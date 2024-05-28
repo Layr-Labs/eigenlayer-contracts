@@ -50,10 +50,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return _pendingWithdrawalData[withdrawalRoot].isPending;        
     }
 
-    // TODO: decide if the return type should be int256 instead of int64
     // @notice Returns the epoch in which the withdrawal corresponding to `withdrawalRoot` was queued
     // @dev Will return zero for a non-existent (i.e never queued or already completed) withdrawal
-    function withdrawalCreationEpoch(bytes32 withdrawalRoot) public view returns (int64) {
+    function withdrawalCreationEpoch(bytes32 withdrawalRoot) public view returns (uint32) {
         return _pendingWithdrawalData[withdrawalRoot].creationEpoch;        
     }
 
@@ -399,7 +398,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 require(!pendingWithdrawals(newRoot), "DelegationManager.migrateQueuedWithdrawals: withdrawal already exists");
                 _pendingWithdrawalData[newRoot] = PendingWithdrawalData({
                     isPending: true,
-                    creationEpoch: int64(EpochUtils.currentEpoch())
+                    creationEpoch: EpochUtils.currentEpoch()
                 });
 
                 emit WithdrawalQueued(newRoot, migratedWithdrawal);
@@ -626,7 +625,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // TODO: currently, this _inclusive_, meaning the completed withdrawal will include slashing effects that were enacted in the `epochForEndOfSlashability`
         // TODO: note that we again probably want the first real epoch to be epoch 1, so that existing queued withdrawals are safe from slashing
-        int256 epochForEndOfSlashability = withdrawalCreationEpoch(withdrawalRoot) + 1;
+        uint32 epochForEndOfSlashability = withdrawalCreationEpoch(withdrawalRoot) + 1;
         require(EpochUtils.currentEpoch() > epochForEndOfSlashability,
             "DelegationManager._completeQueuedWithdrawal: withdrawal is still slashable");
 
@@ -832,7 +831,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // Place withdrawal in queue
         _pendingWithdrawalData[withdrawalRoot] = PendingWithdrawalData({
             isPending: true,
-            creationEpoch: int64(EpochUtils.currentEpoch())
+            creationEpoch: EpochUtils.currentEpoch()
         });
 
         emit WithdrawalQueued(withdrawalRoot, withdrawal);

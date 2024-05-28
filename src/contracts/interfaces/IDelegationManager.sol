@@ -102,7 +102,7 @@ interface IDelegationManager is ISignatureUtils {
 
     struct PendingWithdrawalData {
         bool isPending;
-        int64 creationEpoch;
+        uint32 creationEpoch;
     }
 
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.

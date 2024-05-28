@@ -14,11 +14,12 @@ library EpochUtils {
     // TODO: define appropriately
     uint256 internal constant EPOCH_LENGTH_SECONDS = 1 weeks;
 
-    function getEpochFromTimestamp(uint256 timestamp) internal pure returns (int256) {
-        return (int256(timestamp) - int256(EPOCH_GENESIS_TIMESTAMP)) / int256(EPOCH_LENGTH_SECONDS);
+    function getEpochFromTimestamp(uint256 timestamp) internal pure returns (uint32) {
+        require(timestamp >= EPOCH_GENESIS_TIMESTAMP, "EpochUtils.getEpochFromTimestamp: timestamp is before genesis");
+        return uint32((timestamp - EPOCH_GENESIS_TIMESTAMP) / EPOCH_LENGTH_SECONDS);
     }
 
-    function currentEpoch() internal view returns (int256) {
+    function currentEpoch() internal view returns (uint32) {
         return getEpochFromTimestamp(block.timestamp);
     }
 }

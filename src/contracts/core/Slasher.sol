@@ -56,17 +56,17 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     // @notice Mapping: operator => strategy => epochs in which the strategy was slashed for the operator
     // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
-    mapping(address => mapping(IStrategy => int256[])) public slashedEpochHistory;
+    mapping(address => mapping(IStrategy => uint32[])) public slashedEpochHistory;
 
     /**
      * @notice Mapping: operator => strategy => epoch => scaling factor as a result of slashing *in that epoch*
      * @dev Note that this will be zero in the event of no slashing for the (operator, strategy) tuple in the given epoch.
      * You should use `shareScalingFactorAtEpoch` if you want the actual historical value of the share scaling factor in a given epoch.
      */
-    mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public shareScalingFactorHistory;
+    mapping(address => mapping(IStrategy => mapping(uint32 => uint256))) public shareScalingFactorHistory;
 
     // TODO: this is a "naive" search since it brute-force backwards searches; we might technically want a binary search for completeness
-    function shareScalingFactorAtEpoch(address operator, IStrategy strategy, int256 epoch) public view returns (uint256) {
+    function shareScalingFactorAtEpoch(address operator, IStrategy strategy, uint32 epoch) public view returns (uint256) {
         uint256 slashedEpochHistoryLength = slashedEpochHistory[operator][strategy].length;
         // TODO: note the edge case of 0th epoch; need to make sure it's clear how it should be handled
         if (slashedEpochHistoryLength == 0 || epoch < 0) {
@@ -74,7 +74,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         } else {
             for (uint256 i = slashedEpochHistoryLength - 1; i > 0; --i) {
                 if (slashedEpochHistory[operator][strategy][i] <= epoch) {
-                    int256 correctEpochForLookup = slashedEpochHistory[operator][strategy][i];
+                    uint32 correctEpochForLookup = slashedEpochHistory[operator][strategy][i];
                     return shareScalingFactorHistory[operator][strategy][correctEpochForLookup];
                 }
             }
@@ -82,7 +82,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     }
 
     // @notice Returns the epoch in which the operator was last slashed
-    function lastSlashed(address operator, IStrategy strategy) public view returns (int256) {
+    function lastSlashed(address operator, IStrategy strategy) public view returns (uint32) {
         uint256 slashedEpochHistoryLength = slashedEpochHistory[operator][strategy].length;
         if (slashedEpochHistoryLength == 0) {
             // TODO: consider if a different return value is more appropriate for this special case
@@ -93,7 +93,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     }
 
     // @notice Permissionlessly called to execute slashing of strategies for a given operator, for an epoch
-    function executeSlashing(address operator, IStrategy[] memory strategies, int256 epoch) external {
+    function executeSlashing(address operator, IStrategy[] memory strategies, uint32 epoch) external {
         // TODO: decide if this needs a stonger condition. e.g. the epoch must be further in the past
         require(epoch < EpochUtils.currentEpoch(),
             "must slash for a previous epoch");
@@ -110,8 +110,8 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         }
     }
 
-    function _slashShares(address operator, IStrategy strategy, int256 epoch, uint256 rateToSlash) internal {
-        int256 lastSlashedEpoch = lastSlashed(operator, strategy);
+    function _slashShares(address operator, IStrategy strategy, uint32 epoch, uint256 rateToSlash) internal {
+        uint32 lastSlashedEpoch = lastSlashed(operator, strategy);
         // TODO: again note that we need something like the first epoch being epoch 1 here, to allow actually slashing in the first epoch
         require(epoch > lastSlashedEpoch, "slashing must occur in strictly ascending epoch order");
         uint256 scalingFactorBefore = shareScalingFactor(operator, strategy);
@@ -133,21 +133,21 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
      *      The amount that the operator's delegated shares will actually get slashed (which goes into `pendingSlashingRate`) is linearly proportional
      *      to *both* this number *and* the slashable bips.
      */
-    mapping(address => mapping(IStrategy => mapping(int256 => mapping(address => uint256)))) public requestedSlashedBips;
+    mapping(address => mapping(IStrategy => mapping(uint32 => mapping(address => uint256)))) public requestedSlashedBips;
 
     /**
      * @notice Mapping: Operator => Strategy => epoch => pending slashed amount, where pending slashed amount is the
      * amount that will be slashed when slashing is executed for the current epoch, assuming no existing requests are cancelled or nullified. summed over all AVSs
      * @dev Note that this is parts per (BIPS_FACTOR**2), i.e. parts per 1e8
      */
-    mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public pendingSlashingRate;
+    mapping(address => mapping(IStrategy => mapping(uint32 => uint256))) public pendingSlashingRate;
 
     // @notice fetches the bips slashable by an AVS for the shares of a certain strategy delegated to a certain operator for a certain epoch
     function getSlashableBips(
         address operator, 
         address avs, 
         IStrategy strategy, 
-        int256 epoch
+        uint32 epoch
     ) public pure returns (uint256) {
         // TODO: this is a stub. it needs implementation
         return 10;
@@ -161,7 +161,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         require(bipsToSlash <= SlashingAccountingUtils.BIPS_FACTOR, "invalid slashing amount");
         require(bipsToSlash != 0, "cannot slash 0");
         address avs = msg.sender;
-        int256 epoch = EpochUtils.currentEpoch();
+        uint32 epoch = EpochUtils.currentEpoch();
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
             uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][avs];
@@ -188,7 +188,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     ) external {
         require(bipsToReduce != 0, "cannot reduce slashing by 0");
         address avs = msg.sender;
-        int256 epoch = EpochUtils.currentEpoch();
+        uint32 epoch = EpochUtils.currentEpoch();
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
             uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][avs];
