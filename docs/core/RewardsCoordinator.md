@@ -56,7 +56,8 @@ This document is organized according to the following themes (click each to be t
 
 ### Submitting Rewards Requests
 
-AVSs submit rewards requests via the following functions:
+
+Rewards are initially submitted to the contract to be distributed to Operators and Stakers by the following functions:
 
 * [`RewardsCoordinator.createAVSRewardsSubmission`](#createavsrewardssubmission)
 * [`RewardsCoordinator.createRewardsForAllSubmission`](#createrewardsforallsubmission)
@@ -72,7 +73,7 @@ function createAVSRewardsSubmission(
     nonReentrant
 ```
 
-Called by an AVS to submit a list of `RewardsSubmissions` to be distributed across all registered Operators (and Stakers delegated to each Operator). A `RewardsSubmission` consists of the following fields:
+Called by an AVS to submit a list of `RewardsSubmission`s to be distributed across all registered Operators (and Stakers delegated to each Operator). A `RewardsSubmission` consists of the following fields:
 * `IERC20 token`: the address of the ERC20 token being used for reward submission
 * `uint256 amount`: amount of `token` to transfer to the `RewardsCoordinator`
 * `uint32 startTimestamp`: the start of the submission time range
@@ -87,9 +88,12 @@ For each submitted `RewardsSubmission`, this method performs a `transferFrom` to
 
 In order to be eligible to claim a `createAVSRewardsSubmission` reward, the Operator should be registered for the AVS in the `AVSDirectory` during the time period over which the reward is being made (see docs for [`AVSDirectory.registerOperatorToAVS`](./AVSDirectory.md#registeroperatortoavs)). If an Operator is ineligible, any Stakers delegated to the Operator are also ineligible.
 
+In addition, the AVS ServiceManager contract must also implement the interfaces `ServiceManager.getRestakeableStrategies` and `ServiceManager.getOperatorRestakedStrategies` to have their rewards be successfully distributed as these view functions are called offchain as part of the rewards distribution process. This is by default implemented in the `ServiceManagerBase` contract but is important to note if the base contract is not being inherited from.
+See the `ServiceManagerBase` abstract contract here: [`ServiceManagerBase.sol`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/dev/src/ServiceManagerBase.sol)
+
 *Rewards Distribution*:
 
-The rewards distribution amongst the AVS's Operators and delegated Stakers is determined offchain using the strategies and multipliers provided in the `RewardsSubmission` struct as well as the actual shares for those defined strategies over the `RewardsSubmission's` time range. These shares are read from the [`EigenPodManager`](./EigenPodManager.md) (in the case of the Beacon Chain ETH strategy), or the [`StrategyManager`](./StrategyManager.md) for any other strategy. Note that Stakers' shares specifically are what determines rewards distribution; Operators earn based on a combination of their own deposited shares and a configured `globalOperatorCommissionBips`.
+The rewards distribution amongst the AVS's Operators and delegated Stakers is determined offchain using the strategies and multipliers provided in the `RewardsSubmission` struct as well as the actual shares for those defined strategies over the `RewardsSubmission`'s time range. These shares are read from the [`EigenPodManager`](./EigenPodManager.md) (in the case of the Beacon Chain ETH strategy), or the [`StrategyManager`](./StrategyManager.md) for any other strategy. Note that Stakers' shares specifically are what determines rewards distribution; Operators earn based on a combination of their own deposited shares and a configured `globalOperatorCommissionBips`.
 
 *Effects*:
 * For each `RewardsSubmission` element
@@ -102,7 +106,6 @@ The rewards distribution amongst the AVS's Operators and delegated Stakers is de
 * Pause status MUST NOT be set: `PAUSED_AVS_REWARDS_SUBMISSION`
 * Function call is not reentered
 * For each `RewardsSubmission` element
-    * `isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash]` MUST be false, the hash keccak256(msg.sender[AVS], nonce, and `RewardsSubmission`) should not have been submitted before
     * Requirements from calling internal function `_validateRewardsSubmission()`
         * `rewardsSubmission.strategiesAndMultipliers.length > 0`
         * `rewardsSubmission.amount > 0`
