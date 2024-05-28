@@ -12,7 +12,7 @@ This document provides an overview of system components, contracts, and user rol
     * [`EigenPodManager`](#eigenpodmanager)
     * [`StrategyManager`](#strategymanager)
     * [`DelegationManager`](#delegationmanager)
-    * [`PaymentCoordinator`](#paymentcoordinator)
+    * [`RewardsCoordinator`](#rewardscoordinator)
     * [`AVSDirectory`](#avsdirectory)
     * [`Slasher`](#slasher)
 * [Roles and Actors](#roles-and-actors)
@@ -67,18 +67,18 @@ The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager`
 
 See full documentation in [`/core/DelegationManager.md`](./core/DelegationManager.md).
 
-#### PaymentCoordinator
+#### RewardsCoordinator
 
 | File | Type | Proxy |
 | -------- | -------- | -------- |
-| [`PaymentCoordinator.sol`](../src/contracts/core/PaymentCoordinator.sol) | Singleton | Transparent proxy |
+| [`RewardsCoordinator.sol`](../src/contracts/core/RewardsCoordinator.sol) | Singleton | Transparent proxy |
 
-The `PaymentCoordinator` is the main entry point of submission and claiming of ERC20 payments in EigenLayer. It carries out three basic functions:
-* AVSs (via the AVS's contracts) submit "range payments" to their registered Operators and Stakers over a specific time period 
-* *Off-chain*, the payment updater will use each range payment's time period to apply payment amounts to historical Staker/Operator stake weights. This is consolidated into a merkle root that is posted *on-chain* to the `PaymentCoordinator`, allowing Stakers/Operators to claim their allocated payments.
-* Stakers/Operators can claim payments posted by the payment updater.
+The `RewardsCoordinator` is the main entry point of submission and claiming of ERC20 rewards in EigenLayer. It carries out three basic functions:
+* AVSs (via the AVS's contracts) submit "rewards submissions" to their registered Operators and Stakers over a specific time period 
+* *Off-chain*, the rewards updater will use each RewardsSubmission time period to apply reward amounts to historical Staker/Operator stake weights. This is consolidated into a merkle root that is posted *on-chain* to the `RewardsCoordinator`, allowing Stakers/Operators to claim their allocated rewards.
+* Stakers/Operators can claim rewards posted by the rewards updater.
 
-See full documentation in [`/core/PaymentCoordinator.md`](./core/PaymentCoordinator.md).
+See full documentation in [`/core/RewardsCoordinator.md`](./core/RewardsCoordinator.md).
 
 #### AVSDirectory
 

@@ -5,32 +5,32 @@ import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/IPaymentCoordinator.sol";
+import "../interfaces/IRewardsCoordinator.sol";
 
 /**
- * @title Storage variables for the `PaymentCoordinator` contract.
+ * @title Storage variables for the `RewardsCoordinator` contract.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
-abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
+abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
 
     /*******************************************************************************
                                CONSTANTS AND IMMUTABLES 
     *******************************************************************************/
 
-    /// @notice The interval in seconds at which the calculation for range payment distribution is done.
-    /// @dev Payment durations must be multiples of this interval. This is going to be configured to 1 week
+    /// @notice The interval in seconds at which the calculation for rewards distribution is done.
+    /// @dev RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 week
     uint32 public immutable CALCULATION_INTERVAL_SECONDS;
-    /// @notice The maximum amount of time (seconds) that a range payment can span over
-    uint32 public immutable MAX_PAYMENT_DURATION;
-    /// @notice max amount of time (seconds) that a payment can start in the past
+    /// @notice The maximum amount of time (seconds) that a rewards submission can span over
+    uint32 public immutable MAX_REWARDS_DURATION;
+    /// @notice max amount of time (seconds) that a rewards submission can start in the past
     uint32 public immutable MAX_RETROACTIVE_LENGTH;
-    /// @notice max amount of time (seconds) that a payment can start in the future
+    /// @notice max amount of time (seconds) that a rewards submission can start in the future
     uint32 public immutable MAX_FUTURE_LENGTH;
-    /// @notice absolute min timestamp (seconds) that a payment can start at
-    uint32 public immutable GENESIS_PAYMENT_TIMESTAMP;
-    /// @notice The cadence at which a snapshot is taken offchain for calculating payment distributions
+    /// @notice absolute min timestamp (seconds) that a rewards submission can start at
+    uint32 public immutable GENESIS_REWARDS_TIMESTAMP;
+    /// @notice The cadence at which a snapshot is taken offchain for calculating rewards distributions
     uint32 internal constant SNAPSHOT_CADENCE = 1 days;   
 
     /// @notice The DelegationManager contract for EigenLayer
@@ -50,16 +50,16 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
      */
     bytes32 internal _DOMAIN_SEPARATOR;
 
-    /// @notice list of roots submitted by the paymentUpdater
+    /// @notice list of roots submitted by the rewardsUpdater
     DistributionRoot[] public distributionRoots;
 
     /// Slot 3
     /// @notice The address of the entity that can update the contract with new merkle roots
-    address public paymentUpdater;
+    address public rewardsUpdater;
     /// @notice Delay in timestamp (seconds) before a posted root can be claimed against
     uint32 public activationDelay;
     /// @notice Timestamp for last submitted DistributionRoot
-    uint32 public currPaymentCalculationEndTimestamp;
+    uint32 public currRewardsCalculationEndTimestamp;
 
     /// Slot 4
     /// @notice the commission for all operators across all avss
@@ -71,39 +71,39 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     /// @notice Mapping: earner => token => total amount claimed
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
 
-    /// @notice Used for unique rangePaymentHashes per AVS and for PayAllForRangeSubmitters
-    mapping(address => uint256) public paymentNonce;
-    /// @notice Mapping: avs => rangePaymentHash => bool to check if range payment hash has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isRangePaymentHash;
-    /// @notice Mapping: avs => rangePaymentForALlHash => bool to check if range payment hash for all has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isRangePaymentForAllHash;
-    /// @notice Mapping: address => bool to check if the address is permissioned to submit payAllForRange
-    mapping(address => bool) public isPayAllForRangeSubmitter;
+    /// @notice Used for unique rewardsSubmissionHashes per AVS and for RewardsForAllSubmitters
+    mapping(address => uint256) public submissionNonce;
+    /// @notice Mapping: avs => avsRewardsSubmissionHash => bool to check if rewards submission hash has been submitted
+    mapping(address => mapping(bytes32 => bool)) public isAVSRewardsSubmissionHash;
+    /// @notice Mapping: avs => rewardsSubmissionForALlHash => bool to check if rewards submission hash for all has been submitted
+    mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllHash;
+    /// @notice Mapping: address => bool to check if the address is permissioned to call createRewardsForAllSubmission
+    mapping(address => bool) public isRewardsForAllSubmitter;
 
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
         uint32 _CALCULATION_INTERVAL_SECONDS,
-        uint32 _MAX_PAYMENT_DURATION,
+        uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
         uint32 _MAX_FUTURE_LENGTH,
-        uint32 _GENESIS_PAYMENT_TIMESTAMP
+        uint32 _GENESIS_REWARDS_TIMESTAMP
     ) {
         require(
-            _GENESIS_PAYMENT_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0,
-            "PaymentCoordinator: GENESIS_PAYMENT_TIMESTAMP must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            _GENESIS_REWARDS_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator: GENESIS_REWARDS_TIMESTAMP must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
             _CALCULATION_INTERVAL_SECONDS % SNAPSHOT_CADENCE == 0,
-            "PaymentCoordinator: CALCULATION_INTERVAL_SECONDS must be a multiple of SNAPSHOT_CADENCE"
+            "RewardsCoordinator: CALCULATION_INTERVAL_SECONDS must be a multiple of SNAPSHOT_CADENCE"
         );
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
         CALCULATION_INTERVAL_SECONDS = _CALCULATION_INTERVAL_SECONDS;
-        MAX_PAYMENT_DURATION = _MAX_PAYMENT_DURATION;
+        MAX_REWARDS_DURATION = _MAX_REWARDS_DURATION;
         MAX_RETROACTIVE_LENGTH = _MAX_RETROACTIVE_LENGTH;
         MAX_FUTURE_LENGTH = _MAX_FUTURE_LENGTH;
-        GENESIS_PAYMENT_TIMESTAMP = _GENESIS_PAYMENT_TIMESTAMP;
+        GENESIS_REWARDS_TIMESTAMP = _GENESIS_REWARDS_TIMESTAMP;
     }
 
     /**

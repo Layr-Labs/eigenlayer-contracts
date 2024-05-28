@@ -23,14 +23,14 @@
     "init_paused_status": 0,
     "init_minWithdrawalDelayBlocks": 10
   },
-  "paymentCoordinator": {
+  "rewardsCoordinator": {
     "init_paused_status": 0,
     "CALCULATION_INTERVAL_SECONDS": 604800,
-    "MAX_PAYMENT_DURATION": 6048000,
+    "MAX_REWARDS_DURATION": 6048000,
     "MAX_RETROACTIVE_LENGTH": 7776000,
     "MAX_FUTURE_LENGTH": 2592000,
-    "GENESIS_PAYMENT_TIMESTAMP": 1710979200,
-    "payment_updater_address": "0x02d9bd32ec711AC8782aEaBF9e1E1309F0965c11",
+    "GENESIS_REWARDS_TIMESTAMP": 1710979200,
+    "rewards_updater_address": "0x18a0f92Ad9645385E8A8f3db7d0f6CF7aBBb0aD4",
     "activation_delay": 120,
     "calculation_interval_seconds": 604800,
     "global_operator_commission_bips": 1000

@@ -44,8 +44,8 @@
     ],
     "strategyManager": "0xdfB5f6CE42aAA7830E94ECFCcAd411beF4d4D5b6",
     "strategyManagerImplementation": "0x59f766A603C53f3AC8Be43bBe158c1519b193a18",
-    "paymentCoordinator": "0x0000000000000000000000000000000000000000",
-    "paymentCoordinatorImplementation": "0x0000000000000000000000000000000000000000"
+    "rewardsCoordinator": "0x0000000000000000000000000000000000000000",
+    "rewardsCoordinatorImplementation": "0x0000000000000000000000000000000000000000"
   },
   "chainInfo": {
     "chainId": 17000,
