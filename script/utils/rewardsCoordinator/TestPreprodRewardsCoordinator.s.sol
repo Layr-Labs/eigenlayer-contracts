@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import "script/deploy/holesky/Deploy_Test_PaymentCoordinator.s.sol";
+import "script/deploy/holesky/Deploy_Test_rewardsCoordinator.s.sol";
 import "./ServiceManagerMock.sol";
 
 /**
@@ -14,7 +14,7 @@ import "./ServiceManagerMock.sol";
  * delegating to operators
  *
  */
-contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
+contract TestPreprodRewardsCoordinator is ExistingDeploymentParser {
     // 0-20: operators
     // 21-100: stakers
     string internal constant TEST_MNEMONIC = "hundred february vast fluid produce radar notice ridge armed glare panther balance";
@@ -36,7 +36,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     bytes32 earnerTokenRoot;
 
     function _setupScript() internal virtual {
-        _parseInitialDeploymentParams("script/configs/holesky/Deploy_PaymentCoordinator.holesky.config.json");
+        _parseInitialDeploymentParams("script/configs/holesky/Deploy_rewardsCoordinator.holesky.config.json");
         _parseDeployedContracts("script/output/holesky/M2_deploy_preprod.output.json");
 
         require(
@@ -81,19 +81,19 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Deploys a new AVS ServiceManager
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvvv \
             --sig "deployNewAVS()"
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --verify \
             --sig "deployNewAVS()"
      */
     function deployNewAVS() external virtual {
         _setupScript();
         require(
-            address(paymentCoordinator) == 0xb22Ef643e1E067c994019A4C19e403253C05c2B0,
+            address(rewardsCoordinator) == 0xb22Ef643e1E067c994019A4C19e403253C05c2B0,
             "PaymentCoordinator address incorrect"
         );
         require(
@@ -103,7 +103,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         address emptyContract = 0xc08b788d587F927b49665b90ab35D5224965f3d9;
 
         vm.startBroadcast();
-        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(avsDirectory, paymentCoordinator);
+        ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(avsDirectory, rewardsCoordinator);
 
         serviceManager = ServiceManagerMock(
             address(
@@ -120,7 +120,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         );
 
         require(
-            address(serviceManager.paymentCoordinator()) == address(paymentCoordinator),
+            address(serviceManager.rewardsCoordinator()) == address(rewardsCoordinator),
             "PaymentCoordinator not set in ServiceManager"
         );
 
@@ -128,20 +128,20 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     }
 
     /**
-        Submit a RangePayment to the PaymentCoordinator
+        Submit a RewardsSubmission to the PaymentCoordinator
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
-            --sig "payForRange(string memory startTimestampType, address avsServiceManager, address paymentTokenAddress, uint256 amount)" \
+            --sig "createAVSRewardsSubmission(string memory startTimestampType, address avsServiceManager, address paymentTokenAddress, uint256 amount)" \
             "genesis" 0x5d78d44aE92bF5C588930B4948D8DbCb93344830 0x0000000000000000000000000000000000000000 1000000000000000000000000000000
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
-            --sig "payForRange(string memory startTimestampType, address avsServiceManager, address paymentTokenAddress, uint256 amount)" \
+            --sig "createAVSRewardsSubmission(string memory startTimestampType, address avsServiceManager, address paymentTokenAddress, uint256 amount)" \
             "genesis" 0x5384B6701DbBAAa0a78A4F20cc48f150f7b1526D 0x0000000000000000000000000000000000000000 1000000000000000000000000000000
      */
-    function payForRange(
+    function createAVSRewardsSubmission(
         string memory startTimestampType,
         address avsServiceManager,
         address paymentTokenAddress,
@@ -168,30 +168,30 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
 
         if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("genesis"))) {
             /// 1710979200 unix timestamp, genesis at March 21st
-            startTimestamp = PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP;
+            startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP;
             duration = 10 weeks;
         } else if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("current"))) {
             /// 1715212800 unix timestamp, May 9th
-            startTimestamp = PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP + 7 weeks;
+            startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 7 weeks;
             duration = 3 weeks;
         } else if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("future"))) {
             /// 1715817600 unix timestamp, May 16th
-            startTimestamp = PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP + 8 weeks;
+            startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 8 weeks;
             duration = 2 weeks;
         }
 
-        IPaymentCoordinator.StrategyAndMultiplier[] memory strategiesAndMultipliers = new IPaymentCoordinator.StrategyAndMultiplier[](2);
-        strategiesAndMultipliers[0] = IPaymentCoordinator.StrategyAndMultiplier({
+        IRewardsCoordinator.StrategyAndMultiplier[] memory strategiesAndMultipliers = new IRewardsCoordinator.StrategyAndMultiplier[](2);
+        strategiesAndMultipliers[0] = IRewardsCoordinator.StrategyAndMultiplier({
             strategy: wethStrategy,
             multiplier: 2e18
         });
-        strategiesAndMultipliers[1] = IPaymentCoordinator.StrategyAndMultiplier({
+        strategiesAndMultipliers[1] = IRewardsCoordinator.StrategyAndMultiplier({
             strategy: eigenStrategy,
             multiplier: 1e18
         });
 
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategiesAndMultipliers,
             token: paymentToken,
             amount: amount,
@@ -201,7 +201,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
 
         vm.startBroadcast();
         paymentToken.approve(avsServiceManager, amount);
-        ServiceManagerMock(avsServiceManager).payForRange(rangePayments);
+        ServiceManagerMock(avsServiceManager).createAVSRewardsSubmission(rewardsSubmissions);
         vm.stopBroadcast();
     }
 
@@ -209,13 +209,13 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         Submit a PayForAll to the PaymentCoordinator
         Address associated with `PRIVATE_KEY` must be a payForAllSubmitter
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "payForAll(string memory startTimestampType, address paymentTokenAddress, uint256 amount)" \
             "genesis" 0x0000000000000000000000000000000000000000 1000000000000000000000000000000
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig " "payForAll(string memory startTimestampType, address paymentTokenAddress, uint256 amount)" \
             "genesis" 0x0000000000000000000000000000000000000000 1000000000000000000000000000000
@@ -246,30 +246,30 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
 
         if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("genesis"))) {
             /// 1710979200 unix timestamp, genesis at March 21st
-            startTimestamp = PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP;
+            startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP;
             duration = 10 weeks;
         } else if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("current"))) {
             /// 1715212800 unix timestamp, May 9th
-            startTimestamp = PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP + 9 weeks;
+            startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 9 weeks;
             duration = 3 weeks;
         } else if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("future"))) {
             /// 1715817600 unix timestamp, May 16th
-            startTimestamp = PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP + 8 weeks;
+            startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 8 weeks;
             duration = 2 weeks;
         }
 
-        IPaymentCoordinator.StrategyAndMultiplier[] memory strategiesAndMultipliers = new IPaymentCoordinator.StrategyAndMultiplier[](2);
-        strategiesAndMultipliers[0] = IPaymentCoordinator.StrategyAndMultiplier({
+        IRewardsCoordinator.StrategyAndMultiplier[] memory strategiesAndMultipliers = new IRewardsCoordinator.StrategyAndMultiplier[](2);
+        strategiesAndMultipliers[0] = IRewardsCoordinator.StrategyAndMultiplier({
             strategy: wethStrategy,
             multiplier: 1e18
         });
-        strategiesAndMultipliers[1] = IPaymentCoordinator.StrategyAndMultiplier({
+        strategiesAndMultipliers[1] = IRewardsCoordinator.StrategyAndMultiplier({
             strategy: eigenStrategy,
             multiplier: 2e18
         });
 
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategiesAndMultipliers,
             token: paymentToken,
             amount: amount,
@@ -278,24 +278,24 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         });
 
         vm.startBroadcast();
-        paymentToken.approve(address(paymentCoordinator), amount);
-        paymentCoordinator.payAllForRange(rangePayments);
+        paymentToken.approve(address(rewardsCoordinator), amount);
+        rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
         vm.stopBroadcast();
     }
 
     /**
      * @notice Takes the latest distributionRoot and uses the claim against it. Broadcasts with earnerIndex and the test mnemonic
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic)" \
-            "script/utils/paymentCoordinator/claimProofs/processClaim_1.json" 20
+            "script/utils/rewardsCoordinator/claimProofs/processClaim_1.json" 20
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic)" \
-            "script/utils/paymentCoordinator/claimProofs/processClaim_proof1.json" 20
+            "script/utils/rewardsCoordinator/claimProofs/processClaim_proof1.json" 20
      */
     function processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic) external virtual {
         _setupScript();
@@ -313,7 +313,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         uint256 numTokenLeaves = stdJson.readUint(claimProofData, ".proof.tokenLeavesNum");
         uint256 numTokenTreeProofs = stdJson.readUint(claimProofData, ".proof.tokenTreeProofsNum");
  
-        IPaymentCoordinator.TokenTreeMerkleLeaf[] memory tokenLeaves = new IPaymentCoordinator.TokenTreeMerkleLeaf[](
+        IRewardsCoordinator.TokenTreeMerkleLeaf[] memory tokenLeaves = new IRewardsCoordinator.TokenTreeMerkleLeaf[](
             numTokenLeaves
         );
         uint32[] memory tokenIndices = new uint32[](numTokenLeaves);
@@ -324,7 +324,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
 
             IERC20 token = IERC20(stdJson.readAddress(claimProofData, tokenKey));
             uint256 cumulativeEarnings = stdJson.readUint(claimProofData, amountKey);
-            tokenLeaves[i] = IPaymentCoordinator.TokenTreeMerkleLeaf({
+            tokenLeaves[i] = IRewardsCoordinator.TokenTreeMerkleLeaf({
                 token: token,
                 cumulativeEarnings: cumulativeEarnings
             });
@@ -336,41 +336,41 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
             tokenTreeProofs[i] = abi.decode(stdJson.parseRaw(claimProofData, tokenTreeProofKey), (bytes));
         }
 
-        IPaymentCoordinator.PaymentMerkleClaim memory newClaim = IPaymentCoordinator.PaymentMerkleClaim({
-            rootIndex: uint32(paymentCoordinator.getDistributionRootsLength() - 1),
+        IRewardsCoordinator.RewardsMerkleClaim memory newClaim = IRewardsCoordinator.RewardsMerkleClaim({
+            rootIndex: uint32(rewardsCoordinator.getDistributionRootsLength() - 1),
             earnerIndex: earnerIndex,
             earnerTreeProof: earnerTreeProof,
-            earnerLeaf: IPaymentCoordinator.EarnerTreeMerkleLeaf({earner: earner, earnerTokenRoot: earnerTokenRoot}),
+            earnerLeaf: IRewardsCoordinator.EarnerTreeMerkleLeaf({earner: earner, earnerTokenRoot: earnerTokenRoot}),
             tokenIndices: tokenIndices,
             tokenTreeProofs: tokenTreeProofs,
             tokenLeaves: tokenLeaves
         });
 
         vm.startBroadcast(earner);
-        paymentCoordinator.processClaim(newClaim, earner);
+        rewardsCoordinator.processClaim(newClaim, earner);
         vm.stopBroadcast();
     }
 
     /**
         ========ANVIL========
         Deposit WETH strategy:
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositIntoStrategy(uint8 numStakers, address strategy)" 20 0xD523267698C81a372191136e477fdebFa33D9FB4
 
         Deposit EIGEN strategy:
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositIntoStrategy(uint8 numStakers, address strategy)" 20 0xdcCF401fD121d8C542E96BC1d0078884422aFAD2
 
         ========HOLESKY========
         Deposit WETH strategy:
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositIntoStrategy(uint8 numStakers, address strategy)" 20 0xD523267698C81a372191136e477fdebFa33D9FB4
 
         Deposit EIGEN strategy:
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositIntoStrategy(uint8 numStakers, address strategy)" 20 0xdcCF401fD121d8C542E96BC1d0078884422aFAD2
      */
@@ -410,12 +410,12 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Deposit into WETH and EIGEN strategies
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositWETHAndEIGEN(uint8 numStakers)" 80
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositWETHAndEIGEN(uint8 numStakers)" 10
      */
@@ -450,12 +450,12 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Register Operators in the DM
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "registerOperators(uint8 numOperators, address serviceManagerAddress)" 5 0xa5d5E9bcdDC1dACe96E5d8f7536A97900550BbB2
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "registerOperators(uint8 numOperators, address serviceManagerAddress)" 1 0xa5d5E9bcdDC1dACe96E5d8f7536A97900550BbB2
      */
@@ -498,12 +498,12 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Register Operators in the DM
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "registerOperatorByIndex(uint8 operatorIndex, address serviceManagerAddress)" 5 0xa5d5E9bcdDC1dACe96E5d8f7536A97900550BbB2
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "registerOperatorByIndex(uint8 operatorIndex, address serviceManagerAddress)" 1 0xa5d5E9bcdDC1dACe96E5d8f7536A97900550BbB2
      */
@@ -541,12 +541,12 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Delegate Stakers to Operators
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "delegateTo(uint8 stakerId, uint8 operatorId)" 40 10
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "delegateTo(uint8 stakerId, uint8 operatorId)" 40 10
      */
@@ -568,12 +568,12 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Transfer ETH to the test addresses so they can submit txs
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "transferETH()"
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "transferETH()"
 
@@ -592,7 +592,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
 
     /**
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "deployStablecoin()"
      */

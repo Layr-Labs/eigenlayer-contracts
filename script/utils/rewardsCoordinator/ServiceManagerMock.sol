@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {ISignatureUtils} from "src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "src/contracts/interfaces/IAVSDirectory.sol";
-import {IPaymentCoordinator} from "src/contracts/interfaces/IPaymentCoordinator.sol";
+import {IRewardsCoordinator} from "src/contracts/interfaces/IRewardsCoordinator.sol";
 
 /**
  * @title Minimal implementation of a ServiceManager-type contract.
@@ -14,7 +14,7 @@ import {IPaymentCoordinator} from "src/contracts/interfaces/IPaymentCoordinator.
 contract ServiceManagerMock is OwnableUpgradeable {
 
     IAVSDirectory internal immutable _avsDirectory;
-    IPaymentCoordinator internal immutable _paymentCoordinator;
+    IRewardsCoordinator internal immutable _rewardsCoordinator;
 
     address[] public restakeableStrategies;
     mapping(address => address[]) public operatorRestakedStrategies;
@@ -22,10 +22,10 @@ contract ServiceManagerMock is OwnableUpgradeable {
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
-        IPaymentCoordinator ___paymentCoordinator
+        IRewardsCoordinator ___rewardsCoordinator
     ) {
         _avsDirectory = __avsDirectory;
-        _paymentCoordinator = ___paymentCoordinator;
+        _rewardsCoordinator = ___rewardsCoordinator;
         _disableInitializers();
     }
 
@@ -51,26 +51,26 @@ contract ServiceManagerMock is OwnableUpgradeable {
      * set of stakers delegated to operators who are registered to the `avs`.
      * Note that the owner calling this function must have approved the tokens to be transferred to the ServiceManager
      * and of course has the required balances.
-     * @param rangePayments The range payments being created
+     * @param rewardsSubmissions The range payments being created
      * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the payment is being made
-     * @dev The duration of the `rangePayment` cannot exceed `paymentCoordinator.MAX_PAYMENT_DURATION()`
+     * @dev The duration of the `rangePayment` cannot exceed `rewardsCoordinator.MAX_PAYMENT_DURATION()`
      * @dev The tokens are sent to the `PaymentCoordinator` contract
      * @dev Strategies must be in ascending order of addresses to check for duplicates
      * @dev This function will revert if the `rangePayment` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function payForRange(
-        IPaymentCoordinator.RangePayment[] calldata rangePayments
+    function createAVSRewardsSubmission(
+        IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions
     ) public virtual onlyOwner {
-        for (uint256 i = 0; i < rangePayments.length; ++i) {
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             // transfer token to ServiceManager and approve PaymentCoordinator to transfer again
-            // in payForRange() call
-            rangePayments[i].token.transferFrom(msg.sender, address(this), rangePayments[i].amount);
-            uint256 allowance = rangePayments[i].token.allowance(address(this), address(_paymentCoordinator));
-            rangePayments[i].token.approve(address(_paymentCoordinator), rangePayments[i].amount + allowance);
+            // in createAVSRewardsSubmission() call
+            rewardsSubmissions[i].token.transferFrom(msg.sender, address(this), rewardsSubmissions[i].amount);
+            uint256 allowance = rewardsSubmissions[i].token.allowance(address(this), address(_rewardsCoordinator));
+            rewardsSubmissions[i].token.approve(address(_rewardsCoordinator), rewardsSubmissions[i].amount + allowance);
         }
 
-        _paymentCoordinator.payForRange(rangePayments);
+        _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     /**
@@ -133,8 +133,8 @@ contract ServiceManagerMock is OwnableUpgradeable {
         return address(_avsDirectory);
     }
 
-    function paymentCoordinator() external view returns (address) {
-        return address(_paymentCoordinator);
+    function rewardsCoordinator() external view returns (address) {
+        return address(_rewardsCoordinator);
     }
     
     // storage gap for upgradeability
