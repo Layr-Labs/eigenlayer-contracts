@@ -131,7 +131,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
      * @notice Mapping: Operator => Strategy => epoch => AVS => requested slashed bips
      * @dev Note that this is *independent* of the slashable bips that the operator has determined!
      *      The amount that the operator's delegated shares will actually get slashed (which goes into `pendingSlashingRate`) is linearly proportional
-     *      to *both* this number (capped by the `maxSlashingRate`) *and* linearly proportional to the slashable bips.
+     *      to *both* this number *and* the slashable bips.
      */
     mapping(address => mapping(IStrategy => mapping(int256 => mapping(address => uint256)))) public requestedSlashedBips;
 
@@ -153,16 +153,6 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         return 10;
     }
 
-    // @notice fetches the maximum slashing rate -- expressed in bips -- by an AVS for the shares of a certain strategy for a certain epoch
-    function getMaxSlashingRate(
-        address avs,
-        IStrategy strategy, 
-        int256 epoch
-    ) public pure returns (uint256) {
-        // TODO: this is a stub. it needs implementation
-        return 10000;
-    }
-
     function createSlashingRequest(
         address operator,
         IStrategy[] memory strategies,
@@ -178,7 +168,6 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
             uint256 requestedSlashedBipsAfter = requestedSlashedBipsBefore + bipsToSlash;
             int256 changeInPendingSlashedBips = _changeInPendingSlashedBips({
                 slashableBips: getSlashableBips(operator, avs, strategy, epoch),
-                maxSlashingRate: getMaxSlashingRate(avs, strategy, epoch),
                 requestedSlashedBipsBefore: requestedSlashedBipsBefore,
                 requestedSlashedBipsAfter: requestedSlashedBipsAfter
             });
@@ -212,7 +201,6 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
             }
             int256 changeInPendingSlashedBips = _changeInPendingSlashedBips({
                 slashableBips: getSlashableBips(operator, avs, strategy, epoch),
-                maxSlashingRate: getMaxSlashingRate(avs, strategy, epoch),
                 requestedSlashedBipsBefore: requestedSlashedBipsBefore,
                 requestedSlashedBipsAfter: requestedSlashedBipsAfter
             });
@@ -227,29 +215,10 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     function _changeInPendingSlashedBips(
         uint256 slashableBips,
-        uint256 maxSlashingRate,
         uint256 requestedSlashedBipsBefore,
         uint256 requestedSlashedBipsAfter
     ) internal pure returns (int256) {
-        uint256 realSlashingRateBefore = _getSlashingRate(slashableBips, maxSlashingRate, requestedSlashedBipsBefore);
-        uint256 realSlashingRateAfter = _getSlashingRate(slashableBips, maxSlashingRate, requestedSlashedBipsAfter);
-        return int256(realSlashingRateAfter) - int256(realSlashingRateBefore);
-    }
-    
-    /**
-     * @notice returns the amount of total delegated shares that will get slashed, based on the input params
-     * @dev note that the return value is a rate as parts per (BIPS_FACTOR**2), i.e. parts per 1e8
-     */
-    function _getSlashingRate(
-        uint256 slashableBips,
-        uint256 maxSlashingRate,
-        uint256 _requestedSlashedBips
-    ) internal pure returns (uint256) {
-        if (_requestedSlashedBips >= maxSlashingRate) {
-            return (maxSlashingRate * slashableBips);
-        } else {
-            return (_requestedSlashedBips * slashableBips);
-        }
+        return int256(slashableBips) * (int256(requestedSlashedBipsAfter) - int256(requestedSlashedBipsAfter));
     }
 
     constructor(IStrategyManager, IDelegationManager) {}
