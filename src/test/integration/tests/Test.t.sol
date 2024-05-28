@@ -69,120 +69,49 @@ contract Integration_Tester is IntegrationCheckUtils {
 
     // }
 
-    function test_Thing() public {
+    function test_VerifyAll_Start_CompleteCP_WithRewards(uint24 _rand) public {
         _configRand({
-            _randomSeed: 0,
+            _randomSeed: _rand,
             _assetTypes: HOLDS_ETH,
             _userTypes: DEFAULT
         });
 
         (User staker, ,) = _newRandomStaker();
 
-        uint numValidators = 10;
-        uint40[] memory validators = staker.startValidators(numValidators);
-        _logPod(staker);
-
-        IStrategy[] memory strats = new IStrategy[](1);
-        uint[] memory shares = new uint[](1);
-        strats[0] = BEACONCHAIN_ETH_STRAT;
-        shares[0] = 32 ether * numValidators;
+        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
 
         staker.verifyWithdrawalCredentials(validators);
-        assert_Snap_Added_StakerShares(staker, strats, shares, "should have added shares");
-        _logPod(staker);
+        // checks
 
-        // Move forward one epoch and distribute consensus rewards to all validators
-        // These rewards are not withdrawn to the execution layer!
-        // beaconChain.advanceEpochWithRewards({ withdraw: false });
+        beaconChain.advanceEpoch_NoRewards();
+        // check pod balances have increased
 
         staker.startCheckpoint();
-        _logPod(staker);
-        // check_StartCheckpoint_State(staker, validators, 1 gwei);
+        // checks
 
         staker.completeCheckpoint();
-        _logPod(staker);
+        // checks
     }
 
-    function test_Thing2() public {
+    function test_VerifyAll_Start_CompleteCP_NoRewards(uint24 _rand) public {
         _configRand({
-            _randomSeed: 0,
+            _randomSeed: _rand,
             _assetTypes: HOLDS_ETH,
             _userTypes: DEFAULT
         });
 
         (User staker, ,) = _newRandomStaker();
-        cheats.pauseGasMetering();
 
-        uint numValidators = 5;
-        uint40[] memory validators = staker.startValidators(numValidators);
-        _logPod(staker);
+        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
 
-        IStrategy[] memory strats = new IStrategy[](1);
-        uint[] memory shares = new uint[](1);
-        strats[0] = BEACONCHAIN_ETH_STRAT;
-        shares[0] = 32 ether * numValidators;
+        staker.verifyWithdrawalCredentials(validators);
+        // checks
 
-        CredentialProofs memory proofs = beaconChain.genCredentialProofs(validators);
+        staker.startCheckpoint();
+        // checks
 
-        cheats.startPrank(address(staker));
-        EigenPod pod = staker.pod();
-
-        cheats.resumeGasMetering();
-        uint gasBefore = gasleft();
-        pod.verifyWithdrawalCredentials({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            validatorIndices: validators,
-            validatorFieldsProofs: proofs.validatorFieldsProofs,
-            validatorFields: proofs.validatorFields
-        });
-        uint gasAfter = gasleft();
-        uint gasConsumed = gasBefore - gasAfter;
-        cheats.pauseGasMetering();
-
-        emit log_named_uint("credential proofs for num validators", validators.length);
-        emit log_named_uint("consumed gas", gasConsumed);
-
-        pod.startCheckpoint(false);
-
-        CheckpointProofs memory proofs2 = beaconChain.genCheckpointProofs(validators);
-
-        cheats.resumeGasMetering();
-        gasBefore = gasleft();
-        pod.verifyCheckpointProofs({
-            stateRootProof: proofs2.stateRootProof,
-            proofs: proofs2.balanceProofs
-        });
-        gasAfter = gasleft();
-        gasConsumed = gasBefore - gasAfter;
-        cheats.pauseGasMetering();
-
-        emit log_named_uint("checkpoint proofs for num validators", validators.length);
-        emit log_named_uint("consumed gas", gasConsumed);
-
-        // staker.verifyWithdrawalCredentials(validators);
-        // assert_Snap_Added_StakerShares(staker, strats, shares, "should have added shares");
-        // _logPod(staker);
-
-        // // Move forward one epoch and distribute consensus rewards to all validators
-        // // These rewards are not withdrawn to the execution layer!
-        // // beaconChain.advanceEpochWithRewards({ withdraw: false });
-
-        // staker.startCheckpoint();
-        // _logPod(staker);
-        // // check_StartCheckpoint_State(staker, validators, 1 gwei);
-
-        // staker.completeCheckpoint();
-        // _logPod(staker);
-    }
-
-    function _logValidator(uint40 validatorIndex) internal {
-        emit log_named_uint("validator", validatorIndex);
-        emit log_named_uint("current balance", beaconChain.currentBalance(validatorIndex));
-        emit log_named_uint("effective balance", beaconChain.effectiveBalance(validatorIndex));
-        emit log_named_uint("exit epoch", beaconChain.exitEpoch(validatorIndex));
-
-        emit log("===");
+        staker.completeCheckpoint();
+        // checks
     }
 
     function _logPod(User staker) internal {

@@ -44,13 +44,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            stakerName = string.concat("- M1_Staker", numStakers.toString());
+            stakerName = string.concat("M1_Staker", numStakers.toString());
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
 
             stakersToMigrate.push(staker);
         } else {
-            stakerName = string.concat("- Staker", numStakers.toString());
+            stakerName = string.concat("Staker", numStakers.toString());
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
         }
@@ -73,7 +73,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            string memory operatorName = string.concat("- M1_Operator", numOperators.toString());
+            string memory operatorName = string.concat("M1_Operator", numOperators.toString());
 
             // Create an operator for M1. We omit native ETH because we want to
             // check staker/operator shares, and we don't award native ETH shares in M1
@@ -86,7 +86,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             operatorsToMigrate.push(operator);
         } else {
-            string memory operatorName = string.concat("- Operator", numOperators.toString());
+            string memory operatorName = string.concat("Operator", numOperators.toString());
 
             (operator, strategies, tokenBalances) = _randUser(operatorName);
 
@@ -129,7 +129,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
             // Bump block.timestamp forward to allow verifyWC proofs for migrated pods
             emit log("advancing block time to start of next epoch:");
 
-            beaconChain.processEpoch();
+            beaconChain.advanceEpoch();
 
             emit log("======");
 

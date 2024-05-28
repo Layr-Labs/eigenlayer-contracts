@@ -13,6 +13,7 @@ import "src/contracts/interfaces/IStrategy.sol";
 
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/integration/utils/PrintUtils.t.sol";
 
 struct Validator {
     uint40 index;
@@ -26,19 +27,18 @@ interface IUserDeployer {
     function beaconChain() external view returns (BeaconChainMock);
 }
 
-contract User is Test {
+contract User is PrintUtils {
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
     DelegationManager delegationManager;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
-
     TimeMachine timeMachine;
-
-    /// @dev Native restaker state vars
-
     BeaconChainMock beaconChain;
+
+    string _NAME;
+
     // User's EigenPod and each of their validator indices within that pod
     EigenPod public pod;
     uint40[] validators;
@@ -46,8 +46,6 @@ contract User is Test {
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     uint constant GWEI_TO_WEI = 1e9;
-
-    string public NAME;
 
     constructor(string memory name) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
@@ -60,7 +58,7 @@ contract User is Test {
         beaconChain = deployer.beaconChain();
         _createPod();
 
-        NAME = name;
+        _NAME = name;
     }
 
     modifier createSnapshot() virtual {
@@ -70,12 +68,16 @@ contract User is Test {
 
     receive() external payable {}
 
-    /**
-     * DelegationManager methods:
-     */
+    function NAME() public view override returns (string memory) {
+        return _NAME;
+    }
+
+    /*******************************************************************************
+                            DELEGATIONMANAGER METHODS
+    *******************************************************************************/
 
     function registerAsOperator() public createSnapshot virtual {
-        emit log(_name(".registerAsOperator"));
+        _logM("registerAsOperator");
 
         IDelegationManager.OperatorDetails memory details = IDelegationManager.OperatorDetails({
             earningsReceiver: address(this),
@@ -86,168 +88,9 @@ contract User is Test {
         delegationManager.registerAsOperator(details, "metadata");
     }
 
-    /**
-     * Beacon chain methods
-     */
-
-    function startValidators(uint _numValidators) public createSnapshot virtual returns (uint40[] memory) {
-        _log("startValidators");
-
-        uint40[] memory newValidators = new uint40[](_numValidators);
-
-        for (uint i = 0; i < _numValidators; i++) {
-            uint40 validatorIndex = beaconChain.newValidator({
-                balanceWei: 32 ether,
-                withdrawalCreds: _podWithdrawalCredentials()
-            });
-
-            newValidators[i] = validatorIndex;
-            validators.push(validatorIndex);
-        }
-
-        return newValidators;
-    }
-
-    function rewardValidators(Validator[] memory _validators) public createSnapshot virtual {
-        // generate consensus rewards for validators and send to pod
-    }
-
-    function stopValidators(Validator[] memory _validators) public createSnapshot virtual {
-        // stop validators and send ETH to pod
-    }
-
-    function _log(string memory s) internal {
-        emit log_named_string(NAME, s);
-    }
-
-    /**
-     * EigenPod methods:
-     */
-
-    function verifyWithdrawalCredentials(
-        uint40[] memory _validators
-    ) public createSnapshot virtual {
-        _log("verifyWithdrawalCredentials");
-
-        CredentialProofs memory proofs = beaconChain.genCredentialProofs(_validators);
-
-        uint gasBefore = gasleft();
-
-        pod.verifyWithdrawalCredentials({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            validatorIndices: _validators,
-            validatorFieldsProofs: proofs.validatorFieldsProofs,
-            validatorFields: proofs.validatorFields
-        });
-
-        uint gasAfter = gasleft();
-        uint gasConsumed = gasBefore - gasAfter;
-
-        emit log_named_uint("credential proofs for num validators", _validators.length);
-        emit log_named_uint("consumed gas", gasConsumed);
-    }
-
-    function startCheckpoint() public createSnapshot virtual {
-        _log("startCheckpoint");
-
-        pod.startCheckpoint(false);
-    }
-
-    function completeCheckpoint() public createSnapshot virtual {
-        _log("completeCheckpoint");
-
-        CheckpointProofs memory proofs = beaconChain.genCheckpointProofs(validators);
-
-        // for (uint i = 0; i < validators.length; i++) {
-        //     emit log_named_uint("submitting proof for validator", validators[i]);
-
-        //     BeaconChainProofs.BalanceProof[] memory proof = new BeaconChainProofs.BalanceProof[](1);
-        //     proof[0] = proofs.balanceProofs[i];
-
-        //     emit log_named_bytes32("- pubkeyHash", proof[0].pubkeyHash);
-        //     emit log_named_bytes32("- balanceRoot", proof[0].balanceRoot);
-        //     emit log_named_bytes("- proof", proof[0].proof);
-
-        //     pod.verifyCheckpointProofs({
-        //         stateRootProof: proofs.stateRootProof,
-        //         proofs: proof
-        //     });
-        // }
-
-        uint gasBefore = gasleft();
-
-        pod.verifyCheckpointProofs({
-            stateRootProof: proofs.stateRootProof,
-            proofs: proofs.balanceProofs
-        });
-
-        uint gasAfter = gasleft();
-        uint gasConsumed = gasBefore - gasAfter;
-
-        emit log_named_uint("checkpoint proofs for num validators", validators.length);
-        emit log_named_uint("consumed gas", gasConsumed);
-    }
-
-    function depositLSTs(IStrategy[] memory strategies) public createSnapshot virtual {
-        // _log("depositIntoStrategies");
-
-        // for (uint i = 0; i < strategies.length; i++) {
-        //     IStrategy strat = strategies[i];
-        //     uint tokenBalance = tokenBalances[i];
-
-        //     IERC20 underlyingToken = strat.underlyingToken();
-        //     underlyingToken.approve(address(strategyManager), tokenBalance);
-        //     strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
-        // }
-    }
-
-    /// @dev For each strategy/token balance, call the relevant deposit method
-    function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot virtual {
-        emit log(_name(".depositIntoEigenlayer"));
-
-        revert("unimplemented");
-    }
-
-    function updateBalances(IStrategy[] memory strategies, int[] memory tokenDeltas) public createSnapshot virtual {
-        emit log(_name(".updateBalances"));
-        revert("fail - placeholder");
-
-        // for (uint i = 0; i < strategies.length; i++) {
-        //     IStrategy strat = strategies[i];
-        //     int delta = tokenDeltas[i];
-
-        //     if (strat == BEACONCHAIN_ETH_STRAT) {
-        //         // TODO - right now, we just grab the first validator
-        //         uint40 validator = getUpdatableValidator();
-        //         BalanceUpdate memory update = beaconChain.updateBalance(validator, delta);
-
-        //         int sharesBefore = eigenPodManager.podOwnerShares(address(this));
-
-        //         pod.verifyBalanceUpdates({
-        //             oracleTimestamp: update.oracleTimestamp,
-        //             validatorIndices: update.validatorIndices,
-        //             stateRootProof: update.stateRootProof,
-        //             validatorFieldsProofs: update.validatorFieldsProofs,
-        //             validatorFields: update.validatorFields
-        //         });
-
-        //         int sharesAfter = eigenPodManager.podOwnerShares(address(this));
-
-        //         emit log_named_int("pod owner shares before: ", sharesBefore);
-        //         emit log_named_int("pod owner shares after: ", sharesAfter);
-        //     } else {
-        //         uint tokens = uint(delta);
-        //         IERC20 underlyingToken = strat.underlyingToken();
-        //         underlyingToken.approve(address(strategyManager), tokens);
-        //         strategyManager.depositIntoStrategy(strat, underlyingToken, tokens);
-        //     }
-        // }
-    }
-
     /// @dev Delegate to the operator without a signature
     function delegateTo(User operator) public createSnapshot virtual {
-        emit log_named_string(_name(".delegateTo: "), operator.NAME());
+        _logM("delegateTo", operator.NAME());
 
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
@@ -255,7 +98,7 @@ contract User is Test {
 
     /// @dev Undelegate from operator
     function undelegate() public createSnapshot virtual returns(IDelegationManager.Withdrawal[] memory){
-        emit log(_name(".undelegate"));
+        _logM("undelegate");
 
         IDelegationManager.Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
         delegationManager.undelegate(address(this));
@@ -272,7 +115,7 @@ contract User is Test {
 
     /// @dev Force undelegate staker
     function forceUndelegate(User staker) public createSnapshot virtual returns(IDelegationManager.Withdrawal[] memory){
-        emit log_named_string(_name(".forceUndelegate: "), staker.NAME());
+        _logM("forceUndelegate", staker.NAME());
 
         IDelegationManager.Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(staker));
         delegationManager.undelegate(address(staker));
@@ -284,7 +127,7 @@ contract User is Test {
         IStrategy[] memory strategies, 
         uint[] memory shares
     ) public createSnapshot virtual returns (IDelegationManager.Withdrawal[] memory) {
-        emit log(_name(".queueWithdrawals"));
+        _logM("queueWithdrawals");
 
         address operator = delegationManager.delegatedTo(address(this));
         address withdrawer = address(this);
@@ -319,7 +162,7 @@ contract User is Test {
     }
 
     function completeWithdrawalsAsTokens(IDelegationManager.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
-        emit log(_name(".completeWithdrawalsAsTokens"));
+        _logM("completeWithdrawalsAsTokens");
 
         IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
 
@@ -331,13 +174,13 @@ contract User is Test {
     }
     
     function completeWithdrawalAsTokens(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
-        emit log(_name(".completeWithdrawalAsTokens"));
+        _logM("completeWithdrawalsAsTokens");
 
         return _completeQueuedWithdrawal(withdrawal, true);
     }
 
     function completeWithdrawalsAsShares(IDelegationManager.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
-        emit log(_name(".completeWithdrawalsAsShares"));
+        _logM("completeWithdrawalAsShares");
         
         IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
 
@@ -349,21 +192,210 @@ contract User is Test {
     }
 
     function completeWithdrawalAsShares(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
-        emit log(_name(".completeWithdrawalAsShares"));
+        _logM("completeWithdrawalAsShares");
 
         return _completeQueuedWithdrawal(withdrawal, false);
     }
 
+    /*******************************************************************************
+                                BEACON CHAIN METHODS
+    *******************************************************************************/
+
+    /// @dev Uses any ETH held by the User to start validators on the beacon chain
+    /// @return A list of created validator indices
+    /// @return The amount of wei sent to the beacon chain
+    /// Note: If the user does not have enough ETH to start a validator, this method reverts
+    /// Note: This method also advances one epoch forward on the beacon chain, so that
+    /// withdrawal credential proofs are generated for each validator.
+    function startValidators() public createSnapshot virtual returns (uint40[] memory, uint) {
+        _logM("startValidators");
+
+        uint balanceWei = address(this).balance;
+
+        // Number of full validators: balance / 32 ETH
+        uint numValidators = balanceWei / 32 ether;
+        balanceWei -= (numValidators * 32 ether);
+
+        // If we still have at least 1 ETH left over, we can create another (non-full) validator
+        // Note that in the mock beacon chain this validator will generate rewards like any other.
+        // The main point is to ensure pods are able to handle validators that have less than 32 ETH
+        uint lastValidatorBalance;
+        uint totalValidators = numValidators;
+        if (balanceWei >= 1 ether) {
+            lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
+            balanceWei -= lastValidatorBalance;
+            totalValidators++;
+        }
+
+        require(totalValidators != 0, "startValidators: not enough ETH to start a validator");
+        uint40[] memory newValidators = new uint40[](totalValidators);
+        uint totalBeaconBalance = address(this).balance - balanceWei;
+
+        _log("- creating new validators", newValidators.length);
+        _log("- depositing balance to beacon chain (wei)", totalBeaconBalance);
+
+        // Create each of the full validators
+        for (uint i = 0; i < numValidators; i++) {
+            uint40 validatorIndex = beaconChain.newValidator{ 
+                value: 32 ether 
+            }(_podWithdrawalCredentials());
+
+            newValidators[i] = validatorIndex;
+            validators.push(validatorIndex);
+        }
+
+        // If we had a remainder, create the final, non-full validator
+        if (totalValidators == numValidators + 1) {
+            uint40 validatorIndex = beaconChain.newValidator{ 
+                value: lastValidatorBalance 
+            }(_podWithdrawalCredentials());
+
+            newValidators[newValidators.length - 1] = validatorIndex;
+            validators.push(validatorIndex);
+        }
+
+        // Advance forward one epoch and generate withdrawal and balance proofs for each validator
+        beaconChain.advanceEpoch_NoRewards();
+
+        return (newValidators, totalBeaconBalance);
+    }
+
+    // function startValidators(uint _numValidators) public createSnapshot virtual returns (uint40[] memory) {
+    //     _log("startValidators");
+
+    //     uint40[] memory newValidators = new uint40[](_numValidators);
+
+    //     for (uint i = 0; i < _numValidators; i++) {
+    //         uint40 validatorIndex = beaconChain.newValidator({
+    //             balanceWei: 32 ether,
+    //             withdrawalCreds: _podWithdrawalCredentials()
+    //         });
+
+    //         newValidators[i] = validatorIndex;
+    //         validators.push(validatorIndex);
+    //     }
+
+    //     beaconChain.advanceEpoch();
+
+    //     return newValidators;
+    // }
+
+    function rewardValidators(Validator[] memory _validators) public createSnapshot virtual {
+        // generate consensus rewards for validators and send to pod
+    }
+
+    function stopValidators(Validator[] memory _validators) public createSnapshot virtual {
+        // stop validators and send ETH to pod
+    }
+
+    /*******************************************************************************
+                                 EIGENPOD METHODS
+    *******************************************************************************/
+
+    function verifyWithdrawalCredentials(
+        uint40[] memory _validators
+    ) public createSnapshot virtual {
+        _logM("verifyWithdrawalCredentials");
+
+        CredentialProofs memory proofs = beaconChain.getCredentialProofs(_validators);
+
+        pod.verifyWithdrawalCredentials({
+            beaconTimestamp: proofs.beaconTimestamp,
+            stateRootProof: proofs.stateRootProof,
+            validatorIndices: _validators,
+            validatorFieldsProofs: proofs.validatorFieldsProofs,
+            validatorFields: proofs.validatorFields
+        });
+    }
+
+    function startCheckpoint() public createSnapshot virtual {
+        _logM("startCheckpoint");
+
+        pod.startCheckpoint(false);
+    }
+
+    function completeCheckpoint() public createSnapshot virtual {
+        _logM("completeCheckpoint");
+
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators);
+
+        pod.verifyCheckpointProofs({
+            stateRootProof: proofs.stateRootProof,
+            proofs: proofs.balanceProofs
+        });
+    }
+
     /// @notice We set the proof generation start time to be after the timestamp that pod restaking is activated
     /// We do this to prevent proofIsForValidTimestamp modifier from reverting
+    /// TODO remove
     function activateRestaking() public createSnapshot {
-        emit log(_name(".activateRestaking"));
+        _logM("activateRestaking");
         
-        emit log_named_uint("pre-activation, most recent wd timestamp", pod.mostRecentWithdrawalTimestamp());
+        // _log("pre-activation, most recent wd timestamp", uint(pod.mostRecentWithdrawalTimestamp()));
 
         pod.activateRestaking();
 
-        emit log_named_uint("post-activation, most recent wd timestamp", pod.mostRecentWithdrawalTimestamp());
+        // _log("post-activation, most recent wd timestamp", pod.mostRecentWithdrawalTimestamp());
+    }
+
+    /*******************************************************************************
+                              STRATEGYMANAGER METHODS
+    *******************************************************************************/
+
+    function depositLSTs(IStrategy[] memory strategies) public createSnapshot virtual {
+        // _log("depositIntoStrategies");
+
+        // for (uint i = 0; i < strategies.length; i++) {
+        //     IStrategy strat = strategies[i];
+        //     uint tokenBalance = tokenBalances[i];
+
+        //     IERC20 underlyingToken = strat.underlyingToken();
+        //     underlyingToken.approve(address(strategyManager), tokenBalance);
+        //     strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
+        // }
+    }
+
+    /// @dev For each strategy/token balance, call the relevant deposit method
+    function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot virtual {
+        _logM("depositIntoEigenlayer");
+
+        revert("unimplemented");
+    }
+
+    function updateBalances(IStrategy[] memory strategies, int[] memory tokenDeltas) public createSnapshot virtual {
+        _logM("updateBalances");
+        revert("fail - placeholder");
+
+        // for (uint i = 0; i < strategies.length; i++) {
+        //     IStrategy strat = strategies[i];
+        //     int delta = tokenDeltas[i];
+
+        //     if (strat == BEACONCHAIN_ETH_STRAT) {
+        //         // TODO - right now, we just grab the first validator
+        //         uint40 validator = getUpdatableValidator();
+        //         BalanceUpdate memory update = beaconChain.updateBalance(validator, delta);
+
+        //         int sharesBefore = eigenPodManager.podOwnerShares(address(this));
+
+        //         pod.verifyBalanceUpdates({
+        //             oracleTimestamp: update.oracleTimestamp,
+        //             validatorIndices: update.validatorIndices,
+        //             stateRootProof: update.stateRootProof,
+        //             validatorFieldsProofs: update.validatorFieldsProofs,
+        //             validatorFields: update.validatorFields
+        //         });
+
+        //         int sharesAfter = eigenPodManager.podOwnerShares(address(this));
+
+        //         emit log_named_int("pod owner shares before: ", sharesBefore);
+        //         emit log_named_int("pod owner shares after: ", sharesAfter);
+        //     } else {
+        //         uint tokens = uint(delta);
+        //         IERC20 underlyingToken = strat.underlyingToken();
+        //         underlyingToken.approve(address(strategyManager), tokens);
+        //         strategyManager.depositIntoStrategy(strat, underlyingToken, tokens);
+        //     }
+        // }
     }
 
     function _completeQueuedWithdrawal(
@@ -455,10 +487,6 @@ contract User is Test {
         return expectedWithdrawals;
     }
 
-    function _name(string memory s) internal view returns (string memory) {
-        return string.concat(NAME, s);
-    }
-
     function getUpdatableValidator() public view returns (uint40) {
         return validators[0];
     }
@@ -472,7 +500,8 @@ contract User_AltMethods is User {
     constructor(string memory name) User(name) {}
 
     function delegateTo(User operator) public createSnapshot override {
-        emit log_named_string(_name(".delegateTo: "), operator.NAME());
+        _logM("delegateTo", operator.NAME());
+
         // Create empty data
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         uint256 expiry = type(uint256).max;
