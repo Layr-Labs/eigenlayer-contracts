@@ -1,45 +1,44 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "src/contracts/interfaces/IPaymentCoordinator.sol";
+import "src/contracts/interfaces/IRewardsCoordinator.sol";
 
-interface IPaymentCoordinatorEvents {
+interface IRewardsCoordinatorEvents {
     /// EVENTS ///
 
-    /// @notice emitted when an AVS creates a valid RangePayment
-    event RangePaymentCreated(
+    /// @notice emitted when an AVS creates a valid RewardsSubmission
+    event AVSRewardsSubmissionCreated(
         address indexed avs,
-        uint256 indexed paymentNonce,
-        bytes32 indexed rangePaymentHash,
-        IPaymentCoordinator.RangePayment rangePayment
+        uint256 indexed submissionNonce,
+        bytes32 indexed rewardsSubmissionHash,
+        IRewardsCoordinator.RewardsSubmission rewardsSubmission
     );
-    /// @notice emitted when a valid RangePayment is created for all stakers by a valid submitter
-    event RangePaymentForAllCreated(
+    /// @notice emitted when a valid RewardsSubmission is created for all stakers by a valid submitter
+    event RewardsSubmissionForAllCreated(
         address indexed submitter,
-        uint256 indexed paymentNonce,
-        bytes32 indexed rangePaymentHash,
-        IPaymentCoordinator.RangePayment rangePayment
+        uint256 indexed submissionNonce,
+        bytes32 indexed rewardsSubmissionHash,
+        IRewardsCoordinator.RewardsSubmission rewardsSubmission
     );
-    /// @notice paymentUpdater is responsible for submiting DistributionRoots, only owner can set paymentUpdater
-    event PaymentUpdaterSet(address indexed oldPaymentUpdater, address indexed newPaymentUpdater);
-    event PayAllForRangeSubmitterSet(
-        address indexed payAllForRangeSubmitter,
+    /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
+    event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
+    event RewardsForAllSubmitterSet(
+        address indexed rewardsForAllSubmitter,
         bool indexed oldValue,
         bool indexed newValue
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
-    event CalculationIntervalSecondsSet(uint32 oldCalculationIntervalSeconds, uint32 newCalculationIntervalSeconds);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
         bytes32 indexed root,
-        uint32 indexed paymentCalculationEndTimestamp,
+        uint32 indexed rewardsCalculationEndTimestamp,
         uint32 activatedAt
     );
     /// @notice root is one of the submitted distribution roots that was claimed against
-    event PaymentClaimed(
+    event RewardsClaimed(
         bytes32 root,
         address indexed earner,
         address indexed claimer,

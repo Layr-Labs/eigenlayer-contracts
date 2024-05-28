@@ -8,23 +8,23 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../libraries/Merkle.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 import "../permissions/Pausable.sol";
-import "./PaymentCoordinatorStorage.sol";
+import "./RewardsCoordinatorStorage.sol";
 
 /**
- * @title PaymentCoordinator
+ * @title RewardsCoordinator
  * @author Eigen Labs Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice  This is the contract for payments in EigenLayer. The main functionalities of this contract are
- * - enabling any ERC20 payments from AVSs to their operators and stakers for a given time range
+ * @notice  This is the contract for rewards in EigenLayer. The main functionalities of this contract are
+ * - enabling any ERC20 rewards from AVSs to their operators and stakers for a given time range
  * - allowing stakers and operators to claim their earnings including a commission bips for operators
  * - allowing the protocol to provide ERC20 tokens to stakers over a specified time range
  */
-contract PaymentCoordinator is
+contract RewardsCoordinator is
     Initializable,
     OwnableUpgradeable,
     Pausable,
     ReentrancyGuardUpgradeable,
-    PaymentCoordinatorStorage
+    RewardsCoordinatorStorage
 {
     using SafeERC20 for IERC20;
 
@@ -33,15 +33,15 @@ contract PaymentCoordinator is
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
     /// @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
-    /// @notice The maximum payment token amount for a single range payment, constrained by off-chain calculation
-    uint256 internal constant MAX_PAYMENT_AMOUNT = 1e38 - 1;
+    /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
+    uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
 
-    /// @dev Index for flag that pauses payForRange payments
-    uint8 internal constant PAUSED_PAY_FOR_RANGE = 0;
-    /// @dev Index for flag that pauses payAllForRange payments
-    uint8 internal constant PAUSED_PAY_ALL_FOR_RANGE = 1;
-    /// @dev Index for flag that pauses
-    uint8 internal constant PAUSED_CLAIM_PAYMENTS = 2;
+    /// @dev Index for flag that pauses calling createAVSRewardsSubmission
+    uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
+    /// @dev Index for flag that pauses calling createRewardsForAllSubmission
+    uint8 internal constant PAUSED_REWARDS_FOR_ALL_SUBMISSION = 1;
+    /// @dev Index for flag that pauses calling processClaim
+    uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
     /// @dev Index for flag that pauses submitRoots
     uint8 internal constant PAUSED_SUBMIT_ROOTS = 3;
 
@@ -53,15 +53,15 @@ contract PaymentCoordinator is
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    modifier onlyPaymentUpdater() {
-        require(msg.sender == paymentUpdater, "PaymentCoordinator: caller is not the paymentUpdater");
+    modifier onlyRewardsUpdater() {
+        require(msg.sender == rewardsUpdater, "RewardsCoordinator: caller is not the rewardsUpdater");
         _;
     }
 
-    modifier onlyPayAllForRangeSubmitter() {
+    modifier onlyRewardsForAllSubmitter() {
         require(
-            isPayAllForRangeSubmitter[msg.sender],
-            "PaymentCoordinator: caller is not a valid payAllForRange submitter"
+            isRewardsForAllSubmitter[msg.sender],
+            "RewardsCoordinator: caller is not a valid createRewardsForAllSubmission submitter"
         );
         _;
     }
@@ -71,19 +71,19 @@ contract PaymentCoordinator is
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
         uint32 _CALCULATION_INTERVAL_SECONDS,
-        uint32 _MAX_PAYMENT_DURATION,
+        uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
         uint32 _MAX_FUTURE_LENGTH,
-        uint32 _GENESIS_PAYMENT_TIMESTAMP
+        uint32 __GENESIS_REWARDS_TIMESTAMP
     )
-        PaymentCoordinatorStorage(
+        RewardsCoordinatorStorage(
             _delegationManager,
             _strategyManager,
             _CALCULATION_INTERVAL_SECONDS,
-            _MAX_PAYMENT_DURATION,
+            _MAX_REWARDS_DURATION,
             _MAX_RETROACTIVE_LENGTH,
             _MAX_FUTURE_LENGTH,
-            _GENESIS_PAYMENT_TIMESTAMP
+            __GENESIS_REWARDS_TIMESTAMP
         )
     {
         _disableInitializers();
@@ -91,21 +91,21 @@ contract PaymentCoordinator is
     }
 
     /**
-     * @dev Initializes the addresses of the initial owner, pauser registry, paymentUpdater and
+     * @dev Initializes the addresses of the initial owner, pauser registry, rewardsUpdater and
      * configures the initial paused status, activationDelay, and globalOperatorCommissionBips.
      */
     function initialize(
         address initialOwner,
         IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus,
-        address _paymentUpdater,
+        address _rewardsUpdater,
         uint32 _activationDelay,
         uint16 _globalCommissionBips
     ) external initializer {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
-        _setPaymentUpdater(_paymentUpdater);
+        _setRewardsUpdater(_rewardsUpdater);
         _setActivationDelay(_activationDelay);
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
@@ -115,74 +115,74 @@ contract PaymentCoordinator is
     *******************************************************************************/
 
     /**
-     * @notice Creates a new range payment on behalf of an AVS, to be split amongst the
+     * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
      * set of stakers delegated to operators who are registered to the `avs`
-     * @param rangePayments The range payments being created
-     * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the payment is being made
-     * @dev The duration of the `rangePayment` cannot exceed `MAX_PAYMENT_DURATION`
-     * @dev The tokens are sent to the `PaymentCoordinator` contract
+     * @param rewardsSubmissions The rewards submissions being created
+     * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
+     * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The tokens are sent to the `RewardsCoordinator` contract
      * @dev Strategies must be in ascending order of addresses to check for duplicates
-     * @dev This function will revert if the `rangePayment` is malformed,
+     * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function payForRange(
-        RangePayment[] calldata rangePayments
-    ) external onlyWhenNotPaused(PAUSED_PAY_FOR_RANGE) nonReentrant {
-        for (uint256 i = 0; i < rangePayments.length; i++) {
-            RangePayment calldata rangePayment = rangePayments[i];
-            uint256 nonce = paymentNonce[msg.sender];
-            bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, nonce, rangePayment));
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[msg.sender];
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
             
-            _validateRangePayment(rangePayment);
+            _validateRewardsSubmission(rewardsSubmission);
             
-            isRangePaymentHash[msg.sender][rangePaymentHash] = true;
-            paymentNonce[msg.sender] = nonce + 1;
+            isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
+            submissionNonce[msg.sender] = nonce + 1;
 
-            emit RangePaymentCreated(msg.sender, nonce, rangePaymentHash, rangePayment);
-            rangePayment.token.safeTransferFrom(msg.sender, address(this), rangePayment.amount);
+            emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
     /**
-     * @notice similar to `payForRange` except the payment is split amongst *all* stakers
+     * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
      * rather than just those delegated to operators who are registered to a single avs and is
-     * a permissioned call based on isPayAllForRangeSubmitter mapping.
-     * @param rangePayments The range payments being created
+     * a permissioned call based on isRewardsForAllSubmitter mapping.
+     * @param rewardsSubmissions The rewards submissions being created
      */
-    function payAllForRange(
-        RangePayment[] calldata rangePayments
-    ) external onlyWhenNotPaused(PAUSED_PAY_ALL_FOR_RANGE) onlyPayAllForRangeSubmitter nonReentrant {
-        for (uint256 i = 0; i < rangePayments.length; i++) {
-            RangePayment calldata rangePayment = rangePayments[i];
-            uint256 nonce = paymentNonce[msg.sender];
-            bytes32 rangePaymentForAllHash = keccak256(abi.encode(msg.sender, nonce, rangePayment));
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[msg.sender];
+            bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
             
-            _validateRangePayment(rangePayment);
+            _validateRewardsSubmission(rewardsSubmission);
 
-            isRangePaymentForAllHash[msg.sender][rangePaymentForAllHash] = true;
-            paymentNonce[msg.sender] = nonce + 1;
+            isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionForAllHash] = true;
+            submissionNonce[msg.sender] = nonce + 1;
 
-            emit RangePaymentForAllCreated(msg.sender, nonce, rangePaymentForAllHash, rangePayment);
-            rangePayment.token.safeTransferFrom(msg.sender, address(this), rangePayment.amount);
+            emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
     /**
-     * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex]).
+     * @notice Claim rewards against a given root (read from distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
      * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
-     * @param claim The PaymentMerkleClaim to be processed.
-     * Contains the root index, earner, payment leaves, and required proofs
-     * @param recipient The address recipient that receives the ERC20 payments
+     * @param claim The RewardsMerkleClaim to be processed.
+     * Contains the root index, earner, token leaves, and required proofs
+     * @param recipient The address recipient that receives the ERC20 rewards
      * @dev only callable by the valid claimer, that is
      * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
-     * claimerFor[claim.earner] can claim the payments.
+     * claimerFor[claim.earner] can claim the rewards.
      */
     function processClaim(
-        PaymentMerkleClaim calldata claim,
+        RewardsMerkleClaim calldata claim,
         address recipient
-    ) external onlyWhenNotPaused(PAUSED_CLAIM_PAYMENTS) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_PROCESS_CLAIM) nonReentrant {
         DistributionRoot memory root = distributionRoots[claim.rootIndex];
         _checkClaim(claim, root);
         // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
@@ -191,14 +191,14 @@ contract PaymentCoordinator is
         if (claimer == address(0)) {
             claimer = earner;
         }
-        require(msg.sender == claimer, "PaymentCoordinator.processClaim: caller is not valid claimer");
+        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
         for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
 
             uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
             require(
                 tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
-                "PaymentCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
+                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
             );
 
             // Calculate amount to claim and update cumulativeClaimed
@@ -206,27 +206,27 @@ contract PaymentCoordinator is
             cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
 
             tokenLeaf.token.safeTransfer(recipient, claimAmount);
-            emit PaymentClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
+            emit RewardsClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
         }
     }
 
     /**
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
      * @param root The merkle root of the distribution
-     * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
-     * @dev Only callable by the paymentUpdater
+     * @param rewardsCalculationEndTimestamp The timestamp until which rewards have been calculated
+     * @dev Only callable by the rewardsUpdater
      */
     function submitRoot(
         bytes32 root,
-        uint32 paymentCalculationEndTimestamp
-    ) external onlyWhenNotPaused(PAUSED_SUBMIT_ROOTS) onlyPaymentUpdater {
+        uint32 rewardsCalculationEndTimestamp
+    ) external onlyWhenNotPaused(PAUSED_SUBMIT_ROOTS) onlyRewardsUpdater {
         require(
-            paymentCalculationEndTimestamp > currPaymentCalculationEndTimestamp,
-            "PaymentCoordinator.submitRoot: new root must be for newer calculated period"
+            rewardsCalculationEndTimestamp > currRewardsCalculationEndTimestamp,
+            "RewardsCoordinator.submitRoot: new root must be for newer calculated period"
         );
         require(
-            paymentCalculationEndTimestamp < block.timestamp,
-            "PaymentCoordinator.submitRoot: paymentCalculationEndTimestamp cannot be in the future"
+            rewardsCalculationEndTimestamp < block.timestamp,
+            "RewardsCoordinator.submitRoot: rewardsCalculationEndTimestamp cannot be in the future"
         );
         uint32 rootIndex = uint32(distributionRoots.length);
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
@@ -234,11 +234,11 @@ contract PaymentCoordinator is
             DistributionRoot({
                 root: root,
                 activatedAt: activatedAt,
-                paymentCalculationEndTimestamp: paymentCalculationEndTimestamp
+                rewardsCalculationEndTimestamp: rewardsCalculationEndTimestamp
             })
         );
-        currPaymentCalculationEndTimestamp = paymentCalculationEndTimestamp;
-        emit DistributionRootSubmitted(rootIndex, root, paymentCalculationEndTimestamp, activatedAt);
+        currRewardsCalculationEndTimestamp = rewardsCalculationEndTimestamp;
+        emit DistributionRootSubmitted(rootIndex, root, rewardsCalculationEndTimestamp, activatedAt);
     }
 
     /**
@@ -272,24 +272,24 @@ contract PaymentCoordinator is
     }
 
     /**
-     * @notice Sets the permissioned `paymentUpdater` address which can post new roots
+     * @notice Sets the permissioned `rewardsUpdater` address which can post new roots
      * @dev Only callable by the contract owner
-     * @param _paymentUpdater The address of the new paymentUpdater
+     * @param _rewardsUpdater The address of the new rewardsUpdater
      */
-    function setPaymentUpdater(address _paymentUpdater) external onlyOwner {
-        _setPaymentUpdater(_paymentUpdater);
+    function setRewardsUpdater(address _rewardsUpdater) external onlyOwner {
+        _setRewardsUpdater(_rewardsUpdater);
     }
 
     /**
-     * @notice Sets the permissioned `payAllForRangeSubmitter` address which can submit payAllForRange
+     * @notice Sets the permissioned `rewardsForAllSubmitter` address which can submit createRewardsForAllSubmission
      * @dev Only callable by the contract owner
-     * @param _submitter The address of the payAllForRangeSubmitter
-     * @param _newValue The new value for isPayAllForRangeSubmitter
+     * @param _submitter The address of the rewardsForAllSubmitter
+     * @param _newValue The new value for isRewardsForAllSubmitter
      */
-    function setPayAllForRangeSubmitter(address _submitter, bool _newValue) external onlyOwner {
-        bool prevValue = isPayAllForRangeSubmitter[_submitter];
-        emit PayAllForRangeSubmitterSet(_submitter, prevValue, _newValue);
-        isPayAllForRangeSubmitter[_submitter] = _newValue;
+    function setRewardsForAllSubmitter(address _submitter, bool _newValue) external onlyOwner {
+        bool prevValue = isRewardsForAllSubmitter[_submitter];
+        emit RewardsForAllSubmitterSet(_submitter, prevValue, _newValue);
+        isRewardsForAllSubmitter[_submitter] = _newValue;
     }
 
     /*******************************************************************************
@@ -297,59 +297,59 @@ contract PaymentCoordinator is
     *******************************************************************************/
 
     /**
-     * @notice Validate a RangePayment. Called from both `payForRange` and `payAllForRange`
+     * @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
      */
-    function _validateRangePayment(RangePayment calldata rangePayment) internal view {
-        require(rangePayment.strategiesAndMultipliers.length > 0, "PaymentCoordinator._payForRange: no strategies set");
-        require(rangePayment.amount > 0, "PaymentCoordinator._payForRange: amount cannot be 0");
-        require(rangePayment.amount <= MAX_PAYMENT_AMOUNT, "PaymentCoordinator._payForRange: amount too large");
+    function _validateRewardsSubmission(RewardsSubmission calldata rewardsSubmission) internal view {
+        require(rewardsSubmission.strategiesAndMultipliers.length > 0, "RewardsCoordinator._validateRewardsSubmission: no strategies set");
+        require(rewardsSubmission.amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
+        require(rewardsSubmission.amount <= MAX_REWARDS_AMOUNT, "RewardsCoordinator._validateRewardsSubmission: amount too large");
         require(
-            rangePayment.duration <= MAX_PAYMENT_DURATION,
-            "PaymentCoordinator._payForRange: duration exceeds MAX_PAYMENT_DURATION"
+            rewardsSubmission.duration <= MAX_REWARDS_DURATION,
+            "RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
         );
         require(
-            rangePayment.duration % CALCULATION_INTERVAL_SECONDS == 0,
-            "PaymentCoordinator._payForRange: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            rewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validateRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            rangePayment.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
-            "PaymentCoordinator._payForRange: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            rewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= rangePayment.startTimestamp &&
-                GENESIS_PAYMENT_TIMESTAMP <= rangePayment.startTimestamp,
-            "PaymentCoordinator._payForRange: startTimestamp too far in the past"
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp &&
+                GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
+            "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
         );
         require(
-            rangePayment.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
-            "PaymentCoordinator._payForRange: startTimestamp too far in the future"
+            rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
+            "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the future"
         );
 
-        // Require rangePayment is for whitelisted strategy or beaconChainETHStrategy
+        // Require rewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
         address currAddress = address(0);
-        for (uint256 i = 0; i < rangePayment.strategiesAndMultipliers.length; ++i) {
-            IStrategy strategy = rangePayment.strategiesAndMultipliers[i].strategy;
+        for (uint256 i = 0; i < rewardsSubmission.strategiesAndMultipliers.length; ++i) {
+            IStrategy strategy = rewardsSubmission.strategiesAndMultipliers[i].strategy;
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
-                "PaymentCoordinator._payForRange: invalid strategy considered"
+                "RewardsCoordinator._validateRewardsSubmission: invalid strategy considered"
             );
             require(
                 currAddress < address(strategy),
-                "PaymentCoordinator._payForRange: strategies must be in ascending order to handle duplicates"
+                "RewardsCoordinator._validateRewardsSubmission: strategies must be in ascending order to handle duplicates"
             );
             currAddress = address(strategy);
         }
     }
 
-    function _checkClaim(PaymentMerkleClaim calldata claim, DistributionRoot memory root) internal view {
-        require(block.timestamp >= root.activatedAt, "PaymentCoordinator._checkClaim: root not activated yet");
+    function _checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root) internal view {
+        require(block.timestamp >= root.activatedAt, "RewardsCoordinator._checkClaim: root not activated yet");
         require(
             claim.tokenIndices.length == claim.tokenTreeProofs.length,
-            "PaymentCoordinator._checkClaim: tokenIndices and tokenProofs length mismatch"
+            "RewardsCoordinator._checkClaim: tokenIndices and tokenProofs length mismatch"
         );
         require(
             claim.tokenTreeProofs.length == claim.tokenLeaves.length,
-            "PaymentCoordinator._checkClaim: tokenTreeProofs and leaves length mismatch"
+            "RewardsCoordinator._checkClaim: tokenTreeProofs and leaves length mismatch"
         );
 
         // Verify inclusion of earners leaf (earner, earnerTokenRoot) in the distribution root
@@ -388,7 +388,7 @@ contract PaymentCoordinator is
         // index can't be greater than 2**(tokenProof/32)
         require(
             tokenLeafIndex < (1 << (tokenProof.length / 32)),
-            "PaymentCoordinator._verifyTokenClaim: invalid tokenLeafIndex"
+            "RewardsCoordinator._verifyTokenClaim: invalid tokenLeafIndex"
         );
 
         // Verify inclusion of token leaf
@@ -400,7 +400,7 @@ contract PaymentCoordinator is
                 proof: tokenProof,
                 leaf: tokenLeafHash
             }),
-            "PaymentCoordinator._verifyTokenClaim: invalid token claim proof"
+            "RewardsCoordinator._verifyTokenClaim: invalid token claim proof"
         );
     }
 
@@ -423,7 +423,7 @@ contract PaymentCoordinator is
         // index can't be greater than 2**(earnerProof/32)
         require(
             earnerLeafIndex < (1 << (earnerProof.length / 32)),
-            "PaymentCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex"
+            "RewardsCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex"
         );
         // Verify inclusion of earner leaf
         bytes32 earnerLeafHash = calculateEarnerLeafHash(earnerLeaf);
@@ -434,7 +434,7 @@ contract PaymentCoordinator is
                 proof: earnerProof,
                 leaf: earnerLeafHash
             }),
-            "PaymentCoordinator._verifyEarnerClaimProof: invalid earner claim proof"
+            "RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof"
         );
     }
 
@@ -448,9 +448,9 @@ contract PaymentCoordinator is
         globalOperatorCommissionBips = _globalCommissionBips;
     }
 
-    function _setPaymentUpdater(address _paymentUpdater) internal {
-        emit PaymentUpdaterSet(paymentUpdater, _paymentUpdater);
-        paymentUpdater = _paymentUpdater;
+    function _setRewardsUpdater(address _rewardsUpdater) internal {
+        emit RewardsUpdaterSet(rewardsUpdater, _rewardsUpdater);
+        rewardsUpdater = _rewardsUpdater;
     }
 
     /*******************************************************************************
@@ -469,7 +469,7 @@ contract PaymentCoordinator is
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     /// but will revert if not valid
-    function checkClaim(PaymentMerkleClaim calldata claim) public view returns (bool) {
+    function checkClaim(RewardsMerkleClaim calldata claim) public view returns (bool) {
         _checkClaim(claim, distributionRoots[claim.rootIndex]);
         return true;
     }
@@ -491,7 +491,7 @@ contract PaymentCoordinator is
                 return i - 1;
             }
         }
-        revert("PaymentCoordinator.getRootIndexFromHash: root not found");
+        revert("RewardsCoordinator.getRootIndexFromHash: root not found");
     }
 
     /**

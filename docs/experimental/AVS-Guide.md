@@ -11,7 +11,7 @@ This document aims to describe and summarize how actively validated services (AV
 🚧 ** The Slasher contract is under active development and its interface is expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. 🚧
 </font></b><p>
 
-We are currently in the process of implementing the API for payment flow from AVSs to operators in EigenLayer. Details of this API will be added to this document in the near future.
+We are currently in the process of implementing the API for rewards flow from AVSs to operators in EigenLayer. Details of this API will be added to this document in the near future.
 
 The following figure summarizes the scope of this document: 
 ![Doc Outline](../images/middleware_outline_doc.png)
