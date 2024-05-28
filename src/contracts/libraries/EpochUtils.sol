@@ -22,8 +22,4 @@ library EpochUtils {
     function currentEpoch() internal view returns (uint32) {
         return getEpochFromTimestamp(block.timestamp);
     }
-
-    function currentEpochUint32() internal view returns (uint32) {
-        return uint32(uint256(getEpochFromTimestamp(block.timestamp)));
-    }
 }

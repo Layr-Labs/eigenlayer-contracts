@@ -53,7 +53,7 @@ contract OperatorSetManager is IOperatorSetManager {
 	) external returns(uint32 effectEpoch) {
         require(_isAllocatorFor(msg.sender, operator), "OperatorSetManager.updateOperatorSetSlashingParameters: Caller is not the allocator for the operator");
         // Change takes effect in 2 epochs
-        effectEpoch = EpochUtils.currentEpochUint32() + 2; 
+        effectEpoch = EpochUtils.currentEpoch() + 2; 
 
         for (uint256 i = 0; i < slashingMagnitudeParameters.length; i++) {
             require(slashingMagnitudeParameters[i].operatorSets.length == slashingMagnitudeParameters[i].slashableMagnitudes.length, "OperatorSetManager.updateOperatorSetSlashingParameters: operatorSets and slashableMagnitudes length mismatch");
@@ -149,7 +149,7 @@ contract OperatorSetManager is IOperatorSetManager {
             epoch--;
         }
 
-        require(epoch <= EpochUtils.currentEpochUint32() + 2, "Epoch is more than 2 epochs in the future");
+        require(epoch <= EpochUtils.currentEpoch() + 2, "Epoch is more than 2 epochs in the future");
 
         bytes32 operatorSetHash = _hashOperatorSet(operatorSet);
         MagnitudeUpdate[] storage operatorSetMagnitudeUpdates = _operatorSetMagnitudeUpdates[operator][strategy][operatorSetHash];
