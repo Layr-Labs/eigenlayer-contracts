@@ -22,7 +22,6 @@ contract OperatorSetManager is IOperatorSetManager {
         uint64 magnitude;
     }
 
-    mapping(address => mapping(IStrategy => BipUpdate[])) private _slashingCapBipsUpdates;
     mapping(address => mapping(IStrategy => mapping(bytes32 => MagnitudeUpdate[]))) private _operatorSetMagnitudeUpdates;
     mapping(address => mapping(IStrategy => TotalMagnitudeUpdate[])) private _totalMagnitudeUpdates;
 
@@ -103,31 +102,6 @@ contract OperatorSetManager is IOperatorSetManager {
     }
 
     /// VIEW
-
-    /**
-	 * @param operator the operator to get the slashable bips for
-	 * @param strategy the strategy to get the slashable bips for 
-	 * @param epoch the epoch to get the slashable bips for for
-	 * 
-	 * @return slashableCapBips the total slashable bips of the 
-	 * given strategy allocated across all operator sets  
-	 */
-    function getSlashingCapBips(address operator, IStrategy strategy, uint32 epoch) external view returns (uint16) {
-        require(epoch <= EpochUtils.currentEpochUint32() + 2, "Epoch is more than 2 epochs in the future");
-
-        BipUpdate[] storage slashingCapBipsUpdates = _slashingCapBipsUpdates[operator][strategy];
-        uint16 latestBips = 0;
-
-        // iterate from the latest update to the oldest
-        for (uint256 i = slashingCapBipsUpdates.length; i > 0; i--) {
-            if (slashingCapBipsUpdates[i - 1].epoch <= epoch) {
-                latestBips = slashingCapBipsUpdates[i - 1].bips;
-                break;
-            }
-        }
-
-        return latestBips;
-    }
 
     /**
      * @param operator the operator to get the slashable bips for
