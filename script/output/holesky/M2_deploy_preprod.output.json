@@ -54,7 +54,7 @@
       "eigenStrategyImpl": "0x59D13E7Fb0bC0e57c1fc6594ff701592A6e4dD2B"
     },
     "rewardsCoordinator": "0xb22Ef643e1E067c994019A4C19e403253C05c2B0",
-    "paymentCoordinatorImplementation": "0xC9366ab4A299e0937EC15A6C256C4481C05A24fD"
+    "rewardsCoordinatorImplementation": "0xC9366ab4A299e0937EC15A6C256C4481C05A24fD"
   },
   "chainInfo": {
     "chainId": 17000,

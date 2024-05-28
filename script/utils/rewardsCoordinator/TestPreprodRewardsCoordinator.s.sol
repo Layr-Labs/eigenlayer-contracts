@@ -39,10 +39,10 @@ contract TestPreprodRewardsCoordinator is ExistingDeploymentParser {
         _parseInitialDeploymentParams("script/configs/holesky/Deploy_rewardsCoordinator.holesky.config.json");
         _parseDeployedContracts("script/output/holesky/M2_deploy_preprod.output.json");
 
-        require(
-            msg.sender == testAddress,
-            "Only the test address can run this script"
-        );
+        // require(
+        //     msg.sender == testAddress,
+        //     "Only the test address can run this script"
+        // );
         require(
             address(eigenStrategy) == 0xdcCF401fD121d8C542E96BC1d0078884422aFAD2,
             "Eigen strategy address incorrect"
@@ -128,6 +128,50 @@ contract TestPreprodRewardsCoordinator is ExistingDeploymentParser {
     }
 
     /**
+        Deploys a new AVS ServiceManager
+        ========ANVIL========
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
+            --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvvv \
+            --sig "upgradeAVSs(address[])" "[0x5d78d44aE92bF5C588930B4948D8DbCb93344830]"
+
+        ========HOLESKY========
+        forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
+            --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --verify \
+            --sig "upgradeAVSs(address[])" "[0x5d78d44aE92bF5C588930B4948D8DbCb93344830]"
+     */
+    function upgradeAVSs(address[] calldata avss) external virtual {
+        _setupScript();
+
+        require(
+            address(rewardsCoordinator) == 0xb22Ef643e1E067c994019A4C19e403253C05c2B0,
+            "PaymentCoordinator address incorrect"
+        );
+        require(
+            address(avsDirectory) == 0x141d6995556135D4997b2ff72EB443Be300353bC,
+            "AVSDirectory address incorrect"
+        );
+
+        vm.startBroadcast();
+        for (uint256 i = 0; i < avss.length; i++) {
+            ServiceManagerMock serviceManagerImplementation = new ServiceManagerMock(avsDirectory, rewardsCoordinator);
+
+            serviceManager = ServiceManagerMock(avss[i]);
+            avsProxyAdmin.upgrade(   
+                TransparentUpgradeableProxy(payable(address(serviceManager))),
+                address(serviceManagerImplementation)
+            );
+
+            require(
+                address(serviceManager.rewardsCoordinator()) == address(rewardsCoordinator),
+                "PaymentCoordinator not set in ServiceManager"
+            );
+        }
+
+
+        vm.stopBroadcast();
+    }
+
+    /**
         Submit a RewardsSubmission to the PaymentCoordinator
         ========ANVIL========
         forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
@@ -172,8 +216,8 @@ contract TestPreprodRewardsCoordinator is ExistingDeploymentParser {
             duration = 10 weeks;
         } else if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("current"))) {
             /// 1715212800 unix timestamp, May 9th
-            startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 7 weeks;
-            duration = 3 weeks;
+            startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 9 weeks;
+            duration = 4 weeks;
         } else if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("future"))) {
             /// 1715817600 unix timestamp, May 16th
             startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 8 weeks;
@@ -250,7 +294,7 @@ contract TestPreprodRewardsCoordinator is ExistingDeploymentParser {
             duration = 10 weeks;
         } else if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("current"))) {
             /// 1715212800 unix timestamp, May 9th
-            startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 9 weeks;
+            startTimestamp = REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 11 weeks;
             duration = 3 weeks;
         } else if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("future"))) {
             /// 1715817600 unix timestamp, May 16th
