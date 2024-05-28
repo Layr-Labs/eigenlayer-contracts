@@ -21,55 +21,10 @@ contract Integration_Tester is IntegrationCheckUtils {
 
     using Strings for *;
     using StdStyle for *;
-
-    string constant HEADER_DELIMITER = "========================================================================";
+    
     string constant SECTION_DELIMITER = "======";
 
-    // function setUp() public override {
-    //     _select({
-    //         network: Network.LOCAL,
-    //         version: Version.LATEST
-    //         // version: Version.0_2_5
-    //     });
-
-    //     super.setUp();
-    // }
-
-    // function test_Example() public {
-    //     _config({
-    //         _randomSeed: 0,
-    //         _assetTypes: HOLDS_ETH,
-    //         _userTypes: DEFAULT
-    //     });
-
-    //     // User staker = _newStaker(Assets.ETH);
-    //     // User operator = _newOperator(Assets.NONE);
-
-    //     User staker = _newRandomStaker();
-
-    //     // staker.startValidators();        // start a random number of validators
-    //     // staker.startNonFullValidators(); // start a random number of validators with < 32 ETH
-    //     uint40[] memory validators = staker.startValidators(1);
-
-    //     // staker.delegateTo(operator);
-    //     // check_Delegation_State(staker, operator, ...);
-
-    //     staker.verifyWithdrawalCredentials(validators);
-    //     // check_VerifyWC_State(staker, validators);
-    //     // assert_Snap_Added_OperatorShares(operator, BEACONCHAIN_ETH_STRAT, )
-        
-    //     // staker.startCheckpoint();
-    //     // check_StartCheckpoint_State(staker, validators);
-
-    //     // staker.completeCheckpoint();
-    //     // check_CompleteCheckpoint_State(staker, validators);
-
-    //     // beaconChain.rewardValidators();
-        
-
-    // }
-
-    function test_VerifyAll_Start_CompleteCP_WithRewards(uint24 _rand) public {
+    function test_VerifyAll_Start_CompleteCP_WithRewardsWithdrawn(uint24 _rand) public {
         _configRand({
             _randomSeed: _rand,
             _assetTypes: HOLDS_ETH,
@@ -83,7 +38,31 @@ contract Integration_Tester is IntegrationCheckUtils {
         staker.verifyWithdrawalCredentials(validators);
         // checks
 
-        beaconChain.advanceEpoch_NoRewards();
+        beaconChain.advanceEpoch();
+        // check pod balances have increased
+
+        staker.startCheckpoint();
+        // checks
+
+        staker.completeCheckpoint();
+        // checks
+    }
+
+    function test_VerifyAll_Start_CompleteCP_WithRewardsNotWithdrawn(uint24 _rand) public {
+        _configRand({
+            _randomSeed: _rand,
+            _assetTypes: HOLDS_ETH,
+            _userTypes: DEFAULT
+        });
+
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
+
+        staker.verifyWithdrawalCredentials(validators);
+        // checks
+
+        beaconChain.advanceEpoch_NoWithdraw();
         // check pod balances have increased
 
         staker.startCheckpoint();
@@ -106,6 +85,9 @@ contract Integration_Tester is IntegrationCheckUtils {
 
         staker.verifyWithdrawalCredentials(validators);
         // checks
+
+        beaconChain.advanceEpoch_NoRewards();
+        // check pod balances have increased
 
         staker.startCheckpoint();
         // checks
