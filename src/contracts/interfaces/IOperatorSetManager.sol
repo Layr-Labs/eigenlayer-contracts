@@ -14,11 +14,11 @@ interface IOperatorSetManager is ISignatureUtils {
     }
 
     /**
-     * @notice Parameters for updating slashing magnitudes for an operator
-     * @param strategy the strategy to update slashable magnitudes for
-     * @param totalMagnitude the total magnitude allocated to all operator sets
-     * @param operatorSets the operator sets to change slashing parameters for
-     * @param slashableMagnitudes the proportional parts of totalMagnitude that the operator set is getting as part of the strategy
+     * @notice A structure defining a set of operator-based slashing configurations to manage slashable stake
+     * @param strategy each slashable stake is defined within a single strategy
+     * @param totalMagnitude a virtual "denominator" magnitude from which to base portions of slashable stake to AVSs.
+     * @param operatorSets the operator sets to change slashing parameters for on the given strategy
+     * @param slashableMagnitudes the proportional parts of the virtualBasis that the operator set is getting as part of the strategy. This ultimately determines how much slashable stake is delegated to a given AVS for that strategy. (slashableMagnitude / virtualBasis) of an operator's delegated stake.
      */
     struct SlashingMagnitudeParameters {
         IStrategy strategy;
