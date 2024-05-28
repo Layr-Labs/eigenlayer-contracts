@@ -27,8 +27,6 @@ contract OperatorSetManager is IOperatorSetManager {
     mapping(address => mapping(IStrategy => mapping(bytes32 => MagnitudeUpdate[]))) private _operatorSetMagnitudeUpdates;
     mapping(address => mapping(IStrategy => TotalMagnitudeUpdate[])) private _totalMagnitudeUpdates;
 
-    mapping(address => mapping(IStrategy => mapping(uint32 => bool))) private _lockedStakeUpdates;
-
     constructor(ISlasher _slasher) {
         slasher = _slasher;
     }
@@ -49,7 +47,7 @@ contract OperatorSetManager is IOperatorSetManager {
 	function updateSlashingParameters(
 		address operator,
 		SlashingMagnitudeParameters[] calldata slashingMagnitudeParameters,
-		SignatureWithExpiry calldata allocatorSignature
+		SignatureWithExpiry calldata allocatorSignature // TODO: implement signature verification
 	) external returns(uint32 effectEpoch) {
         require(_isAllocatorFor(msg.sender, operator), "OperatorSetManager.updateOperatorSetSlashingParameters: Caller is not the allocator for the operator");
         // Change takes effect in 2 epochs
@@ -109,24 +107,6 @@ contract OperatorSetManager is IOperatorSetManager {
         return effectEpoch;
     }
 
-    /**
-     * @notice Locks stake updates for an operator at a given epoch
-     * @param operator that stake updates are locked for
-     * @param strategy that the operator cannot update stake for
-     * @param epoch to lock stake updates at
-     * @dev Only callable by the Slasher
-     */
-    function lockStakeUpdatesAtEpoch(
-        address operator,
-        IStrategy strategy,
-        uint32 epoch
-    ) external {
-        require(msg.sender == address(slasher), "OperatorSetManager.lockStakeUpdatesAtEpoch: Caller is not the slasher");
-        _lockedStakeUpdates[operator][strategy][epoch] = true;
-        
-        emit StakeUpdatesLocked(operator, strategy, epoch);
-    }
-
     /// VIEW
 
     /**
@@ -144,15 +124,9 @@ contract OperatorSetManager is IOperatorSetManager {
         IStrategy strategy,
         uint32 epoch
     ) public view returns (uint16 slashableBips) {
-        // find the latest epoch that is not locked
-        while (_lockedStakeUpdates[operator][strategy][epoch]) {
-            epoch--;
-        }
-
         require(epoch <= EpochUtils.currentEpoch() + 2, "Epoch is more than 2 epochs in the future");
 
-        bytes32 operatorSetHash = _hashOperatorSet(operatorSet);
-        MagnitudeUpdate[] storage operatorSetMagnitudeUpdates = _operatorSetMagnitudeUpdates[operator][strategy][operatorSetHash];
+        MagnitudeUpdate[] storage operatorSetMagnitudeUpdates = _operatorSetMagnitudeUpdates[operator][strategy][_hashOperatorSet(operatorSet)];
         uint192 operatorSetMagnitude = 0;
 
         // iterate from the latest operator set magnitude update to the oldest
@@ -183,6 +157,8 @@ contract OperatorSetManager is IOperatorSetManager {
     function _hashOperatorSet(
         OperatorSet memory operatorSet
     ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(operatorSet));
+        OperatorSet[] memory operatorSetArray = new OperatorSet[](1);
+        operatorSetArray[0] = operatorSet;
+        return keccak256(abi.encode(operatorSetArray));
     }
 }

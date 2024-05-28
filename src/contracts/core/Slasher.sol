@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "../interfaces/ISlasher.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IStrategyManager.sol";
+import "../interfaces/IOperatorSetManager.sol";
 import "../permissions/Pausable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
@@ -28,6 +29,9 @@ import "../libraries/SlashingAccountingUtils.sol";
  * and deploy scripts. Otherwise, it does nothing.
  */ 
 contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
+    // todo: make this immutable and add to constructor
+    IOperatorSetManager public operatorSetManager;
+
     /**
      * @notice Mapping: operator => strategy => share scalingFactor,
      * stored in the "SHARE_CONVERSION_SCALE", i.e. scalingFactor = 2 * SHARE_CONVERSION_SCALE indicates a scalingFactor of "2".
@@ -128,12 +132,12 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     }
 
     /**
-     * @notice Mapping: Operator => Strategy => epoch => AVS => requested slashed bips
+     * @notice Mapping: Operator => Strategy => epoch => operator set hash => requested slashed bips
      * @dev Note that this is *independent* of the slashable bips that the operator has determined!
      *      The amount that the operator's delegated shares will actually get slashed (which goes into `pendingSlashingRate`) is linearly proportional
      *      to *both* this number *and* the slashable bips.
      */
-    mapping(address => mapping(IStrategy => mapping(uint32 => mapping(address => uint256)))) public requestedSlashedBips;
+    mapping(address => mapping(IStrategy => mapping(uint32 => mapping(bytes32 => uint256)))) public requestedSlashedBips;
 
     /**
      * @notice Mapping: Operator => Strategy => epoch => pending slashed amount, where pending slashed amount is the
@@ -142,7 +146,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
      */
     mapping(address => mapping(IStrategy => mapping(uint32 => uint256))) public pendingSlashingRate;
 
-    // @notice fetches the bips slashable by an AVS for the shares of a certain strategy delegated to a certain operator for a certain epoch
+    // @notice fetches the bips slashable for an operator set for the shares of a certain strategy delegated to a certain operator for a certain epoch
     function getSlashableBips(
         address operator, 
         address avs, 
@@ -155,25 +159,30 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     function createSlashingRequest(
         address operator,
+        bytes4 operatorSetID,
         IStrategy[] memory strategies,
         uint256 bipsToSlash
     ) external {
         require(bipsToSlash <= SlashingAccountingUtils.BIPS_FACTOR, "invalid slashing amount");
         require(bipsToSlash != 0, "cannot slash 0");
-        address avs = msg.sender;
+        IOperatorSetManager.OperatorSet memory operatorSet = IOperatorSetManager.OperatorSet({
+            avs: msg.sender,
+            id: operatorSetID
+        });
+        bytes32 operatorSetHash = _hashOperatorSet(operatorSet);
         uint32 epoch = EpochUtils.currentEpoch();
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
-            uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][avs];
+            uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][operatorSetHash];
             uint256 requestedSlashedBipsAfter = requestedSlashedBipsBefore + bipsToSlash;
             int256 changeInPendingSlashedBips = _changeInPendingSlashedBips({
-                slashableBips: getSlashableBips(operator, avs, strategy, epoch),
+                slashableBips: operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch),
                 requestedSlashedBipsBefore: requestedSlashedBipsBefore,
                 requestedSlashedBipsAfter: requestedSlashedBipsAfter
             });
 
             // TODO: events
-            requestedSlashedBips[operator][strategy][epoch][avs] = requestedSlashedBipsAfter;
+            requestedSlashedBips[operator][strategy][epoch][operatorSetHash] = requestedSlashedBipsAfter;
             pendingSlashingRate[operator][strategy][epoch] = uint256(
                 int256(pendingSlashingRate[operator][strategy][epoch]) + int256(changeInPendingSlashedBips)
             );
@@ -182,16 +191,21 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     function reduceRequestedSlashedBips(
         address operator,
+        bytes4 operatorSetID,
         IStrategy[] memory strategies,
         // TODO: naming
         uint256 bipsToReduce
     ) external {
         require(bipsToReduce != 0, "cannot reduce slashing by 0");
-        address avs = msg.sender;
+        IOperatorSetManager.OperatorSet memory operatorSet = IOperatorSetManager.OperatorSet({
+            avs: msg.sender,
+            id: operatorSetID
+        });
+        bytes32 operatorSetHash = _hashOperatorSet(operatorSet);
         uint32 epoch = EpochUtils.currentEpoch();
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
-            uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][avs];
+            uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][operatorSetHash];
             uint256 requestedSlashedBipsAfter;
             // ignore underflow; max out at reducing to zero
             if (bipsToReduce >= requestedSlashedBipsBefore) {
@@ -200,13 +214,13 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
                 requestedSlashedBipsAfter = requestedSlashedBipsBefore - bipsToReduce;
             }
             int256 changeInPendingSlashedBips = _changeInPendingSlashedBips({
-                slashableBips: getSlashableBips(operator, avs, strategy, epoch),
+                slashableBips: operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch),
                 requestedSlashedBipsBefore: requestedSlashedBipsBefore,
                 requestedSlashedBipsAfter: requestedSlashedBipsAfter
             });
 
             // TODO: events
-            requestedSlashedBips[operator][strategy][epoch][avs] = requestedSlashedBipsAfter;
+            requestedSlashedBips[operator][strategy][epoch][operatorSetHash] = requestedSlashedBipsAfter;
             pendingSlashingRate[operator][strategy][epoch] = uint256(
                 int256(pendingSlashingRate[operator][strategy][epoch]) + int256(changeInPendingSlashedBips)
             );
@@ -221,7 +235,16 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         return int256(slashableBips) * (int256(requestedSlashedBipsAfter) - int256(requestedSlashedBipsAfter));
     }
 
-    constructor(IStrategyManager, IDelegationManager) {}
+    function _hashOperatorSet(
+        IOperatorSetManager.OperatorSet memory operatorSet
+    ) internal pure returns (bytes32) {
+        IOperatorSetManager.OperatorSet[] memory operatorSetArray = new IOperatorSetManager.OperatorSet[](1);
+        operatorSetArray[0] = operatorSet;
+        return keccak256(abi.encode(operatorSetArray));
+    }
+
+    constructor(IStrategyManager, IDelegationManager) {
+    }
 
     function initialize(
         address,

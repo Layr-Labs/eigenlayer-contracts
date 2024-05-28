@@ -18,7 +18,7 @@ interface IOperatorSetManager is ISignatureUtils {
      * @param strategy each slashable stake is defined within a single strategy
      * @param totalMagnitude a virtual "denominator" magnitude from which to base portions of slashable stake to AVSs.
      * @param operatorSets the operator sets to change slashing parameters for on the given strategy
-     * @param slashableMagnitudes the proportional parts of the virtualBasis that the operator set is getting as part of the strategy. This ultimately determines how much slashable stake is delegated to a given AVS for that strategy. (slashableMagnitude / virtualBasis) of an operator's delegated stake.
+     * @param slashableMagnitudes the proportional parts of the virtualBasis that the operator set is getting as part of the strategy. This ultimately determines how much slashable stake is delegated to a given AVS for that strategy. (slashableMagnitude / totalMagnitude) of an operator's delegated stake.
      */
     struct SlashingMagnitudeParameters {
         IStrategy strategy;
@@ -34,8 +34,6 @@ interface IOperatorSetManager is ISignatureUtils {
     );
 
     event TotalMagnitudeUpdated(address operator, IStrategy strategy, uint64 totalMagnitude, uint32 effectEpoch);
-
-    event StakeUpdatesLocked(address operator, IStrategy strategy, uint32 epoch);
 
     /// EXTERNAL - STATE MODIFYING
 
@@ -59,8 +57,6 @@ interface IOperatorSetManager is ISignatureUtils {
     ) external returns (uint32 effectEpoch);
 
     /// VIEW
-
-    function slasher() external view returns (ISlasher);
 
     /**
      * @param operator the operator to get the slashable bips for
