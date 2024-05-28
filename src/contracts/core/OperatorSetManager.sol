@@ -22,8 +22,16 @@ contract OperatorSetManager is IOperatorSetManager {
         uint64 magnitude;
     }
 
+    ISlasher public immutable slasher;
+
     mapping(address => mapping(IStrategy => mapping(bytes32 => MagnitudeUpdate[]))) private _operatorSetMagnitudeUpdates;
     mapping(address => mapping(IStrategy => TotalMagnitudeUpdate[])) private _totalMagnitudeUpdates;
+
+    mapping(address => mapping(IStrategy => mapping(uint32 => bool))) private _lockedStakeUpdates;
+
+    constructor(ISlasher _slasher) {
+        slasher = _slasher;
+    }
 
     /**
 	 * @notice Updates slashableBips of the provided strategies
@@ -101,6 +109,24 @@ contract OperatorSetManager is IOperatorSetManager {
         return effectEpoch;
     }
 
+    /**
+     * @notice Locks stake updates for an operator at a given epoch
+     * @param operator that stake updates are locked for
+     * @param strategy that the operator cannot update stake for
+     * @param epoch to lock stake updates at
+     * @dev Only callable by the Slasher
+     */
+    function lockStakeUpdatesAtEpoch(
+        address operator,
+        IStrategy strategy,
+        uint32 epoch
+    ) external {
+        require(msg.sender == address(slasher), "OperatorSetManager.lockStakeUpdatesAtEpoch: Caller is not the slasher");
+        _lockedStakeUpdates[operator][strategy][epoch] = true;
+        
+        emit StakeUpdatesLocked(operator, strategy, epoch);
+    }
+
     /// VIEW
 
     /**
@@ -117,7 +143,12 @@ contract OperatorSetManager is IOperatorSetManager {
         OperatorSet calldata operatorSet,
         IStrategy strategy,
         uint32 epoch
-    ) external view returns (uint16 slashableBips) {
+    ) public view returns (uint16 slashableBips) {
+        // find the latest epoch that is not locked
+        while (_lockedStakeUpdates[operator][strategy][epoch]) {
+            epoch--;
+        }
+
         require(epoch <= EpochUtils.currentEpochUint32() + 2, "Epoch is more than 2 epochs in the future");
 
         bytes32 operatorSetHash = _hashOperatorSet(operatorSet);

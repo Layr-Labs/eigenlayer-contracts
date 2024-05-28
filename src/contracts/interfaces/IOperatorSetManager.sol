@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 import "./ISignatureUtils.sol";
 import "./IStrategy.sol";
+import "./ISlasher.sol";
 
 interface IOperatorSetManager is ISignatureUtils {
     /// STRUCTS
@@ -32,32 +33,34 @@ interface IOperatorSetManager is ISignatureUtils {
         address operator, IStrategy strategy, OperatorSet operatorSet, uint64 slashableMagnitude, uint32 effectEpoch
     );
 
-    event TotalMagnitudeUpdated(
-        address operator, IStrategy strategy, uint64 totalMagnitude, uint32 effectEpoch
-    );
+    event TotalMagnitudeUpdated(address operator, IStrategy strategy, uint64 totalMagnitude, uint32 effectEpoch);
+
+    event StakeUpdatesLocked(address operator, IStrategy strategy, uint32 epoch);
 
     /// EXTERNAL - STATE MODIFYING
 
     /**
-	 * @notice Updates slashableBips of the provided strategies
-	 * for an operator set for a given operator
-	 * 
-	 * @param operator the operator to change slashing parameters for
-	 * @param slashingMagnitudeParameters the new slashing magnitude parameters
-	 * @param allocatorSignature if non-empty is the signature of the allocator on 
-	 * the modification. if empty, the msg.sender must be the allocator for the 
-	 * operator
-	 * 
-	 * @return effectEpoch the epoch in which the change to parameters will 
-	 * take effect 
-	 */
-	function updateSlashingParameters(
-		address operator,
-		SlashingMagnitudeParameters[] calldata slashingMagnitudeParameters,
-		SignatureWithExpiry calldata allocatorSignature
-	) external returns(uint32 effectEpoch);
+     * @notice Updates slashableBips of the provided strategies
+     * for an operator set for a given operator
+     *
+     * @param operator the operator to change slashing parameters for
+     * @param slashingMagnitudeParameters the new slashing magnitude parameters
+     * @param allocatorSignature if non-empty is the signature of the allocator on
+     * the modification. if empty, the msg.sender must be the allocator for the
+     * operator
+     *
+     * @return effectEpoch the epoch in which the change to parameters will
+     * take effect
+     */
+    function updateSlashingParameters(
+        address operator,
+        SlashingMagnitudeParameters[] calldata slashingMagnitudeParameters,
+        SignatureWithExpiry calldata allocatorSignature
+    ) external returns (uint32 effectEpoch);
 
     /// VIEW
+
+    function slasher() external view returns (ISlasher);
 
     /**
      * @param operator the operator to get the slashable bips for
