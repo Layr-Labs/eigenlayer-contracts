@@ -331,47 +331,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
-    /// @notice Migrates an array of queued withdrawals from the StrategyManager contract to this contract.
-    /// @dev This function is expected to be removed in the next upgrade, after all queued withdrawals have been migrated.
-    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToMigrate) external {
-        for(uint256 i = 0; i < withdrawalsToMigrate.length;) {
-            IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory withdrawalToMigrate = withdrawalsToMigrate[i];
-            // Delete withdrawal root from strateyManager
-            (bool isDeleted, bytes32 oldWithdrawalRoot) = strategyManager.migrateQueuedWithdrawal(withdrawalToMigrate);
-            // If old storage is deleted from strategyManager
-            if (isDeleted) {
-                address staker = withdrawalToMigrate.staker;
-                // Create queue entry and increment withdrawal nonce
-                uint256 nonce = cumulativeWithdrawalsQueued[staker];
-                cumulativeWithdrawalsQueued[staker]++;
-
-                Withdrawal memory migratedWithdrawal = Withdrawal({
-                    staker: staker,
-                    delegatedTo: withdrawalToMigrate.delegatedAddress,
-                    withdrawer: withdrawalToMigrate.withdrawerAndNonce.withdrawer,
-                    nonce: nonce,
-                    startBlock: withdrawalToMigrate.withdrawalStartBlock,
-                    strategies: withdrawalToMigrate.strategies,
-                    shares: withdrawalToMigrate.shares
-                });
-
-                // create the new storage
-                bytes32 newRoot = calculateWithdrawalRoot(migratedWithdrawal);
-                // safety check to ensure that root doesn't exist already -- this should *never* be hit
-                require(!pendingWithdrawals[newRoot], "DelegationManager.migrateQueuedWithdrawals: withdrawal already exists");
-                pendingWithdrawals[newRoot] = true;
-
-                emit WithdrawalQueued(newRoot, migratedWithdrawal);
-
-                emit WithdrawalMigrated(oldWithdrawalRoot, newRoot);
-            }
-            unchecked {
-                ++i;
-            }
-        }
-        
-    }
-
     /**
      * @notice Increases a staker's delegated share balance in a strategy.
      * @param staker The address to increase the delegated shares for their operator.

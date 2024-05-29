@@ -161,6 +161,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         uint256 stakerSharesBefore = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
         uint256 operatorSharesBefore = delegation.operatorShares(operator, stakeTokenStrat);
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        cheats.prank(delegationFaucet.owner());
         delegationFaucet.mintDepositAndDelegate(operator, signatureWithExpiry, bytes32(0), DEFAULT_AMOUNT);
 
         uint256 stakerSharesAfter = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);

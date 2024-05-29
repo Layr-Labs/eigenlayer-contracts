@@ -195,19 +195,6 @@ contract StrategyManager is
         strategy.withdraw(recipient, token, shares);
     }
 
-    /// @notice Function called by the DelegationManager as part of the process of transferring existing queued withdrawals from this contract to that contract.
-    /// @dev This function is expected to be removed in the next upgrade, after all queued withdrawals have been migrated.
-    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external onlyDelegationManager returns(bool, bytes32) {
-        bytes32 existingWithdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
-        bool isDeleted;
-        // Delete the withdrawal root if it exists
-        if (withdrawalRootPending[existingWithdrawalRoot]) {
-            withdrawalRootPending[existingWithdrawalRoot] = false;
-            isDeleted = true;
-        }
-        return (isDeleted, existingWithdrawalRoot);
-    }
-
     /**
      * If true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
      * and also when performing DelegationManager.queueWithdrawals, a staker can only withdraw to themselves.
@@ -467,22 +454,5 @@ contract StrategyManager is
     // @notice Internal function for calculating the current domain separator of this contract
     function _calculateDomainSeparator() internal view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
-    }
-
-// LIMITED BACKWARDS-COMPATIBILITY FOR DEPRECATED FUNCTIONALITY
-    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
-    function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) public pure returns (bytes32) {
-        return (
-            keccak256(
-                abi.encode(
-                    queuedWithdrawal.strategies,
-                    queuedWithdrawal.shares,
-                    queuedWithdrawal.staker,
-                    queuedWithdrawal.withdrawerAndNonce,
-                    queuedWithdrawal.withdrawalStartBlock,
-                    queuedWithdrawal.delegatedAddress
-                )
-            )
-        );
     }
 }

@@ -136,9 +136,6 @@ interface IDelegationManager is ISignatureUtils {
 
     /// @notice Emitted when a queued withdrawal is completed
     event WithdrawalCompleted(bytes32 withdrawalRoot);
-
-    /// @notice Emitted when a queued withdrawal is *migrated* from the StrategyManager to the DelegationManager
-    event WithdrawalMigrated(bytes32 oldWithdrawalRoot, bytes32 newWithdrawalRoot);
     
     /// @notice Emitted when the `minWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event MinWithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
@@ -458,5 +455,4 @@ interface IDelegationManager is ISignatureUtils {
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);
 
-    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external;
 }
