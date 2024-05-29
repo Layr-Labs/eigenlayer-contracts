@@ -1,14 +1,10 @@
 .
 ├── DelegationManager Tree (*** denotes that integration tests are needed to validate path)
 ├── when registerAsOperator is called
-│   ├── given that the caller has already registered as operator
+│   ├── given that the caller has already delegated to an operator
 │   │   └── it should revert
 │   ├── it should call `_setOperatorDetails`
-│   │   ├── given that operatorDetails.earningsReceiver is 0 address
-│   │   │   └── it should revert
 │   │   ├── given operatorDetails.stakerOptOutWindowBlocks is > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS
-│   │   │   └── it should revert
-│   │   ├── given caller has already delegated to an operator
 │   │   │   └── it should revert
 │   │   └── it should emit an OperatorDetailsModified event
 │   └── it should call `_delegate`
@@ -22,13 +18,11 @@
 ├── when modifyOperatorDetails is called
 │   ├── given caller is not an operator
 │   │   └── it should revert
-│   ├── given operatorDetails.earningsReceiver is 0 address
-│   │   └── it should revert
 │   ├── given operatorDetails.stakerOptOutWindowBlocks is > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS
 │   │   └── it should revert
 │   ├── given operatorDetails.stakerOptOutWindowBlocks is less than the current stakerOptOutWindowBlocks
 │   │   └── it should revert
-│   └── given caller is an operator and provides a valid earningsReceiver and stakerOptOutWindowBlocks
+│   └── given caller is an operator and provides a valid stakerOptOutWindowBlocks
 │       └── it should update the operatorDetails and emit an OperatorDetailsModified event
 ├── when updateOperatorMetadataURI is called
 │   ├── given caller is not an operator

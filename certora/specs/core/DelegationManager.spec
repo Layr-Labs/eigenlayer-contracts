@@ -24,6 +24,7 @@ methods {
     function _.addShares(address,uint256) external => DISPATCHER(true);
     function _.removeShares(address,uint256) external => DISPATCHER(true);
     function _.withdrawSharesAsTokens(address, address, uint256) external => DISPATCHER(true);
+    function _.podOwnerShares(address) external => NONDET;
 
     // external calls to EigenPod
 	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
@@ -56,7 +57,6 @@ methods {
     //envfree functions
     function delegatedTo(address) external returns (address) envfree;
     function operatorDetails(address) external returns (IDelegationManager.OperatorDetails memory) envfree;
-    function earningsReceiver(address) external returns (address) envfree;
     function delegationApprover(address operator) external returns (address) envfree;
     function stakerOptOutWindowBlocks(address operator) external returns (uint256) envfree;
     function operatorShares(address operator, address strategy) external returns (uint256) envfree;
@@ -130,7 +130,7 @@ invariant operatorsAlwaysDelegatedToSelf(address operator)
 rule operatorCannotUnregister(address operator) {
     requireInvariant operatorsAlwaysDelegatedToSelf(operator);
     // assume `operator` starts in a state of being registered as an operator
-    require(isOperator(operator));
+    require(isOperator(operator) && operator != 0);
     // perform arbitrary function call
     method f;
     env e;

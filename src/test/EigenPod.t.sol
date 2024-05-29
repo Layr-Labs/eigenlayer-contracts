@@ -1627,7 +1627,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function _testDelegation(address operator, address staker) internal {
         if (!delegation.isOperator(operator)) {
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-                earningsReceiver: operator,
+                __deprecated_earningsReceiver: operator,
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             });
