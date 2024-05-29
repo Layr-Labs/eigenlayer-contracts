@@ -167,7 +167,7 @@ contract BeaconChainMock is PrintUtils {
     /// - Decreasing current balance to 0
     /// - Withdrawing the balance to the validator's withdrawal credentials
     /// NOTE that the validator's effective balance is unchanged until advanceEpoch is called
-    /// @return exitedBalanceWei The balance exited to the withdrawal address
+    /// @return exitedBalanceGwei The balance exited to the withdrawal address
     ///
     /// This partially mimics the beacon chain's behavior, which is:
     /// 1. when an exit is initiated, the validator's exit/withdrawable epochs are immediately set
@@ -179,7 +179,7 @@ contract BeaconChainMock is PrintUtils {
     /// `exitValidator` combines steps 1 and 2 into this method.
     ///
     /// TODO we may need to advance a slot here to maintain the properties we want in startCheckpoint
-    function exitValidator(uint40 validatorIndex) public returns (uint exitedBalanceWei) {
+    function exitValidator(uint40 validatorIndex) public returns (uint64 exitedBalanceGwei) {
         _logM("exitValidator");
 
         // Update validator.exitEpoch
@@ -189,14 +189,14 @@ contract BeaconChainMock is PrintUtils {
         v.exitEpoch = currentEpoch() + 1;
         
         // Set current balance to 0
-        uint currentBalanceWei = currentBalance(validatorIndex) * GWEI_TO_WEI;
+        exitedBalanceGwei = _currentBalanceGwei(validatorIndex);
         _setCurrentBalance(validatorIndex, 0);
 
         // Send current balance to pod
         address destination = _toAddress(validators[validatorIndex].withdrawalCreds);
-        cheats.deal(destination, address(destination).balance + currentBalanceWei);
+        cheats.deal(destination, address(destination).balance + uint(uint(exitedBalanceGwei) * GWEI_TO_WEI));
 
-        return currentBalanceWei;
+        return exitedBalanceGwei;
     }
 
     /// @dev Move forward one epoch on the beacon chain, taking care of important epoch processing:

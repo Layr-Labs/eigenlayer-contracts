@@ -605,6 +605,17 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertEq(prevActiveValidatorCount + addedValidators, curActiveValidatorCount, err);
     }
 
+    function assert_Snap_Removed_ActiveValidatorCount(
+        User staker,
+        uint exitedValidators,
+        string memory err
+    ) internal {
+        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
+        uint prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
+
+        assertEq(curActiveValidatorCount + exitedValidators, prevActiveValidatorCount, err);
+    }
+
     function assert_Snap_Added_ActiveValidators(
         User staker,
         uint40[] memory addedValidators,
@@ -618,6 +629,22 @@ abstract contract IntegrationBase is IntegrationDeployer {
         for (uint i = 0; i < curStatuses.length; i++) {
             assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.INACTIVE, err);
             assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
+        }
+    }
+
+    function assert_Snap_Removed_ActiveValidators(
+        User staker,
+        uint40[] memory exitedValidators,
+        string memory err
+    ) internal {
+        bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(exitedValidators);
+
+        IEigenPod.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        IEigenPod.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+
+        for (uint i = 0; i < curStatuses.length; i++) {
+            assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.WITHDRAWN, err);
         }
     }
 
@@ -664,6 +691,17 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint64 prevCheckpointPodBalanceGwei = _getPrevCheckpointPodBalanceGwei(staker);
 
         assertEq(prevWithdrawableRestakedGwei + prevCheckpointPodBalanceGwei, curWithdrawableRestakedGwei, err);
+    }
+
+    function assert_Snap_Added_WithdrawableGwei(
+        User staker,
+        uint64 addedGwei,
+        string memory err
+    ) internal {
+        uint64 curWithdrawableRestakedGwei = _getWithdrawableRestakedGwei(staker);
+        uint64 prevWithdrawableRestakedGwei = _getPrevWithdrawableRestakedGwei(staker);
+
+        assertEq(prevWithdrawableRestakedGwei + addedGwei, curWithdrawableRestakedGwei, err);
     }
 
     /*******************************************************************************

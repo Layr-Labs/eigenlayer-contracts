@@ -11,6 +11,10 @@ contract Integration_Tester is IntegrationCheckUtils {
     
     string constant SECTION_DELIMITER = "======";
 
+    /*******************************************************************************
+                       VERIFY -> START/COMPLETE CHECKPOINT
+    *******************************************************************************/
+
     function test_VerifyAll_Start_CompleteCP_WithRewardsWithdrawn(uint24 _rand) public {
         _configRand({
             _randomSeed: _rand,
@@ -81,6 +85,85 @@ contract Integration_Tester is IntegrationCheckUtils {
 
         staker.completeCheckpoint();
         check_CompleteCheckpoint_State(staker);
+    }
+
+    /*******************************************************************************
+                    VERIFY -> EXIT -> START/COMPLETE CHECKPOINT
+    *******************************************************************************/
+
+    function test_VerifyAll_ExitAll_Start_CompleteCP_WithRewardsWithdrawn(uint24 _rand) public {
+        _configRand({
+            _randomSeed: _rand,
+            _assetTypes: HOLDS_ETH,
+            _userTypes: DEFAULT
+        });
+
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceWei);
+
+        uint64 exitedBalanceGwei = staker.exitValidators(validators);
+        beaconChain.advanceEpoch();
+        // check pod balances have increased
+
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithExits_State(staker, validators, exitedBalanceGwei);
+    }
+
+    function test_VerifyAll_ExitAll_Start_CompleteCP_WithRewardsNotWithdrawn(uint24 _rand) public {
+        _configRand({
+            _randomSeed: _rand,
+            _assetTypes: HOLDS_ETH,
+            _userTypes: DEFAULT
+        });
+
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceWei);
+
+        uint64 exitedBalanceGwei = staker.exitValidators(validators);
+        beaconChain.advanceEpoch_NoWithdraw();
+        // check pod balances have increased
+
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithExits_State(staker, validators, exitedBalanceGwei);
+    }
+
+    function test_VerifyAll_ExitAll_Start_CompleteCP_NoRewards(uint24 _rand) public {
+        _configRand({
+            _randomSeed: _rand,
+            _assetTypes: HOLDS_ETH,
+            _userTypes: DEFAULT
+        });
+
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceWei);
+
+        uint64 exitedBalanceGwei = staker.exitValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
+        // check pod balances have increased
+
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithExits_State(staker, validators, exitedBalanceGwei);
     }
 
     function _logPod(User staker) internal {

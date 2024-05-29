@@ -260,32 +260,18 @@ contract User is PrintUtils {
         return (newValidators, totalBeaconBalance);
     }
 
-    // function startValidators(uint _numValidators) public createSnapshot virtual returns (uint40[] memory) {
-    //     _log("startValidators");
+    function exitValidators(uint40[] memory _validators) public createSnapshot virtual returns (uint64 exitedBalanceGwei) {
+        _logM("exitValidators");
 
-    //     uint40[] memory newValidators = new uint40[](_numValidators);
+        _log("- exiting num validators", _validators.length);
 
-    //     for (uint i = 0; i < _numValidators; i++) {
-    //         uint40 validatorIndex = beaconChain.newValidator({
-    //             balanceWei: 32 ether,
-    //             withdrawalCreds: _podWithdrawalCredentials()
-    //         });
+        for (uint i = 0; i < _validators.length; i++) {
+            exitedBalanceGwei += beaconChain.exitValidator(_validators[i]);
+        }
 
-    //         newValidators[i] = validatorIndex;
-    //         validators.push(validatorIndex);
-    //     }
+        _log("- exited balance to pod (gwei)", exitedBalanceGwei);
 
-    //     beaconChain.advanceEpoch();
-
-    //     return newValidators;
-    // }
-
-    function rewardValidators(Validator[] memory _validators) public createSnapshot virtual {
-        // generate consensus rewards for validators and send to pod
-    }
-
-    function stopValidators(Validator[] memory _validators) public createSnapshot virtual {
-        // stop validators and send ETH to pod
+        return exitedBalanceGwei;
     }
 
     /*******************************************************************************

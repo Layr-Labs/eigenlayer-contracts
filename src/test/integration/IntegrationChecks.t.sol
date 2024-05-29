@@ -43,6 +43,17 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_PodBalanceToWithdrawable(staker, "pod balance should have been added to withdrawable restaked exec layer gwei");
     }
 
+    function check_CompleteCheckpoint_WithExits_State(
+        User staker,
+        uint40[] memory exitedValidators,
+        uint64 exitedBalanceGwei
+    ) internal {
+        check_CompleteCheckpoint_State(staker);
+        assert_Snap_Added_WithdrawableGwei(staker, exitedBalanceGwei, "should have added expected gwei to withdrawable restaked exec layer gwei");
+        assert_Snap_Removed_ActiveValidatorCount(staker, exitedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, exitedValidators, "exited validators should each be WITHDRAWN");
+    }
+
     /*******************************************************************************
                               LST/DELEGATION CHECKS
     *******************************************************************************/
