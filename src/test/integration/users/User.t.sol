@@ -317,7 +317,11 @@ contract User is PrintUtils {
     function completeCheckpoint() public createSnapshot virtual {
         _logM("completeCheckpoint");
 
+        _log("- active validator count", pod.activeValidatorCount());
+        _log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
+
         CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators);
+        _log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
 
         pod.verifyCheckpointProofs({
             stateRootProof: proofs.stateRootProof,

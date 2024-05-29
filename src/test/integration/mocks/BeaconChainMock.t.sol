@@ -899,4 +899,14 @@ contract BeaconChainMock is PrintUtils {
     function pubkeyHash(uint40 validatorIndex) public view returns (bytes32) {
         return validators[validatorIndex].pubkeyHash;
     }
+
+    function getPubkeyHashes(uint40[] memory _validators) public view returns (bytes32[] memory) {
+        bytes32[] memory pubkeyHashes = new bytes32[](_validators.length);
+
+        for (uint i = 0; i < _validators.length; i++) {
+            pubkeyHashes[i] = validators[_validators[i]].pubkeyHash;
+        }
+
+        return pubkeyHashes;
+    }
 }

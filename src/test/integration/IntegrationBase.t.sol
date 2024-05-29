@@ -146,9 +146,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    /** 
-     * Common assertions:
-     */
+    /*******************************************************************************
+                                COMMON ASSERTIONS
+    *******************************************************************************/
 
     function assert_HasNoDelegatableShares(User user, string memory err) internal {
         (IStrategy[] memory strategies, uint[] memory shares) = 
@@ -267,13 +267,23 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal {
         assertEq(withdrawalRoot, delegationManager.calculateWithdrawalRoot(withdrawal), err);
     }
+
+    function assert_ProofsRemainingEqualsActive(
+        User staker,
+        string memory err
+    ) internal {
+        EigenPod pod = staker.pod();
+        assertEq(pod.currentCheckpoint().proofsRemaining, pod.activeValidatorCount(), err);
+    }
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
                        TIME TRAVELERS ONLY BEYOND THIS POINT
     *******************************************************************************/
 
-    /// Snapshot assertions for delegationManager.operatorShares:
+    /*******************************************************************************
+                        SNAPSHOT ASSERTIONS: OPERATOR SHARES
+    *******************************************************************************/
 
     /// @dev Check that the operator has `addedShares` additional operator shares 
     // for each strategy since the last snapshot
@@ -351,7 +361,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    /// Snapshot assertions for strategyMgr.stakerStrategyShares and eigenPodMgr.podOwnerShares:
+    /*******************************************************************************
+                            SNAPSHOT ASSERTIONS: STAKER SHARES
+    *******************************************************************************/
 
     /// @dev Check that the staker has `addedShares` additional delegatable shares
     /// for each strategy since the last snapshot
@@ -361,6 +373,27 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory addedShares,
         string memory err
     ) internal {
+        uint[] memory curShares = _getStakerShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerShares(staker, strategies);
+
+        // For each strategy, check (prev + added == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);            
+        }
+    }
+
+    function assert_Snap_Added_StakerShares(
+        User staker, 
+        IStrategy strat, 
+        uint _addedShares,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        uint[] memory addedShares = new uint[](1);
+        strategies[0] = strat;
+        addedShares[0] = _addedShares;
+
         uint[] memory curShares = _getStakerShares(staker, strategies);
         // Use timewarp to get previous staker shares
         uint[] memory prevShares = _getPrevStakerShares(staker, strategies);
@@ -407,6 +440,26 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function assert_Snap_Delta_StakerShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        int[] memory shareDeltas,
+        string memory err
+    ) internal {
+        int[] memory curShares = _getStakerSharesInt(staker, strategies);
+        // Use timewarp to get previous staker shares
+        int[] memory prevShares = _getPrevStakerSharesInt(staker, strategies);
+
+        // For each strategy, check (prev + added == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i] + shareDeltas[i], curShares[i], err);
+        }
+    }
+
+    /*******************************************************************************
+                        SNAPSHOT ASSERTIONS: STRATEGY SHARES
+    *******************************************************************************/
+
     function assert_Snap_Removed_StrategyShares(
         IStrategy[] memory strategies,
         uint[] memory removedShares,
@@ -446,23 +499,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    function assert_Snap_Delta_StakerShares(
-        User staker, 
-        IStrategy[] memory strategies, 
-        int[] memory shareDeltas,
-        string memory err
-    ) internal {
-        int[] memory curShares = _getStakerSharesInt(staker, strategies);
-        // Use timewarp to get previous staker shares
-        int[] memory prevShares = _getPrevStakerSharesInt(staker, strategies);
-
-        // For each strategy, check (prev + added == cur)
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] + shareDeltas[i], curShares[i], err);
-        }
-    }
-
-    /// Snapshot assertions for underlying token balances:
+    /*******************************************************************************
+                      SNAPSHOT ASSERTIONS: UNDERLYING TOKEN
+    *******************************************************************************/
 
     /// @dev Check that the staker has `addedTokens` additional underlying tokens 
     // since the last snapshot
@@ -523,7 +562,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    /// Other snapshot assertions:
+    /*******************************************************************************
+                      SNAPSHOT ASSERTIONS: QUEUED WITHDRAWALS
+    *******************************************************************************/
 
     function assert_Snap_Added_QueuedWithdrawals(
         User staker, 
@@ -547,6 +588,82 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint prevQueuedWithdrawal = _getPrevCumulativeWithdrawals(staker);
 
         assertEq(prevQueuedWithdrawal + 1, curQueuedWithdrawal, err);
+    }
+
+    /*******************************************************************************
+                         SNAPSHOT ASSERTIONS: EIGENPODS
+    *******************************************************************************/
+
+    function assert_Snap_Added_ActiveValidatorCount(
+        User staker,
+        uint addedValidators,
+        string memory err
+    ) internal {
+        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
+        uint prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
+
+        assertEq(prevActiveValidatorCount + addedValidators, curActiveValidatorCount, err);
+    }
+
+    function assert_Snap_Added_ActiveValidators(
+        User staker,
+        uint40[] memory addedValidators,
+        string memory err
+    ) internal {
+        bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(addedValidators);
+
+        IEigenPod.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        IEigenPod.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+
+        for (uint i = 0; i < curStatuses.length; i++) {
+            assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.INACTIVE, err);
+            assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
+        }
+    }
+
+    function assert_Snap_Created_Checkpoint(
+        User staker,
+        string memory err
+    ) internal {
+        uint64 curCheckpointTimestamp = _getCheckpointTimestamp(staker);
+        uint64 prevCheckpointTimestamp = _getPrevCheckpointTimestamp(staker);
+
+        assertEq(prevCheckpointTimestamp, 0, err);
+        assertTrue(curCheckpointTimestamp != 0, err);
+    }
+
+    function assert_Snap_Removed_Checkpoint(
+        User staker,
+        string memory err
+    ) internal {
+        uint64 curCheckpointTimestamp = _getCheckpointTimestamp(staker);
+        uint64 prevCheckpointTimestamp = _getPrevCheckpointTimestamp(staker);
+
+        assertEq(curCheckpointTimestamp, 0, err);
+        assertTrue(prevCheckpointTimestamp != 0, err);
+    }
+
+    function assert_Snap_Updated_LastCheckpoint(
+        User staker,
+        string memory err
+    ) internal {
+        // Sorry for the confusing naming... the pod variable is called `lastCheckpointTimestamp`
+        uint64 curLastCheckpointTimestamp = _getLastCheckpointTimestamp(staker);
+        uint64 prevLastCheckpointTimestamp = _getPrevLastCheckpointTimestamp(staker);
+
+        assertTrue(curLastCheckpointTimestamp > prevLastCheckpointTimestamp, err);
+    }
+
+    function assert_Snap_Added_PodBalanceToWithdrawable(
+        User staker,
+        string memory err
+    ) internal {
+        uint64 curWithdrawableRestakedGwei = _getWithdrawableRestakedGwei(staker);
+        uint64 prevWithdrawableRestakedGwei = _getPrevWithdrawableRestakedGwei(staker);
+
+        uint64 prevCheckpointPodBalanceGwei = _getPrevCheckpointPodBalanceGwei(staker);
+
+        assertEq(prevWithdrawableRestakedGwei + prevCheckpointPodBalanceGwei, curWithdrawableRestakedGwei, err);
     }
 
     /*******************************************************************************
@@ -895,5 +1012,65 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
 
         return shares;
+    }
+
+    function _getActiveValidatorCount(User staker) internal view returns (uint) {
+        EigenPod pod = staker.pod();
+        return pod.activeValidatorCount();
+    }
+
+    function _getPrevActiveValidatorCount(User staker) internal timewarp() returns (uint) {
+        return _getActiveValidatorCount(staker);
+    }
+
+    function _getValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal view returns (IEigenPod.VALIDATOR_STATUS[] memory) {
+        EigenPod pod = staker.pod();
+        IEigenPod.VALIDATOR_STATUS[] memory statuses = new IEigenPod.VALIDATOR_STATUS[](pubkeyHashes.length);
+
+        for (uint i = 0; i < statuses.length; i++) {
+            statuses[i] = pod.validatorStatus(pubkeyHashes[i]);
+        }
+
+        return statuses;
+    }
+
+    function _getPrevValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (IEigenPod.VALIDATOR_STATUS[] memory) {
+        return _getValidatorStatuses(staker, pubkeyHashes);
+    }
+
+    function _getCheckpointTimestamp(User staker) internal view returns (uint64) {
+        EigenPod pod = staker.pod();
+        return pod.currentCheckpointTimestamp();
+    }
+
+    function _getPrevCheckpointTimestamp(User staker) internal timewarp() returns (uint64) {
+        return _getCheckpointTimestamp(staker);
+    }
+
+    function _getLastCheckpointTimestamp(User staker) internal view returns (uint64) {
+        EigenPod pod = staker.pod();
+        return pod.lastCheckpointTimestamp();
+    }
+
+    function _getPrevLastCheckpointTimestamp(User staker) internal timewarp() returns (uint64) {
+        return _getLastCheckpointTimestamp(staker);
+    }
+
+    function _getWithdrawableRestakedGwei(User staker) internal view returns (uint64) {
+        EigenPod pod = staker.pod();
+        return pod.withdrawableRestakedExecutionLayerGwei();
+    }
+
+    function _getPrevWithdrawableRestakedGwei(User staker) internal timewarp() returns (uint64) {
+        return _getWithdrawableRestakedGwei(staker);
+    }
+
+    function _getCheckpointPodBalanceGwei(User staker) internal view returns (uint64) {
+        EigenPod pod = staker.pod();
+        return uint64(pod.currentCheckpoint().podBalanceGwei);
+    }
+
+    function _getPrevCheckpointPodBalanceGwei(User staker) internal timewarp() returns (uint64) {
+        return _getCheckpointPodBalanceGwei(staker);
     }
 }

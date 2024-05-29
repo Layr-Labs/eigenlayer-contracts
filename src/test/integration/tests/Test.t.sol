@@ -4,19 +4,6 @@ pragma solidity ^0.8.12;
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
-enum Network {
-    LOCAL,
-    HOLESKY,
-    MAINNET
-}
-
-enum Version {
-    LATEST,
-    M2_0_2_5, // m2 + eigen + pod fix
-    M2,       // m2 + eigen
-    M1
-}
-
 contract Integration_Tester is IntegrationCheckUtils {
 
     using Strings for *;
@@ -36,16 +23,16 @@ contract Integration_Tester is IntegrationCheckUtils {
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
 
         staker.verifyWithdrawalCredentials(validators);
-        // checks
+        check_VerifyWC_State(staker, validators, beaconBalanceWei);
 
         beaconChain.advanceEpoch();
         // check pod balances have increased
 
         staker.startCheckpoint();
-        // checks
+        check_StartCheckpoint_State(staker);
 
         staker.completeCheckpoint();
-        // checks
+        check_CompleteCheckpoint_State(staker);
     }
 
     function test_VerifyAll_Start_CompleteCP_WithRewardsNotWithdrawn(uint24 _rand) public {
@@ -60,16 +47,16 @@ contract Integration_Tester is IntegrationCheckUtils {
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
 
         staker.verifyWithdrawalCredentials(validators);
-        // checks
+        check_VerifyWC_State(staker, validators, beaconBalanceWei);
 
         beaconChain.advanceEpoch_NoWithdraw();
         // check pod balances have increased
 
         staker.startCheckpoint();
-        // checks
+        check_StartCheckpoint_State(staker);
 
         staker.completeCheckpoint();
-        // checks
+        check_CompleteCheckpoint_State(staker);
     }
 
     function test_VerifyAll_Start_CompleteCP_NoRewards(uint24 _rand) public {
@@ -84,16 +71,16 @@ contract Integration_Tester is IntegrationCheckUtils {
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
 
         staker.verifyWithdrawalCredentials(validators);
-        // checks
+        check_VerifyWC_State(staker, validators, beaconBalanceWei);
 
         beaconChain.advanceEpoch_NoRewards();
         // check pod balances have increased
 
         staker.startCheckpoint();
-        // checks
+        check_StartCheckpoint_State(staker);
 
         staker.completeCheckpoint();
-        // checks
+        check_CompleteCheckpoint_State(staker);
     }
 
     function _logPod(User staker) internal {
@@ -146,53 +133,4 @@ contract Integration_Tester is IntegrationCheckUtils {
     function _log(string memory name, int value) internal {
         emit log_named_int(name, value);
     }
-
-    // function test_Thing() public {
-    //     uint40 aIdx = beaconChain.newValidator2(1 ether, "");
-
-    //     bytes32 balanceRoot = beaconChain.getBalanceRoot(aIdx);
-    //     emit log_named_bytes32("balance root a 1", balanceRoot);
-    //     uint64 balanceA = beaconChain.getBalance(aIdx);
-    //     emit log_named_uint("balance a 1", balanceA);
-
-    //     uint40 bIdx = beaconChain.newValidator2(2 ether, "");
-
-    //     balanceRoot = beaconChain.getBalanceRoot(bIdx);
-    //     emit log_named_bytes32("balance root ab 12", balanceRoot);
-    //     balanceA = beaconChain.getBalance(aIdx);
-    //     emit log_named_uint("balance a 1", balanceA);
-    //     uint64 balanceB = beaconChain.getBalance(bIdx);
-    //     emit log_named_uint("balance b 2", balanceB);
-
-    //     uint40 cIdx = beaconChain.newValidator2(3 ether, "");
-
-    //     balanceRoot = beaconChain.getBalanceRoot(cIdx);
-    //     emit log_named_bytes32("balance root abc 123", balanceRoot);
-    //     balanceA = beaconChain.getBalance(aIdx);
-    //     emit log_named_uint("balance a 1", balanceA);
-    //     balanceB = beaconChain.getBalance(bIdx);
-    //     emit log_named_uint("balance b 2", balanceB);
-    //     uint64 balanceC = beaconChain.getBalance(cIdx);
-    //     emit log_named_uint("balance c 3", balanceC);
-
-    //     uint40 dIdx = beaconChain.newValidator2(4 ether, "");
-
-    //     balanceRoot = beaconChain.getBalanceRoot(dIdx);
-    //     emit log_named_bytes32("balance root abc 1234", balanceRoot);
-    //     balanceA = beaconChain.getBalance(aIdx);
-    //     emit log_named_uint("balance a 1", balanceA);
-    //     balanceB = beaconChain.getBalance(bIdx);
-    //     emit log_named_uint("balance b 2", balanceB);
-    //     balanceC = beaconChain.getBalance(cIdx);
-    //     emit log_named_uint("balance c 3", balanceC);
-    //     uint64 balanceD = beaconChain.getBalance(dIdx);
-    //     emit log_named_uint("balance d 4", balanceD);
-
-    //     uint40 eIdx = beaconChain.newValidator2(5 ether, "");
-
-    //     balanceRoot = beaconChain.getBalanceRoot(eIdx);
-    //     emit log_named_bytes32("balance root e 5", balanceRoot);
-    //     uint64 balanceE = beaconChain.getBalance(eIdx);
-    //     emit log_named_uint("balance e 5", balanceE);
-    // }
 }
