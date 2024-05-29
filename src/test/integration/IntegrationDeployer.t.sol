@@ -21,7 +21,6 @@ import "src/contracts/permissions/PauserRegistry.sol";
 
 import "src/test/mocks/EmptyContract.sol";
 import "src/test/mocks/ETHDepositMock.sol";
-import "src/test/integration/mocks/BeaconChainOracleMock.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
 import "src/test/integration/users/User.t.sol";
@@ -41,6 +40,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     uint256 holeskyForkId;
     uint64 constant DENEB_FORK_TIMESTAMP = 1705473120;
 
+    // Beacon chain genesis time when running locally
+    // Multiple of 12 for sanity's sake
+    uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
+    uint64 constant GENESIS_TIME_MAINNET = 1606824023;
 
     TimeMachine public timeMachine;
 
@@ -58,7 +61,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Mock Contracts to deploy
     ETHPOSDepositMock ethPOSDeposit;
-    BeaconChainOracleMock public beaconChainOracle;
     BeaconChainMock public beaconChain;
 
     // Admin Addresses
@@ -222,7 +224,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy mocks
         EmptyContract emptyContract = new EmptyContract();
         ethPOSDeposit = new ETHPOSDepositMock();
-        beaconChainOracle = new BeaconChainOracleMock();
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -252,7 +253,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            0
+            GENESIS_TIME_LOCAL
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
@@ -358,11 +359,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
 
-        // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
+        // Create time machine and beacon chain. Set block time to beacon chain genesis time
+        cheats.warp(GENESIS_TIME_LOCAL);
         timeMachine = new TimeMachine();
-        timeMachine.setProofGenStartTime(2 hours);
-        // Create mock beacon chain / proof gen interface
-        beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
+        beaconChain = new BeaconChainMock(timeMachine, eigenPodManager, GENESIS_TIME_LOCAL);
 
         //set deneb fork timestamp
         eigenPodManager.setDenebForkTimestamp(type(uint64).max);
@@ -385,7 +385,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            0
+            GENESIS_TIME_MAINNET
         );
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
         // Deploy AVSDirectory, contract has not been deployed on mainnet yet
@@ -461,9 +461,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         delegationManager.unpause(0);
         eigenPodManager.unpause(0);
         strategyManager.unpause(0);
-
-        timeMachine.setProofGenStartTime(0);
-        beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
 
         if (eigenPodManager.denebForkTimestamp() == type(uint64).max) {
             //set deneb fork timestamp if not set
@@ -569,9 +566,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         delegationManager.unpause(0);
         eigenPodManager.unpause(0);
         strategyManager.unpause(0);
-
-        timeMachine.setProofGenStartTime(0);
-        beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
 
         if (eigenPodManager.denebForkTimestamp() == type(uint64).max) {
             //set deneb fork timestamp if not set
@@ -683,11 +677,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 allTokens.push(strategy.underlyingToken());
             }
 
-            // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
+            // Create time machine and mock beacon chain
             timeMachine = new TimeMachine();
-            beaconChainOracle = new BeaconChainOracleMock();
-            // Create mock beacon chain / proof gen interface
-            beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
+            beaconChain = new BeaconChainMock(timeMachine, eigenPodManager, GENESIS_TIME_MAINNET);
         } else if (forkType == HOLESKY) {
             revert("_deployOrFetchContracts - holesky tests currently broken sorry");
             // cheats.selectFork(holeskyForkId);
@@ -716,11 +708,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 eigenPodImplementation.eigenPodManager(),
                 0
             );
-            // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
+            // Create time machine and mock beacon chain
             timeMachine = new TimeMachine();
-            beaconChainOracle = new BeaconChainOracleMock();
-            // Create mock beacon chain / proof gen interface
-            beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
+            beaconChain = new BeaconChainMock(timeMachine, eigenPodManager, GENESIS_TIME_MAINNET);
 
             cheats.startPrank(executorMultisig);
             eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
@@ -737,6 +727,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Assets are pulled from `strategies` based on a random staker/operator `assetType`
      */
     function _randUser(string memory name) internal returns (User, IStrategy[] memory, uint[] memory) {
+        emit log("1");
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -746,7 +737,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         
         // Deploy new User contract
         User user = _genRandUser(name, userType);
-
+        emit log("2");
         // For the specific asset selection we made, get a random assortment of
         // strategies and deal the user some corresponding underlying token balances
         (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
