@@ -7,7 +7,57 @@ import "src/test/integration/users/User_M1.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
-    
+
+    /*******************************************************************************
+                                 EIGENPOD CHECKS
+    *******************************************************************************/
+
+    function check_VerifyWC_State(
+        User staker,
+        uint40[] memory validators,
+        uint beaconBalanceWei
+    ) internal {
+        assert_Snap_Added_StakerShares(staker, BEACONCHAIN_ETH_STRAT, beaconBalanceWei, "staker should have added shares to beacon chain strat");
+        assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
+        assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
+    }
+
+    function check_StartCheckpoint_State(
+        User staker
+    ) internal {
+        assert_ProofsRemainingEqualsActive(staker, "checkpoint proofs remaining should equal active validator count");
+        assert_Snap_Created_Checkpoint(staker, "staker should have created a new checkpoint");
+    }
+
+    function check_EmptyCheckpoint_State(
+        User staker
+    ) internal {
+        revert("TODO");
+    }
+
+    function check_CompleteCheckpoint_State(
+        User staker
+    ) internal {
+        assert_Snap_Removed_Checkpoint(staker, "should have deleted active checkpoint");
+        assert_Snap_Updated_LastCheckpoint(staker, "last checkpoint timestamp should be updated");
+        assert_Snap_Added_PodBalanceToWithdrawable(staker, "pod balance should have been added to withdrawable restaked exec layer gwei");
+    }
+
+    function check_CompleteCheckpoint_WithExits_State(
+        User staker,
+        uint40[] memory exitedValidators,
+        uint64 exitedBalanceGwei
+    ) internal {
+        check_CompleteCheckpoint_State(staker);
+        assert_Snap_Added_WithdrawableGwei(staker, exitedBalanceGwei, "should have added expected gwei to withdrawable restaked exec layer gwei");
+        assert_Snap_Removed_ActiveValidatorCount(staker, exitedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, exitedValidators, "exited validators should each be WITHDRAWN");
+    }
+
+    /*******************************************************************************
+                              LST/DELEGATION CHECKS
+    *******************************************************************************/
+
     function check_Deposit_State(
         User staker, 
         IStrategy[] memory strategies, 

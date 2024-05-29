@@ -10,8 +10,6 @@ contract TimeMachine is Test {
     bool pastExists = false;
     uint lastSnapshot;
 
-    uint64 public proofGenStartTime;
-
     function createSnapshot() public returns (uint) {
         uint snapshot = cheats.snapshot();
         lastSnapshot = snapshot;
@@ -31,15 +29,5 @@ contract TimeMachine is Test {
 
     function warpToPresent(uint curState) public {
         cheats.revertTo(curState);
-    }
-
-    /// @dev Sets the timestamp we use for proof gen to now,
-    /// then sets block timestamp to now + secondsAgo.
-    ///
-    /// This means we can create mock proofs using an oracle time
-    /// of `proofGenStartTime`.
-    function setProofGenStartTime(uint secondsAgo) public {
-        proofGenStartTime = uint64(block.timestamp);
-        cheats.warp(block.timestamp + secondsAgo);
     }
 }
