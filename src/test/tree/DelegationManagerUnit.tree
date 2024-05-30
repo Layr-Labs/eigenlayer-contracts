@@ -154,12 +154,6 @@
 │   │   └── it should call withdrawSharesAsTokens on the eigen pod manager
 │   └── given that the strategy is not the beaconChainStrategy
 │       └── it should call withdrawSharesAsTokens on the strategy manager
-├── when migrate queued withdrawals is called
-│   └── given that the withdrawal succesfully deletes from the strategy manager
-│       ├── it should calculate a new root
-│       │   └── given that the root is already pending
-│       │       └── it should revert
-│       └── it should emit WithdrawalQueued and WithdrawalMigrated events
 ├── when increaseDelegatedShares is called
 │   ├── if the caller is not the strategy manager or eigen pod manager
 │   │   └── it should revert

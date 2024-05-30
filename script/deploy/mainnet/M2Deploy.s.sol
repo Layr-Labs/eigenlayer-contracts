@@ -68,14 +68,7 @@ contract M2Deploy is Script, Test {
     uint256 public stakerStrategyListLength;
     uint256[] public stakerStrategyShares; // Array of shares in each strategy
     IStrategy[] public stakerStrategyList; // Array of strategies staker has deposited into
-    IStrategyManager.DeprecatedStruct_QueuedWithdrawal public queuedWithdrawalLst; // queuedWithdrawal for
-    uint256 public m1PostWithdrawTokensReceived; // Number of tokens received after completing withdrawal on M1 contracts
-    bytes32 public withdrawalRootBeforeUpgrade;
     IERC20[] public tokensToWithdraw;
-    uint256 public lstDepositorNonceBefore;
-    uint256 public lstDepositorNumWithdrawalsQueued;
-    uint256 public lstDepositorBalancePreUpgrade; // balance after withdrawal on m1 contracts
-    uint256 public lstDepositorSharesPreUpgrade; // shares after withdrawal on m1 contracts
 
     // Pointers to pre-upgrade values for eigenPodDepositor
     address public eigenPodDepositor;
@@ -118,7 +111,6 @@ contract M2Deploy is Script, Test {
 
         // Store pre-upgrade values to check against later
         strategyWhitelister = strategyManager.strategyWhitelister();
-        withdrawalDelayBlocks = m1StrategyManager(address(strategyManager)).withdrawalDelayBlocks();
         delegationManagerDomainSeparator = IDelegationManagerV0(address(delegation)).DOMAIN_SEPARATOR();
         numPods = eigenPodManager.numPods();
         delayedWithdrawalRouter = EigenPod(payable(eigenPodBeacon.implementation())).delayedWithdrawalRouter();
@@ -133,16 +125,6 @@ contract M2Deploy is Script, Test {
             lstDepositor = 0x01e453D2465cEC1BD2ac9aed06115Fbf28482b33;
             strategyArray[0] = IStrategy(0x879944A8cB437a5f8061361f82A6d4EED59070b5);
             shareAmounts[0] = 188647761812080108;
-            IStrategyManager.DeprecatedStruct_WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager
-                .DeprecatedStruct_WithdrawerAndNonce({withdrawer: lstDepositor, nonce: uint96(0)});
-            queuedWithdrawalLst = IStrategyManager.DeprecatedStruct_QueuedWithdrawal({
-                strategies: strategyArray,
-                shares: shareAmounts,
-                staker: lstDepositor,
-                withdrawerAndNonce: withdrawerAndNonce,
-                withdrawalStartBlock: uint32(9083727),
-                delegatedAddress: delegation.delegatedTo(lstDepositor)
-            });
             tokensToWithdraw.push(IERC20(0x178E141a0E3b34152f73Ff610437A7bf9B83267A));
 
             // Set eigenPod owner values
@@ -154,11 +136,6 @@ contract M2Deploy is Script, Test {
         // Store LST depositor pre-upgrade values
         stakerStrategyListLength = strategyManager.stakerStrategyListLength(lstDepositor);
         (stakerStrategyList, stakerStrategyShares) = strategyManager.getDeposits(lstDepositor);
-        withdrawalRootBeforeUpgrade = strategyManager.calculateWithdrawalRoot(queuedWithdrawalLst);
-        lstDepositorNonceBefore = StrategyManagerStorage(address(strategyManager)).nonces(lstDepositor);
-        lstDepositorNumWithdrawalsQueued = m1StrategyManager(address(strategyManager)).numWithdrawalsQueued(
-            lstDepositor
-        );
 
         // Store eigenPod owner pre-ugprade values
         eigenPod = eigenPodManager.ownerToPod(eigenPodDepositor);
@@ -166,9 +143,6 @@ contract M2Deploy is Script, Test {
         hasPod = eigenPodManager.hasPod(eigenPodDepositor);
         eigenPodOwner = eigenPod.podOwner();
         mostRecentWithdrawalBlock = m1EigenPod(address(eigenPod)).mostRecentWithdrawalBlockNumber();
-
-        // Complete queued withdrawals before upgrade to sanity check post upgrade
-        _completeWithdrawalsPreUpgrade();
 
         // Begin deployment
         vm.startBroadcast();
@@ -267,8 +241,6 @@ contract M2Deploy is Script, Test {
 
         _verifyContractsInitialized();
 
-        _verifyLSTDepositorCorrectness();
-
         _verifyEigenPodCorrectness();
     }
 
@@ -343,88 +315,6 @@ contract M2Deploy is Script, Test {
         );
     }
 
-    function _verifyLSTDepositorCorrectness() internal {
-        // Check that LST depositor has the same shares in the same strategies
-        require(
-            strategyManager.stakerStrategyListLength(lstDepositor) == stakerStrategyListLength,
-            "strategyManager.stakerStrategyListLength incorrect"
-        );
-        (IStrategy[] memory stakerStrategyListAfter, uint256[] memory stakerStrategySharesAfter) = strategyManager
-            .getDeposits(lstDepositor);
-        for (uint256 i = 0; i < stakerStrategyListAfter.length; i++) {
-            require(
-                stakerStrategyListAfter[i] == stakerStrategyList[i],
-                "strategyManager.stakerStrategyList incorrect"
-            );
-            require(
-                stakerStrategySharesAfter[i] == stakerStrategyShares[i],
-                "strategyManager.stakerStrategyShares incorrect"
-            );
-        }
-
-        // Check that withdrawal root resolves to prev root
-        require(
-            withdrawalRootBeforeUpgrade == strategyManager.calculateWithdrawalRoot(queuedWithdrawalLst),
-            "strategyManager.calculateWithdrawalRoot does not resolve to previous root"
-        );
-        require(
-            StrategyManagerStorage(address(strategyManager)).withdrawalRootPending(withdrawalRootBeforeUpgrade),
-            "strategyManager.withdrawalRootPending incorrect"
-        );
-
-        // Check that nonce and numWithdrawalsQueued remains the same
-        require(
-            lstDepositorNonceBefore == StrategyManagerStorage(address(strategyManager)).nonces(lstDepositor),
-            "strategyManager.nonces mismatch"
-        );
-        bytes32 withdrawalsQueuedSlot = keccak256(abi.encode(lstDepositor, withdrawalsQueuedStorageSlot));
-        require(
-            lstDepositorNumWithdrawalsQueued == uint256(cheats.load(address(strategyManager), withdrawalsQueuedSlot)),
-            "strategyManager.numWithdrawalsQueued mismatch"
-        );
-
-        // Unpause delegationManager withdrawals
-        uint256 paused = IPausable(address(delegation)).paused();
-        cheats.prank(IPauserRegistry(IPausable(address(delegation)).pauserRegistry()).unpauser());
-        IPausable(address(delegation)).unpause(paused ^ (1 << 2)); // Withdrawal queue on 2nd bit
-
-        // Migrate queued withdrawal to delegationManger
-        // Migrating the withdrawal root also verifies that the root has not been erroneously set to false
-        IStrategyManager.DeprecatedStruct_QueuedWithdrawal[]
-            memory queuedWithdrawals = new IStrategyManager.DeprecatedStruct_QueuedWithdrawal[](1);
-        queuedWithdrawals[0] = queuedWithdrawalLst;
-        delegation.migrateQueuedWithdrawals(queuedWithdrawals);
-
-        // If successful, confirms that queuedWithdrawal root has not been corrupted between upgrades
-        // Queue withdrawal on delegationManager
-        IDelegationManager.Withdrawal memory delegationManagerWithdrawal = IDelegationManager.Withdrawal({
-            staker: queuedWithdrawalLst.staker,
-            delegatedTo: queuedWithdrawalLst.delegatedAddress,
-            withdrawer: queuedWithdrawalLst.withdrawerAndNonce.withdrawer,
-            nonce: 0, // first withdrawal, so 0 nonce
-            startBlock: queuedWithdrawalLst.withdrawalStartBlock,
-            strategies: queuedWithdrawalLst.strategies,
-            shares: queuedWithdrawalLst.shares
-        });
-        cheats.prank(lstDepositor);
-        delegation.completeQueuedWithdrawal(delegationManagerWithdrawal, tokensToWithdraw, 0, true);
-
-        // Check balances and shares are the same as a withdrawal done pre-upgrade
-        uint256 lstDepositorBalancePostUpgrade = tokensToWithdraw[0].balanceOf(lstDepositor);
-        uint256 lstDepositorSharesPostUpgrade = strategyManager.stakerStrategyShares(
-            lstDepositor,
-            delegationManagerWithdrawal.strategies[0]
-        );
-        require(
-            lstDepositorBalancePostUpgrade == lstDepositorBalancePreUpgrade,
-            "delegationManager.completeQueuedWithdrawal incorrect post balance"
-        );
-        require(
-            lstDepositorSharesPostUpgrade == lstDepositorSharesPreUpgrade,
-            "delegationManager.completeQueuedWithdrawal incorrect post shares"
-        );
-    }
-
     function _verifyEigenPodCorrectness() public {
         // Check that state is correct
         require(
@@ -478,29 +368,6 @@ contract M2Deploy is Script, Test {
         require(delayedWithdrawal.blockCreated == block.number, "delayedWithdrawal.blockCreated incorrect");
     }
 
-    function _completeWithdrawalsPreUpgrade() public {
-        // Save fork and create new fork
-        uint256 forkId = cheats.activeFork();
-        cheats.createSelectFork(cheats.envString(rpcUrl), block.number);
-
-        // Complete lstDepositor withdrawal
-        cheats.prank(lstDepositor);
-        m1StrategyManager(address(strategyManager)).completeQueuedWithdrawal(
-            queuedWithdrawalLst,
-            tokensToWithdraw,
-            0,
-            true
-        );
-        lstDepositorBalancePreUpgrade = tokensToWithdraw[0].balanceOf(lstDepositor);
-        lstDepositorSharesPreUpgrade = strategyManager.stakerStrategyShares(
-            lstDepositor,
-            queuedWithdrawalLst.strategies[0]
-        );
-
-        // Reload previous fork
-        cheats.selectFork(forkId);
-    }
-
     // Existing LST depositor – ensure that strategy length and shares are all identical
     // Existing LST depositor – ensure that an existing queued withdrawal remains queued
     // Check from stored root, and recalculate root and make sure it matches
@@ -523,19 +390,6 @@ contract M2Deploy is Script, Test {
 
 interface IDelegationManagerV0 {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
-}
-
-interface m1StrategyManager {
-    function withdrawalDelayBlocks() external view returns (uint256);
-
-    function numWithdrawalsQueued(address staker) external view returns (uint256);
-
-    function completeQueuedWithdrawal(
-        IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal,
-        IERC20[] memory tokensToWithdraw,
-        uint256 middlewareTimesIndex,
-        bool receiveAsTokens
-    ) external;
 }
 
 interface m1EigenPod {

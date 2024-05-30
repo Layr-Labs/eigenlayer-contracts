@@ -33,7 +33,6 @@ methods {
     function _.addShares(address,address,uint256) external => DISPATCHER(true);
     function _.removeShares(address,address,uint256) external => DISPATCHER(true);
     function _.withdrawSharesAsTokens(address, address, uint256, address) external => DISPATCHER(true);
-    function _.migrateQueuedWithdrawal(IStrategyManager.DeprecatedStruct_QueuedWithdrawal) external => NONDET;
 
     // external calls to Strategy contracts
     function _.deposit(address, uint256) external => NONDET;

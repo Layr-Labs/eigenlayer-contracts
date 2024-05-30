@@ -135,30 +135,4 @@ interface IStrategyManager {
      * depositIntoStrategyWithSignature calls or queueing withdrawals to a different address than the staker.
      */
     function thirdPartyTransfersForbidden(IStrategy strategy) external view returns (bool);
-
-// LIMITED BACKWARDS-COMPATIBILITY FOR DEPRECATED FUNCTIONALITY
-    // packed struct for queued withdrawals; helps deal with stack-too-deep errors
-    struct DeprecatedStruct_WithdrawerAndNonce {
-        address withdrawer;
-        uint96 nonce;
-    }
-
-    /**
-     * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
-     * In functions that operate on existing queued withdrawals -- e.g. `startQueuedWithdrawalWaitingPeriod` or `completeQueuedWithdrawal`,
-     * the data is resubmitted and the hash of the submitted data is computed by `calculateWithdrawalRoot` and checked against the
-     * stored hash in order to confirm the integrity of the submitted data.
-     */
-    struct DeprecatedStruct_QueuedWithdrawal {
-        IStrategy[] strategies;
-        uint256[] shares;
-        address staker;
-        DeprecatedStruct_WithdrawerAndNonce withdrawerAndNonce;
-        uint32 withdrawalStartBlock;
-        address delegatedAddress;
-    }
-
-    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external returns (bool, bytes32);
-
-    function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32);
 }

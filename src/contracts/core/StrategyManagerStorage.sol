@@ -42,20 +42,20 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * Reserved space previously used by the deprecated storage variable `withdrawalDelayBlocks.
      * This variable was migrated to the DelegationManager instead.
      */
-    uint256 internal withdrawalDelayBlocks;
+    uint256 private __deprecated_withdrawalDelayBlocks;
     /// @notice Mapping: staker => Strategy => number of shares which they currently hold
     mapping(address => mapping(IStrategy => uint256)) public stakerStrategyShares;
     /// @notice Mapping: staker => array of strategies in which they have nonzero shares
     mapping(address => IStrategy[]) public stakerStrategyList;
     /// @notice *Deprecated* mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     /// @dev This mapping is preserved to allow the migration of withdrawals to the DelegationManager contract.
-    mapping(bytes32 => bool) public withdrawalRootPending;
+    mapping(bytes32 => bool) private __deprecated_withdrawalRootPending;
     /*
      * Reserved space previously used by the deprecated mapping(address => uint256) numWithdrawalsQueued.
      * This mapping tracked the cumulative number of queued withdrawals initiated by a staker.
      * Withdrawals are now initiated in the DlegationManager, so the mapping has moved to that contract.
      */
-    mapping(address => uint256) internal numWithdrawalsQueued;
+    mapping(address => uint256) private __deprecated_numWithdrawalsQueued;
     /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
     /*

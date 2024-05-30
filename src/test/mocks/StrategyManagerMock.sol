@@ -111,7 +111,6 @@ contract StrategyManagerMock is
         strategyIsWhitelistedForDeposit[strategy] = value;
     }
 
-
     function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
 
     function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external {}
@@ -128,9 +127,5 @@ contract StrategyManagerMock is
         bool[] calldata /*thirdPartyTransfersForbiddenValues*/
     ) external pure {}
 
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
-
-    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external returns (bool, bytes32) {}
-
-    function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
+    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}
 }
