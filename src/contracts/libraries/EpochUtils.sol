@@ -22,4 +22,12 @@ library EpochUtils {
     function currentEpoch() internal view returns (uint32) {
         return getEpochFromTimestamp(block.timestamp);
     }
+
+    function getNextSlashingParameterEffectEpoch() internal view returns (uint32) {
+        return currentEpoch() + 3;
+    }
+
+    function getLastSlashableEpoch(uint32 queuedEpoch) internal view returns (uint32) {
+        return queuedEpoch + 2;
+    }
 }
