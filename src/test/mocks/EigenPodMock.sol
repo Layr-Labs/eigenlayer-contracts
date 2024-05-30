@@ -58,7 +58,7 @@ contract EigenPodMock is IEigenPod, Test {
     function startCheckpoint(bool revertIfNoBalance) external {}
 
     function verifyCheckpointProofs(
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.BalanceContainerProof calldata balanceContainerProof,
         BeaconChainProofs.BalanceProof[] calldata proofs
     ) external {}
 

@@ -180,11 +180,11 @@ contract EigenPod is
      * @dev If the checkpoint's `proofsRemaining` reaches 0, the checkpoint is finalized.
      * (see `_updateCheckpoint` for more details)
      * @dev This method can only be called when there is a currently-active checkpoint.
-     * @param stateRootProof proves a beacon state root against the checkpoint's `beaconBlockRoot`
-     * @param proofs Proofs for one or more validator current balances against the `beaconStateRoot`
+     * @param balanceContainerProof proves the beacon's current balance container root against a checkpoint's `beaconBlockRoot`
+     * @param proofs Proofs for one or more validator current balances against the `balanceContainerRoot`
      */
     function verifyCheckpointProofs(
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.BalanceContainerProof calldata balanceContainerProof,
         BeaconChainProofs.BalanceProof[] calldata proofs
     ) 
         external 
@@ -198,11 +198,10 @@ contract EigenPod is
 
         Checkpoint memory checkpoint = _currentCheckpoint;
 
-        // Verify `stateRootProof` against `beaconBlockRoot`
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-            latestBlockRoot: checkpoint.beaconBlockRoot,
-            beaconStateRoot: stateRootProof.beaconStateRoot,
-            stateRootProof: stateRootProof.proof
+        // Verify `balanceContainerProof` against `beaconBlockRoot`
+        BeaconChainProofs.verifyBalanceContainer({
+            beaconBlockRoot: checkpoint.beaconBlockRoot,
+            proof: balanceContainerProof
         });
 
         // Process each checkpoint proof submitted
@@ -234,7 +233,7 @@ contract EigenPod is
             int256 balanceDeltaGwei = _verifyCheckpointProof({
                 validatorInfo: validatorInfo,
                 beaconTimestamp: beaconTimestamp,
-                beaconStateRoot: stateRootProof.beaconStateRoot,
+                balanceContainerRoot: balanceContainerProof.balanceContainerRoot,
                 proof: proofs[i]
             });
 
@@ -283,11 +282,10 @@ contract EigenPod is
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
         );
 
-        // Verify passed-in beaconStateRoot against oracle-provided block root:
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-            latestBlockRoot: _getParentBlockRoot(beaconTimestamp),
-            beaconStateRoot: stateRootProof.beaconStateRoot,
-            stateRootProof: stateRootProof.proof
+        // Verify passed-in `beaconStateRoot` against the beacon block root
+        BeaconChainProofs.verifyStateRoot({
+            beaconBlockRoot: _getParentBlockRoot(beaconTimestamp),
+            proof: stateRootProof
         });
 
         uint256 totalAmountToBeRestakedWei;
@@ -351,11 +349,10 @@ contract EigenPod is
             "EigenPod.verifyStaleBalance: validator must be slashed to be marked stale"
         );
 
-        // Verify `beaconStateRoot` against beacon block root
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-            latestBlockRoot: _getParentBlockRoot(beaconTimestamp),
-            beaconStateRoot: stateRootProof.beaconStateRoot,
-            stateRootProof: stateRootProof.proof
+        // Verify passed-in `beaconStateRoot` against the beacon block root
+        BeaconChainProofs.verifyStateRoot({
+            beaconBlockRoot: _getParentBlockRoot(beaconTimestamp),
+            proof: stateRootProof
         });
 
         // Verify Validator container proof against `beaconStateRoot`
@@ -504,15 +501,15 @@ contract EigenPod is
     function _verifyCheckpointProof(
         ValidatorInfo memory validatorInfo,
         uint64 beaconTimestamp,
-        bytes32 beaconStateRoot,
+        bytes32 balanceContainerRoot,
         BeaconChainProofs.BalanceProof calldata proof
     ) internal returns (int256 balanceDeltaGwei) {
         uint40 validatorIndex = uint40(validatorInfo.validatorIndex);
         
-        // Verify validator balance against beaconStateRoot
+        // Verify validator balance against `balanceContainerRoot`
         uint64 prevBalanceGwei = validatorInfo.restakedBalanceGwei;
         uint64 newBalanceGwei = BeaconChainProofs.verifyValidatorBalance({
-            beaconStateRoot: beaconStateRoot,
+            balanceContainerRoot: balanceContainerRoot,
             validatorIndex: validatorIndex,
             proof: proof
         });

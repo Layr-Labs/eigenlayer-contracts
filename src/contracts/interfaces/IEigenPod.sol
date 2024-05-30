@@ -156,11 +156,11 @@ interface IEigenPod {
      * @dev If the checkpoint's `proofsRemaining` reaches 0, the checkpoint is finalized.
      * (see `_updateCheckpoint` for more details)
      * @dev This method can only be called when there is a currently-active checkpoint.
-     * @param stateRootProof proves a beacon state root against the checkpoint's `beaconBlockRoot`
-     * @param proofs Proofs for one or more validator current balances against the `beaconStateRoot`
+     * @param balanceContainerProof proves the beacon's current balance container root against a checkpoint's `beaconBlockRoot`
+     * @param proofs Proofs for one or more validator current balances against the `balanceContainerRoot`
      */
     function verifyCheckpointProofs(
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.BalanceContainerProof calldata balanceContainerProof,
         BeaconChainProofs.BalanceProof[] calldata proofs
     ) 
         external;
