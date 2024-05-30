@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import "script/deploy/holesky/Deploy_Test_rewardsCoordinator.s.sol";
+import "script/deploy/holesky/Deploy_Test_RewardsCoordinator.s.sol";
 import "./ServiceManagerMock.sol";
 
 /**
@@ -36,7 +36,7 @@ contract TestPreprodRewardsCoordinator is ExistingDeploymentParser {
     bytes32 earnerTokenRoot;
 
     function _setupScript() internal virtual {
-        _parseInitialDeploymentParams("script/configs/holesky/Deploy_rewardsCoordinator.holesky.config.json");
+        _parseInitialDeploymentParams("script/configs/holesky/Deploy_RewardsCoordinator.holesky.config.json");
         _parseDeployedContracts("script/output/holesky/M2_deploy_preprod.output.json");
 
         // require(
@@ -333,13 +333,13 @@ contract TestPreprodRewardsCoordinator is ExistingDeploymentParser {
         forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic)" \
-            "script/utils/rewardsCoordinator/claimProofs/processClaim_1.json" 20
+            "script/utils/rewardsCoordinator/claimProofs/processClaim_2.json" 31
 
         ========HOLESKY========
         forge script script/utils/rewardsCoordinator/TestPreprodRewardsCoordinator.s.sol:TestPreprodRewardsCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic)" \
-            "script/utils/rewardsCoordinator/claimProofs/processClaim_proof1.json" 20
+            "script/utils/rewardsCoordinator/claimProofs/processClaim_2.json" 31
      */
     function processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic) external virtual {
         _setupScript();
