@@ -60,12 +60,12 @@ contract BeaconChainMock is PrintUtils {
     // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
     uint constant BEACON_BLOCK_FIELDS = 5;
 
-    uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT;
+    uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
     uint immutable VAL_FIELDS_PROOF_LEN = 32 * (
-        (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_FIELD_TREE_HEIGHT
+        (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT
     );
     uint immutable BALANCE_CONTAINER_PROOF_LEN = 32 * (
-        BeaconChainProofs.BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_FIELD_TREE_HEIGHT
+        BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT
     );
     uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
     
@@ -368,7 +368,7 @@ contract BeaconChainMock is PrintUtils {
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = _buildMerkleTree({
             leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot),
-            treeHeight: BeaconChainProofs.BEACON_STATE_FIELD_TREE_HEIGHT,
+            treeHeight: BeaconChainProofs.BEACON_STATE_TREE_HEIGHT,
             tree: trees[curTimestamp].stateTree
         });
         // _log("-- beacon state root", beaconStateRoot);
@@ -376,7 +376,7 @@ contract BeaconChainMock is PrintUtils {
         // Build merkle tree for BeaconBlock
         bytes32 beaconBlockRoot = _buildMerkleTree({
             leaves: _getBeaconBlockLeaves(beaconStateRoot),
-            treeHeight: BeaconChainProofs.BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT,
+            treeHeight: BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT,
             tree: trees[curTimestamp].blockTree
         });
         _log("-- beacon block root", beaconBlockRoot);
@@ -511,7 +511,7 @@ contract BeaconChainMock is PrintUtils {
         bytes32 curNode = beaconStateRoot;
 
         uint depth = 0;
-        for (uint i = 0; i < BeaconChainProofs.BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT; i++) {
+        for (uint i = 0; i < BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT; i++) {
             bytes32 sibling = trees[curTimestamp].blockTree.siblings[curNode];
 
             // proof[j] = sibling;
@@ -538,7 +538,7 @@ contract BeaconChainMock is PrintUtils {
 
         uint totalHeight = BALANCE_CONTAINER_PROOF_LEN / 32;
         uint depth = 0;
-        for (uint i = 0; i < BeaconChainProofs.BEACON_STATE_FIELD_TREE_HEIGHT; i++) {
+        for (uint i = 0; i < BeaconChainProofs.BEACON_STATE_TREE_HEIGHT; i++) {
             bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
 
             // proof[j] = sibling;
@@ -604,7 +604,7 @@ contract BeaconChainMock is PrintUtils {
             // Validator container root -> beacon state root
             for (
                 uint j = depth; 
-                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_FIELD_TREE_HEIGHT; 
+                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT; 
                 j++
             ) {
                 bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
