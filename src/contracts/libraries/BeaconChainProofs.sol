@@ -13,46 +13,19 @@ library BeaconChainProofs {
     // constants are the number of fields and the heights of the different merkle trees used in merkleizing beacon chain containers
     uint256 internal constant BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT = 3;
 
-    uint256 internal constant BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT = 4;
-
     uint256 internal constant BEACON_STATE_FIELD_TREE_HEIGHT = 5;
 
     uint256 internal constant VALIDATOR_FIELD_TREE_HEIGHT = 3;
-
-    //Note: changed in the deneb hard fork from 4->5
-    uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB = 5;
-    uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA = 4;
-
-    // SLOTS_PER_HISTORICAL_ROOT = 2**13, so tree height is 13
-    uint256 internal constant BLOCK_ROOTS_TREE_HEIGHT = 13;
-
-    //HISTORICAL_ROOTS_LIMIT = 2**24, so tree height is 24
-    uint256 internal constant HISTORICAL_SUMMARIES_TREE_HEIGHT = 24;
-
-    //Index of block_summary_root in historical_summary container
-    uint256 internal constant BLOCK_SUMMARY_ROOT_INDEX = 0;
-
-    // tree height for hash tree of an individual withdrawal container
-    uint256 internal constant WITHDRAWAL_FIELD_TREE_HEIGHT = 2;
 
     uint256 internal constant VALIDATOR_TREE_HEIGHT = 40;
     //refer to the eigenlayer-cli proof library.  Despite being the same dimensions as the validator tree, the balance tree is merkleized differently
     uint256 internal constant BALANCE_TREE_HEIGHT = 38;
 
-    // MAX_WITHDRAWALS_PER_PAYLOAD = 2**4, making tree height = 4
-    uint256 internal constant WITHDRAWALS_TREE_HEIGHT = 4;
-
-    //in beacon block body https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconblockbody
-    uint256 internal constant EXECUTION_PAYLOAD_INDEX = 9;
-
     // in beacon block header https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader
-    uint256 internal constant SLOT_INDEX = 0;
     uint256 internal constant STATE_ROOT_INDEX = 3;
-    uint256 internal constant BODY_ROOT_INDEX = 4;
     // in beacon state https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate
-    uint256 internal constant VALIDATOR_TREE_ROOT_INDEX = 11;
+    uint256 internal constant VALIDATOR_CONTAINER_INDEX = 11;
     uint256 internal constant BALANCE_CONTAINER_INDEX = 12;
-    uint256 internal constant HISTORICAL_SUMMARIES_INDEX = 27;
 
     // in validator https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
     uint256 internal constant VALIDATOR_PUBKEY_INDEX = 0;
@@ -60,16 +33,6 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_BALANCE_INDEX = 2;
     uint256 internal constant VALIDATOR_SLASHED_INDEX = 3;
     uint256 internal constant VALIDATOR_EXIT_EPOCH_INDEX = 6;
-
-    // in execution payload header
-    uint256 internal constant TIMESTAMP_INDEX = 9;
-
-    //in execution payload
-    uint256 internal constant WITHDRAWALS_INDEX = 14;
-
-    // in withdrawal
-    uint256 internal constant WITHDRAWAL_VALIDATOR_INDEX_INDEX = 1;
-    uint256 internal constant WITHDRAWAL_VALIDATOR_AMOUNT_INDEX = 3;
 
     //Misc Constants
 
@@ -157,9 +120,6 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyBalanceContainer: Proof has incorrect length"
         );
 
-        /// Since this proof combines a proof against the beacon block root with a proof of the balances field
-        /// within the beacon state, the index for the proof accounts for leaves in both of these trees
-
         /// This proof combines two proofs, so its index accounts for the relative position of leaves in two trees:
         /// - beaconBlockRoot
         /// |                            HEIGHT: BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT
@@ -211,18 +171,17 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyValidatorFields: Proof has incorrect length"
         );
 
-        /// Since this proof combines a proof against the validator container root with a proof against the
-        /// beacon state root,
-
-        /// Since this proof combines a proof against the beacon block root with a proof of the balances field
-        /// within the beacon state, the index for the proof accounts for leaves in both of these trees
-        uint256 index = (VALIDATOR_TREE_ROOT_INDEX << (VALIDATOR_TREE_HEIGHT + 1)) | uint256(validatorIndex);
-
-
-        // merkleize the validatorFields to get the leaf to prove
+        // Merkleize `validatorFields` to get the leaf to prove
         bytes32 validatorRoot = Merkle.merkleizeSha256(validatorFields);
 
-        // verify the proof of the validatorRoot against the beaconStateRoot
+        /// This proof combines two proofs, so its index accounts for the relative position of leaves in two trees:
+        /// - beaconStateRoot
+        /// |                            HEIGHT: BEACON_STATE_FIELD_TREE_HEIGHT
+        /// -- validatorContainerRoot
+        /// |                            HEIGHT: VALIDATOR_TREE_HEIGHT + 1
+        /// ---- validatorRoot
+        uint256 index = (VALIDATOR_CONTAINER_INDEX << (VALIDATOR_TREE_HEIGHT + 1)) | uint256(validatorIndex);
+
         require(
             Merkle.verifyInclusionSha256({
                 proof: validatorFieldsProof,
@@ -244,12 +203,18 @@ library BeaconChainProofs {
         uint40 validatorIndex,
         BalanceProof calldata proof
     ) internal view returns (uint64 validatorBalanceGwei) {
+        /// Note: the reason we use `BALANCE_TREE_HEIGHT + 1` here is because the merklization process for
+        /// this container includes hashing the root of the balances tree with the length of the balances list
         require(
             proof.proof.length == 32 * (BALANCE_TREE_HEIGHT + 1),
             "BeaconChainProofs.verifyValidatorBalance: Proof has incorrect length"
         );
 
-        // Beacon chain balances are lists of uint64 values which are grouped together in 4s when merkleized
+        /// When merkleized, beacon chain balances are combined into groups of 4 called a `balanceRoot`. The merkle
+        /// proof here verifies that this validator's `balanceRoot` is included in the `balanceContainerRoot`
+        /// - balanceContainerRoot
+        /// |                            HEIGHT: BALANCE_TREE_HEIGHT
+        /// -- balanceRoot
         uint256 balanceIndex = uint256(validatorIndex / 4);
  
         require(
@@ -262,6 +227,7 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyValidatorBalance: Invalid merkle proof"
         );
 
+        /// Extract the individual validator's balance from the `balanceRoot`
         return getBalanceAtIndex(proof.balanceRoot, validatorIndex);
     }
 
@@ -338,29 +304,5 @@ library BeaconChainProofs {
     function getExitEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
         return 
             Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
-    }
-
-    /**
-     * Indices for withdrawal fields (refer to consensus specs):
-     * 0: withdrawal index
-     * 1: validator index
-     * 2: execution address
-     * 3: withdrawal amount
-     */
-
-    /**
-     * @dev Retrieves a withdrawal's validator index
-     */
-    function getValidatorIndex(bytes32[] memory withdrawalFields) internal pure returns (uint40) {
-        return 
-            uint40(Endian.fromLittleEndianUint64(withdrawalFields[WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
-    }
-
-    /**
-     * @dev Retrieves a withdrawal's withdrawal amount (in gwei)
-     */
-    function getWithdrawalAmountGwei(bytes32[] memory withdrawalFields) internal pure returns (uint64) {
-        return
-            Endian.fromLittleEndianUint64(withdrawalFields[WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
     }
 }

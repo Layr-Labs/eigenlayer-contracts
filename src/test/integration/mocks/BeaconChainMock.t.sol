@@ -698,7 +698,7 @@ contract BeaconChainMock is PrintUtils {
         }
 
         // Place validatorsRoot and balancesRoot into tree
-        leaves[BeaconChainProofs.VALIDATOR_TREE_ROOT_INDEX] = validatorsRoot;
+        leaves[BeaconChainProofs.VALIDATOR_CONTAINER_INDEX] = validatorsRoot;
         leaves[BeaconChainProofs.BALANCE_CONTAINER_INDEX] = balancesRoot;
         return leaves;
     }
@@ -779,7 +779,7 @@ contract BeaconChainMock is PrintUtils {
 
     function _calcValProofIndex(uint40 validatorIndex) internal pure returns (uint) {
         return 
-            (BeaconChainProofs.VALIDATOR_TREE_ROOT_INDEX << (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1)) | 
+            (BeaconChainProofs.VALIDATOR_CONTAINER_INDEX << (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1)) | 
             uint(validatorIndex);
     }
 
