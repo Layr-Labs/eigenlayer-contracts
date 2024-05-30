@@ -310,7 +310,7 @@ contract User is PrintUtils {
         _log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
 
         pod.verifyCheckpointProofs({
-            stateRootProof: proofs.stateRootProof,
+            balanceContainerProof: proofs.balanceContainerProof,
             proofs: proofs.balanceProofs
         });
     }

@@ -11,6 +11,63 @@ contract Integration_Tester is IntegrationCheckUtils {
     
     string constant SECTION_DELIMITER = "======";
 
+    function test_GasMetering() public {
+        _configRand({
+            _randomSeed: 24,
+            _assetTypes: HOLDS_ETH,
+            _userTypes: DEFAULT
+        });
+
+        (User staker, ,) = _newRandomStaker();
+        cheats.pauseGasMetering();
+
+        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
+
+        EigenPod pod = staker.pod();
+        CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
+
+        cheats.startPrank(address(staker));
+        cheats.resumeGasMetering();
+
+        uint startGas = gasleft();
+        pod.verifyWithdrawalCredentials({
+            beaconTimestamp: proofs.beaconTimestamp,
+            stateRootProof: proofs.stateRootProof,
+            validatorIndices: validators,
+            validatorFieldsProofs: proofs.validatorFieldsProofs,
+            validatorFields: proofs.validatorFields
+        });
+        uint endGas = gasleft();
+        cheats.pauseGasMetering();
+        uint totalGas = startGas - endGas;        
+        emit log_named_uint("== num validators", validators.length);
+        emit log_named_uint("== verifyWC gas", totalGas);
+
+        // check_VerifyWC_State(staker, validators, beaconBalanceWei);
+
+        beaconChain.advanceEpoch();
+        // check pod balances have increased
+
+        staker.startCheckpoint();
+        // check_StartCheckpoint_State(staker);
+
+        CheckpointProofs memory cpProofs = beaconChain.getCheckpointProofs(validators);
+
+        cheats.resumeGasMetering();
+        startGas = gasleft();
+        pod.verifyCheckpointProofs({
+            balanceContainerProof: cpProofs.balanceContainerProof,
+            proofs: cpProofs.balanceProofs
+        });
+        endGas = gasleft();
+        cheats.pauseGasMetering();
+        totalGas = startGas - endGas;
+        emit log_named_uint("== checkpoint gas", totalGas);
+
+        // check_CompleteCheckpoint_State(staker);
+        // revert();
+    }
+
     /*******************************************************************************
                        VERIFY -> START/COMPLETE CHECKPOINT
     *******************************************************************************/
