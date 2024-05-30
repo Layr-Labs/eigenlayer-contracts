@@ -43,10 +43,22 @@ contract EigenPod is
                                CONSTANTS / IMMUTABLES
     *******************************************************************************/
 
-    // @notice Internal constant used in calculations, since the beacon chain stores balances in Gwei rather than wei
+    /// @notice The beacon chain stores balances in Gwei, rather than wei. This value is used to convert between the two
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
-    /// @notice This is the beacon chain deposit contract
+    /// @notice If a validator is slashed on the beacon chain and their balance has not been checkpointed
+    /// within `TIME_TILL_STALE_BALANCE` of the current block, `verifyStaleBalance` allows anyone to start
+    /// a checkpoint for the pod.
+    uint256 internal constant TIME_TILL_STALE_BALANCE = 2 weeks;
+
+    /// @notice The address of the EIP-4788 beacon block root oracle
+    /// (See https://eips.ethereum.org/EIPS/eip-4788)
+    address internal constant BEACON_ROOTS_ADDRESS = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
+
+    /// @notice The length of the EIP-4788 beacon block root ring buffer
+    uint256 internal constant BEACON_ROOTS_HISTORY_BUFFER_LENGTH = 8191;
+
+    /// @notice The beacon chain deposit contract
     IETHPOSDeposit public immutable ethPOS;
 
     /// @notice Contract used for withdrawal routing, to provide an extra "safety net" mechanism
@@ -57,18 +69,6 @@ contract EigenPod is
 
     /// @notice This is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
     uint64 public immutable GENESIS_TIME;
-
-    /// @notice If a validator is slashed on the beacon chain and their balance has not been checkpointed
-    /// within `TIME_TILL_STALE_BALANCE` of the current block, they are eligible to be marked "stale"
-    /// via `verifyStaleBalance`.
-    uint256 internal constant TIME_TILL_STALE_BALANCE = 2 weeks;
-
-    /// @notice The address of the EIP-4788 beacon block root oracle
-    /// (See https://eips.ethereum.org/EIPS/eip-4788)
-    address internal constant BEACON_ROOTS_ADDRESS = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
-
-    /// @notice The length of the EIP-4799 beacon block root ring buffer
-    uint256 internal constant BEACON_ROOTS_HISTORY_BUFFER_LENGTH = 8191;
 
     /*******************************************************************************
                                      MODIFIERS
@@ -180,11 +180,11 @@ contract EigenPod is
      * @dev If the checkpoint's `proofsRemaining` reaches 0, the checkpoint is finalized.
      * (see `_updateCheckpoint` for more details)
      * @dev This method can only be called when there is a currently-active checkpoint.
-     * @param stateRootProof proves a beacon state root against the checkpoint's `beaconBlockRoot`
-     * @param proofs Proofs for one or more validator current balances against the `beaconStateRoot`
+     * @param balanceContainerProof proves the beacon's current balance container root against a checkpoint's `beaconBlockRoot`
+     * @param proofs Proofs for one or more validator current balances against the `balanceContainerRoot`
      */
     function verifyCheckpointProofs(
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.BalanceContainerProof calldata balanceContainerProof,
         BeaconChainProofs.BalanceProof[] calldata proofs
     ) 
         external 
@@ -198,11 +198,10 @@ contract EigenPod is
 
         Checkpoint memory checkpoint = _currentCheckpoint;
 
-        // Verify `stateRootProof` against `beaconBlockRoot`
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-            latestBlockRoot: checkpoint.beaconBlockRoot,
-            beaconStateRoot: stateRootProof.beaconStateRoot,
-            stateRootProof: stateRootProof.proof
+        // Verify `balanceContainerProof` against `beaconBlockRoot`
+        BeaconChainProofs.verifyBalanceContainer({
+            beaconBlockRoot: checkpoint.beaconBlockRoot,
+            proof: balanceContainerProof
         });
 
         // Process each checkpoint proof submitted
@@ -234,7 +233,7 @@ contract EigenPod is
             int256 balanceDeltaGwei = _verifyCheckpointProof({
                 validatorInfo: validatorInfo,
                 beaconTimestamp: beaconTimestamp,
-                beaconStateRoot: stateRootProof.beaconStateRoot,
+                balanceContainerRoot: balanceContainerProof.balanceContainerRoot,
                 proof: proofs[i]
             });
 
@@ -283,11 +282,10 @@ contract EigenPod is
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
         );
 
-        // Verify passed-in beaconStateRoot against oracle-provided block root:
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-            latestBlockRoot: _getParentBlockRoot(beaconTimestamp),
-            beaconStateRoot: stateRootProof.beaconStateRoot,
-            stateRootProof: stateRootProof.proof
+        // Verify passed-in `beaconStateRoot` against the beacon block root
+        BeaconChainProofs.verifyStateRoot({
+            beaconBlockRoot: _getParentBlockRoot(beaconTimestamp),
+            proof: stateRootProof
         });
 
         uint256 totalAmountToBeRestakedWei;
@@ -351,11 +349,10 @@ contract EigenPod is
             "EigenPod.verifyStaleBalance: validator must be slashed to be marked stale"
         );
 
-        // Verify `beaconStateRoot` against beacon block root
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-            latestBlockRoot: _getParentBlockRoot(beaconTimestamp),
-            beaconStateRoot: stateRootProof.beaconStateRoot,
-            stateRootProof: stateRootProof.proof
+        // Verify passed-in `beaconStateRoot` against the beacon block root
+        BeaconChainProofs.verifyStateRoot({
+            beaconBlockRoot: _getParentBlockRoot(beaconTimestamp),
+            proof: stateRootProof
         });
 
         // Verify Validator container proof against `beaconStateRoot`
@@ -504,15 +501,15 @@ contract EigenPod is
     function _verifyCheckpointProof(
         ValidatorInfo memory validatorInfo,
         uint64 beaconTimestamp,
-        bytes32 beaconStateRoot,
+        bytes32 balanceContainerRoot,
         BeaconChainProofs.BalanceProof calldata proof
     ) internal returns (int256 balanceDeltaGwei) {
         uint40 validatorIndex = uint40(validatorInfo.validatorIndex);
         
-        // Verify validator balance against beaconStateRoot
+        // Verify validator balance against `balanceContainerRoot`
         uint64 prevBalanceGwei = validatorInfo.restakedBalanceGwei;
         uint64 newBalanceGwei = BeaconChainProofs.verifyValidatorBalance({
-            beaconStateRoot: beaconStateRoot,
+            balanceContainerRoot: balanceContainerRoot,
             validatorIndex: validatorIndex,
             proof: proof
         });
