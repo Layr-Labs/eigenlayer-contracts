@@ -251,7 +251,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
             GENESIS_TIME_LOCAL
         );
@@ -383,7 +382,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
             GENESIS_TIME_MAINNET
         );
@@ -488,7 +486,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
             0
         );
@@ -704,7 +701,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ethPOSDeposit = new ETHPOSDepositMock();
             eigenPodImplementation = new EigenPod(
                 ethPOSDeposit,
-                eigenPodImplementation.delayedWithdrawalRouter(),
                 eigenPodImplementation.eigenPodManager(),
                 0
             );

@@ -63,7 +63,6 @@ contract EigenPod_PodManager_UnitTests is EigenLayerUnitTestSetup {
         // Deploy EigenPod Implementation and beacon
         podImplementation = new EigenPod(
             ethPOSMock,
-            delayedWithdrawalRouterMock,
             eigenPodManager,
             GOERLI_GENESIS_TIME
         );

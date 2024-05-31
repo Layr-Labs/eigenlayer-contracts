@@ -74,7 +74,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             IETHPOSDeposit(ETHPOSDepositAddress),
-            delayedWithdrawalRouter,
             eigenPodManager,
             EIGENPOD_GENESIS_TIME
         );

@@ -85,7 +85,6 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
 
         genesisTimeBefore = EigenPod(payable(eigenPodBeacon.implementation())).GENESIS_TIME();
         // maxRestakedBalanceBefore = EigenPod(payable(eigenPodBeacon.implementation())).MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR();
-        delayedWithdrawalRouter = EigenPod(payable(eigenPodBeacon.implementation())).delayedWithdrawalRouter();
 
         // Begin deployment
         vm.startBroadcast();
@@ -93,7 +92,6 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
         // Deploy new implmementation contracts
         eigenPodImplementation = new EigenPod({
             _ethPOS: ethPOS,
-            _delayedWithdrawalRouter: delayedWithdrawalRouter,
             _eigenPodManager: eigenPodManager,
             // _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR: maxRestakedBalanceBefore,
             _GENESIS_TIME: genesisTimeBefore
@@ -143,8 +141,6 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
         // Check that state is correct
         require(eigenPodBeacon.implementation() == address(eigenPodImplementation),
             "implementation set incorrectly");
-        require(eigenPodImplementation.delayedWithdrawalRouter() == delayedWithdrawalRouter,
-            "delayedWithdrawalRouter set incorrectly");
         require(eigenPodImplementation.ethPOS() == ethPOS,
             "ethPOS set incorrectly");
         require(eigenPodImplementation.eigenPodManager() == eigenPodManager,
@@ -161,7 +157,6 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
             "GENESIS_TIME set incorrectly");
 
 
-        require(address(EigenPod(payable(eigenPodBeacon.implementation())).delayedWithdrawalRouter())  == 0x7Fe7E9CC0F274d2435AD5d56D5fa73E47F6A23D8);
         require(address(EigenPod(payable(eigenPodBeacon.implementation())).eigenPodManager())  == 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338);
         require(address(EigenPod(payable(eigenPodBeacon.implementation())).ethPOS())  == 0x00000000219ab540356cBB839Cbe05303d7705Fa);
     }

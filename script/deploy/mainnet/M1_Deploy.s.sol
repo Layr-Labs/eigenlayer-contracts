@@ -181,7 +181,6 @@ contract Deployer_M1 is Script, Test {
         }
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
             GOERLI_GENESIS_TIME
         );
@@ -556,10 +555,6 @@ contract Deployer_M1 is Script, Test {
         require(
             eigenPodImplementation.eigenPodManager() == eigenPodManager,
             " eigenPodImplementation: eigenPodManager contract address not set correctly"
-        );
-        require(
-            eigenPodImplementation.delayedWithdrawalRouter() == delayedWithdrawalRouter,
-            " eigenPodImplementation: delayedWithdrawalRouter contract address not set correctly"
         );
 
         string memory config_data = vm.readFile(deployConfigPath);

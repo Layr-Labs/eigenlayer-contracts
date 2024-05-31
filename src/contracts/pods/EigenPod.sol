@@ -61,9 +61,6 @@ contract EigenPod is
     /// @notice The beacon chain deposit contract
     IETHPOSDeposit public immutable ethPOS;
 
-    /// @notice Contract used for withdrawal routing, to provide an extra "safety net" mechanism
-    IDelayedWithdrawalRouter public immutable delayedWithdrawalRouter;
-
     /// @notice The single EigenPodManager for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
@@ -118,12 +115,10 @@ contract EigenPod is
 
     constructor(
         IETHPOSDeposit _ethPOS,
-        IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
         uint64 _GENESIS_TIME
     ) {
         ethPOS = _ethPOS;
-        delayedWithdrawalRouter = _delayedWithdrawalRouter;
         eigenPodManager = _eigenPodManager;
         GENESIS_TIME = _GENESIS_TIME;
         _disableInitializers();
