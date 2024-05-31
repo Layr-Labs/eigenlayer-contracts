@@ -160,7 +160,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         ethPOSDeposit = new ETHPOSDepositMock();
         podImplementation = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             IEigenPodManager(podManagerAddress),
             GOERLI_GENESIS_TIME
         );
@@ -1835,7 +1834,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function _deployInternalFunctionTester() internal {
         podInternalFunctionTester = new EPInternalFunctions(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             IEigenPodManager(podManagerAddress),
             GOERLI_GENESIS_TIME
         );

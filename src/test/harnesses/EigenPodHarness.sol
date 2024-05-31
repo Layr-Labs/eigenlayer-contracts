@@ -8,12 +8,10 @@ contract EPInternalFunctions is EigenPod, Test {
 
     constructor(
         IETHPOSDeposit _ethPOS,
-        IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
         uint64 _GENESIS_TIME
     ) EigenPod(
         _ethPOS,
-        _delayedWithdrawalRouter,
         _eigenPodManager,
         _GENESIS_TIME
     ) {}
