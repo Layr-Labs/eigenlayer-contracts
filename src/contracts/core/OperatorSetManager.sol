@@ -31,7 +31,7 @@ contract OperatorSetManager is IOperatorSetManager {
 
     mapping(address => mapping(IStrategy => mapping(bytes32 => MagnitudeUpdate[]))) private _operatorSetMagnitudeUpdates;
     mapping(address => mapping(IStrategy => TotalMagnitudeUpdate[])) private _totalMagnitudeUpdates;
-    mapping(address => mapping(IStrategy => StakeLock[])) private _lockedStakeUpdates;
+    mapping(address => mapping(IStrategy => StakeLock[])) private _lockedMagnitudeUpdates;
 
     constructor(ISlasher _slasher) {
         slasher = _slasher;
@@ -114,33 +114,33 @@ contract OperatorSetManager is IOperatorSetManager {
     }
 
     /**
-     * @notice Locks stake updates for an operator at the current epoch
+     * @notice Locks magnitude updates for an operator at the current epoch
      * @param operator that stake updates are locked for
      * @param strategy that the operator cannot update stake for
      * @dev Only callable by the Slasher
      */
-    function lockStakeUpdatesAtEpoch(
+    function lockMagnitudeUpdatesAtEpoch(
         address operator,
         IStrategy strategy
     ) external {
         uint32 epoch = EpochUtils.currentEpoch();
         require(msg.sender == address(slasher), "OperatorSetManager.lockStakeUpdatesAtEpoch: Caller is not the slasher");
-        uint256 lockedStakeUpdatesLength = _lockedStakeUpdates[operator][strategy].length;
-        if (lockedStakeUpdatesLength != 0) {
-            if (_lockedStakeUpdates[operator][strategy][lockedStakeUpdatesLength - 1].endEpoch == epoch) {
+        uint256 lockedMagnitudeUpdatesLength = _lockedMagnitudeUpdates[operator][strategy].length;
+        if (lockedMagnitudeUpdatesLength != 0) {
+            if (_lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch == epoch) {
                 // already locked for this epoch
                 return;
-            } else if (_lockedStakeUpdates[operator][strategy][lockedStakeUpdatesLength - 1].endEpoch + 1 == epoch) {
+            } else if (_lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch + 1 == epoch) {
                 // extend the last lock to this epoch
-                _lockedStakeUpdates[operator][strategy][lockedStakeUpdatesLength - 1].endEpoch = epoch;
-                // emit StakeUpdatesLocked(operator, strategy, epoch);
+                _lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch = epoch;
+                // emit MagnitudeUpdatesLocked(operator, strategy, epoch);
                 return;
             }
         }
 
-        _lockedStakeUpdates[operator][strategy].push(StakeLock({startEpoch: epoch, endEpoch: epoch}));
+        _lockedMagnitudeUpdates[operator][strategy].push(StakeLock({startEpoch: epoch, endEpoch: epoch}));
 
-        // emit StakeUpdatesLocked(operator, strategy, epoch);
+        // emit MagnitudeUpdatesLocked(operator, strategy, epoch);
     }
 
     /// VIEW
@@ -163,9 +163,9 @@ contract OperatorSetManager is IOperatorSetManager {
         require(epoch <= EpochUtils.getNextSlashingParameterEffectEpoch(), "Epoch is more than 2 epochs in the future");
 
         // if locked for this epoch, set the epoch to the start of the lock
-        for (uint256 i = _lockedStakeUpdates[operator][strategy].length; i > 0; i--) {
-            if (_lockedStakeUpdates[operator][strategy][i - 1].startEpoch <= epoch && _lockedStakeUpdates[operator][strategy][i - 1].endEpoch >= epoch) {
-                epoch = _lockedStakeUpdates[operator][strategy][i - 1].startEpoch;
+        for (uint256 i = _lockedMagnitudeUpdates[operator][strategy].length; i > 0; i--) {
+            if (_lockedMagnitudeUpdates[operator][strategy][i - 1].startEpoch <= epoch && _lockedMagnitudeUpdates[operator][strategy][i - 1].endEpoch >= epoch) {
+                epoch = _lockedMagnitudeUpdates[operator][strategy][i - 1].startEpoch;
                 break;
             }
         }
