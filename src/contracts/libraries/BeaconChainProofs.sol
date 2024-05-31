@@ -27,34 +27,42 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_TREE_HEIGHT = 40;
     
     /// @notice Index of the beaconStateRoot in the `BeaconBlockHeader` container
-    /// For more info, see https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader
+    ///
+    /// BeaconBlockHeader = [..., state_root, ...]
+    ///                      0...      3
+    ///
+    /// (See https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader)
     uint256 internal constant STATE_ROOT_INDEX = 3;
 
     /// @notice Indices for fields in the `BeaconState` container
-    /// For more info, see https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate 
+    ///
+    /// BeaconState = [..., validators, balances, ...]
+    ///                0...     11         12
+    ///
+    /// (See https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate)
     uint256 internal constant VALIDATOR_CONTAINER_INDEX = 11;
     uint256 internal constant BALANCE_CONTAINER_INDEX = 12;
 
     /// @notice Number of fields in the `Validator` container
-    /// For more info, see https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
+    /// (See https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator)
     uint256 internal constant VALIDATOR_FIELDS_LENGTH = 8;
 
-    /// @notice Indices for fields in the Validator container
+    /// @notice Indices for fields in the `Validator` container
     uint256 internal constant VALIDATOR_PUBKEY_INDEX = 0;
     uint256 internal constant VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX = 1;
     uint256 internal constant VALIDATOR_BALANCE_INDEX = 2;
     uint256 internal constant VALIDATOR_SLASHED_INDEX = 3;
     uint256 internal constant VALIDATOR_EXIT_EPOCH_INDEX = 6;
 
-    /// @notice The number of slots each epoch in the beacon chain
-    uint64 internal constant SLOTS_PER_EPOCH = 32;
-    /// @notice The number of seconds in a slot in the beacon chain
+    /// @notice Slot/Epoch timings
     uint64 internal constant SECONDS_PER_SLOT = 12;
-    /// @notice Number of seconds per epoch: 384 == 32 slots/epoch * 12 seconds/slot 
+    uint64 internal constant SLOTS_PER_EPOCH = 32;
     uint64 internal constant SECONDS_PER_EPOCH = SLOTS_PER_EPOCH * SECONDS_PER_SLOT;
 
-    bytes8 internal constant UINT64_MASK = 0xffffffffffffffff;
+    /// @notice `FAR_FUTURE_EPOCH` is used as the default value for certain `Validator`
+    /// fields when a `Validator` is first created on the beacon chain
     uint64 internal constant FAR_FUTURE_EPOCH = type(uint64).max;
+    bytes8 internal constant UINT64_MASK = 0xffffffffffffffff;
 
     /// @notice Contains a beacon state root and a merkle proof verifying its inclusion under a beacon block root
     struct StateRootProof {
@@ -242,18 +250,6 @@ library BeaconChainProofs {
     }
 
     /**
-     * @notice This function replicates the ssz hashing of a validator's pubkey, outlined below:
-     *  hh := ssz.NewHasher()
-     *  hh.PutBytes(validatorPubkey[:])
-     *  validatorPubkeyHash := hh.Hash()
-     *  hh.Reset()
-     */
-    function hashValidatorBLSPubkey(bytes memory validatorPubkey) internal pure returns (bytes32 pubkeyHash) {
-        require(validatorPubkey.length == 48, "Input should be 48 bytes in length");
-        return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
-    }
-
-    /**
      * @notice Parses a balanceRoot to get the uint64 balance of a validator.  
      * @dev During merkleization of the beacon state balance tree, four uint64 values are treated as a single 
      * leaf in the merkle tree. We use validatorIndex % 4 to determine which of the four uint64 values to 
@@ -268,49 +264,42 @@ library BeaconChainProofs {
             Endian.fromLittleEndianUint64(bytes32((uint256(balanceRoot) << bitShiftAmount)));
     }
 
-    /**
-     * Indices for validator fields (refer to consensus specs):
-     * 0: pubkey
-     * 1: withdrawal credentials
-     * 2: effective balance
-     * 3: slashed?
-     * 4: activation elligibility epoch
-     * 5: activation epoch
-     * 6: exit epoch
-     * 7: withdrawable epoch
-     */
+    /// @notice Indices for fields in the `Validator` container:
+    /// 0: pubkey
+    /// 1: withdrawal credentials
+    /// 2: effective balance
+    /// 3: slashed?
+    /// 4: activation elligibility epoch
+    /// 5: activation epoch
+    /// 6: exit epoch
+    /// 7: withdrawable epoch
+    ///
+    /// (See https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator)
 
-    /**
-     * @dev Retrieves a validator's pubkey hash
-     */
+    /// @dev Retrieves a validator's pubkey hash
     function getPubkeyHash(bytes32[] memory validatorFields) internal pure returns (bytes32) {
         return 
             validatorFields[VALIDATOR_PUBKEY_INDEX];
     }
 
+    /// @dev Retrieves a validator's withdrawal credentials
     function getWithdrawalCredentials(bytes32[] memory validatorFields) internal pure returns (bytes32) {
         return
             validatorFields[VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX];
     }
 
-    /**
-     * @dev Retrieves a validator's effective balance (in gwei)
-     */
+    /// @dev Retrieves a validator's effective balance (in gwei)
     function getEffectiveBalanceGwei(bytes32[] memory validatorFields) internal pure returns (uint64) {
         return 
             Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_BALANCE_INDEX]);
     }
 
-    /**
-     * @dev Returns true IFF the validator is marked slashed
-     */
+    /// @dev Retrieves true IFF a validator is marked slashed
     function isValidatorSlashed(bytes32[] memory validatorFields) internal pure returns (bool) {
         return validatorFields[VALIDATOR_SLASHED_INDEX] != 0;
     }
 
-    /**
-     * @dev Retrieves a validator's exit epoch
-     */
+    /// @dev Retrieves a validator's exit epoch
     function getExitEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
         return 
             Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
