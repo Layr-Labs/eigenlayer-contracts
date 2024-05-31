@@ -50,7 +50,6 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup {
         // Deploy EigenPod
         podImplementation = new EigenPod(
             ethPOSDepositMock,
-            delayedWithdrawalRouterMock,
             eigenPodManagerMock,
             GOERLI_GENESIS_TIME
         );
@@ -99,7 +98,6 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests, IEigenPodEvents 
         assertTrue(eigenPod.hasRestaked(), "hasRestaked incorrectly set");
         // Check immutable storage
         assertEq(address(eigenPod.ethPOS()), address(ethPOSDepositMock), "EthPOS incorrectly set");
-        assertEq(address(eigenPod.delayedWithdrawalRouter()), address(delayedWithdrawalRouterMock), "DelayedWithdrawalRouter incorrectly set");
         assertEq(address(eigenPod.eigenPodManager()), address(eigenPodManagerMock), "EigenPodManager incorrectly set");
         assertEq(eigenPod.GENESIS_TIME(), GOERLI_GENESIS_TIME, "Goerli genesis time incorrectly set");
     }
@@ -374,7 +372,6 @@ contract EigenPodHarnessSetup is EigenPodUnitTests {
         // Deploy EP Harness
         eigenPodHarnessImplementation = new EPInternalFunctions(
             ethPOSDepositMock,
-            delayedWithdrawalRouterMock,
             eigenPodManagerMock,
             GOERLI_GENESIS_TIME
         );

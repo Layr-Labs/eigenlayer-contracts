@@ -121,7 +121,6 @@ contract M2Deploy is Script, Test {
         withdrawalDelayBlocks = m1StrategyManager(address(strategyManager)).withdrawalDelayBlocks();
         delegationManagerDomainSeparator = IDelegationManagerV0(address(delegation)).DOMAIN_SEPARATOR();
         numPods = eigenPodManager.numPods();
-        delayedWithdrawalRouter = EigenPod(payable(eigenPodBeacon.implementation())).delayedWithdrawalRouter();
 
         // Set chain-specific values
         IStrategy[] memory strategyArray = new IStrategy[](1);
@@ -185,7 +184,6 @@ contract M2Deploy is Script, Test {
         );
         eigenPodImplementation = new EigenPod({
             _ethPOS: ethPOS,
-            _delayedWithdrawalRouter: delayedWithdrawalRouter,
             _eigenPodManager: eigenPodManager,
             _GENESIS_TIME: 1616508000
         });

@@ -64,7 +64,6 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         // 2. Deploy Implementations
         eigenPodImplementation = new EigenPod(
             IETHPOSDeposit(ETHPOSDepositAddress),
-            delayedWithdrawalRouter,
             eigenPodManager,
             EIGENPOD_GENESIS_TIME
         );

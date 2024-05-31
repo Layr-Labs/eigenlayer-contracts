@@ -167,7 +167,6 @@ contract EigenLayerDeployer is Operators {
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
             GOERLI_GENESIS_TIME
         );
@@ -240,7 +239,6 @@ contract EigenLayerDeployer is Operators {
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
             GOERLI_GENESIS_TIME
         );
