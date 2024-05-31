@@ -41,9 +41,9 @@ interface IEigenPod {
 
     struct Checkpoint {
         bytes32 beaconBlockRoot;
-        uint256 podBalanceGwei;
-        int256 balanceDeltasGwei;
-        uint256 proofsRemaining;
+        uint24 proofsRemaining;
+        uint64 podBalanceGwei;
+        int128 balanceDeltasGwei;
     }
 
     /// @notice Emitted when an ETH validator stakes via this eigenPod
