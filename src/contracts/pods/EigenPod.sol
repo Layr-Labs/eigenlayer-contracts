@@ -225,7 +225,7 @@ contract EigenPod is
             // If the proof shows the validator has a balance of 0, they are marked `WITHDRAWN`.
             // The assumption is that if this is the case, any withdrawn ETH was already in
             // the pod when `startCheckpoint` was originally called.
-            int256 balanceDeltaGwei = _verifyCheckpointProof({
+            int128 balanceDeltaGwei = _verifyCheckpointProof({
                 validatorInfo: validatorInfo,
                 beaconTimestamp: beaconTimestamp,
                 balanceContainerRoot: balanceContainerProof.balanceContainerRoot,
@@ -498,7 +498,7 @@ contract EigenPod is
         uint64 beaconTimestamp,
         bytes32 balanceContainerRoot,
         BeaconChainProofs.BalanceProof calldata proof
-    ) internal returns (int256 balanceDeltaGwei) {
+    ) internal returns (int128 balanceDeltaGwei) {
         uint40 validatorIndex = uint40(validatorInfo.validatorIndex);
         
         // Verify validator balance against `balanceContainerRoot`
@@ -563,8 +563,8 @@ contract EigenPod is
         // `podBalanceGwei` is also converted to a gwei amount here. This means that any sub-gwei amounts 
         // sent to the pod are not credited with shares and are therefore not withdrawable. 
         // This can be addressed by topping up a pod's balance to a value divisible by 1 gwei.
-        uint256 podBalanceGwei = 
-            (address(this).balance / GWEI_TO_WEI) - withdrawableRestakedExecutionLayerGwei;
+        uint64 podBalanceGwei = 
+            uint64(address(this).balance / GWEI_TO_WEI) - withdrawableRestakedExecutionLayerGwei;
 
         // If the caller doesn't want a "0 balance" checkpoint, revert
         if (revertIfNoBalance && podBalanceGwei == 0) {
@@ -576,9 +576,9 @@ contract EigenPod is
         // the checkpoint.
         Checkpoint memory checkpoint = Checkpoint({
             beaconBlockRoot: _getParentBlockRoot(uint64(block.timestamp)),
+            proofsRemaining: uint24(activeValidatorCount),
             podBalanceGwei: podBalanceGwei,
-            balanceDeltasGwei: 0,
-            proofsRemaining: activeValidatorCount
+            balanceDeltasGwei: 0
         });
 
         // Place checkpoint in storage. If `proofsRemaining` is 0, the checkpoint
@@ -600,11 +600,11 @@ contract EigenPod is
     function _updateCheckpoint(Checkpoint memory checkpoint) internal {
         if (checkpoint.proofsRemaining == 0) {
             int256 totalShareDeltaWei =
-                (int256(checkpoint.podBalanceGwei) + checkpoint.balanceDeltasGwei) * int256(GWEI_TO_WEI);
+                (int128(uint128(checkpoint.podBalanceGwei)) + checkpoint.balanceDeltasGwei) * int256(GWEI_TO_WEI);
 
             // Add any native ETH in the pod to `withdrawableRestakedExecutionLayerGwei`
             // ... this amount can be withdrawn via the `DelegationManager` withdrawal queue
-            withdrawableRestakedExecutionLayerGwei += uint64(checkpoint.podBalanceGwei);
+            withdrawableRestakedExecutionLayerGwei += checkpoint.podBalanceGwei;
 
             // Finalize the checkpoint
             lastCheckpointTimestamp = currentCheckpointTimestamp;
@@ -654,9 +654,9 @@ contract EigenPod is
     }
 
     /// @dev Calculates the delta between two Gwei amounts and returns as an int256
-    function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int256) {
+    function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int128) {
         return
-            int256(uint256(newAmountGwei)) - int256(uint256(previousAmountGwei));
+            int128(uint128(newAmountGwei)) - int128(uint128(previousAmountGwei));
     }
 
     /*******************************************************************************
