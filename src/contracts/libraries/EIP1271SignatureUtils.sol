@@ -24,7 +24,7 @@ library EIP1271SignatureUtils {
          * check validity of signature:
          * 1) if `signer` is an EOA, then `signature` must be a valid ECDSA signature from `signer`,
          * indicating their intention for this action
-         * 2) if `signer` is a contract, then `signature` must will be checked according to EIP-1271
+         * 2) if `signer` is a contract, then `signature` must be checked according to EIP-1271
          */
         if (Address.isContract(signer)) {
             require(
