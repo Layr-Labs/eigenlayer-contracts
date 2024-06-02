@@ -15,7 +15,7 @@ contract AVSDirectory is
     AVSDirectoryStorage,
     ReentrancyGuardUpgradeable
 {
-    // @dev Index for flag that pauses operator register/deregister to avs when set.
+    // @dev Index for flag that pauses operator register/deregister to AVS when set.
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
     // @dev Chain ID at the time of contract deployment
@@ -26,8 +26,8 @@ contract AVSDirectory is
     *******************************************************************************/
 
     /**
-     * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher, 
-     * and eigenpodManager contracts
+     * @dev Initializes the immutable addresses of the StrategyManager, DelegationManager, Slasher, 
+     * and EigenPodManager contracts
      */
     constructor(IDelegationManager _delegation) AVSDirectoryStorage(_delegation) {
         _disableInitializers();
@@ -35,7 +35,7 @@ contract AVSDirectory is
     }
 
     /**
-     * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
+     * @dev Initializes the addresses of the initial owner, PauserRegistry, and paused status.
      * minWithdrawalDelayBlocks is set only once here
      */
     function initialize(
@@ -54,7 +54,7 @@ contract AVSDirectory is
 
 
     /**
-     * @notice Called by the AVS's service manager contract to register an operator with the avs.
+     * @notice Called by the AVS's service manager contract to register an operator with the AVS.
      * @param operator The address of the operator to register.
      * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
@@ -104,7 +104,7 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Called by an avs to deregister an operator with the avs.
+     * @notice Called by an AVS to deregister an operator with the AVS.
      * @param operator The address of the operator to deregister.
      */
     function deregisterOperatorFromAVS(address operator) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
@@ -120,8 +120,8 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Called by an avs to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
-     * @param metadataURI The URI for metadata associated with an avs
+     * @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+     * @param metadataURI The URI for metadata associated with an AVS
      */
     function updateAVSMetadataURI(string calldata metadataURI) external {
         emit AVSMetadataURIUpdated(msg.sender, metadataURI);
