@@ -21,6 +21,9 @@ contract AVSDirectory is
     // @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
+    /// @notice Canonical, virtual beacon chain ETH strategy
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
     /*******************************************************************************
                             INITIALIZING FUNCTIONS
     *******************************************************************************/
@@ -67,7 +70,7 @@ contract AVSDirectory is
 =	 */
     function registerOperatorToOperatorSet(
         address operator,
-        uint32 operatorSetId
+        uint32 operatorSetID,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         require(
@@ -75,7 +78,7 @@ contract AVSDirectory is
             "AVSDirectory.registerOperatorToOperatorSet: operator signature expired"
         );
         require(
-            operatorSetRegistrations[msg.sender][operator][operatorSetId] != true,
+            operatorSetRegistrations[msg.sender][operator][operatorSetID] != true,
             "AVSDirectory.registerOperatorToOperatorSet: operator already registered to operator set"
         );
         require(
@@ -91,7 +94,7 @@ contract AVSDirectory is
         bytes32 operatorSetRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
             operator: operator,
             avs: msg.sender,
-            operatorSetId: operatorSetId,
+            operatorSetID: operatorSetID,
             salt: operatorSignature.salt,
             expiry: operatorSignature.expiry
         });
@@ -109,7 +112,7 @@ contract AVSDirectory is
         }
 
         // Update operator set registration
-        operatorSetRegistrations[msg.sender][operator][operatorSetId] = true;
+        operatorSetRegistrations[msg.sender][operator][operatorSetID] = true;
         operatorAVSOperatorSetCount[msg.sender][operator] += 1;
 
         // Mark the salt as spent
@@ -121,7 +124,7 @@ contract AVSDirectory is
             emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
         }
 
-        emit OperatorAddedToOperatorSet(operator, msg.sender, operatorSetId);
+        emit OperatorAddedToOperatorSet(operator, msg.sender, operatorSetID);
     }
 
     /**
@@ -137,18 +140,18 @@ contract AVSDirectory is
      */
     function deregisterOperatorFromOperatorSet(
         address operator,
-        uint32 operatorSetId
+        uint32 operatorSetID
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         require(
-            operatorSetRegistrations[msg.sender][operator][operatorSetId] == true,
+            operatorSetRegistrations[msg.sender][operator][operatorSetID] == true,
             "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
         );
 
         // Update operator set registration
-        operatorSetRegistrations[msg.sender][operator][operatorSetId] = false;
+        operatorSetRegistrations[msg.sender][operator][operatorSetID] = false;
         operatorAVSOperatorSetCount[msg.sender][operator] -= 1;
 
-        emit OperatorRemovedFromOperatorSet(operator, msg.sender, operatorSetId);
+        emit OperatorRemovedFromOperatorSet(operator, msg.sender, operatorSetID);
 
         // Set the operator as deregistered if no longer registered for any operator sets
         if (operatorAVSOperatorSetCount[msg.sender][operator] == 0) {
@@ -184,8 +187,8 @@ contract AVSDirectory is
             "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
         );
         require(
-            !isOperatorSetAVS[msg.sender],
-        )
+            !isOperatorSetAVS[msg.sender]
+        );
 
         // Calculate the digest hash
         bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
@@ -237,14 +240,14 @@ contract AVSDirectory is
 
     /**
      * @notice Adds strategies to an operator set
-     * @param operatorSetId The ID of the operator set
+     * @param operatorSetID The ID of the operator set
      * @param strategies The strategies to add to the operator set
      * TODO: align with team on if we want to keep the two require statements
      */
     function addStrategiesToOperatorSet(
-        bytes4 operatorSetID,
+        uint32 operatorSetID,
         IStrategy[] calldata strategies
-    ) {
+    ) external {
         uint256 strategiesToAdd = strategies.length;
         for (uint256 i = 0; i < strategiesToAdd; i++) {
             // Require that the strategy is valid 
@@ -253,30 +256,30 @@ contract AVSDirectory is
                 "AVSDirectory.addStrategiesToOperatorSet: invalid strategy considered"
             );
             require(
-                !avsOperatorSetStrategies[msg.sender][operatorSetID][strategies[i]],
+                !operatorSetStrategies[msg.sender][operatorSetID][strategies[i]],
                 "AVSDirectory.addStrategiesToOperatorSet: strategy already added to operator set"
-            )
-            avsOperatorSetStrategies[msg.sender][operatorSetID][strategies[i]] = true;
+            );
+            operatorSetStrategies[msg.sender][operatorSetID][strategies[i]] = true;
             emit OperatorSetStrategyAdded(msg.sender, operatorSetID, strategies[i]);
         }
     }
 
     /**
      * @notice Removes strategies from an operator set
-     * @param operatorSetId The ID of the operator set
+     * @param operatorSetID The ID of the operator set
      * @param strategies The strategies to remove from the operator set
      */
     function removeStrategiesFromOperatorSet(
-        bytes4 operatorSetID,
+        uint32 operatorSetID,
         IStrategy[] calldata strategies
-    ) {
+    ) external {
         uint256 strategiesToRemove = strategies.length;
         for (uint256 i = 0; i < strategiesToRemove; i++) {
             require(
-                avsOperatorSetStrategies[msg.sender][operatorSetID][strategies[i]],
+                operatorSetStrategies[msg.sender][operatorSetID][strategies[i]],
                 "AVSDirectory.removeStrategiesFromOperatorSet: strategy not a member of operator set"
             );
-            avsOperatorSetStrategies[msg.sender][operatorSetID][strategies[i]] = false;
+            operatorSetStrategies[msg.sender][operatorSetID][strategies[i]] = false;
             emit OperatorSetStrategyRemoved(msg.sender, operatorSetID, strategies[i]);
         }
     }
@@ -333,7 +336,7 @@ contract AVSDirectory is
         uint32 operatorSetID,
         bytes32 salt,
         uint256 expiry
-    ) {
+    ) public view returns (bytes32) {
         // calculate the struct hash
         bytes32 structHash = keccak256(
             abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, operator, avs, operatorSetID, salt, expiry)

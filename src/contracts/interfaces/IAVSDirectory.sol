@@ -72,6 +72,26 @@ interface IAVSDirectory is ISignatureUtils {
 	 */
 	function registerOperatorToOperatorSet(address operator, uint32 operatorSetID, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external;
 
+    /**
+     * @notice Adds strategies to an operator set
+     * @param operatorSetID The ID of the operator set
+     * @param strategies The strategies to add to the operator set
+     */
+    function addStrategiesToOperatorSet(
+        uint32 operatorSetID,
+        IStrategy[] calldata strategies
+    ) external;
+
+    /**
+     * @notice Removes strategies from an operator set
+     * @param operatorSetID The ID of the operator set
+     * @param strategies The strategies to remove from the operator set
+     */
+    function removeStrategiesFromOperatorSet(
+        uint32 operatorSetID,
+        IStrategy[] calldata strategies
+    ) external;
+
 	/**
 	 * @notice Called by AVSs or operators to remove an operator to from operator set
 	 * 
