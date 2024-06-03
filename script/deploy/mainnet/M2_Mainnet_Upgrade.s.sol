@@ -322,7 +322,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         bytes[] memory validatorFieldsProofs;
         bytes32[][] memory validatorFields;
         cheats.startPrank(existingEigenPod.podOwner());
-        existingEigenPod.activateRestaking();
+        existingEigenPod.startCheckpoint(false);
         cheats.expectRevert("EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized");
         existingEigenPod.verifyWithdrawalCredentials(
             uint64(block.timestamp),

@@ -315,19 +315,6 @@ contract User is PrintUtils {
         });
     }
 
-    /// @notice We set the proof generation start time to be after the timestamp that pod restaking is activated
-    /// We do this to prevent proofIsForValidTimestamp modifier from reverting
-    /// TODO remove
-    function activateRestaking() public createSnapshot {
-        _logM("activateRestaking");
-        
-        // _log("pre-activation, most recent wd timestamp", uint(pod.mostRecentWithdrawalTimestamp()));
-
-        pod.activateRestaking();
-
-        // _log("post-activation, most recent wd timestamp", pod.mostRecentWithdrawalTimestamp());
-    }
-
     /*******************************************************************************
                               STRATEGYMANAGER METHODS
     *******************************************************************************/

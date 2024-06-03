@@ -116,7 +116,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             // Enable restaking for stakers' pods
             for (uint i = 0; i < stakersToMigrate.length; i++) {
-                stakersToMigrate[i].activateRestaking();
+                stakersToMigrate[i].startCheckpoint();
             }
 
             // Register operators with DelegationManager
