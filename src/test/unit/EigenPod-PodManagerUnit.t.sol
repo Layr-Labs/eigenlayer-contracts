@@ -125,7 +125,6 @@ contract EigenPod_PodManager_UnitTests_EigenPodPausing is EigenPod_PodManager_Un
      * 1. verifyBalanceUpdates revert when PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE set
      * 2. verifyAndProcessWithdrawals revert when PAUSED_EIGENPODS_VERIFY_WITHDRAWAL set
      * 3. verifyWithdrawalCredentials revert when PAUSED_EIGENPODS_VERIFY_CREDENTIALS set
-     * 4. activateRestaking revert when PAUSED_EIGENPODS_VERIFY_CREDENTIALS set
      */
 
     /// @notice Index for flag that pauses creation of new EigenPods when set. See EigenPodManager code for details.
@@ -202,15 +201,15 @@ contract EigenPod_PodManager_UnitTests_EigenPodPausing is EigenPod_PodManager_Un
         );
     }
 
-    function test_activateRestaking_revert_pausedEigenVerifyCredentials() public {
-        // pause the contract
-        cheats.prank(address(pauser));
-        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
+    // function test_activateRestaking_revert_pausedEigenVerifyCredentials() public {
+    //     // pause the contract
+    //     cheats.prank(address(pauser));
+    //     eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
 
-        cheats.prank(address(podOwner));
-        cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-        eigenPod.activateRestaking();
-    }
+    //     cheats.prank(address(podOwner));
+    //     cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
+    //     eigenPod.activateRestaking();
+    // }
 }
 
 contract EigenPod_PodManager_UnitTests_EigenPod is EigenPod_PodManager_UnitTests {

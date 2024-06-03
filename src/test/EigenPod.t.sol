@@ -377,7 +377,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         // activate restaking
         cheats.startPrank(podOwner);
-        newPod.activateRestaking();
+        newPod.startCheckpoint(false);
 
         // Ensure verifyWC fails for each slot remaining in the epoch
         for (uint i = 0; i < 32; i++) {
@@ -945,7 +945,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         if (!newPod.hasRestaked()) {
-            newPod.activateRestaking();
+            newPod.startCheckpoint(false);
         }
         // set oracle block root
         _setOracleBlockRoot();
@@ -1680,7 +1680,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.startPrank(_podOwner);
         cheats.warp(timestamp);
         if (newPod.hasRestaked() == false) {
-            newPod.activateRestaking();
+            newPod.startCheckpoint(false);
         }
         //set the oracle block root
         _setOracleBlockRoot();
@@ -1728,7 +1728,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function _verifyWCStartTimestamp(IEigenPod pod) internal  returns (uint64) {
         uint64 genesis = EigenPod(payable(address(pod))).GENESIS_TIME();
-        uint64 activateRestakingTimestamp = pod.mostRecentWithdrawalTimestamp();
+        uint64 activateRestakingTimestamp;
 
         // For pods deployed after M2, `mostRecentWithdrawalTimestamp` will always be 0
         // In order to give our `_nextEpochStartTimestamp` a sane calculation, we set it

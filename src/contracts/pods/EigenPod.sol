@@ -81,21 +81,6 @@ contract EigenPod is
         _;
     }
 
-    modifier hasNeverRestaked() {
-        require(!hasRestaked, "EigenPod.hasNeverRestaked: restaking is enabled");
-        _;
-    }
-
-    /// @notice Checks that `timestamp` is greater than or equal to `mostRecentWithdrawalTimestamp`
-    modifier afterRestaking(uint64 timestamp) {
-        require(
-            hasRestaked &&
-            timestamp >= mostRecentWithdrawalTimestamp,
-            "EigenPod.afterRestaking: timestamp must be at or after restaking was activated"
-        );
-        _;
-    }
-
     /**
      * @notice Based on 'Pausable' code, but uses the storage of the EigenPodManager instead of this contract. This construction
      * is necessary for enabling pausing all EigenPods at the same time (due to EigenPods being Beacon Proxies).
@@ -128,12 +113,9 @@ contract EigenPod is
     function initialize(address _podOwner) external initializer {
         require(_podOwner != address(0), "EigenPod.initialize: podOwner cannot be zero address");
         podOwner = _podOwner;
-        /**
-         * From the M2 deployment onwards, we are requiring that pods deployed are by default enabled with restaking
-         * In prior deployments without proofs, EigenPods could be deployed with restaking disabled so as to allow
-         * simple (proof-free) withdrawals.  However, this is no longer the case.  Thus going forward, all pods are
-         * initialized with hasRestaked set to true.
-         */
+
+        /// Pods deployed prior to the M2 release have this variable set to `false`, as before M2, pod owners
+        /// did not need to engage with the proof system and were able to withdraw ETH from their pod on demand.
         hasRestaked = true;
         emit RestakingActivated(podOwner);
     }
@@ -163,9 +145,16 @@ contract EigenPod is
         external
         onlyEigenPodOwner() 
         onlyWhenNotPaused(PAUSED_START_CHECKPOINT) 
-        afterRestaking(uint64(block.timestamp)) /// TODO - this is the wrong condition
     {
         _startCheckpoint(revertIfNoBalance);
+
+        /// Legacy support for pods deployed pre-M2 that never activated restaking. `startCheckpoint`
+        /// can activate restaking, allowing them to continue using their pods via the checkpoint
+        /// system.
+        if (!hasRestaked) {
+            hasRestaked = true;
+            emit RestakingActivated(podOwner);
+        }
     }
 
     /**
@@ -264,8 +253,9 @@ contract EigenPod is
         external
         onlyEigenPodOwner
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
-        afterRestaking(beaconTimestamp)
     {
+        require(hasRestaked, "EigenPod.verifyWithdrawalCredentials: restaking not active");
+
         require(
             (validatorIndices.length == validatorFieldsProofs.length) &&
                 (validatorFieldsProofs.length == validatorFields.length),
@@ -375,26 +365,6 @@ contract EigenPod is
         for (uint256 i = 0; i < tokenList.length; i++) {
             tokenList[i].safeTransfer(recipient, amountsToWithdraw[i]);
         }
-    }
-
-    /**
-     * @notice Called by the pod owner to activate restaking by withdrawing
-     * all existing ETH from the pod by starting a checkpoint. Once this is called,
-     * the pod owner can begin proving validator withdrawal credentials and checkpoints
-     * to receive shares for beacon chain ETH.
-     * Note: This method is only callable on pods that were deployed *before* the M2
-     * upgrade. After the M2 upgrade, restaking is enabled by default.
-     */
-    function activateRestaking()
-        external
-        onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
-        onlyEigenPodOwner
-        hasNeverRestaked
-    {
-        hasRestaked = true;
-
-        emit RestakingActivated(podOwner);
-        _startCheckpoint(false);
     }
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
