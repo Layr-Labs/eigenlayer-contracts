@@ -315,10 +315,6 @@ contract M2Deploy is Script, Test {
         );
         require(eigenPodManager.hasPod(eigenPodDepositor) == hasPod, "eigenPodManager.hasPod incorrect");
         require(eigenPod.podOwner() == eigenPodOwner, "eigenPod.podOwner incorrect");
-        require(
-            eigenPod.mostRecentWithdrawalTimestamp() == mostRecentWithdrawalBlock,
-            "eigenPod.mostRecentWithdrawalTimestamp incorrect"
-        ); // Timestmap replace by block number in storage
         require(!eigenPod.hasRestaked(), "eigenPod.hasRestaked incorrect");
 
         // Unpause eigenpods verify credentials
@@ -334,19 +330,11 @@ contract M2Deploy is Script, Test {
         cheats.prank(eigenPodOwner);
         cheats.expectEmit(true, true, true, true);
         emit RestakingActivated(eigenPodOwner);
-        eigenPod.activateRestaking();
+        eigenPod.startCheckpoint(false);
 
         // Check updated storage values
         require(eigenPod.hasRestaked(), "eigenPod.hasRestaked not set to true");
         require(address(eigenPod).balance == 0, "eigenPod balance not 0 after activating restaking");
-        require(
-            eigenPod.mostRecentWithdrawalTimestamp() == block.timestamp,
-            "eigenPod.mostRecentWithdrawalTimestamp not updated"
-        );
-        require(
-            eigenPod.mostRecentWithdrawalTimestamp() > mostRecentWithdrawalBlock,
-            "eigenPod.mostRecentWithdrawalTimestamp not updated"
-        );
 
         // Check that delayed withdrawal has been created
         require(
@@ -368,13 +356,11 @@ contract M2Deploy is Script, Test {
     // Existing EigenPod owner – EigenPodManager.ownerToPod remains the same
     // Existing EigenPod owner –  EigenPodManager.hasPod remains the same
     // Existing EigenPod owner –  EigenPod.podOwner remains the same
-    // Existing EigenPod owner –  EigenPod.mostRecentWithdrawalTimestamp (after upgrade) == EigenPod.mostRecentWithdrawalBlock (before upgrade)
     // Existing EigenPod owner – EigenPod.hasRestaked remains false
     // Can call EigenPod.activateRestaking and it correctly:
     // Sends all funds in EigenPod (need to make sure it has nonzero balance beforehand)
     // Sets `hasRestaked` to ‘true’
     // Emits a ‘RestakingActivated’ event
-    // EigenPod.mostRecentWithdrawalTimestamp updates correctly
     // EigenPod: ethPOS, delayedWithdrawalRouter, eigenPodManager
     event RestakingActivated(address indexed podOwner);
 }

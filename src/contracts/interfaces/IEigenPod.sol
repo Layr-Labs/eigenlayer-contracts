@@ -104,13 +104,6 @@ interface IEigenPod {
     /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
     function hasRestaked() external view returns (bool);
 
-    /**
-     * @notice The latest timestamp at which the pod owner withdrew the balance of the pod, via calling `withdrawBeforeRestaking`.
-     * @dev This variable is only updated when the `withdrawBeforeRestaking` function is called, which can only occur before `hasRestaked` is set to true for this pod.
-     * Proofs for this pod are only valid against Beacon Chain state roots corresponding to timestamps after the stored `mostRecentWithdrawalTimestamp`.
-     */
-    function mostRecentWithdrawalTimestamp() external view returns (uint64);
-
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory);
 
@@ -211,13 +204,6 @@ interface IEigenPod {
         BeaconChainProofs.ValidatorProof calldata proof
     )
         external;
-
-    /**
-     * @notice Called by the pod owner to activate restaking by withdrawing
-     * all existing ETH from the pod and preventing further withdrawals via
-     * "withdrawBeforeRestaking()"
-     */
-    function activateRestaking() external;
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;

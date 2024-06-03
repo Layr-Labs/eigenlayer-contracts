@@ -255,18 +255,18 @@ contract EigenPodUnitTests_PodOwnerFunctions is EigenPodUnitTests, IEigenPodEven
                              Activate Restaking Tests
     *******************************************************************************/
 
-    function testFuzz_activateRestaking_revert_notPodOwner(address invalidCaller) public {
-        cheats.assume(invalidCaller != podOwner);
+    // function testFuzz_activateRestaking_revert_notPodOwner(address invalidCaller) public {
+    //     cheats.assume(invalidCaller != podOwner);
 
-        cheats.prank(invalidCaller);
-        cheats.expectRevert("EigenPod.onlyEigenPodOwner: not podOwner");
-        eigenPod.activateRestaking();
-    }
+    //     cheats.prank(invalidCaller);
+    //     cheats.expectRevert("EigenPod.onlyEigenPodOwner: not podOwner");
+    //     eigenPod.activateRestaking();
+    // }
 
-    function test_activateRestaking_revert_alreadyRestaked() public {
-        cheats.expectRevert("EigenPod.hasNeverRestaked: restaking is enabled");
-        eigenPod.activateRestaking();
-    }
+    // function test_activateRestaking_revert_alreadyRestaked() public {
+    //     cheats.expectRevert("EigenPod.hasNeverRestaked: restaking is enabled");
+    //     eigenPod.activateRestaking();
+    // }
 
     // function testFuzz_activateRestaking(uint256 ethAmount) public hasNotRestaked {
     //     // Seed some ETH
