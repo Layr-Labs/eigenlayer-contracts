@@ -102,7 +102,6 @@ interface IEigenPod {
     function podOwner() external view returns (address);
 
     /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
-    /// TODO
     function hasRestaked() external view returns (bool);
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
