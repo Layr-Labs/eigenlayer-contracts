@@ -13,6 +13,7 @@ import "../../utils/ExistingDeploymentParser.sol";
 contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
 
     address testAddress = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
+    address initOwner = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
 
     function run() external virtual {
         _parseInitialDeploymentParams("script/configs/holesky/Deploy_RewardsCoordinator.holesky.config.json");
@@ -58,7 +59,7 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         RewardsCoordinator.initialize.selector,
-                        testAddress, // initOwner
+                        executorMultisig,
                         eigenLayerPauserReg,
                         REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                         REWARDS_COORDINATOR_UPDATER,
@@ -68,8 +69,6 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
                 )
             )
         );
-
-
     }
 
         /**

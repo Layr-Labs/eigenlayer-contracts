@@ -45,7 +45,16 @@
     "strategyManager": "0xdfB5f6CE42aAA7830E94ECFCcAd411beF4d4D5b6",
     "strategyManagerImplementation": "0x59f766A603C53f3AC8Be43bBe158c1519b193a18",
     "rewardsCoordinator": "0x0000000000000000000000000000000000000000",
-    "rewardsCoordinatorImplementation": "0x0000000000000000000000000000000000000000"
+    "rewardsCoordinatorImplementation": "0x0000000000000000000000000000000000000000",
+    "token": {
+      "tokenProxyAdmin": "0x67482666771e82C9a73BB9e9A22B2B597f448BBf",
+      "EIGEN": "0x3B78576F7D6837500bA3De27A60c7f594934027E",
+      "bEIGEN": "0x275cCf9Be51f4a6C94aBa6114cdf2a4c45B9cb27",
+      "EIGENImpl": "0x083bC9e0DCF2C3e13E24686e5202232995578c5a",
+      "bEIGENImpl": "0x4500927874Ad41538c1bEF2F5278E7a86DF6bce8",
+      "eigenStrategy": "0x43252609bff8a13dFe5e057097f2f45A24387a84",
+      "eigenStrategyImpl": "0x94650e09a471CEF96e7966cabf26718FBf352697"
+    }
   },
   "chainInfo": {
     "chainId": 17000,
