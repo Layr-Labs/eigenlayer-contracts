@@ -55,6 +55,8 @@ contract EigenPodMock is IEigenPod, Test {
     /// @notice Returns the currently-active checkpoint
     function currentCheckpoint() external view returns (Checkpoint memory) {}
 
+    function checkpointBalanceExitedGwei(uint64) external view returns (uint64) {}
+
     function startCheckpoint(bool revertIfNoBalance) external {}
 
     function verifyCheckpointProofs(

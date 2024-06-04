@@ -50,6 +50,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         check_CompleteCheckpoint_State(staker);
         assert_Snap_Added_WithdrawableGwei(staker, exitedBalanceGwei, "should have added expected gwei to withdrawable restaked exec layer gwei");
+        assert_Snap_Added_BalanceExitedGwei(staker, exitedBalanceGwei, "should have attributed expected gwei to exited balance");
         assert_Snap_Removed_ActiveValidatorCount(staker, exitedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, exitedValidators, "exited validators should each be WITHDRAWN");
     }

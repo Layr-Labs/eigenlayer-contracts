@@ -189,6 +189,7 @@ contract EigenPod is
         });
 
         // Process each checkpoint proof submitted
+        uint64 exitedBalancesGwei;
         for (uint256 i = 0; i < proofs.length; i++) {
             ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proofs[i].pubkeyHash];
 
@@ -214,7 +215,7 @@ contract EigenPod is
             // If the proof shows the validator has a balance of 0, they are marked `WITHDRAWN`.
             // The assumption is that if this is the case, any withdrawn ETH was already in
             // the pod when `startCheckpoint` was originally called.
-            int128 balanceDeltaGwei = _verifyCheckpointProof({
+            (int128 balanceDeltaGwei, uint64 exitedBalanceGwei) = _verifyCheckpointProof({
                 validatorInfo: validatorInfo,
                 beaconTimestamp: beaconTimestamp,
                 balanceContainerRoot: balanceContainerProof.balanceContainerRoot,
@@ -223,9 +224,11 @@ contract EigenPod is
 
             checkpoint.proofsRemaining--;
             checkpoint.balanceDeltasGwei += balanceDeltaGwei;
+            exitedBalancesGwei += exitedBalanceGwei;
         }
 
-        // Update and/or finalize the checkpoint
+        // Update the checkpoint and the total amount attributed to exited validators
+        checkpointBalanceExitedGwei[beaconTimestamp] += exitedBalancesGwei;
         _updateCheckpoint(checkpoint);
     }
 
@@ -468,7 +471,7 @@ contract EigenPod is
         uint64 beaconTimestamp,
         bytes32 balanceContainerRoot,
         BeaconChainProofs.BalanceProof calldata proof
-    ) internal returns (int128 balanceDeltaGwei) {
+    ) internal returns (int128 balanceDeltaGwei, uint64 exitedBalanceGwei) {
         uint40 validatorIndex = uint40(validatorInfo.validatorIndex);
         
         // Verify validator balance against `balanceContainerRoot`
@@ -479,12 +482,25 @@ contract EigenPod is
             proof: proof
         });
         
+        // Calculate change in the validator's balance since the last proof
+        if (newBalanceGwei != prevBalanceGwei) {
+            balanceDeltaGwei = _calcBalanceDelta({
+                newAmountGwei: newBalanceGwei,
+                previousAmountGwei: prevBalanceGwei
+            });
+
+            emit ValidatorBalanceUpdated(validatorIndex, beaconTimestamp, newBalanceGwei);
+        }
+
         // Update validator state. If their new balance is 0, they are marked `WITHDRAWN`
         validatorInfo.restakedBalanceGwei = newBalanceGwei;
         validatorInfo.mostRecentBalanceUpdateTimestamp = beaconTimestamp;
         if (newBalanceGwei == 0) {
             activeValidatorCount--;
             validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
+            // If we reach this point, `balanceDeltaGwei` should always be negative,
+            // so this should be a safe conversion
+            exitedBalanceGwei = uint64(uint128(-balanceDeltaGwei));
 
             emit ValidatorWithdrawn(beaconTimestamp, validatorIndex);
         }
@@ -492,17 +508,7 @@ contract EigenPod is
         _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
         emit ValidatorCheckpointed(beaconTimestamp, validatorIndex);
 
-        // Calculate change in the validator's balance since the last proof
-        if (newBalanceGwei != prevBalanceGwei) {
-            emit ValidatorBalanceUpdated(validatorIndex, beaconTimestamp, newBalanceGwei);
-
-            balanceDeltaGwei = _calcBalanceDelta({
-                newAmountGwei: newBalanceGwei,
-                previousAmountGwei: prevBalanceGwei
-            });
-        }
-
-        return balanceDeltaGwei;
+        return (balanceDeltaGwei, exitedBalanceGwei);
     }
 
     /**
