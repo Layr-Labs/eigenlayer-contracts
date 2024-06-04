@@ -39,6 +39,7 @@ contract BeaconChainMock is PrintUtils {
 
     struct Validator {
         bool isDummy;
+        bool isSlashed;
         bytes32 pubkeyHash;
         bytes withdrawalCreds;
         uint64 effectiveBalanceGwei;
@@ -51,7 +52,8 @@ contract BeaconChainMock is PrintUtils {
     uint constant ZERO_NODES_LENGTH = 100;
 
     // Rewards given to each validator during epoch processing
-    uint64 constant CONSENSUS_REWARD_AMOUNT_GWEI = 1;
+    uint64 public constant CONSENSUS_REWARD_AMOUNT_GWEI = 1;
+    uint64 public constant SLASH_AMOUNT_GWEI = 10;
 
     /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
 
@@ -203,6 +205,36 @@ contract BeaconChainMock is PrintUtils {
         return exitedBalanceGwei;
     }
 
+    function slashValidators(uint40[] memory _validators) public returns (uint64 slashedBalanceGwei) {
+        _logM("slashValidators");
+
+        for (uint i = 0; i < _validators.length; i++) {
+            uint40 validatorIndex = _validators[i];
+            Validator storage v = validators[validatorIndex];
+            require(!v.isDummy, "BeaconChainMock: attempting to exit dummy validator. We need those for proofgen >:(");
+            require(!v.isSlashed, "BeaconChainMock: validator already slashed");
+
+            // Mark slashed and initiate validator exit
+            v.isSlashed = true;
+            v.exitEpoch = currentEpoch() + 1;
+            
+            // Calculate slash amount
+            uint64 curBalanceGwei = _currentBalanceGwei(validatorIndex);
+            if (SLASH_AMOUNT_GWEI > curBalanceGwei) {
+                slashedBalanceGwei += curBalanceGwei;
+                curBalanceGwei = 0;
+            } else {
+                slashedBalanceGwei += SLASH_AMOUNT_GWEI;
+                curBalanceGwei -= SLASH_AMOUNT_GWEI;
+            }
+
+            // Decrease current balance (effective balance updated during epoch processing)
+            _setCurrentBalance(validatorIndex, curBalanceGwei);
+        }
+
+        return slashedBalanceGwei;
+    }
+
     /// @dev Move forward one epoch on the beacon chain, taking care of important epoch processing:
     /// - Award ALL validators CONSENSUS_REWARD_AMOUNT
     /// - Withdraw any balance over 32 ETH
@@ -223,8 +255,6 @@ contract BeaconChainMock is PrintUtils {
 
         _advanceEpoch();
     }
-
-    
 
     /// @dev Like `advanceEpoch`, but does NOT generate consensus rewards for validators.
     /// This amount is added to each validator's current balance before effective balances
@@ -409,6 +439,7 @@ contract BeaconChainMock is PrintUtils {
 
             validators.push(Validator({
                 isDummy: true,
+                isSlashed: false,
                 pubkeyHash: keccak256(abi.encodePacked(validatorIndex)),
                 withdrawalCreds: "",
                 effectiveBalanceGwei: dummyBalanceGwei,
@@ -421,6 +452,7 @@ contract BeaconChainMock is PrintUtils {
 
         validators.push(Validator({
             isDummy: false,
+            isSlashed: false,
             pubkeyHash: keccak256(abi.encodePacked(validatorIndex)),
             withdrawalCreds: withdrawalCreds,
             effectiveBalanceGwei: balanceGwei,
@@ -917,5 +949,9 @@ contract BeaconChainMock is PrintUtils {
         }
 
         return pubkeyHashes;
+    }
+
+    function isActive(uint40 validatorIndex) public view returns (bool) {
+        return validators[validatorIndex].exitEpoch == BeaconChainProofs.FAR_FUTURE_EPOCH;
     }
 }

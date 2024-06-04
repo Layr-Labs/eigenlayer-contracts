@@ -777,24 +777,31 @@ abstract contract IntegrationBase is IntegrationDeployer {
             IStrategy strat = strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                // TODO - could choose and set a "next updatable validator" at random here
-                uint40 validator = staker.getUpdatableValidator();
-                uint64 beaconBalanceGwei = beaconChain.balanceOfGwei(validator);
+                // For native ETH, we're either going to slash the staker's validators,
+                // or award them consensus rewards. In either case, the magnitude of
+                // the balance update depends on the staker's active validator count
+                uint activeValidatorCount = staker.pod().activeValidatorCount();
+                int64 deltaGwei;
+                if (_randBool()) {
+                    uint40[] memory validators = staker.getActiveValidators();
+                    emit log_named_uint("slashing validators", validators.length);
 
-                // For native eth, add or remove a random amount of Gwei - minimum 1
-                // and max of the current beacon chain balance
-                int64 deltaGwei = int64(int(_randUint({ min: 1, max: beaconBalanceGwei })));
-                bool addTokens = _randBool();
-                deltaGwei = addTokens ? deltaGwei : -deltaGwei;
+                    deltaGwei = -int64(beaconChain.slashValidators(validators));
+                    beaconChain.advanceEpoch_NoRewards();
 
+                    emit log_named_int("slashed amount", deltaGwei);
+                } else {
+                    emit log("generating consensus rewards for validators");
+
+                    deltaGwei = int64(uint64(activeValidatorCount) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI());
+                    beaconChain.advanceEpoch_NoWithdraw();
+                }
+                
                 tokenDeltas[i] = int(deltaGwei) * int(GWEI_TO_WEI);
 
-                // stakerShareDeltas[i] = _calculateSharesDelta(newPodBalanceGwei, oldPodBalanceGwei);
-                stakerShareDeltas[i] = _calcNativeETHStakerShareDelta(staker, validator, beaconBalanceGwei, deltaGwei);
+                stakerShareDeltas[i] = tokenDeltas[i];
                 operatorShareDeltas[i] = _calcNativeETHOperatorShareDelta(staker, stakerShareDeltas[i]);
 
-                emit log_named_uint("current beacon balance (gwei): ", beaconBalanceGwei);
-                // emit log_named_uint("current validator pod balance (gwei): ", oldPodBalanceGwei);
                 emit log_named_int("beacon balance delta (gwei): ", deltaGwei);
                 emit log_named_int("staker share delta (gwei): ", stakerShareDeltas[i] / int(GWEI_TO_WEI));
                 emit log_named_int("operator share delta (gwei): ", operatorShareDeltas[i] / int(GWEI_TO_WEI));
@@ -812,37 +819,37 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return (tokenDeltas, stakerShareDeltas, operatorShareDeltas);
     }
 
-    function _calcNativeETHStakerShareDelta(
-        User staker, 
-        uint40 validatorIndex, 
-        uint64 beaconBalanceGwei, 
-        int64 deltaGwei
-    ) internal view returns (int) {
-        uint64 oldPodBalanceGwei = 
-            staker
-                .pod()
-                .validatorPubkeyHashToInfo(beaconChain.pubkeyHash(validatorIndex))
-                .restakedBalanceGwei;
+    // function _calcNativeETHStakerShareDelta(
+    //     User staker, 
+    //     uint40 validatorIndex, 
+    //     uint64 beaconBalanceGwei, 
+    //     int64 deltaGwei
+    // ) internal view returns (int) {
+    //     uint64 oldPodBalanceGwei = 
+    //         staker
+    //             .pod()
+    //             .validatorPubkeyHashToInfo(beaconChain.pubkeyHash(validatorIndex))
+    //             .restakedBalanceGwei;
         
-        uint64 newPodBalanceGwei = _calcPodBalance(beaconBalanceGwei, deltaGwei);
+    //     uint64 newPodBalanceGwei = _calcPodBalance(beaconBalanceGwei, deltaGwei);
 
-        return (int(uint(newPodBalanceGwei)) - int(uint(oldPodBalanceGwei))) * int(GWEI_TO_WEI);
-    }
+    //     return (int(uint(newPodBalanceGwei)) - int(uint(oldPodBalanceGwei))) * int(GWEI_TO_WEI);
+    // }
     
-    function _calcPodBalance(uint64 beaconBalanceGwei, int64 deltaGwei) internal pure returns (uint64) {
-        uint64 podBalanceGwei;
-        if (deltaGwei < 0) {
-            podBalanceGwei = beaconBalanceGwei - uint64(uint(int(-deltaGwei)));
-        } else {
-            podBalanceGwei = beaconBalanceGwei + uint64(uint(int(deltaGwei)));
-        }
+    // function _calcPodBalance(uint64 beaconBalanceGwei, int64 deltaGwei) internal pure returns (uint64) {
+    //     uint64 podBalanceGwei;
+    //     if (deltaGwei < 0) {
+    //         podBalanceGwei = beaconBalanceGwei - uint64(uint(int(-deltaGwei)));
+    //     } else {
+    //         podBalanceGwei = beaconBalanceGwei + uint64(uint(int(deltaGwei)));
+    //     }
 
-        if (podBalanceGwei > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
-            podBalanceGwei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
-        }
+    //     if (podBalanceGwei > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
+    //         podBalanceGwei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
+    //     }
 
-        return podBalanceGwei;
-    }
+    //     return podBalanceGwei;
+    // }
 
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
         int curPodOwnerShares = eigenPodManager.podOwnerShares(address(staker));
