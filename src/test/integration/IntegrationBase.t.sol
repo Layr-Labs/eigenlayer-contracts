@@ -704,6 +704,27 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertEq(prevWithdrawableRestakedGwei + addedGwei, curWithdrawableRestakedGwei, err);
     }
 
+    function assert_Snap_Added_BalanceExitedGwei(
+        User staker,
+        uint64 addedGwei,
+        string memory err
+    ) internal {
+        uint64 curCheckpointTimestamp = _getCheckpointTimestamp(staker);
+        uint64 prevCheckpointTimestamp = _getPrevCheckpointTimestamp(staker);
+
+        // If we just finalized a checkpoint, that's the timestamp we want to use
+        // to look up checkpoint balances exited
+        uint64 targetTimestamp = curCheckpointTimestamp;
+        if (curCheckpointTimestamp != prevCheckpointTimestamp) {
+            targetTimestamp = prevCheckpointTimestamp;
+        }
+
+        uint64 curExitedBalanceGwei = _getCheckpointBalanceExited(staker, targetTimestamp);
+        uint64 prevExitedBalanceGwei = _getPrevCheckpointBalanceExited(staker, targetTimestamp);
+
+        assertEq(prevExitedBalanceGwei + addedGwei, curExitedBalanceGwei, err);
+    }
+
     /*******************************************************************************
                                 UTILITY METHODS
     *******************************************************************************/
@@ -1110,5 +1131,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function _getPrevCheckpointPodBalanceGwei(User staker) internal timewarp() returns (uint64) {
         return _getCheckpointPodBalanceGwei(staker);
+    }
+
+    function _getCheckpointBalanceExited(User staker, uint64 checkpointTimestamp) internal view returns (uint64) {
+        EigenPod pod = staker.pod();
+        return pod.checkpointBalanceExitedGwei(checkpointTimestamp);
+    }
+
+    function _getPrevCheckpointBalanceExited(User staker, uint64 checkpointTimestamp) internal timewarp() returns (uint64) {
+        return _getCheckpointBalanceExited(staker, checkpointTimestamp);
     }
 }

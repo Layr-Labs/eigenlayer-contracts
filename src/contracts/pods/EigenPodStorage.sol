@@ -42,6 +42,30 @@ abstract contract EigenPodStorage is IEigenPod {
     /// @notice The timestamp of the currently-active checkpoint. Will be 0 if there is not active checkpoint
     uint64 public currentCheckpointTimestamp;
 
+    /// @notice For each checkpoint, the total balance attributed to exited validators, in gwei
+    ///
+    /// Note that the values added to this mapping are NOT guaranteed to capture the entirety of a validator's
+    /// exit - rather, they capture the total change in a validator's balance when a checkpoint shows their
+    /// balance change from nonzero to zero. While a change from nonzero to zero DOES guarantee that a validator
+    /// has been fully exited, it is possible that the magnitude of this change does not capture what is 
+    /// typically thought of as a "full exit."
+    /// 
+    /// For example:
+    /// 1. Consider a validator was last checkpointed at 32 ETH before exiting. Once the exit has been processed, 
+    /// it is expected that the validator's exited balance is calculated to be `32 ETH`.
+    /// 2. However, before `startCheckpoint` is called, a deposit is made to the validator for 1 ETH. The beacon
+    /// chain will automatically withdraw this ETH, but not until the withdrawal sweep passes over the validator
+    /// again. Until this occurs, the validator's current balance (used for checkpointing) is 1 ETH.
+    /// 3. If `startCheckpoint` is called at this point, the balance delta calculated for this validator will be
+    /// `-31 ETH`, and because the validator has a nonzero balance, it is not marked WITHDRAWN.
+    /// 4. After the exit is processed by the beacon chain, a subsequent `startCheckpoint` and checkpoint proof
+    /// will calculate a balance delta of `-1 ETH` and attribute a 1 ETH exit to the validator.
+    /// 
+    /// If this edge case impacts your usecase, it should be possible to mitigate this by monitoring for deposits
+    /// to your exited validators, and waiting to call `startCheckpoint` until those deposits have been automatically
+    /// exited.
+    mapping(uint64 => uint64) public checkpointBalanceExitedGwei;
+
     /// @notice The current checkpoint, if there is one active
     Checkpoint internal _currentCheckpoint;
 
@@ -50,5 +74,5 @@ abstract contract EigenPodStorage is IEigenPod {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[38] private __gap;
+    uint256[37] private __gap;
 }
