@@ -186,6 +186,8 @@ The current testnet deployment is on holesky, and is from our M2 beta release. Y
 | [`AVSDirectory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/core/AVSDirectory.sol) | [`0x055733000064333CaDDbC92763c58BF0192fFeBf`](https://holesky.etherscan.io/address/0x055733000064333CaDDbC92763c58BF0192fFeBf) | [`0xEF5B...3e3a`](https://holesky.etherscan.io/address/0xEF5BA995Bc7722fd1e163edF8Dc09375de3d3e3a) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`Slasher`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/core/Slasher.sol) | [`0xcAe751b75833ef09627549868A04E32679386e7C`](https://holesky.etherscan.io/address/0xcAe751b75833ef09627549868A04E32679386e7C) | [`0x9971...345A`](https://holesky.etherscan.io/address/0x99715D255E34a39bE9943b82F281CA734bcF345A) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
+| [`RewardsCoordinator`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/core/Slasher.sol) | [`0xAcc1fb458a1317E886dB376Fc8141540537E68fE`](https://holesky.etherscan.io/address/0xAcc1fb458a1317E886dB376Fc8141540537E68fE) | [`0x123C...3D02`](https://holesky.etherscan.io/address/0x99715D255E34a39bE9943b82F281CA734bcF345A) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
 ###### Strategies - ETH
 
 | Name | Proxy | Implementation | Notes |

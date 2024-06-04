@@ -7,7 +7,7 @@ import "../../utils/ExistingDeploymentParser.sol";
  * @notice Script used for the first deployment of EigenLayer core contracts to Holesky
  * anvil --fork-url $RPC_HOLESKY
  * forge script script/deploy/holesky/Deploy_Test_RewardsCoordinator.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv
- * forge script script/deploy/holesky/Deploy_Test_RewardsCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv
+ * forge script script/deploy/holesky/Deploy_Test_RewardsCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --verify --broadcast -vvvv
  *
  */
 contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
