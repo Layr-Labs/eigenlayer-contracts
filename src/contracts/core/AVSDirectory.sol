@@ -24,15 +24,20 @@ contract AVSDirectory is
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    /*******************************************************************************
-                            INITIALIZING FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         INITIALIZING FUNCTIONS
+     *
+     */
 
     /**
-     * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher, 
+     * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher,
      * and eigenpodManager contracts
      */
-    constructor(IDelegationManager _delegation, IStrategyManager _strategyManager) AVSDirectoryStorage(_delegation, _strategyManager) {
+    constructor(
+        IDelegationManager _delegation,
+        IStrategyManager _strategyManager
+    ) AVSDirectoryStorage(_delegation, _strategyManager) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -51,23 +56,26 @@ contract AVSDirectory is
         _transferOwnership(initialOwner);
     }
 
-    /*******************************************************************************
-                            EXTERNAL FUNCTIONS 
-    *******************************************************************************/
+    /**
+     *
+     *                         EXTERNAL FUNCTIONS 
+     *
+     */
 
-	/**
-	 * @notice Called by AVSs to add an operator to an operator set
-	 * 
-	 * @param operator the address of the operator to be added to the operator set
-	 * @param operatorSetID the ID of the operator set
-	 * @param operatorSignature the signature of the operator on their intent to register
-     * 
-	 * @dev msg.sender is used as the AVS
-	 * @dev operator must not have a deregistration from the operator set
-	 * @dev if this is the first operator set in the AVS that the operator is 
-	 * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with 
-	 * a REGISTERED status
-=	 */
+    /**
+     * @notice Called by AVSs to add an operator to an operator set
+     *
+     * @param operator the address of the operator to be added to the operator set
+     * @param operatorSetID the ID of the operator set
+     * @param operatorSignature the signature of the operator on their intent to register
+     *
+     * @dev msg.sender is used as the AVS
+     * @dev operator must not have a deregistration from the operator set
+     * @dev if this is the first operator set in the AVS that the operator is
+     * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with
+     * a REGISTERED status
+     * =
+     */
     function registerOperatorToOperatorSet(
         address operator,
         uint32 operatorSetID,
@@ -89,7 +97,7 @@ contract AVSDirectory is
             delegation.isOperator(operator),
             "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
         );
-        
+
         // Calculate the digest hash
         bytes32 operatorSetRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
             operator: operator,
@@ -101,9 +109,7 @@ contract AVSDirectory is
 
         // Check that the signature is valid
         EIP1271SignatureUtils.checkSignature_EIP1271(
-            operator,
-            operatorSetRegistrationDigestHash,
-            operatorSignature.signature
+            operator, operatorSetRegistrationDigestHash, operatorSignature.signature
         );
 
         // Set as Operator Set AVS, preventing any further legacy registrations
@@ -129,13 +135,13 @@ contract AVSDirectory is
 
     /**
      * @notice Called by AVSs or operators to remove an operator to from operator set
-     * 
-     * @param operator the address of the operator to be removed from the 
+     *
+     * @param operator the address of the operator to be removed from the
      * operator set
      * @param operatorSetID the ID of the operator set
-     * 
+     *
      * @dev msg.sender is used as the AVS
-     * @dev operator must be registered for msg.sender AVS and the given 
+     * @dev operator must be registered for msg.sender AVS and the given
      * operator set
      */
     function deregisterOperatorFromOperatorSet(
@@ -169,7 +175,6 @@ contract AVSDirectory is
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-
         require(
             operatorSignature.expiry >= block.timestamp,
             "AVSDirectory.registerOperatorToAVS: operator signature expired"
@@ -186,9 +191,7 @@ contract AVSDirectory is
             delegation.isOperator(operator),
             "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
         );
-        require(
-            !isOperatorSetAVS[msg.sender]
-        );
+        require(!isOperatorSetAVS[msg.sender]);
 
         // Calculate the digest hash
         bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
@@ -200,9 +203,7 @@ contract AVSDirectory is
 
         // Check that the signature is valid
         EIP1271SignatureUtils.checkSignature_EIP1271(
-            operator,
-            operatorRegistrationDigestHash,
-            operatorSignature.signature
+            operator, operatorRegistrationDigestHash, operatorSignature.signature
         );
 
         // Set the operator as registered
@@ -218,7 +219,10 @@ contract AVSDirectory is
      * @notice Called by an avs to deregister an operator with the avs.
      * @param operator The address of the operator to deregister.
      */
-    function deregisterOperatorFromAVS(address operator) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+    function deregisterOperatorFromAVS(address operator)
+        external
+        onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
+    {
         require(
             avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
             "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
@@ -244,15 +248,13 @@ contract AVSDirectory is
      * @param strategies The strategies to add to the operator set
      * TODO: align with team on if we want to keep the two require statements
      */
-    function addStrategiesToOperatorSet(
-        uint32 operatorSetID,
-        IStrategy[] calldata strategies
-    ) external {
+    function addStrategiesToOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external {
         uint256 strategiesToAdd = strategies.length;
         for (uint256 i = 0; i < strategiesToAdd; i++) {
-            // Require that the strategy is valid 
+            // Require that the strategy is valid
             require(
-                strategyManager.strategyIsWhitelistedForDeposit(strategies[i]) || strategies[i] == beaconChainETHStrategy,
+                strategyManager.strategyIsWhitelistedForDeposit(strategies[i])
+                    || strategies[i] == beaconChainETHStrategy,
                 "AVSDirectory.addStrategiesToOperatorSet: invalid strategy considered"
             );
             require(
@@ -269,10 +271,7 @@ contract AVSDirectory is
      * @param operatorSetID The ID of the operator set
      * @param strategies The strategies to remove from the operator set
      */
-    function removeStrategiesFromOperatorSet(
-        uint32 operatorSetID,
-        IStrategy[] calldata strategies
-    ) external {
+    function removeStrategiesFromOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external {
         uint256 strategiesToRemove = strategies.length;
         for (uint256 i = 0; i < strategiesToRemove; i++) {
             require(
@@ -284,7 +283,6 @@ contract AVSDirectory is
         }
     }
 
-
     /**
      * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
      * @param salt A unique and single use value associated with the approver signature.
@@ -294,9 +292,11 @@ contract AVSDirectory is
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
 
-    /*******************************************************************************
-                            VIEW FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
 
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an AVS
@@ -312,13 +312,9 @@ contract AVSDirectory is
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the struct hash
-        bytes32 structHash = keccak256(
-            abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)
-        );
+        bytes32 structHash = keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry));
         // calculate the digest hash
-        bytes32 digestHash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator(), structHash)
-        );
+        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
         return digestHash;
     }
 
@@ -338,13 +334,10 @@ contract AVSDirectory is
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the struct hash
-        bytes32 structHash = keccak256(
-            abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, operator, avs, operatorSetID, salt, expiry)
-        );
+        bytes32 structHash =
+            keccak256(abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, operator, avs, operatorSetID, salt, expiry));
         // calculate the digest hash
-        bytes32 digestHash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator(), structHash)
-        );
+        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
         return digestHash;
     }
 

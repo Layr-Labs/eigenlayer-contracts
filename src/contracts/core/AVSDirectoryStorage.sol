@@ -15,8 +15,9 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
         keccak256("OperatorAVSRegistration(address operator,address avs,bytes32 salt,uint256 expiry)");
 
     /// @notice The EIP-712 typehash for the `OperatorSetRegistration` struct used by the contract
-    bytes32 public constant OPERATOR_SET_REGISTRATION_TYPEHASH =
-        keccak256("OperatorSetRegistration(address operator,address avs,uint32 operatorSetID,bytes32 salt,uint256 expiry)");
+    bytes32 public constant OPERATOR_SET_REGISTRATION_TYPEHASH = keccak256(
+        "OperatorSetRegistration(address operator,address avs,uint32 operatorSetID,bytes32 salt,uint256 expiry)"
+    );
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
@@ -30,7 +31,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * Use the getter function `domainSeparator` to get the current domain separator for this contract.
      */
     bytes32 internal _DOMAIN_SEPARATOR;
-    
+
     /// @notice Mapping: AVS => operator => enum of operator status to the AVS
     mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 
@@ -46,7 +47,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     /// @notice Mapping: avs => operator => operatorSetID => whether the operator is registered for the operator set
     mapping(address => mapping(address => mapping(uint32 => bool))) public operatorSetRegistrations;
-    
+
     /// @notice Mapping: avs => operator => number of operator sets the operator is registered for the AVS
     mapping(address => mapping(address => uint256)) public operatorAVSOperatorSetCount;
 
