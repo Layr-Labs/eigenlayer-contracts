@@ -58,7 +58,7 @@ contract AVSDirectory is
 
     /**
      *
-     *                         EXTERNAL FUNCTIONS 
+     *                         EXTERNAL FUNCTIONS
      *
      */
 
@@ -102,7 +102,6 @@ contract AVSDirectory is
         bytes32 operatorSetRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
             operator: operator,
             avs: msg.sender,
-            operatorSetID: operatorSetID,
             salt: operatorSignature.salt,
             expiry: operatorSignature.expiry
         });
@@ -130,7 +129,7 @@ contract AVSDirectory is
             emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
         }
 
-        emit OperatorAddedToOperatorSet(operator, msg.sender, operatorSetID);
+        emit OperatorAddedToOperatorSet(operator, OperatorSet(msg.sender, operatorSetID));
     }
 
     /**
@@ -157,7 +156,7 @@ contract AVSDirectory is
         operatorSetRegistrations[msg.sender][operator][operatorSetID] = false;
         operatorAVSOperatorSetCount[msg.sender][operator] -= 1;
 
-        emit OperatorRemovedFromOperatorSet(operator, msg.sender, operatorSetID);
+        emit OperatorRemovedFromOperatorSet(operator, OperatorSet(msg.sender, operatorSetID));
 
         // Set the operator as deregistered if no longer registered for any operator sets
         if (operatorAVSOperatorSetCount[msg.sender][operator] == 0) {
@@ -262,7 +261,7 @@ contract AVSDirectory is
                 "AVSDirectory.addStrategiesToOperatorSet: strategy already added to operator set"
             );
             operatorSetStrategies[msg.sender][operatorSetID][strategies[i]] = true;
-            emit OperatorSetStrategyAdded(msg.sender, operatorSetID, strategies[i]);
+            emit OperatorSetStrategyAdded(OperatorSet(msg.sender, operatorSetID), strategies[i]);
         }
     }
 
@@ -279,7 +278,7 @@ contract AVSDirectory is
                 "AVSDirectory.removeStrategiesFromOperatorSet: strategy not a member of operator set"
             );
             operatorSetStrategies[msg.sender][operatorSetID][strategies[i]] = false;
-            emit OperatorSetStrategyRemoved(msg.sender, operatorSetID, strategies[i]);
+            emit OperatorSetStrategyRemoved(OperatorSet(msg.sender, operatorSetID), strategies[i]);
         }
     }
 
@@ -321,21 +320,20 @@ contract AVSDirectory is
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an operator set
      * @param operator The operator set that the operator is registering to
-     * @param avs The AVS the operator is registering to
-     * @param operatorSetID The ID of the operator set
+     * @param operatorSet A struct containing info about a given operator set. 
      * @param salt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid
      */
     function calculateOperatorSetRegistrationDigestHash(
         address operator,
-        address avs,
-        uint32 operatorSetID,
+        OperatorSet memory operatorSet,
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the struct hash
-        bytes32 structHash =
-            keccak256(abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, operator, avs, operatorSetID, salt, expiry));
+        bytes32 structHash = keccak256(
+            abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, salt, expiry)
+        );
         // calculate the digest hash
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
         return digestHash;
