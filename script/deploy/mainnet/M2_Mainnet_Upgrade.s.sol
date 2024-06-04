@@ -121,7 +121,6 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         delegationManager.unpause(0);
         eigenPodManager.unpause(0);
 
-        eigenPodManager.setDenebForkTimestamp(EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP);
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
 
         vm.stopPrank();
@@ -215,11 +214,11 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         // );
 
         // set Deneb fork timestamp on EigenPodManager
-        txs[8] = Tx(
-            address(eigenPodManager), 
-            0, // value
-            abi.encodeWithSelector(EigenPodManager.setDenebForkTimestamp.selector, EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP)
-        );
+        // txs[8] = Tx(
+        //     address(eigenPodManager), 
+        //     0, // value
+        //     abi.encodeWithSelector(EigenPodManager.setDenebForkTimestamp.selector, EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP)
+        // );
 
         // unpause everything on DelegationManager
         txs[9] = Tx(
