@@ -363,14 +363,14 @@ contract EigenPodUnitTests_PodOwnerFunctions is EigenPodUnitTests, IEigenPodEven
 
 contract EigenPodHarnessSetup is EigenPodUnitTests {
     // Harness that exposes internal functions for test
-    EPInternalFunctions public eigenPodHarnessImplementation;
-    EPInternalFunctions public eigenPodHarness;
+    EigenPodHarness public eigenPodHarnessImplementation;
+    EigenPodHarness public eigenPodHarness;
 
     function setUp() public virtual override {
         EigenPodUnitTests.setUp();
 
         // Deploy EP Harness
-        eigenPodHarnessImplementation = new EPInternalFunctions(
+        eigenPodHarnessImplementation = new EigenPodHarness(
             ethPOSDepositMock,
             eigenPodManagerMock,
             GOERLI_GENESIS_TIME
@@ -378,7 +378,7 @@ contract EigenPodHarnessSetup is EigenPodUnitTests {
 
         // Upgrade eigenPod to harness
         UpgradeableBeacon(address(eigenPodBeacon)).upgradeTo(address(eigenPodHarnessImplementation));
-        eigenPodHarness = EPInternalFunctions(payable(eigenPod));
+        eigenPodHarness = EigenPodHarness(payable(eigenPod));
     }    
 }
 
@@ -511,7 +511,7 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
         // Set beacon state root, validatorIndex
         beaconStateRoot = getBeaconStateRoot();
         validatorIndex = uint40(getValidatorIndex());
-        validatorFieldsProof = abi.encodePacked(getWithdrawalCredentialProof()); // Validator fields are proven here
+        validatorFieldsProof = getWithdrawalCredentialProof(); // Validator fields are proven here
         validatorFields = getValidatorFields();
 
         // Get an oracle timestamp
@@ -1067,7 +1067,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         // Set beacon state root, validatorIndex
         beaconStateRoot = getBeaconStateRoot();
         uint40 validatorIndex = uint40(getValidatorIndex());
-        validatorFieldsProof = abi.encodePacked(getWithdrawalCredentialProof()); // Validator fields are proven here
+        validatorFieldsProof = getWithdrawalCredentialProof(); // Validator fields are proven here
         validatorFields = getValidatorFields();
 
         // Get an oracle timestamp

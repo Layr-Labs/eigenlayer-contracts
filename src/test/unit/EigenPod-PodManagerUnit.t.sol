@@ -83,7 +83,6 @@ contract EigenPod_PodManager_UnitTests is EigenLayerUnitTestSetup {
             address(eigenPodManagerWrapper),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                beaconChainOracle,
                 initialOwner,
                 pauserRegistry,
                 0 /*initialPausedStatus*/
@@ -513,7 +512,7 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
 
     // Helper Functions
     function _getStateRootProof() internal returns (BeaconChainProofs.StateRootProof memory) {
-        return BeaconChainProofs.StateRootProof(getBeaconStateRoot(), abi.encodePacked(getStateRootProof()));
+        return BeaconChainProofs.StateRootProof(getBeaconStateRoot(), getStateRootProof());
     }
 
     function _setOracleBlockRoot() internal {
@@ -558,7 +557,7 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
         validatorFields.push(getValidatorFields());
 
         // Set validator fields proof
-        validatorFieldsProofs.push(abi.encodePacked(getWithdrawalCredentialProof())); // Validator fields are proven here
+        validatorFieldsProofs.push(getWithdrawalCredentialProof()); // Validator fields are proven here
     }
 
     // function _setBalanceUpdateParams() internal {

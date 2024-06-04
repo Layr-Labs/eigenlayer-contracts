@@ -4,20 +4,19 @@ pragma solidity ^0.8.12;
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
-contract Integration_Tester is IntegrationCheckUtils {
+contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
 
-    using Strings for *;
-    using StdStyle for *;
-    
-    string constant SECTION_DELIMITER = "======";
-
-    function test_GasMetering() public {
+    modifier r(uint24 _rand) {
         _configRand({
-            _randomSeed: 24,
+            _randomSeed: _rand,
             _assetTypes: HOLDS_ETH,
             _userTypes: DEFAULT
         });
 
+        _;
+    }
+
+    function test_GasMetering() public r(24) {
         (User staker, ,) = _newRandomStaker();
         cheats.pauseGasMetering();
 
@@ -72,13 +71,96 @@ contract Integration_Tester is IntegrationCheckUtils {
                        VERIFY -> START/COMPLETE CHECKPOINT
     *******************************************************************************/
 
-    function test_VerifyAll_Start_CompleteCP_WithRewardsWithdrawn(uint24 _rand) public {
-        _configRand({
-            _randomSeed: _rand,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
+    /// 1. Verify one or more validators' withdrawal credentials
+    /// 2. start a checkpoint
+    /// 3. complete a checkpoint
+    /// => no change in shares
+    function test_VerifyWC_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
 
+        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
+        uint40[] memory subset = _choose(validators);
+        uint subsetBalanceWei = beaconChain.totalEffectiveBalanceWei(subset);
+
+        staker.verifyWithdrawalCredentials(subset);
+        check_VerifyWC_State(staker, subset, subsetBalanceWei);
+
+        // Advance epoch without generating consensus rewards
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_State(staker);
+    }
+
+    /// 1. Verify one or more validators' withdrawal credentials
+    /// 2. start a checkpoint (in the same block)
+    /// 3. complete a checkpoint
+    /// => no change in shares
+    function test_VerifyWC_SameBlock_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
+        uint40[] memory subset = _choose(validators);
+        uint subsetBalanceWei = beaconChain.totalEffectiveBalanceWei(subset);
+
+        staker.verifyWithdrawalCredentials(subset);
+        check_VerifyWC_State(staker, subset, subsetBalanceWei);
+
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_State(staker);
+    }
+
+    /// 1. Verify one or more validators' withdrawal credentials
+    /// -- fully exit one or more validators to the pod
+    /// 2. start a checkpoint
+    /// 3. complete a checkpoint
+    /// => no change in shares
+    function test_VerifyWC_ExitValidators_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
+        uint40[] memory subset = _choose(validators);
+        uint subsetBalanceWei = beaconChain.totalEffectiveBalanceWei(subset);
+
+        staker.verifyWithdrawalCredentials(subset);
+        check_VerifyWC_State(staker, subset, subsetBalanceWei);
+
+        // Fully exit validators to pod and advance epoch without generating consensus rewards
+        staker.exitValidators(subset);
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_State(staker);
+    }
+
+    /// 1. Verify one or more validators' withdrawal credentials
+    /// -- earn rewards on beacon chain (not withdrawn to pod)
+    /// 2. start a checkpoint
+    /// 3. complete a checkpoint
+    /// => shares increase by rewards earned
+    function test_VerifyWC_Earn_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+
+    }
+
+    /// 1. Verify one or more validators' withdrawal credentials
+    /// -- earn rewards on beacon chain (not withdrawn to pod)
+    /// 2. start a checkpoint
+    /// 3. complete a checkpoint
+    /// => shares increase by rewards earned
+    function test_VerifyWC_Earn_Withdraw_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+
+    }
+
+    function test_VerifyAll_Start_CompleteCP_WithRewardsWithdrawn(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
@@ -96,13 +178,7 @@ contract Integration_Tester is IntegrationCheckUtils {
         check_CompleteCheckpoint_State(staker);
     }
 
-    function test_VerifyAll_Start_CompleteCP_WithRewardsNotWithdrawn(uint24 _rand) public {
-        _configRand({
-            _randomSeed: _rand,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
-
+    function test_VerifyAll_Start_CompleteCP_WithRewardsNotWithdrawn(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
@@ -120,13 +196,7 @@ contract Integration_Tester is IntegrationCheckUtils {
         check_CompleteCheckpoint_State(staker);
     }
 
-    function test_VerifyAll_Start_CompleteCP_NoRewards(uint24 _rand) public {
-        _configRand({
-            _randomSeed: _rand,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
-
+    function test_VerifyAll_Start_CompleteCP_NoRewards(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
@@ -148,13 +218,7 @@ contract Integration_Tester is IntegrationCheckUtils {
                     VERIFY -> EXIT -> START/COMPLETE CHECKPOINT
     *******************************************************************************/
 
-    function test_VerifyAll_ExitAll_Start_CompleteCP_WithRewardsWithdrawn(uint24 _rand) public {
-        _configRand({
-            _randomSeed: _rand,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
-
+    function test_VerifyAll_ExitAll_Start_CompleteCP_WithRewardsWithdrawn(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
@@ -173,13 +237,7 @@ contract Integration_Tester is IntegrationCheckUtils {
         check_CompleteCheckpoint_WithExits_State(staker, validators, exitedBalanceGwei);
     }
 
-    function test_VerifyAll_ExitAll_Start_CompleteCP_WithRewardsNotWithdrawn(uint24 _rand) public {
-        _configRand({
-            _randomSeed: _rand,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
-
+    function test_VerifyAll_ExitAll_Start_CompleteCP_WithRewardsNotWithdrawn(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
@@ -198,13 +256,7 @@ contract Integration_Tester is IntegrationCheckUtils {
         check_CompleteCheckpoint_WithExits_State(staker, validators, exitedBalanceGwei);
     }
 
-    function test_VerifyAll_ExitAll_Start_CompleteCP_NoRewards(uint24 _rand) public {
-        _configRand({
-            _randomSeed: _rand,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
-
+    function test_VerifyAll_ExitAll_Start_CompleteCP_NoRewards(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
@@ -223,54 +275,9 @@ contract Integration_Tester is IntegrationCheckUtils {
         check_CompleteCheckpoint_WithExits_State(staker, validators, exitedBalanceGwei);
     }
 
-    function _logPod(User staker) internal {
-        EigenPod pod = staker.pod();
-
-        _logSection(string.concat(staker.NAME().cyan(), ": Pod Details"));
-
-        _log("- hasRestaked", pod.hasRestaked());
-        _log("- podOwnerShares", eigenPodManager.podOwnerShares(address(staker)));
-        _log("- activeValidatorCount", pod.activeValidatorCount());
-        _logU64("- withdrawableRestakedELGwei", pod.withdrawableRestakedExecutionLayerGwei());
-
-        bool hasCheckpoint = pod.currentCheckpointTimestamp() != 0;
-        _log("- has checkpoint", hasCheckpoint);
-        if (hasCheckpoint) {
-            IEigenPod.Checkpoint memory checkpoint = pod.currentCheckpoint();
-            _log("-- beaconBlockRoot", checkpoint.beaconBlockRoot);
-            _log("-- podBalanceGwei", checkpoint.podBalanceGwei);
-            _log("-- balanceDeltasGwei", checkpoint.balanceDeltasGwei);
-            _log("-- proofsRemaining", checkpoint.proofsRemaining);
-        }
-
-        _logSection("");
-    }
-
-    function _logSection(string memory name) internal {
-        emit log(string.concat(
-            SECTION_DELIMITER,
-            name,
-            SECTION_DELIMITER
-        ));
-    }
-
-    function _log(string memory name, bool value) internal {
-        emit log_named_string(name, value ? "true".green() : "false".magenta());
-    }
-
-    function _log(string memory name, bytes32 value) internal {
-        emit log_named_string(name, value.dimBytes32());
-    }
-
-    function _log(string memory name, uint value) internal {
-        emit log_named_uint(name, value);
-    }
-
-    function _logU64(string memory name, uint64 value) internal {
-        emit log_named_uint(name, value);
-    }
-
-    function _log(string memory name, int value) internal {
-        emit log_named_int(name, value);
+    /// @dev Choose a random subset of validators
+    /// TODO implement
+    function _choose(uint40[] memory validators) internal returns (uint40[] memory) {
+        return validators;
     }
 }
