@@ -642,10 +642,6 @@ contract ExistingDeploymentParser is Script, Test {
             "eigenPodManager: init paused status set incorrectly"
         );
         require(
-            eigenPodManager.denebForkTimestamp() == EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP,
-            "eigenPodManager: denebForkTimestamp not set correctly"
-        );
-        require(
             eigenPodManager.ethPOS() == IETHPOSDeposit(ETHPOSDepositAddress),
             "eigenPodManager: ethPOS not set correctly"
         );

@@ -362,9 +362,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         cheats.warp(GENESIS_TIME_LOCAL);
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(timeMachine, eigenPodManager, GENESIS_TIME_LOCAL);
-
-        //set deneb fork timestamp
-        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
     }
 
     /**
@@ -460,10 +457,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManager.unpause(0);
         strategyManager.unpause(0);
 
-        if (eigenPodManager.denebForkTimestamp() == type(uint64).max) {
-            //set deneb fork timestamp if not set
-            eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP);
-        }
         cheats.stopPrank();
 
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
@@ -564,10 +557,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManager.unpause(0);
         strategyManager.unpause(0);
 
-        if (eigenPodManager.denebForkTimestamp() == type(uint64).max) {
-            //set deneb fork timestamp if not set
-            eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP);
-        }
         cheats.stopPrank();
 
         ethStrats.push(BEACONCHAIN_ETH_STRAT);

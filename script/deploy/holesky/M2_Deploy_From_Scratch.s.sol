@@ -203,9 +203,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
         strategyManager.setStrategyWhitelister(STRATEGY_MANAGER_WHITELISTER);
 
-        // Fork timestamp config
-        eigenPodManager.setDenebForkTimestamp(EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP);
-
         // Transfer ownership
         strategyManager.transferOwnership(executorMultisig);
         eigenLayerProxyAdmin.transferOwnership(executorMultisig);
