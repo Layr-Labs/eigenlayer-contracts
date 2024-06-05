@@ -129,7 +129,7 @@ contract AVSDirectory is
             emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
         }
 
-        emit OperatorAddedToOperatorSet(operator, OperatorSet(msg.sender, operatorSetID));
+        emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetID}));
     }
 
     /**
@@ -156,7 +156,7 @@ contract AVSDirectory is
         operatorSetRegistrations[msg.sender][operator][operatorSetID] = false;
         operatorAVSOperatorSetCount[msg.sender][operator] -= 1;
 
-        emit OperatorRemovedFromOperatorSet(operator, OperatorSet(msg.sender, operatorSetID));
+        emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetID}));
 
         // Set the operator as deregistered if no longer registered for any operator sets
         if (operatorAVSOperatorSetCount[msg.sender][operator] == 0) {
@@ -264,7 +264,7 @@ contract AVSDirectory is
                 "AVSDirectory.addStrategiesToOperatorSet: strategy already added to operator set"
             );
             operatorSetStrategies[msg.sender][operatorSetID][strategies[i]] = true;
-            emit OperatorSetStrategyAdded(OperatorSet(msg.sender, operatorSetID), strategies[i]);
+            emit OperatorSetStrategyAdded(OperatorSet({avs: msg.sender, id: operatorSetID}), strategies[i]);
         }
     }
 
@@ -281,7 +281,7 @@ contract AVSDirectory is
                 "AVSDirectory.removeStrategiesFromOperatorSet: strategy not a member of operator set"
             );
             operatorSetStrategies[msg.sender][operatorSetID][strategies[i]] = false;
-            emit OperatorSetStrategyRemoved(OperatorSet(msg.sender, operatorSetID), strategies[i]);
+            emit OperatorSetStrategyRemoved(OperatorSet({avs: msg.sender, id: operatorSetID}), strategies[i]);
         }
     }
 
