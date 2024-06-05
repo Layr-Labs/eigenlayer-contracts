@@ -190,7 +190,10 @@ contract AVSDirectory is
             delegation.isOperator(operator),
             "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
         );
-        require(!isOperatorSetAVS[msg.sender]);
+        require(
+            !isOperatorSetAVS[msg.sender],
+            "AVSDirectory.registerOperatorToAVS: operator set AVS cannot register operators with legacy method"
+        );
 
         // Calculate the digest hash
         bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
