@@ -15,8 +15,8 @@
     "eigenPodManager": "0x30770d7E3e71112d7A6b7259542D1f680a70e315",
     "eigenPodManagerImplementation": "0x5265C162f7d5F3fE3175a78828ab16bf5E324a7B",
     "emptyContract": "0x9690d52B1Ce155DB2ec5eCbF5a262ccCc7B3A6D2",
-    "rewardsCoordinator": "0x5fC97864488C2B6fA6E5d2D7730090d7908Db98D",
-    "rewardsCoordinatorImplementation": "0x4B034d112b8d422665B13F791A4e1104894e0463",
+    "rewardsCoordinator": "0xAcc1fb458a1317E886dB376Fc8141540537E68fE",
+    "rewardsCoordinatorImplementation": "0x123C1A3543DBCA3f704E703dDda7FAAaA8e43D02",
     "slasher": "0xcAe751b75833ef09627549868A04E32679386e7C",
     "slasherImplementation": "0x99715D255E34a39bE9943b82F281CA734bcF345A",
     "strategies": "",
@@ -25,7 +25,7 @@
   },
   "chainInfo": {
     "chainId": 17000,
-    "deploymentBlock": 1471383
+    "deploymentBlock": 1671209
   },
   "parameters": {
     "communityMultisig": "0xCb8d2f9e55Bc7B1FA9d089f9aC80C583D2BDD5F7",

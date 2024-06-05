@@ -551,10 +551,10 @@ contract ExistingDeploymentParser is Script, Test {
             rewardsCoordinator.pauserRegistry() == eigenLayerPauserReg,
             "rewardsCoordinator: pauser registry not set correctly"
         );
-        // require(
-        //     rewardsCoordinator.owner() == executorMultisig,
-        //     "rewardsCoordinator: owner not set correctly"
-        // );
+        require(
+            rewardsCoordinator.owner() == executorMultisig,
+            "rewardsCoordinator: owner not set correctly"
+        );
         require(
             rewardsCoordinator.paused() == REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
             "rewardsCoordinator: init paused status set incorrectly"
