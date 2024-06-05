@@ -16,6 +16,8 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
  * Contracts not mocked: DelegationManager
  */
 contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
+    uint256 internal constant MAX_PRIVATE_KEY = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140;
+
     // Contract under test
     AVSDirectory avsDirectory;
     AVSDirectory avsDirectoryImplementation;
@@ -170,6 +172,127 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     }
 }
 
+contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnitTests {
+    event OperatorAddedToOperatorSet(address operator, IAVSDirectory.OperatorSet operatorSet);
+
+    function testFuzz_revert_SignatureIsExpired(
+        address operator,
+        uint32 oid,
+        bytes32 salt,
+        uint256 expiry
+    ) public virtual {
+        expiry = bound(expiry, 0, type(uint256).max - 1);
+
+        cheats.warp(type(uint256).max);
+        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSet: operator signature expired");
+
+        avsDirectory.registerOperatorToOperatorSet(
+            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
+        );
+    }
+
+    function testFuzz_revert_OperatorRegistered(
+        uint256 operatorPk,
+        uint32 oid,
+        bytes32 salt,
+        uint256 expiry
+    ) public virtual {
+        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+        expiry = bound(expiry, 1, type(uint256).max);
+
+        cheats.warp(0);
+
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), salt, expiry)
+        );
+
+        _registerOperatorWithBaseDetails(operator);
+
+        avsDirectory.registerOperatorToOperatorSet(
+            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        );
+
+        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSet: operator already registered to operator set");
+        avsDirectory.registerOperatorToOperatorSet(
+            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
+        );
+    }
+
+    function testFuzz_revert_OperatorNotRegistered(
+        address operator,
+        uint32 oid,
+        bytes32 salt,
+        uint256 expiry
+    ) public virtual {
+        vm.assume(operator != address(0));
+
+        expiry = bound(expiry, 1, type(uint256).max);
+
+        cheats.warp(0);
+
+        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet");
+        avsDirectory.registerOperatorToOperatorSet(
+            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
+        );
+    }
+
+    function testFuzz_revert_SaltSpent(uint256 operatorPk, uint32 oid, bytes32 salt, uint256 expiry) public virtual {
+        oid = uint32(bound(oid, 1, type(uint32).max));
+        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+        expiry = bound(expiry, 1, type(uint256).max);
+
+        cheats.warp(0);
+
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), salt, expiry)
+        );
+
+        _registerOperatorWithBaseDetails(operator);
+
+        avsDirectory.registerOperatorToOperatorSet(
+            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        );
+
+        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: salt already spent");
+        avsDirectory.registerOperatorToOperatorSet(
+            operator, 0, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
+        );
+    }
+
+    function testFuzz_Correctness(uint256 operatorPk, uint32 oid, bytes32 salt, uint256 expiry) public virtual {
+        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+        expiry = bound(expiry, 1, type(uint256).max);
+
+        cheats.warp(0);
+
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), salt, expiry)
+        );
+
+        _registerOperatorWithBaseDetails(operator);
+
+        cheats.expectEmit(true, false, false, false, address(avsDirectory));
+        emit OperatorAVSRegistrationStatusUpdated(
+            operator, address(this), IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+        );
+        
+        cheats.expectEmit(true, false, false, false, address(avsDirectory));
+        emit OperatorAddedToOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), oid));
+        avsDirectory.registerOperatorToOperatorSet(
+            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        );
+
+        assertEq(avsDirectory.operatorAVSOperatorSetCount(address(this), operator), 1);
+        assertEq(uint8(avsDirectory.avsOperatorStatus(address(this), operator)), 1);
+        assertTrue(avsDirectory.operatorSetRegistrations(address(this), operator, oid));
+        assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
+        assertTrue(avsDirectory.isOperatorSetAVS(address(this)));
+    }
+}
+
 contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUnitTests {
     function test_revert_whenRegisterDeregisterToAVSPaused() public {
         // set the pausing flag
@@ -177,7 +300,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         avsDirectory.pause(2 ** PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS);
 
         cheats.expectRevert("Pausable: index is paused");
-        avsDirectory.registerOperatorToAVS(address(0), ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(""), 0, 0));
+        avsDirectory.registerOperatorToAVS(
+            address(0), ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(""), 0, 0)
+        );
 
         cheats.expectRevert("Pausable: index is paused");
         avsDirectory.deregisterOperatorFromAVS(address(0));
@@ -242,9 +367,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
     }
 
     // @notice Verifies an operator registers fails when the signature expiry already expires
-    function testFuzz_revert_whenExpiryHasExpired(
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) public {
+    function testFuzz_revert_whenExpiryHasExpired(ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature)
+        public
+    {
         address operator = cheats.addr(delegationSignerPrivateKey);
         operatorSignature.expiry = bound(operatorSignature.expiry, 0, block.timestamp - 1);
 
@@ -283,10 +408,14 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         avsDirectory.cancelSalt(salt);
 
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt), "salt was not successfully cancelled");
-        assertFalse(avsDirectory.operatorSaltIsSpent(defaultAVS, salt), "salt should only be cancelled for the operator");
+        assertFalse(
+            avsDirectory.operatorSaltIsSpent(defaultAVS, salt), "salt should only be cancelled for the operator"
+        );
 
-        bytes32 newSalt; 
-        unchecked { newSalt = bytes32(uint(salt) + 1); }
+        bytes32 newSalt;
+        unchecked {
+            newSalt = bytes32(uint256(salt) + 1);
+        }
 
         assertFalse(salt == newSalt, "bad test setup");
 
@@ -321,9 +450,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
         _registerOperatorWithBaseDetails(operator);
 
-        uint256 expiry = type(uint256).max;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
-            _getOperatorSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
+        // uint256 expiry = type(uint256).max;
+        // ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
+        //     _getOperatorSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
 
         cheats.startPrank(operator);
         avsDirectory.cancelSalt(salt);
