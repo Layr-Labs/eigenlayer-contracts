@@ -187,7 +187,8 @@ contract AVSDirectory is
             "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
         );
         require(
-            !isOperatorSetAVS[msg.sender]
+            !isOperatorSetAVS[msg.sender],
+            "AVSDirectory.registerOperatorToAVS: operator set AVS cannot register operators with legacy method"
         );
 
         // Calculate the digest hash
