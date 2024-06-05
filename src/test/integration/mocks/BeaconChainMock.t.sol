@@ -762,6 +762,15 @@ contract BeaconChainMock is PrintUtils {
         return validators[validatorIndex].exitEpoch;
     }
 
+    function totalEffectiveBalanceWei(uint40[] memory validatorIndices) public view returns (uint) {
+        uint total;
+        for (uint i = 0; i < validatorIndices.length; i++) {
+            total += uint(validators[validatorIndices[i]].effectiveBalanceGwei * GWEI_TO_WEI);
+        }
+
+        return total;
+    }
+
     /// @dev Returns the validator's effective balance, in gwei
     function effectiveBalance(uint40 validatorIndex) public view returns (uint64) {
         return validators[validatorIndex].effectiveBalanceGwei;
@@ -790,7 +799,7 @@ contract BeaconChainMock is PrintUtils {
         vFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX] = v.pubkeyHash;
         vFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] = bytes32(v.withdrawalCreds);
         vFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX] = _toLittleEndianUint64(v.effectiveBalanceGwei);
-        vFields[BeaconChainProofs.VALIDATOR_EXIT_EPOCH_INDEX] = _toLittleEndianUint64(BeaconChainProofs.FAR_FUTURE_EPOCH);
+        vFields[BeaconChainProofs.VALIDATOR_EXIT_EPOCH_INDEX] = _toLittleEndianUint64(v.exitEpoch);
 
         return vFields;
     }

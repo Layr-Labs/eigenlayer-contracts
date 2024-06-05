@@ -819,38 +819,6 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return (tokenDeltas, stakerShareDeltas, operatorShareDeltas);
     }
 
-    // function _calcNativeETHStakerShareDelta(
-    //     User staker, 
-    //     uint40 validatorIndex, 
-    //     uint64 beaconBalanceGwei, 
-    //     int64 deltaGwei
-    // ) internal view returns (int) {
-    //     uint64 oldPodBalanceGwei = 
-    //         staker
-    //             .pod()
-    //             .validatorPubkeyHashToInfo(beaconChain.pubkeyHash(validatorIndex))
-    //             .restakedBalanceGwei;
-        
-    //     uint64 newPodBalanceGwei = _calcPodBalance(beaconBalanceGwei, deltaGwei);
-
-    //     return (int(uint(newPodBalanceGwei)) - int(uint(oldPodBalanceGwei))) * int(GWEI_TO_WEI);
-    // }
-    
-    // function _calcPodBalance(uint64 beaconBalanceGwei, int64 deltaGwei) internal pure returns (uint64) {
-    //     uint64 podBalanceGwei;
-    //     if (deltaGwei < 0) {
-    //         podBalanceGwei = beaconBalanceGwei - uint64(uint(int(-deltaGwei)));
-    //     } else {
-    //         podBalanceGwei = beaconBalanceGwei + uint64(uint(int(deltaGwei)));
-    //     }
-
-    //     if (podBalanceGwei > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
-    //         podBalanceGwei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
-    //     }
-
-    //     return podBalanceGwei;
-    // }
-
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
         int curPodOwnerShares = eigenPodManager.podOwnerShares(address(staker));
         int newPodOwnerShares = curPodOwnerShares + shareDelta;
