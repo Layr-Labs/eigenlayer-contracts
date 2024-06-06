@@ -265,8 +265,7 @@ contract AVSDirectory is
      * TODO: align with team on if we want to keep the two require statements
      */
     function addStrategiesToOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external {
-        uint256 strategiesToAdd = strategies.length;
-        for (uint256 i = 0; i < strategiesToAdd; ++i) {
+        for (uint256 i = 0; i < strategies.length; ++i) {
             // Require that the strategy is valid
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategies[i])
@@ -274,10 +273,10 @@ contract AVSDirectory is
                 "AVSDirectory.addStrategiesToOperatorSet: invalid strategy considered"
             );
             require(
-                !operatorSetStrategies[msg.sender][operatorSetID][strategies[i]],
+                !isOperatorSetStrategy[msg.sender][operatorSetID][strategies[i]],
                 "AVSDirectory.addStrategiesToOperatorSet: strategy already added to operator set"
             );
-            operatorSetStrategies[msg.sender][operatorSetID][strategies[i]] = true;
+            isOperatorSetStrategy[msg.sender][operatorSetID][strategies[i]] = true;
             emit OperatorSetStrategyAdded(OperatorSet({avs: msg.sender, id: operatorSetID}), strategies[i]);
         }
     }
@@ -288,13 +287,12 @@ contract AVSDirectory is
      * @param strategies The strategies to remove from the operator set
      */
     function removeStrategiesFromOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external {
-        uint256 strategiesToRemove = strategies.length;
-        for (uint256 i = 0; i < strategiesToRemove; ++i) {
+        for (uint256 i = 0; i < strategies.length; ++i) {
             require(
-                operatorSetStrategies[msg.sender][operatorSetID][strategies[i]],
+                isOperatorSetStrategy[msg.sender][operatorSetID][strategies[i]],
                 "AVSDirectory.removeStrategiesFromOperatorSet: strategy not a member of operator set"
             );
-            operatorSetStrategies[msg.sender][operatorSetID][strategies[i]] = false;
+            isOperatorSetStrategy[msg.sender][operatorSetID][strategies[i]] = false;
             emit OperatorSetStrategyRemoved(OperatorSet({avs: msg.sender, id: operatorSetID}), strategies[i]);
         }
     }
@@ -350,7 +348,7 @@ contract AVSDirectory is
         // calculate the struct hash
         bytes32 structHash = keccak256(
             abi.encode(
-                OPERATOR_SET_REGISTRATION_TYPEHASH, // todo
+                OPERATOR_SET_REGISTRATION_TYPEHASH,
                 avs,
                 operatorSetIDs,
                 salt,
