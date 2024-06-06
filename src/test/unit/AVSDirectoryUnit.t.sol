@@ -278,6 +278,37 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         );
     }
 
+    function testFuzz_revert_WrongAVS(
+        address badAvs,
+        uint256 operatorPk,
+        uint32 oid,
+        bytes32 salt,
+        uint256 expiry
+    ) public virtual {
+        oid = uint32(bound(oid, 1, type(uint32).max));
+        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+        expiry = bound(expiry, 1, type(uint256).max);
+
+        cheats.warp(0);
+
+        uint32[] memory oids = new uint32[](1);
+        oids[0] = oid;
+
+        address operator = cheats.addr(operatorPk);
+
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
+        );
+
+        _registerOperatorWithBaseDetails(operator);
+
+        vm.prank(badAvs);
+        vm.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        );
+    }
+
     function testFuzz_Correctness(uint256 operatorPk, uint32 oid, bytes32 salt, uint256 expiry) public virtual {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
         expiry = bound(expiry, 1, type(uint256).max);
