@@ -162,7 +162,7 @@ contract AVSDirectory is
 
             // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIDs[i]`.
             isOperatorInOperatorSet[msg.sender][operator][operatorSetIDs[i]] = false;
-            
+
             // Decrement `operatorAVSOperatorSetCount` by 1.
             // The above assertion makes underflow logically impossible here.
             unchecked {
@@ -353,14 +353,14 @@ contract AVSDirectory is
                 OPERATOR_SET_REGISTRATION_TYPEHASH, // todo
                 avs,
                 operatorSetIDs,
-                salt, 
+                salt,
                 expiry
             )
         );
 
         // calculate the digest hash
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
-        
+
         return digestHash;
     }
 

@@ -185,7 +185,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
     ) public virtual {
         expiry = bound(expiry, 0, type(uint256).max - 1);
         cheats.warp(type(uint256).max);
-        
+
         _registerOperatorWithBaseDetails(operator);
 
         uint32[] memory oids = new uint32[](1);
