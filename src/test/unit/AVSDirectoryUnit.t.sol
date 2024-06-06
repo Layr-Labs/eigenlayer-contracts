@@ -412,6 +412,40 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
     }
 }
 
+contract AVSDirectoryUnitTests_addStrategiesToOperatorSet is AVSDirectoryUnitTests {
+    event OperatorSetStrategyAdded(IAVSDirectory.OperatorSet operatorSet, IStrategy strategy);
+
+    function testFuzz_revert_InvalidStrategy(uint32 oid, address badStrat) public virtual {
+        IStrategy[] memory strats = new IStrategy[](1);
+        strats[0] = IStrategy(badStrat);
+
+        vm.expectRevert("AVSDirectory.addStrategiesToOperatorSet: invalid strategy considered");
+        avsDirectory.addStrategiesToOperatorSet(oid, strats);
+    }
+
+    function testFuzz_revert_AlreadyOperatorSetStrategy(uint32 oid) public virtual {
+        IStrategy[] memory strats = new IStrategy[](1);
+        strats[0] = IStrategy(avsDirectory.beaconChainETHStrategy());
+
+        avsDirectory.addStrategiesToOperatorSet(oid, strats);
+
+        vm.expectRevert("AVSDirectory.addStrategiesToOperatorSet: strategy already added to operator set");
+        avsDirectory.addStrategiesToOperatorSet(oid, strats);
+    }
+
+    function testFuzz_Correctness(uint32 oid) public virtual {
+        IStrategy[] memory strats = new IStrategy[](1);
+        strats[0] = IStrategy(avsDirectory.beaconChainETHStrategy());
+
+        vm.expectEmit(false, false, false, false, address(avsDirectory));
+        emit OperatorSetStrategyAdded(IAVSDirectory.OperatorSet(address(this), oid), strats[0]);
+
+        avsDirectory.addStrategiesToOperatorSet(oid, strats);
+
+        assertTrue(avsDirectory.isOperatorSetStrategy(address(this), oid, strats[0]));
+    }
+}
+
 contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUnitTests {
     function test_revert_whenRegisterDeregisterToAVSPaused() public {
         // set the pausing flag
