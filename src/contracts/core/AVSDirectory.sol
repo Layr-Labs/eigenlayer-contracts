@@ -127,13 +127,13 @@ contract AVSDirectory is
             // Mutate `isOperatorInOperatorSet` to `true` for `operatorSetIDs[i]`.
             isOperatorInOperatorSet[msg.sender][operator][operatorSetIDs[i]] = true;
 
-            // Increment `operatorAVSOperatorSetCount` by 1.
-            // You would have to call this function 2**256-2 times before overflow is possible here.
-            unchecked {
-                ++operatorAVSOperatorSetCount[msg.sender][operator];
-            }
-
             emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIDs[i]}));
+        }
+
+        // Increase `operatorAVSOperatorSetCount` by `operatorSetIDs.length`.
+        // You would have to add the operator to 2**256-2 operator sets before overflow is possible here.
+        unchecked {
+            operatorAVSOperatorSetCount[msg.sender][operator] += operatorSetIDs.length;
         }
     }
 
