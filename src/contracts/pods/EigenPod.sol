@@ -174,9 +174,9 @@ contract EigenPod is
         external 
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS) 
     {
-        uint64 beaconTimestamp = currentCheckpointTimestamp;
+        uint64 checkpointTimestamp = currentCheckpointTimestamp;
         require(
-            beaconTimestamp != 0, 
+            checkpointTimestamp != 0, 
             "EigenPod.verifyCheckpointProofs: must have active checkpoint to perform checkpoint proof"
         );
 
@@ -199,12 +199,12 @@ contract EigenPod is
             if (validatorInfo.status != VALIDATOR_STATUS.ACTIVE) {
                 continue;
             }
-            
+
             // Ensure we aren't proving a validator twice for the same checkpoint. This will fail if:
             // - validator submitted twice during this checkpoint
             // - validator withdrawal credentials verified after checkpoint starts, then submitted
             //   as a checkpoint proof
-            if (validatorInfo.mostRecentBalanceUpdateTimestamp >= beaconTimestamp) {
+            if (validatorInfo.lastCheckpointedAt >= checkpointTimestamp) {
                 continue;
             }
 
@@ -217,7 +217,7 @@ contract EigenPod is
             // the pod when `startCheckpoint` was originally called.
             (int128 balanceDeltaGwei, uint64 exitedBalanceGwei) = _verifyCheckpointProof({
                 validatorInfo: validatorInfo,
-                beaconTimestamp: beaconTimestamp,
+                checkpointTimestamp: checkpointTimestamp,
                 balanceContainerRoot: balanceContainerProof.balanceContainerRoot,
                 proof: proofs[i]
             });
@@ -228,7 +228,7 @@ contract EigenPod is
         }
 
         // Update the checkpoint and the total amount attributed to exited validators
-        checkpointBalanceExitedGwei[beaconTimestamp] += exitedBalancesGwei;
+        checkpointBalanceExitedGwei[checkpointTimestamp] += exitedBalancesGwei;
         _updateCheckpoint(checkpoint);
     }
 
@@ -321,7 +321,7 @@ contract EigenPod is
 
         // Validator must be eligible for a staleness proof
         require(
-            beaconTimestamp > validatorInfo.mostRecentBalanceUpdateTimestamp + TIME_TILL_STALE_BALANCE,
+            beaconTimestamp > validatorInfo.lastCheckpointedAt + TIME_TILL_STALE_BALANCE,
             "EigenPod.verifyStaleBalance: validator balance is not stale yet"
         );
 
@@ -417,8 +417,8 @@ contract EigenPod is
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields
     ) internal returns (uint256) {
-        bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
-        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
+        bytes32 pubkeyHash = validatorFields.getPubkeyHash();
+        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[pubkeyHash];
 
         // Withdrawal credential proofs should only be processed for "INACTIVE" validators
         require(
@@ -451,24 +451,28 @@ contract EigenPod is
             validatorIndex: validatorIndex
         });
 
-        // Proofs complete - update this validator's status, record its proven balance, and save in state:
+        // Account for validator in future checkpoints
         activeValidatorCount++;
-        validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
-        validatorInfo.validatorIndex = validatorIndex;
-        validatorInfo.mostRecentBalanceUpdateTimestamp = beaconTimestamp;
-        validatorInfo.restakedBalanceGwei = restakedBalanceGwei;
+        uint64 lastCheckpointedAt = 
+            currentCheckpointTimestamp == 0 ? lastCheckpointTimestamp : currentCheckpointTimestamp;
 
-        _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
+        // Proofs complete - create the validator in state
+        _validatorPubkeyHashToInfo[pubkeyHash] = ValidatorInfo({
+            validatorIndex: validatorIndex,
+            restakedBalanceGwei: restakedBalanceGwei,
+            lastCheckpointedAt: lastCheckpointedAt,
+            status: VALIDATOR_STATUS.ACTIVE
+        });
 
         emit ValidatorRestaked(validatorIndex);
-        emit ValidatorBalanceUpdated(validatorIndex, beaconTimestamp, restakedBalanceGwei);
+        emit ValidatorBalanceUpdated(validatorIndex, lastCheckpointedAt, restakedBalanceGwei);
 
         return restakedBalanceGwei * GWEI_TO_WEI;
     }
 
     function _verifyCheckpointProof(
         ValidatorInfo memory validatorInfo,
-        uint64 beaconTimestamp,
+        uint64 checkpointTimestamp,
         bytes32 balanceContainerRoot,
         BeaconChainProofs.BalanceProof calldata proof
     ) internal returns (int128 balanceDeltaGwei, uint64 exitedBalanceGwei) {
@@ -489,12 +493,13 @@ contract EigenPod is
                 previousAmountGwei: prevBalanceGwei
             });
 
-            emit ValidatorBalanceUpdated(validatorIndex, beaconTimestamp, newBalanceGwei);
+            emit ValidatorBalanceUpdated(validatorIndex, checkpointTimestamp, newBalanceGwei);
         }
 
-        // Update validator state. If their new balance is 0, they are marked `WITHDRAWN`
         validatorInfo.restakedBalanceGwei = newBalanceGwei;
-        validatorInfo.mostRecentBalanceUpdateTimestamp = beaconTimestamp;
+        validatorInfo.lastCheckpointedAt = checkpointTimestamp;
+
+        // If the validator's new balance is 0, mark them withdrawn
         if (newBalanceGwei == 0) {
             activeValidatorCount--;
             validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
@@ -502,11 +507,11 @@ contract EigenPod is
             // so this should be a safe conversion
             exitedBalanceGwei = uint64(uint128(-balanceDeltaGwei));
 
-            emit ValidatorWithdrawn(beaconTimestamp, validatorIndex);
+            emit ValidatorWithdrawn(checkpointTimestamp, validatorIndex);
         }
 
         _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
-        emit ValidatorCheckpointed(beaconTimestamp, validatorIndex);
+        emit ValidatorCheckpointed(checkpointTimestamp, validatorIndex);
 
         return (balanceDeltaGwei, exitedBalanceGwei);
     }
@@ -528,6 +533,11 @@ contract EigenPod is
         require(
             currentCheckpointTimestamp == 0, 
             "EigenPod._startCheckpoint: must finish previous checkpoint before starting another"
+        );
+
+        require(
+            lastCheckpointTimestamp != uint64(block.timestamp),
+            "EigenPod._startCheckpoint: cannot checkpoint twice in one block"
         );
 
         // Snapshot pod balance at the start of the checkpoint, subtracting pod balance that has
