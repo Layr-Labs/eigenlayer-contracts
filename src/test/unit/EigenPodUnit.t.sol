@@ -502,7 +502,7 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
         IEigenPod.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
         assertEq(uint8(validatorInfo.status), uint8(IEigenPod.VALIDATOR_STATUS.ACTIVE), "Validator status should be active");
         assertEq(validatorInfo.validatorIndex, validatorIndex, "Validator index incorrectly set");
-        assertEq(validatorInfo.mostRecentBalanceUpdateTimestamp, oracleTimestamp, "Most recent balance update timestamp incorrectly set");
+        assertEq(validatorInfo.lastCheckpointedAt, oracleTimestamp, "Last checkpointed at timestamp incorrectly set");
         assertEq(validatorInfo.restakedBalanceGwei, restakedBalanceGwei, "Restaked balance gwei not set correctly");
     }
 
@@ -531,9 +531,9 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
     bytes validatorFieldsProof;
     bytes32[] validatorFields;
 
-    // function testFuzz_revert_oracleTimestampStale(uint64 oracleFuzzTimestamp, uint64 mostRecentBalanceUpdateTimestamp) public {
+    // function testFuzz_revert_oracleTimestampStale(uint64 oracleFuzzTimestamp, uint64 lastCheckpointedAt) public {
     //     // Constain inputs and set proof file
-    //     cheats.assume(oracleFuzzTimestamp < mostRecentBalanceUpdateTimestamp);
+    //     cheats.assume(oracleFuzzTimestamp < lastCheckpointedAt);
     //     setJSON("src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         
     //     // Get validator fields and balance update root
@@ -550,7 +550,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
     //         bytes32(0),
     //         validatorFieldsProof,
     //         validatorFields,
-    //         mostRecentBalanceUpdateTimestamp
+    //         lastCheckpointedAt
     //     );
     // }
 
@@ -961,7 +961,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
     //     IEigenPod.ValidatorInfo memory validatorInfo = IEigenPod.ValidatorInfo({
     //         validatorIndex: 0,
     //         restakedBalanceGwei: restakedAmount,
-    //         mostRecentBalanceUpdateTimestamp: 0,
+    //         lastCheckpointedAt: 0,
     //         status: IEigenPod.VALIDATOR_STATUS.ACTIVE
     //     });
 

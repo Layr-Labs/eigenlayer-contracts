@@ -38,7 +38,7 @@ interface IEigenPod {
         // amount of beacon chain ETH restaked on EigenLayer in gwei
         uint64 restakedBalanceGwei;
         //timestamp of the validator's most recent balance update
-        uint64 mostRecentBalanceUpdateTimestamp;
+        uint64 lastCheckpointedAt;
         // status of the validator
         VALIDATOR_STATUS status;
     }
