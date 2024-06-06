@@ -110,9 +110,7 @@ contract AVSDirectory is
         // Register `operator` if not already registered.
         if (avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED) {
             avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
-            emit OperatorAVSRegistrationStatusUpdated(
-                operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED
-            );
+            emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
         }
 
         // Loop over `operatorSetIds` array and register `operator` for each item.
@@ -122,7 +120,7 @@ contract AVSDirectory is
                 !operatorSetRegistrations[msg.sender][operator][operatorSetIDs[i]],
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
-            
+
             // Mutate calling AVS to operator set AVS status, preventing further legacy registrations.
             if (!isOperatorSetAVS[msg.sender]) {
                 isOperatorSetAVS[msg.sender] = true;
@@ -130,7 +128,7 @@ contract AVSDirectory is
 
             // Mutate `operatorSetRegistrations` to `true` for `operatorSetIDs[i]`.
             operatorSetRegistrations[msg.sender][operator][operatorSetIDs[i]] = true;
-            
+
             // Increment `operatorAVSOperatorSetCount` by 1.
             // You would have to call this function 2**256-2 times before overflow is possible here.
             unchecked {

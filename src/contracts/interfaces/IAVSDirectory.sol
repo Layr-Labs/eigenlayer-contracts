@@ -11,6 +11,7 @@ interface IAVSDirectory is ISignatureUtils {
     enum OperatorAVSRegistrationStatus {
         UNREGISTERED, // Operator not registered to AVS
         REGISTERED // Operator registered to AVS
+
     }
 
     struct OperatorSet {
@@ -133,7 +134,6 @@ interface IAVSDirectory is ISignatureUtils {
     //  * @return whether the operator was in a given operator set
     //  */
     // function isOperatorInOperatorSet(address operator, OperatorSet calldata operatorSet) external view returns (bool);
-
 
     /**
      * @notice Called by AVSs or operators to remove an operator to from operator set
