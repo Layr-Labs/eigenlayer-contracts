@@ -184,14 +184,14 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         uint256 expiry
     ) public virtual {
         expiry = bound(expiry, 0, type(uint256).max - 1);
-
         cheats.warp(type(uint256).max);
-        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: operator signature expired");
+        
+        _registerOperatorWithBaseDetails(operator);
 
         uint32[] memory oids = new uint32[](1);
-
         oids[0] = oid;
 
+        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: operator signature expired");
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
         );
@@ -208,13 +208,13 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
         cheats.warp(0);
 
-        address operator = cheats.addr(operatorPk);
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), salt, expiry)
-        );
-
         uint32[] memory oids = new uint32[](1);
         oids[0] = oid;
+
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
+        );
 
         _registerOperatorWithBaseDetails(operator);
 
@@ -223,7 +223,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         );
 
         (v, r, s) = cheats.sign(
-            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), 0, expiry)
+            operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, 0, expiry)
         );
 
         cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set");
@@ -258,13 +258,13 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
         cheats.warp(0);
 
-        address operator = cheats.addr(operatorPk);
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), salt, expiry)
-        );
-
         uint32[] memory oids = new uint32[](1);
         oids[0] = oid;
+
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
+        );
 
         _registerOperatorWithBaseDetails(operator);
 
@@ -284,13 +284,13 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
         cheats.warp(0);
 
-        address operator = cheats.addr(operatorPk);
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), salt, expiry)
-        );
-
         uint32[] memory oids = new uint32[](1);
         oids[0] = oid;
+
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
+        );
 
         _registerOperatorWithBaseDetails(operator);
 

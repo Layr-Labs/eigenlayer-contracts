@@ -95,9 +95,9 @@ contract AVSDirectory is
         // Assert signature provided by `operator` is valid.
         EIP1271SignatureUtils.checkSignature_EIP1271(
             operator,
-            calculateOperatorAVSRegistrationDigestHash({
-                operator: operator,
+            calculateOperatorSetRegistrationDigestHash({
                 avs: msg.sender,
+                operatorSetIDs: operatorSetIDs,
                 salt: operatorSignature.salt,
                 expiry: operatorSignature.expiry
             }),
@@ -336,23 +336,31 @@ contract AVSDirectory is
 
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an operator set
-     * @param operator The operator set that the operator is registering to
-     * @param operatorSet A struct containing info about a given operator set.
+     * @param avs The AVS that operator is registering to operator sets for.
+     * @param operatorSetIDs An array of operator set IDs the operator is registering to.
      * @param salt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid
      */
     function calculateOperatorSetRegistrationDigestHash(
-        address operator,
-        OperatorSet memory operatorSet,
+        address avs,
+        uint32[] calldata operatorSetIDs,
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the struct hash
         bytes32 structHash = keccak256(
-            abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, salt, expiry)
+            abi.encode(
+                OPERATOR_SET_REGISTRATION_TYPEHASH, // todo
+                avs,
+                operatorSetIDs,
+                salt, 
+                expiry
+            )
         );
+
         // calculate the digest hash
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
+        
         return digestHash;
     }
 

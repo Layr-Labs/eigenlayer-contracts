@@ -126,7 +126,7 @@ interface IAVSDirectory is ISignatureUtils {
     function removeStrategiesFromOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external;
 
     // VIEW
-    
+
     /**
      * @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      * @param metadataURI The URI for metadata associated with an AVS
@@ -156,14 +156,14 @@ interface IAVSDirectory is ISignatureUtils {
 
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an operator set
-     * @param operator The operator set that the operator is registering to
-     * @param operatorSet A struct containing info about a given operator set.
+     * @param avs The AVS that operator is registering to operator sets for.
+     * @param operatorSetIDs An array of operator set IDs the operator is registering to.
      * @param salt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid
      */
     function calculateOperatorSetRegistrationDigestHash(
-        address operator,
-        OperatorSet memory operatorSet,
+        address avs,
+        uint32[] memory operatorSetIDs,
         bytes32 salt,
         uint256 expiry
     ) external view returns (bytes32);
