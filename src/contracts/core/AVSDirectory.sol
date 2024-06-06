@@ -15,10 +15,10 @@ contract AVSDirectory is
     AVSDirectoryStorage,
     ReentrancyGuardUpgradeable
 {
-    // @dev Index for flag that pauses operator register/deregister to avs when set.
+    /// @dev Index for flag that pauses operator register/deregister to avs when set.
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
-    // @dev Chain ID at the time of contract deployment
+    /// @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
     /// @notice Canonical, virtual beacon chain ETH strategy
@@ -63,73 +63,82 @@ contract AVSDirectory is
      */
 
     /**
-     * @notice Called by AVSs to add an operator to an operator set
+     * @notice Enables an AVS to register an operator to a list of operator sets.
      *
-     * @param operator the address of the operator to be added to the operator set
-     * @param operatorSetID the ID of the operator set
-     * @param operatorSignature the signature of the operator on their intent to register
+     * @param operator The address of the operator to be registered.
+     * @param operatorSetIDs An array of operator set IDs that the operator should be registered for.
+     * @param operatorSignature The signature confirming the operator's intent to register.
      *
-     * @dev msg.sender is used as the AVS
-     * @dev operator must not have a deregistration from the operator set
-     * @dev if this is the first operator set in the AVS that the operator is
-     * registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with
-     * a REGISTERED status
-     * =
+     * @dev This function assumes that `msg.sender` is an AVS.
      */
-    function registerOperatorToOperatorSet(
+    function registerOperatorToOperatorSets(
         address operator,
-        uint32 operatorSetID,
+        uint32[] calldata operatorSetIDs,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+        // Assert operator's signature has not expired.
         require(
             operatorSignature.expiry >= block.timestamp,
-            "AVSDirectory.registerOperatorToOperatorSet: operator signature expired"
+            "AVSDirectory.registerOperatorToOperatorSets: operator signature expired"
         );
-        require(
-            operatorSetRegistrations[msg.sender][operator][operatorSetID] != true,
-            "AVSDirectory.registerOperatorToOperatorSet: operator already registered to operator set"
-        );
+        // Assert operator's signature `salt` has not already been spent.
         require(
             !operatorSaltIsSpent[operator][operatorSignature.salt],
-            "AVSDirectory.registerOperatorToAVS: salt already spent"
+            "AVSDirectory.registerOperatorToOperatorSets: salt already spent"
         );
+        // Assert `operator` is actually an operator.
         require(
             delegation.isOperator(operator),
-            "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
+            "AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
         );
 
-        // Calculate the digest hash
-        bytes32 operatorSetRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
-            operator: operator,
-            avs: msg.sender,
-            salt: operatorSignature.salt,
-            expiry: operatorSignature.expiry
-        });
-
-        // Check that the signature is valid
+        // Assert signature provided by `operator` is valid.
         EIP1271SignatureUtils.checkSignature_EIP1271(
-            operator, operatorSetRegistrationDigestHash, operatorSignature.signature
+            operator,
+            calculateOperatorAVSRegistrationDigestHash({
+                operator: operator,
+                avs: msg.sender,
+                salt: operatorSignature.salt,
+                expiry: operatorSignature.expiry
+            }),
+            operatorSignature.signature
         );
 
-        // Set as Operator Set AVS, preventing any further legacy registrations
-        if (!isOperatorSetAVS[msg.sender]) {
-            isOperatorSetAVS[msg.sender] = true;
-        }
-
-        // Update operator set registration
-        operatorSetRegistrations[msg.sender][operator][operatorSetID] = true;
-        operatorAVSOperatorSetCount[msg.sender][operator] += 1;
-
-        // Mark the salt as spent
+        // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
 
-        // Set the operator as registered if not already
+        // Register `operator` if not already registered.
         if (avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED) {
             avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
-            emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
+            emit OperatorAVSRegistrationStatusUpdated(
+                operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED
+            );
         }
 
-        emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetID}));
+        // Loop over `operatorSetIds` array and register `operator` for each item.
+        for (uint256 i = 0; i < operatorSetIDs.length; ++i) {
+            // Assert `operator` has not already been registered to `operatorSetIds[i]`.
+            require(
+                !operatorSetRegistrations[msg.sender][operator][operatorSetIDs[i]],
+                "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
+            );
+            
+            // Mutate calling AVS to operator set AVS status, preventing further legacy registrations.
+            if (!isOperatorSetAVS[msg.sender]) {
+                isOperatorSetAVS[msg.sender] = true;
+            }
+
+            // Mutate `operatorSetRegistrations` to `true` for `operatorSetIDs[i]`.
+            operatorSetRegistrations[msg.sender][operator][operatorSetIDs[i]] = true;
+            
+            // Increment `operatorAVSOperatorSetCount` by 1.
+            // You would have to call this function 2**256-2 times before overflow is possible here.
+            unchecked {
+                ++operatorAVSOperatorSetCount[msg.sender][operator];
+            }
+
+            emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIDs[i]}));
+        }
     }
 
     /**
@@ -323,7 +332,7 @@ contract AVSDirectory is
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an operator set
      * @param operator The operator set that the operator is registering to
-     * @param operatorSet A struct containing info about a given operator set. 
+     * @param operatorSet A struct containing info about a given operator set.
      * @param salt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid
      */

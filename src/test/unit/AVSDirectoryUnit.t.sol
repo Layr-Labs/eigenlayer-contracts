@@ -172,6 +172,8 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     }
 }
 
+// TODO: test mutating large sets of operator set ids
+
 contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnitTests {
     event OperatorAddedToOperatorSet(address operator, IAVSDirectory.OperatorSet operatorSet);
 
@@ -184,10 +186,14 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         expiry = bound(expiry, 0, type(uint256).max - 1);
 
         cheats.warp(type(uint256).max);
-        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSet: operator signature expired");
+        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: operator signature expired");
 
-        avsDirectory.registerOperatorToOperatorSet(
-            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
+        uint32[] memory oids = new uint32[](1);
+
+        oids[0] = oid;
+
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
         );
     }
 
@@ -207,15 +213,22 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
             operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), salt, expiry)
         );
 
+        uint32[] memory oids = new uint32[](1);
+        oids[0] = oid;
+
         _registerOperatorWithBaseDetails(operator);
 
-        avsDirectory.registerOperatorToOperatorSet(
-            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSet: operator already registered to operator set");
-        avsDirectory.registerOperatorToOperatorSet(
-            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
+        (v, r, s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), 0, expiry)
+        );
+
+        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set");
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), 0, expiry)
         );
     }
 
@@ -226,14 +239,15 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         uint256 expiry
     ) public virtual {
         vm.assume(operator != address(0));
-
         expiry = bound(expiry, 1, type(uint256).max);
-
         cheats.warp(0);
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet");
-        avsDirectory.registerOperatorToOperatorSet(
-            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
+        uint32[] memory oids = new uint32[](1);
+        oids[0] = oid;
+
+        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet");
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
         );
     }
 
@@ -249,15 +263,18 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
             operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), salt, expiry)
         );
 
+        uint32[] memory oids = new uint32[](1);
+        oids[0] = oid;
+
         _registerOperatorWithBaseDetails(operator);
 
-        avsDirectory.registerOperatorToOperatorSet(
-            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: salt already spent");
-        avsDirectory.registerOperatorToOperatorSet(
-            operator, 0, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
+        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: salt already spent");
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, new uint32[](0), ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
         );
     }
 
@@ -272,17 +289,20 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
             operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, address(this), salt, expiry)
         );
 
+        uint32[] memory oids = new uint32[](1);
+        oids[0] = oid;
+
         _registerOperatorWithBaseDetails(operator);
 
         cheats.expectEmit(true, false, false, false, address(avsDirectory));
         emit OperatorAVSRegistrationStatusUpdated(
             operator, address(this), IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
         );
-        
+
         cheats.expectEmit(true, false, false, false, address(avsDirectory));
         emit OperatorAddedToOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), oid));
-        avsDirectory.registerOperatorToOperatorSet(
-            operator, oid, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
 
         assertEq(avsDirectory.operatorAVSOperatorSetCount(address(this), operator), 1);
