@@ -76,6 +76,11 @@ contract AVSDirectory is
         uint32[] calldata operatorSetIDs,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+        // Assert `operator` is actually an operator.
+        require(
+            delegation.isOperator(operator),
+            "AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
+        );
         // Assert operator's signature has not expired.
         require(
             operatorSignature.expiry >= block.timestamp,
@@ -85,11 +90,6 @@ contract AVSDirectory is
         require(
             !operatorSaltIsSpent[operator][operatorSignature.salt],
             "AVSDirectory.registerOperatorToOperatorSets: salt already spent"
-        );
-        // Assert `operator` is actually an operator.
-        require(
-            delegation.isOperator(operator),
-            "AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
         );
 
         // Assert signature provided by `operator` is valid.
@@ -117,17 +117,15 @@ contract AVSDirectory is
         for (uint256 i = 0; i < operatorSetIDs.length; ++i) {
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
-                !operatorSetRegistrations[msg.sender][operator][operatorSetIDs[i]],
+                !isOperatorInOperatorSet[msg.sender][operator][operatorSetIDs[i]],
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
             // Mutate calling AVS to operator set AVS status, preventing further legacy registrations.
-            if (!isOperatorSetAVS[msg.sender]) {
-                isOperatorSetAVS[msg.sender] = true;
-            }
+            if (!isOperatorSetAVS[msg.sender]) isOperatorSetAVS[msg.sender] = true;
 
-            // Mutate `operatorSetRegistrations` to `true` for `operatorSetIDs[i]`.
-            operatorSetRegistrations[msg.sender][operator][operatorSetIDs[i]] = true;
+            // Mutate `isOperatorInOperatorSet` to `true` for `operatorSetIDs[i]`.
+            isOperatorInOperatorSet[msg.sender][operator][operatorSetIDs[i]] = true;
 
             // Increment `operatorAVSOperatorSetCount` by 1.
             // You would have to call this function 2**256-2 times before overflow is possible here.
@@ -144,26 +142,35 @@ contract AVSDirectory is
      *
      * @param operator the address of the operator to be removed from the
      * operator set
-     * @param operatorSetID the ID of the operator set
+     * @param operatorSetIDs the IDs of the operator sets
      *
      * @dev msg.sender is used as the AVS
      * @dev operator must be registered for msg.sender AVS and the given
      * operator set
      */
-    function deregisterOperatorFromOperatorSet(
+    function deregisterOperatorFromOperatorSets(
         address operator,
-        uint32 operatorSetID
+        uint32[] calldata operatorSetIDs
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        require(
-            operatorSetRegistrations[msg.sender][operator][operatorSetID] == true,
-            "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
-        );
+        // Loop over `operatorSetIDs` array and deregister `operator` for each item.
+        for (uint256 i = 0; i < operatorSetIDs.length; ++i) {
+            // Assert `operator` is registered for this iterations operator set.
+            require(
+                isOperatorInOperatorSet[msg.sender][operator][operatorSetIDs[i]],
+                "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
+            );
 
-        // Update operator set registration
-        operatorSetRegistrations[msg.sender][operator][operatorSetID] = false;
-        operatorAVSOperatorSetCount[msg.sender][operator] -= 1;
+            // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIDs[i]`.
+            isOperatorInOperatorSet[msg.sender][operator][operatorSetIDs[i]] = false;
+            
+            // Decrement `operatorAVSOperatorSetCount` by 1.
+            // The above assertion makes underflow logically impossible here.
+            unchecked {
+                --operatorAVSOperatorSetCount[msg.sender][operator];
+            }
 
-        emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetID}));
+            emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIDs[i]}));
+        }
 
         // Set the operator as deregistered if no longer registered for any operator sets
         if (operatorAVSOperatorSetCount[msg.sender][operator] == 0) {
@@ -259,7 +266,7 @@ contract AVSDirectory is
      */
     function addStrategiesToOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external {
         uint256 strategiesToAdd = strategies.length;
-        for (uint256 i = 0; i < strategiesToAdd; i++) {
+        for (uint256 i = 0; i < strategiesToAdd; ++i) {
             // Require that the strategy is valid
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategies[i])
@@ -282,7 +289,7 @@ contract AVSDirectory is
      */
     function removeStrategiesFromOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external {
         uint256 strategiesToRemove = strategies.length;
-        for (uint256 i = 0; i < strategiesToRemove; i++) {
+        for (uint256 i = 0; i < strategiesToRemove; ++i) {
             require(
                 operatorSetStrategies[msg.sender][operatorSetID][strategies[i]],
                 "AVSDirectory.removeStrategiesFromOperatorSet: strategy not a member of operator set"

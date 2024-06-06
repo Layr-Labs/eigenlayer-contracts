@@ -307,7 +307,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
         assertEq(avsDirectory.operatorAVSOperatorSetCount(address(this), operator), 1);
         assertEq(uint8(avsDirectory.avsOperatorStatus(address(this), operator)), 1);
-        assertTrue(avsDirectory.operatorSetRegistrations(address(this), operator, oid));
+        assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, oid));
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
         assertTrue(avsDirectory.isOperatorSetAVS(address(this)));
     }

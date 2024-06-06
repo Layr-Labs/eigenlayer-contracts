@@ -87,21 +87,21 @@ interface IAVSDirectory is ISignatureUtils {
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature
     ) external;
 
-    // /**
-    //  * @notice Called by AVSs or operators to remove an operator to from operator set
-    //  *
-    //  * @param operator the address of the operator to be removed from the
-    //  * operator set
-    //  * @param operatorSetIDs the IDs of the operator sets
-    //  *
-    //  * @dev msg.sender is used as the AVS
-    //  * @dev operator must be registered for msg.sender AVS and the given
-    //  * operator set
-    //  * @dev if this removes operator from all operator sets for the msg.sender AVS
-    //  * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
-    //  * status
-    //  */
-    // function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIDs) external;
+    /**
+     * @notice Called by AVSs or operators to remove an operator to from operator set
+     *
+     * @param operator the address of the operator to be removed from the
+     * operator set
+     * @param operatorSetIDs the IDs of the operator sets
+     *
+     * @dev msg.sender is used as the AVS
+     * @dev operator must be registered for msg.sender AVS and the given
+     * operator set
+     * @dev if this removes operator from all operator sets for the msg.sender AVS
+     * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
+     * status
+     */
+    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIDs) external;
 
     /**
      * @notice Called by AVSs to add a strategy to its operator set
@@ -126,31 +126,7 @@ interface IAVSDirectory is ISignatureUtils {
     function removeStrategiesFromOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external;
 
     // VIEW
-
-    // /**
-    //  * @param operator the operator to get the status of
-    //  * @param operatorSet the operator set to check whether the operator was in
-    //  *
-    //  * @return whether the operator was in a given operator set
-    //  */
-    // function isOperatorInOperatorSet(address operator, OperatorSet calldata operatorSet) external view returns (bool);
-
-    /**
-     * @notice Called by AVSs or operators to remove an operator to from operator set
-     *
-     * @param operator the address of the operator to be removed from the
-     * operator set
-     * @param operatorSetID the ID of the operator set
-     *
-     * @dev msg.sender is used as the AVS
-     * @dev operator must be registered for msg.sender AVS and the given
-     * operator set
-     * @dev if this removes operator from all operator sets for the msg.sender AVS
-     * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED
-     * status
-     */
-    function deregisterOperatorFromOperatorSet(address operator, uint32 operatorSetID) external;
-
+    
     /**
      * @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      * @param metadataURI The URI for metadata associated with an AVS
