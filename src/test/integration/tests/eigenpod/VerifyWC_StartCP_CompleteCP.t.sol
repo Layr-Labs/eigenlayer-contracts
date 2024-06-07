@@ -21,6 +21,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         cheats.pauseGasMetering();
 
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
 
         EigenPod pod = staker.pod();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
@@ -50,7 +51,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.startCheckpoint();
         // check_StartCheckpoint_State(staker);
 
-        CheckpointProofs memory cpProofs = beaconChain.getCheckpointProofs(validators);
+        CheckpointProofs memory cpProofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
 
         cheats.resumeGasMetering();
         startGas = gasleft();
@@ -68,22 +69,43 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     }
 
     /*******************************************************************************
-                       VERIFY -> START/COMPLETE CHECKPOINT
+                       VERIFY -> START -> COMPLETE CHECKPOINT
+                                (TIMING VARIANTS)
     *******************************************************************************/
 
-    /// 1. Verify one or more validators' withdrawal credentials
+    /// 1. Verify validators' withdrawal credentials
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
-    /// => no change in shares
+    /// => no change in shares between 1 and 3
     function test_VerifyWC_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
-        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
-        uint40[] memory subset = _choose(validators);
-        uint subsetBalanceWei = beaconChain.totalEffectiveBalanceWei(subset);
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
 
-        staker.verifyWithdrawalCredentials(subset);
-        check_VerifyWC_State(staker, subset, subsetBalanceWei);
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_State(staker);
+    }
+
+    /// 1. Verify validators' withdrawal credentials
+    /// -- move forward 1 or more epochs
+    /// 2. start a checkpoint
+    /// 3. complete a checkpoint
+    /// => no change in shares between 1 and 3
+    function test_VerifyWC_Advance_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
         // Advance epoch without generating consensus rewards
         beaconChain.advanceEpoch_NoRewards();
@@ -95,52 +117,110 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_CompleteCheckpoint_State(staker);
     }
 
-    /// 1. Verify one or more validators' withdrawal credentials
-    /// 2. start a checkpoint (in the same block)
+    /// 1. Verify validators' withdrawal credentials
+    /// 2. start a checkpoint
+    /// -- move forward 1 or more epochs
     /// 3. complete a checkpoint
-    /// => no change in shares
-    function test_VerifyWC_SameBlock_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    /// => no change in shares between 1 and 3
+    function test_VerifyWC_StartCP_Advance_CompleteCP(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
-        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
-        uint40[] memory subset = _choose(validators);
-        uint subsetBalanceWei = beaconChain.totalEffectiveBalanceWei(subset);
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
 
-        staker.verifyWithdrawalCredentials(subset);
-        check_VerifyWC_State(staker, subset, subsetBalanceWei);
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
+
+        // Advance epoch without generating consensus rewards
+        beaconChain.advanceEpoch_NoRewards();
 
         staker.completeCheckpoint();
         check_CompleteCheckpoint_State(staker);
     }
 
-    /// 1. Verify one or more validators' withdrawal credentials
-    /// -- fully exit one or more validators to the pod
+    /*******************************************************************************
+                       VERIFY -> START -> COMPLETE CHECKPOINT
+                             (EXIT TO POD VARIANTS)
+    *******************************************************************************/
+
+    /// -- Fully exit validators before verifying withdrawal credentials
+    /// 1. Verify validators' withdrawal credentials
+    /// => This should fail
+    function test_ExitValidators_VerifyWC_Fails(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, ) = staker.startValidators();
+        staker.exitValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
+
+        cheats.expectRevert("EigenPod._verifyWithdrawalCredentials: validator must not be exiting");
+        staker.verifyWithdrawalCredentials(validators);
+    }
+
+    /// 1. Verify validators' withdrawal credentials
+    /// -- fully exit validators to pod
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
-    /// => no change in shares
+    /// => no change in shares between 1 and 3
     function test_VerifyWC_ExitValidators_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
-        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        // Fully exit one or more validators and advance epoch without generating rewards
         uint40[] memory subset = _choose(validators);
-        uint subsetBalanceWei = beaconChain.totalEffectiveBalanceWei(subset);
-
-        staker.verifyWithdrawalCredentials(subset);
-        check_VerifyWC_State(staker, subset, subsetBalanceWei);
-
-        // Fully exit validators to pod and advance epoch without generating consensus rewards
-        staker.exitValidators(subset);
+        uint64 exitedBalanceGwei = staker.exitValidators(subset);
         beaconChain.advanceEpoch_NoRewards();
 
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
 
         staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithExits_State(staker, subset, exitedBalanceGwei);
+    }
+
+    /// 1. Verify validators' withdrawal credentials
+    /// 2. start a checkpoint
+    /// -- fully exit validators to pod
+    /// 3. complete a checkpoint
+    /// => no change in shares between 1 and 3
+    function test_VerifyWC_StartCP_ExitValidators_CompleteCP(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+
+        // Fully exit one or more validators and advance epoch without generating rewards
+        uint40[] memory subset = _choose(validators);
+        uint64 exitedBalanceGwei = staker.exitValidators(subset);
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.completeCheckpoint();
         check_CompleteCheckpoint_State(staker);
     }
+
+    /*******************************************************************************
+                       VERIFY -> START -> COMPLETE CHECKPOINT
+                             (SLASH TO POD VARIANTS)
+    *******************************************************************************/
+
+    /*******************************************************************************
+                       VERIFY -> START -> COMPLETE CHECKPOINT
+                             (EARN ON CL VARIANTS)
+    *******************************************************************************/
 
     /// 1. Verify one or more validators' withdrawal credentials
     /// -- earn rewards on beacon chain (not withdrawn to pod)
@@ -148,132 +228,61 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 3. complete a checkpoint
     /// => shares increase by rewards earned
     function test_VerifyWC_Earn_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
-
-    }
-
-    /// 1. Verify one or more validators' withdrawal credentials
-    /// -- earn rewards on beacon chain (not withdrawn to pod)
-    /// 2. start a checkpoint
-    /// 3. complete a checkpoint
-    /// => shares increase by rewards earned
-    function test_VerifyWC_Earn_Withdraw_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
-
-    }
-
-    function test_VerifyAll_Start_CompleteCP_WithRewardsWithdrawn(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
-        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
-
-        staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceWei);
-
-        beaconChain.advanceEpoch();
-        // check pod balances have increased
-
-        staker.startCheckpoint();
-        check_StartCheckpoint_State(staker);
-
-        staker.completeCheckpoint();
-        check_CompleteCheckpoint_State(staker);
-    }
-
-    function test_VerifyAll_Start_CompleteCP_WithRewardsNotWithdrawn(uint24 _rand) public r(_rand) {
-        (User staker, ,) = _newRandomStaker();
-
-        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
-
-        staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceWei);
-
-        beaconChain.advanceEpoch_NoWithdraw();
-        // check pod balances have increased
-
-        staker.startCheckpoint();
-        check_StartCheckpoint_State(staker);
-
-        staker.completeCheckpoint();
-        check_CompleteCheckpoint_State(staker);
-    }
-
-    function test_VerifyAll_Start_CompleteCP_NoRewards(uint24 _rand) public r(_rand) {
-        (User staker, ,) = _newRandomStaker();
-
-        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
-
-        staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceWei);
-
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
-        // check pod balances have increased
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        // Advance epoch and generate consensus rewards, but don't withdraw excess
+        beaconChain.advanceEpoch_NoWithdraw();
 
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
 
+        uint64 beaconBalanceIncreaseGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_State(staker);
+        check_CompleteCheckpoint_WithRewards_State(staker, beaconBalanceIncreaseGwei, 0);
     }
 
     /*******************************************************************************
-                    VERIFY -> EXIT -> START/COMPLETE CHECKPOINT
+                       VERIFY -> START -> COMPLETE CHECKPOINT
+                             (EARN TO POD VARIANTS)
     *******************************************************************************/
 
-    function test_VerifyAll_ExitAll_Start_CompleteCP_WithRewardsWithdrawn(uint24 _rand) public r(_rand) {
+    /// 1. Verify validators' withdrawal credentials
+    /// -- earn rewards on beacon chain (withdrawn to pod)
+    /// 2. start a checkpoint
+    /// 3. complete a checkpoint
+    /// => shares increase by rewards earned
+    function test_VerifyWC_EarnToPod_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
         (User staker, ,) = _newRandomStaker();
 
-        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
-
-        staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceWei);
-
-        uint64 exitedBalanceGwei = staker.exitValidators(validators);
-        beaconChain.advanceEpoch();
-        // check pod balances have increased
-
-        staker.startCheckpoint();
-        check_StartCheckpoint_State(staker);
-
-        staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithExits_State(staker, validators, exitedBalanceGwei);
-    }
-
-    function test_VerifyAll_ExitAll_Start_CompleteCP_WithRewardsNotWithdrawn(uint24 _rand) public r(_rand) {
-        (User staker, ,) = _newRandomStaker();
-
-        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
-
-        staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceWei);
-
-        uint64 exitedBalanceGwei = staker.exitValidators(validators);
-        beaconChain.advanceEpoch_NoWithdraw();
-        // check pod balances have increased
-
-        staker.startCheckpoint();
-        check_StartCheckpoint_State(staker);
-
-        staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithExits_State(staker, validators, exitedBalanceGwei);
-    }
-
-    function test_VerifyAll_ExitAll_Start_CompleteCP_NoRewards(uint24 _rand) public r(_rand) {
-        (User staker, ,) = _newRandomStaker();
-
-        (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
-
-        staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceWei);
-
-        uint64 exitedBalanceGwei = staker.exitValidators(validators);
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
-        // check pod balances have increased
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        // Advance epoch, generating consensus rewards and withdrawing anything over 32 ETH
+        beaconChain.advanceEpoch();
+        uint64 beaconBalanceIncreaseGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
 
         staker.startCheckpoint();
-        check_StartCheckpoint_State(staker);
+        check_StartCheckpoint_EarnToPod_State(staker, beaconBalanceIncreaseGwei);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithExits_State(staker, validators, exitedBalanceGwei);
+        check_CompleteCheckpoint_State(staker); // TODO complete_withrewards?
     }
+
+    /*******************************************************************************
+                       VERIFY -> START -> COMPLETE CHECKPOINT
+                             (NATIVE ETH VARIANTS)
+    *******************************************************************************/
+
+    /// 
 
     /// @dev Choose a random subset of validators
     /// TODO implement

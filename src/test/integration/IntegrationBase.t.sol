@@ -88,7 +88,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         } else {
             string memory operatorName = string.concat("Operator", numOperators.toString());
 
-            (operator, strategies, tokenBalances) = _randUser(operatorName);
+            (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
 
             uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -274,6 +274,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal {
         EigenPod pod = staker.pod();
         assertEq(pod.currentCheckpoint().proofsRemaining, pod.activeValidatorCount(), err);
+    }
+
+    function assert_CheckpointPodBalance(
+        User staker,
+        uint64 expectedPodBalanceGwei,
+        string memory err
+    ) internal {
+        EigenPod pod = staker.pod();
+        assertEq(pod.currentCheckpoint().podBalanceGwei, expectedPodBalanceGwei, err);
     }
     
     /*******************************************************************************
