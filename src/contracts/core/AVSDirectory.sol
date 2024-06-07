@@ -63,17 +63,21 @@ contract AVSDirectory is
      */
 
     /**
-     * @notice Enables an AVS to register an operator to a list of operator sets.
+     *  @notice Called by AVSs to add an operator to an operator set.
      *
-     * @param operator The address of the operator to be registered.
-     * @param operatorSetIDs An array of operator set IDs that the operator should be registered for.
-     * @param operatorSignature The signature confirming the operator's intent to register.
+     *  @param operator The address of the operator to be added to the operator set.
+     *  @param operatorSetIds The IDs of the operator sets.
+     *  @param signature The signature of the operator on their intent to register.
      *
-     * @dev This function assumes that `msg.sender` is an AVS.
+     *  @dev msg.sender is used as the AVS.
+     *  @dev The operator must not have a pending deregistration from the operator set.
+     *  @dev If this is the first operator set in the AVS that the operator is
+     *  registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with
+     *  a REGISTERED status.
      */
     function registerOperatorToOperatorSets(
         address operator,
-        uint32[] calldata operatorSetIDs,
+        uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert `operator` is actually an operator.
@@ -97,7 +101,7 @@ contract AVSDirectory is
             operator,
             calculateOperatorSetRegistrationDigestHash({
                 avs: msg.sender,
-                operatorSetIDs: operatorSetIDs,
+                operatorSetIds: operatorSetIds,
                 salt: operatorSignature.salt,
                 expiry: operatorSignature.expiry
             }),
@@ -114,54 +118,54 @@ contract AVSDirectory is
         }
 
         // Loop over `operatorSetIds` array and register `operator` for each item.
-        for (uint256 i = 0; i < operatorSetIDs.length; ++i) {
+        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
-                !isOperatorInOperatorSet[msg.sender][operator][operatorSetIDs[i]],
+                !isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
             // Mutate calling AVS to operator set AVS status, preventing further legacy registrations.
             if (!isOperatorSetAVS[msg.sender]) isOperatorSetAVS[msg.sender] = true;
 
-            // Mutate `isOperatorInOperatorSet` to `true` for `operatorSetIDs[i]`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIDs[i]] = true;
+            // Mutate `isOperatorInOperatorSet` to `true` for `operatorSetIds[i]`.
+            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = true;
 
-            emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIDs[i]}));
+            emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
 
-        // Increase `operatorAVSOperatorSetCount` by `operatorSetIDs.length`.
+        // Increase `operatorAVSOperatorSetCount` by `operatorSetIds.length`.
         // You would have to add the operator to 2**256-2 operator sets before overflow is possible here.
         unchecked {
-            operatorAVSOperatorSetCount[msg.sender][operator] += operatorSetIDs.length;
+            operatorAVSOperatorSetCount[msg.sender][operator] += operatorSetIds.length;
         }
     }
 
     /**
-     * @notice Called by AVSs or operators to remove an operator to from operator set
+     *  @notice Called by AVSs or operators to remove an operator from an operator set.
      *
-     * @param operator the address of the operator to be removed from the
-     * operator set
-     * @param operatorSetIDs the IDs of the operator sets
+     *  @param operator The address of the operator to be removed from the operator set.
+     *  @param operatorSetIds The IDs of the operator sets.
      *
-     * @dev msg.sender is used as the AVS
-     * @dev operator must be registered for msg.sender AVS and the given
-     * operator set
+     *  @dev msg.sender is used as the AVS.
+     *  @dev The operator must be registered for the msg.sender AVS and the given operator set.
+     *  @dev If this call removes the operator from all operator sets for the msg.sender AVS,
+     *  then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED status.
      */
     function deregisterOperatorFromOperatorSets(
         address operator,
-        uint32[] calldata operatorSetIDs
+        uint32[] calldata operatorSetIds
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        // Loop over `operatorSetIDs` array and deregister `operator` for each item.
-        for (uint256 i = 0; i < operatorSetIDs.length; ++i) {
+        // Loop over `operatorSetIds` array and deregister `operator` for each item.
+        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             // Assert `operator` is registered for this iterations operator set.
             require(
-                isOperatorInOperatorSet[msg.sender][operator][operatorSetIDs[i]],
+                isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
                 "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
-            // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIDs[i]`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIDs[i]] = false;
+            // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIds[i]`.
+            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = false;
 
             // Decrement `operatorAVSOperatorSetCount` by 1.
             // The above assertion makes underflow logically impossible here.
@@ -169,7 +173,7 @@ contract AVSDirectory is
                 --operatorAVSOperatorSetCount[msg.sender][operator];
             }
 
-            emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIDs[i]}));
+            emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
 
         // Set the operator as deregistered if no longer registered for any operator sets
@@ -180,9 +184,13 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Called by the AVS's service manager contract to register an operator with the avs.
-     * @param operator The address of the operator to register.
-     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     *  @notice Called by the AVS's service manager contract to register an operator with the AVS.
+     *
+     *  @param operator The address of the operator to register.
+     *  @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     *
+     *  @dev msg.sender must be the AVS.
+     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
      */
     function registerOperatorToAVS(
         address operator,
@@ -232,8 +240,11 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Called by an avs to deregister an operator with the avs.
-     * @param operator The address of the operator to deregister.
+     *  @notice Called by an AVS to deregister an operator from the AVS.
+     *
+     *  @param operator The address of the operator to deregister.
+     *
+     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
      */
     function deregisterOperatorFromAVS(address operator)
         external
@@ -251,18 +262,24 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Called by an avs to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
-     * @param metadataURI The URI for metadata associated with an avs
+     *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+     *
+     *  @param metadataURI The URI for metadata associated with an AVS.
+     *
+     *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
      */
     function updateAVSMetadataURI(string calldata metadataURI) external {
         emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /**
-     * @notice Adds strategies to an operator set
-     * @param operatorSetID The ID of the operator set
-     * @param strategies The strategies to add to the operator set
-     * TODO: align with team on if we want to keep the two require statements
+     *  @notice Called by AVSs to add strategies to its operator set.
+     *
+     *  @param operatorSetID The ID of the operator set.
+     *  @param strategies The list of strategies to add to the operator set.
+     *
+     *  @dev msg.sender is used as the AVS.
+     *  @dev No storage is updated, as the event is used by off-chain services.
      */
     function addStrategiesToOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external {
         for (uint256 i = 0; i < strategies.length; ++i) {
@@ -282,9 +299,13 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Removes strategies from an operator set
-     * @param operatorSetID The ID of the operator set
-     * @param strategies The strategies to remove from the operator set
+     *  @notice Called by AVSs to remove strategies from its operator set.
+     *
+     *  @param operatorSetID The ID of the operator set.
+     *  @param strategies The list of strategies to remove from the operator set.
+     *
+     *  @dev msg.sender is used as the AVS.
+     *  @dev No storage is updated, as the event is used by off-chain services.
      */
     function removeStrategiesFromOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external {
         for (uint256 i = 0; i < strategies.length; ++i) {
@@ -299,6 +320,7 @@ contract AVSDirectory is
 
     /**
      * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
+     *
      * @param salt A unique and single use value associated with the approver signature.
      */
     function cancelSalt(bytes32 salt) external {
@@ -313,11 +335,12 @@ contract AVSDirectory is
      */
 
     /**
-     * @notice Calculates the digest hash to be signed by an operator to register with an AVS
-     * @param operator The account registering as an operator
-     * @param avs The address of the service manager contract for the AVS that the operator is registering to
-     * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid
+     *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
+     *
+     *  @param operator The account registering as an operator.
+     *  @param avs The AVS the operator is registering with.
+     *  @param salt A unique and single-use value associated with the approver's signature.
+     *  @param expiry The time after which the approver's signature becomes invalid.
      */
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
@@ -333,28 +356,22 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Calculates the digest hash to be signed by an operator to register with an operator set
+     * @notice Calculates the digest hash to be signed by an operator to register with an operator set.
+     *
      * @param avs The AVS that operator is registering to operator sets for.
-     * @param operatorSetIDs An array of operator set IDs the operator is registering to.
+     * @param operatorSetIds An array of operator set IDs the operator is registering to.
      * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid
+     * @param expiry Time after which the approver's signature becomes invalid.
      */
     function calculateOperatorSetRegistrationDigestHash(
         address avs,
-        uint32[] calldata operatorSetIDs,
+        uint32[] calldata operatorSetIds,
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the struct hash
-        bytes32 structHash = keccak256(
-            abi.encode(
-                OPERATOR_SET_REGISTRATION_TYPEHASH,
-                avs,
-                operatorSetIDs,
-                salt,
-                expiry
-            )
-        );
+        bytes32 structHash =
+            keccak256(abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry));
 
         // calculate the digest hash
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
@@ -362,10 +379,8 @@ contract AVSDirectory is
         return digestHash;
     }
 
-    /**
-     * @notice Getter function for the current EIP-712 domain separator for this contract.
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     */
+    /// @notice Getter function for the current EIP-712 domain separator for this contract.
+    /// @dev The domain separator will change in the event of a fork that changes the ChainID.
     function domainSeparator() public view returns (bytes32) {
         if (block.chainid == ORIGINAL_CHAIN_ID) {
             return _DOMAIN_SEPARATOR;
@@ -374,7 +389,7 @@ contract AVSDirectory is
         }
     }
 
-    // @notice Internal function for calculating the current domain separator of this contract
+    /// @notice Internal function for calculating the current domain separator of this contract
     function _calculateDomainSeparator() internal view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
