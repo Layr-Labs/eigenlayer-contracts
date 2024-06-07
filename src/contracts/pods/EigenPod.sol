@@ -439,7 +439,7 @@ contract EigenPod is
         );
 
         // Get the validator's effective balance. Note that this method uses effective balance, while
-        // `verifyBalanceUpdates` uses current balance. Effective balance is updated per-epoch - so it's
+        // `verifyCheckpointProofs` uses current balance. Effective balance is updated per-epoch - so it's
         // less accurate, but is good enough for verifying withdrawal credentials.
         uint64 restakedBalanceGwei = validatorFields.getEffectiveBalanceGwei();
 
