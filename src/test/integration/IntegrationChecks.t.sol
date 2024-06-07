@@ -32,11 +32,11 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     function check_StartCheckpoint_EarnToPod_State(
         User staker,
-        uint64 podBalanceIncreaseGwei
+        uint64 expectedPodBalanceGwei
     ) internal {
         check_StartCheckpoint_State(staker);
 
-        assert_CheckpointPodBalance(staker, podBalanceIncreaseGwei, "checkpoint podBalanceGwei should equal expected");
+        assert_CheckpointPodBalance(staker, expectedPodBalanceGwei, "checkpoint podBalanceGwei should equal expected");
     }
 
     function check_EmptyCheckpoint_State(
@@ -53,14 +53,14 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_PodBalanceToWithdrawable(staker, "pod balance should have been added to withdrawable restaked exec layer gwei");
     }
 
-    function check_CompleteCheckpoint_WithRewards_State(
+    function check_CompleteCheckpoint_EarnOnBeacon_State(
         User staker,
-        uint64 beaconBalanceIncreaseWei,
-        uint64 podBalanceIncreaseWei
+        uint64 beaconBalanceAdded
     ) internal {
         check_CompleteCheckpoint_State(staker);
 
-        // TODO
+        uint balanceAddedWei = beaconBalanceAdded * GWEI_TO_WEI;
+        assert_Snap_Added_StakerShares(staker, BEACONCHAIN_ETH_STRAT, balanceAddedWei, "should have increased shares by excess beacon balance");
     }
 
     function check_CompleteCheckpoint_WithExits_State(

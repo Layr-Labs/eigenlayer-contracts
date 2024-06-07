@@ -402,7 +402,9 @@ contract User is PrintUtils {
     }
 
     function _startCheckpoint() internal {
-        pod.startCheckpoint(false);
+        try pod.startCheckpoint(false) {} catch (bytes memory err) {
+            _revert(err);
+        }
     }
 
     function _completeCheckpoint() internal {
@@ -433,12 +435,16 @@ contract User is PrintUtils {
             validatorFieldsProofs: proofs.validatorFieldsProofs,
             validatorFields: proofs.validatorFields
         }) { } catch (bytes memory err) {
-            // Pass through error message
-            if (err.length != 0) {
-                assembly { revert(add(32, err), mload(err)) }
-            }
-            revert("User._verifyWithdrawalCredentials: unknown error");
+            _revert(err);            
         }
+    }
+
+    /// @dev Revert, passing through an error message
+    function _revert(bytes memory err) internal {
+        if (err.length != 0) {
+            assembly { revert(add(32, err), mload(err)) }
+        }
+        revert("reverted with unknown error");
     }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
