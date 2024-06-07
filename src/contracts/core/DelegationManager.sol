@@ -45,13 +45,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return _pendingWithdrawalData[withdrawalRoot];        
     }
 
-    // @notice Returns 'true' if the `withdrawalRoot` corresponds to a queued-but-not-completed withdrawal, and 'false' otherwise
+    /// @notice Returns 'true' if the `withdrawalRoot` corresponds to a queued-but-not-completed withdrawal, and 'false' otherwise
     function pendingWithdrawals(bytes32 withdrawalRoot) public view returns (bool) {
         return _pendingWithdrawalData[withdrawalRoot].isPending;        
     }
 
-    // @notice Returns the epoch in which the withdrawal corresponding to `withdrawalRoot` was queued
-    // @dev Will return zero for a non-existent (i.e never queued or already completed) withdrawal
+    /// @notice Returns the epoch in which the withdrawal corresponding to `withdrawalRoot` was queued
+    /// @dev Will return zero for a non-existent (i.e never queued or already completed) withdrawal
     function withdrawalCreationEpoch(bytes32 withdrawalRoot) public view returns (uint32) {
         return _pendingWithdrawalData[withdrawalRoot].creationEpoch;        
     }
@@ -259,7 +259,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // Gather strategies and shares to remove from staker/operator during undelegation
         // Undelegation removes ALL currently-active strategies and shares
-        (IStrategy[] memory strategies, uint256[] memory shares) = getNonNormalizedDelegatableShares(staker);
+        (IStrategy[] memory strategies, uint256[] memory shares) = getNonNormalizedDeposits(staker);
 
         // emit an event if this action was not initiated by the staker themselves
         if (msg.sender != staker) {
@@ -575,7 +575,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit StakerDelegated(staker, operator);
 
         (IStrategy[] memory strategies, uint256[] memory shares)
-            = getNonNormalizedDelegatableShares(staker);
+            = getNonNormalizedDeposits(staker);
 
         for (uint256 i = 0; i < strategies.length;) {
             _increaseOperatorShares({
@@ -641,23 +641,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
                 // TODO: require no pending slashing in epochForEndOfSlashability for each strategy
-
-                // TODO: refactor so that nonNormalizedShares is an input to `_withdrawSharesAsTokens`?
-                // uint256 scalingFactorAtEndOfSlashability = slasher.shareScalingFactorAtEpoch(
-                //     withdrawal.delegatedTo,
-                //     withdrawal.strategies[i],
-                //     epochForEndOfSlashability
-                // );
-                // uint256 shares = SlashingAccountingUtils.normalize(withdrawal.shares[i], scalingFactorAtEndOfSlashability);
-                uint256 shares = SlashingAccountingUtils.normalize({
-                    nonNormalizedShares: withdrawal.shares[i], 
-                    scalingFactor: slasher.shareScalingFactorAtEpoch(
-                        withdrawal.delegatedTo,
-                        withdrawal.strategies[i],
-                        epochForEndOfSlashability
-                    )
-                });
-
                 _withdrawSharesAsTokens({
                     staker: withdrawal.staker,
                     withdrawer: msg.sender,
@@ -677,13 +660,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
                 // TODO: require no pending slashing in epochForEndOfSlashability for each strategy
-
-                // uint256 scalingFactorAtEndOfSlashability = slasher.shareScalingFactorAtEpoch(
-                //     withdrawal.delegatedTo,
-                //     withdrawal.strategies[i],
-                //     epochForEndOfSlashability
-                // );
-                // uint256 shares = SlashingAccountingUtils.normalize(withdrawal.shares[i], scalingFactorAtEndOfSlashability);
                 uint256 shares = SlashingAccountingUtils.normalize({
                     nonNormalizedShares: withdrawal.shares[i], 
                     scalingFactor: slasher.shareScalingFactorAtEpoch(
@@ -693,23 +669,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     )
                 });
 
-                /** When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
-                 * Other strategy shares can + will be awarded to the withdrawer.
-                 */
+                // When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
+                // Other strategy shares can + will be awarded to the withdrawer.
                 if (withdrawal.strategies[i] == beaconChainETHStrategy) {
                     // address staker = withdrawal.staker;
                     address podOwnerOperator = delegatedTo[withdrawal.staker];
-                    // uint256 scalingFactor = slasher.shareScalingFactor(podOwnerOperator, beaconChainETHStrategy);
-                    // uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize(shares, scalingFactor);
                     // TODO: unfortunately there doesn't seem to be a good way to avoid scaling down then up
                     uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
                         shares: shares,
                         scalingFactor: slasher.shareScalingFactor(podOwnerOperator, beaconChainETHStrategy)
                     });
-                    /**
-                    * Update shares amount depending upon the returned value.
-                    * The return value will be lower than the input value in the case where the staker has an existing share deficit
-                    */
+
+                    // Update shares amount depending upon the returned value.
+                    // The return value will be lower than the input value in the case where the staker has an existing share deficit
                     uint256 increaseInDelegateableShares = eigenPodManager.addShares({
                         podOwner: withdrawal.staker,
                         shares: nonNormalizedShares
@@ -725,7 +697,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                         });
                     }
                 } else {
-                    uint256 scalingFactor = slasher.shareScalingFactor(currentOperator, beaconChainETHStrategy);
+                    uint256 scalingFactor = slasher.shareScalingFactor(currentOperator, withdrawal.strategies[i]);
                     // TODO: unfortunately there doesn't seem to be a good way to avoid scaling down then up
                     uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
                         shares: shares,
@@ -842,7 +814,16 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares, then a call is ultimately forwarded to the
      * `staker`s EigenPod; otherwise a call is ultimately forwarded to the `strategy` with info on the `token`.
      */
-    function _withdrawSharesAsTokens(address staker, address withdrawer, IStrategy strategy, uint256 shares, IERC20 token) internal {
+    function _withdrawSharesAsTokens(address staker, address withdrawer, IStrategy strategy, uint256 nonNormalizedShares, IERC20 token) internal {
+        uint256 shares = SlashingAccountingUtils.normalize({
+            nonNormalizedShares: withdrawal.shares[i], 
+            scalingFactor: slasher.shareScalingFactorAtEpoch(
+                withdrawal.delegatedTo,
+                withdrawal.strategies[i],
+                epochForEndOfSlashability
+            )
+        });
+
         if (strategy == beaconChainETHStrategy) {
             eigenPodManager.withdrawSharesAsTokens({
                 podOwner: staker,
@@ -973,62 +954,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return shares;
     }
 
-// TODO: consider deleting function. currently used in tests; may be used in some integrations.
     /**
-     * @notice Returns the number of actively-delegatable shares a staker has across all strategies.
+     * @notice Returns the number of actively-delegatable non normalized shares a staker has across all strategies.
+     * @param staker The address to get the non normalized shares for.
      * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
      */
-    function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
-        // Get currently active shares and strategies for `staker`
-        int256 podShares = eigenPodManager.podOwnerShares(staker);
-        (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) 
-            = strategyManager.getDeposits(staker);
-
-        // Has no shares in EigenPodManager, but potentially some in StrategyManager
-        if (podShares <= 0) {
-            return (strategyManagerStrats, strategyManagerShares);
-        }
-
-        IStrategy[] memory strategies;
-        uint256[] memory shares;
-
-        if (strategyManagerStrats.length == 0) {
-            // Has shares in EigenPodManager, but not in StrategyManager
-            strategies = new IStrategy[](1);
-            shares = new uint256[](1);
-            strategies[0] = beaconChainETHStrategy;
-            shares[0] = uint256(podShares);
-        } else {
-            // Has shares in both
-            
-            // 1. Allocate return arrays
-            strategies = new IStrategy[](strategyManagerStrats.length + 1);
-            shares = new uint256[](strategies.length);
-            
-            // 2. Place StrategyManager strats/shares in return arrays
-            for (uint256 i = 0; i < strategyManagerStrats.length; ) {
-                strategies[i] = strategyManagerStrats[i];
-                shares[i] = strategyManagerShares[i];
-
-                unchecked { ++i; }
-            }
-
-            // 3. Place EigenPodManager strat/shares in return arrays
-            strategies[strategies.length - 1] = beaconChainETHStrategy;
-            shares[strategies.length - 1] = uint256(podShares);
-        }
-
-        return (strategies, shares);
-    }
-
-
-
-// TODO: update documentation
-    /**
-     * @notice Returns the number of actively-delegatable shares a staker has across all strategies.
-     * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
-     */
-    function getNonNormalizedDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
+    function getNonNormalizedDeposits(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
         // Get currently active shares and strategies for `staker`
         int256 podShares = eigenPodManager.nonNormalizedPodOwnerShares(staker);
         (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) 

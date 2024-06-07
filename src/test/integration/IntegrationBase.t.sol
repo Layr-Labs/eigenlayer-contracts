@@ -170,12 +170,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
      * Common assertions:
      */
 
-    function assert_HasNoDelegatableShares(User user, string memory err) internal {
+    function assert_HasNoDeposits(User user, string memory err) internal {
         (IStrategy[] memory strategies, uint[] memory shares) = 
-            delegationManager.getDelegatableShares(address(user));
+            delegationManager.getNonNormalizedDeposits(address(user));
         
         assertEq(strategies.length, 0, err);
-        assertEq(strategies.length, shares.length, "assert_HasNoDelegatableShares: return length mismatch");
+        assertEq(strategies.length, shares.length, "assert_HasNoDeposits: return length mismatch");
     }
 
     function assert_HasUnderlyingTokenBalances(

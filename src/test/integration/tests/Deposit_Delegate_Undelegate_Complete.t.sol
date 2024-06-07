@@ -36,7 +36,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
+        assert_HasNoDeposits(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
@@ -64,7 +64,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         }
 
         // Check Final State
-        assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
+        assert_HasNoDeposits(staker, "staker should have withdrawn all shares");
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should once again have original token balances");
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
@@ -99,7 +99,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
+        assert_HasNoDeposits(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
@@ -155,7 +155,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
+        assert_HasNoDeposits(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
@@ -182,7 +182,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         }
 
         // Check Final State
-        assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
+        assert_HasNoDeposits(staker, "staker should have withdrawn all shares");
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should once again have original token balances");
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
@@ -212,7 +212,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
+        assert_HasNoDeposits(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
