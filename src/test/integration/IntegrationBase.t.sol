@@ -179,7 +179,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         // Manually update length of result
         assembly { mstore(result, newLen) }
 
-        return validators;
+        return result;
     }
 
     /*******************************************************************************
