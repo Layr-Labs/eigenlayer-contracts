@@ -207,7 +207,7 @@ contract User is PrintUtils {
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
-    function startValidators() public createSnapshot virtual returns (uint40[] memory, uint) {
+    function startValidators() public createSnapshot virtual returns (uint40[] memory, uint64) {
         _logM("startValidators");
 
         return _startValidators();
@@ -257,6 +257,8 @@ contract User is PrintUtils {
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 (uint40[] memory newValidators, ) = _startValidators();
+                // Advance forward one epoch and generate credential and balance proofs for each validator
+                beaconChain.advanceEpoch_NoRewards();
                 _verifyWithdrawalCredentials(newValidators);
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
@@ -339,7 +341,7 @@ contract User is PrintUtils {
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
-    function _startValidators() internal returns (uint40[] memory, uint) {
+    function _startValidators() internal returns (uint40[] memory, uint64) {
         uint balanceWei = address(this).balance;
 
         // Number of full validators: balance / 32 ETH
@@ -359,10 +361,10 @@ contract User is PrintUtils {
 
         require(totalValidators != 0, "startValidators: not enough ETH to start a validator");
         uint40[] memory newValidators = new uint40[](totalValidators);
-        uint totalBeaconBalance = address(this).balance - balanceWei;
+        uint64 totalBeaconBalanceGwei = uint64((address(this).balance - balanceWei) / GWEI_TO_WEI);
 
         _log("- creating new validators", newValidators.length);
-        _log("- depositing balance to beacon chain (wei)", totalBeaconBalance);
+        _log("- depositing balance to beacon chain (gwei)", totalBeaconBalanceGwei);
 
         // Create each of the full validators
         for (uint i = 0; i < numValidators; i++) {
@@ -384,10 +386,7 @@ contract User is PrintUtils {
             validators.push(validatorIndex);
         }
 
-        // Advance forward one epoch and generate withdrawal and balance proofs for each validator
-        beaconChain.advanceEpoch_NoRewards();
-
-        return (newValidators, totalBeaconBalance);
+        return (newValidators, totalBeaconBalanceGwei);
     }
 
     function _exitValidators(uint40[] memory _validators) internal returns (uint64 exitedBalanceGwei) {
@@ -403,14 +402,21 @@ contract User is PrintUtils {
     }
 
     function _startCheckpoint() internal {
-        pod.startCheckpoint(false);
+        try pod.startCheckpoint(false) {} catch (bytes memory err) {
+            _revert(err);
+        }
     }
 
     function _completeCheckpoint() internal {
         _log("- active validator count", pod.activeValidatorCount());
         _log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators);
+        uint64 checkpointTimestamp = pod.currentCheckpointTimestamp();
+        if (checkpointTimestamp == 0) {
+            revert("User._completeCheckpoint: no existing checkpoint");
+        }
+
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, checkpointTimestamp);
         _log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
 
         pod.verifyCheckpointProofs({
@@ -422,13 +428,23 @@ contract User is PrintUtils {
     function _verifyWithdrawalCredentials(uint40[] memory _validators) internal {
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(_validators);
 
-        pod.verifyWithdrawalCredentials({
+        try pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
             validatorIndices: _validators,
             validatorFieldsProofs: proofs.validatorFieldsProofs,
             validatorFields: proofs.validatorFields
-        });
+        }) { } catch (bytes memory err) {
+            _revert(err);            
+        }
+    }
+
+    /// @dev Revert, passing through an error message
+    function _revert(bytes memory err) internal {
+        if (err.length != 0) {
+            assembly { revert(add(32, err), mload(err)) }
+        }
+        revert("reverted with unknown error");
     }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
@@ -524,6 +540,8 @@ contract User_AltMethods is User {
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 (uint40[] memory newValidators, ) = _startValidators();
+                // Advance forward one epoch and generate credential and balance proofs for each validator
+                beaconChain.advanceEpoch_NoRewards();
                 _verifyWithdrawalCredentials(newValidators);
             } else {
                 // Approve token
