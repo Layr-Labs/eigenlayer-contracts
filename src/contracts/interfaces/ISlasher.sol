@@ -12,9 +12,23 @@ import "./IOperatorSetManager.sol";
  * @notice See the `Slasher` contract itself for implementation details.
  */
 interface ISlasher {
-    function strategyManager() external view returns (IStrategyManager);
-    function delegation() external view returns (IDelegationManager);
-    function operatorSetManager() external view returns (IOperatorSetManager);
+
+    /// EVENTS
+	
+	event RequestedBipsToSlashModified(
+		uint32 epoch,
+		address operator,
+        IOperatorSetManager.OperatorSet operatorSet,
+        IStrategy[] strategies,
+        int32 bipsToModify
+    );
+    
+    event SlashingExecuted(
+        uint32 epoch, // epoch in which the slashing was requested
+        address operator,
+        IStrategy strategy,
+        uint64 slashingRate
+    );
 
     /// EXTERNAL - STATE MODIFYING
 	
@@ -79,7 +93,7 @@ interface ISlasher {
 	/**
 	 * @notice fetches the parts per hundred million that will be slashed for the 
 	 * given operator, strategy, epoch, and operator set assuming no further 
-	 * modifications to requested slashed bips by operatorSet
+	 * modifications to requested slashing rate by operatorSet
 	 *
 	 * @param operator the operator to get the pending slashing rate for 
 	 * @param strategy the strategy to get the pending slashing rate for
@@ -87,7 +101,7 @@ interface ISlasher {
 	 *
 	 * @return the parts per hundred million that will be slashed for the given 
 	 * operator, strategy, epoch, and operator set assuming no further 
-	 * modifications to requested slashed bips by operatorSet
+	 * modifications to requested slashing rate by operatorSet
 	 */
 	function getPendingSlashingRate(
 		address operator, 
@@ -99,7 +113,7 @@ interface ISlasher {
 	/**
 	 * @notice fetches the parts per hundred million that will be slashed for 
 	 * the given operator, strategy, and epoch, across all operator set assuming 
-	 * no more modifications to requested slashed bips for the operator.
+	 * no more modifications to requested slashing rate for the operator.
 	 *
 	 * @param operator the operator to get the pending slashing rate for
 	 * @param strategy the strategy to get the pending slashing rate for
@@ -107,7 +121,7 @@ interface ISlasher {
 	 * 
 	 * @return the parts per hundred million that will be slashed for the 
 	 * given operator, strategy, and epoch, across all operator set assuming 
-	 * no more modifications to requested slashed bips for the operator.
+	 * no more modifications to requested slashing rate for the operator.
 	 */
 	function getTotalPendingSlashingRate(
 		address operator, 
@@ -115,7 +129,10 @@ interface ISlasher {
 		uint32 epoch
 	) external view returns (uint32);
 
-    /// VIEW
+    function strategyManager() external view returns (IStrategyManager);
+    function delegation() external view returns (IDelegationManager);
+    function operatorSetManager() external view returns (IOperatorSetManager);
+
     // TODO: documentation
     function shareScalingFactor(address operator, IStrategy strategy) external view returns (uint256);
 

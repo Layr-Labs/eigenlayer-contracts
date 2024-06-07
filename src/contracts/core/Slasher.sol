@@ -59,7 +59,14 @@ contract Slasher is SlasherStorage {
                     + int64(bipsToModify) * int64(uint64(operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch)))
             );
         }
-        // TODO: Events
+        
+        emit RequestedBipsToSlashModified(
+            epoch,
+            operator,
+            operatorSet,
+            strategies,
+            bipsToModify
+        );
     }
 
     /**
@@ -93,8 +100,14 @@ contract Slasher is SlasherStorage {
             _shareScalingFactor[operator][strategy] = scalingFactorAfter;
             // TODO: note that this behavior risks off-by-one errors. it needs to be clearly defined precisely how the historical storage is supposed to work
             shareScalingFactorHistory[operator][strategy][epoch] = scalingFactorAfter;
+
+            emit SlashingExecuted(
+                epoch,
+                operator,
+                strategy,
+                rateToSlash
+            );
         }
-        // TODO: events!
     }
 
     /// VIEW
@@ -127,7 +140,7 @@ contract Slasher is SlasherStorage {
 	/**
 	 * @notice fetches the parts per hundred million that will be slashed for the 
 	 * given operator, strategy, epoch, and operator set assuming no further 
-	 * modifications to requested slashed bips by operatorSet
+	 * modifications to requested slashing rate by operatorSet
 	 *
 	 * @param operator the operator to get the pending slashing rate for 
 	 * @param strategy the strategy to get the pending slashing rate for
@@ -135,7 +148,7 @@ contract Slasher is SlasherStorage {
 	 *
 	 * @return the parts per hundred million that will be slashed for the given 
 	 * operator, strategy, epoch, and operator set assuming no further 
-	 * modifications to requested slashed bips by operatorSet
+	 * modifications to requested slashing rate by operatorSet
 	 */
 	function getPendingSlashingRate(
 		address operator, 
@@ -153,7 +166,7 @@ contract Slasher is SlasherStorage {
 	/**
 	 * @notice fetches the parts per hundred million that will be slashed for 
 	 * the given operator, strategy, and epoch, across all operator set assuming 
-	 * no more modifications to requested slashed bips for the operator.
+	 * no more modifications to requested slashing rate for the operator.
 	 *
 	 * @param operator the operator to get the pending slashing rate for
 	 * @param strategy the strategy to get the pending slashing rate for
@@ -161,7 +174,7 @@ contract Slasher is SlasherStorage {
 	 * 
 	 * @return the parts per hundred million that will be slashed for the 
 	 * given operator, strategy, and epoch, across all operator set assuming 
-	 * no more modifications to requested slashed bips for the operator.
+	 * no more modifications to requested slashing rate for the operator.
 	 */
 	function getTotalPendingSlashingRate(
 		address operator, 
