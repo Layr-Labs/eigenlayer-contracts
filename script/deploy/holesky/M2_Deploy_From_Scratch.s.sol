@@ -84,7 +84,8 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
         delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
-        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        // todo: fix
+        slasherImplementation = new Slasher(strategyManager, delegationManager, IOperatorSetManager(address(0)));
         eigenPodManagerImplementation = new EigenPodManager(
             IETHPOSDeposit(ETHPOSDepositAddress),
             eigenPodBeacon,
@@ -135,16 +136,17 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             )
         );
         // Slasher
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation),
-            abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                SLASHER_INIT_PAUSED_STATUS
-            )
-        );
+        // TODO: fix
+        // eigenLayerProxyAdmin.upgradeAndCall(
+        //     TransparentUpgradeableProxy(payable(address(slasher))),
+        //     address(slasherImplementation),
+        //     abi.encodeWithSelector(
+        //         Slasher.initialize.selector,
+        //         executorMultisig,
+        //         eigenLayerPauserReg,
+        //         SLASHER_INIT_PAUSED_STATUS
+        //     )
+        // );
         // EigenPodManager
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),

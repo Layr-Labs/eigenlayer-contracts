@@ -192,7 +192,8 @@ contract Deployer_M1 is Script, Test {
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
-        slasherImplementation = new Slasher(strategyManager, delegation);
+        // todo: fix
+        slasherImplementation = new Slasher(strategyManager, delegation, IOperatorSetManager(address(0)));
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
@@ -224,16 +225,17 @@ contract Deployer_M1 is Script, Test {
                 STRATEGY_MANAGER_INIT_PAUSED_STATUS
             )
         );
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation),
-            abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                SLASHER_INIT_PAUSED_STATUS
-            )
-        );
+        // TODO: fix
+        // eigenLayerProxyAdmin.upgradeAndCall(
+        //     TransparentUpgradeableProxy(payable(address(slasher))),
+        //     address(slasherImplementation),
+        //     abi.encodeWithSelector(
+        //         Slasher.initialize.selector,
+        //         executorMultisig,
+        //         eigenLayerPauserReg,
+        //         SLASHER_INIT_PAUSED_STATUS
+        //     )
+        // );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation),

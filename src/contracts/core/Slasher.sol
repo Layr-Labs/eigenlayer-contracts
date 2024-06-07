@@ -1,43 +1,179 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "../interfaces/ISlasher.sol";
-import "../interfaces/IDelegationManager.sol";
-import "../interfaces/IStrategyManager.sol";
-import "../interfaces/IOperatorSetManager.sol";
-import "../permissions/Pausable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "./SlasherStorage.sol";
 
 import "../libraries/EpochUtils.sol";
 import "../libraries/SlashingAccountingUtils.sol";
 
 /**
- * @notice This contract is not in use as of the Eigenlayer M2 release.
- *
- * Although many contracts reference it as an immutable variable, they do not
- * interact with it and it is effectively dead code. The Slasher was originally
- * deployed during Eigenlayer M1, but remained paused and unused for the duration
- * of that release as well.
- *
- * Eventually, slashing design will be finalized and the Slasher will be finished
- * and more fully incorporated into the core contracts. For now, you can ignore this
- * file. If you really want to see what the deployed M1 version looks like, check
- * out the `init-mainnet-deployment` branch under "releases".
- *
- * This contract is a stub that maintains its original interface for use in testing
- * and deploy scripts. Otherwise, it does nothing.
+ * @notice Slasher
  */ 
-contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
-    // todo: make this immutable and add to constructor
-    IOperatorSetManager public operatorSetManager;
+contract Slasher is SlasherStorage {
+
+    constructor(IStrategyManager _strategyManager, IDelegationManager _delegationManager, IOperatorSetManager _operatorSetManager) 
+        SlasherStorage(_strategyManager, _delegationManager, _operatorSetManager) {}
 
     /**
-     * @notice Mapping: operator => strategy => share scalingFactor,
-     * stored in the "SHARE_CONVERSION_SCALE", i.e. scalingFactor = 2 * SHARE_CONVERSION_SCALE indicates a scalingFactor of "2".
-     * Note that a value of zero is treated as one, since this means that the operator has never been slashed
-     */
-    mapping(address => mapping(IStrategy => uint256)) internal _shareScalingFactor;
+	 * @notice Called by an AVS to modify its own slashing request for a given
+	 * operator set and operator in the current epoch
+	 *
+	 * @param operator the operator that the calling AVS is to modify the bips they want to slash
+	 * @param operatorSetID the id of the operator set the AVS is modifying their slashing for
+	 * @param strategies the list of strategies slashing requested is being modified for
+	 * @param bipsToModify the basis points slashing to modify for given strategies
+	 *
+	 * @dev bipsToModify is negative when the AVS wants to reduce the amount of slashing
+     *     and positive when the AVS wants to increase the amount of slashing
+	 */
+    function modifyRequestedBipsToSlash(
+        address operator,
+        bytes4 operatorSetID,
+        IStrategy[] memory strategies,
+        int32 bipsToModify
+    ) external {
+        require(bipsToModify != 0, "Slasher._modifyRequestedBipsToSlash: cannot modify slashing by 0");
+
+        IOperatorSetManager.OperatorSet memory operatorSet = IOperatorSetManager.OperatorSet({
+            avs: msg.sender,
+            id: operatorSetID
+        });
+        bytes32 operatorSetHash = _hashOperatorSet(operatorSet);
+        uint32 epoch = EpochUtils.currentEpoch();
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            IStrategy strategy = strategies[i];
+            uint32 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][operatorSetHash];
+            int32 requestedSlashedBipsAfter = int32(requestedSlashedBipsBefore) + bipsToModify;
+            // don't allow underflow
+            if (requestedSlashedBipsAfter < 0) {
+                bipsToModify = -int32(requestedSlashedBipsBefore);
+                requestedSlashedBipsAfter = 0;
+            }
+            requestedSlashedBips[operator][strategy][epoch][operatorSetHash] = uint32(requestedSlashedBipsAfter);
+
+            // pending slashing rate is modified by the bips to modify * the slashable bips
+            // when divided by BIPS_FACTOR**2, this will give the actual proportion of the 
+            // stake is being modified. this is done for accuracy when slashable bips are small
+            pendingSlashingRate[operator][strategy][epoch] = uint64(
+                int64(pendingSlashingRate[operator][strategy][epoch]) 
+                    + int64(bipsToModify) * int64(uint64(operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch)))
+            );
+        }
+        // TODO: Events
+    }
+
+    /**
+	 * @notice Permissionlessly called to execute slashing of a given list of 
+	 * strategies for a given operator, for the latest unslashed epoch
+	 *
+	 * @param operator the operator to slash
+	 * @param strategies the list of strategies to execute slashing for
+	 * @param epoch the epoch in which the slashing requests to execute were made
+	 */
+    function executeSlashing(address operator, IStrategy[] memory strategies, uint32 epoch) external {
+        // TODO: decide if this needs a stonger condition. e.g. the epoch must be further in the past
+        require(epoch < EpochUtils.currentEpoch(), "Slasher.executeSlashing: must slash for a previous epoch");
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            IStrategy strategy = strategies[i];
+            uint64 rateToSlash = pendingSlashingRate[operator][strategy][epoch];
+            pendingSlashingRate[operator][strategy][epoch] = 0;
+            // truncate to BIPS_FACTOR_SQUARED if it exceeds it
+            if(rateToSlash > SlashingAccountingUtils.BIPS_FACTOR_SQUARED) {
+                rateToSlash = SlashingAccountingUtils.BIPS_FACTOR_SQUARED;
+            }
+            // TODO: again note that we need something like the first epoch being epoch 1 here, to allow actually slashing in the first epoch
+            require(epoch > lastSlashed(operator, strategy), "Slasher._slashShares: slashing must occur in strictly ascending epoch order");
+            uint256 scalingFactorBefore = shareScalingFactor(operator, strategy);
+            uint256 scalingFactorAfter = SlashingAccountingUtils.findNewScalingFactor({
+                scalingFactorBefore: scalingFactorBefore,
+                rateToSlash: rateToSlash
+            });
+            // update storage to reflect the slashing
+            slashedEpochHistory[operator][strategy].push(epoch);
+            _shareScalingFactor[operator][strategy] = scalingFactorAfter;
+            // TODO: note that this behavior risks off-by-one errors. it needs to be clearly defined precisely how the historical storage is supposed to work
+            shareScalingFactorHistory[operator][strategy][epoch] = scalingFactorAfter;
+        }
+        // TODO: events!
+    }
+
+    /// VIEW
+	
+	/**
+	 * @notice fetches the requested parts per hundred million to slash for the 
+	 * given operator, strategy, epoch, and operator set
+	 *
+	 * @param operator the operator to get the requested slashing rate for
+	 * @param strategy the strategy to get the requested slashing rate for
+	 * @param operatorSet the operator set to get the requested requested slashing rate for
+	 * @param epoch the epoch to get the requested slashing rate  for
+	 * 
+	 * @return the requested parts per hundred million to slash for the given 
+	 * operator, strategy, epoch, and operator set
+	 * 
+	 * @dev may exceed the AVS operator set's allowed slashing per epoch; 
+	 * the `getPendingSlashedPPHM` will accurately reflect this ceiling though.
+	 */
+	function getRequestedSlashingRate(
+		address operator, 
+		IStrategy strategy, 
+		IOperatorSetManager.OperatorSet calldata operatorSet,
+		uint32 epoch
+	) public view returns (uint32) {
+        return requestedSlashedBips[operator][strategy][epoch][_hashOperatorSet(operatorSet)] 
+            * operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch);
+    }
+	
+	/**
+	 * @notice fetches the parts per hundred million that will be slashed for the 
+	 * given operator, strategy, epoch, and operator set assuming no further 
+	 * modifications to requested slashed bips by operatorSet
+	 *
+	 * @param operator the operator to get the pending slashing rate for 
+	 * @param strategy the strategy to get the pending slashing rate for
+	 * @param operatorSet the operator set to get the pending slashing rate for
+	 *
+	 * @return the parts per hundred million that will be slashed for the given 
+	 * operator, strategy, epoch, and operator set assuming no further 
+	 * modifications to requested slashed bips by operatorSet
+	 */
+	function getPendingSlashingRate(
+		address operator, 
+		IStrategy strategy,
+		IOperatorSetManager.OperatorSet calldata operatorSet,
+		uint32 epoch
+	) external view returns (uint32) {
+        uint32 requestedSlashingRate = getRequestedSlashingRate(operator, strategy, operatorSet, epoch);
+        if (requestedSlashingRate >= SlashingAccountingUtils.BIPS_FACTOR_SQUARED) {
+            requestedSlashingRate = uint32(SlashingAccountingUtils.BIPS_FACTOR_SQUARED);
+        }
+        return requestedSlashingRate;
+    }
+	
+	/**
+	 * @notice fetches the parts per hundred million that will be slashed for 
+	 * the given operator, strategy, and epoch, across all operator set assuming 
+	 * no more modifications to requested slashed bips for the operator.
+	 *
+	 * @param operator the operator to get the pending slashing rate for
+	 * @param strategy the strategy to get the pending slashing rate for
+	 * @param epoch the epoch to get the pending slashing rate for
+	 * 
+	 * @return the parts per hundred million that will be slashed for the 
+	 * given operator, strategy, and epoch, across all operator set assuming 
+	 * no more modifications to requested slashed bips for the operator.
+	 */
+	function getTotalPendingSlashingRate(
+		address operator, 
+		IStrategy strategy,
+		uint32 epoch
+	) external view returns (uint32) {
+        uint64 totalSlashingRate = pendingSlashingRate[operator][strategy][epoch];
+        if (totalSlashingRate >= SlashingAccountingUtils.BIPS_FACTOR_SQUARED) {
+            totalSlashingRate = SlashingAccountingUtils.BIPS_FACTOR_SQUARED;
+        }
+        return uint32(totalSlashingRate);
+    }
 
     function shareScalingFactor(address operator, IStrategy strategy) public view returns (uint256) {
         uint256 scalingFactor = _shareScalingFactor[operator][strategy];
@@ -58,31 +194,18 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         return pendingScalingFactor;
     }
 
-    // @notice Mapping: operator => strategy => epochs in which the strategy was slashed for the operator
-    // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
-    mapping(address => mapping(IStrategy => uint32[])) public slashedEpochHistory;
-
-    /**
-     * @notice Mapping: operator => strategy => epoch => scaling factor as a result of slashing *in that epoch*
-     * @dev Note that this will be zero in the event of no slashing for the (operator, strategy) tuple in the given epoch.
-     * You should use `shareScalingFactorAtEpoch` if you want the actual historical value of the share scaling factor in a given epoch.
-     */
-    mapping(address => mapping(IStrategy => mapping(uint32 => uint256))) public shareScalingFactorHistory;
-
     // TODO: this is a "naive" search since it brute-force backwards searches; we might technically want a binary search for completeness
     function shareScalingFactorAtEpoch(address operator, IStrategy strategy, uint32 epoch) public view returns (uint256) {
-        uint256 slashedEpochHistoryLength = slashedEpochHistory[operator][strategy].length;
+        uint256 scalingFactor = SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
         // TODO: note the edge case of 0th epoch; need to make sure it's clear how it should be handled
-        if (slashedEpochHistoryLength == 0 || epoch < 0) {
-            return SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
-        } else {
-            for (uint256 i = slashedEpochHistoryLength - 1; i > 0; --i) {
-                if (slashedEpochHistory[operator][strategy][i] <= epoch) {
-                    uint32 correctEpochForLookup = slashedEpochHistory[operator][strategy][i];
-                    return shareScalingFactorHistory[operator][strategy][correctEpochForLookup];
-                }
+        for (uint256 i = slashedEpochHistory[operator][strategy].length; i > 0; --i) {
+            if (slashedEpochHistory[operator][strategy][i] <= epoch) {
+                uint32 correctEpochForLookup = slashedEpochHistory[operator][strategy][i];
+                scalingFactor = shareScalingFactorHistory[operator][strategy][correctEpochForLookup];
+                break;
             }
         }
+        return scalingFactor;
     }
 
     // @notice Returns the epoch in which the operator was last slashed
@@ -96,145 +219,6 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         }
     }
 
-    // @notice Permissionlessly called to execute slashing of strategies for a given operator, for an epoch
-    function executeSlashing(address operator, IStrategy[] memory strategies, uint32 epoch) external {
-        // TODO: decide if this needs a stonger condition. e.g. the epoch must be further in the past
-        require(epoch < EpochUtils.currentEpoch(),
-            "must slash for a previous epoch");
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            IStrategy strategy = strategies[i];
-            uint256 rateToSlash = pendingSlashingRate[operator][strategy][epoch];
-            pendingSlashingRate[operator][strategy][epoch] = 0;
-            _slashShares({
-                operator: operator,
-                strategy: strategy,
-                epoch: epoch,
-                rateToSlash: rateToSlash
-            });
-        }
-    }
-
-    function _slashShares(address operator, IStrategy strategy, uint32 epoch, uint256 rateToSlash) internal {
-        uint32 lastSlashedEpoch = lastSlashed(operator, strategy);
-        // TODO: again note that we need something like the first epoch being epoch 1 here, to allow actually slashing in the first epoch
-        require(epoch > lastSlashedEpoch, "slashing must occur in strictly ascending epoch order");
-        uint256 scalingFactorBefore = shareScalingFactor(operator, strategy);
-        uint256 scalingFactorAfter = SlashingAccountingUtils.findNewScalingFactor({
-            scalingFactorBefore: scalingFactorBefore,
-            rateToSlash: rateToSlash
-        });
-        // update storage to reflect the slashing
-        slashedEpochHistory[operator][strategy].push(epoch);
-        _shareScalingFactor[operator][strategy] = scalingFactorAfter;
-        // TODO: note that this behavior risks off-by-one errors. it needs to be clearly defined precisely how the historical storage is supposed to work
-        shareScalingFactorHistory[operator][strategy][epoch] = scalingFactorAfter;
-        // TODO: events!
-    }
-
-    /**
-     * @notice Mapping: Operator => Strategy => epoch => operator set hash => requested slashed bips
-     * @dev Note that this is *independent* of the slashable bips that the operator has determined!
-     *      The amount that the operator's delegated shares will actually get slashed (which goes into `pendingSlashingRate`) is linearly proportional
-     *      to *both* this number *and* the slashable bips.
-     */
-    mapping(address => mapping(IStrategy => mapping(uint32 => mapping(bytes32 => uint256)))) public requestedSlashedBips;
-
-    /**
-     * @notice Mapping: Operator => Strategy => epoch => pending slashed amount, where pending slashed amount is the
-     * amount that will be slashed when slashing is executed for the current epoch, assuming no existing requests are cancelled or nullified. summed over all AVSs
-     * @dev Note that this is parts per (BIPS_FACTOR**2), i.e. parts per 1e8
-     */
-    mapping(address => mapping(IStrategy => mapping(uint32 => uint256))) public pendingSlashingRate;
-
-    // @notice fetches the bips slashable for an operator set for the shares of a certain strategy delegated to a certain operator for a certain epoch
-    function getSlashableBips(
-        address operator, 
-        address avs, 
-        IStrategy strategy, 
-        uint32 epoch
-    ) public pure returns (uint256) {
-        // TODO: this is a stub. it needs implementation
-        return 10;
-    }
-
-    function createSlashingRequest(
-        address operator,
-        bytes4 operatorSetID,
-        IStrategy[] memory strategies,
-        uint256 bipsToSlash
-    ) external {
-        require(bipsToSlash <= SlashingAccountingUtils.BIPS_FACTOR, "invalid slashing amount");
-        require(bipsToSlash != 0, "cannot slash 0");
-        IOperatorSetManager.OperatorSet memory operatorSet = IOperatorSetManager.OperatorSet({
-            avs: msg.sender,
-            id: operatorSetID
-        });
-        bytes32 operatorSetHash = _hashOperatorSet(operatorSet);
-        uint32 epoch = EpochUtils.currentEpoch();
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            IStrategy strategy = strategies[i];
-            uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][operatorSetHash];
-            uint256 requestedSlashedBipsAfter = requestedSlashedBipsBefore + bipsToSlash;
-            int256 changeInPendingSlashedBips = _changeInPendingSlashedBips({
-                slashableBips: operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch),
-                requestedSlashedBipsBefore: requestedSlashedBipsBefore,
-                requestedSlashedBipsAfter: requestedSlashedBipsAfter
-            });
-
-            // TODO: events
-            requestedSlashedBips[operator][strategy][epoch][operatorSetHash] = requestedSlashedBipsAfter;
-            pendingSlashingRate[operator][strategy][epoch] = uint256(
-                int256(pendingSlashingRate[operator][strategy][epoch]) + int256(changeInPendingSlashedBips)
-            );
-        }
-    }
-
-    function reduceRequestedSlashedBips(
-        address operator,
-        bytes4 operatorSetID,
-        IStrategy[] memory strategies,
-        // TODO: naming
-        uint256 bipsToReduce
-    ) external {
-        require(bipsToReduce != 0, "cannot reduce slashing by 0");
-        IOperatorSetManager.OperatorSet memory operatorSet = IOperatorSetManager.OperatorSet({
-            avs: msg.sender,
-            id: operatorSetID
-        });
-        bytes32 operatorSetHash = _hashOperatorSet(operatorSet);
-        uint32 epoch = EpochUtils.currentEpoch();
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            IStrategy strategy = strategies[i];
-            uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][operatorSetHash];
-            uint256 requestedSlashedBipsAfter;
-            // ignore underflow; max out at reducing to zero
-            if (bipsToReduce >= requestedSlashedBipsBefore) {
-                requestedSlashedBipsAfter = 0;
-            } else {
-                requestedSlashedBipsAfter = requestedSlashedBipsBefore - bipsToReduce;
-            }
-            int256 changeInPendingSlashedBips = _changeInPendingSlashedBips({
-                slashableBips: operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch),
-                requestedSlashedBipsBefore: requestedSlashedBipsBefore,
-                requestedSlashedBipsAfter: requestedSlashedBipsAfter
-            });
-
-            // TODO: events
-            requestedSlashedBips[operator][strategy][epoch][operatorSetHash] = requestedSlashedBipsAfter;
-            pendingSlashingRate[operator][strategy][epoch] = uint256(
-                int256(pendingSlashingRate[operator][strategy][epoch]) + int256(changeInPendingSlashedBips)
-            );
-        }
-    }
-
-    function _changeInPendingSlashedBips(
-        uint256 slashableBips,
-        uint256 requestedSlashedBipsBefore,
-        uint256 requestedSlashedBipsAfter
-    ) internal pure returns (int256) {
-        return int256(slashableBips) * (int256(requestedSlashedBipsAfter) - int256(requestedSlashedBipsAfter));
-    }
-
     function _hashOperatorSet(
         IOperatorSetManager.OperatorSet memory operatorSet
     ) internal pure returns (bytes32) {
@@ -242,77 +226,4 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         operatorSetArray[0] = operatorSet;
         return keccak256(abi.encode(operatorSetArray));
     }
-
-    constructor(IStrategyManager, IDelegationManager) {
-    }
-
-    function initialize(
-        address,
-        IPauserRegistry,
-        uint256
-    ) external {}
-
-    function optIntoSlashing(address) external {}
-
-    function freezeOperator(address) external {}
-
-    function resetFrozenStatus(address[] calldata) external {}
-
-    function recordFirstStakeUpdate(address, uint32) external {}
-
-    function recordStakeUpdate(
-        address,
-        uint32,
-        uint32,
-        uint256
-    ) external {}
-
-    function recordLastStakeUpdateAndRevokeSlashingAbility(address, uint32) external {}
-
-    function strategyManager() external view returns (IStrategyManager) {}
-
-    function delegation() external view returns (IDelegationManager) {}
-
-    function isFrozen(address) external view returns (bool) {}
-
-    function canSlash(address, address) external view returns (bool) {}
-
-    function contractCanSlashOperatorUntilBlock(
-        address,
-        address
-    ) external view returns (uint32) {}
-
-    function latestUpdateBlock(address, address) external view returns (uint32) {}
-
-    function getCorrectValueForInsertAfter(address, uint32) external view returns (uint256) {}
-
-    function canWithdraw(
-        address,
-        uint32,
-        uint256
-    ) external returns (bool) {}
-
-    function operatorToMiddlewareTimes(
-        address,
-        uint256
-    ) external view returns (MiddlewareTimes memory) {}
-
-    function middlewareTimesLength(address) external view returns (uint256) {}
-
-    function getMiddlewareTimesIndexStalestUpdateBlock(address, uint32) external view returns (uint32) {}
-
-    function getMiddlewareTimesIndexServeUntilBlock(address, uint32) external view returns (uint32) {}
-
-    function operatorWhitelistedContractsLinkedListSize(address) external view returns (uint256) {}
-
-    function operatorWhitelistedContractsLinkedListEntry(
-        address,
-        address
-    ) external view returns (bool, uint256, uint256) {}
-
-    function whitelistedContractDetails(
-        address,
-        address
-    ) external view returns (MiddlewareDetails memory) {}
-
 }

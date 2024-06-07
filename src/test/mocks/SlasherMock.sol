@@ -6,76 +6,54 @@ import "../../contracts/interfaces/ISlasher.sol";
 
 
 contract SlasherMock is ISlasher, Test {
+    function strategyManager() external view override returns (IStrategyManager) {}
+    function delegation() external view override returns (IDelegationManager) {}
+    function operatorSetManager() external view override returns (IOperatorSetManager) {}
+
     function shareScalingFactor(address operator, IStrategy strategy) external view returns (uint256) {}
     function pendingShareScalingFactor(address operator, IStrategy strategy) public view returns (uint256) {}
     function shareScalingFactorAtEpoch(address operator, IStrategy strategy, uint32 epoch) public view returns (uint256) {}
 
-    mapping(address => bool) public isFrozen;
-    bool public _canWithdraw = true;
-    IStrategyManager public strategyManager;
-    IDelegationManager public delegation;
+    function modifyRequestedBipsToSlash(
+        address operator,
+        bytes4 operatorSetID,
+        IStrategy[] memory strategies,
+        int32 bipsToModify
+    ) external {}
+	
+	/**
+	 * @notice Permissionlessly called to execute slashing of a given list of 
+	 * strategies for a given operator, for the latest unslashed epoch
+	 *
+	 * @param operator the operator to slash
+	 * @param strategies the list of strategies to execute slashing for
+	 * @param epoch the epoch in which the slashing requests to execute were made
+	 */
+	function executeSlashing(
+		address operator, 
+		IStrategy[] memory strategies,
+		uint32 epoch
+	) external {}
+	
+	/// VIEW
+	function getRequestedSlashingRate(
+		address operator, 
+		IStrategy strategy, 
+		IOperatorSetManager.OperatorSet calldata operatorSet,
+		uint32 epoch
+	) external view returns (uint32) {}
 
-    function setCanWithdrawResponse(bool response) external {
-        _canWithdraw = response;
-    }
+	function getPendingSlashingRate(
+		address operator, 
+		IStrategy strategy,
+		IOperatorSetManager.OperatorSet calldata operatorSet,
+		uint32 epoch
+	) external view returns (uint32) {}
 
-    function setOperatorFrozenStatus(address operator, bool status) external{
-        isFrozen[operator] = status;
-    }
+	function getTotalPendingSlashingRate(
+		address operator, 
+		IStrategy strategy,
+		uint32 epoch
+	) external view returns (uint32) {}
 
-    function freezeOperator(address toBeFrozen) external {
-        isFrozen[toBeFrozen] = true;
-    }
-    
-    function optIntoSlashing(address contractAddress) external{}
-
-    function resetFrozenStatus(address[] calldata frozenAddresses) external{}
-
-    function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external{}
-
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 insertAfter) external{}
-
-    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external{}
-
-    /// @notice Returns true if `slashingContract` is currently allowed to slash `toBeSlashed`.
-    function canSlash(address toBeSlashed, address slashingContract) external view returns (bool) {}
-
-    /// @notice Returns the UTC timestamp until which `serviceContract` is allowed to slash the `operator`.
-    function contractCanSlashOperatorUntilBlock(address operator, address serviceContract) external view returns (uint32) {}
-
-    /// @notice Returns the block at which the `serviceContract` last updated its view of the `operator`'s stake
-    function latestUpdateBlock(address operator, address serviceContract) external view returns (uint32) {}
-
-    /// @notice A search routine for finding the correct input value of `insertAfter` to `recordStakeUpdate` / `_updateMiddlewareList`.
-    function getCorrectValueForInsertAfter(address operator, uint32 updateBlock) external view returns (uint256) {}
-
-    function canWithdraw(address /*operator*/, uint32 /*withdrawalStartBlock*/, uint256 /*middlewareTimesIndex*/) external view returns(bool) {
-        return _canWithdraw;
-    }
-
-    /**
-     * operator => 
-     *  [
-     *      (
-     *          the least recent update block of all of the middlewares it's serving/served, 
-     *          latest time that the stake bonded at that update needed to serve until
-     *      )
-     *  ]
-     */
-    function operatorToMiddlewareTimes(address operator, uint256 arrayIndex) external view returns (MiddlewareTimes memory) {}
-
-    /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator].length`
-    function middlewareTimesLength(address operator) external view returns (uint256) {}
-
-    /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
-    function getMiddlewareTimesIndexStalestUpdateBlock(address operator, uint32 index) external view returns(uint32) {}
-
-    /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].latestServeUntilBlock`.
-    function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns(uint32) {}
-
-    /// @notice Getter function for fetching `_operatorToWhitelistedContractsByUpdate[operator].size`.
-    function operatorWhitelistedContractsLinkedListSize(address operator) external view returns (uint256) {}
-
-    /// @notice Getter function for fetching a single node in the operator's linked list (`_operatorToWhitelistedContractsByUpdate[operator]`).
-    function operatorWhitelistedContractsLinkedListEntry(address operator, address node) external view returns (bool, uint256, uint256) {}
 }

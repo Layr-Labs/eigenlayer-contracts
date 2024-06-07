@@ -16,7 +16,7 @@ library SlashingAccountingUtils {
 
     uint256 internal constant BIPS_FACTOR = 10000;
 
-    uint256 internal constant BIPS_FACTOR_SQUARED = 1e8;
+    uint64 internal constant BIPS_FACTOR_SQUARED = 1e8;
 
     // TODO: explain this better. basically seems like we may need to set some max factor beyond which shares are just zeroed out
     // at present this is (2^160)/1e18 ~ 1.46e30, which would be reached after ~659 consecutive 10% slashings, or ~15 consecutive 99% slashings
@@ -42,7 +42,7 @@ library SlashingAccountingUtils {
 
     // TODO: consider possible loss of precision and its consequences
     // @dev note that rateToSlash is in parts per BIPS_FACTOR_SQUARED, i.e. in parts per 1e8
-    function findNewScalingFactor(uint256 scalingFactorBefore, uint256 rateToSlash) internal pure returns (uint256) {
+    function findNewScalingFactor(uint256 scalingFactorBefore, uint64 rateToSlash) internal pure returns (uint256) {
         require(rateToSlash != 0, "cannot slash for 0%");
         require(rateToSlash <= BIPS_FACTOR_SQUARED, "cannot slash more than 100% at once");
         uint256 scalingFactorAfter;

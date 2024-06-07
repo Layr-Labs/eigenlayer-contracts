@@ -66,10 +66,8 @@ contract GoerliUpgrade2 is Script, Test {
         );
 
         address slasherImplementation = address(
-            new Slasher(
-                strategyManager,
-                delegation
-            )
+            // todo: fix
+            new Slasher(strategyManager, delegation, IOperatorSetManager(address(0)))
         );
 
         address strategyManagerImplementation = address(
