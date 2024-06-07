@@ -172,6 +172,38 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     }
 }
 
+contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
+    function testFuzz_Correctness(
+        address delegationManager,
+        address strategyManager,
+        address owner,
+        address pauserRegistry,
+        uint256 initialPausedStatus
+    ) public virtual {
+        AVSDirectory dir = new AVSDirectory(IDelegationManager(delegationManager), IStrategyManager(strategyManager));
+
+        assertEq(address(dir.delegation()), delegationManager);
+        assertEq(address(dir.strategyManager()), strategyManager);
+
+        vm.expectRevert("Initializable: contract is already initialized");
+        dir.initialize(owner, IPauserRegistry(pauserRegistry), initialPausedStatus);
+
+        // assertEq(dir.owner(), owner);
+        // assertEq(address(dir.pauserRegistry()), pauserRegistry);
+
+        // todo: initialPausedStatus?
+    }
+}
+
+contract AVSDirectoryUnitTests_domainSeparator is AVSDirectoryUnitTests {
+    function test_domainSeparator() public virtual {
+        // This is just to get coverage up.
+        avsDirectory.domainSeparator();
+        vm.chainId(0xC0FFEE);
+        avsDirectory.domainSeparator();
+    }
+}
+
 // TODO: test mutating large sets of operator set ids
 
 contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUnitTests {
@@ -465,7 +497,7 @@ contract AVSDirectoryUnitTests_removeStrategiesFromOperatorSet is AVSDirectoryUn
         emit OperatorSetStrategyRemoved(IAVSDirectory.OperatorSet(address(this), oid), strats[0]);
 
         avsDirectory.removeStrategiesFromOperatorSet(oid, strats);
-        
+
         assertEq(avsDirectory.isOperatorSetStrategy(address(this), oid, strats[0]), false);
     }
 }
