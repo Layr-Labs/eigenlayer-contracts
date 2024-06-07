@@ -629,96 +629,82 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         require(EpochUtils.currentEpoch() > epochForEndOfSlashability,
             "DelegationManager._completeQueuedWithdrawal: withdrawal is still slashable");
 
+        
+
         // Remove `withdrawalRoot` from pending roots
         delete _pendingWithdrawalData[withdrawalRoot];
 
         // Finalize action by converting shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
-        if (receiveAsTokens) {
-            for (uint256 i = 0; i < withdrawal.strategies.length; ) {
-                require(
-                    withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
-                    "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
-                );
-                // TODO: require no pending slashing in epochForEndOfSlashability for each strategy
-                _withdrawSharesAsTokens({
-                    staker: withdrawal.staker,
-                    withdrawer: msg.sender,
-                    strategy: withdrawal.strategies[i],
-                    shares: shares,
-                    token: tokens[i]
-                });
-                unchecked { ++i; }
+        for (uint256 i = 0; i < withdrawal.strategies.length; ) {
+            require(
+                withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
+                "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
+            );
+
+            uint256 shares = SlashingAccountingUtils.normalize({
+                nonNormalizedShares: withdrawal.shares[i], 
+                scalingFactor: slasher.shareScalingFactorAtEpoch(
+                    withdrawal.delegatedTo,
+                    withdrawal.strategies[i],
+                    epochForEndOfSlashability
+                )
+            });
+
+            // if the withdrawal is being redelegated, load the current operator, avoid it in the case of receiving as tokens for gas
+            address currentOperator;
+            if (!receiveAsTokens) {
+                currentOperator = delegatedTo[msg.sender];
             }
-        // TODO: figure out how to award correct number of shares back when a stale withdrawal is completed
-        // Award shares back in StrategyManager/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
-        } else {
-            address currentOperator = delegatedTo[msg.sender];
-            for (uint256 i = 0; i < withdrawal.strategies.length; ) {
-                require(
-                    withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number, 
-                    "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
-                );
+
+            if (receiveAsTokens) {
                 // TODO: require no pending slashing in epochForEndOfSlashability for each strategy
-                uint256 shares = SlashingAccountingUtils.normalize({
-                    nonNormalizedShares: withdrawal.shares[i], 
-                    scalingFactor: slasher.shareScalingFactorAtEpoch(
-                        withdrawal.delegatedTo,
-                        withdrawal.strategies[i],
-                        epochForEndOfSlashability
-                    )
+                if (withdrawal.strategies[i] == beaconChainETHStrategy) {
+                    eigenPodManager.withdrawSharesAsTokens({
+                        podOwner: withdrawal.staker,
+                        destination: msg.sender,
+                        // TODO: rename param in EigenPodManager and update here
+                        shares: shares
+                    });
+                } else {
+                    strategyManager.withdrawSharesAsTokens(msg.sender, withdrawal.strategies[i], withdrawal.shares[i], tokens[i]);
+                }
+            } else {
+                // TODO: unfortunately there doesn't seem to be a good way to avoid scaling down then up
+                uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
+                    shares: shares,
+                    scalingFactor: slasher.shareScalingFactor(currentOperator, withdrawal.strategies[i])
                 });
 
+                // TODO: figure out how to award correct number of shares back when a stale withdrawal is completed
+                // Award shares back in StrategyManager/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
                 // When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
                 // Other strategy shares can + will be awarded to the withdrawer.
                 if (withdrawal.strategies[i] == beaconChainETHStrategy) {
-                    // address staker = withdrawal.staker;
-                    address podOwnerOperator = delegatedTo[withdrawal.staker];
-                    // TODO: unfortunately there doesn't seem to be a good way to avoid scaling down then up
-                    uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
-                        shares: shares,
-                        scalingFactor: slasher.shareScalingFactor(podOwnerOperator, beaconChainETHStrategy)
-                    });
-
                     // Update shares amount depending upon the returned value.
                     // The return value will be lower than the input value in the case where the staker has an existing share deficit
-                    uint256 increaseInDelegateableShares = eigenPodManager.addShares({
+                    nonNormalizedShares = eigenPodManager.addShares({
                         podOwner: withdrawal.staker,
                         shares: nonNormalizedShares
                     });
-                    // Similar to `isDelegated` logic
-                    if (podOwnerOperator != address(0)) {
-                        _increaseOperatorShares({
-                            operator: podOwnerOperator,
-                            // the 'staker' here is the address receiving new shares
-                            staker: withdrawal.staker,
-                            strategy: withdrawal.strategies[i],
-                            nonNormalizedShares: increaseInDelegateableShares
-                        });
-                    }
                 } else {
-                    uint256 scalingFactor = slasher.shareScalingFactor(currentOperator, withdrawal.strategies[i]);
-                    // TODO: unfortunately there doesn't seem to be a good way to avoid scaling down then up
-                    uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
-                        shares: shares,
-                        scalingFactor: scalingFactor
-                    });
                     strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], nonNormalizedShares);
-                    // Similar to `isDelegated` logic
-                    if (currentOperator != address(0)) {
-                        _increaseOperatorShares({
-                            operator: currentOperator,
-                            // the 'staker' here is the address receiving new shares
-                            staker: msg.sender,
-                            strategy: withdrawal.strategies[i],
-                            nonNormalizedShares: nonNormalizedShares
-                        });
-                    }
                 }
-                unchecked { ++i; }
-            }
-        }
 
+                // Similar to `isDelegated` logic
+                if (currentOperator != address(0)) {
+                    _increaseOperatorShares({
+                        operator: currentOperator,
+                        // the 'staker' here is the address receiving new shares
+                        staker: withdrawal.staker,
+                        strategy: withdrawal.strategies[i],
+                        nonNormalizedShares: nonNormalizedShares
+                    });
+                }
+            }
+            unchecked { ++i; }
+        }
+        
         emit WithdrawalCompleted(withdrawalRoot);
     }
 
@@ -814,26 +800,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares, then a call is ultimately forwarded to the
      * `staker`s EigenPod; otherwise a call is ultimately forwarded to the `strategy` with info on the `token`.
      */
-    function _withdrawSharesAsTokens(address staker, address withdrawer, IStrategy strategy, uint256 nonNormalizedShares, IERC20 token) internal {
-        uint256 shares = SlashingAccountingUtils.normalize({
-            nonNormalizedShares: withdrawal.shares[i], 
-            scalingFactor: slasher.shareScalingFactorAtEpoch(
-                withdrawal.delegatedTo,
-                withdrawal.strategies[i],
-                epochForEndOfSlashability
-            )
-        });
-
-        if (strategy == beaconChainETHStrategy) {
-            eigenPodManager.withdrawSharesAsTokens({
-                podOwner: staker,
-                destination: withdrawer,
-                // TODO: rename param in EigenPodManager and update here
-                shares: shares
-            });
-        } else {
-            strategyManager.withdrawSharesAsTokens(withdrawer, strategy, shares, token);
-        }
+    function _withdrawSharesAsTokens(
+            address staker, 
+            address withdrawer, 
+            IStrategy strategy,
+            uint256 shares,
+            IERC20 token
+    ) internal {
+        
     }
 
     function _setMinWithdrawalDelayBlocks(uint256 _minWithdrawalDelayBlocks) internal {

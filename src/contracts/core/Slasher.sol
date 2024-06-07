@@ -51,13 +51,29 @@ contract Slasher is SlasherStorage {
             }
             requestedSlashedBips[operator][strategy][epoch][operatorSetHash] = uint32(requestedSlashedBipsAfter);
 
+            SlashingRequest memory slashingRequest = slashingRequests[operator][strategy][epoch];
+            // if the rate to slash is 0, increment the lastCreatedSlashingRequestId and set the id
+            if (slashingRequest.slashingRate == 0) {
+                uint32 requestId = slashingRequestIds[operator][strategy].lastCreatedSlashingRequestId + 1;
+                slashingRequestIds[operator][strategy].lastCreatedSlashingRequestId = requestId;
+                slashingRequest.id = requestId;
+            }
+
             // pending slashing rate is modified by the bips to modify * the slashable bips
             // when divided by BIPS_FACTOR**2, this will give the actual proportion of the 
             // stake is being modified. this is done for accuracy when slashable bips are small
-            pendingSlashingRate[operator][strategy][epoch] = uint64(
-                int64(pendingSlashingRate[operator][strategy][epoch]) 
+            slashingRequest.slashingRate = uint64(
+                int64(slashingRequest.slashingRate) 
                     + int64(bipsToModify) * int64(uint64(operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch)))
             );
+
+            // if the rate to slash is 0, this means the request was entirely cancelled, so we should increment the lastExecutedSlashingRequestId
+            if (slashingRequest.slashingRate == 0) {
+                slashingRequestIds[operator][strategy].lastExecutedSlashingRequestId = slashingRequest.id - 1;
+                slashingRequest.id = 0;
+            }
+
+            slashingRequests[operator][strategy][epoch] = slashingRequest;
         }
         
         emit RequestedBipsToSlashModified(
@@ -82,18 +98,20 @@ contract Slasher is SlasherStorage {
         require(epoch < EpochUtils.currentEpoch(), "Slasher.executeSlashing: must slash for a previous epoch");
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
-            uint64 rateToSlash = pendingSlashingRate[operator][strategy][epoch];
-            pendingSlashingRate[operator][strategy][epoch] = 0;
+            // make sure the slashing request is in order and overwrite the last executed slashing request ID
+            SlashingRequest memory slashingRequest = slashingRequests[operator][strategy][epoch];
+            require(slashingRequestIds[operator][strategy].lastExecutedSlashingRequestId + 1 == slashingRequest.id, "Slasher.executeSlashing: must execute slashings in order");
+            slashingRequestIds[operator][strategy].lastExecutedSlashingRequestId = slashingRequest.id;
+        
             // truncate to BIPS_FACTOR_SQUARED if it exceeds it
-            if(rateToSlash > SlashingAccountingUtils.BIPS_FACTOR_SQUARED) {
-                rateToSlash = SlashingAccountingUtils.BIPS_FACTOR_SQUARED;
+            if(slashingRequest.slashingRate > SlashingAccountingUtils.BIPS_FACTOR_SQUARED) {
+                slashingRequest.slashingRate = SlashingAccountingUtils.BIPS_FACTOR_SQUARED;
             }
-            // TODO: again note that we need something like the first epoch being epoch 1 here, to allow actually slashing in the first epoch
-            require(epoch > lastSlashed(operator, strategy), "Slasher._slashShares: slashing must occur in strictly ascending epoch order");
+
             uint256 scalingFactorBefore = shareScalingFactor(operator, strategy);
             uint256 scalingFactorAfter = SlashingAccountingUtils.findNewScalingFactor({
                 scalingFactorBefore: scalingFactorBefore,
-                rateToSlash: rateToSlash
+                rateToSlash: slashingRequest.slashingRate
             });
             // update storage to reflect the slashing
             slashedEpochHistory[operator][strategy].push(epoch);
@@ -105,7 +123,7 @@ contract Slasher is SlasherStorage {
                 epoch,
                 operator,
                 strategy,
-                rateToSlash
+                slashingRequest.slashingRate
             );
         }
     }
@@ -181,7 +199,7 @@ contract Slasher is SlasherStorage {
 		IStrategy strategy,
 		uint32 epoch
 	) external view returns (uint32) {
-        uint64 totalSlashingRate = pendingSlashingRate[operator][strategy][epoch];
+        uint64 totalSlashingRate = slashingRequests[operator][strategy][epoch].slashingRate;
         if (totalSlashingRate >= SlashingAccountingUtils.BIPS_FACTOR_SQUARED) {
             totalSlashingRate = SlashingAccountingUtils.BIPS_FACTOR_SQUARED;
         }
@@ -202,7 +220,7 @@ contract Slasher is SlasherStorage {
         uint256 pendingScalingFactor = SlashingAccountingUtils.findNewScalingFactor({
             scalingFactorBefore: _shareScalingFactor[operator][strategy],
             // TODO: this particular lookup could potentially get more complex? e.g. also including the trailing epoch's pending amounts
-            rateToSlash: pendingSlashingRate[operator][strategy][EpochUtils.currentEpoch()]
+            rateToSlash: slashingRequests[operator][strategy][EpochUtils.currentEpoch()].slashingRate
         });
         return pendingScalingFactor;
     }
