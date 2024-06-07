@@ -47,7 +47,6 @@ contract BeaconChainMock is PrintUtils {
     }
 
     /// @dev All withdrawals are processed with index == 0
-    uint64 constant WITHDRAWAL_INDEX = 0;
     uint constant GWEI_TO_WEI = 1e9;
     uint constant ZERO_NODES_LENGTH = 100;
 
@@ -889,7 +888,7 @@ contract BeaconChainMock is PrintUtils {
         for (uint i = 0; i < _validators.length; i++) {
             require(
                 _validators[i] <= lastIndexProcessed, 
-                "BeaconChain.getCredentialProofs: no credential proof found (did you call advanceEpoch yet?)"
+                "BeaconChain.getCredentialProofs: validator has not been included in beacon chain state (DID YOU CALL advanceEpoch YET?)"
             );
         }
 
@@ -910,19 +909,19 @@ contract BeaconChainMock is PrintUtils {
         return proofs;
     }
 
-    function getCheckpointProofs(uint40[] memory _validators) public view returns (CheckpointProofs memory) {
+    function getCheckpointProofs(uint40[] memory _validators, uint64 timestamp) public view returns (CheckpointProofs memory) {
         // If we have not advanced an epoch since a validator was created, no proofs have been
         // generated for that validator. We check this here and revert early so we don't return
         // empty proofs.
         for (uint i = 0; i < _validators.length; i++) {
             require(
                 _validators[i] <= lastIndexProcessed, 
-                "BeaconChain.getCredentialProofs: no credential proof found (did you call advanceEpoch yet?)"
+                "BeaconChain.getCredentialProofs: no checkpoint proof found (did you call advanceEpoch yet?)"
             );
         }
 
         CheckpointProofs memory proofs = CheckpointProofs({
-            balanceContainerProof: balanceContainerProofs[curTimestamp],
+            balanceContainerProof: balanceContainerProofs[timestamp],
             balanceProofs: new BeaconChainProofs.BalanceProof[](_validators.length)
         });
 
@@ -930,7 +929,7 @@ contract BeaconChainMock is PrintUtils {
         for (uint i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
             uint40 balanceRootIndex = _getBalanceRootIndex(validatorIndex);
-            BalanceRootProof memory proof = balanceRootProofs[curTimestamp][balanceRootIndex];
+            BalanceRootProof memory proof = balanceRootProofs[timestamp][balanceRootIndex];
 
             proofs.balanceProofs[i] = BeaconChainProofs.BalanceProof({
                 pubkeyHash: validators[validatorIndex].pubkeyHash,

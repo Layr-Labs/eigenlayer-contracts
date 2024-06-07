@@ -88,7 +88,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         } else {
             string memory operatorName = string.concat("Operator", numOperators.toString());
 
-            (operator, strategies, tokenBalances) = _randUser(operatorName);
+            (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
 
             uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -102,6 +102,22 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         numOperators++;
         return (operator, strategies, tokenBalances);
+    }
+
+    /// @dev Send a random amount of ETH (up to 10 gwei) to the destination via `call`,
+    /// triggering its fallback function. Sends a gwei-divisible amount as well as a
+    /// non-gwei-divisible amount.
+    ///
+    /// Total sent == `gweiSent + remainderSent`
+    function _sendRandomETH(address destination) internal returns (uint64 gweiSent, uint remainderSent) {
+        gweiSent = uint64(_randUint({ min: 1 , max: 10 }));
+        remainderSent = _randUint({ min: 1, max: 100 });
+        uint totalSent = (gweiSent * GWEI_TO_WEI) + remainderSent;
+
+        cheats.deal(address(this), address(this).balance + totalSent);
+        destination.call{ value: totalSent }("");
+
+        return (gweiSent, remainderSent);
     }
 
     /// @dev If we're on mainnet, upgrade contracts to M2 and migrate stakers/operators
@@ -144,6 +160,26 @@ abstract contract IntegrationBase is IntegrationDeployer {
             isUpgraded = true;
             emit log("_upgradeEigenLayerContracts: m2 upgrade complete");
         }
+    }
+
+    /// @dev Choose a random subset of validators (selects AT LEAST ONE)
+    function _choose(uint40[] memory validators) internal returns (uint40[] memory) {
+        uint rand = _randUint({ min: 1, max: validators.length ** 2 });
+
+        uint40[] memory result = new uint40[](validators.length);
+        uint newLen;
+        for (uint i = 0; i < validators.length; i++) {
+            // if bit set, add validator
+            if (rand >> i & 1 == 1) {
+                result[newLen] = validators[i];
+                newLen++;
+            }
+        }
+
+        // Manually update length of result
+        assembly { mstore(result, newLen) }
+
+        return result;
     }
 
     /*******************************************************************************
@@ -268,12 +304,30 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertEq(withdrawalRoot, delegationManager.calculateWithdrawalRoot(withdrawal), err);
     }
 
+    function assert_PodBalance_Eq(
+        User staker,
+        uint expectedBalance,
+        string memory err
+    ) internal {
+        EigenPod pod = staker.pod();
+        assertEq(address(pod).balance, expectedBalance, err);
+    }
+
     function assert_ProofsRemainingEqualsActive(
         User staker,
         string memory err
     ) internal {
         EigenPod pod = staker.pod();
         assertEq(pod.currentCheckpoint().proofsRemaining, pod.activeValidatorCount(), err);
+    }
+
+    function assert_CheckpointPodBalance(
+        User staker,
+        uint64 expectedPodBalanceGwei,
+        string memory err
+    ) internal {
+        EigenPod pod = staker.pod();
+        assertEq(pod.currentCheckpoint().podBalanceGwei, expectedPodBalanceGwei, err);
     }
     
     /*******************************************************************************

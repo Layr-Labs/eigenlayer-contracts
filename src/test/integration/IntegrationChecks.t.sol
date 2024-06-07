@@ -15,8 +15,9 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_VerifyWC_State(
         User staker,
         uint40[] memory validators,
-        uint beaconBalanceWei
+        uint64 beaconBalanceGwei
     ) internal {
+        uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
         assert_Snap_Added_StakerShares(staker, BEACONCHAIN_ETH_STRAT, beaconBalanceWei, "staker should have added shares to beacon chain strat");
         assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
         assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
@@ -27,6 +28,15 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         assert_ProofsRemainingEqualsActive(staker, "checkpoint proofs remaining should equal active validator count");
         assert_Snap_Created_Checkpoint(staker, "staker should have created a new checkpoint");
+    }
+
+    function check_StartCheckpoint_WithPodBalance_State(
+        User staker,
+        uint64 expectedPodBalanceGwei
+    ) internal {
+        check_StartCheckpoint_State(staker);
+
+        assert_CheckpointPodBalance(staker, expectedPodBalanceGwei, "checkpoint podBalanceGwei should equal expected");
     }
 
     function check_EmptyCheckpoint_State(
@@ -43,13 +53,33 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_PodBalanceToWithdrawable(staker, "pod balance should have been added to withdrawable restaked exec layer gwei");
     }
 
+    function check_CompleteCheckpoint_EarnOnBeacon_State(
+        User staker,
+        uint64 beaconBalanceAdded
+    ) internal {
+        check_CompleteCheckpoint_State(staker);
+
+        uint balanceAddedWei = beaconBalanceAdded * GWEI_TO_WEI;
+        assert_Snap_Added_StakerShares(staker, BEACONCHAIN_ETH_STRAT, balanceAddedWei, "should have increased shares by excess beacon balance");
+    }
+
+    function check_CompleteCheckpoint_WithPodBalance_State(
+        User staker,
+        uint64 expectedPodBalanceGwei
+    ) internal {
+        check_CompleteCheckpoint_State(staker);
+
+        assert_Snap_Added_WithdrawableGwei(staker, expectedPodBalanceGwei, "should have added expected gwei to withdrawable restaked exec layer gwei");
+    }
+
     function check_CompleteCheckpoint_WithExits_State(
         User staker,
         uint40[] memory exitedValidators,
         uint64 exitedBalanceGwei
     ) internal {
-        check_CompleteCheckpoint_State(staker);
-        assert_Snap_Added_WithdrawableGwei(staker, exitedBalanceGwei, "should have added expected gwei to withdrawable restaked exec layer gwei");
+        check_CompleteCheckpoint_WithPodBalance_State(staker, exitedBalanceGwei);
+
+        // TODO check share delta
         assert_Snap_Added_BalanceExitedGwei(staker, exitedBalanceGwei, "should have attributed expected gwei to exited balance");
         assert_Snap_Removed_ActiveValidatorCount(staker, exitedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, exitedValidators, "exited validators should each be WITHDRAWN");
