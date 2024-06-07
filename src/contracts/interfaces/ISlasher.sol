@@ -51,6 +51,26 @@ interface ISlasher {
         IStrategy[] memory strategies,
         int32 bipsToModify
     ) external;
+
+	/**
+	 * @notice Called by an AVS to reduce its own slashing request for a given
+	 * operator set and operator in the current or previous epoch
+	 *
+	 * @param operator the operator that the calling AVS is to reduce the bips they want to slash
+	 * @param operatorSetID the id of the operator set the AVS is reducing their slashing for
+	 * @param strategies the list of strategies slashing requested is being reduced for
+	 * @param epoch the epoch in which slashing was requested
+	 * @param bipsToReduce the basis points slashing to reduced for given strategies
+	 *
+	 * @dev bipsToReduce must be negative
+	 */
+	function reduceRequestedBipsToSlash(
+		address operator,
+		bytes4 operatorSetID,
+		IStrategy[] memory strategies,
+		uint32 epoch,
+		int32 bipsToReduce
+	) external;
 	
 	/**
 	 * @notice Permissionlessly called to execute slashing of a given list of 
