@@ -17,24 +17,24 @@ contract Slasher is SlasherStorage {
     ) SlasherStorage(_strategyManager, _delegationManager, _operatorSetManager) {}
 
     /**
-     * @notice Called by an AVS to modify its own slashing request for a given
-     * operator set and operator in the current epoch
-     *
-     * @param operator the operator that the calling AVS is to modify the bips they want to slash
-     * @param operatorSetID the id of the operator set the AVS is modifying their slashing for
-     * @param strategies the list of strategies slashing requested is being modified for
-     * @param bipsToModify the basis points slashing to modify for given strategies
-     *
-     * @dev bipsToModify is negative when the AVS wants to reduce the amount of slashing
-     *     and positive when the AVS wants to increase the amount of slashing
-     */
-    function modifyRequestedBipsToSlash(
-        address operator,
-        bytes4 operatorSetID,
-        IStrategy[] memory strategies,
-        int32 bipsToModify
-    ) external {
-        _modifyRequestedBipsToSlash(operator, operatorSetID, strategies, EpochUtils.currentEpoch(), bipsToModify);
+	 * @notice Called by an AVS to increase its own slashing request for a given
+	 * operator set and operator in the current epoch
+	 *
+	 * @param operator the operator that the calling AVS is to increase the bips they want to slash
+	 * @param operatorSetID the id of the operator set the AVS is increasing their slashing for
+	 * @param strategies the list of strategies slashing requested is being modified for
+	 * @param bipsToIncrease the basis points slashing to modify for given strategies
+	 *
+	 * @dev bipsToModify must be positive
+	 */
+	function increaseRequestedBipsToSlash(
+		address operator,
+		bytes4 operatorSetID,
+		IStrategy[] memory strategies,
+		int32 bipsToIncrease
+	) external {
+        require(bipsToIncrease > 0, "Slasher.increaseRequestedBipsToSlash: bipsToIncrease must be positive");
+        _modifyRequestedBipsToSlash(operator, operatorSetID, strategies, EpochUtils.currentEpoch(), bipsToIncrease);
     }
 
     /**
