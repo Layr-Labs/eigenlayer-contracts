@@ -623,8 +623,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             );
         }
 
-        // TODO: currently, this _inclusive_, meaning the completed withdrawal will include slashing effects that were enacted in the `epochForEndOfSlashability`
-        // TODO: note that we again probably want the first real epoch to be epoch 1, so that existing queued withdrawals are safe from slashing
         uint32 epochForEndOfSlashability = EpochUtils.getEndOfSlashabilityEpoch(withdrawalCreationEpoch(withdrawalRoot));
         require(EpochUtils.currentEpoch() > epochForEndOfSlashability,
             "DelegationManager._completeQueuedWithdrawal: withdrawal is still slashable");
@@ -664,7 +662,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             }
 
             if (receiveAsTokens) {
-                // TODO: require no pending slashing in epochForEndOfSlashability for each strategy
                 if (withdrawal.strategies[i] == beaconChainETHStrategy) {
                     eigenPodManager.withdrawSharesAsTokens({
                         podOwner: withdrawal.staker,
@@ -682,7 +679,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     scalingFactor: slasher.shareScalingFactor(currentOperator, withdrawal.strategies[i])
                 });
 
-                // TODO: figure out how to award correct number of shares back when a stale withdrawal is completed
+                // TODO DONE?: figure out how to award correct number of shares back when a stale withdrawal is completed
                 // Award shares back in StrategyManager/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
                 // When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
                 // Other strategy shares can + will be awarded to the withdrawer.

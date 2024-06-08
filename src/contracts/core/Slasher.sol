@@ -100,7 +100,7 @@ contract Slasher is SlasherStorage {
                 // update storage to reflect the slashing
                 slashedEpochHistory[operator][strategy].push(epoch);
                 _shareScalingFactor[operator][strategy] = scalingFactorAfter;
-                // TODO: note that this behavior risks off-by-one errors. it needs to be clearly defined precisely how the historical storage is supposed to work
+                // TODO DONE?: note that this behavior risks off-by-one errors. it needs to be clearly defined precisely how the historical storage is supposed to work
                 slashingRequest.scalingFactor = scalingFactorAfter;
             }
 
@@ -331,7 +331,7 @@ contract Slasher is SlasherStorage {
     /// @notice Returns the epoch for lookup in the slashing request history and whether 
     /// there were any slashing requests that happened before or at the given epoch
     function _getLookupEpoch(address operator, IStrategy strategy, uint32 epoch) internal view returns (uint32, bool) {
-        // TODO: note the edge case of 0th epoch; need to make sure it's clear how it should be handled
+        // TODO DONE?: note the edge case of 0th epoch; need to make sure it's clear how it should be handled
         uint32 epochForLookup;
         bool found;
         for (uint256 i = slashedEpochHistory[operator][strategy].length; i > 0; --i) {
