@@ -27,7 +27,11 @@ library EpochUtils {
         return currentEpoch() + 3;
     }
 
-    function getLastSlashableEpoch(uint32 queuedEpoch) internal view returns (uint32) {
+    function getMinExecutionEpochFromRequestEpoch(uint32 requestEpoch) internal pure returns (uint32) {
+        return requestEpoch + 2;
+    }
+
+    function getEndOfSlashabilityEpoch(uint32 queuedEpoch) internal view returns (uint32) {
         return queuedEpoch + 2;
     }
 }

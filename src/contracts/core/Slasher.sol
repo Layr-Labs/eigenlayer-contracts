@@ -74,8 +74,7 @@ contract Slasher is SlasherStorage {
      * @param epoch the epoch in which the slashing requests to execute were made
      */
     function executeSlashing(address operator, IStrategy[] memory strategies, uint32 epoch) external {
-        // TODO: decide if this needs a stonger condition. e.g. the epoch must be further in the past
-        require(epoch < EpochUtils.currentEpoch(), "Slasher.executeSlashing: must slash for a previous epoch");
+        require(EpochUtils.currentEpoch() > EpochUtils.getMinExecutionEpochFromRequestEpoch(epoch) , "Slasher.executeSlashing: current epoch must be greater than the minimum execution epoch");
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
             // make sure the slashing request is in order and overwrite the last executed slashing request ID
@@ -187,6 +186,52 @@ contract Slasher is SlasherStorage {
         return uint32(totalSlashingRate);
     }
 
+    /**
+     * @notice gets whether withdrawals of the given strategy delegated to the given operator can be withdrawn and the scaling factor
+     * @param operator the operator the withdrawal is delegated to
+     * @param strategy the strategy the withdrawal is from
+     * @param epoch the last epoch the withdrawal was slashable until
+     * @return whether the withdrawal can be executed
+     * @return whether there was a slashing request for the given operator and strategy at the given epoch
+     */
+    function getWithdrawabilityAndScalingFactorAtEpoch(
+        address operator,
+        IStrategy strategy,
+        uint32 epoch
+    ) external view returns (bool, uint64) {
+        bool __canWithdraw = true;
+        uint64 scalingFactor = SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
+        (uint32 lookupEpoch, bool found) = _getLookupEpoch(operator, strategy, epoch);
+        if (found) {
+            __canWithdraw = _canWithdraw(operator, strategy, lookupEpoch);
+            scalingFactor = slashingRequests[operator][strategy][lookupEpoch].scalingFactor;
+        }
+        return (__canWithdraw, scalingFactor);
+    }
+
+    /**
+     * @notice gets whether withdrawals of the given strategy delegated to the given operator can be withdrawn
+     * @param operator the operator the withdrawal is delegated to
+     * @param strategy the strategy the withdrawal is from
+     * @param epoch the last epoch the withdrawal was slashable until
+     * @return whether the withdrawal can be executed
+     */
+    function canWithdraw(address operator, IStrategy strategy, uint32 epoch) public view returns (bool) {
+        bool __canWithdraw = true;
+        (uint32 lookupEpoch, bool found) = _getLookupEpoch(operator, strategy, epoch);
+        if(found) {
+            // if the slashing request is not executed, the operator cannot withdraw
+            __canWithdraw = _canWithdraw(operator, strategy, lookupEpoch);
+        }
+        return __canWithdraw;
+    }
+
+    /**
+     * @notice gets the scaling factor for the given operator and strategy
+     * @param operator the operator to get the scaling factor for
+     * @param strategy the strategy to get the scaling factor for
+     * @return the scaling factor for the given operator and strategy
+     */
     function shareScalingFactor(address operator, IStrategy strategy) public view returns (uint64) {
         uint64 scalingFactor = _shareScalingFactor[operator][strategy];
         if (scalingFactor == 0) {
@@ -207,19 +252,22 @@ contract Slasher is SlasherStorage {
     }
 
     // TODO: this is a "naive" search since it brute-force backwards searches; we might technically want a binary search for completeness
+    /**
+     * @notice gets the scaling factor for the given operator and strategy at the given epoch
+     * @param operator the operator to get the scaling factor for
+     * @param strategy the strategy to get the scaling factor for
+     * @param epoch the epoch to get the scaling factor for
+     * @return the scaling factor for the given operator and strategy at the given epoch
+     */
     function shareScalingFactorAtEpoch(
         address operator,
         IStrategy strategy,
         uint32 epoch
     ) public view returns (uint64) {
         uint64 scalingFactor = SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
-        // TODO: note the edge case of 0th epoch; need to make sure it's clear how it should be handled
-        for (uint256 i = slashedEpochHistory[operator][strategy].length; i > 0; --i) {
-            if (slashedEpochHistory[operator][strategy][i] <= epoch) {
-                uint32 correctEpochForLookup = slashedEpochHistory[operator][strategy][i];
-                scalingFactor = slashingRequests[operator][strategy][correctEpochForLookup].scalingFactor;
-                break;
-            }
+        (uint32 lookupEpoch, bool found) = _getLookupEpoch(operator, strategy, epoch);
+        if (found) {
+            scalingFactor = slashingRequests[operator][strategy][lookupEpoch].scalingFactor;
         }
         return scalingFactor;
     }
@@ -279,6 +327,29 @@ contract Slasher is SlasherStorage {
 
         emit RequestedBipsToSlashModified(epoch, operator, operatorSet, strategies, bipsToModify);
     }
+
+    /// @notice Returns the epoch for lookup in the slashing request history and whether 
+    /// there were any slashing requests that happened before or at the given epoch
+    function _getLookupEpoch(address operator, IStrategy strategy, uint32 epoch) internal view returns (uint32, bool) {
+        // TODO: note the edge case of 0th epoch; need to make sure it's clear how it should be handled
+        uint32 epochForLookup;
+        bool found;
+        for (uint256 i = slashedEpochHistory[operator][strategy].length; i > 0; --i) {
+            epochForLookup = slashedEpochHistory[operator][strategy][i - 1];
+            if (epochForLookup <= epoch) {
+                found = true;
+                break;
+            }
+        }
+        return (epochForLookup, found);
+    }
+
+    /// @notice the withdrawability condition for a certain epoch that a withdrawal was slashable until is
+    /// that all slashings executable at that epoch have been executed
+    /// @dev slashingRequests[operator][strategy][epochForLookup] must be set, use _getLookupEpoch
+    function _canWithdraw(address operator, IStrategy strategy, uint32 epoch) internal view returns (bool) {
+        return slashingRequests[operator][strategy][epoch].id <= slashingRequestIds[operator][strategy].lastExecutedSlashingRequestId;
+    } 
 
     function _hashOperatorSet(IOperatorSetManager.OperatorSet memory operatorSet) internal pure returns (bytes32) {
         IOperatorSetManager.OperatorSet[] memory operatorSetArray = new IOperatorSetManager.OperatorSet[](1);

@@ -625,11 +625,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // TODO: currently, this _inclusive_, meaning the completed withdrawal will include slashing effects that were enacted in the `epochForEndOfSlashability`
         // TODO: note that we again probably want the first real epoch to be epoch 1, so that existing queued withdrawals are safe from slashing
-        uint32 epochForEndOfSlashability = EpochUtils.getLastSlashableEpoch(withdrawalCreationEpoch(withdrawalRoot));
+        uint32 epochForEndOfSlashability = EpochUtils.getEndOfSlashabilityEpoch(withdrawalCreationEpoch(withdrawalRoot));
         require(EpochUtils.currentEpoch() > epochForEndOfSlashability,
             "DelegationManager._completeQueuedWithdrawal: withdrawal is still slashable");
-
-        
 
         // Remove `withdrawalRoot` from pending roots
         delete _pendingWithdrawalData[withdrawalRoot];
@@ -642,14 +640,22 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
             );
 
-            uint256 shares = SlashingAccountingUtils.normalize({
-                nonNormalizedShares: withdrawal.shares[i], 
-                scalingFactor: slasher.shareScalingFactorAtEpoch(
+            uint256 shares;
+            {
+                // Check if the withdrawal is withdrawable and get the scaling factor
+                (bool canWithdraw, uint64 scalingFactor) = slasher.getWithdrawabilityAndScalingFactorAtEpoch(
                     withdrawal.delegatedTo,
                     withdrawal.strategies[i],
                     epochForEndOfSlashability
-                )
-            });
+                );
+
+                require(canWithdraw, "DelegationManager._completeQueuedWithdrawal: withdrawal is still slashable");
+
+                shares = SlashingAccountingUtils.normalize({
+                    nonNormalizedShares: withdrawal.shares[i], 
+                    scalingFactor: scalingFactor
+                });
+            }
 
             // if the withdrawal is being redelegated, load the current operator, avoid it in the case of receiving as tokens for gas
             address currentOperator;

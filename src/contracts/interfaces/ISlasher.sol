@@ -86,6 +86,10 @@ interface ISlasher {
 	) external;
 	
 	/// VIEW
+
+	function strategyManager() external view returns (IStrategyManager);
+    function delegation() external view returns (IDelegationManager);
+    function operatorSetManager() external view returns (IOperatorSetManager);
 	
 	/**
 	 * @notice fetches the requested parts per hundred million to slash for the 
@@ -148,17 +152,51 @@ interface ISlasher {
 		uint32 epoch
 	) external view returns (uint32);
 
-    function strategyManager() external view returns (IStrategyManager);
-    function delegation() external view returns (IDelegationManager);
-    function operatorSetManager() external view returns (IOperatorSetManager);
+	/**
+     * @notice gets whether withdrawals of the given strategy delegated to the given operator can be withdrawn and the scaling factor
+     * @param operator the operator the withdrawal is delegated to
+     * @param strategy the strategy the withdrawal is from
+     * @param epoch the last epoch the withdrawal was slashable until
+     * @return whether the withdrawal can be executed
+     * @return whether there was a slashing request for the given operator and strategy at the given epoch
+     */
+    function getWithdrawabilityAndScalingFactorAtEpoch(
+        address operator,
+        IStrategy strategy,
+        uint32 epoch
+    ) external view returns (bool, uint64);
 
-    // TODO: documentation
+	/**
+     * @notice gets whether withdrawals of the given strategy delegated to the given operator can be withdrawn
+     * @param operator the operator the withdrawal is delegated to
+     * @param strategy the strategy the withdrawal is from
+     * @param epoch the last epoch the withdrawal was slashable until
+     * @return whether the withdrawal can be executed
+     */
+    function canWithdraw(address operator, IStrategy strategy, uint32 epoch) external view returns (bool);
+
+    /**
+     * @notice gets the scaling factor for the given operator and strategy
+     * @param operator the operator to get the scaling factor for
+     * @param strategy the strategy to get the scaling factor for
+     * @return the scaling factor for the given operator and strategy
+     */
     function shareScalingFactor(address operator, IStrategy strategy) external view returns (uint64);
 
     // TODO: documentation
     function pendingShareScalingFactor(address operator, IStrategy strategy) external view returns (uint64);
 
-    // TODO: documentation
-    function shareScalingFactorAtEpoch(address operator, IStrategy strategy, uint32 epoch) external view returns (uint64);
+    /**
+     * @notice gets the scaling factor for the given operator and strategy at the given epoch
+     * @param operator the operator to get the scaling factor for
+     * @param strategy the strategy to get the scaling factor for
+     * @param epoch the epoch to get the scaling factor for
+     * @return the scaling factor for the given operator and strategy at the given epoch
+     */
+    function shareScalingFactorAtEpoch(
+        address operator,
+        IStrategy strategy,
+        uint32 epoch
+    ) external view returns (uint64);
 
 }
