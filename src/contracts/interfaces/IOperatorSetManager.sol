@@ -72,5 +72,5 @@ interface IOperatorSetManager is ISignatureUtils {
         OperatorSet calldata operatorSet,
         IStrategy strategy,
         uint32 epoch
-    ) external returns (uint16 slashableBips);
+    ) external view returns (uint16 slashableBips);
 }

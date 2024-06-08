@@ -667,7 +667,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                         shares: shares
                     });
                 } else {
-                    strategyManager.withdrawSharesAsTokens(msg.sender, withdrawal.strategies[i], withdrawal.shares[i], tokens[i]);
+                    strategyManager.withdrawSharesAsTokens(msg.sender, withdrawal.strategies[i], shares, tokens[i]);
                 }
             } else {
                 // TODO: unfortunately there doesn't seem to be a good way to avoid scaling down then up

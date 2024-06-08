@@ -133,7 +133,7 @@ contract Slasher is SlasherStorage {
         uint32 epoch
     ) public view returns (uint32) {
         return requestedSlashedBips[operator][strategy][epoch][_hashOperatorSet(operatorSet)]
-            * operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch);
+                * operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch);
     }
 
     /**

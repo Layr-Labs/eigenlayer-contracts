@@ -10,11 +10,28 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  * @notice SlasherStorage
  */
 abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher, Pausable {
-    IStrategyManager public strategyManager;
+    
+    // system contracts
+    IStrategyManager public immutable strategyManager;
+    IDelegationManager public immutable delegation;
+    IOperatorSetManager public immutable operatorSetManager;
 
-    IDelegationManager public delegation;
+    struct SlashingRequest {
+        uint32 id; // an incrementing ID for each slashing request
+        uint64 slashingRate; // This is parts per (BIPS_FACTOR**2), i.e. parts per 1e8, pphm = parts per hundred million, to slash upon execution
+        uint64 scalingFactor; // the scaling factor to apply to the operator's shares. this is only set upon execution
+    }
 
-    IOperatorSetManager public operatorSetManager;
+    struct SlashingRequestIds {
+        uint32 lastCreatedSlashingRequestId; // the last slashing request ID that was created
+        uint32 lastExecutedSlashingRequestId; // the last slashing request ID that was executed
+    }
+
+    /// @notice Mapping: Operator => Strategy => SlashingRequestIds
+    mapping(address => mapping(IStrategy => SlashingRequestIds)) public slashingRequestIds;
+
+    /// @notice Mapping: Operator => Strategy => epoch => SlashingRequest
+    mapping(address => mapping(IStrategy => mapping(uint32 => SlashingRequest))) public slashingRequests;
 
     /**
      * @notice Mapping: operator => strategy => share scalingFactor,
@@ -34,23 +51,6 @@ abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher,
      *      to *both* this number *and* the slashable bips.
      */
     mapping(address => mapping(IStrategy => mapping(uint32 => mapping(bytes32 => uint32)))) public requestedSlashedBips;
-
-    struct SlashingRequest {
-        uint32 id; // an incrementing ID for each slashing request
-        uint64 slashingRate; // This is parts per (BIPS_FACTOR**2), i.e. parts per 1e8, pphm = parts per hundred million, to slash upon execution
-        uint64 scalingFactor; // the scaling factor to apply to the operator's shares. this is only set upon execution
-    }
-
-    struct SlashingRequestIds {
-        uint32 lastCreatedSlashingRequestId; // the last slashing request ID that was created
-        uint32 lastExecutedSlashingRequestId; // the last slashing request ID that was executed
-    }
-
-    /// @notice Mapping: Operator => Strategy => SlashingRequestIds
-    mapping(address => mapping(IStrategy => SlashingRequestIds)) public slashingRequestIds;
-
-    /// @notice Mapping: Operator => Strategy => epoch => SlashingRequest
-    mapping(address => mapping(IStrategy => mapping(uint32 => SlashingRequest))) public slashingRequests;
 
     constructor(
         IStrategyManager _strategyManager,
