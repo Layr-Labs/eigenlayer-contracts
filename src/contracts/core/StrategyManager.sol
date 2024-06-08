@@ -32,7 +32,7 @@ contract StrategyManager is
 
     function stakerStrategyShares(address staker, IStrategy strategy) public view returns (uint256) {
         address operator = delegation.delegatedTo(staker);
-        uint256 scalingFactor = slasher.shareScalingFactor(operator, strategy);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, strategy);
         return SlashingAccountingUtils.normalize({
             nonNormalizedShares: nonNormalizedStakerStrategyShares[staker][strategy],
             scalingFactor: scalingFactor
@@ -42,7 +42,7 @@ contract StrategyManager is
     // includes the effect of all unexecuted but pending slashings
     function stakerStrategySharesIncludingPendingSlashings(address staker, IStrategy strategy) external view returns (uint256) {
         address operator = delegation.delegatedTo(staker);
-        uint256 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
+        uint64 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
         return SlashingAccountingUtils.normalize({
             nonNormalizedShares: nonNormalizedStakerStrategyShares[staker][strategy],
             scalingFactor: scalingFactor
@@ -356,7 +356,7 @@ contract StrategyManager is
         // TODO: possibly optimize or clarify the below operations by reorganizing them
         // find the nonNormalizedShares amount
         address operator = delegation.delegatedTo(staker);
-        uint256 scalingFactor = slasher.shareScalingFactor(operator, strategy);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, strategy);
         uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
             shares: shares,
             scalingFactor: scalingFactor

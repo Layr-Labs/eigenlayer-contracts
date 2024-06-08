@@ -93,8 +93,8 @@ contract Slasher is SlasherStorage {
                 // if the slashing rate is 0 due to cancellation, skip the slashing
                 continue;
             } else {
-                uint256 scalingFactorBefore = shareScalingFactor(operator, strategy);
-                uint256 scalingFactorAfter = SlashingAccountingUtils.findNewScalingFactor({
+                uint64 scalingFactorBefore = shareScalingFactor(operator, strategy);
+                uint64 scalingFactorAfter = SlashingAccountingUtils.findNewScalingFactor({
                     scalingFactorBefore: scalingFactorBefore,
                     rateToSlash: slashingRequest.slashingRate
                 });
@@ -102,7 +102,7 @@ contract Slasher is SlasherStorage {
                 slashedEpochHistory[operator][strategy].push(epoch);
                 _shareScalingFactor[operator][strategy] = scalingFactorAfter;
                 // TODO: note that this behavior risks off-by-one errors. it needs to be clearly defined precisely how the historical storage is supposed to work
-                shareScalingFactorHistory[operator][strategy][epoch] = scalingFactorAfter;
+                slashingRequest.scalingFactor = scalingFactorAfter;
             }
 
             emit SlashingExecuted(epoch, operator, strategy, slashingRequest.slashingRate);
@@ -187,8 +187,8 @@ contract Slasher is SlasherStorage {
         return uint32(totalSlashingRate);
     }
 
-    function shareScalingFactor(address operator, IStrategy strategy) public view returns (uint256) {
-        uint256 scalingFactor = _shareScalingFactor[operator][strategy];
+    function shareScalingFactor(address operator, IStrategy strategy) public view returns (uint64) {
+        uint64 scalingFactor = _shareScalingFactor[operator][strategy];
         if (scalingFactor == 0) {
             return SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
         } else {
@@ -197,8 +197,8 @@ contract Slasher is SlasherStorage {
     }
 
     // includes pending but unexecuted slashings
-    function pendingShareScalingFactor(address operator, IStrategy strategy) public view returns (uint256) {
-        uint256 pendingScalingFactor = SlashingAccountingUtils.findNewScalingFactor({
+    function pendingShareScalingFactor(address operator, IStrategy strategy) public view returns (uint64) {
+        uint64 pendingScalingFactor = SlashingAccountingUtils.findNewScalingFactor({
             scalingFactorBefore: _shareScalingFactor[operator][strategy],
             // TODO: this particular lookup could potentially get more complex? e.g. also including the trailing epoch's pending amounts
             rateToSlash: slashingRequests[operator][strategy][EpochUtils.currentEpoch()].slashingRate
@@ -211,13 +211,13 @@ contract Slasher is SlasherStorage {
         address operator,
         IStrategy strategy,
         uint32 epoch
-    ) public view returns (uint256) {
-        uint256 scalingFactor = SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
+    ) public view returns (uint64) {
+        uint64 scalingFactor = SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
         // TODO: note the edge case of 0th epoch; need to make sure it's clear how it should be handled
         for (uint256 i = slashedEpochHistory[operator][strategy].length; i > 0; --i) {
             if (slashedEpochHistory[operator][strategy][i] <= epoch) {
                 uint32 correctEpochForLookup = slashedEpochHistory[operator][strategy][i];
-                scalingFactor = shareScalingFactorHistory[operator][strategy][correctEpochForLookup];
+                scalingFactor = slashingRequests[operator][strategy][correctEpochForLookup].scalingFactor;
                 break;
             }
         }

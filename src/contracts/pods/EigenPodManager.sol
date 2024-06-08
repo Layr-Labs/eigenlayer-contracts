@@ -34,7 +34,7 @@ contract EigenPodManager is
 {
     function podOwnerShares(address podOwner) external view returns (int256) {
         address operator = delegationManager.delegatedTo(podOwner);
-        uint256 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
         return SlashingAccountingUtils.normalize({
             nonNormalizedShares: nonNormalizedPodOwnerShares[podOwner],
             scalingFactor: scalingFactor
@@ -44,7 +44,7 @@ contract EigenPodManager is
     // includes the effect of all unexecuted but pending slashings
     function podOwnerSharesIncludingPendingSlashings(address podOwner) external view returns (int256) {
         address operator = delegationManager.delegatedTo(podOwner);
-        uint256 scalingFactor = slasher.pendingShareScalingFactor(operator, beaconChainETHStrategy);
+        uint64 scalingFactor = slasher.pendingShareScalingFactor(operator, beaconChainETHStrategy);
         return SlashingAccountingUtils.normalize({
             nonNormalizedShares: nonNormalizedPodOwnerShares[podOwner],
             scalingFactor: scalingFactor
@@ -135,7 +135,7 @@ contract EigenPodManager is
 
         // find the nonNormalizedShares amount
         address operator = delegationManager.delegatedTo(podOwner);
-        uint256 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
         int256 nonNormalizedSharesDelta = SlashingAccountingUtils.denormalize({
             shares: sharesDelta,
             scalingFactor: scalingFactor
@@ -230,7 +230,7 @@ contract EigenPodManager is
 
         // find the nonNormalizedShares amount
         address operator = delegationManager.delegatedTo(podOwner);
-        uint256 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
         uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
             shares: shares,
             scalingFactor: scalingFactor

@@ -24,7 +24,7 @@ import "../libraries/SlashingAccountingUtils.sol";
 contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage, ReentrancyGuardUpgradeable {
 
     function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
-        uint256 scalingFactor = slasher.shareScalingFactor(operator, strategy);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, strategy);
         return SlashingAccountingUtils.normalize({
             nonNormalizedShares: nonNormalizedOperatorShares[operator][strategy],
             scalingFactor: scalingFactor
@@ -33,7 +33,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     // includes the effect of all unexecuted but pending slashings
     function operatorSharesIncludingPendingSlashings(address operator, IStrategy strategy) external view returns (uint256) {
-        uint256 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
+        uint64 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
         return SlashingAccountingUtils.normalize({
             nonNormalizedShares: nonNormalizedOperatorShares[operator][strategy],
             scalingFactor: scalingFactor
@@ -919,7 +919,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     ) public view returns (uint256[] memory) {
         uint256[] memory shares = new uint256[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            uint256 scalingFactor = slasher.shareScalingFactor(operator, strategies[i]);
+            uint64 scalingFactor = slasher.shareScalingFactor(operator, strategies[i]);
             shares[i] = SlashingAccountingUtils.normalize({
                 nonNormalizedShares: nonNormalizedOperatorShares[operator][strategies[i]],
                 scalingFactor: scalingFactor

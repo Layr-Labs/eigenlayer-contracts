@@ -153,12 +153,12 @@ interface ISlasher {
     function operatorSetManager() external view returns (IOperatorSetManager);
 
     // TODO: documentation
-    function shareScalingFactor(address operator, IStrategy strategy) external view returns (uint256);
+    function shareScalingFactor(address operator, IStrategy strategy) external view returns (uint64);
 
     // TODO: documentation
-    function pendingShareScalingFactor(address operator, IStrategy strategy) external view returns (uint256);
+    function pendingShareScalingFactor(address operator, IStrategy strategy) external view returns (uint64);
 
     // TODO: documentation
-    function shareScalingFactorAtEpoch(address operator, IStrategy strategy, uint32 epoch) external view returns (uint256);
+    function shareScalingFactorAtEpoch(address operator, IStrategy strategy, uint32 epoch) external view returns (uint64);
 
 }

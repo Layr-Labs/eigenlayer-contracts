@@ -10,9 +10,9 @@ contract SlasherMock is ISlasher, Test {
     function delegation() external view override returns (IDelegationManager) {}
     function operatorSetManager() external view override returns (IOperatorSetManager) {}
 
-    function shareScalingFactor(address operator, IStrategy strategy) external view returns (uint256) {}
-    function pendingShareScalingFactor(address operator, IStrategy strategy) public view returns (uint256) {}
-    function shareScalingFactorAtEpoch(address operator, IStrategy strategy, uint32 epoch) public view returns (uint256) {}
+    function shareScalingFactor(address operator, IStrategy strategy) external view returns (uint64) {}
+    function pendingShareScalingFactor(address operator, IStrategy strategy) public view returns (uint64) {}
+    function shareScalingFactorAtEpoch(address operator, IStrategy strategy, uint32 epoch) public view returns (uint64) {}
 
     /**
 	 * @notice Called by an AVS to increase its own slashing request for a given

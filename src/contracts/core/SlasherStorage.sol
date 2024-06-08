@@ -21,18 +21,11 @@ abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher,
      * stored in the "SHARE_CONVERSION_SCALE", i.e. scalingFactor = 2 * SHARE_CONVERSION_SCALE indicates a scalingFactor of "2".
      * Note that a value of zero is treated as one, since this means that the operator has never been slashed
      */
-    mapping(address => mapping(IStrategy => uint256)) internal _shareScalingFactor;
+    mapping(address => mapping(IStrategy => uint64)) internal _shareScalingFactor;
 
     /// @notice Mapping: operator => strategy => epochs in which the strategy was slashed for the operator
     // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
     mapping(address => mapping(IStrategy => uint32[])) public slashedEpochHistory;
-
-    /**
-     * @notice Mapping: operator => strategy => epoch => scaling factor as a result of slashing *in that epoch*
-     * @dev Note that this will be zero in the event of no slashing for the (operator, strategy) tuple in the given epoch.
-     * You should use `shareScalingFactorAtEpoch` if you want the actual historical value of the share scaling factor in a given epoch.
-     */
-    mapping(address => mapping(IStrategy => mapping(uint32 => uint256))) public shareScalingFactorHistory;
 
     /**
      * @notice Mapping: Operator => Strategy => epoch => operator set hash => requested slashed bips
@@ -45,6 +38,7 @@ abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher,
     struct SlashingRequest {
         uint32 id; // an incrementing ID for each slashing request
         uint64 slashingRate; // This is parts per (BIPS_FACTOR**2), i.e. parts per 1e8, pphm = parts per hundred million, to slash upon execution
+        uint64 scalingFactor; // the scaling factor to apply to the operator's shares. this is only set upon execution
     }
 
     struct SlashingRequestIds {
