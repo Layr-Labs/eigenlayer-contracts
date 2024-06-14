@@ -314,6 +314,7 @@ contract EigenPod is
         BeaconChainProofs.ValidatorProof calldata proof
     )
         external
+        onlyWhenNotPaused(PAUSED_START_CHECKPOINT) 
         onlyWhenNotPaused(PAUSED_VERIFY_STALE_BALANCE)
     {  
         bytes32 validatorPubkey = proof.validatorFields.getPubkeyHash();
