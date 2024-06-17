@@ -5,7 +5,7 @@ RUN apt-get update \
     && add-apt-repository -y ppa:longsleep/golang-backports \
     && add-apt-repository -y ppa:ethereum/ethereum \
     && apt-get update \
-    && apt-get install -y golang-1.22 ethereum=1.14.3+build29843+noble \
+    && apt-get install -y golang-1.22 ethereum=1.14.5+build29958+noble \
     && curl -L https://foundry.paradigm.xyz | bash \
     && /root/.foundry/bin/foundryup
 
