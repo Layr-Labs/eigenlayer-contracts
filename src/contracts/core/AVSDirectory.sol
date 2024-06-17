@@ -74,15 +74,23 @@ contract AVSDirectory is
     function updateStandbyParams(
         address operator,
         StandbyParam[] calldata standbyParams,
-        SignatureWithExpiry calldata operatorSignature
+        SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {
         if (operatorSignature.signature.length == 0) {
             require(msg.sender == operator, "AVSDirectory.updateStandbyParams: invalid access");
+        } else {
+            EIP1271SignatureUtils.checkSignature_EIP1271(
+                operator,
+                calculateUpdateStandbyDigestHash(standbyParams, operatorSignature.salt, operatorSignature.expiry),
+                operatorSignature.signature
+            );
         }
 
+        for (uint256 i; i < standbyParams.length; ++i) {
+            onStandby[standbyParams[i].operatorSet.avs][standbyParams[i].operatorSet.id] = standbyParams[i].onStandby;
 
-
-        
+            emit StandbyParamUpdated(operator, standbyParams[i]);
+        }
     }
 
     /**
@@ -360,20 +368,16 @@ contract AVSDirectory is
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
      *
-     *  @param avs The AVS the operator is registering with.
-     *  @param operatorSetID The ID of the operator set.
-     *  @param onStandby The boolean determining whether or not
+     *  @param standbyParams The newly updated standby mode parameters.
      *  @param salt A unique and single-use value associated with the approver's signature.
      *  @param expiry The time after which the approver's signature becomes invalid.
      */
     function calculateUpdateStandbyDigestHash(
-        address avs,
-        uint32 operatorSetID,
-        bool onStandby,
+        StandbyParam[] calldata standbyParams,
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
-        return _calculateDigestHash(keccak256(abi.encode(OPERATOR_STANDBY_UPDATE, avs, operatorSetID, onStandby)));
+        return _calculateDigestHash(keccak256(abi.encode(OPERATOR_STANDBY_UPDATE, standbyParams)));
     }
 
     /**
@@ -416,19 +420,19 @@ contract AVSDirectory is
     /// @notice Getter function for the current EIP-712 domain separator for this contract.
     /// @dev The domain separator will change in the event of a fork that changes the ChainID.
     function domainSeparator() public view returns (bytes32) {
-        if (block.chainid == ORIGINAL_CHAIN_ID) {
-            return _DOMAIN_SEPARATOR;
-        } else {
-            return _calculateDomainSeparator();
-        }
+        return _calculateDomainSeparator();
     }
 
     /// @notice Internal function for calculating the current domain separator of this contract
     function _calculateDomainSeparator() internal view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
+        if (block.chainid == ORIGINAL_CHAIN_ID) {
+            return _DOMAIN_SEPARATOR;
+        } else {
+            return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
+        }
     }
 
     function _calculateDigestHash(bytes32 structHash) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
+        return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
     }
 }

@@ -62,7 +62,7 @@ interface IAVSDirectory is ISignatureUtils {
     function updateStandbyParams(
         address operator,
         StandbyParam[] calldata standbyParams,
-        SignatureWithExpiry calldata signature
+        SignatureWithSaltAndExpiry calldata signature
     ) external;
 
     /**
