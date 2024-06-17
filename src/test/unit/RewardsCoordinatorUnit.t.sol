@@ -1155,6 +1155,16 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
             rewardsCoordinator.getDistributionRootsLength() - 1,
             "root not added to roots array"
         );
+        assertEq(
+            root,
+            rewardsCoordinator.getCurrentDistributionRoot().root,
+            "getCurrentDistributionRoot view function failed"
+        );
+        assertEq(
+            root,
+            rewardsCoordinator.getDistributionRootAtIndex(expectedRootIndex).root,
+            "getDistributionRootAtIndex view function failed"
+        );
         assertEq(activatedAt, submittedActivatedAt, "activatedAt not correct");
         assertEq(root, submittedRoot, "root not set");
         assertEq(
