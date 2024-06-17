@@ -46,6 +46,8 @@ interface IRewardsCoordinatorEvents {
         IERC20 token,
         uint256 claimedAmount
     );
+    event DirectAVSRewardSubmissionCreated(address indexed avs, address indexed earner, IERC20 token, uint256 amount);
+
 
 
 

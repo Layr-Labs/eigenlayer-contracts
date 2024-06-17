@@ -168,6 +168,23 @@ contract RewardsCoordinator is
     }
 
     /**
+     * @notice Rewards a list of earners directly with the specified `amounts` of `token`
+     * @dev No offchain calculations are done, the amounts are directly transferred to the earners
+     * @dev msg.sender is expected to be the AVS
+     * @param earners to reward
+     * @param amounts to send to earners
+     * @param token to reward operators in
+     */
+    function createDirectAVSRewardSubmission(address[] calldata earners, uint256[] calldata amounts, IERC20 token
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) {
+        require(earners.length == amounts.length, "RewardsCoordinator.createDirectAVSRewardSubmission: lengths mismatch");
+        for (uint256 i = 0; i < earners.length; i++) {
+            token.safeTransferFrom(msg.sender, earners[i], amounts[i]);
+            emit DirectAVSRewardSubmissionCreated(msg.sender, earners[i], token, amounts[i]);
+        }
+    }
+
+    /**
      * @notice Claim rewards against a given root (read from distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between

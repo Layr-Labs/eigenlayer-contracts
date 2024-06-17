@@ -170,6 +170,7 @@ interface IRewardsCoordinator {
         IERC20 token,
         uint256 claimedAmount
     );
+    event DirectAVSRewardSubmissionCreated(address indexed avs, address indexed earner, IERC20 token, uint256 amount);
 
     /*******************************************************************************
                             VIEW FUNCTIONS
@@ -311,4 +312,14 @@ interface IRewardsCoordinator {
      * @param _newValue The new value for isRewardsForAllSubmitter
      */
     function setRewardsForAllSubmitter(address _submitter, bool _newValue) external;
+
+    /**
+     * @notice Rewards a list of earners directly with the specified `amounts` of `token`
+     * @dev No offchain calculations are done, the amounts are directly transferred to the earners
+     * @dev msg.sender is expected to be the AVS
+     * @param earners to reward
+     * @param amounts to send to earners
+     * @param token to reward operators in
+     */
+    function createDirectAVSRewardSubmission(address[] calldata earners, uint256[] calldata amounts, IERC20 token) external;
 }

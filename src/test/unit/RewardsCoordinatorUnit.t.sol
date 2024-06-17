@@ -2002,3 +2002,62 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         return claims;
     }
 }
+
+/// @notice Tests for createDirectAVSRewardSubmission
+contract RewardsCoordinatorUnitTests_createDirectAVSRewardSubmission is RewardsCoordinatorUnitTests {
+    using stdStorage for StdStorage;
+
+    IERC20 rewardToken;
+
+
+    function setUp() public virtual override {
+        RewardsCoordinatorUnitTests.setUp();
+
+        rewardToken = new ERC20PresetFixedSupply(
+            "dog wif hat",
+            "MOCK1",
+            mockTokenInitialSupply,
+            address(this)
+        );
+    }
+
+    function test_Revert_WhenPaused() public {
+        cheats.prank(pauser);
+        rewardsCoordinator.pause(2 ** PAUSED_AVS_REWARDS_SUBMISSION);
+
+        address[] memory earners = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        cheats.expectRevert("Pausable: index is paused");
+        rewardsCoordinator.createDirectAVSRewardSubmission(earners, amounts, rewardToken);
+    }
+
+    function test_Revert_mismatchedInputLengths() public {
+        address[] memory earners = new address[](1);
+        uint256[] memory amounts = new uint256[](2);
+
+        cheats.expectRevert("RewardsCoordinator.createDirectAVSRewardSubmission: lengths mismatch");
+        rewardsCoordinator.createDirectAVSRewardSubmission(earners, amounts, rewardToken);
+    }
+
+    function test_Fuzz_createDirectAVSRewardSubmission(address[] memory earners, uint256 salt) public {
+        uint256[] memory amounts = new uint256[](earners.length);
+        // Generate random amounts to send to each earner
+        uint256 remainingSupply = mockTokenInitialSupply;
+        for (uint256 i = 0; i < earners.length; ++i) {
+            vm.assume(earners[i] != address(0));
+            uint256 amount = uint256(keccak256(abi.encodePacked(salt, i))) % (remainingSupply + 1);
+            amounts[i] = amount;
+            remainingSupply -= amount;
+        }
+
+        rewardToken.approve(address(rewardsCoordinator), mockTokenInitialSupply);
+
+        // Emit Events
+        for (uint256 i = 0; i < earners.length; ++i) {
+            cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+            emit DirectAVSRewardSubmissionCreated(address(this), earners[i], rewardToken, amounts[i]);
+        }
+        rewardsCoordinator.createDirectAVSRewardSubmission(earners, amounts, rewardToken);
+    }
+}
