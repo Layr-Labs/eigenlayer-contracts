@@ -77,7 +77,7 @@ contract AVSDirectory is
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {
         if (operatorSignature.signature.length == 0) {
-            require(msg.sender == operator, "AVSDirectory.updateStandbyParams: invalid access");
+            require(msg.sender == operator, "AVSDirectory.updateStandbyParams: invalid signature");
         } else {
             EIP1271SignatureUtils.checkSignature_EIP1271(
                 operator,
@@ -87,7 +87,7 @@ contract AVSDirectory is
         }
 
         for (uint256 i; i < standbyParams.length; ++i) {
-            onStandby[standbyParams[i].operatorSet.avs][standbyParams[i].operatorSet.id] = standbyParams[i].onStandby;
+            onStandby[operator][standbyParams[i].avs] = standbyParams[i].onStandby;
 
             emit StandbyParamUpdated(operator, standbyParams[i]);
         }
@@ -127,17 +127,19 @@ contract AVSDirectory is
             "AVSDirectory.registerOperatorToOperatorSets: salt already spent"
         );
 
-        // Assert signature provided by `operator` is valid.
-        EIP1271SignatureUtils.checkSignature_EIP1271(
-            operator,
-            calculateOperatorSetRegistrationDigestHash({
-                avs: msg.sender,
-                operatorSetIds: operatorSetIds,
-                salt: operatorSignature.salt,
-                expiry: operatorSignature.expiry
-            }),
-            operatorSignature.signature
-        );
+        if (!onStandby[msg.sender][operator]) {
+            // Assert signature provided by `operator` is valid.
+            EIP1271SignatureUtils.checkSignature_EIP1271(
+                operator,
+                calculateOperatorSetRegistrationDigestHash({
+                    avs: msg.sender,
+                    operatorSetIds: operatorSetIds,
+                    salt: operatorSignature.salt,
+                    expiry: operatorSignature.expiry
+                }),
+                operatorSignature.signature
+            );
+        }
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;

@@ -18,7 +18,7 @@ interface IAVSDirectory is ISignatureUtils {
     }
 
     struct StandbyParam {
-        OperatorSet operatorSet;
+        address avs;
         bool onStandby;
     }
 
