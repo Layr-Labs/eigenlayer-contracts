@@ -1,0 +1,85 @@
+name: Run Coverage
+
+on:
+  push:
+  workflow_dispatch: {}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+  run-tests:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - name: Load issue number
+      uses: actions/github-script@v6
+      id: get_issue_number
+      with:
+        script: |
+          if (context.issue.number) {
+            // Return issue number if present
+            return context.issue.number;
+          } else {
+            // Otherwise return issue number from commit
+            return (
+              await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                commit_sha: context.sha,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              })
+            ).data[0].number;
+          }
+        result-encoding: string
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Install lcov
+      run: |
+        sudo apt-get install lcov
+      id: lcov
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+    - name: Run coverage
+      run: forge coverage --report lcov
+    - name: Prune coverage report
+      run: lcov --remove ./lcov.info -o ./lcov.info.pruned 'src/test/*' 'script/*' --ignore-errors inconsistent
+    - name: Generate reports
+      run: genhtml -o report ./lcov.info.pruned
+    - name: Upload coverage results (s3 link here)
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-coverage-report
+        path: report/*
+    - name: View Coverage (text here)
+      id: print_coverage
+      run: |
+        EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+        echo "comment_contents<<$EOF" >> $GITHUB_OUTPUT
+        echo "$(lcov --list ./lcov.info.pruned --ignore-errors inconsistent)" >> $GITHUB_OUTPUT
+        echo "$EOF" >> $GITHUB_OUTPUT
+    - name: Comment the full report
+      uses: actions/github-script@v7
+      with:
+        script: |
+          let body = `${{ steps.print_coverage.outputs.comment_contents }}`;
+          github.rest.issues.createComment({
+            issue_number: ${{ steps.get_issue_number.outputs.result }},
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `
+            \`\`\`
+            ${body}
+            \`\`\`
+            `
+          })
