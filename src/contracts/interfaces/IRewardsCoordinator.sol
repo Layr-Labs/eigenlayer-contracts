@@ -115,7 +115,7 @@ interface IRewardsCoordinator {
      * @dev The merkle tree is structured with the merkle root at the top and EarnerTreeMerkleLeaf as internal leaves
      * in the tree. Each earner leaf has its own subtree with TokenTreeMerkleLeaf as leaves in the subtree.
      * To prove a claim against a specified rootIndex(which specifies the distributionRoot being used),
-     * the claim will first verify inclusion of the earner leaf in the tree against distributionRoots[rootIndex].root.
+     * the claim will first verify inclusion of the earner leaf in the tree against _distributionRoots[rootIndex].root.
      * Then for each token, it will verify inclusion of the token leaf in the earner's subtree against the earner's earnerTokenRoot.
      */
     struct RewardsMerkleClaim {
@@ -262,7 +262,7 @@ interface IRewardsCoordinator {
     function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmission) external;
 
     /**
-     * @notice Claim rewards against a given root (read from distributionRoots[claim.rootIndex]).
+     * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
      * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.

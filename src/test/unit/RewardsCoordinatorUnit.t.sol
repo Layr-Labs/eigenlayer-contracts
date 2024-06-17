@@ -1144,11 +1144,7 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
         cheats.prank(rewardsUpdater);
         rewardsCoordinator.submitRoot(root, rewardsCalculationEndTimestamp);
 
-        (
-            bytes32 submittedRoot,
-            uint32 submittedRewardsCalculationEndTimestamp,
-            uint32 submittedActivatedAt
-        ) = rewardsCoordinator.distributionRoots(expectedRootIndex);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(expectedRootIndex);
 
         assertEq(
             expectedRootIndex,
@@ -1165,11 +1161,11 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
             rewardsCoordinator.getDistributionRootAtIndex(expectedRootIndex).root,
             "getDistributionRootAtIndex view function failed"
         );
-        assertEq(activatedAt, submittedActivatedAt, "activatedAt not correct");
-        assertEq(root, submittedRoot, "root not set");
+        assertEq(activatedAt, distributionRoot.activatedAt, "activatedAt not correct");
+        assertEq(root, distributionRoot.root, "root not set");
         assertEq(
             rewardsCalculationEndTimestamp,
-            submittedRewardsCalculationEndTimestamp,
+            distributionRoot.rewardsCalculationEndTimestamp,
             "rewardsCalculationEndTimestamp not set"
         );
         assertEq(
@@ -1248,8 +1244,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-        cheats.warp(activatedAt);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        cheats.warp(distributionRoot.activatedAt);
 
         // Claim against root and check balances before/after, and check it matches the difference between
         // cumulative claimed and earned.
@@ -1260,7 +1256,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         uint256[] memory earnings = _getCumulativeEarnings(claim);
         uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-        _assertRewardsClaimedEvents(root, claim, claimer);
+        _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
         rewardsCoordinator.processClaim(claim, claimer);
 
         uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
@@ -1297,8 +1293,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-        cheats.warp(activatedAt);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        cheats.warp(distributionRoot.activatedAt);
 
         // Claim against root and check balances before/after, and check it matches the difference between
         // cumulative claimed and earned.
@@ -1309,7 +1305,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         uint256[] memory earnings = _getCumulativeEarnings(claim);
         uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-        _assertRewardsClaimedEvents(root, claim, claimer);
+        _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
         rewardsCoordinator.processClaim(claim, claimer);
 
         uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
@@ -1348,8 +1344,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 1. Claim against first root
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-            cheats.warp(activatedAt);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
@@ -1360,7 +1356,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             uint256[] memory earnings = _getCumulativeEarnings(claim);
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-            _assertRewardsClaimedEvents(root, claim, claimer);
+            _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
             rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
@@ -1380,8 +1376,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         claim = claims[1];
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-            cheats.warp(activatedAt);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
@@ -1392,7 +1388,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             uint256[] memory earnings = _getCumulativeEarnings(claim);
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-            _assertRewardsClaimedEvents(root, claim, claimer);
+            _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
             rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
@@ -1412,8 +1408,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         claim = claims[2];
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-            cheats.warp(activatedAt);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
@@ -1424,7 +1420,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             uint256[] memory earnings = _getCumulativeEarnings(claim);
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-            _assertRewardsClaimedEvents(root, claim, claimer);
+            _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
             rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
@@ -1464,8 +1460,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 1. Claim against first root
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-            cheats.warp(activatedAt);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
@@ -1476,7 +1472,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             uint256[] memory earnings = _getCumulativeEarnings(claim);
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-            _assertRewardsClaimedEvents(root, claim, claimer);
+            _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
             rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
@@ -1495,8 +1491,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 2. Claim against first root again, expect a revert
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-            cheats.warp(activatedAt);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
@@ -1533,8 +1529,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-        cheats.warp(activatedAt);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        cheats.warp(distributionRoot.activatedAt);
 
         // Modify Earnings
         claim.tokenLeaves[0].cumulativeEarnings = 1e20;
@@ -1574,8 +1570,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-        cheats.warp(activatedAt);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        cheats.warp(distributionRoot.activatedAt);
 
         // Modify Earner
         claim.earnerLeaf.earner = invalidEarner;
@@ -1613,8 +1609,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-        cheats.warp(activatedAt);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        cheats.warp(distributionRoot.activatedAt);
 
         assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
@@ -1654,8 +1650,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-        cheats.warp(activatedAt);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        cheats.warp(distributionRoot.activatedAt);
 
         assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
@@ -1692,8 +1688,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-        cheats.warp(activatedAt);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        cheats.warp(distributionRoot.activatedAt);
 
         assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
@@ -1733,8 +1729,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-            cheats.warp(activatedAt);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
@@ -1759,7 +1755,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
                 (1 << ((claim.tokenTreeProofs[0].length / 32))),
                 "TokenIndex not set to max value"
             );
-            _assertRewardsClaimedEvents(root, claim, claimer);
+            _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
             rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
@@ -1799,8 +1795,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-            cheats.warp(activatedAt);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
@@ -1822,7 +1818,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
                 0,
                 "TokenTreeProof should be empty"
             );
-            _assertRewardsClaimedEvents(root, claim, claimer);
+            _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
             rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
@@ -1865,8 +1861,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
-            cheats.warp(activatedAt);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
@@ -1888,7 +1884,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
                 0,
                 "EarnerTreeProof should be empty"
             );
-            _assertRewardsClaimedEvents(root, claim, claimer);
+            _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
             rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
