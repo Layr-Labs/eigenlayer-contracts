@@ -27,7 +27,7 @@
     "chalk": "^4.1.0",
     "dotenv": "^16.3.1",
     "fs": "^0.0.1-security",
-    "hardhat": "^2.12.4",
+    "hardhat": "^2.22.4",
     "hardhat-preprocessor": "^0.1.5",
     "husky": "^8.0.3",
     "ts-node": "^10.9.1",
