@@ -15,9 +15,12 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
         keccak256("OperatorAVSRegistration(address operator,address avs,bytes32 salt,uint256 expiry)");
 
     /// @notice The EIP-712 typehash for the `OperatorSetRegistration` struct used by the contract
-    bytes32 public constant OPERATOR_SET_REGISTRATION_TYPEHASH = keccak256(
-        "OperatorSetRegistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)"
-    );
+    bytes32 public constant OPERATOR_SET_REGISTRATION_TYPEHASH =
+        keccak256("OperatorSetRegistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
+
+    /// @notice The EIP-712 typehash for the `StandbyParams` struct used by the contract
+    bytes32 public constant OPERATOR_STANDBY_UPDATE =
+        keccak256("OperatorStandbyUpdate(address avs,uint32 id,bool onStandby,bytes32 salt,uint256 expiry)");
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;

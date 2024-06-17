@@ -17,6 +17,11 @@ interface IAVSDirectory is ISignatureUtils {
         uint32 id;
     }
 
+    struct StandbyParam {
+        OperatorSet operatorSet;
+        bool onStandby;
+    }
+
     /**
      *  @notice Emitted when an operator's registration status with an AVS is updated.
      *  Specifically, when an operator enters its first operator set for an AVS, or
@@ -41,6 +46,24 @@ interface IAVSDirectory is ISignatureUtils {
     /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
     /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+
+    /// @notice Emitted when an operator updates their standby parameters.
+    event StandbyParamUpdated(address operator, StandbyParam standbyParam);
+
+    /**
+     * @notice Updates the standby parameters for an operator across multiple operator sets.
+     * Allows the AVS to add the operator to a given operator set if they are not already registered.
+     *
+     * @param operator The address of the operator for which the standby parameters are being updated.
+     * @param standbyParams The new standby parameters for the operator.
+     * @param signature If non-empty, the signature of the operator authorizing the modification.
+     *                  If empty, the `msg.sender` must be the operator.
+     */
+    function updateStandbyParams(
+        address operator,
+        StandbyParam[] calldata standbyParams,
+        SignatureWithExpiry calldata signature
+    ) external;
 
     /**
      *  @notice Called by the AVS's service manager contract to register an operator with the AVS.

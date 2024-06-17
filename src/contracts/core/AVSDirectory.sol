@@ -63,11 +63,34 @@ contract AVSDirectory is
      */
 
     /**
+     * @notice Updates the standby parameters for an operator across multiple operator sets.
+     * Allows the AVS to add the operator to a given operator set if they are not already registered.
+     *
+     * @param operator The address of the operator for which the standby parameters are being updated.
+     * @param standbyParams The new standby parameters for the operator.
+     * @param operatorSignature If non-empty, the signature of the operator authorizing the modification.
+     *                  If empty, the `msg.sender` must be the operator.
+     */
+    function updateStandbyParams(
+        address operator,
+        StandbyParam[] calldata standbyParams,
+        SignatureWithExpiry calldata operatorSignature
+    ) external {
+        if (operatorSignature.signature.length == 0) {
+            require(msg.sender == operator, "AVSDirectory.updateStandbyParams: invalid access");
+        }
+
+
+
+        
+    }
+
+    /**
      *  @notice Called by AVSs to add an operator to an operator set.
      *
      *  @param operator The address of the operator to be added to the operator set.
      *  @param operatorSetIds The IDs of the operator sets.
-     *  @param signature The signature of the operator on their intent to register.
+     *  @param operatorSignature The signature of the operator on their intent to register.
      *
      *  @dev msg.sender is used as the AVS.
      *  @dev The operator must not have a pending deregistration from the operator set.
@@ -337,6 +360,25 @@ contract AVSDirectory is
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
      *
+     *  @param avs The AVS the operator is registering with.
+     *  @param operatorSetID The ID of the operator set.
+     *  @param onStandby The boolean determining whether or not
+     *  @param salt A unique and single-use value associated with the approver's signature.
+     *  @param expiry The time after which the approver's signature becomes invalid.
+     */
+    function calculateUpdateStandbyDigestHash(
+        address avs,
+        uint32 operatorSetID,
+        bool onStandby,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        return _calculateDigestHash(keccak256(abi.encode(OPERATOR_STANDBY_UPDATE, avs, operatorSetID, onStandby)));
+    }
+
+    /**
+     *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
+     *
      *  @param operator The account registering as an operator.
      *  @param avs The AVS the operator is registering with.
      *  @param salt A unique and single-use value associated with the approver's signature.
@@ -348,11 +390,8 @@ contract AVSDirectory is
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
-        // calculate the struct hash
-        bytes32 structHash = keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry));
-        // calculate the digest hash
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
-        return digestHash;
+        return
+            _calculateDigestHash(keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)));
     }
 
     /**
@@ -369,14 +408,9 @@ contract AVSDirectory is
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
-        // calculate the struct hash
-        bytes32 structHash =
-            keccak256(abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry));
-
-        // calculate the digest hash
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
-
-        return digestHash;
+        return _calculateDigestHash(
+            keccak256(abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry))
+        );
     }
 
     /// @notice Getter function for the current EIP-712 domain separator for this contract.
@@ -392,5 +426,9 @@ contract AVSDirectory is
     /// @notice Internal function for calculating the current domain separator of this contract
     function _calculateDomainSeparator() internal view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
+    }
+
+    function _calculateDigestHash(bytes32 structHash) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
     }
 }
