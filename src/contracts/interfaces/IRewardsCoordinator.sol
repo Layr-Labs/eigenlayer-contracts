@@ -231,6 +231,12 @@ interface IRewardsCoordinator {
     /// @notice returns the number of distribution roots posted
     function getDistributionRootsLength() external view returns (uint256);
 
+    /// @notice returns the distributionRoot at the specified index
+    function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory);
+
+    /// @notice returns the current distributionRoot
+    function getCurrentDistributionRoot() external view returns (DistributionRoot memory);
+
     /*******************************************************************************
                             EXTERNAL FUNCTIONS 
     *******************************************************************************/

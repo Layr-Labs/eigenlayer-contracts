@@ -484,6 +484,14 @@ contract RewardsCoordinator is
         return distributionRoots.length;
     }
 
+    function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory) {
+        return distributionRoots[index];
+    }
+
+    function getCurrentDistributionRoot() external view returns (DistributionRoot memory) {
+        return distributionRoots[distributionRoots.length - 1];
+    }
+
     /// @notice loop through distribution roots from reverse and return hash
     function getRootIndexFromHash(bytes32 rootHash) public view returns (uint32) {
         for (uint32 i = uint32(distributionRoots.length); i > 0; i--) {
