@@ -50,8 +50,11 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      */
     bytes32 internal _DOMAIN_SEPARATOR;
 
-    /// @notice list of roots submitted by the rewardsUpdater
-    DistributionRoot[] public distributionRoots;
+    /**
+     * @notice List of roots submited by the rewardsUpdater
+     * @dev Array is internal with an external getter so we can return a `DistributionRoot[] memory` object
+     */
+    DistributionRoot[] internal _distributionRoots;
 
     /// Slot 3
     /// @notice The address of the entity that can update the contract with new merkle roots

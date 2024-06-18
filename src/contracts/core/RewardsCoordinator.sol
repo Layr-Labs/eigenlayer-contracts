@@ -168,7 +168,7 @@ contract RewardsCoordinator is
     }
 
     /**
-     * @notice Claim rewards against a given root (read from distributionRoots[claim.rootIndex]).
+     * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
      * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
@@ -183,7 +183,7 @@ contract RewardsCoordinator is
         RewardsMerkleClaim calldata claim,
         address recipient
     ) external onlyWhenNotPaused(PAUSED_PROCESS_CLAIM) nonReentrant {
-        DistributionRoot memory root = distributionRoots[claim.rootIndex];
+        DistributionRoot memory root = _distributionRoots[claim.rootIndex];
         _checkClaim(claim, root);
         // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
         address earner = claim.earnerLeaf.earner;
@@ -228,9 +228,9 @@ contract RewardsCoordinator is
             rewardsCalculationEndTimestamp < block.timestamp,
             "RewardsCoordinator.submitRoot: rewardsCalculationEndTimestamp cannot be in the future"
         );
-        uint32 rootIndex = uint32(distributionRoots.length);
+        uint32 rootIndex = uint32(_distributionRoots.length);
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
-        distributionRoots.push(
+        _distributionRoots.push(
             DistributionRoot({
                 root: root,
                 activatedAt: activatedAt,
@@ -470,7 +470,7 @@ contract RewardsCoordinator is
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     /// but will revert if not valid
     function checkClaim(RewardsMerkleClaim calldata claim) public view returns (bool) {
-        _checkClaim(claim, distributionRoots[claim.rootIndex]);
+        _checkClaim(claim, _distributionRoots[claim.rootIndex]);
         return true;
     }
 
@@ -481,21 +481,21 @@ contract RewardsCoordinator is
     }
 
     function getDistributionRootsLength() public view returns (uint256) {
-        return distributionRoots.length;
+        return _distributionRoots.length;
     }
 
     function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory) {
-        return distributionRoots[index];
+        return _distributionRoots[index];
     }
 
     function getCurrentDistributionRoot() external view returns (DistributionRoot memory) {
-        return distributionRoots[distributionRoots.length - 1];
+        return _distributionRoots[_distributionRoots.length - 1];
     }
 
     /// @notice loop through distribution roots from reverse and return hash
     function getRootIndexFromHash(bytes32 rootHash) public view returns (uint32) {
-        for (uint32 i = uint32(distributionRoots.length); i > 0; i--) {
-            if (distributionRoots[i - 1].root == rootHash) {
+        for (uint32 i = uint32(_distributionRoots.length); i > 0; i--) {
+            if (_distributionRoots[i - 1].root == rootHash) {
                 return i - 1;
             }
         }
