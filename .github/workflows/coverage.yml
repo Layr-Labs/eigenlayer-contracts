@@ -67,20 +67,11 @@ jobs:
         echo "coverage_file_name=${coverage_file_name}" >> $GITHUB_ENV
         # Print the file name for debugging purposes
         echo "Will upload coverage as: $coverage_file_name"
-        echo "Fetching branches..."
         git fetch --unshallow origin dev:dev
-        echo "Checking branches..."
-        git branch
-        echo "Calculating merge base..."
         current_branch=$(git branch --show-current)
         echo "Current branch: ${current_branch}"
         merge_base_name="$(git merge-base dev $current_branch)-lcov"
         echo "merge_base_name=${merge_base_name}" >> $GITHUB_ENV
-    - name: Upload historical coverage results (s3 link here)
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ steps.compute_name.coverage_file_name }}
-        path: ./lcov.info.pruned
     - name: Get merge-base coverage for comparison
       uses: actions/github-script@v6
       env:
