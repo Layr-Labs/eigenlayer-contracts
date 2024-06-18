@@ -503,11 +503,16 @@ contract AVSDirectoryUnitTests_removeStrategiesFromOperatorSet is AVSDirectoryUn
 }
 
 contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
-    event StandbyParamUpdated(address operator, address avs, bool standby);
+    event StandbyParamUpdated(address operator, IAVSDirectory.OperatorSet operatorSet, bool onStandby);
 
-    function testFuzz_revert_CallerNotOperatorNoSignature(address operator, address avs, bool standby) public virtual {
+    function testFuzz_revert_CallerNotOperatorNoSignature(
+        address operator,
+        address avs,
+        uint32 id,
+        bool standby
+    ) public virtual {
         IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
-        params[0] = IAVSDirectory.StandbyParam(avs, standby);
+        params[0] = IAVSDirectory.StandbyParam(IAVSDirectory.OperatorSet(avs, id), standby);
 
         cheats.expectRevert("AVSDirectory.updateStandbyParams: invalid signature");
         avsDirectory.updateStandbyParams(
@@ -518,6 +523,7 @@ contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
     function testFuzz_revert_OperatorSignatureExpired(
         address operator,
         address avs,
+        uint32 id,
         bool standby,
         uint256 expiry
     ) public virtual {
@@ -526,7 +532,7 @@ contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
         expiry = bound(expiry, 0, type(uint256).max - 1);
 
         IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
-        params[0] = IAVSDirectory.StandbyParam(avs, standby);
+        params[0] = IAVSDirectory.StandbyParam(IAVSDirectory.OperatorSet(avs, id), standby);
 
         // Assert operator signature reverts when non-zero.
         cheats.expectRevert("AVSDirectory.updateStandbyParams: operator signature expired");
@@ -538,6 +544,7 @@ contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
     function testFuzz_revert_SaltSpent(
         uint256 operatorPk,
         address avs,
+        uint32 id,
         bytes32 salt,
         uint256 expiry,
         bool standby
@@ -547,7 +554,7 @@ contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
 
         IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
-        params[0] = IAVSDirectory.StandbyParam(avs, standby);
+        params[0] = IAVSDirectory.StandbyParam(IAVSDirectory.OperatorSet(avs, id), standby);
 
         address operator = cheats.addr(operatorPk);
         (uint8 v, bytes32 r, bytes32 s) =
@@ -566,6 +573,7 @@ contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
     function testFuzz_Correctness(
         uint256 operatorPk,
         address avs,
+        uint32 id,
         bytes32 salt,
         uint256 expiry,
         bool standby
@@ -575,19 +583,19 @@ contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
 
         IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
-        params[0] = IAVSDirectory.StandbyParam(avs, standby);
+        params[0] = IAVSDirectory.StandbyParam(IAVSDirectory.OperatorSet(avs, id), standby);
 
         address operator = cheats.addr(operatorPk);
         (uint8 v, bytes32 r, bytes32 s) =
             cheats.sign(operatorPk, avsDirectory.calculateUpdateStandbyDigestHash(params, salt, expiry));
 
         cheats.expectEmit(true, false, false, false, address(avsDirectory));
-        emit StandbyParamUpdated(operator, avs, standby);
+        emit StandbyParamUpdated(operator, IAVSDirectory.OperatorSet(avs, id), standby);
         avsDirectory.updateStandbyParams(
             operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
 
-        assertEq(avsDirectory.onStandby(operator, avs), standby);
+        assertEq(avsDirectory.onStandby(avs, operator, id), standby);
     }
 }
 
