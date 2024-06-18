@@ -77,13 +77,22 @@ contract AVSDirectory is
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {
         if (operatorSignature.signature.length == 0) {
+            // Assert caller is `operator` if signature length is zero.
             require(msg.sender == operator, "AVSDirectory.updateStandbyParams: invalid signature");
         } else {
+            // Assert operator's signature has not expired.
+            require(
+                operatorSignature.expiry >= block.timestamp,
+                "AVSDirectory.updateStandbyParams: operator signature expired"
+            );
+            // Assert operator's signature is valid.
             EIP1271SignatureUtils.checkSignature_EIP1271(
                 operator,
                 calculateUpdateStandbyDigestHash(standbyParams, operatorSignature.salt, operatorSignature.expiry),
                 operatorSignature.signature
             );
+            // Spend salt.
+            operatorSaltIsSpent[operator][operatorSignature.salt] = true;
         }
 
         for (uint256 i; i < standbyParams.length; ++i) {
@@ -379,7 +388,7 @@ contract AVSDirectory is
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
-        return _calculateDigestHash(keccak256(abi.encode(OPERATOR_STANDBY_UPDATE, standbyParams)));
+        return _calculateDigestHash(keccak256(abi.encode(OPERATOR_STANDBY_UPDATE, standbyParams, salt, expiry)));
     }
 
     /**
