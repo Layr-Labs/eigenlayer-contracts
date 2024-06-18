@@ -79,12 +79,6 @@ jobs:
         merge_base_name: ${{ steps.compute_name.outputs.merge_base_name }}
       with:
         script: |
-          const { Octokit } = require("@octokit/rest");
-
-          const octokit = new Octokit({
-            auth: process.env.GITHUB_TOKEN
-          });
-
           const res = await octokit.rest.actions.listArtifactsForRepo({
             owner: context.repo.owner,
             repo: context.repo.repo,
