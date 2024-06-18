@@ -5,22 +5,27 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-  run-tests:
-    needs: prepare
+  run-coverage:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 10
+    - name: Checkout dev
+      run: |
+        git fetch origin dev
+    - name: Install lcov
+      run: |
+        sudo apt-get install lcov
+      id: lcov
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
     - name: Load issue number
       uses: actions/github-script@v6
       id: get_issue_number
@@ -40,36 +45,101 @@ jobs:
             ).data[0].number;
           }
         result-encoding: string
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Install lcov
-      run: |
-        sudo apt-get install lcov
-      id: lcov
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-    - name: Run coverage
-      run: forge coverage --report lcov
+    # - name: Run coverage
+    #   run: forge coverage --report lcov
     - name: Prune coverage report
       run: lcov --remove ./lcov.info -o ./lcov.info.pruned 'src/test/*' 'script/*' --ignore-errors inconsistent
-    - name: Generate reports
-      run: genhtml -o report ./lcov.info.pruned
-    - name: Upload coverage results (s3 link here)
-      uses: actions/upload-artifact@v4
-      with:
-        name: code-coverage-report
-        path: report/*
-    - name: View Coverage (text here)
+    - name: Generate coverage report
       id: print_coverage
       run: |
         EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
         echo "comment_contents<<$EOF" >> $GITHUB_OUTPUT
         echo "$(lcov --list ./lcov.info.pruned --ignore-errors inconsistent)" >> $GITHUB_OUTPUT
         echo "$EOF" >> $GITHUB_OUTPUT
+    - name: Compute historical coverage name
+      id: compute_name
+      run: |
+        # Get the current commit hash
+        commit_hash=$(git rev-parse --short HEAD)
+        # Create the file name
+        coverage_file_name="${commit_hash}-lcov"
+        # Export the coverage file name
+        echo "coverage_file_name=${coverage_file_name}" >> $GITHUB_ENV
+        # Print the file name for debugging purposes
+        echo "Will upload coverage as: $coverage_file_name"
+        echo "Fetching branches..."
+        git fetch --unshallow origin dev:dev
+        echo "Checking branches..."
+        git branch
+        echo "Calculating merge base..."
+        current_branch=$(git branch --show-current)
+        echo "Current branch: ${current_branch}"
+        merge_base_name="$(git merge-base dev $current_branch)-lcov"
+        echo "merge_base_name=${merge_base_name}" >> $GITHUB_ENV
+    - name: Upload historical coverage results (s3 link here)
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.compute_name.coverage_file_name }}
+        path: ./lcov.info.pruned
+    - name: Get merge-base coverage for comparison
+      uses: actions/github-script@v6
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        merge_base_name: ${{ steps.compute_name.outputs.merge_base_name }}
+      with:
+        script: |
+          const { Octokit } = require("@octokit/rest");
+
+          const octokit = new Octokit({
+            auth: process.env.GITHUB_TOKEN
+          });
+
+          const res = await octokit.rest.actions.listArtifactsForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            headers: {
+              'X-GitHub-Api-Version': '2022-11-28'
+            }
+          });
+
+          const mergeBase = process.env.merge_base_name;
+          const mergeBaseArtifact = res.data.artifacts.find((artifact) => {
+            return artifact.name === mergeBase;
+          });
+
+          if (mergeBaseArtifact && !mergeBaseArtifact.expired) {
+            // we found the artifact! download it.
+            core.exportVariable('has_merge_base', '1');
+            core.exportVariable('has_merge_base_url', mergeBaseArtifact.archive_download_url);
+          } else {
+            core.exportVariable('has_merge_base', '0');
+          }
+    - name: Check for code coverage change
+      if: env.has_merge_base == '1'
+      run: |
+          lcov --add-tracefile ${{ steps.compute_name.outputs.merge_base_name }} --add-tracefile ./lcov.info.pruned --output-file combined-lcov.info
+          
+          # Extract coverage percentages
+          base_coverage=$(lcov --summary ${{ steps.compute_name.outputs.merge_base_name }} | grep 'lines' | awk '{print $4}' | sed 's/%//')
+          current_coverage=$(lcov --summary lcov.info.pruned | grep 'lines' | awk '{print $4}' | sed 's/%//')
+          
+          echo "Base coverage: $base_coverage%"
+          echo "Current coverage: $current_coverage%"
+
+          # Check if coverage has regressed
+          if (( $(echo "$current_coverage < $base_coverage" | bc -l) )); then
+            echo "Test coverage has regressed from $base_coverage% to $current_coverage%"
+            # Comment on the pull request
+            gh pr comment ${{ github.event.pull_request.number }} --body "Test coverage has regressed from $base_coverage% to $current_coverage%."
+          else
+            echo "Test coverage has not regressed."
+          fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Comment the full report
       uses: actions/github-script@v7
+      if: env.has_merge_base == '0'
       with:
         script: |
           let body = `${{ steps.print_coverage.outputs.comment_contents }}`;
