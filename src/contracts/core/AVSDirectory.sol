@@ -85,6 +85,10 @@ contract AVSDirectory is
                 operatorSignature.expiry >= block.timestamp,
                 "AVSDirectory.updateStandbyParams: operator signature expired"
             );
+            // Assert operator's signature cannot be replayed.
+            require(
+                !operatorSaltIsSpent[operator][operatorSignature.salt], "AVSDirectory.updateStandbyParams: salt spent"
+            );
             // Assert operator's signature is valid.
             EIP1271SignatureUtils.checkSignature_EIP1271(
                 operator,
@@ -98,7 +102,7 @@ contract AVSDirectory is
         for (uint256 i; i < standbyParams.length; ++i) {
             onStandby[operator][standbyParams[i].avs] = standbyParams[i].onStandby;
 
-            emit StandbyParamUpdated(operator, standbyParams[i]);
+            emit StandbyParamUpdated(operator, standbyParams[i].avs, standbyParams[i].onStandby);
         }
     }
 

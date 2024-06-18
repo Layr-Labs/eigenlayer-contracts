@@ -48,7 +48,7 @@ interface IAVSDirectory is ISignatureUtils {
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
     /// @notice Emitted when an operator updates their standby parameters.
-    event StandbyParamUpdated(address operator, StandbyParam standbyParam);
+    event StandbyParamUpdated(address operator, address avs, bool standby);
 
     /**
      * @notice Updates the standby parameters for an operator across multiple operator sets.

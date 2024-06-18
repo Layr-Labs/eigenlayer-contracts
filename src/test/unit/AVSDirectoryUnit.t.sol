@@ -185,7 +185,7 @@ contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
         assertEq(address(dir.delegation()), delegationManager);
         assertEq(address(dir.strategyManager()), strategyManager);
 
-        vm.expectRevert("Initializable: contract is already initialized");
+        cheats.expectRevert("Initializable: contract is already initialized");
         dir.initialize(owner, IPauserRegistry(pauserRegistry), initialPausedStatus);
 
         // assertEq(dir.owner(), owner);
@@ -199,7 +199,7 @@ contract AVSDirectoryUnitTests_domainSeparator is AVSDirectoryUnitTests {
     function test_domainSeparator() public virtual {
         // This is just to get coverage up.
         avsDirectory.domainSeparator();
-        vm.chainId(0xC0FFEE);
+        cheats.chainId(0xC0FFEE);
         avsDirectory.domainSeparator();
     }
 }
@@ -502,14 +502,14 @@ contract AVSDirectoryUnitTests_removeStrategiesFromOperatorSet is AVSDirectoryUn
     }
 }
 
-// TODO: make sure salts are spent.
-
 contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
+    event StandbyParamUpdated(address operator, address avs, bool standby);
+
     function testFuzz_revert_CallerNotOperatorNoSignature(address operator, address avs, bool standby) public virtual {
         IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
         params[0] = IAVSDirectory.StandbyParam(avs, standby);
 
-        vm.expectRevert("AVSDirectory.updateStandbyParams: invalid signature");
+        cheats.expectRevert("AVSDirectory.updateStandbyParams: invalid signature");
         avsDirectory.updateStandbyParams(
             operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), bytes32(0), 0)
         );
@@ -522,16 +522,44 @@ contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
         uint256 expiry
     ) public virtual {
         // Make sure signature is always expired.
-        vm.warp(type(uint256).max);
+        cheats.warp(type(uint256).max);
         expiry = bound(expiry, 0, type(uint256).max - 1);
 
         IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
         params[0] = IAVSDirectory.StandbyParam(avs, standby);
 
         // Assert operator signature reverts when non-zero.
-        vm.expectRevert("AVSDirectory.updateStandbyParams: operator signature expired");
+        cheats.expectRevert("AVSDirectory.updateStandbyParams: operator signature expired");
         avsDirectory.updateStandbyParams(
             operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(1), bytes32(0), expiry)
+        );
+    }
+
+    function testFuzz_revert_SaltSpent(
+        uint256 operatorPk,
+        address avs,
+        bytes32 salt,
+        uint256 expiry,
+        bool standby
+    ) public virtual {
+        // Make sure sigature is always non-expired.
+        cheats.warp(0);
+        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+
+        IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
+        params[0] = IAVSDirectory.StandbyParam(avs, standby);
+
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) =
+            cheats.sign(operatorPk, avsDirectory.calculateUpdateStandbyDigestHash(params, salt, expiry));
+
+        avsDirectory.updateStandbyParams(
+            operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        );
+
+        cheats.expectRevert("AVSDirectory.updateStandbyParams: salt spent");
+        avsDirectory.updateStandbyParams(
+            operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
     }
 
@@ -543,7 +571,7 @@ contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
         bool standby
     ) public virtual {
         // Make sure sigature is always non-expired.
-        vm.warp(0);
+        cheats.warp(0);
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
 
         IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
@@ -553,6 +581,8 @@ contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
         (uint8 v, bytes32 r, bytes32 s) =
             cheats.sign(operatorPk, avsDirectory.calculateUpdateStandbyDigestHash(params, salt, expiry));
 
+        cheats.expectEmit(true, false, false, false, address(avsDirectory));
+        emit StandbyParamUpdated(operator, avs, standby);
         avsDirectory.updateStandbyParams(
             operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
