@@ -209,8 +209,6 @@ contract EigenPod is
             }
 
             // Process a checkpoint proof for a validator. 
-            // - the validator MUST be in the ACTIVE state
-            // - the validator MUST NOT have already been proven for this checkpoint
             //
             // If the proof shows the validator has a balance of 0, they are marked `WITHDRAWN`.
             // The assumption is that if this is the case, any withdrawn ETH was already in
@@ -536,6 +534,11 @@ contract EigenPod is
             "EigenPod._startCheckpoint: must finish previous checkpoint before starting another"
         );
 
+        // Prevent a checkpoint being completable twice in the same block. This prevents an edge case 
+        // where the second checkpoint would not be completable.
+        //
+        // This is because the validators checkpointed in the first checkpoint would have a `lastCheckpointedAt` 
+        // value equal to the second checkpoint, causing their proofs to get skipped in `verifyCheckpointProofs`
         require(
             lastCheckpointTimestamp != uint64(block.timestamp),
             "EigenPod._startCheckpoint: cannot checkpoint twice in one block"
@@ -623,11 +626,8 @@ contract EigenPod is
         (bool success, bytes memory result) =
             BEACON_ROOTS_ADDRESS.staticcall(abi.encode(timestamp));
 
-        if (success && result.length > 0) {
-            return abi.decode(result, (bytes32));
-        } else {
-            revert("EigenPod._getParentBlockRoot: invalid block root returned");
-        }
+        require(success && result.length > 0, "EigenPod._getParentBlockRoot: invalid block root returned");
+        return abi.decode(result, (bytes32));
     }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {

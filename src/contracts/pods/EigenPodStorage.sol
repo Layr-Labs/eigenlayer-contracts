@@ -44,7 +44,7 @@ abstract contract EigenPodStorage is IEigenPod {
 
     /// @notice For each checkpoint, the total balance attributed to exited validators, in gwei
     ///
-    /// Note that the values added to this mapping are NOT guaranteed to capture the entirety of a validator's
+    /// NOTE that the values added to this mapping are NOT guaranteed to capture the entirety of a validator's
     /// exit - rather, they capture the total change in a validator's balance when a checkpoint shows their
     /// balance change from nonzero to zero. While a change from nonzero to zero DOES guarantee that a validator
     /// has been fully exited, it is possible that the magnitude of this change does not capture what is 
@@ -64,6 +64,12 @@ abstract contract EigenPodStorage is IEigenPod {
     /// If this edge case impacts your usecase, it should be possible to mitigate this by monitoring for deposits
     /// to your exited validators, and waiting to call `startCheckpoint` until those deposits have been automatically
     /// exited.
+    /// 
+    /// Additional edge cases this mapping does not cover:
+    /// - If a validator is slashed, their balance exited will reflect their original balance rather than the slashed amount
+    /// - The final partial withdrawal for an exited validator will be likely be included in this mapping.
+    ///   i.e. if a validator was last checkpointed at 32.1 ETH before exiting, the next checkpoint will calculate their
+    ///   "exited" amount to be 32.1 ETH rather than 32 ETH.
     mapping(uint64 => uint64) public checkpointBalanceExitedGwei;
 
     /// @notice The current checkpoint, if there is one active
