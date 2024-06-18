@@ -32,7 +32,6 @@ contract EigenPodHarness is EigenPod, Test {
         bytes32[] calldata validatorFields
     ) public returns (uint256) {
         return _verifyWithdrawalCredentials(
-            oracleTimestamp,
             beaconStateRoot,
             validatorIndex,
             validatorFieldsProof,
