@@ -191,7 +191,8 @@ contract EigenPod is
         // Process each checkpoint proof submitted
         uint64 exitedBalancesGwei;
         for (uint256 i = 0; i < proofs.length; i++) {
-            ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proofs[i].pubkeyHash];
+            BeaconChainProofs.BalanceProof calldata proof = proofs[i];
+            ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proof.pubkeyHash];
 
             // Validator must be in the ACTIVE state to be provable during a checkpoint.
             // Validators become ACTIVE when initially proven via verifyWithdrawalCredentials
@@ -208,7 +209,7 @@ contract EigenPod is
                 continue;
             }
 
-            // Process a checkpoint proof for a validator. 
+            // Process a checkpoint proof for a validator and update its balance.
             //
             // If the proof shows the validator has a balance of 0, they are marked `WITHDRAWN`.
             // The assumption is that if this is the case, any withdrawn ETH was already in
@@ -217,12 +218,16 @@ contract EigenPod is
                 validatorInfo: validatorInfo,
                 checkpointTimestamp: checkpointTimestamp,
                 balanceContainerRoot: balanceContainerProof.balanceContainerRoot,
-                proof: proofs[i]
+                proof: proof
             });
 
             checkpoint.proofsRemaining--;
             checkpoint.balanceDeltasGwei += balanceDeltaGwei;
             exitedBalancesGwei += exitedBalanceGwei;
+
+            // Record the updated validator in state
+            _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
+            emit ValidatorCheckpointed(checkpointTimestamp, uint40(validatorInfo.validatorIndex));
         }
 
         // Update the checkpoint and the total amount attributed to exited validators
@@ -508,9 +513,6 @@ contract EigenPod is
 
             emit ValidatorWithdrawn(checkpointTimestamp, validatorIndex);
         }
-
-        _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
-        emit ValidatorCheckpointed(checkpointTimestamp, validatorIndex);
 
         return (balanceDeltaGwei, exitedBalanceGwei);
     }

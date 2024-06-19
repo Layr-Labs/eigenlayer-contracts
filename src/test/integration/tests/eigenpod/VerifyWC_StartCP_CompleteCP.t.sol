@@ -16,8 +16,11 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         _;
     }
 
-    function test_GasMetering() public r(24) {
+    function test_GasMetering() public r(0) {
         (User staker, ,) = _newRandomStaker();
+        // Deal user 20 full stakers worth of ETH
+        emit log_named_string("Dealing 20 * 32 ETH to", staker.NAME());
+        cheats.deal(address(staker), 32 ether * 20);
         cheats.pauseGasMetering();
 
         (uint40[] memory validators, uint beaconBalanceWei) = staker.startValidators();
