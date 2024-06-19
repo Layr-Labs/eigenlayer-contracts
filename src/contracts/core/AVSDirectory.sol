@@ -326,6 +326,52 @@ contract AVSDirectory is
     }
 
     /**
+     *  @notice Called by AVSs to add strategies to its operator set.
+     *
+     *  @param operatorSetID The ID of the operator set.
+     *  @param strategies The list of strategies to add to the operator set.
+     *
+     *  @dev msg.sender is used as the AVS.
+     *  @dev No storage is updated, as the event is used by off-chain services.
+     */
+    function addStrategiesToOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external {
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            // Require that the strategy is valid
+            require(
+                strategyManager.strategyIsWhitelistedForDeposit(strategies[i])
+                    || strategies[i] == beaconChainETHStrategy,
+                "AVSDirectory.addStrategiesToOperatorSet: invalid strategy considered"
+            );
+            require(
+                !isOperatorSetStrategy[msg.sender][operatorSetID][strategies[i]],
+                "AVSDirectory.addStrategiesToOperatorSet: strategy already added to operator set"
+            );
+            isOperatorSetStrategy[msg.sender][operatorSetID][strategies[i]] = true;
+            emit OperatorSetStrategyAdded(OperatorSet({avs: msg.sender, id: operatorSetID}), strategies[i]);
+        }
+    }
+
+    /**
+     *  @notice Called by AVSs to remove strategies from its operator set.
+     *
+     *  @param operatorSetID The ID of the operator set.
+     *  @param strategies The list of strategies to remove from the operator set.
+     *
+     *  @dev msg.sender is used as the AVS.
+     *  @dev No storage is updated, as the event is used by off-chain services.
+     */
+    function removeStrategiesFromOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external {
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            require(
+                isOperatorSetStrategy[msg.sender][operatorSetID][strategies[i]],
+                "AVSDirectory.removeStrategiesFromOperatorSet: strategy not a member of operator set"
+            );
+            isOperatorSetStrategy[msg.sender][operatorSetID][strategies[i]] = false;
+            emit OperatorSetStrategyRemoved(OperatorSet({avs: msg.sender, id: operatorSetID}), strategies[i]);
+        }
+    }
+
+    /**
      * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
      *
      * @param salt A unique and single use value associated with the approver signature.

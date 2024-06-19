@@ -45,6 +45,9 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: AVS => whether or not the AVS uses operator set
     mapping(address => bool) public isOperatorSetAVS;
 
+    /// @notice Mapping: AVS => operatorSetID => strategy => whether or not the strategy is in the operator set
+    mapping(address => mapping(uint32 => mapping(IStrategy => bool))) public isOperatorSetStrategy;
+
     /// @notice Mapping: avs => operator => operatorSetID => whether the operator is registered for the operator set
     mapping(address => mapping(address => mapping(uint32 => bool))) public isOperatorInOperatorSet;
 

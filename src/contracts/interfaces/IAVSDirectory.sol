@@ -120,6 +120,28 @@ interface IAVSDirectory is ISignatureUtils {
      */
     function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
 
+    /**
+     *  @notice Called by AVSs to add strategies to its operator set.
+     *
+     *  @param operatorSetID The ID of the operator set.
+     *  @param strategies The list of strategies to add to the operator set.
+     *
+     *  @dev msg.sender is used as the AVS.
+     *  @dev No storage is updated, as the event is used by off-chain services.
+     */
+    function addStrategiesToOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external;
+
+    /**
+     *  @notice Called by AVSs to remove strategies from its operator set.
+     *
+     *  @param operatorSetID The ID of the operator set.
+     *  @param strategies The list of strategies to remove from the operator set.
+     *
+     *  @dev msg.sender is used as the AVS.
+     *  @dev No storage is updated, as the event is used by off-chain services.
+     */
+    function removeStrategiesFromOperatorSet(uint32 operatorSetID, IStrategy[] calldata strategies) external;
+
     // VIEW
 
     /**

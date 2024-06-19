@@ -444,6 +444,64 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
     }
 }
 
+contract AVSDirectoryUnitTests_addStrategiesToOperatorSet is AVSDirectoryUnitTests {
+    event OperatorSetStrategyAdded(IAVSDirectory.OperatorSet operatorSet, IStrategy strategy);
+
+    function testFuzz_revert_InvalidStrategy(uint32 oid, address badStrat) public virtual {
+        IStrategy[] memory strats = new IStrategy[](1);
+        strats[0] = IStrategy(badStrat);
+
+        cheats.expectRevert("AVSDirectory.addStrategiesToOperatorSet: invalid strategy considered");
+        avsDirectory.addStrategiesToOperatorSet(oid, strats);
+    }
+
+    function testFuzz_revert_AlreadyOperatorSetStrategy(uint32 oid) public virtual {
+        IStrategy[] memory strats = new IStrategy[](1);
+        strats[0] = IStrategy(avsDirectory.beaconChainETHStrategy());
+
+        avsDirectory.addStrategiesToOperatorSet(oid, strats);
+
+        cheats.expectRevert("AVSDirectory.addStrategiesToOperatorSet: strategy already added to operator set");
+        avsDirectory.addStrategiesToOperatorSet(oid, strats);
+    }
+
+    function testFuzz_Correctness(uint32 oid) public virtual {
+        IStrategy[] memory strats = new IStrategy[](1);
+        strats[0] = IStrategy(avsDirectory.beaconChainETHStrategy());
+
+        cheats.expectEmit(true, false, false, false, address(avsDirectory));
+        emit OperatorSetStrategyAdded(IAVSDirectory.OperatorSet(address(this), oid), strats[0]);
+
+        avsDirectory.addStrategiesToOperatorSet(oid, strats);
+
+        assertEq(avsDirectory.isOperatorSetStrategy(address(this), oid, strats[0]), true);
+    }
+}
+
+contract AVSDirectoryUnitTests_removeStrategiesFromOperatorSet is AVSDirectoryUnitTests {
+    event OperatorSetStrategyRemoved(IAVSDirectory.OperatorSet operatorSet, IStrategy strategy);
+
+    function testFuzz_revert_NotOperatorSetStrategy(address strat, uint32 oid) public virtual {
+        IStrategy[] memory strats = new IStrategy[](1);
+        strats[0] = IStrategy(strat);
+        cheats.expectRevert("AVSDirectory.removeStrategiesFromOperatorSet: strategy not a member of operator set");
+        avsDirectory.removeStrategiesFromOperatorSet(oid, strats);
+    }
+
+    function testFuzz_Correctness(uint32 oid) public virtual {
+        IStrategy[] memory strats = new IStrategy[](1);
+        strats[0] = IStrategy(avsDirectory.beaconChainETHStrategy());
+        avsDirectory.addStrategiesToOperatorSet(oid, strats);
+
+        cheats.expectEmit(true, false, false, false, address(avsDirectory));
+        emit OperatorSetStrategyRemoved(IAVSDirectory.OperatorSet(address(this), oid), strats[0]);
+
+        avsDirectory.removeStrategiesFromOperatorSet(oid, strats);
+
+        assertEq(avsDirectory.isOperatorSetStrategy(address(this), oid, strats[0]), false);
+    }
+}
+
 contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
     event StandbyParamUpdated(address operator, IAVSDirectory.OperatorSet operatorSet, bool onStandby);
 
