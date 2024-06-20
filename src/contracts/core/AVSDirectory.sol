@@ -141,6 +141,20 @@ contract AVSDirectory is
             "AVSDirectory.registerOperatorToOperatorSets: salt already spent"
         );
 
+        if (operatorSignature.signature.length != 0) {
+            // Assert signature provided by `operator` is valid.
+            EIP1271SignatureUtils.checkSignature_EIP1271(
+                operator,
+                calculateOperatorSetRegistrationDigestHash({
+                    avs: msg.sender,
+                    operatorSetIds: operatorSetIds,
+                    salt: operatorSignature.salt,
+                    expiry: operatorSignature.expiry
+                }),
+                operatorSignature.signature
+            );
+        }
+
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
 
@@ -150,12 +164,14 @@ contract AVSDirectory is
             emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
         }
 
-        bool requireSignature;
-
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-            if (!onStandby[msg.sender][operator][operatorSetIds[i]]) {
-                requireSignature = true;
+            // Assert avs is on standby mode for the given `operator` and `operatorSetIds[i]`.
+            if (operatorSignature.signature.length == 0) {
+                require(
+                    onStandby[msg.sender][operator][operatorSetIds[i]],
+                    "AVSDirectory.registerOperatorToOperatorSets: avs not on standby"
+                );
             }
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
@@ -171,20 +187,6 @@ contract AVSDirectory is
             isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = true;
 
             emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
-        }
-
-        if (requireSignature) {
-            // Assert signature provided by `operator` is valid.
-            EIP1271SignatureUtils.checkSignature_EIP1271(
-                operator,
-                calculateOperatorSetRegistrationDigestHash({
-                    avs: msg.sender,
-                    operatorSetIds: operatorSetIds,
-                    salt: operatorSignature.salt,
-                    expiry: operatorSignature.expiry
-                }),
-                operatorSignature.signature
-            );
         }
 
         // Increase `operatorAVSOperatorSetCount` by `operatorSetIds.length`.
