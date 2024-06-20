@@ -31,8 +31,8 @@ var (
 
 // BeaconChainProofsMetaData contains all meta data concerning the BeaconChainProofs contract.
 var BeaconChainProofsMetaData = &bind.MetaData{
-	ABI: "[]",
-	Bin: "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122092f1bf8bdbb8ed57f4cfdd904586b6c5ebd855f30d851bae7aacb6d2b92a25fd64736f6c634300080c0033",
+	ABI: "[{\"type\":\"function\",\"name\":\"getEffectiveBalanceGwei\",\"inputs\":[{\"name\":\"validatorFields\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"}]",
+	Bin: "0x61021761003a600b82828239805160001a60731461002d57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106100355760003560e01c80634534711b1461003a575b600080fd5b61004d61004836600461010d565b61006a565b60405167ffffffffffffffff909116815260200160405180910390f35b60006100f182600281518110610082576100826101cb565b602002602001015160f881901c60e882901c61ff00161760d882901c62ff0000161760c882901c63ff000000161764ff0000000060b883901c161765ff000000000060a883901c161766ff000000000000609883901c161767ff0000000000000060889290921c919091161790565b92915050565b634e487b7160e01b600052604160045260246000fd5b6000602080838503121561012057600080fd5b823567ffffffffffffffff8082111561013857600080fd5b818501915085601f83011261014c57600080fd5b81358181111561015e5761015e6100f7565b8060051b604051601f19603f83011681018181108582111715610183576101836100f7565b6040529182528482019250838101850191888311156101a157600080fd5b938501935b828510156101bf578435845293850193928501926101a6565b98975050505050505050565b634e487b7160e01b600052603260045260246000fdfea2646970667358221220ed777c3952a4e217d35f7265021825b68acff7872cdf1ee3eaf62d7acdbc3f6464736f6c634300080c0033",
 }
 
 // BeaconChainProofsABI is the input ABI used to generate the binding from.
@@ -200,4 +200,35 @@ func (_BeaconChainProofs *BeaconChainProofsTransactorRaw) Transfer(opts *bind.Tr
 // Transact invokes the (paid) contract method with params as input values.
 func (_BeaconChainProofs *BeaconChainProofsTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _BeaconChainProofs.Contract.contract.Transact(opts, method, params...)
+}
+
+// GetEffectiveBalanceGwei is a free data retrieval call binding the contract method 0x4534711b.
+//
+// Solidity: function getEffectiveBalanceGwei(bytes32[] validatorFields) pure returns(uint64)
+func (_BeaconChainProofs *BeaconChainProofsCaller) GetEffectiveBalanceGwei(opts *bind.CallOpts, validatorFields [][32]byte) (uint64, error) {
+	var out []interface{}
+	err := _BeaconChainProofs.contract.Call(opts, &out, "getEffectiveBalanceGwei", validatorFields)
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// GetEffectiveBalanceGwei is a free data retrieval call binding the contract method 0x4534711b.
+//
+// Solidity: function getEffectiveBalanceGwei(bytes32[] validatorFields) pure returns(uint64)
+func (_BeaconChainProofs *BeaconChainProofsSession) GetEffectiveBalanceGwei(validatorFields [][32]byte) (uint64, error) {
+	return _BeaconChainProofs.Contract.GetEffectiveBalanceGwei(&_BeaconChainProofs.CallOpts, validatorFields)
+}
+
+// GetEffectiveBalanceGwei is a free data retrieval call binding the contract method 0x4534711b.
+//
+// Solidity: function getEffectiveBalanceGwei(bytes32[] validatorFields) pure returns(uint64)
+func (_BeaconChainProofs *BeaconChainProofsCallerSession) GetEffectiveBalanceGwei(validatorFields [][32]byte) (uint64, error) {
+	return _BeaconChainProofs.Contract.GetEffectiveBalanceGwei(&_BeaconChainProofs.CallOpts, validatorFields)
 }

@@ -13,6 +13,7 @@ import "../mocks/Reenterer.sol";
 
 import "forge-std/Test.sol";
 
+/// @notice Deprecated contract for ETH withdrawals from EigenPods
 contract DelayedWithdrawalRouterUnitTests is Test {
 
     // Vm cheats = Vm(HEVM_ADDRESS);
