@@ -10,7 +10,7 @@ labels: design
 Add a summary and description. What are we trying to do and why?
 
 ### Action Items
-- [ ] Come up with scheme for...
+- [ ] Come up with a scheme for...
 - [ ] Spec it in a HackMD or Google Doc that is linked here
 - [ ] Get @ to review design
 - [ ] Discuss design and tradeoffs with @
