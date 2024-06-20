@@ -19,6 +19,8 @@ import "../interfaces/IPausable.sol";
 import "./EigenPodPausingConstants.sol";
 import "./EigenPodStorage.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
@@ -31,7 +33,8 @@ contract EigenPod is
     Initializable, 
     ReentrancyGuardUpgradeable, 
     EigenPodPausingConstants, 
-    EigenPodStorage 
+    EigenPodStorage,
+    Test
 {
 
     using BytesLib for bytes;
@@ -462,7 +465,6 @@ contract EigenPod is
 
         emit ValidatorRestaked(validatorIndex);
         emit ValidatorBalanceUpdated(validatorIndex, lastCheckpointedAt, restakedBalanceGwei);
-
         return restakedBalanceGwei * GWEI_TO_WEI;
     }
 

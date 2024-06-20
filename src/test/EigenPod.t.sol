@@ -395,46 +395,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return (timestamp - GOERLI_GENESIS_TIME) / BeaconChainProofs.SECONDS_PER_EPOCH;
     }
 
-    function testWithdrawNonBeaconChainETHBalanceWei() public {
-        revert("TODO");
-        // IEigenPod pod = testDeployAndVerifyNewEigenPod();
-
-        // cheats.deal(address(podOwner), 10 ether);
-        // emit log_named_address("Pod:", address(pod));
-
-        // uint256 balanceBeforeDeposit = pod.nonBeaconChainETHBalanceWei();
-
-        // (bool sent, ) = payable(address(pod)).call{value: 1 ether}("");
-
-        // require(sent == true, "not sent");
-
-        // uint256 balanceAfterDeposit = pod.nonBeaconChainETHBalanceWei();
-
-        // require(
-        //     balanceBeforeDeposit < balanceAfterDeposit 
-        //     && (balanceAfterDeposit - balanceBeforeDeposit) == 1 ether, 
-        //     "increment checks"
-        // );
-
-        // cheats.startPrank(podOwner, podOwner);
-        // cheats.expectEmit(true, true, true, true, address(pod));
-        // emit NonBeaconChainETHWithdrawn(podOwner, 1 ether);
-        // pod.withdrawNonBeaconChainETHBalanceWei(
-        //     podOwner,
-        //     1 ether
-        // );
-
-        // uint256 balanceAfterWithdrawal = pod.nonBeaconChainETHBalanceWei();
-
-        // require(
-        //     balanceAfterWithdrawal < balanceAfterDeposit 
-        //     && balanceAfterWithdrawal == balanceBeforeDeposit, 
-        //     "decrement checks"
-        // );
-
-        // cheats.stopPrank();
-    }
-
     function testDeployAndVerifyNewEigenPod() public returns (IEigenPod) {
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
@@ -527,38 +487,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             validatorFieldsArray
         );
         cheats.stopPrank();
-    }
-
-    function testBalanceProofWithWrongTimestamp(uint64 timestamp) public {
-        revert("TODO");
-        // cheats.assume(timestamp > GOERLI_GENESIS_TIME);
-        // // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
-        // setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-        // IEigenPod newPod = testDeployAndVerifyNewEigenPod();
-
-        //  // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
-        // setJSON("./src/test/test-data/balanceUpdateProof_updated_to_0ETH_302913.json");
-        // // prove overcommitted balance
-        // cheats.warp(timestamp);
-        // _proveOverCommittedStake(newPod);
-
-
-        // bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-        // validatorFieldsArray[0] = getValidatorFields();
-
-        // uint40[] memory validatorIndices = new uint40[](1);
-        // validatorIndices[0] = uint40(getValidatorIndex());
-
-        // bytes memory proof = abi.encodePacked(getBalanceUpdateProof());
-        // bytes[] memory proofs = new bytes[](1);
-        // proofs[0] = proof;
-
-        // bytes32 newLatestBlockRoot = getLatestBlockRoot();
-        // BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
-        // BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();      
-
-        // cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"));
-        // newPod.verifyBalanceUpdates(uint64(block.timestamp - 1), validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
     }
 
     function testProveSingleWithdrawalCredential() public {

@@ -7,7 +7,6 @@ import "src/contracts/libraries/BeaconChainProofs.sol";
 import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
-import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/integration/utils/PrintUtils.t.sol";
 
@@ -31,6 +30,12 @@ struct CredentialProofs {
     BeaconChainProofs.StateRootProof stateRootProof;
     bytes[] validatorFieldsProofs;
     bytes32[][] validatorFields;
+}
+
+struct StaleBalanceProofs {
+    uint64 beaconTimestamp;
+    BeaconChainProofs.StateRootProof stateRootProof;
+    BeaconChainProofs.ValidatorProof validatorProof;
 }
 
 contract BeaconChainMock is PrintUtils {
@@ -116,7 +121,7 @@ contract BeaconChainMock is PrintUtils {
     
     bytes32[] zeroNodes;
     
-    constructor(TimeMachine timeMachine, EigenPodManager _eigenPodManager, uint64 _genesisTime) {
+    constructor(EigenPodManager _eigenPodManager, uint64 _genesisTime) {
         genesisTime = _genesisTime;
         eigenPodManager = _eigenPodManager;
 
@@ -799,6 +804,7 @@ contract BeaconChainMock is PrintUtils {
         vFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] = bytes32(v.withdrawalCreds);
         vFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX] = _toLittleEndianUint64(v.effectiveBalanceGwei);
         vFields[BeaconChainProofs.VALIDATOR_EXIT_EPOCH_INDEX] = _toLittleEndianUint64(v.exitEpoch);
+        vFields[BeaconChainProofs.VALIDATOR_SLASHED_INDEX] = bytes32(abi.encode(v.isSlashed));
 
         return vFields;
     }
@@ -939,6 +945,18 @@ contract BeaconChainMock is PrintUtils {
         }
 
         return proofs;
+    }
+
+    function getStaleBalanceProofs(uint40 validatorIndex) public view returns (StaleBalanceProofs memory) {
+        ValidatorFieldsProof memory vfProof = validatorFieldsProofs[curTimestamp][validatorIndex];
+        return StaleBalanceProofs({
+            beaconTimestamp: curTimestamp,
+            stateRootProof: stateRootProofs[curTimestamp],
+            validatorProof: BeaconChainProofs.ValidatorProof({
+                validatorFields: vfProof.validatorFields,
+                proof: vfProof.validatorFieldsProof
+            })
+        });
     }
 
     function balanceOfGwei(uint40 validatorIndex) public view returns (uint64) {
