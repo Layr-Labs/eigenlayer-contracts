@@ -34,7 +34,7 @@ This document organizes methods according to the following themes (click each to
     * For all strategies including native beacon chain ETH, Stakers at minimum must wait this amount of time before a withdrawal can be completed.
     To withdraw a specific strategy, it may require additional time depending on the strategy's withdrawal delay. See `strategyWithdrawalDelayBlocks` below.
 * `mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks`:
-    * This mapping tracks the withdrawal delay for each strategy. This mapping value only comes into affect
+    * This mapping tracks the withdrawal delay for each strategy. This mapping value only comes into effect
     if `strategyWithdrawalDelayBlocks[strategy] > minWithdrawalDelayBlocks`. Otherwise, `minWithdrawalDelayBlocks` is used.
 * `mapping(bytes32 => bool) public pendingWithdrawals;`:
     * `Withdrawals` are hashed and set to `true` in this mapping when a withdrawal is initiated. The hash is set to false again when the withdrawal is completed. A per-staker nonce provides a way to distinguish multiple otherwise-identical withdrawals.
