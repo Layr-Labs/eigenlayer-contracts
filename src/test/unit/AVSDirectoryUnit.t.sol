@@ -406,7 +406,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 
         address operator = cheats.addr(operatorPk);
         (uint8 v, bytes32 r, bytes32 s) =
-            cheats.sign(operatorPk, avsDirectory.calculateUpdateStandbyDigestHash(params, salt, expiry));
+            cheats.sign(operatorPk, avsDirectory.calculateUpdateStandbyDigestHash(params, keccak256(""), expiry));
 
         _registerOperatorWithBaseDetails(operator);
 
@@ -415,9 +415,12 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
         );
 
-        // avsDirectory.updateStandbyParams(
-        //     operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
-        // );
+        avsDirectory.updateStandbyParams(
+            operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), keccak256(""), expiry)
+        );
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), 0, 0)
+        );
     }
 }
 
