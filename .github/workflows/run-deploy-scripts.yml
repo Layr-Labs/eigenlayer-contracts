@@ -16,7 +16,7 @@ jobs:
         with:
           submodules: true
 
-      # install foundry to run forge script. Should we run forge script in a container instead?
+      # install foundry to run forge script. Should we run the forge script in a container instead?
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
