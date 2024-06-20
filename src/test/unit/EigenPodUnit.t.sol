@@ -902,7 +902,10 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators);
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
+            validators,
+            pod.currentCheckpointTimestamp()
+        );
 
         cheats.prank(pauser);
         eigenPodManagerMock.pause(2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS);
@@ -920,7 +923,10 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators);
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
+            validators,
+            pod.currentCheckpointTimestamp()
+        );
         cheats.expectRevert(
             "EigenPod.verifyCheckpointProofs: must have active checkpoint to perform checkpoint proof"
         );
@@ -939,7 +945,10 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         staker.verifyWithdrawalCredentials(validators);
         beaconChain.advanceEpoch();
         staker.startCheckpoint();
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators);
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
+            validators,
+            pod.currentCheckpointTimestamp()
+        );
 
         // change the length of balanceContainerProof to cause a revert
         proofs.balanceContainerProof.proof = new bytes(proofs.balanceContainerProof.proof.length + 1);
@@ -962,7 +971,10 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         staker.startCheckpoint();
 
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators);
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
+            validators,
+            pod.currentCheckpointTimestamp()
+        );
         // randomly change one of the bytes in the proof to make the proof invalid
         bytes1 randValue = bytes1(keccak256(abi.encodePacked(proofs.balanceContainerProof.proof[0])));
         proofs.balanceContainerProof.proof[0] = randValue;
@@ -983,7 +995,10 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         staker.verifyWithdrawalCredentials(validators);
         beaconChain.advanceEpoch();
         staker.startCheckpoint();
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators);
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
+            validators,
+            pod.currentCheckpointTimestamp()
+        );
 
         // change the length of balance proof to cause a revert
         proofs.balanceProofs[0].proof = new bytes(proofs.balanceProofs[0].proof.length + 1);
@@ -1005,8 +1020,10 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         beaconChain.advanceEpoch();
         staker.startCheckpoint();
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators);
-
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
+            validators,
+            pod.currentCheckpointTimestamp()
+        );
         // randomly change one of the bytes in the first proof to make the proof invalid
         bytes1 randValue = bytes1(keccak256(abi.encodePacked(proofs.balanceProofs[0].proof[0])));
         proofs.balanceProofs[0].proof[0] = randValue;
@@ -1032,7 +1049,10 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         }
         staker.startCheckpoint();
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators);
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
+            validators,
+            pod.currentCheckpointTimestamp()
+        );
 
         // Verify checkpoint proofs emit the expected values
         _expectEventsVerifyCheckpointProofs(staker, validators, proofs.balanceProofs);
