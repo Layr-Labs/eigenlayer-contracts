@@ -7,7 +7,7 @@ labels: research
 ---
 
 ## Description
-Add a summary and description. What do we need any why? Any preliminary notion of options + what we want out of them?
+Add a summary and description. What do we need and why? Any preliminary notion of options + what we want out of them?
 
 ### Action Items
 - [ ] Create a list of options to evaluate
