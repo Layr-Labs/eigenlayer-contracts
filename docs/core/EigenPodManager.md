@@ -396,7 +396,7 @@ function withdrawRestakedBeaconChainETH(
 The `EigenPodManager` calls this method when withdrawing a Pod Owner's shares as tokens (native ETH). The input `amountWei` is converted to Gwei and subtracted from `withdrawableRestakedExecutionLayerGwei`, which tracks Gwei that has been provably withdrawn (via `EigenPod.verifyAndProcessWithdrawals`).
 
 As such:
-* If a withdrawal has not been proven that sufficiently raises `withdrawableRestakedExecutionLayerGwei`, this method will revert.
+* If a withdrawal has not been proven that sufficiently raise `withdrawableRestakedExecutionLayerGwei`, this method will revert.
 * If the `EigenPod` does not have `amountWei` available to transfer, this method will revert
 
 *Effects*:
