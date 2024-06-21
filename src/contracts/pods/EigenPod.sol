@@ -14,7 +14,6 @@ import "../libraries/Endian.sol";
 
 import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
@@ -32,7 +31,7 @@ contract EigenPod is
     Initializable, 
     ReentrancyGuardUpgradeable, 
     EigenPodPausingConstants, 
-    EigenPodStorage 
+    EigenPodStorage
 {
 
     using BytesLib for bytes;
@@ -282,7 +281,6 @@ contract EigenPod is
         uint256 totalAmountToBeRestakedWei;
         for (uint256 i = 0; i < validatorIndices.length; i++) {
             totalAmountToBeRestakedWei += _verifyWithdrawalCredentials(
-                beaconTimestamp,
                 stateRootProof.beaconStateRoot,
                 validatorIndices[i],
                 validatorFieldsProofs[i],
@@ -409,13 +407,11 @@ contract EigenPod is
 
     /**
      * @notice internal function that proves an individual validator's withdrawal credentials
-     * @param beaconTimestamp is the timestamp whose state root the `proof` will be proven against.
      * @param validatorIndex is the index of the validator being proven
      * @param validatorFieldsProof is the bytes that prove the ETH validator's  withdrawal credentials against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      */
     function _verifyWithdrawalCredentials(
-        uint64 beaconTimestamp,
         bytes32 beaconStateRoot,
         uint40 validatorIndex,
         bytes calldata validatorFieldsProof,
@@ -470,7 +466,6 @@ contract EigenPod is
 
         emit ValidatorRestaked(validatorIndex);
         emit ValidatorBalanceUpdated(validatorIndex, lastCheckpointedAt, restakedBalanceGwei);
-
         return restakedBalanceGwei * GWEI_TO_WEI;
     }
 

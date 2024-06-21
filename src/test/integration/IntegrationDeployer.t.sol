@@ -361,7 +361,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Create time machine and beacon chain. Set block time to beacon chain genesis time
         cheats.warp(GENESIS_TIME_LOCAL);
         timeMachine = new TimeMachine();
-        beaconChain = new BeaconChainMock(timeMachine, eigenPodManager, GENESIS_TIME_LOCAL);
+        beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_LOCAL);
     }
 
     /**
@@ -665,7 +665,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
             // Create time machine and mock beacon chain
             timeMachine = new TimeMachine();
-            beaconChain = new BeaconChainMock(timeMachine, eigenPodManager, GENESIS_TIME_MAINNET);
+            beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_MAINNET);
         } else if (forkType == HOLESKY) {
             revert("_deployOrFetchContracts - holesky tests currently broken sorry");
             // cheats.selectFork(holeskyForkId);
@@ -695,7 +695,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             );
             // Create time machine and mock beacon chain
             timeMachine = new TimeMachine();
-            beaconChain = new BeaconChainMock(timeMachine, eigenPodManager, GENESIS_TIME_MAINNET);
+            beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_MAINNET);
 
             cheats.startPrank(executorMultisig);
             eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
