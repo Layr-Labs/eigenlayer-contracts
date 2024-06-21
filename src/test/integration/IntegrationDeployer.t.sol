@@ -16,7 +16,6 @@ import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
-import "src/contracts/pods/DelayedWithdrawalRouter.sol";
 import "src/contracts/permissions/PauserRegistry.sol";
 
 import "src/test/mocks/EmptyContract.sol";
@@ -101,8 +100,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
     uint8 internal constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
-    // DelayedWithdrawalRouter
-    uint8 internal constant PAUSED_DELAYED_WITHDRAWAL_CLAIMS = 0;
 
     // Flags
     uint constant FLAG = 1;
@@ -241,9 +238,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        delayedWithdrawalRouter = DelayedWithdrawalRouter(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
         avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -268,7 +262,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -321,18 +314,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 eigenLayerReputedMultisig, // initialOwner
                 eigenLayerPauserReg,
                 0 // initialPausedStatus
-            )
-        );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation),
-            abi.encodeWithSelector(
-                DelayedWithdrawalRouter.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                eigenLayerPauserReg,
-                0, // initialPausedStatus
-                withdrawalDelayBlocks
             )
         );
         // AVSDirectory
@@ -399,7 +380,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
@@ -422,11 +402,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
-        );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation)
         );
         // AVSDirectory, upgrade and initalized
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -499,7 +474,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
@@ -522,11 +496,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
-        );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation)
         );
         // AVSDirectory, upgrade and initalized
         eigenLayerProxyAdmin.upgradeAndCall(

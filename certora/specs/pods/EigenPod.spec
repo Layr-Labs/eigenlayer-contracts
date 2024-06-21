@@ -52,9 +52,6 @@ methods {
     // external calls to ETH2Deposit contract
     function _.deposit(bytes, bytes, bytes, bytes32) external => NONDET;
 
-    // external calls to DelayedWithdrawalRouter (from EigenPod)
-    function _.createDelayedWithdrawal(address, address) external => DISPATCHER(true);
-
     // external calls to PauserRegistry
     function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
@@ -75,7 +72,6 @@ methods {
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external returns (IEigenPod.ValidatorInfo) envfree;
     function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external returns (bool) envfree;
     function validatorStatus(bytes32 pubkeyHash) external returns (IEigenPod.VALIDATOR_STATUS) envfree;
-    function delayedWithdrawalRouter() external returns (address) envfree;
     function nonBeaconChainETHBalanceWei() external returns (uint256) envfree;
 
     // harnessed functions

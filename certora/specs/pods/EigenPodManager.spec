@@ -27,9 +27,6 @@ methods {
 
     // external calls to EigenPod
 	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
-    
-    // external calls to DelayedWithdrawalRouter (from EigenPod)
-    function _.createDelayedWithdrawal(address, address) external => DISPATCHER(true);
 
     // external calls to PauserRegistry
     function _.isPauser(address) external => DISPATCHER(true);
@@ -40,7 +37,6 @@ methods {
     function getPod(address podOwner) external returns (address) envfree;
     function ethPOS() external returns (address) envfree;
     function eigenPodBeacon() external returns (address) envfree;
-    function beaconChainOracle() external returns (address) envfree;
     function getBlockRootAtTimestamp(uint64 timestamp) external returns (bytes32) envfree;
     function strategyManager() external returns (address) envfree;
     function slasher() external returns (address) envfree;

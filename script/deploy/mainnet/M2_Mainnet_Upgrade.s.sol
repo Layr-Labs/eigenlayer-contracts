@@ -77,7 +77,6 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
     }
 
     function _simulateUpgrade() internal {
@@ -109,11 +108,6 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
-        );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation)
         );
 
         // Second, configure additional settings and paused statuses
@@ -170,15 +164,15 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             )
         );
 
-        txs[3] = Tx(
-            address(eigenLayerProxyAdmin),
-            0,
-            abi.encodeWithSelector(
-                ProxyAdmin.upgrade.selector, 
-                TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))), 
-                delayedWithdrawalRouterImplementation
-            )
-        );
+        // txs[3] = Tx(
+        //     address(eigenLayerProxyAdmin),
+        //     0,
+        //     abi.encodeWithSelector(
+        //         ProxyAdmin.upgrade.selector, 
+        //         TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))), 
+        //         delayedWithdrawalRouterImplementation
+        //     )
+        // );
 
         txs[4] = Tx(
             address(eigenLayerProxyAdmin),

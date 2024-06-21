@@ -50,7 +50,7 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     *******************************************************************************/
 
     /// @notice [DEPRECATED] Previously used to query beacon block roots. We now use eip-4788 directly
-    IBeaconChainOracle internal __deprecated_beaconChainOracle;
+    address internal __deprecated_beaconChainOracle;
 
     /// @notice Pod owner to deployed EigenPod address
     mapping(address => IEigenPod) public ownerToPod;

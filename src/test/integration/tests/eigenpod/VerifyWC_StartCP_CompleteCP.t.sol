@@ -244,7 +244,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
 
         // Fully exit one or more validators and advance epoch without generating rewards
         uint40[] memory subset = _choose(validators);
-        uint64 exitedBalanceGwei = staker.exitValidators(subset);
+        staker.exitValidators(subset);
         beaconChain.advanceEpoch_NoRewards();
 
         staker.completeCheckpoint();
