@@ -101,10 +101,5 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
             eigenPodManager.delegationManager() == delegationManager,
             "eigenPodManager: delegationManager contract address not set correctly"
         );
-        // DelayedWithdrawalRouter
-        require(
-            delayedWithdrawalRouter.eigenPodManager() == eigenPodManager,
-            "delayedWithdrawalRouterContract: eigenPodManager address not set correctly"
-        );
     }
 }

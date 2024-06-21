@@ -139,7 +139,7 @@ contract BeaconChainMock is PrintUtils {
         }
     }
 
-    function NAME() public view override returns (string memory) {
+    function NAME() public pure override returns (string memory) {
         return "BeaconChain";
     }
 
@@ -792,7 +792,7 @@ contract BeaconChainMock is PrintUtils {
         return balances[validatorIndex / 4];
     }
 
-    function _getBalanceRootIndex(uint40 validatorIndex) internal view returns (uint40) {
+    function _getBalanceRootIndex(uint40 validatorIndex) internal pure returns (uint40) {
         return validatorIndex / 4;
     }
 
@@ -862,7 +862,7 @@ contract BeaconChainMock is PrintUtils {
     /// @dev Opposite of BeaconChainProofs.getBalanceAtIndex, calculates a new balance
     /// root by updating the balance at validatorIndex
     /// @return The new, updated balance root
-    function _calcBalanceRoot(bytes32 balanceRoot, uint40 validatorIndex, uint64 newBalanceGwei) internal returns (bytes32) {
+    function _calcBalanceRoot(bytes32 balanceRoot, uint40 validatorIndex, uint64 newBalanceGwei) internal pure returns (bytes32) {
         // Clear out old balance
         uint bitShiftAmount = 256 - (64 * ((validatorIndex % 4) + 1));
         uint mask = ~(uint(0xFFFFFFFFFFFFFFFF) << bitShiftAmount);
@@ -887,7 +887,7 @@ contract BeaconChainMock is PrintUtils {
                                   VIEW METHODS
     *******************************************************************************/
 
-    function getCredentialProofs(uint40[] memory _validators) public returns (CredentialProofs memory) {
+    function getCredentialProofs(uint40[] memory _validators) public view returns (CredentialProofs memory) {
         // If we have not advanced an epoch since a validator was created, no proofs have been
         // generated for that validator. We check this here and revert early so we don't return
         // empty proofs.

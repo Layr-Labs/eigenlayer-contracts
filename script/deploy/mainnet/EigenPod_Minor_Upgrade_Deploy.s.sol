@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
-import "../../../src/contracts/interfaces/IBeaconChainOracle.sol";
 
 import "../../../src/contracts/core/StrategyManager.sol";
 import "../../../src/contracts/core/Slasher.sol";
@@ -15,7 +14,6 @@ import "../../../src/contracts/core/DelegationManager.sol";
 
 import "../../../src/contracts/pods/EigenPod.sol";
 import "../../../src/contracts/pods/EigenPodManager.sol";
-import "../../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "../../../src/contracts/permissions/PauserRegistry.sol";
 
@@ -41,16 +39,14 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
     StrategyManager public strategyManagerImplementation;
     IEigenPodManager public eigenPodManager;
     EigenPodManager public eigenPodManagerImplementation;
-    IDelayedWithdrawalRouter public delayedWithdrawalRouter;
     IBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
 
     // Eigenlayer Proxy Admin
     ProxyAdmin public eigenLayerProxyAdmin;
 
-    // BeaconChain deposit contract & beacon chain oracle
+    // BeaconChain deposit contract
     IETHPOSDeposit public ethPOS;
-    address public beaconChainOracle;
 
     // RPC url to fork from for pre-upgrade state change tests
     string public rpcUrl;

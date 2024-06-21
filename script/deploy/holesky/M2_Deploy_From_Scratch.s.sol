@@ -67,10 +67,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        delayedWithdrawalRouter = DelayedWithdrawalRouter(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             IETHPOSDeposit(ETHPOSDepositAddress),
@@ -90,7 +86,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
@@ -152,18 +147,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
                 msg.sender, // initialOwner is msg.sender for now to set forktimestamp later
                 eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
-            )
-        );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation),
-            abi.encodeWithSelector(
-                DelayedWithdrawalRouter.initialize.selector,
-                executorMultisig, // initialOwner
-                eigenLayerPauserReg,
-                DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS,
-                DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS
             )
         );
 

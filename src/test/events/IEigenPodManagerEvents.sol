@@ -2,9 +2,6 @@
 pragma solidity ^0.8.12;
 
 interface IEigenPodManagerEvents {
-    /// @notice Emitted to notify the update of the beaconChainOracle address
-    event BeaconOracleUpdated(address indexed newOracleAddress);
-
     /// @notice Emitted to notify that the denebForkTimestamp has been set
     event DenebForkTimestampUpdated(uint64 denebForkTimestamp);
 

@@ -3,7 +3,6 @@ pragma solidity ^0.8.12;
 
 import "./BeaconChainProofs.sol";
 import "./IEigenPodManager.sol";
-import "./IBeaconChainOracle.sol";
 
 /**
  * @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928

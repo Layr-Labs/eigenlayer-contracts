@@ -8,7 +8,6 @@ import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodPausingConstants.sol";
 
 import "src/test/mocks/ETHDepositMock.sol";
-import "src/test/mocks/DelayedWithdrawalRouterMock.sol";
 import "src/test/mocks/ERC20Mock.sol";
 import "src/test/harnesses/EigenPodHarness.sol";
 import "src/test/utils/ProofParsing.sol";
@@ -954,7 +953,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
 
     /// @notice revert when startCheckpoint is not called by pod owner
     function testFuzz_revert_callerIsNotPodOwner(uint256 rand, address invalidCaller) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
 
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
@@ -973,7 +972,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
     function testFuzz_revert_startCheckpointPaused(uint256 rand) public {
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
 
-        (uint40[] memory validators,) = staker.startValidators();
+        staker.startValidators();
 
         cheats.prank(pauser);
         eigenPodManagerMock.pause(2 ** PAUSED_START_CHECKPOINT);
@@ -1040,7 +1039,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
         _setPodHasNotRestaked(staker);
 
-        (uint40[] memory validators,) = staker.startValidators();
+        staker.startValidators();
         beaconChain.advanceEpoch();
 
         assertFalse(

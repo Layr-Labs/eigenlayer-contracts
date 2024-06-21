@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "./IETHPOSDeposit.sol";
 import "./IStrategyManager.sol";
 import "./IEigenPod.sol";
-import "./IBeaconChainOracle.sol";
 import "./IPausable.sol";
 import "./ISlasher.sol";
 import "./IStrategy.sol";
