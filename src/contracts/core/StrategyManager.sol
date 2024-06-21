@@ -10,6 +10,8 @@ import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 
+import "../libraries/SlashingAccountingUtils.sol";
+
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
  * @author Layr Labs, Inc.
@@ -27,6 +29,25 @@ contract StrategyManager is
     StrategyManagerStorage
 {
     using SafeERC20 for IERC20;
+
+    function stakerStrategyShares(address staker, IStrategy strategy) public view returns (uint256) {
+        address operator = delegation.delegatedTo(staker);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, strategy);
+        return SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedStakerStrategyShares[staker][strategy],
+            scalingFactor: scalingFactor
+        });
+    }
+
+    // includes the effect of all unexecuted but pending slashings
+    function stakerStrategySharesIncludingPendingSlashings(address staker, IStrategy strategy) external view returns (uint256) {
+        address operator = delegation.delegatedTo(staker);
+        uint64 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
+        return SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedStakerStrategyShares[staker][strategy],
+            scalingFactor: scalingFactor
+        });
+    }
 
     // index for flag that pauses deposits when set
     uint8 internal constant PAUSED_DEPOSITS = 0;
@@ -269,22 +290,22 @@ contract StrategyManager is
     // INTERNAL FUNCTIONS
 
     /**
-     * @notice This function adds `shares` for a given `strategy` to the `staker` and runs through the necessary update logic.
-     * @param staker The address to add shares to
+     * @notice This function adds `nonNormalizedShares` for a given `strategy` to the `staker` and runs through the necessary update logic.
+     * @param staker The address to add nonNormalizedShares to
      * @param token The token that is being deposited (used for indexing)
-     * @param strategy The Strategy in which the `staker` is receiving shares
-     * @param shares The amount of shares to grant to the `staker`
-     * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
-     * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
+     * @param strategy The Strategy in which the `staker` is receiving nonNormalizedShares
+     * @param nonNormalizedShares The amount of nonNormalizedShares to grant to the `staker`
+     * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, nonNormalizedShares)` to ensure that all
+     * delegated nonNormalizedShares are tracked, increases the stored share amount in `nonNormalizedStakerStrategyShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) internal {
+    function _addShares(address staker, IERC20 token, IStrategy strategy, uint256 nonNormalizedShares) internal {
         // sanity checks on inputs
         require(staker != address(0), "StrategyManager._addShares: staker cannot be zero address");
-        require(shares != 0, "StrategyManager._addShares: shares should not be zero!");
+        require(nonNormalizedShares != 0, "StrategyManager._addShares: nonNormalizedShares should not be zero!");
 
-        // if they dont have existing shares of this strategy, add it to their strats
-        if (stakerStrategyShares[staker][strategy] == 0) {
+        // if they dont have existing nonNormalizedShares of this strategy, add it to their strats
+        if (nonNormalizedStakerStrategyShares[staker][strategy] == 0) {
             require(
                 stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH,
                 "StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH"
@@ -292,10 +313,10 @@ contract StrategyManager is
             stakerStrategyList[staker].push(strategy);
         }
 
-        // add the returned shares to their existing shares for this strategy
-        stakerStrategyShares[staker][strategy] += shares;
+        // add the returned nonNormalizedShares to their existing nonNormalizedShares for this strategy
+        nonNormalizedStakerStrategyShares[staker][strategy] += nonNormalizedShares;
 
-        emit Deposit(staker, token, strategy, shares);
+        emit Deposit(staker, token, strategy, nonNormalizedShares);
     }
 
     /**
@@ -319,42 +340,52 @@ contract StrategyManager is
         // deposit the assets into the specified strategy and get the equivalent amount of shares in that strategy
         shares = strategy.deposit(token, amount);
 
-        // add the returned shares to the staker's existing shares for this strategy
-        _addShares(staker, token, strategy, shares);
+        // TODO: possibly optimize or clarify the below operations by reorganizing them
+        // find the nonNormalizedShares amount
+        address operator = delegation.delegatedTo(staker);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, strategy);
+        uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
+            shares: shares,
+            scalingFactor: scalingFactor
+        });
 
-        // Increase shares delegated to operator, if needed
-        delegation.increaseDelegatedShares(staker, strategy, shares);
+        // add the returned nonNormalizedShares to the staker's existing nonNormalizedShares for this strategy
+        _addShares(staker, token, strategy, nonNormalizedShares);
 
+        // Increase nonNormalizedShares delegated to operator, if needed
+        delegation.increaseDelegatedShares(staker, strategy, nonNormalizedShares);
+
+        // TODO: decide if this return value still makes sense
         return shares;
     }
 
     /**
-     * @notice Decreases the shares that `staker` holds in `strategy` by `shareAmount`.
+     * @notice Decreases the nonNormalizedShares that `staker` holds in `strategy` by `nonNormalizedShares`.
      * @param staker The address to decrement shares from
      * @param strategy The strategy for which the `staker`'s shares are being decremented
-     * @param shareAmount The amount of shares to decrement
+     * @param nonNormalizedShares The amount of shares to decrement
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
     function _removeShares(
         address staker,
         IStrategy strategy,
-        uint256 shareAmount
+        uint256 nonNormalizedShares
     ) internal returns (bool) {
         // sanity checks on inputs
-        require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
+        require(nonNormalizedShares != 0, "StrategyManager._removeShares: nonNormalizedShares should not be zero!");
 
         //check that the user has sufficient shares
-        uint256 userShares = stakerStrategyShares[staker][strategy];
+        uint256 userShares = nonNormalizedStakerStrategyShares[staker][strategy];
 
-        require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
+        require(nonNormalizedShares <= userShares, "StrategyManager._removeShares: nonNormalizedShares too high");
         //unchecked arithmetic since we just checked this above
         unchecked {
-            userShares = userShares - shareAmount;
+            userShares = userShares - nonNormalizedShares;
         }
 
         // subtract the shares from the staker's existing shares for this strategy
-        stakerStrategyShares[staker][strategy] = userShares;
+        nonNormalizedStakerStrategyShares[staker][strategy] = userShares;
 
         // if no existing shares, remove the strategy from the staker's dynamic array of strategies
         if (userShares == 0) {
@@ -426,7 +457,26 @@ contract StrategyManager is
         uint256[] memory shares = new uint256[](strategiesLength);
 
         for (uint256 i = 0; i < strategiesLength; ) {
-            shares[i] = stakerStrategyShares[staker][stakerStrategyList[staker][i]];
+            // TODO: consider optimizing the lookups here
+            shares[i] = stakerStrategyShares(staker, stakerStrategyList[staker][i]);
+            unchecked {
+                ++i;
+            }
+        }
+        return (stakerStrategyList[staker], shares);
+    }
+
+    /**
+     * @notice Get all details on the staker's deposits and corresponding shares
+     * @param staker The staker of interest, whose deposits this function will fetch
+     * @return (staker's strategies, shares in these strategies)
+     */
+    function getNonNormalizedDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
+        uint256 strategiesLength = stakerStrategyList[staker].length;
+        uint256[] memory shares = new uint256[](strategiesLength);
+
+        for (uint256 i = 0; i < strategiesLength; ) {
+            shares[i] = nonNormalizedStakerStrategyShares[staker][stakerStrategyList[staker][i]];
             unchecked {
                 ++i;
             }

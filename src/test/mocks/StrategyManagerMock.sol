@@ -69,6 +69,8 @@ contract StrategyManagerMock is
     /// @notice Returns the current shares of `user` in `strategy`
     function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
 
+    function nonNormalizedStakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
+
     /**
      * @notice mocks the return value of getDeposits
      * @param staker staker whose deposits are being mocked
@@ -91,6 +93,10 @@ contract StrategyManagerMock is
      * @return (staker's strategies, shares in these strategies)
      */
     function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
+        return (strategiesToReturn[staker], sharesToReturn[staker]);
+    }
+
+    function getNonNormalizedDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
         return (strategiesToReturn[staker], sharesToReturn[staker]);
     }
 
