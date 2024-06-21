@@ -289,7 +289,7 @@ library BeaconChainProofs {
     }
 
     /// @dev Retrieves a validator's effective balance (in gwei)
-    function getEffectiveBalanceGwei(bytes32[] memory validatorFields) public pure returns (uint64) {
+    function getEffectiveBalanceGwei(bytes32[] memory validatorFields) internal pure returns (uint64) {
         return 
             Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_BALANCE_INDEX]);
     }
