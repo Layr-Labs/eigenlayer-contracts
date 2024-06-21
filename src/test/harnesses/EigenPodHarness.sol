@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import "../../contracts/pods/EigenPod.sol";
 import "forge-std/Test.sol";
 
-contract EigenPodHarness is EigenPod, Test {
+contract EigenPodHarness is EigenPod {
 
     constructor(
         IETHPOSDeposit _ethPOS,
@@ -25,14 +25,12 @@ contract EigenPodHarness is EigenPod, Test {
     }
 
     function verifyWithdrawalCredentials(
-        uint64 oracleTimestamp,
         bytes32 beaconStateRoot,
         uint40 validatorIndex,
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields
     ) public returns (uint256) {
         return _verifyWithdrawalCredentials(
-            oracleTimestamp,
             beaconStateRoot,
             validatorIndex,
             validatorFieldsProof,

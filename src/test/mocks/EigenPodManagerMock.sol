@@ -3,13 +3,19 @@ pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
 import "../../contracts/interfaces/IEigenPodManager.sol";
+import "../../contracts/permissions/Pausable.sol";
 
-contract EigenPodManagerMock is IEigenPodManager, Test {
+
+contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     IBeacon public eigenPodBeacon;
     IETHPOSDeposit public ethPOS;
 
     mapping(address => int256) public podShares;
+
+    constructor(IPauserRegistry _pauserRegistry) {
+        _initializePauser(_pauserRegistry, 0);
+    }
 
     function slasher() external view returns(ISlasher) {}
 
@@ -34,26 +40,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function hasPod(address /*podOwner*/) external pure returns (bool) {
         return false;
     }
-
-    function pause(uint256 /*newPausedStatus*/) external{}
-
-    function pauseAll() external{}
-
-    function paused() external pure returns (uint256) {
-        return 0;
-    }
-    
-    function paused(uint8 /*index*/) external pure returns (bool) {
-        return false;
-    }
-
-    function setPauserRegistry(IPauserRegistry /*newPauserRegistry*/) external {}
-
-    function pauserRegistry() external pure returns (IPauserRegistry) {
-        return IPauserRegistry(address(0));
-    }
-
-    function unpause(uint256 /*newPausedStatus*/) external{}
 
     function podOwnerShares(address podOwner) external view returns (int256) {
         return podShares[podOwner];
