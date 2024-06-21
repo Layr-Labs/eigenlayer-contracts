@@ -317,28 +317,6 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         return
             int128(uint128(newAmountGwei)) - int128(uint128(previousAmountGwei));
     }
-
-    /*******************************************************************************
-                        verifyStaleBalance
-    *******************************************************************************/
-
-    /// @notice randomly roll forward to a stale timestamp. This assumes the beaconTimestamp being
-    /// passed into verifyStaleBalance is block.timestamp
-    function rollToStaleTimestamp(
-        EigenPodUser staker,
-        bytes32[] memory validatorFields,
-        uint64 rollSeconds
-    ) internal {
-        EigenPod pod = staker.pod();
-
-        IEigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(validatorFields.getPubkeyHash());
-        uint64 rollForwardTimestamp = uint64(bound(
-            rollSeconds,
-            info.lastCheckpointedAt + TIME_TILL_STALE_BALANCE + 1,
-            info.lastCheckpointedAt + TIME_TILL_STALE_BALANCE + 1 + 2 weeks
-        ));
-        cheats.warp(rollForwardTimestamp);
-    }
 }
 
 contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
@@ -1458,18 +1436,43 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         beaconChain.advanceEpoch();
         staker.verifyWithdrawalCredentials(validators);
 
+        staker.startCheckpoint();
+        staker.completeCheckpoint();
+
+        uint64 lastCheckpointTimestamp = pod.lastCheckpointTimestamp();
         // proof for given beaconTimestamp is not yet stale, this should revert
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
-        cheats.expectRevert("EigenPod.verifyStaleBalance: validator balance is not stale yet");
+        cheats.expectRevert("EigenPod.verifyStaleBalance: proof is older than last checkpoint");
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
+            beaconTimestamp: lastCheckpointTimestamp,
+            stateRootProof: proofs.stateRootProof,
+            proof: proofs.validatorProof
+        });
+    }
+
+    /// @notice checks staleness condition when a pod has never completed a checkpoint before
+    /// The only value that will result in a revert here is `beaconTimestamp == 0`
+    function testFuzz_revert_validatorBalanceNotStale_NeverCheckpointed(uint256 rand) public {
+        // setup eigenpod staker and validators
+        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        EigenPod pod = staker.pod();
+        (uint40[] memory validators,) = staker.startValidators();
+        uint40 validator = validators[0];
+        beaconChain.advanceEpoch();
+        staker.verifyWithdrawalCredentials(validators);
+
+        // proof for given beaconTimestamp is not yet stale, this should revert
+        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
+        cheats.expectRevert("EigenPod.verifyStaleBalance: proof is older than last checkpoint");
+        pod.verifyStaleBalance({
+            beaconTimestamp: 0,
             stateRootProof: proofs.stateRootProof,
             proof: proofs.validatorProof
         });
     }
 
     /// @notice verifyStaleBalance should revert if validator status is not ACTIVE
-    function testFuzz_revert_validatorStatusNotActive(uint256 rand, uint64 randRollSeconds) public {
+    function testFuzz_revert_validatorStatusNotActive(uint256 rand) public {
         // setup eigenpod staker and validators
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
         EigenPod pod = staker.pod();
@@ -1480,9 +1483,6 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         // validator should be INACTIVE and cause a revert
         beaconChain.advanceEpoch();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
-        rollToStaleTimestamp(staker, proofs.validatorProof.validatorFields, randRollSeconds);
-        beaconChain.advanceEpoch();
-        proofs = beaconChain.getStaleBalanceProofs(validator);
 
         cheats.expectRevert("EigenPod.verifyStaleBalance: validator is not active");
         pod.verifyStaleBalance({
@@ -1493,7 +1493,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     }
 
     /// @notice verifyStaleBalance should revert if validator is not slashed
-    function testFuzz_revert_validatorNotSlashed(uint256 rand, uint64 randRollSeconds) public {
+    function testFuzz_revert_validatorNotSlashed(uint256 rand) public {
         // setup eigenpod staker and validators
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
         EigenPod pod = staker.pod();
@@ -1505,9 +1505,6 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         // this should cause a revert
         beaconChain.advanceEpoch();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
-        rollToStaleTimestamp(staker, proofs.validatorProof.validatorFields, randRollSeconds);
-        beaconChain.advanceEpoch();
-        proofs = beaconChain.getStaleBalanceProofs(validator);
 
         cheats.expectRevert("EigenPod.verifyStaleBalance: validator must be slashed to be marked stale");
         pod.verifyStaleBalance({
@@ -1518,7 +1515,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     }
 
      /// @notice verifyStaleBalance should revert with invalid beaconStateRoot proof length
-    function testFuzz_revert_beaconStateRootProofInvalidLength(uint256 rand, uint64 randRollSeconds) public {
+    function testFuzz_revert_beaconStateRootProofInvalidLength(uint256 rand) public {
         // setup eigenpod staker and validators
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
         EigenPod pod = staker.pod();
@@ -1526,13 +1523,10 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         uint40 validator = validators[0];
         staker.verifyWithdrawalCredentials(validators);
 
-        // Advance epoch where validators got slashed. Use stale balance proof by rolling timestamp forward
-        beaconChain.advanceEpoch();
-        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
-        rollToStaleTimestamp(staker, proofs.validatorProof.validatorFields, randRollSeconds);
+        // Slash validators and advance epoch
         beaconChain.slashValidators(validators);
         beaconChain.advanceEpoch();
-        proofs = beaconChain.getStaleBalanceProofs(validator);
+        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
         // change the proof to have an invalid length
         bytes memory proofWithInvalidLength = new bytes(proofs.stateRootProof.proof.length + 1);
@@ -1550,7 +1544,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     }
 
     /// @notice verifyStaleBalance should revert with invalid beaconStateRoot proof
-    function testFuzz_revert_beaconStateRootProofInvalid(uint256 rand, uint64 randRollSeconds) public {
+    function testFuzz_revert_beaconStateRootProofInvalid(uint256 rand) public {
         // setup eigenpod staker and validators
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
         EigenPod pod = staker.pod();
@@ -1558,13 +1552,10 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         uint40 validator = validators[0];
         staker.verifyWithdrawalCredentials(validators);
 
-        // Advance epoch where validators got slashed. Use stale balance proof by rolling timestamp forward
-        beaconChain.advanceEpoch();
-        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
-        rollToStaleTimestamp(staker, proofs.validatorProof.validatorFields, randRollSeconds);
+        // Slash validators and advance epoch
         beaconChain.slashValidators(validators);
         beaconChain.advanceEpoch();
-        proofs = beaconChain.getStaleBalanceProofs(validator);
+        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
         // change the proof to have an invalid value
         bytes1 randValue = bytes1(keccak256(abi.encodePacked(proofs.stateRootProof.proof[0])));
@@ -1582,8 +1573,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
     /// @notice verifyStaleBalance should revert with invalid validatorFields and validator proof length
     function testFuzz_revert_validatorContainerProofInvalidLength(
-        uint256 rand,
-        uint64 randRollSeconds
+        uint256 rand
     ) public {
         // setup eigenpod staker and validators
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
@@ -1592,13 +1582,10 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         uint40 validator = validators[0];
         staker.verifyWithdrawalCredentials(validators);
 
-        // Advance epoch where validators got slashed. Use stale balance proof by rolling timestamp forward
-        beaconChain.advanceEpoch();
-        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
-        rollToStaleTimestamp(staker, proofs.validatorProof.validatorFields, randRollSeconds);
+        // Slash validators and advance epoch
         beaconChain.slashValidators(validators);
         beaconChain.advanceEpoch();
-        proofs = beaconChain.getStaleBalanceProofs(validator);
+        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
         // change the proof to have an invalid length
         uint256 proofLength = proofs.validatorProof.proof.length;
@@ -1632,7 +1619,6 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     /// @notice verifyStaleBalance should revert with invalid validatorContainer proof
     function testFuzz_revert_validatorContainerProofInvalid(
         uint256 rand,
-        uint64 randRollSeconds,
         bytes32 randWithdrawalCredentials
     ) public {
         // setup eigenpod staker and validators
@@ -1642,13 +1628,10 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         uint40 validator = validators[0];
         staker.verifyWithdrawalCredentials(validators);
 
-        // Advance epoch where validators got slashed. Use stale balance proof by rolling timestamp forward
-        beaconChain.advanceEpoch();
-        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
-        rollToStaleTimestamp(staker, proofs.validatorProof.validatorFields, randRollSeconds);
+        // Slash validators and advance epoch
         beaconChain.slashValidators(validators);
         beaconChain.advanceEpoch();
-        proofs = beaconChain.getStaleBalanceProofs(validator);
+        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
         // change validator withdrawal creds to an invalid value causing a revert
         uint256 VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX = 1;
@@ -1663,8 +1646,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     }
 
     function testFuzz_verifyStaleBalance(
-        uint256 rand,
-        uint64 randRollSeconds
+        uint256 rand
     ) public {
         // setup eigenpod staker and validators
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
@@ -1673,13 +1655,10 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         uint40 validator = validators[0];
         staker.verifyWithdrawalCredentials(validators);
 
-        // Advance epoch where validators got slashed. Use stale balance proof by rolling timestamp forward
-        beaconChain.advanceEpoch();
-        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
-        rollToStaleTimestamp(staker, proofs.validatorProof.validatorFields, randRollSeconds);
+        // Slash validators and advance epoch
         beaconChain.slashValidators(validators);
         beaconChain.advanceEpoch();
-        proofs = beaconChain.getStaleBalanceProofs(validator);
+        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
         cheats.expectEmit(true, true, true, true, address(staker.pod()));
         emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp));

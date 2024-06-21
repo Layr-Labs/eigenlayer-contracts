@@ -45,11 +45,6 @@ contract EigenPod is
     /// @notice The beacon chain stores balances in Gwei, rather than wei. This value is used to convert between the two
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
-    /// @notice If a validator is slashed on the beacon chain and their balance has not been checkpointed
-    /// within `TIME_TILL_STALE_BALANCE` of the current block, `verifyStaleBalance` allows anyone to start
-    /// a checkpoint for the pod.
-    uint256 internal constant TIME_TILL_STALE_BALANCE = 2 weeks;
-
     /// @notice The address of the EIP-4788 beacon block root oracle
     /// (See https://eips.ethereum.org/EIPS/eip-4788)
     address internal constant BEACON_ROOTS_ADDRESS = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
@@ -243,7 +238,7 @@ contract EigenPod is
      * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
      * to the parent beacon block root against which the proof is verified.
      * @param stateRootProof proves a beacon state root against a beacon block root
-     * @param validatorIndices a list of validator indices being proven stale
+     * @param validatorIndices a list of validator indices being proven
      * @param validatorFieldsProofs proofs of each validator's `validatorFields` against the beacon state root
      * @param validatorFields the fields of the beacon chain "Validator" container. See consensus specs for
      * details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
@@ -293,10 +288,23 @@ contract EigenPod is
     }
 
     /**
-     * @dev Prove that one or more validators were slashed on the beacon chain and have not had timely
-     * checkpoint proofs since being slashed. If successful, this allows the caller to start a checkpoint.
+     * @dev Prove that one of this pod's active validators was slashed on the beacon chain. A successful
+     * staleness proof allows the caller to start a checkpoint.
+     * 
      * @dev Note that in order to start a checkpoint, any existing checkpoint must already be completed!
      * (See `_startCheckpoint` for details)
+     * 
+     * @dev Note that this method allows anyone to start a checkpoint as soon as a slashing occurs on the beacon
+     * chain. This is intended to make it easier to external watchers to keep a pod's balance up to date.
+     * 
+     * @dev Note too that beacon chain slashings are not instant. There is a delay between the initial slashing event
+     * and the validator's final exit back to the execution layer. During this time, the validator's balance may or
+     * may not drop further due to a correlation penalty. This method allows proof of a slashed validator
+     * to initiate a checkpoint for as long as the validator remains on the beacon chain. Once the validator
+     * has exited and been checkpointed at 0 balance, they are no longer "checkpoint-able" and cannot be proven
+     * "stale" via this method.
+     * See https://eth2book.info/capella/part3/transition/epoch/#slashings for more info.
+     * 
      * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
      * to the parent beacon block root against which the proof is verified.
      * @param stateRootProof proves a beacon state root against a beacon block root
@@ -305,7 +313,7 @@ contract EigenPod is
      * https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      *
      * @dev Staleness conditions:
-     * - Validator's last balance update is older than `beaconTimestamp` by `TIME_TILL_STALE_BALANCE`
+     * - Validator's last checkpoint is older than `beaconTimestamp`
      * - Validator MUST be in `ACTIVE` status in the pod
      * - Validator MUST be slashed on the beacon chain
      */
@@ -321,10 +329,26 @@ contract EigenPod is
         bytes32 validatorPubkey = proof.validatorFields.getPubkeyHash();
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkey];
 
-        // Validator must be eligible for a staleness proof
+        // Validator must be eligible for a staleness proof. Generally, this condition
+        // ensures that the staleness proof is newer than the last time we got an update
+        // on this validator.
+        //
+        // Note: It is possible for `validatorInfo.lastCheckpointedAt` to be 0 if
+        // a validator's withdrawal credentials are verified when no checkpoint has
+        // ever been completed in this pod. Technically, this would mean that `beaconTimestamp`
+        // can be any valid EIP-4788 timestamp - because any nonzero value satisfies the
+        // require below.
+        //
+        // However, in practice, if the only update we've seen from a validator is their
+        // `verifyWithdrawalCredentials` proof, any valid `verifyStaleBalance` proof is
+        // necessarily newer. This is because when a validator is initially slashed, their
+        // exit epoch is set. And because `verifyWithdrawalCredentials` rejects validators
+        // that have initiated exits, we know that if we're seeing a proof where the validator
+        // is slashed that it MUST be newer than the `verifyWithdrawalCredentials` proof
+        // (regardless of the relationship between `beaconTimestamp` and `lastCheckpointedAt`).
         require(
-            beaconTimestamp > validatorInfo.lastCheckpointedAt + TIME_TILL_STALE_BALANCE,
-            "EigenPod.verifyStaleBalance: validator balance is not stale yet"
+            beaconTimestamp > validatorInfo.lastCheckpointedAt,
+            "EigenPod.verifyStaleBalance: proof is older than last checkpoint"
         );
 
         // Validator must be checkpoint-able
@@ -398,7 +422,7 @@ contract EigenPod is
         withdrawableRestakedExecutionLayerGwei -= amountGwei;
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);
         // transfer ETH from pod to `recipient` directly
-        _sendETH(recipient, amountWei);
+        Address.sendValue(payable(recipient), amountWei);
     }
 
     /*******************************************************************************
@@ -604,10 +628,6 @@ contract EigenPod is
         } else {
             _currentCheckpoint = checkpoint;
         }
-    }
-
-    function _sendETH(address recipient, uint256 amountWei) internal {
-        Address.sendValue(payable(recipient), amountWei);
     }
 
     /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`

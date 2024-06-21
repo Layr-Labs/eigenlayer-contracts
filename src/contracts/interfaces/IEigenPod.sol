@@ -142,7 +142,7 @@ interface IEigenPod {
      * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
      * to the parent beacon block root against which the proof is verified.
      * @param stateRootProof proves a beacon state root against a beacon block root
-     * @param validatorIndices a list of validator indices being proven stale
+     * @param validatorIndices a list of validator indices being proven
      * @param validatorFieldsProofs proofs of each validator's `validatorFields` against the beacon state root
      * @param validatorFields the fields of the beacon chain "Validator" container. See consensus specs for
      * details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
@@ -157,10 +157,23 @@ interface IEigenPod {
         external;
  
     /**
-     * @dev Prove that one or more validators were slashed on the beacon chain and have not had timely
-     * checkpoint proofs since being slashed. If successful, this allows the caller to start a checkpoint.
+     * @dev Prove that one of this pod's active validators was slashed on the beacon chain. A successful
+     * staleness proof allows the caller to start a checkpoint.
+     * 
      * @dev Note that in order to start a checkpoint, any existing checkpoint must already be completed!
      * (See `_startCheckpoint` for details)
+     * 
+     * @dev Note that this method allows anyone to start a checkpoint as soon as a slashing occurs on the beacon
+     * chain. This is intended to make it easier to external watchers to keep a pod's balance up to date.
+     * 
+     * @dev Note too that beacon chain slashings are not instant. There is a delay between the initial slashing event
+     * and the validator's final exit back to the execution layer. During this time, the validator's balance may or
+     * may not drop further due to a correlation penalty. This method allows proof of a slashed validator
+     * to initiate a checkpoint for as long as the validator remains on the beacon chain. Once the validator
+     * has exited and been checkpointed at 0 balance, they are no longer "checkpoint-able" and cannot be proven
+     * "stale" via this method.
+     * See https://eth2book.info/capella/part3/transition/epoch/#slashings for more info.
+     * 
      * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
      * to the parent beacon block root against which the proof is verified.
      * @param stateRootProof proves a beacon state root against a beacon block root
@@ -169,7 +182,7 @@ interface IEigenPod {
      * https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      *
      * @dev Staleness conditions:
-     * - Validator's last balance update is older than `beaconTimestamp` by `TIME_TILL_STALE_BALANCE`
+     * - Validator's last checkpoint is older than `beaconTimestamp`
      * - Validator MUST be in `ACTIVE` status in the pod
      * - Validator MUST be slashed on the beacon chain
      */
@@ -225,7 +238,7 @@ interface IEigenPod {
 
     /// @notice For each checkpoint, the total balance attributed to exited validators, in gwei
     ///
-    /// Note that the values added to this mapping are NOT guaranteed to capture the entirety of a validator's
+    /// NOTE that the values added to this mapping are NOT guaranteed to capture the entirety of a validator's
     /// exit - rather, they capture the total change in a validator's balance when a checkpoint shows their
     /// balance change from nonzero to zero. While a change from nonzero to zero DOES guarantee that a validator
     /// has been fully exited, it is possible that the magnitude of this change does not capture what is 
@@ -245,5 +258,11 @@ interface IEigenPod {
     /// If this edge case impacts your usecase, it should be possible to mitigate this by monitoring for deposits
     /// to your exited validators, and waiting to call `startCheckpoint` until those deposits have been automatically
     /// exited.
+    /// 
+    /// Additional edge cases this mapping does not cover:
+    /// - If a validator is slashed, their balance exited will reflect their original balance rather than the slashed amount
+    /// - The final partial withdrawal for an exited validator will be likely be included in this mapping.
+    ///   i.e. if a validator was last checkpointed at 32.1 ETH before exiting, the next checkpoint will calculate their
+    ///   "exited" amount to be 32.1 ETH rather than 32 ETH.
     function checkpointBalanceExitedGwei(uint64) external view returns (uint64);
 }
