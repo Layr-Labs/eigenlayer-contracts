@@ -7,7 +7,7 @@ if [[ "$OS" == "linux" ]]; then
     sudo apt-get install -y make curl git software-properties-common jq
     sudo add-apt-repository -y ppa:ethereum/ethereum
     sudo apt-get update
-    sudo apt-get install "ethereum=1.14.5+build29958+$(lsb_release -c | awk '{ print $2 }')"
+    sudo apt-get install -y "ethereum=1.14.5+build29958+$(lsb_release -c | awk '{ print $2 }')"
     curl -L https://foundry.paradigm.xyz | bash
 elif [[ "$OS" == "darwin" ]]; then
     brew tap ethereum/ethereum
