@@ -677,6 +677,16 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertEq(curActiveValidatorCount + exitedValidators, prevActiveValidatorCount, err);
     }
 
+    function assert_Snap_Unchanged_ActiveValidatorCount(
+        User staker,
+        string memory err
+    ) internal {
+        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
+        uint prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
+
+        assertEq(curActiveValidatorCount, prevActiveValidatorCount, err);
+    }
+
     function assert_Snap_Added_ActiveValidators(
         User staker,
         uint40[] memory addedValidators,
@@ -729,6 +739,16 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         assertEq(curCheckpointTimestamp, 0, err);
         assertTrue(prevCheckpointTimestamp != 0, err);
+    }
+
+    function assert_Snap_Unchanged_Checkpoint(
+        User staker,
+        string memory err
+    ) internal {
+        uint64 curCheckpointTimestamp = _getCheckpointTimestamp(staker);
+        uint64 prevCheckpointTimestamp = _getPrevCheckpointTimestamp(staker);
+
+        assertEq(curCheckpointTimestamp, prevCheckpointTimestamp, err);
     }
 
     function assert_Snap_Updated_LastCheckpoint(

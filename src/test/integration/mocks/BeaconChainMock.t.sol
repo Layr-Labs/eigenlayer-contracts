@@ -216,11 +216,12 @@ contract BeaconChainMock is PrintUtils {
             uint40 validatorIndex = _validators[i];
             Validator storage v = validators[validatorIndex];
             require(!v.isDummy, "BeaconChainMock: attempting to exit dummy validator. We need those for proofgen >:(");
-            require(!v.isSlashed, "BeaconChainMock: validator already slashed");
 
             // Mark slashed and initiate validator exit
-            v.isSlashed = true;
-            v.exitEpoch = currentEpoch() + 1;
+            if (!v.isSlashed) {
+                v.isSlashed = true;
+                v.exitEpoch = currentEpoch() + 1;
+            }
             
             // Calculate slash amount
             uint64 curBalanceGwei = _currentBalanceGwei(validatorIndex);
@@ -381,8 +382,16 @@ contract BeaconChainMock is PrintUtils {
         _log("- building beacon state trees");
 
         // Log total number of validators and number being processed for the first time
-        lastIndexProcessed = validators.length - 1;
+        if (validators.length > 0) {
+            lastIndexProcessed = validators.length - 1;
+        } else {
+            // generate an empty root if we don't have any validators
+            EIP_4788_ORACLE.setBlockRoot(curTimestamp, keccak256(""));
 
+            _log("-- no validators; added empty block root");
+            return;
+        }
+        
         // Build merkle tree for validators
         bytes32 validatorsRoot = _buildMerkleTree({
             leaves: _getValidatorLeaves(),

@@ -243,6 +243,20 @@ contract User is PrintUtils {
         _completeCheckpoint();
     }
 
+    function verifyStaleBalance(uint40 validatorIndex) public createSnapshot virtual {
+        _logM("verifyStaleBalance");
+
+        StaleBalanceProofs memory proof = beaconChain.getStaleBalanceProofs(validatorIndex);
+
+        try pod.verifyStaleBalance({
+            beaconTimestamp: proof.beaconTimestamp,
+            stateRootProof: proof.stateRootProof,
+            proof: proof.validatorProof
+        }) { } catch (bytes memory err) {
+            _revert(err);
+        }
+    }
+
     /*******************************************************************************
                                 STRATEGY METHODS
     *******************************************************************************/

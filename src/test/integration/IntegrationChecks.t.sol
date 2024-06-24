@@ -39,10 +39,16 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_CheckpointPodBalance(staker, expectedPodBalanceGwei, "checkpoint podBalanceGwei should equal expected");
     }
 
-    function check_EmptyCheckpoint_State(
-        User staker
+    function check_StartCheckpoint_NoValidators_State(
+        User staker,
+        uint64 sharesAddedGwei
     ) internal {
-        revert("TODO");
+        assert_Snap_Added_StakerShares(staker, BEACONCHAIN_ETH_STRAT, sharesAddedGwei * GWEI_TO_WEI, "should have added staker shares");
+        assert_Snap_Added_WithdrawableGwei(staker, sharesAddedGwei, "should have added to withdrawable restaked gwei");
+        
+        assert_Snap_Unchanged_ActiveValidatorCount(staker, "active validator count should remain 0");
+        assert_Snap_Updated_LastCheckpoint(staker, "last checkpoint timestamp should have increased");
+        assert_Snap_Unchanged_Checkpoint(staker, "current checkpoint timestamp should be unchanged");
     }
 
     function check_CompleteCheckpoint_State(
@@ -82,6 +88,16 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_StakerShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have reduced shares by slashed amount");
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+    }
+
+    function check_CompleteCheckpoint_WithCLSlashing_State(
+        User staker,
+        uint64 slashedAmountGwei
+    ) internal {
+        check_CompleteCheckpoint_State(staker);
+
+        assert_Snap_Removed_StakerShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have reduced shares by slashed amount");
+        assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
     }
 
     function check_CompleteCheckpoint_WithExits_State(

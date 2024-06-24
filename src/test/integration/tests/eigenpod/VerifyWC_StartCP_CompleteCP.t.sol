@@ -365,7 +365,106 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.completeCheckpoint();
         check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
     }
-    
+
+    /*******************************************************************************
+                       VERIFY -> PROVE STALE BALANCE -> COMPLETE CHECKPOINT
+    *******************************************************************************/
+
+    /// 1. Verify validators' withdrawal credentials
+    /// -- get slashed on beacon chain; exit to pod
+    /// 2. start a checkpoint
+    /// 3. complete a checkpoint
+    /// => after 3, shares should decrease by slashed amount
+    function test_VerifyWC_SlashToPod_VerifyStale_CompleteCP(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        // Advance epoch without generating rewards
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.verifyStaleBalance(validators[0]);
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
+    }
+
+    /// 1. Verify validators' withdrawal credentials
+    /// -- get slashed on beacon chain; do not exit to pod
+    /// 2. start a checkpoint
+    /// 3. complete a checkpoint
+    /// => after 3, shares should decrease by slashed amount
+    function test_VerifyWC_SlashToCL_VerifyStale_CompleteCP_SlashAgain(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        // Advance epoch without generating rewards
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        // Slash validators but do not process exits to pod
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoWithdraw();
+
+        staker.verifyStaleBalance(validators[0]);
+        check_StartCheckpoint_WithPodBalance_State(staker, 0);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithCLSlashing_State(staker, slashedBalanceGwei);
+
+        // Slash validators again but do not process exits to pod
+        uint64 secondSlashedBalanceGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoWithdraw();
+
+        staker.verifyStaleBalance(validators[0]);
+        check_StartCheckpoint_WithPodBalance_State(staker, 0);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithCLSlashing_State(staker, secondSlashedBalanceGwei);
+    }
+
+    /// 1. Verify validators' withdrawal credentials
+    /// 2. start a checkpoint
+    /// -- get slashed on beacon chain; exit to pod
+    /// 3. complete a checkpoint
+    /// => no change in shares between 1 and 3
+    /// -- move forward an epoch
+    /// 4. start a checkpoint
+    /// 5. complete a checkpoint
+    /// => slashed balance should be reflected in 4 and 5
+    function test_VerifyWC_StartCP_SlashToPod_CompleteCP_VerifyStale(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        // Advance epoch without generating rewards
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_State(staker);
+
+        staker.verifyStaleBalance(validators[0]);
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
+    }
 
     /*******************************************************************************
                        VERIFY -> START -> COMPLETE CHECKPOINT
@@ -530,6 +629,22 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
                        VERIFY -> START -> COMPLETE CHECKPOINT
                              (NATIVE ETH VARIANTS)
     *******************************************************************************/
+
+    /// -- Pod receives native ETH via fallback
+    /// 1. start a checkpoint
+    /// => checkpoint should auto-complete, awarding shares for ETH in pod
+    function test_NativeETH_StartCP(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+        // Send a random amount of ETH to staker's fallback
+        (uint64 gweiSent, uint remainderSent) = _sendRandomETH(address(staker.pod()));
+
+        // Move forward an epoch so we generate a state root that can be queried in startCheckpoint
+        beaconChain.advanceEpoch();
+
+        // should behave identically to partial withdrawals captured by the "earn to pod" variants
+        staker.startCheckpoint();
+        check_StartCheckpoint_NoValidators_State(staker, gweiSent);
+    }
 
     /// -- Pod receives native ETH via fallback
     /// 1. Verify validators' withdrawal credentials
