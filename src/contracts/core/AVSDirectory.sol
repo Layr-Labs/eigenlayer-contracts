@@ -164,6 +164,9 @@ contract AVSDirectory is
             emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
         }
 
+        // Mutate calling AVS to operator set AVS status, preventing further legacy registrations.
+        if (!isOperatorSetAVS[msg.sender]) isOperatorSetAVS[msg.sender] = true;
+
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             // Assert avs is on standby mode for the given `operator` and `operatorSetIds[i]`.
@@ -179,9 +182,6 @@ contract AVSDirectory is
                 !isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
-
-            // Mutate calling AVS to operator set AVS status, preventing further legacy registrations.
-            if (!isOperatorSetAVS[msg.sender]) isOperatorSetAVS[msg.sender] = true;
 
             // Mutate `isOperatorInOperatorSet` to `true` for `operatorSetIds[i]`.
             isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = true;
