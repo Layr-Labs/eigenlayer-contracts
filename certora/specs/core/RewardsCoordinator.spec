@@ -14,6 +14,7 @@ methods {
 
     function _.verifyInclusionKeccak(bytes memory, bytes32, bytes32, uint256) internal => CONSTANT;
     function cumulativeClaimed(address, address) external returns(uint256) envfree;
+    function submissionNonce(address) external returns(uint256) envfree;
 
     function _.strategyIsWhitelistedForDeposit(address) external => NONDET;
     function _.isPauser(address) external => NONDET;
@@ -111,3 +112,115 @@ rule claimCorrectness(env e, IRewardsCoordinator.RewardsMerkleClaim claim, addre
 /// checkClaim either returns True or reverts otherwise
 invariant checkClaimNeverFalse(env e, IRewardsCoordinator.RewardsMerkleClaim claim)
     !checkClaim(e, claim);
+
+rule rewardsSubmissionIntegrity(env e) 
+    {
+    IRewardsCoordinator.RewardsSubmission[] rewardsSubmission1;
+    IRewardsCoordinator.RewardsSubmission[] rewardsSubmission2;
+    IRewardsCoordinator.RewardsSubmission[] rewardsSubmissions;
+
+    // requiring that rewardsSubmissions = [rewardsSubmission1, rewardsSubmission2]
+    require rewardsSubmission1.length == 1;
+    require rewardsSubmission2.length == 1;
+    require rewardsSubmissions.length == 2;
+    require rewardsSubmission1[0].strategiesAndMultipliers.length == 1;
+    require rewardsSubmission2[0].strategiesAndMultipliers.length == 1;
+    require rewardsSubmissions[0].strategiesAndMultipliers.length == 1;
+    require rewardsSubmissions[1].strategiesAndMultipliers.length == 1;
+    require rewardsSubmission1[0].strategiesAndMultipliers[0].strategy 
+        == rewardsSubmissions[0].strategiesAndMultipliers[0].strategy;
+    require rewardsSubmission2[0].strategiesAndMultipliers[0].strategy 
+        == rewardsSubmissions[1].strategiesAndMultipliers[0].strategy;
+    require rewardsSubmission1[0].strategiesAndMultipliers[0].multiplier 
+        == rewardsSubmissions[0].strategiesAndMultipliers[0].multiplier;
+    require rewardsSubmission2[0].strategiesAndMultipliers[0].multiplier 
+        == rewardsSubmissions[1].strategiesAndMultipliers[0].multiplier;
+    require rewardsSubmission1[0].token == rewardsSubmissions[0].token;
+    require rewardsSubmission2[0].token == rewardsSubmissions[1].token;
+    require rewardsSubmission1[0].amount == rewardsSubmissions[0].amount;
+    require rewardsSubmission2[0].amount == rewardsSubmissions[1].amount;
+    require rewardsSubmission1[0].startTimestamp == rewardsSubmissions[0].startTimestamp;
+    require rewardsSubmission2[0].startTimestamp == rewardsSubmissions[1].startTimestamp;
+    require rewardsSubmission1[0].duration == rewardsSubmissions[0].duration;
+    require rewardsSubmission2[0].duration == rewardsSubmissions[1].duration;
+
+    storage init = lastStorage;
+
+    createAVSRewardsSubmission(e, rewardsSubmission1);
+    createAVSRewardsSubmission(e, rewardsSubmission2);
+
+    storage splitFinal = lastStorage;
+
+    createAVSRewardsSubmission(e, rewardsSubmissions) at init;
+
+    assert(lastStorage == splitFinal);
+}
+
+rule allRewardsSubmissionIntegrity(env e) 
+    {
+    IRewardsCoordinator.RewardsSubmission[] rewardsSubmission1;
+    IRewardsCoordinator.RewardsSubmission[] rewardsSubmission2;
+    IRewardsCoordinator.RewardsSubmission[] rewardsSubmissions;
+
+    // requiring that rewardsSubmissions = [rewardsSubmission1, rewardsSubmission2]
+    require rewardsSubmission1.length == 1;
+    require rewardsSubmission2.length == 1;
+    require rewardsSubmissions.length == 2;
+    require rewardsSubmission1[0].strategiesAndMultipliers.length == 1;
+    require rewardsSubmission2[0].strategiesAndMultipliers.length == 1;
+    require rewardsSubmissions[0].strategiesAndMultipliers.length == 1;
+    require rewardsSubmissions[1].strategiesAndMultipliers.length == 1;
+    require rewardsSubmission1[0].strategiesAndMultipliers[0].strategy 
+        == rewardsSubmissions[0].strategiesAndMultipliers[0].strategy;
+    require rewardsSubmission2[0].strategiesAndMultipliers[0].strategy 
+        == rewardsSubmissions[1].strategiesAndMultipliers[0].strategy;
+    require rewardsSubmission1[0].strategiesAndMultipliers[0].multiplier 
+        == rewardsSubmissions[0].strategiesAndMultipliers[0].multiplier;
+    require rewardsSubmission2[0].strategiesAndMultipliers[0].multiplier 
+        == rewardsSubmissions[1].strategiesAndMultipliers[0].multiplier;
+    require rewardsSubmission1[0].token == rewardsSubmissions[0].token;
+    require rewardsSubmission2[0].token == rewardsSubmissions[1].token;
+    require rewardsSubmission1[0].amount == rewardsSubmissions[0].amount;
+    require rewardsSubmission2[0].amount == rewardsSubmissions[1].amount;
+    require rewardsSubmission1[0].startTimestamp == rewardsSubmissions[0].startTimestamp;
+    require rewardsSubmission2[0].startTimestamp == rewardsSubmissions[1].startTimestamp;
+    require rewardsSubmission1[0].duration == rewardsSubmissions[0].duration;
+    require rewardsSubmission2[0].duration == rewardsSubmissions[1].duration;
+
+    storage init = lastStorage;
+
+    createRewardsForAllSubmission(e, rewardsSubmission1);
+    createRewardsForAllSubmission(e, rewardsSubmission2);
+
+    storage splitFinal = lastStorage;
+
+    createRewardsForAllSubmission(e, rewardsSubmissions) at init;
+
+    assert(lastStorage == splitFinal);
+}
+
+rule balanceIncreasesOnRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] rewardsSubmission, env e) {
+    
+    uint256 balance1Before = token1.balanceOf(e, currentContract);
+    uint256 balance2Before = token2.balanceOf(e, currentContract);
+    
+    createAVSRewardsSubmission(e, rewardsSubmission);
+
+    uint256 balance1After = token1.balanceOf(e, currentContract);
+    uint256 balance2After = token2.balanceOf(e, currentContract);
+
+    assert(balance1After >= balance1Before);
+    assert(balance2After >= balance2Before);
+}
+
+rule submissionNonceMonontonic( address account) {
+    uint256 nonceBefore = submissionNonce(account);
+    
+    calldataarg args;
+    method f; env e;
+    f(e, args);
+
+    uint256 nonceAfter = submissionNonce(account);
+
+    assert(nonceAfter >= nonceBefore);
+}
