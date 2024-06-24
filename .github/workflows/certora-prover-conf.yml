@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - dev
-      - payments-spec
+      - testnet-holesky
+      - mainnet
+      - rewards-spec
   pull_request: {}
   workflow_dispatch: {}
 
