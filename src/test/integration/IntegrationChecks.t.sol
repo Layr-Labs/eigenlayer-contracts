@@ -72,6 +72,18 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_WithdrawableGwei(staker, expectedPodBalanceGwei, "should have added expected gwei to withdrawable restaked exec layer gwei");
     }
 
+    function check_CompleteCheckpoint_WithSlashing_State(
+        User staker,
+        uint40[] memory slashedValidators,
+        uint64 slashedAmountGwei
+    ) internal {
+        check_CompleteCheckpoint_State(staker);
+
+        assert_Snap_Removed_StakerShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have reduced shares by slashed amount");
+        assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+    }
+
     function check_CompleteCheckpoint_WithExits_State(
         User staker,
         uint40[] memory exitedValidators,
@@ -79,7 +91,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         check_CompleteCheckpoint_WithPodBalance_State(staker, exitedBalanceGwei);
 
-        // TODO check share delta
+        assert_Snap_Unchanged_StakerShares(staker, "staker should not have changed shares");
         assert_Snap_Added_BalanceExitedGwei(staker, exitedBalanceGwei, "should have attributed expected gwei to exited balance");
         assert_Snap_Removed_ActiveValidatorCount(staker, exitedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, exitedValidators, "exited validators should each be WITHDRAWN");

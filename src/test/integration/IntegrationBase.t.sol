@@ -448,14 +448,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         strategies[0] = strat;
         addedShares[0] = _addedShares;
 
-        uint[] memory curShares = _getStakerShares(staker, strategies);
-        // Use timewarp to get previous staker shares
-        uint[] memory prevShares = _getPrevStakerShares(staker, strategies);
-
-        // For each strategy, check (prev + added == cur)
-        for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);            
-        }
+        assert_Snap_Added_StakerShares(staker, strategies, addedShares, err);
     }
 
     /// @dev Check that the staker has `removedShares` fewer delegatable shares
@@ -474,6 +467,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(prevShares[i] - removedShares[i], curShares[i], err);
         }
+    }
+
+    function assert_Snap_Removed_StakerShares(
+        User staker, 
+        IStrategy strat, 
+        uint _removedShares,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        uint[] memory removedShares = new uint[](1);
+        strategies[0] = strat;
+        removedShares[0] = _removedShares;
+
+        assert_Snap_Removed_StakerShares(staker, strategies, removedShares, err);
     }
 
     /// @dev Check that the staker's delegatable shares in ALL strategies have not changed
