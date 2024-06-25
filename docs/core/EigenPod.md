@@ -46,7 +46,7 @@ Because beacon chain proofs are processed asynchronously from the beacon chain i
 * A validator enters the _active validator set_ when their withdrawal credentials are verified (see [`verifyWithdrawalCredentials`](#verifywithdrawalcredentials))
 * A validator leaves the _active validator set_ when a checkpoint proof shows they have 0 balance (see [`verifyCheckpointProofs`](#verifycheckpointproofs))
 
-In the implemtation, the _active validator set_ is comprised of two state variables:
+In the implementation, the _active validator set_ is comprised of two state variables:
 * `uint256 activeValidatorCount` 
     * incremented by 1 when a validator enters the _active validator set_
     * decremented by 1 when a validator leaves the _active validator set_
@@ -106,7 +106,8 @@ A withdrawal credential proof uses a validator's [`ValidatorIndex`][custom-types
 * `pubkey`: A BLS pubkey hash, used to uniquely identify the validator within the `EigenPod`
 * `withdrawal_credentials`: Used to verify that the validator will withdraw its principal to this `EigenPod` if it exits the beacon chain
 * `effective_balance`: The balance of the validator, updated once per epoch and capped at 32 ETH. Used to award shares to the Pod Owner
-* `exit_epoch`: Initially set to `type(uint64).max`, this value is updated when a validator initiates exit from the beacon chain. This method requires that a validator _has not initiated an exit from the beacon chain_
+* `exit_epoch`: Initially set to `type(uint64).max`, this value is updated when a validator initiates exit from the beacon chain. **This method requires that a validator has not initiated an exit from the beacon chain.**
+  * If a validator has been exited prior to calling `verifyWithdrawalCredentials`, their ETH can be accounted for, awarded shares, and/or withdrawn via the checkpoint system (see [Checkpointing Validators](#checkpointing-validators)).
 
 _Note that it is not required to verify your validator's withdrawal credentials_, unless you want to receive shares for ETH on the beacon chain. You may choose to use your `EigenPod` without verifying withdrawal credentials; you will still be able to withdraw yield (or receive shares for yield) via the [checkpoint system](#checkpointing-validators).
 
@@ -118,7 +119,7 @@ _Note that it is not required to verify your validator's withdrawal credentials_
         * `restakedBalanceGwei` is set to the validator's effective balance
         * `lastCheckpointedAt` is set to either the `lastCheckpointTimestamp` or `currentCheckpointTimestamp`
         * `VALIDATOR_STATUS` moves from `INACTIVE` to `ACTIVE`
-* The Pod Owner is awarded shares according to the sum of effective balances proven. See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#TODO)
+* The Pod Owner is awarded shares according to the sum of effective balances proven. See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](./EigenPodManager.md#recordbeaconchainethbalanceupdate)
 
 *Requirements*:
 * Caller MUST be the Pod Owner
@@ -128,14 +129,14 @@ _Note that it is not required to verify your validator's withdrawal credentials_
 * Input array lengths MUST be equal
 * `beaconTimestamp`:
     * MUST be greater than BOTH `lastCheckpointTimestamp` AND `currentCheckpointTimestamp`
-    * MUST be queryable via the [EIP-4788 oracle][eip-4788]. Generally, this means `beaconTimestamp` corresponds to a valid beacon block created within the last 24 hours.
+    * MUST be queryable via the [EIP-4788 oracle][eip-4788]. Generally, this means `beaconTimestamp` corresponds to a valid beacon block created within the last 8192 blocks (~27 hours).
 * `stateRootProof` MUST verify a `beaconStateRoot` against the `beaconBlockRoot` returned from the EIP-4788 oracle
 * For each validator:
     * The validator MUST NOT have been previously-verified (`VALIDATOR_STATUS` should be `INACTIVE`)
     * The validator's `exit_epoch` MUST equal `type(uint64).max` (aka `FAR_FUTURE_EPOCH`)
     * The validator's `withdrawal_credentials` MUST be pointed to the `EigenPod`
     * `validatorFieldsProof` MUST be a valid merkle proof of the corresponding `validatorFields` under the `beaconStateRoot` at the given `validatorIndex`
-* See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#TODO)
+* See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](./EigenPodManager.md#recordbeaconchainethbalanceupdate)
 
 ---
 
@@ -192,7 +193,7 @@ This guarantee means that, if we use the checkpoint to sum up the beacon chain b
     * `withdrawableRestakedExecutionLayerGwei` is increased by `checkpoint.podBalanceGwei`
     * `lastCheckpointTimestamp` is set to `currentCheckpointTimestamp`
     * `currentCheckpointTimestamp` and `_currentCheckpoint` are deleted
-    * The Pod Owner's shares are updated (see [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#TODO))
+    * The Pod Owner's shares are updated (see [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](./EigenPodManager.md#recordbeaconchainethbalanceupdate))
 * If `hasRestaked == false`, sets `hasRestaked` to `true` (see [Compatibility with Previous Versions](#compatibility-with-previous-versions))
 
 *Requirements*:
@@ -244,7 +245,7 @@ Each valid proof submitted decreases the _current checkpoint's_ `proofsRemaining
 * If the checkpoint's `proofsRemaining` drops to 0, the checkpoint is automatically completed:
     * `checkpoint.podBalanceGwei` is added to `withdrawableRestakedExecutionLayerGwei`, rendering it accounted for in future checkpoints
     * `lastCheckpointTimestamp` is set to `currentCheckpointTimestamp`, and both `_currentCheckpoint` and `currentCheckpointTimestamp` are deleted.
-    * The Pod Owner's total share delta is calculated as the sum of `checkpoint.podBalanceGwei` and `checkpoint.balanceDeltasGwei`, and forwarded to the `EigenPodManager` (see [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](TODO))
+    * The Pod Owner's total share delta is calculated as the sum of `checkpoint.podBalanceGwei` and `checkpoint.balanceDeltasGwei`, and forwarded to the `EigenPodManager` (see [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](./EigenPodManager.md#recordbeaconchainethbalanceupdate))
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS`
@@ -256,7 +257,16 @@ Each valid proof submitted decreases the _current checkpoint's_ `proofsRemaining
 
 ### Staleness Proofs
 
-TODO
+Regular checkpointing of validators plays an important role in the health of the system, as a completed checkpoint ensures that the pod's shares and backing assets are up to date.
+
+Typically, checkpoints can only be started by the Pod Owner (see [`startCheckpoint`](#startcheckpoint)). This is because completing a checkpoint with a lot of validators has the potential to be an expensive operation, so gating `startCheckpoint` to only be callable by the Pod Owner prevents a griefing vector where anyone can cheaply force the Pod Owner to perform a checkpoint.
+
+In most cases, Pod Owners are incentivized to perform their own regular checkpoints, as completing checkpoints is the only way to access yield sent to the pod. However, if beacon chain validators are slashed, it's possible that a Pod Owner no longer has an incentive to start/complete a checkpoint. After all, they would be losing shares equal to the slashed amount. Unless they have enough unclaimed yield in the pod to make up for this, they only stand to lose by completing a checkpoint.
+
+In this case, `verifyStaleBalance` can be used to allow a third party to start a checkpoint on the Pod Owner's behalf.
+
+*Methods*:
+* [`verifyStaleBalance`](#verifystalebalance)
 
 #### `verifyStaleBalance`
 
@@ -271,13 +281,43 @@ function verifyStaleBalance(
     onlyWhenNotPaused(PAUSED_VERIFY_STALE_BALANCE)
 ```
 
-TODO
+Allows anyone to prove that a validator in the pod's _active validator set_ was slashed on the beacon chain. A successful proof allows the caller to start a checkpoint. Note that if the pod currently has an active checkpoint, the existing checkpoint needs to be completed before `verifyStaleBalance` can start a checkpoint.
+
+A valid proof has the following requirements:
+* The `beaconTimestamp` MUST be newer than the timestamp the validator was last checkpointed at
+* The validator in question MUST be in the _active validator set_ (have the status `VALIDATOR_STATUS.ACTIVE`)
+* The proof MUST show that the validator has been slashed
+
+If these requirements are met and the proofs are valid against a beacon block root given by `beaconTimestamp`, a checkpoint is started.
+
+*Effects*:
+* Sets `currentCheckpointTimestamp` to `block.timestamp`
+* Creates a new `Checkpoint`:
+    * `beaconBlockRoot`: set to the current block's parent beacon block root, fetched by querying the [EIP-4788 oracle][eip-4788] using `block.timestamp` as input.
+    * `proofsRemaining`: set to the current value of `activeValidatorCount`
+    * `podBalanceGwei`: set to the pod's native ETH balance, minus any balance already accounted for in previous checkpoints
+    * `balanceDeltasGwei`: set to 0 initially
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_START_CHECKPOINT`
+* Pause status MUST NOT be set: `PAUSED_VERIFY_STALE_BALANCE`
+* A checkpoint MUST NOT be active (`currentCheckpointTimestamp == 0`)
+* The last checkpoint completed MUST NOT be the current block
+* For the validator given by `proof.validatorFields`:
+    * `beaconTimestamp` MUST be greater than `validatorInfo.lastCheckpointedAt`
+    * `validatorInfo.status` MUST be `VALIDATOR_STATUS.ACTIVE`
+    * `proof.validatorFields` MUST show that the validator is slashed
+* `stateRootProof` MUST verify a `beaconStateRoot` against the `beaconBlockRoot` returned from the EIP-4788 oracle
+* The `ValidatorProof` MUST contain a valid merkle proof of the corresponding `validatorFields` under the `beaconStateRoot` at `validatorInfo.validatorIndex`
 
 ---
 
 ### Other Methods
 
-TODO
+Minor methods that do not fit well into other sections:
+* [`stake`](#stake)
+* [`withdrawRestakedBeaconChainETH`](#withdrawrestakedbeaconchaineth)
+* [`recoverTokens`](#recovertokens)
 
 #### `stake`
 
@@ -292,7 +332,15 @@ function stake(
     onlyEigenPodManager
 ```
 
-TODO
+Handles the call to the beacon chain deposit contract. Only called via `EigenPodManager.stake`.
+
+*Effects*:
+* Deposits 32 ETH into the beacon chain deposit contract, and provides the pod's address as the deposit's withdrawal credentials
+
+*Requirements*:
+* Caller MUST be the `EigenPodManager`
+* Call value MUST be 32 ETH
+* Deposit contract `deposit` method MUST succeed given the provided `pubkey`, `signature`, and `depositDataRoot`
 
 #### `withdrawRestakedBeaconChainETH`
 
@@ -305,7 +353,19 @@ function withdrawRestakedBeaconChainETH(
     onlyEigenPodManager
 ```
 
-TODO
+The `EigenPodManager` calls this method when withdrawing a Pod Owner's shares as tokens (native ETH). The input `amountWei` is converted to Gwei and subtracted from `withdrawableRestakedExecutionLayerGwei`, which tracks native ETH balance that has been accounted for in a checkpoint (see [Checkpointing Validators](#checkpointing-validators)).
+
+If the `EigenPod` does not have `amountWei` available to transfer, this method will revert
+
+*Effects*:
+* Decreases the pod's `withdrawableRestakedExecutionLayerGwei` by `amountWei / GWEI_TO_WEI`
+* Sends `amountWei` ETH to `recipient`
+
+*Requirements*:
+* `amountWei / GWEI_TO_WEI` MUST NOT be greater than the proven `withdrawableRestakedExecutionLayerGwei`
+* Pod MUST have at least `amountWei` ETH balance
+* `recipient` MUST NOT revert when transferred `amountWei`
+* `amountWei` MUST be a whole Gwei amount
 
 #### `recoverTokens`
 
@@ -320,7 +380,15 @@ function recoverTokens(
     onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS)
 ```
 
-TODO
+Allows the Pod Owner to rescue ERC20 tokens accidentally sent to the `EigenPod`.
+
+*Effects:*
+* Calls `transfer` on each of the ERC20's in `tokenList`, sending the corresponding `amountsToWithdraw` to the `recipient`
+
+*Requirements:*
+* Caller MUST be the Pod Owner
+* Pause status MUST NOT be set: `PAUSED_NON_PROOF_WITHDRAWALS`
+* `tokenList` and `amountsToWithdraw` MUST have equal lengths
 
 ---
 

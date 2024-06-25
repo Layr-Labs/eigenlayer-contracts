@@ -9,13 +9,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice The main functionalities are:
- * - creating new ETH validators with their withdrawal credentials pointed to this contract
- * - proving from beacon chain state roots that withdrawal credentials are pointed to this contract
- * - proving from beacon chain state roots the balances of ETH validators with their withdrawal credentials
- *   pointed to this contract
- * - updating aggregate balances in the EigenPodManager
- * - withdrawing eth when withdrawals are initiated
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
@@ -209,7 +202,7 @@ interface IEigenPod {
     /// @notice The owner of this EigenPod
     function podOwner() external view returns (address);
 
-    /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
+    /// @notice TODO
     function hasRestaked() external view returns (bool);
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash

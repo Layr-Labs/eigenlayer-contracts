@@ -42,7 +42,7 @@ function createPod()
 
 Allows a Staker to deploy an `EigenPod` instance, if they have not done so already.
 
-Each Staker can only deploy a single `EigenPod` instance, but a single `EigenPod` can serve as the withdrawal credentials for any number of beacon chain validators. Each `EigenPod` is created using Create2 and the beacon proxy pattern, using the Staker's address as the Create2 salt.
+Each Staker can only deploy a single `EigenPod` instance, but a single `EigenPod` can serve as the fee recipient / withdrawal credentials for any number of beacon chain validators. Each `EigenPod` is created using Create2 and the beacon proxy pattern, using the Staker's address as the Create2 salt.
 
 As part of the `EigenPod` deployment process, the Staker is made the Pod Owner, a permissioned role within the `EigenPod`.
 
@@ -84,7 +84,7 @@ Allows a Staker to deposit 32 ETH into the beacon chain deposit contract, provid
 
 ### Withdrawal Processing
 
-The `DelegationManager` is the entry point for all undelegation and withdrawals, which must be queued for a time before being completed. When a withdrawal is initiated, the following method is used:
+The `DelegationManager` is the entry point for all undelegation and withdrawals, which must be queued for a time before being completed. When a withdrawal is initiated, the `DelegationManager` calls the following method:
 * [`removeShares`](#removeshares)
 
 When completing a queued undelegation or withdrawal, the `DelegationManager` calls one of these two methods:

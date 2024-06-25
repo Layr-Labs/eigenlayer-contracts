@@ -262,6 +262,15 @@ contract EigenPod is
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
         );
         
+        // Prevents two edge cases:
+        // 1. Calling this method using a `beaconTimestamp` <= `currentCheckpointTimestamp` would allow
+        //    a newly-verified validator to be submitted to `verifyCheckpointProofs`, making progress
+        //    on an existing checkpoint.
+        // 2. Calling this method using a `beaconTimestamp` <= `current/lastCheckpointTimestamp` might allow
+        //    a newly-verified validator to already be exited and included in the previous checkpoint's
+        //    native ETH balance (`podBalanceGwei`). This would result in shares being awarded for the
+        //    validator twice. As an additional safety mechanism, `_verifyWithdrawalCredentials` also
+        //    requires that the validator being proven has not initiated an exit.
         require(
             beaconTimestamp > lastCheckpointTimestamp && beaconTimestamp > currentCheckpointTimestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
@@ -450,7 +459,26 @@ contract EigenPod is
             "EigenPod._verifyWithdrawalCredentials: validator must be inactive to prove withdrawal credentials"
         );
 
-        // Validator should not already be in the process of exiting
+        // Validator should not already be in the process of exiting. 
+        //
+        // Note that when a validator initiates an exit, two values are set:
+        // - exit_epoch
+        // - withdrawable_epoch
+        //
+        // The latter of these two values describes an epoch after which the validator's ETH MIGHT
+        // have been exited to the EigenPod, depending on the state of the beacon chain withdrawal
+        // queue.
+        //
+        // Requiring that a validator has not initiated exit by the time the EigenPod sees their
+        // withdrawal credentials guarantees that the validator has not fully exited at this point.
+        //
+        // This is because:
+        // - the earliest beacon chain slot allowed for withdrawal credential proofs is the earliest 
+        //   slot available in the EIP-4788 oracle, which keeps the last 8192 slots.
+        // - when initiating an exit, a validator's earliest possible withdrawable_epoch is equal to
+        //   1 + MAX_SEED_LOOKAHEAD + MIN_VALIDATOR_WITHDRAWABILITY_DELAY == 261 epochs (8352 slots).
+        // 
+        // (See https://eth2book.info/capella/part3/helper/mutators/#initiate_validator_exit)
         require(
             validatorFields.getExitEpoch() == BeaconChainProofs.FAR_FUTURE_EPOCH,
             "EigenPod._verifyWithdrawalCredentials: validator must not be exiting"

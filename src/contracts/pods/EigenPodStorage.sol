@@ -8,29 +8,25 @@ abstract contract EigenPodStorage is IEigenPod {
     /// @notice The owner of this EigenPod
     address public podOwner;
 
-    /**
-     * @notice The latest timestamp at which the pod owner withdrew the balance of the pod, via calling `withdrawBeforeRestaking`.
-     * @dev This variable is only updated when the `withdrawBeforeRestaking` function is called, which can only occur before `hasRestaked` is set to true for this pod.
-     * Proofs for this pod are only valid against Beacon Chain state roots corresponding to timestamps after the stored `mostRecentWithdrawalTimestamp`.
-     */
+    /// @notice DEPRECATED: previously used to track the time when restaking was activated
     uint64 internal __deprecated_mostRecentWithdrawalTimestamp;
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from the Beacon Chain but not from EigenLayer),
     uint64 public withdrawableRestakedExecutionLayerGwei;
 
-    /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
+    /// @notice TODO
     bool public hasRestaked;
 
-    /// @notice This is a mapping of validatorPubkeyHash to timestamp to whether or not they have proven a withdrawal for that timestamp
+    /// @notice DEPRECATED: previously tracked withdrawals proven per validator
     mapping(bytes32 => mapping(uint64 => bool)) internal __deprecated_provenWithdrawal;
 
     /// @notice This is a mapping that tracks a validator's information by their pubkey hash
     mapping(bytes32 => ValidatorInfo) internal _validatorPubkeyHashToInfo;
 
-    /// @notice This variable tracks any ETH deposited into this contract via the `receive` fallback function
+    /// @notice DEPRECATED: previously used to track ETH sent to the fallback function
     uint256 internal __deprecated_nonBeaconChainETHBalanceWei;
 
-    /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
+    /// @notice DEPRECATED: previously used to track claimed partial withdrawals
     uint64 __deprecated_sumOfPartialWithdrawalsClaimedGwei;
 
     /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
