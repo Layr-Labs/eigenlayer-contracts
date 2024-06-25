@@ -114,7 +114,6 @@ contract ExistingDeploymentParser is Script, Test {
     uint32 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
-    uint64 EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP;
     // EigenPod
     uint64 EIGENPOD_GENESIS_TIME;
     uint64 EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
@@ -316,10 +315,6 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".eigenPodManager.init_paused_status"
         );
-        EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP = uint64(
-            stdJson.readUint(initialDeploymentData, ".eigenPodManager.deneb_fork_timestamp")
-        );
-
         // EigenPod
         EIGENPOD_GENESIS_TIME = uint64(stdJson.readUint(initialDeploymentData, ".eigenPod.GENESIS_TIME"));
         EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = uint64(
@@ -652,7 +647,6 @@ contract ExistingDeploymentParser is Script, Test {
         emit log_named_uint("REWARDS_COORDINATOR_INIT_PAUSED_STATUS", REWARDS_COORDINATOR_INIT_PAUSED_STATUS);
         // todo log all rewards coordinator params
         emit log_named_uint("EIGENPOD_MANAGER_INIT_PAUSED_STATUS", EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
-        emit log_named_uint("EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP", EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP);
         emit log_named_uint("EIGENPOD_GENESIS_TIME", EIGENPOD_GENESIS_TIME);
         emit log_named_uint(
             "EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR",

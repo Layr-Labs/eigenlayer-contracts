@@ -1,0 +1,56 @@
+{
+  "chainInfo": {
+    "chainId": 17000
+  },
+  "multisig_addresses": {
+    "pauserMultisig": "0x53410249ec7d3a3F9F1ba3912D50D6A3Df6d10A7",
+    "communityMultisig": "0xCb8d2f9e55Bc7B1FA9d089f9aC80C583D2BDD5F7",
+    "operationsMultisig": "0xfaEF7338b7490b9E272d80A1a39f4657cAf2b97d",
+    "executorMultisig": "0x28Ade60640fdBDb2609D8d8734D1b5cBeFc0C348",
+    "timelock": "0xcF19CE0561052a7A7Ff21156730285997B350A7D"
+  },
+  "strategies": {
+    "numStrategies": 0,
+    "MAX_PER_DEPOSIT": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
+    "MAX_TOTAL_DEPOSITS": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
+    "strategiesToDeploy": []
+  },
+  "strategyManager": {
+    "init_strategy_whitelister": "0x28Ade60640fdBDb2609D8d8734D1b5cBeFc0C348",
+    "init_paused_status": 0
+  },
+  "delegationManager": {
+    "init_paused_status": 0,
+    "init_minWithdrawalDelayBlocks": 10
+  },
+  "rewardsCoordinator": {
+    "init_paused_status": 0,
+    "CALCULATION_INTERVAL_SECONDS": 604800,
+    "MAX_REWARDS_DURATION": 6048000,
+    "MAX_RETROACTIVE_LENGTH": 7776000,
+    "MAX_FUTURE_LENGTH": 2592000,
+    "GENESIS_REWARDS_TIMESTAMP": 1710979200,
+    "rewards_updater_address": "0x18a0f92Ad9645385E8A8f3db7d0f6CF7aBBb0aD4",
+    "activation_delay": 120,
+    "calculation_interval_seconds": 604800,
+    "global_operator_commission_bips": 1000
+  },
+  "avsDirectory": {
+    "init_paused_status": 0
+  },
+  "slasher": {
+    "init_paused_status": 0
+  },
+  "eigenPod": {
+    "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR": 32000000000,
+    "GENESIS_TIME": 1695902400
+  },
+  "eigenPodManager": {
+    "init_paused_status": 0
+  },
+  "delayedWithdrawalRouter": {
+    "init_paused_status": 0,
+    "init_withdrawalDelayBlocks": 10
+  },
+  "ethPOSDepositAddress": "0x4242424242424242424242424242424242424242"
+}
