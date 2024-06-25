@@ -222,13 +222,13 @@ contract AVSDirectory is
             // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIds[i]`.
             isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = false;
 
-            // Decrement `operatorAVSOperatorSetCount` by 1.
-            // The above assertion makes underflow logically impossible here.
-            unchecked {
-                --operatorAVSOperatorSetCount[msg.sender][operator];
-            }
-
             emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
+        }
+
+        // Decrement `operatorAVSOperatorSetCount` by 1.
+        // The above assertion makes underflow logically impossible here.
+        unchecked {
+            operatorAVSOperatorSetCount[msg.sender][operator] -= operatorSetIds.length;
         }
 
         // Set the operator as deregistered if no longer registered for any operator sets
