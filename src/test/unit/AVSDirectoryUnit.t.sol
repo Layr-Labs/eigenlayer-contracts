@@ -187,11 +187,6 @@ contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
 
         cheats.expectRevert("Initializable: contract is already initialized");
         dir.initialize(owner, IPauserRegistry(pauserRegistry), initialPausedStatus);
-
-        // assertEq(dir.owner(), owner);
-        // assertEq(address(dir.pauserRegistry()), pauserRegistry);
-
-        // todo: initialPausedStatus?
     }
 }
 
@@ -203,8 +198,6 @@ contract AVSDirectoryUnitTests_domainSeparator is AVSDirectoryUnitTests {
         avsDirectory.domainSeparator();
     }
 }
-
-// TODO: test mutating large sets of operator set ids
 
 contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUnitTests {
     event OperatorAddedToOperatorSet(address operator, IAVSDirectory.OperatorSet operatorSet);
@@ -349,6 +342,54 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         );
     }
 
+    function testFuzz_MultipleCorrectness(
+        uint256 operatorPk,
+        uint256 operatorSetIdsLength,
+        bytes32 salt,
+        uint256 expiry
+    ) public virtual {
+        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+        operatorSetIdsLength = bound(operatorSetIdsLength, 1, 16);
+        expiry = bound(expiry, 1, type(uint256).max);
+
+        cheats.warp(0);
+
+        uint32[] memory oids = new uint32[](operatorSetIdsLength);
+        for (uint256 i; i < oids.length; ++i) {
+            oids[i] = uint32(uint256(keccak256(abi.encodePacked(i))) % type(uint32).max);
+        }
+
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
+        );
+
+        _registerOperatorWithBaseDetails(operator);
+
+        cheats.expectEmit(true, false, false, false, address(avsDirectory));
+        emit OperatorAVSRegistrationStatusUpdated(
+            operator, address(this), IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+        );
+
+        for (uint256 i; i < oids.length; ++i) {
+            cheats.expectEmit(true, false, false, false, address(avsDirectory));
+            emit OperatorAddedToOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), oids[i]));
+        }
+
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        );
+
+        for (uint256 i; i < oids.length; ++i) {
+            assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, oids[i]));
+        }
+
+        assertEq(avsDirectory.operatorAVSOperatorSetCount(address(this), operator), oids.length);
+        assertEq(uint8(avsDirectory.avsOperatorStatus(address(this), operator)), 1);
+        assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
+        assertTrue(avsDirectory.isOperatorSetAVS(address(this)));
+    }
+
     function testFuzz_Correctness(
         uint256 operatorPk,
         uint32 operatorSetId,
@@ -416,7 +457,9 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         );
 
         avsDirectory.updateStandbyParams(
-            operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), keccak256(""), expiry)
+            operator,
+            params,
+            ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), keccak256(""), expiry)
         );
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), 0, 0)
