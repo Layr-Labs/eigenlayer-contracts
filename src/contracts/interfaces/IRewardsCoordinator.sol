@@ -74,6 +74,7 @@ interface IRewardsCoordinator {
         bytes32 root;
         uint32 rewardsCalculationEndTimestamp;
         uint32 activatedAt;
+        bool disabled;
     }
 
     /**
@@ -161,6 +162,7 @@ interface IRewardsCoordinator {
         uint32 indexed rewardsCalculationEndTimestamp,
         uint32 activatedAt
     );
+    event DistributionRootDisabled(uint32 indexed rootIndex);
     /// @notice root is one of the submitted distribution roots that was claimed against
     event RewardsClaimed(
         bytes32 root,
@@ -282,6 +284,12 @@ interface IRewardsCoordinator {
      * @dev Only callable by the rewardsUpdater
      */
     function submitRoot(bytes32 root, uint32 rewardsCalculationEndTimestamp) external;
+
+    /**
+     * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
+     * @param rootIndex The index of the root to be disabled
+     */
+    function disableRoot(uint32 rootIndex) external;
 
     /**
      * @notice Sets the address of the entity that can call `processClaim` on behalf of the earner (msg.sender)
