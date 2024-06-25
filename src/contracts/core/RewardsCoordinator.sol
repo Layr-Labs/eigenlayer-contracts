@@ -251,7 +251,7 @@ contract RewardsCoordinator is
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
         require(rootIndex < _distributionRoots.length, "RewardsCoordinator.disableRoot: invalid rootIndex");
         DistributionRoot storage root = _distributionRoots[rootIndex];
-        require(!_distributionRoots[rootIndex].disabled, "RewardsCoordinator.disableRoot: root already disabled");
+        require(!root.disabled, "RewardsCoordinator.disableRoot: root already disabled");
         require(block.timestamp < root.activatedAt, "RewardsCoordinator.disableRoot: root already activated");
         root.disabled = true;
         emit DistributionRootDisabled(rootIndex);
