@@ -225,7 +225,6 @@ contract AVSDirectory is
             emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
 
-        // Decrement `operatorAVSOperatorSetCount` by 1.
         // The above assertion makes underflow logically impossible here.
         unchecked {
             operatorAVSOperatorSetCount[msg.sender][operator] -= operatorSetIds.length;
