@@ -270,7 +270,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             delegationManager
         );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, strategyManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
@@ -408,7 +408,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             delegationManager
         );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, strategyManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -518,7 +518,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             delegationManager
         );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, strategyManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
