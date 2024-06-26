@@ -92,15 +92,6 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
                         EIGENPOD Helpers
     *******************************************************************************/
 
-    /// @notice Post-M2, all new deployed eigen pods will have restaked set to true
-    modifier hasNotRestaked() {
-        // Write hasRestaked as false. hasRestaked in slot 52
-        bytes32 slot = bytes32(uint256(52)); 
-        bytes32 value = bytes32(0); // 0 == false
-        cheats.store(address(eigenPod), slot, value);
-        _;
-    }
-
     modifier timewarp() {
         uint curState = timeMachine.warpToLast();
         _;
@@ -112,13 +103,6 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         bool result;
         bytes memory data;
         (result, data) = address(eigenPod).call{value: ethAmount}("");
-    }
-
-    function _setPodHasNotRestaked(EigenPodUser staker) internal {
-        // Write hasRestaked as false. hasRestaked in slot 52
-        bytes32 slot = bytes32(uint256(52)); 
-        bytes32 value = bytes32(0); // 0 == false
-        cheats.store(address(staker.pod()), slot, value);
     }
 
     function _newEigenPodStaker(uint256 rand) internal returns (EigenPodUser, uint256) {
@@ -321,13 +305,20 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
 
 contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
 
+    function test_constructor() public {
+        EigenPod pod = new EigenPod(ethPOSDepositMock, eigenPodManagerMock, GENESIS_TIME_LOCAL);
+
+        assertTrue(pod.ethPOS() == ethPOSDepositMock, "should have set ethPOS correctly");
+        assertTrue(pod.eigenPodManager() == eigenPodManagerMock, "should have set eigenpodmanager correctly");
+        assertTrue(pod.GENESIS_TIME() == GENESIS_TIME_LOCAL, "should have set genesis time correctly");
+    }
+
     function test_initialization() public {
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
         EigenPod pod = staker.pod();
 
         // Check podOwner and restaked
         assertEq(pod.podOwner(), address(staker), "Pod owner incorrectly set");
-        assertTrue(pod.hasRestaked(), "hasRestaked incorrectly set");
         // Check immutable storage
         assertEq(address(pod.ethPOS()), address(ethPOSDepositMock), "EthPOS incorrectly set");
         assertEq(address(pod.eigenPodManager()), address(eigenPodManagerMock), "EigenPodManager incorrectly set");
@@ -340,24 +331,6 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
 
         cheats.expectRevert("Initializable: contract is already initialized");
         pod.initialize(address(this));
-    }
-
-    function test_initialize_eventEmitted() public {
-        address newPodOwner = address(0x123);
-
-        // Deploy new pod
-        EigenPod newEigenPod = EigenPod(payable(
-            Create2.deploy(
-                0,
-                bytes32(uint256(uint160(newPodOwner))),
-                // set the beacon address to the eigenPodBeacon
-                abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))
-        )));
-
-        // Expect emit and Initialize new pod
-        vm.expectEmit(true, true, true, true);
-        emit RestakingActivated(newPodOwner);
-        newEigenPod.initialize(newPodOwner);
     }
 }
 
@@ -635,27 +608,23 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         staker.verifyWithdrawalCredentials(validators);
     }
 
-    /// @notice beaconTimestamp must be after latest checkpoint
+    /// @notice beaconTimestamp must be after the current checkpoint
     function testFuzz_revert_beaconTimestampInvalid(uint256 rand) public {
         cheats.warp(10 days);
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        // Ensure we have more than one validator (_newEigenPodStaker allocates a nonzero amt of eth)
+        cheats.deal(address(staker), address(staker).balance + 32 ether);
         (uint40[] memory validators,) = staker.startValidators();
 
-        // Start and auto-complete a checkpoint, setting `lastCheckpointTimestamp` to the current block
+        uint40[] memory firstValidator = new uint40[](1);
+        firstValidator[0] = validators[0];
+        staker.verifyWithdrawalCredentials(firstValidator);
+
+        // Start a checkpoint so `currentCheckpointTimestamp` is nonzero
         staker.startCheckpoint();
 
         // Try to verify withdrawal credentials at the current block
         cheats.expectRevert("EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past");
-        staker.verifyWithdrawalCredentials(validators);
-    }
-
-    /// @notice if an eigenPod has not migrated and set hasRestaked to true, verify wc should revert
-    function testFuzz_revert_restakingNotEnabled(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
-        _setPodHasNotRestaked(staker);
-        (uint40[] memory validators,) = staker.startValidators();
-
-        cheats.expectRevert("EigenPod.verifyWithdrawalCredentials: restaking not active");
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -1010,29 +979,6 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
         assertEq(pod.currentCheckpoint().proofsRemaining, uint24(validators.length), "should have one proof remaining pre verified validator");
-    }
-
-    /// @notice fuzz test an eigenpod with multiple validators who hasn't enabled restaking yet
-    function testFuzz_startCheckpoint_hasRestakedFalse(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
-        _setPodHasNotRestaked(staker);
-
-        staker.startValidators();
-        beaconChain.advanceEpoch();
-
-        assertFalse(
-            staker.pod().hasRestaked(),
-            "hasRestaked should be false"
-        );
-        cheats.expectEmit(true, true, true, true, address(staker.pod()));
-        emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp));
-        cheats.expectEmit(true, true, true, true, address(staker.pod()));
-        emit RestakingActivated(address(staker));
-        staker.startCheckpoint();
-        assertTrue(
-            staker.pod().hasRestaked(),
-            "hasRestaked should be true"
-        );
     }
 }
 

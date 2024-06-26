@@ -14,8 +14,8 @@ abstract contract EigenPodStorage is IEigenPod {
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from the Beacon Chain but not from EigenLayer),
     uint64 public withdrawableRestakedExecutionLayerGwei;
 
-    /// @notice TODO
-    bool public hasRestaked;
+    /// @notice DEPRECATED: previously used to track whether a pod had activated restaking
+    bool internal __deprecated_hasRestaked;
 
     /// @notice DEPRECATED: previously tracked withdrawals proven per validator
     mapping(bytes32 => mapping(uint64 => bool)) internal __deprecated_provenWithdrawal;

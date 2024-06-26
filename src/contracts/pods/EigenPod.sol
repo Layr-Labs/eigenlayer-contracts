@@ -107,11 +107,6 @@ contract EigenPod is
     function initialize(address _podOwner) external initializer {
         require(_podOwner != address(0), "EigenPod.initialize: podOwner cannot be zero address");
         podOwner = _podOwner;
-
-        /// Pods deployed prior to the M2 release have this variable set to `false`, as before M2, pod owners
-        /// did not need to engage with the proof system and were able to withdraw ETH from their pod on demand.
-        hasRestaked = true;
-        emit RestakingActivated(podOwner);
     }
 
     /*******************************************************************************
@@ -141,14 +136,6 @@ contract EigenPod is
         onlyWhenNotPaused(PAUSED_START_CHECKPOINT) 
     {
         _startCheckpoint(revertIfNoBalance);
-
-        /// Legacy support for pods deployed pre-M2 that never activated restaking. `startCheckpoint`
-        /// can activate restaking, allowing them to continue using their pods via the checkpoint
-        /// system.
-        if (!hasRestaked) {
-            hasRestaked = true;
-            emit RestakingActivated(podOwner);
-        }
     }
 
     /**
@@ -233,7 +220,7 @@ contract EigenPod is
      * @dev Verify one or more validators have their withdrawal credentials pointed at this EigenPod, and award
      * shares based on their effective balance. Proven validators are marked `ACTIVE` within the EigenPod, and
      * future checkpoint proofs will need to include them.
-     * @dev Withdrawal credential proofs MUST NOT be older than the `lastCheckpointTimestamp` OR `currentCheckpointTimestamp`.
+     * @dev Withdrawal credential proofs MUST NOT be older than `currentCheckpointTimestamp`.
      * @dev Validators proven via this method MUST NOT have an exit epoch set already.
      * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
      * to the parent beacon block root against which the proof is verified.
@@ -254,25 +241,17 @@ contract EigenPod is
         onlyEigenPodOwner
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
     {
-        require(hasRestaked, "EigenPod.verifyWithdrawalCredentials: restaking not active");
-
         require(
             (validatorIndices.length == validatorFieldsProofs.length) &&
                 (validatorFieldsProofs.length == validatorFields.length),
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
         );
         
-        // Prevents two edge cases:
-        // 1. Calling this method using a `beaconTimestamp` <= `currentCheckpointTimestamp` would allow
-        //    a newly-verified validator to be submitted to `verifyCheckpointProofs`, making progress
-        //    on an existing checkpoint.
-        // 2. Calling this method using a `beaconTimestamp` <= `current/lastCheckpointTimestamp` might allow
-        //    a newly-verified validator to already be exited and included in the previous checkpoint's
-        //    native ETH balance (`podBalanceGwei`). This would result in shares being awarded for the
-        //    validator twice. As an additional safety mechanism, `_verifyWithdrawalCredentials` also
-        //    requires that the validator being proven has not initiated an exit.
+        // Calling this method using a `beaconTimestamp` <= `currentCheckpointTimestamp` would allow
+        // a newly-verified validator to be submitted to `verifyCheckpointProofs`, making progress
+        // on an existing checkpoint.
         require(
-            beaconTimestamp > lastCheckpointTimestamp && beaconTimestamp > currentCheckpointTimestamp,
+            beaconTimestamp > currentCheckpointTimestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
         );
 
@@ -459,7 +438,9 @@ contract EigenPod is
             "EigenPod._verifyWithdrawalCredentials: validator must be inactive to prove withdrawal credentials"
         );
 
-        // Validator should not already be in the process of exiting. 
+        // Validator should not already be in the process of exiting. This is an important property
+        // this method needs to enforce to ensure a validator cannot be already-exited by the time
+        // its withdrawal credentials are verified. 
         //
         // Note that when a validator initiates an exit, two values are set:
         // - exit_epoch
@@ -503,7 +484,10 @@ contract EigenPod is
             validatorIndex: validatorIndex
         });
 
-        // Account for validator in future checkpoints
+        // Account for validator in future checkpoints. Note that if this pod has never started a
+        // checkpoint before, `lastCheckpointedAt` will be zero here. This is fine because the main
+        // purpose of `lastCheckpointedAt` is to enforce that newly-verified validators are not
+        // eligible to progress already-existing checkpoints - however in this case, no checkpoints exist.
         activeValidatorCount++;
         uint64 lastCheckpointedAt = 
             currentCheckpointTimestamp == 0 ? lastCheckpointTimestamp : currentCheckpointTimestamp;

@@ -307,39 +307,15 @@ contract M2Deploy is Script, Test {
         );
         require(eigenPodManager.hasPod(eigenPodDepositor) == hasPod, "eigenPodManager.hasPod incorrect");
         require(eigenPod.podOwner() == eigenPodOwner, "eigenPod.podOwner incorrect");
-        require(!eigenPod.hasRestaked(), "eigenPod.hasRestaked incorrect");
 
         // Unpause eigenpods verify credentials
         uint256 paused = IPausable(address(eigenPodManager)).paused();
         cheats.prank(IPauserRegistry(IPausable(address(eigenPodManager)).pauserRegistry()).unpauser());
         IPausable(address(eigenPodManager)).unpause(paused ^ (1 << 2)); // eigenpods verify credentials on 2nd bit
 
-        // Activate restaking and expect emit
         cheats.prank(eigenPodOwner);
-        cheats.expectEmit(true, true, true, true);
-        emit RestakingActivated(eigenPodOwner);
         eigenPod.startCheckpoint(false);
-
-        // Check updated storage values
-        require(eigenPod.hasRestaked(), "eigenPod.hasRestaked not set to true");
     }
-
-    // Existing LST depositor – ensure that strategy length and shares are all identical
-    // Existing LST depositor – ensure that an existing queued withdrawal remains queued
-    // Check from stored root, and recalculate root and make sure it matches
-    // Check that completing the withdrawal results in the same behavior (same transfer of ERC20 tokens)
-    // Check that staker nonce & numWithdrawalsQueued remains the same as before the upgrade
-    // Existing LST depositor – queuing a withdrawal before/after the upgrade has the same effects (same decrease in shares, resultant withdrawal root)
-    // Existing EigenPod owner – EigenPodManager.ownerToPod remains the same
-    // Existing EigenPod owner –  EigenPodManager.hasPod remains the same
-    // Existing EigenPod owner –  EigenPod.podOwner remains the same
-    // Existing EigenPod owner – EigenPod.hasRestaked remains false
-    // Can call EigenPod.activateRestaking and it correctly:
-    // Sends all funds in EigenPod (need to make sure it has nonzero balance beforehand)
-    // Sets `hasRestaked` to ‘true’
-    // Emits a ‘RestakingActivated’ event
-    // EigenPod: ethPOS, eigenPodManager
-    event RestakingActivated(address indexed podOwner);
 }
 
 interface IDelegationManagerV0 {

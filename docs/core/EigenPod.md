@@ -33,7 +33,6 @@ Because beacon chain proofs are processed asynchronously from the beacon chain i
 * [Checkpointing Validators](#checkpointing-validators)
 * [Staleness Proofs](#staleness-proofs)
 * [Other Methods](#other-methods)
-* [Compatibility with Previous Versions](#compatibility-with-previous-versions)
 
 #### Important Definitions
 
@@ -124,11 +123,9 @@ _Note that it is not required to verify your validator's withdrawal credentials_
 *Requirements*:
 * Caller MUST be the Pod Owner
 * Pause status MUST NOT be set: `PAUSED_EIGENPODS_VERIFY_CREDENTIALS`
-* `hasRestaked` MUST be set to `true`
-    * Note: for the majority of pods, this is `true` by default (see [Compatibility with Previous Versions](#compatibility-with-previous-versions))
 * Input array lengths MUST be equal
 * `beaconTimestamp`:
-    * MUST be greater than BOTH `lastCheckpointTimestamp` AND `currentCheckpointTimestamp`
+    * MUST be greater than `currentCheckpointTimestamp`
     * MUST be queryable via the [EIP-4788 oracle][eip-4788]. Generally, this means `beaconTimestamp` corresponds to a valid beacon block created within the last 8192 blocks (~27 hours).
 * `stateRootProof` MUST verify a `beaconStateRoot` against the `beaconBlockRoot` returned from the EIP-4788 oracle
 * For each validator:
@@ -194,7 +191,6 @@ This guarantee means that, if we use the checkpoint to sum up the beacon chain b
     * `lastCheckpointTimestamp` is set to `currentCheckpointTimestamp`
     * `currentCheckpointTimestamp` and `_currentCheckpoint` are deleted
     * The Pod Owner's shares are updated (see [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](./EigenPodManager.md#recordbeaconchainethbalanceupdate))
-* If `hasRestaked == false`, sets `hasRestaked` to `true` (see [Compatibility with Previous Versions](#compatibility-with-previous-versions))
 
 *Requirements*:
 * Caller MUST be the Pod Owner
@@ -389,24 +385,4 @@ Allows the Pod Owner to rescue ERC20 tokens accidentally sent to the `EigenPod`.
 * Caller MUST be the Pod Owner
 * Pause status MUST NOT be set: `PAUSED_NON_PROOF_WITHDRAWALS`
 * `tokenList` and `amountsToWithdraw` MUST have equal lengths
-
----
-
-### Compatibility with Previous Versions
-
-Although all `EigenPods` are updated simultaneously via the `BeaconProxy` pattern, previous versions of `EigenPods` have had slightly different state models that need to be accounted for in the latest release. There are two prior major versions of `EigenPod`:
-* Pods deployed after M2 mainnet ("M2 Pods") were deployed with `EigenPod.hasRestaked` set to `true`. This is the default behavior for any new `EigenPods`.
-* Pods deployed during M1 mainnet ("M1 Pods") were deployed with `EigenPod.hasRestaked` set to `false`. After M2 mainnet, owners of M1 Pods had two options:
-    * Choose not to "fully upgrade" to an M2 Pod, and continue withdrawing ETH from the pod at will via [`EigenPod.withdrawBeforeRestaking`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v0.2.5-mainnet-m2-minor-eigenpod-upgrade/src/contracts/pods/EigenPod.sol#L403-L406).
-    * Call [`EigenPod.activateRestaking`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v0.2.5-mainnet-m2-minor-eigenpod-upgrade/src/contracts/pods/EigenPod.sol#L386-L401), setting `EigenPod.hasRestaked` to `true` and performing one final withdrawal of any ETH in the pod.
-
-Generally, M1 Pods that chose to activate restaking are identical to M2 Pods - so for the sake of clarity, "M1 Pods" will refer to pods that were deployed _before M2_ and _did not call `activateRestaking`_ at any point.
-
-This latest release brings M1 and M2 pods together, forcing both pods to use the same state model while supporting the original behavior that M1 Pod owners prefer. To clarify, M1 Pod owners have never called `verifyWithdrawalCredentials` for any validators, and have therefore never earned restaking shares for any validators. However, M1 Pod owners are also able to withdraw yield without supplying withdrawal proofs required by M2 Pods.
-
-There are a few user groups supported by this release. Note that M2 Pod Owners don't need to do anything special and can begin using the new `EigenPod` ABI as-is.
-
-#### M1 Pod Owners that want to maintain M1 Pod behavior
-
-#### M1 Pod Owners that want to start restaking now that proofs are cheaper
 
