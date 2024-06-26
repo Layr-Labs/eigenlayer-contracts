@@ -496,16 +496,16 @@ contract AVSDirectory is
                             == currentEpoch
                     ) {
                         // already locked for this epoch
-                        startEpoch =
-                            _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1].startEpoch;
+                        startEpoch = _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1]
+                            .startEpoch;
                         return;
                     } else if (
                         _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1].endEpoch + 1
                             == currentEpoch
                     ) {
                         // extend the last lock to this epoch
-                        startEpoch =
-                            _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1].startEpoch;
+                        startEpoch = _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1]
+                            .startEpoch;
                         _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1].endEpoch =
                             currentEpoch;
                         return;
@@ -585,6 +585,74 @@ contract AVSDirectory is
      *                         VIEW FUNCTIONS
      *
      */
+
+    /// VIEW
+
+    /**
+     * @param operator the operator to get the slashable bips for
+     * @param operatorSet the operator set to get the slashable bips for
+     * @param strategy the strategy to get the slashable bips for
+     * @param epoch the epoch to get the slashable bips for for
+     *
+     * @return slashableBips the slashable bips of the given strategy owned by
+     * the given OperatorSet for the given operator and epoch
+     */
+    function getSlashableBips(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy strategy,
+        uint32 epoch
+    ) public view returns (uint16 slashableBips) {
+        require(epoch <= EpochUtils.getNextSlashingParameterEffectEpoch(), "Epoch is more than 2 epochs in the future");
+
+        uint32 startEpoch = epoch;
+        // if locked for this epoch, set the epoch to the start of the lock
+        for (uint256 i = _lockedMagnitudeUpdates[operator][strategy].length; i > 0; i--) {
+            if (
+                _lockedMagnitudeUpdates[operator][strategy][i - 1].startEpoch <= epoch
+                    && _lockedMagnitudeUpdates[operator][strategy][i - 1].endEpoch >= epoch
+            ) {
+                startEpoch = _lockedMagnitudeUpdates[operator][strategy][i - 1].startEpoch;
+                break;
+            }
+        }
+
+        MagnitudeUpdate[] storage operatorSetMagnitudeUpdates =
+            _operatorSetMagnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id];
+        uint64 operatorSetMagnitude;
+
+        // iterate from the latest operator set magnitude update to the oldest
+        for (uint256 i = operatorSetMagnitudeUpdates.length - 1; i >= 0; i--) {
+            if (operatorSetMagnitudeUpdates[i].epoch <= startEpoch) {
+                if (operatorSetMagnitudeUpdates[i].lockedUntilEpoch == epoch) {
+                    // this is the end of the lock and the operator set has not slashed in the epoch yet,
+                    // so the real magnitude is the lockedMagnitude
+                    // todo: should we update storage to move lockedMagnitude to magnitude here or in the decreaseAndLockMagnitude function?
+                    operatorSetMagnitude = operatorSetMagnitudeUpdates[i].lockedMagnitude;
+                } else {
+                    operatorSetMagnitude = operatorSetMagnitudeUpdates[i].magnitude;
+                }
+                break;
+            }
+        }
+
+        uint192 totalMagnitude;
+        // iterate through total magnitude updates to get the total magnitude
+        for (uint256 i = _totalMagnitudeUpdates[operator][strategy].length; i > 0; i--) {
+            if (_totalMagnitudeUpdates[operator][strategy][i - 1].epoch <= startEpoch) {
+                if (_totalMagnitudeUpdates[operator][strategy][i - 1].lockedUntilEpoch == epoch) {
+                    // this is the end of the lock and the operator has not slashed in the epoch for the given strategy yet,
+                    // so the real magnitude is the lockedMagnitude
+                    // todo: should we update storage to move lockedMagnitude to magnitude here or in the decreaseAndLockMagnitude function?
+                    totalMagnitude = _totalMagnitudeUpdates[operator][strategy][i - 1].lockedTotalAllocatedMagnitude;
+                } else {
+                    totalMagnitude = _totalMagnitudeUpdates[operator][strategy][i - 1].totalAllocatedMagnitude;
+                }
+            }
+        }
+
+        return uint16(operatorSetMagnitude * SlashingAccountingUtils.BIPS_FACTOR / totalMagnitude);
+    }
 
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
