@@ -217,7 +217,7 @@ contract Deployer_M2 is Script, Test {
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
-        avsDirectoryImplementation = new AVSDirectory(delegation);
+        avsDirectoryImplementation = new AVSDirectory(delegation, strategyManager);
         slasherImplementation = new Slasher(strategyManager, delegation);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,

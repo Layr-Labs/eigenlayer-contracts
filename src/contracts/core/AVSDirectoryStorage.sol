@@ -28,6 +28,9 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
+    /// @notice The StrategyManager contract for EigenLayer
+    IStrategyManager public immutable strategyManager;
+
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -79,6 +82,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
+        strategyManager = _strategyManager;
     }
 
     /**
@@ -86,5 +90,5 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[36] private __gap;
+    uint256[37] private __gap;
 }
