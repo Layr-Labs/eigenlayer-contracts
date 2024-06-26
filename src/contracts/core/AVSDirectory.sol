@@ -26,6 +26,9 @@ contract AVSDirectory is
     /// @dev Returns the chain ID from the time the contract was deployed.
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
+    /// @notice Canonical, virtual beacon chain ETH strategy
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
     /**
      *
      *                         INITIALIZING FUNCTIONS
@@ -36,7 +39,10 @@ contract AVSDirectory is
      * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher,
      * and eigenpodManager contracts
      */
-    constructor(IDelegationManager _delegation) AVSDirectoryStorage(_delegation) {
+    constructor(
+        IDelegationManager _delegation,
+        IStrategyManager _strategyManager
+    ) AVSDirectoryStorage(_delegation, _strategyManager) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -313,6 +319,10 @@ contract AVSDirectory is
         require(
             delegation.isOperator(operator),
             "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
+        );
+        require(
+            !isOperatorSetAVS[msg.sender],
+            "AVSDirectory.registerOperatorToAVS: operator set AVS cannot register operators with legacy method"
         );
 
         // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.

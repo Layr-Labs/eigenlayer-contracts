@@ -72,7 +72,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         );
 
         // Deploy AVSDirectory implmentation and proxy
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, IStrategyManager(address(strategyManagerMock)));
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
