@@ -164,18 +164,18 @@ This flow is mostly useful if a Staker wants to change which Operator they are d
 
 Completing a queued withdrawal as tokens is roughly the same for both native ETH and LSTs. 
 
-However, note that *before* a withdrawal can be completed, native ETH stakers will need to perform additional steps, detailed in the "Withdrawal Processing" diagrams below. 
+However, note that *before* a withdrawal can be completed, native ETH stakers will need to perform additional steps, detailed in the diagrams below. 
 
 ![.](./images/Staker%20Flow%20Diagrams/Complete%20Withdrawal%20as%20Tokens.png)
 
-##### Withdrawal Processing: Validator Exits
+##### `EigenPods`: Processing Validator Exits
 
 If a Staker wants to fully withdraw from the beacon chain, they need to perform these additional steps before their withdrawal is completable:
 
 ![.](./images/Staker%20Flow%20Diagrams/Validator%20Exits.png)
 
-##### Withdrawal Processing: Partial Beacon Chain Withdrawals
+##### `EigenPods`: Processing Validator Yield
 
-If a Staker wants to withdraw consensus rewards from the beacon chain, they do NOT go through the `DelegationManager`. This is the only withdrawal type that is not initiated in the `DelegationManager`:
+As the Staker's `EigenPod` accumulates consensus layer or execution layer yield, the `EigenPod's` balance will increase. The Staker can Checkpoint their validator to claim this yield as shares, which can either remain staked in EigenLayer or be withdrawn via the `DelegationManager` withdrawal queue:
 
-![.](./images/Staker%20Flow%20Diagrams/Partial%20Withdrawals.png)
+![.](./images/Staker%20Flow%20Diagrams/Validator%20Yield.png)
