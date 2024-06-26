@@ -36,6 +36,14 @@ interface IRewardsCoordinatorEvents {
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+    /// @notice emitted when an operator commission is set for a specific OperatorSet
+    event OperatorCommissionUpdated(
+        address indexed operator,
+        IAVSDirectory.OperatorSet indexed operatorSet,
+        IRewardsCoordinator.RewardType rewardType,
+        uint16 newCommissionBips,
+        uint32 effectTimestamp
+    );
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
@@ -44,6 +52,7 @@ interface IRewardsCoordinatorEvents {
         uint32 indexed rewardsCalculationEndTimestamp,
         uint32 activatedAt
     );
+    event DistributionRootDisabled(uint32 indexed rootIndex);
     /// @notice root is one of the submitted distribution roots that was claimed against
     event RewardsClaimed(
         bytes32 root,
@@ -53,6 +62,14 @@ interface IRewardsCoordinatorEvents {
         IERC20 token,
         uint256 claimedAmount
     );
+    /// @notice emitted when an AVS creates a valid OperatorSetRewardsSubmission
+    event OperatorSetRewardCreated(
+        address indexed avs,
+        uint256 indexed submissionNonce,
+        bytes32 indexed rewardsSubmissionHash,
+        IRewardsCoordinator.OperatorSetRewardsSubmission rewardsSubmission
+    );
+
 
 
 

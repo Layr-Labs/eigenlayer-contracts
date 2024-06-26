@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./IAVSDirectory.sol";
 import "./IStrategy.sol";
 
 /**
@@ -70,6 +71,12 @@ interface IRewardsCoordinator {
     error StrategiesNotInAscendingOrder();
 
     /// STRUCTS ///
+
+    /// @notice Reward type
+    enum RewardType {
+        DELEGATED_STAKE
+    }
+
     /**
      * @notice A linear combination of strategies and multipliers for AVSs to weigh
      * EigenLayer strategies.
@@ -108,6 +115,32 @@ interface IRewardsCoordinator {
      * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION
      */
     struct RewardsSubmission {
+        StrategyAndMultiplier[] strategiesAndMultipliers;
+        IERC20 token;
+        uint256 amount;
+        uint32 startTimestamp;
+        uint32 duration;
+    }
+    /**
+     * @notice OperatorSetRewardsSubmission struct submitted by AVSs when making rewards to operatorSets
+     * @notice The retroactive range applies from RewardsSubmission
+     * @param RewardType The type of reward to be distributed for.
+     * @param operatorSetId The operatorSetId to distribute rewards to
+     * @param strategiesAndMultipliers The strategies and their relative weights
+     * cannot have duplicate strategies and need to be sorted in ascending address order
+     * @param token The rewards token to be distributed
+     * @param amount The total amount of tokens to be distributed
+     * @param startTimestamp The timestamp (seconds) at which the submission range is considered for distribution
+     * could start in the past or in the future but within a valid range. See the diagram above.
+     * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION
+     * @dev The sliding window from `RewardsSubmission` applies to `OperatorSetRewardsSubmission`, with
+     *      using `OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP` instead of `GENESIS_REWARDS_TIMESTAMP` and
+     *      `OPERATOR_SET_MAX_RETROACTIVE_LENGTH` instead of `MAX_RETROACTIVE_LENGTH`
+     */
+
+    struct OperatorSetRewardsSubmission {
+        RewardType rewardType;
+        uint32 operatorSetId;
         StrategyAndMultiplier[] strategiesAndMultipliers;
         IERC20 token;
         uint256 amount;
@@ -182,6 +215,12 @@ interface IRewardsCoordinator {
         TokenTreeMerkleLeaf[] tokenLeaves;
     }
 
+    /// @notice used for setting operator commission bips per operator set
+    struct OperatorCommissionUpdate {
+        uint16 commissionBips;
+        uint32 effectTimestamp;
+    }
+
     /// EVENTS ///
 
     /// @notice emitted when an AVS creates a valid RewardsSubmission
@@ -191,6 +230,15 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+
+    /// @notice emitted when an AVS creates a valid OperatorSetRewardsSubmission
+    event OperatorSetRewardCreated(
+        address indexed avs,
+        uint256 indexed submissionNonce,
+        bytes32 indexed rewardsSubmissionHash,
+        OperatorSetRewardsSubmission rewardsSubmission
+    );
+
     /// @notice emitted when a valid RewardsSubmission is created for all stakers by a valid submitter
     event RewardsSubmissionForAllCreated(
         address indexed submitter,
@@ -207,12 +255,26 @@ interface IRewardsCoordinator {
     );
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
+
     event RewardsForAllSubmitterSet(
         address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
+
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
+
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+
+    /// @notice emitted when an operator commission is set for a specific OperatorSet and RewardType
+    event OperatorCommissionUpdated(
+        address indexed operator,
+        IAVSDirectory.OperatorSet indexed operatorSet,
+        RewardType rewardType,
+        uint16 newCommissionBips,
+        uint32 effectTimestamp
+    );
+
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
+
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
@@ -220,7 +282,9 @@ interface IRewardsCoordinator {
         uint32 indexed rewardsCalculationEndTimestamp,
         uint32 activatedAt
     );
+
     event DistributionRootDisabled(uint32 indexed rootIndex);
+
     /// @notice root is one of the submitted distribution roots that was claimed against
     event RewardsClaimed(
         bytes32 root,
@@ -274,7 +338,11 @@ interface IRewardsCoordinator {
 
     /// @notice the commission for a specific operator for a specific avs
     /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16);
+    function getOperatorCommissionBips(
+        address operator,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType
+    ) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(
@@ -315,6 +383,13 @@ interface IRewardsCoordinator {
         bytes32 rootHash
     ) external view returns (uint32);
 
+    /// @notice returns the length of the operator commission update history
+    function getOperatorCommissionUpdateHistoryLength(
+        address operator,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType
+    ) external view returns (uint256);
+
     /**
      *
      *                         EXTERNAL FUNCTIONS
@@ -322,7 +397,9 @@ interface IRewardsCoordinator {
      */
 
     /**
-     * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
+     * @notice Legacy interface to be DEPRECATED in future releases. See rewardOperatorSetForRange
+     * for a more updated interface.
+     * Creates a new rewards submission on behalf of an AVS, to be split amongst the
      * set of stakers delegated to operators who are registered to the `avs`
      * @param rewardsSubmissions The rewards submissions being created
      * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
@@ -335,6 +412,21 @@ interface IRewardsCoordinator {
     function createAVSRewardsSubmission(
         RewardsSubmission[] calldata rewardsSubmissions
     ) external;
+
+    /**
+     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet,
+     * to be split amongst the set of stakers delegated to operators who are
+     * registered to the msg.sender AVS and the given operatorSetId
+     *
+     * @param rewardsSubmissions The operatorSet rewards submission being created for
+     *
+     * @dev msg.sender is the AVS in the operatorSet the rewards submission is being made to
+     * @dev AVSs set their reward type depending on what metric they want rewards
+     * distributed proportional to
+     * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
+     * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
+     */
+    function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions) external;
 
     /**
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
@@ -428,4 +520,20 @@ interface IRewardsCoordinator {
      * @param _newValue The new value for isRewardsForAllSubmitter
      */
     function setRewardsForAllSubmitter(address _submitter, bool _newValue) external;
+
+    /**
+     * @notice Sets the commission an operator takes in bips for a given reward type and operatorSet
+     * @param operatorSet The operatorSet to update commission for
+     * @param rewardType The associated rewardType to update commission for
+     * @param commissionBips The commission in bips for the operator, must be <= MAX_COMMISSION_BIPS
+     * @return effectTimestamp The timestamp at which the operator commission update will take effect
+     *
+     * @dev The commission can range from 1 to 10000
+     * @dev The commission update takes effect after 7 days
+     */
+    function setOperatorCommissionBips(
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType,
+        uint16 commissionBips
+    ) external returns (uint32);
 }
