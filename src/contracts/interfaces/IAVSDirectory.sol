@@ -37,12 +37,6 @@ interface IAVSDirectory is ISignatureUtils {
     /// @notice Emitted when an operator is removed from an operator set.
     event OperatorRemovedFromOperatorSet(address operator, OperatorSet operatorSet);
 
-    /// @notice Emitted when a strategy is added to an operator set.
-    event OperatorSetStrategyAdded(OperatorSet operatorSet, IStrategy strategy);
-
-    /// @notice Emitted when a strategy is removed from an operator set.
-    event OperatorSetStrategyRemoved(OperatorSet operatorSet, IStrategy strategy);
-
     /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
     /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
