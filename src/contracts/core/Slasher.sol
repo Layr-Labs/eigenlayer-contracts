@@ -36,8 +36,16 @@ contract Slasher is SlasherStorage {
             bipsToIncrease < SlashingAccountingUtils.BIPS_FACTOR,
             "Slasher.increaseRequestedBipsToSlash: bipsToIncrease must be less than BIPS_FACTOR"
         );
+
+        IOperatorSetManager.OperatorSet memory operatorSet =
+            IOperatorSetManager.OperatorSet({avs: msg.sender, id: operatorSetID});
         _modifyRequestedBipsToSlash(
-            operator, operatorSetID, strategies, EpochUtils.currentEpoch(), int32(bipsToIncrease)
+            operator,
+            operatorSet,
+            strategies,
+            EpochUtils.currentEpoch(),
+            bipsToIncrease,
+            _addBips
         );
     }
 
@@ -67,7 +75,17 @@ contract Slasher is SlasherStorage {
         require(
             bipsToReduce < 2 ** 31, "Slasher.reduceRequestedBipsToSlash: bipsToReduce must be less than minimum int32"
         );
-        _modifyRequestedBipsToSlash(operator, operatorSetID, strategies, epoch, -int32(bipsToReduce));
+
+        IOperatorSetManager.OperatorSet memory operatorSet =
+            IOperatorSetManager.OperatorSet({avs: msg.sender, id: operatorSetID});
+        _modifyRequestedBipsToSlash(
+            operator,
+            operatorSet,
+            strategies,
+            epoch,
+            bipsToReduce,
+            _subtractBips
+        );
     }
 
     /**
@@ -293,26 +311,21 @@ contract Slasher is SlasherStorage {
 
     function _modifyRequestedBipsToSlash(
         address operator,
-        bytes4 operatorSetID,
+        IOperatorSetManager.OperatorSet memory operatorSet,
         IStrategy[] memory strategies,
         uint32 epoch,
-        int32 bipsToModify
+        uint32 bipsToModify,
+        function(uint32, uint32) view returns (uint32) bipsOperation
     ) internal {
         require(bipsToModify != 0, "Slasher._modifyRequestedBipsToSlash: cannot modify slashing by 0");
 
-        IOperatorSetManager.OperatorSet memory operatorSet =
-            IOperatorSetManager.OperatorSet({avs: msg.sender, id: operatorSetID});
         bytes32 operatorSetHash = _hashOperatorSet(operatorSet);
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
             uint32 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][operatorSetHash];
-            int32 requestedSlashedBipsAfter = int32(requestedSlashedBipsBefore) + bipsToModify;
-            // don't allow underflow
-            if (requestedSlashedBipsAfter < 0) {
-                bipsToModify = -int32(requestedSlashedBipsBefore);
-                requestedSlashedBipsAfter = 0;
-            }
-            requestedSlashedBips[operator][strategy][epoch][operatorSetHash] = uint32(requestedSlashedBipsAfter);
+            uint32 requestedSlashedBipsAfter = bipsOperation(requestedSlashedBipsBefore, bipsToModify);
+
+            requestedSlashedBips[operator][strategy][epoch][operatorSetHash] = requestedSlashedBipsAfter;
 
             SlashingRequest memory slashingRequest = slashingRequests[operator][strategy][epoch];
             // if this is the first request, increment the lastCreatedSlashingRequestId and set the id
@@ -325,11 +338,8 @@ contract Slasher is SlasherStorage {
             // pending slashing rate is modified by the bips to modify * the slashable bips
             // when divided by BIPS_FACTOR**2, this will give the actual proportion of the
             // stake is being modified. this is done for accuracy when slashable bips are small
-            slashingRequest.slashingRate = uint64(
-                int64(slashingRequest.slashingRate)
-                    + int64(bipsToModify)
-                        * int64(uint64(operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch)))
-            );
+            slashingRequest.slashingRate += 
+                uint64(bipsToModify) * uint64(operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch));
             slashingRequests[operator][strategy][epoch] = slashingRequest;
         }
 
@@ -352,6 +362,15 @@ contract Slasher is SlasherStorage {
         return (epochForLookup, found);
     }
 
+    /// Consider adding to SlashingAccountingUtils
+    function _addBips(uint32 a, uint32 b) private pure returns (uint32) {
+        return (a + b > SlashingAccountingUtils.BIPS_FACTOR) ? uint32(SlashingAccountingUtils.BIPS_FACTOR) : a + b;
+    }
+
+    function _subtractBips(uint32 a, uint32 b) private pure returns (uint32) {
+        return (a <= b) ? 0 : a - b;
+    }
+
     /// @notice the withdrawability condition for a certain epoch that a withdrawal was slashable until is
     /// that all slashings executable at that epoch have been executed
     /// @dev slashingRequests[operator][strategy][epochForLookup] must be set, use _getLookupEpoch
@@ -361,8 +380,6 @@ contract Slasher is SlasherStorage {
     }
 
     function _hashOperatorSet(IOperatorSetManager.OperatorSet memory operatorSet) internal pure returns (bytes32) {
-        IOperatorSetManager.OperatorSet[] memory operatorSetArray = new IOperatorSetManager.OperatorSet[](1);
-        operatorSetArray[0] = operatorSet;
-        return keccak256(abi.encode(operatorSetArray));
+        return keccak256(abi.encode(operatorSet));
     }
 }

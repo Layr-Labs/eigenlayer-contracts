@@ -20,7 +20,7 @@ interface ISlasher {
 		address operator,
         IOperatorSetManager.OperatorSet operatorSet,
         IStrategy[] strategies,
-        int32 bipsToModify
+        uint32 bipsToModify
     );
     
     event SlashingExecuted(
