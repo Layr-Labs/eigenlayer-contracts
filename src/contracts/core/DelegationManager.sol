@@ -488,7 +488,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         (IStrategy[] memory strategies, uint256[] memory shares)
             = getDelegatableShares(staker);
-
+        // check if the staker has any shares to delegate
+        require(strategies.length == 0, "DelegationManager._delegate: staker has no shares");
         for (uint256 i = 0; i < strategies.length;) {
             _increaseOperatorShares({
                 operator: operator,
