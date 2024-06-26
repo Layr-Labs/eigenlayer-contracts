@@ -34,6 +34,10 @@ contract RewardsCoordinator is
     uint256 internal immutable ORIGINAL_CHAIN_ID;
     /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
     uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
+    /// @notice The activation delay until an updated operator's commission bips takes effect
+    uint32 internal constant OPERATOR_COMMISSION_ACTIVATION_DELAY = 7 days;
+    /// @notice The maximum commission bips that can be set for an operator
+    uint16 internal constant MAX_COMMISSION_BIPS = 10_000;
 
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
@@ -43,8 +47,8 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
     /// @dev Index for flag that pauses submitRoots and disableRoot
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
-    /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
-    uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
+    /// @dev Index for flag that pauses calling rewardOperatorSetForRange
+    uint8 internal constant PAUSED_REWARD_OPERATOR_SET = 5;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -68,20 +72,26 @@ contract RewardsCoordinator is
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
+        IAVSDirectory _avsDirectory,
         uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
         uint32 _MAX_FUTURE_LENGTH,
-        uint32 __GENESIS_REWARDS_TIMESTAMP
+        uint32 _GENESIS_REWARDS_TIMESTAMP,
+        uint32 _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+        uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
     )
         RewardsCoordinatorStorage(
             _delegationManager,
             _strategyManager,
+            _avsDirectory,
             _CALCULATION_INTERVAL_SECONDS,
             _MAX_REWARDS_DURATION,
             _MAX_RETROACTIVE_LENGTH,
             _MAX_FUTURE_LENGTH,
-            __GENESIS_REWARDS_TIMESTAMP
+            _GENESIS_REWARDS_TIMESTAMP,
+            _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+            _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         )
     {
         _disableInitializers();
@@ -115,7 +125,9 @@ contract RewardsCoordinator is
      */
 
     /**
-     * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
+     * @notice Legacy interface to be DEPRECATED in future releases. See rewardOperatorSetForRange
+     * for a more updated interface.
+     * Creates a new rewards submission on behalf of an AVS, to be split amongst the
      * set of stakers delegated to operators who are registered to the `avs`
      * @param rewardsSubmissions The rewards submissions being created
      * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
@@ -125,21 +137,35 @@ contract RewardsCoordinator is
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(
-        RewardsSubmission[] calldata rewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
-        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
+        external
+        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
+        nonReentrant
+    {
+        for (uint256 i = 0; i < rewardsSubmissions.length;) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
 
-            _validateRewardsSubmission(rewardsSubmission);
+            _validateRewardsSubmission(
+                rewardsSubmission.strategiesAndMultipliers,
+                rewardsSubmission.token,
+                rewardsSubmission.amount,
+                rewardsSubmission.startTimestamp,
+                rewardsSubmission.duration,
+                MAX_RETROACTIVE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP
+            );
 
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
             submissionNonce[msg.sender] = nonce + 1;
 
             emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -149,21 +175,85 @@ contract RewardsCoordinator is
      * a permissioned call based on isRewardsForAllSubmitter mapping.
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllSubmission(
-        RewardsSubmission[] calldata rewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
-        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
+        external
+        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
+        onlyRewardsForAllSubmitter
+        nonReentrant
+    {
+        for (uint256 i = 0; i < rewardsSubmissions.length;) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
 
-            _validateRewardsSubmission(rewardsSubmission);
+            _validateRewardsSubmission(
+                rewardsSubmission.strategiesAndMultipliers,
+                rewardsSubmission.token,
+                rewardsSubmission.amount,
+                rewardsSubmission.startTimestamp,
+                rewardsSubmission.duration,
+                MAX_RETROACTIVE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP
+            );
 
             isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionForAllHash] = true;
             submissionNonce[msg.sender] = nonce + 1;
 
             emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet,
+     * to be split amongst the set of stakers delegated to operators who are
+     * registered to the msg.sender AVS and the given operatorSetId
+     *
+     * @param rewardsSubmissions The operatorSet rewards submission being created for
+     *
+     * @dev msg.sender is the AVS in the operatorSet the rewards submission is being made to
+     * @dev AVSs set their reward type depending on what metric they want rewards
+     * distributed proportional to
+     * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
+     * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
+     */
+    function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions)
+        external
+        onlyWhenNotPaused(PAUSED_REWARD_OPERATOR_SET)
+        nonReentrant
+    {
+        for (uint256 i = 0; i < rewardsSubmissions.length;) {
+            OperatorSetRewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[msg.sender];
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
+
+            require(
+                avsDirectory.isOperatorSet(msg.sender, rewardsSubmission.operatorSetId),
+                "RewardsCoordinator.rewardOperatorSetForRange: invalid operatorSet"
+            );
+            _validateRewardsSubmission(
+                rewardsSubmission.strategiesAndMultipliers,
+                rewardsSubmission.token,
+                rewardsSubmission.amount,
+                rewardsSubmission.startTimestamp,
+                rewardsSubmission.duration,
+                OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
+                OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP
+            );
+
+            isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
+            submissionNonce[msg.sender] = nonce + 1;
+
+            emit OperatorSetRewardCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -218,8 +308,8 @@ contract RewardsCoordinator is
         if (claimer == address(0)) {
             claimer = earner;
         }
-        require(msg.sender == claimer, InvalidClaimer());
-        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
+        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
+        for (uint256 i = 0; i < claim.tokenIndices.length; ++i) {
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
 
             uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
@@ -292,6 +382,42 @@ contract RewardsCoordinator is
     }
 
     /**
+     * @notice Sets the commission an operator takes in bips for a given reward type and operatorSet
+     * @param operatorSet The operatorSet to update commission for
+     * @param rewardType The associated rewardType to update commission for
+     * @param commissionBips The commission in bips for the operator, must be <= MAX_COMMISSION_BIPS
+     * @return effectTimestamp The timestamp at which the operator commission update will take effect
+     *
+     * @dev The commission can range from 1 to 10000
+     * @dev The commission update takes effect after 7 days
+     */
+    function setOperatorCommissionBips(
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType,
+        uint16 commissionBips
+    ) external returns (uint32 effectTimestamp) {
+        require(
+            commissionBips <= MAX_COMMISSION_BIPS,
+            "RewardsCoordinator.setOperatorCommissionBips: commissionBips too high"
+        );
+        effectTimestamp = uint32(block.timestamp + OPERATOR_COMMISSION_ACTIVATION_DELAY);
+        OperatorCommissionUpdate[] storage commissionHistory =
+            operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.operatorSetId][rewardType];
+        uint256 updateLength = commissionHistory.length;
+
+        // If no updates or latest update is not for current effective timestamp, push a new commission update
+        // otherwise modify current storage
+        if (updateLength == 0 || commissionHistory[updateLength - 1].effectTimestamp != effectTimestamp) {
+            commissionHistory.push(
+                OperatorCommissionUpdate({commissionBips: commissionBips, effectTimestamp: effectTimestamp})
+            );
+        } else {
+            commissionHistory[updateLength - 1].commissionBips = commissionBips;
+        }
+        emit OperatorCommissionUpdated(msg.sender, operatorSet, rewardType, commissionBips, effectTimestamp);
+    }
+
+    /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
      * @dev Only callable by the contract owner
      * @param _activationDelay The new value for activationDelay
@@ -343,34 +469,50 @@ contract RewardsCoordinator is
      */
 
     /**
-     * @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
+     * @notice Validate a RewardsSubmission. Called from `createAVSRewardsSubmission`, `createRewardsForAllSubmission`,
+     *         and `rewardOperatorSetForRange`
+     *
+     * @dev The callee must specify the `retroactiveLength` and `genesisRewardsTimestamp` as those values
+     *      are different depending on the rewards submission type.
      */
     function _validateRewardsSubmission(
-        RewardsSubmission calldata rewardsSubmission
+        StrategyAndMultiplier[] calldata strategiesAndMultipliers,
+        IERC20 token,
+        uint256 amount,
+        uint32 startTimestamp,
+        uint32 duration,
+        uint32 maxRetroactiveLength,
+        uint32 genesisRewardsTimestamp
     ) internal view {
-        require(rewardsSubmission.strategiesAndMultipliers.length > 0, InputArrayLengthZero());
-        require(rewardsSubmission.amount > 0, AmountZero());
-        require(rewardsSubmission.amount <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
-        require(rewardsSubmission.duration <= MAX_REWARDS_DURATION, DurationExceedsMax());
+        require(strategiesAndMultipliers.length > 0, "RewardsCoordinator._validateRewardsSubmission: no strategies set");
+        require(amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
+        require(amount <= MAX_REWARDS_AMOUNT, "RewardsCoordinator._validateRewardsSubmission: amount too large");
         require(
-            rewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
-            DurationNotMultipleOfCalculationIntervalSeconds()
+            duration <= MAX_REWARDS_DURATION,
+            "RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
         );
         require(
-            rewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
-            StartTimestampNotMultipleOfCalculationIntervalSeconds()
+            duration % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validateRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp
-                && GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
-            StartTimestampTooFarInPast()
+            startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
+        );
+        require(
+            block.timestamp - maxRetroactiveLength <= startTimestamp && genesisRewardsTimestamp <= startTimestamp,
+            "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
+        );
+        require(
+            startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
+            "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the future"
         );
         require(rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH, StartTimestampTooFarInFuture());
 
         // Require rewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
         address currAddress = address(0);
-        for (uint256 i = 0; i < rewardsSubmission.strategiesAndMultipliers.length; ++i) {
-            IStrategy strategy = rewardsSubmission.strategiesAndMultipliers[i].strategy;
+        for (uint256 i = 0; i < strategiesAndMultipliers.length; ++i) {
+            IStrategy strategy = strategiesAndMultipliers[i].strategy;
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
                 InvalidStrategy()
@@ -517,10 +659,29 @@ contract RewardsCoordinator is
         return true;
     }
 
-    /// @notice the commission for a specific operator for a specific avs
+    /// @notice the commission for an operator for a specific operatorSet and reward type
     /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16) {
-        return globalOperatorCommissionBips;
+    function getOperatorCommissionBips(
+        address operator,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType
+    ) external view returns (uint16) {
+        // if no value set, default to globalOperatorCommissionBips
+        uint16 commissionBips = globalOperatorCommissionBips;
+        OperatorCommissionUpdate[] memory commissionHistory =
+            operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.operatorSetId][rewardType];
+
+        for (uint256 i = commissionHistory.length; i > 0;) {
+            if (commissionHistory[i - 1].effectTimestamp <= uint32(block.timestamp)) {
+                commissionBips = commissionHistory[i - 1].commissionBips;
+                break;
+            }
+
+            unchecked {
+                --i;
+            }
+        }
+        return commissionBips;
     }
 
     function getDistributionRootsLength() public view returns (uint256) {
@@ -559,6 +720,15 @@ contract RewardsCoordinator is
             }
         }
         revert InvalidRoot();
+    }
+
+    /// @notice returns the length of the operator commission update history
+    function getOperatorCommissionUpdateHistoryLength(
+        address operator,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType
+    ) external view returns (uint256) {
+        return operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.operatorSetId][rewardType].length;
     }
 
     /**
