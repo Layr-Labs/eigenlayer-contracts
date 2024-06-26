@@ -349,15 +349,9 @@ contract AVSDirectory is
         uint64 magnitude;
     }
 
-    struct StakeLock {
-        uint32 startEpoch;
-        uint32 endEpoch;
-    }
-
     mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => MagnitudeUpdate[])))) private
         _operatorSetMagnitudeUpdates;
     mapping(address => mapping(IStrategy => TotalMagnitudeUpdate[])) private _totalMagnitudeUpdates;
-    mapping(address => mapping(IStrategy => StakeLock[])) private _lockedMagnitudeUpdates;
 
     /**
      * @notice updates the slashing magnitudes for an operator for a set of
@@ -584,32 +578,6 @@ contract AVSDirectory is
         IStrategy[] calldata strategies,
         uint16 bipsToIncrease
     ) external {}
-
-    /**
-     * @notice Locks magnitude updates for an operator at the current epoch
-     * @param operator that stake updates are locked for
-     * @param strategy that the operator cannot update stake for
-     * @dev Only callable by the Slasher
-     */
-    function _lockMagnitudeUpdatesAtEpoch(address operator, IStrategy strategy) internal {
-        uint32 epoch = EpochUtils.currentEpoch();
-        require(msg.sender == address(slasher), "OperatorSetManager.lockStakeUpdatesAtEpoch: Caller is not the slasher");
-        uint256 lockedMagnitudeUpdatesLength = _lockedMagnitudeUpdates[operator][strategy].length;
-        if (lockedMagnitudeUpdatesLength != 0) {
-            if (_lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch == epoch) {
-                // already locked for this epoch
-                return;
-            } else if (
-                _lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch + 1 == epoch
-            ) {
-                // extend the last lock to this epoch
-                _lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch = epoch;
-                return;
-            }
-        } else {
-            _lockedMagnitudeUpdates[operator][strategy].push(StakeLock({startEpoch: epoch, endEpoch: epoch}));
-        }
-    }
 
     /**
      *
