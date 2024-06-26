@@ -115,7 +115,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint totalSent = (gweiSent * GWEI_TO_WEI) + remainderSent;
 
         cheats.deal(address(this), address(this).balance + totalSent);
-        destination.call{ value: totalSent }("");
+        bool r;
+        bytes memory d;
+        (r, d) = destination.call{ value: totalSent }("");
 
         return (gweiSent, remainderSent);
     }
@@ -129,11 +131,6 @@ abstract contract IntegrationBase is IntegrationDeployer {
             _upgradeMainnetContracts();
 
             emit log("===Migrating Stakers/Operators===");
-
-            // Enable restaking for stakers' pods
-            for (uint i = 0; i < stakersToMigrate.length; i++) {
-                stakersToMigrate[i].startCheckpoint();
-            }
 
             // Register operators with DelegationManager
             for (uint i = 0; i < operatorsToMigrate.length; i++) {

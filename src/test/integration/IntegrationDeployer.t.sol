@@ -637,38 +637,38 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_MAINNET);
         } else if (forkType == HOLESKY) {
             revert("_deployOrFetchContracts - holesky tests currently broken sorry");
-            // cheats.selectFork(holeskyForkId);
-            string memory deploymentInfoPath = "script/configs/holesky/Holesky_current_deployment.config.json";
-            _parseDeployedContracts(deploymentInfoPath);
+            // // cheats.selectFork(holeskyForkId);
+            // string memory deploymentInfoPath = "script/configs/holesky/Holesky_current_deployment.config.json";
+            // _parseDeployedContracts(deploymentInfoPath);
 
-            // Add deployed strategies to lstStrats and allStrats
-            for (uint i; i < deployedStrategyArray.length; i++) {
-                IStrategy strategy = IStrategy(deployedStrategyArray[i]);
+            // // Add deployed strategies to lstStrats and allStrats
+            // for (uint i; i < deployedStrategyArray.length; i++) {
+            //     IStrategy strategy = IStrategy(deployedStrategyArray[i]);
 
-                if (tokensNotTested[address(strategy.underlyingToken())]) {
-                    continue;
-                }
+            //     if (tokensNotTested[address(strategy.underlyingToken())]) {
+            //         continue;
+            //     }
 
-                // Add to lstStrats and allStrats
-                lstStrats.push(strategy);
-                allStrats.push(strategy);
-                allTokens.push(strategy.underlyingToken());
-            }
+            //     // Add to lstStrats and allStrats
+            //     lstStrats.push(strategy);
+            //     allStrats.push(strategy);
+            //     allTokens.push(strategy.underlyingToken());
+            // }
 
-            // Update deposit contract to be a mock
-            ethPOSDeposit = new ETHPOSDepositMock();
-            eigenPodImplementation = new EigenPod(
-                ethPOSDeposit,
-                eigenPodImplementation.eigenPodManager(),
-                0
-            );
-            // Create time machine and mock beacon chain
-            timeMachine = new TimeMachine();
-            beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_MAINNET);
+            // // Update deposit contract to be a mock
+            // ethPOSDeposit = new ETHPOSDepositMock();
+            // eigenPodImplementation = new EigenPod(
+            //     ethPOSDeposit,
+            //     eigenPodImplementation.eigenPodManager(),
+            //     0
+            // );
+            // // Create time machine and mock beacon chain
+            // timeMachine = new TimeMachine();
+            // beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_MAINNET);
 
-            cheats.startPrank(executorMultisig);
-            eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
-            cheats.stopPrank();
+            // cheats.startPrank(executorMultisig);
+            // eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
+            // cheats.stopPrank();
 
         } else {
             revert("_deployOrFetchContracts: unimplemented forkType");

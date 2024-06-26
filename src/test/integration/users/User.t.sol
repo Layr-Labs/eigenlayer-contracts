@@ -316,7 +316,6 @@ contract User is PrintUtils {
 
         for (uint i = 0; i < tokens.length; i++) {
             IStrategy strat = withdrawal.strategies[i];
-            uint shares = withdrawal.shares[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 tokens[i] = NATIVE_ETH;
@@ -326,7 +325,7 @@ contract User is PrintUtils {
                 if (receiveAsTokens) {
                     
                     _log("- exiting all validators and completing checkpoint");
-                    uint64 exitedBalanceGwei = _exitValidators(getActiveValidators());
+                    _exitValidators(getActiveValidators());
 
                     beaconChain.advanceEpoch_NoRewards();
 
@@ -454,7 +453,7 @@ contract User is PrintUtils {
     }
 
     /// @dev Revert, passing through an error message
-    function _revert(bytes memory err) internal {
+    function _revert(bytes memory err) internal pure {
         if (err.length != 0) {
             assembly { revert(add(32, err), mload(err)) }
         }

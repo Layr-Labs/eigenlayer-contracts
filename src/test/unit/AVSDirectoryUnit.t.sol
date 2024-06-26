@@ -321,10 +321,6 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
         _registerOperatorWithBaseDetails(operator);
 
-        uint256 expiry = type(uint256).max;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
-            _getOperatorSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
-
         cheats.startPrank(operator);
         avsDirectory.cancelSalt(salt);
 

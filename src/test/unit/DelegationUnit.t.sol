@@ -3114,7 +3114,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      */
     function test_Revert_WhenWithdrawalDelayBlocksNotPassed(
         uint256[] memory depositAmounts,
-        uint256 randSalt,
         bool receiveAsTokens
     ) public {
         cheats.assume(depositAmounts.length > 0 && depositAmounts.length <= 32);
@@ -3168,7 +3167,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         (
             IDelegationManager.Withdrawal memory withdrawal,
             IERC20[] memory tokens,
-            bytes32 withdrawalRoot
+            // bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalBeaconStrat({
             staker: defaultStaker,
             withdrawer: defaultStaker,

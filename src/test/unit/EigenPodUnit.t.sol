@@ -732,7 +732,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         );
         staker.verifyWithdrawalCredentials(validators);
 
-        uint64 exitedBalanceGwei = staker.exitValidators(validators);
+        staker.exitValidators(validators);
         beaconChain.advanceEpoch_NoRewards();
 
         staker.startCheckpoint();
@@ -787,7 +787,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
     /// @notice modify validator field length to cause a revert
-    function testFuzz_revert_invalidValidatorFields(uint256 rand, bytes32 randPubkeyIndex) public {
+    function testFuzz_revert_invalidValidatorFields(uint256 rand) public {
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
         (uint40[] memory validators, ) = staker.startValidators();
         EigenPod pod = staker.pod();
@@ -813,7 +813,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
     /// @notice modify validator proof length to cause a revert
-    function testFuzz_revert_invalidValidatorProofLength(uint256 rand, bytes32 randPubkeyIndex) public {
+    function testFuzz_revert_invalidValidatorProofLength(uint256 rand) public {
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
         (uint40[] memory validators, ) = staker.startValidators();
         EigenPod pod = staker.pod();
@@ -861,7 +861,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     function testFuzz_verifyWithdrawalCredentials(uint256 rand) public {
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
         EigenPod pod = staker.pod();
-        (uint40[] memory validators, uint256 beaconBalanceWei) = staker.startValidators();
+        (uint40[] memory validators, ) = staker.startValidators();
         // Complete a quick empty checkpoint so we have a nonzero value for `lastCheckpointedAt`
         staker.startCheckpoint();
         beaconChain.advanceEpoch_NoRewards();
@@ -1210,7 +1210,7 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
     }
 
     /// @notice test that verifyCheckpointProofs skips duplicate checkpoint proofs
-    function testFuzz_verifyCheckpointProofs_skipIfAlreadyProven(uint256 rand, bool epochRewards) public {
+    function testFuzz_verifyCheckpointProofs_skipIfAlreadyProven(uint256 rand) public {
         // Setup verifyCheckpointProofs
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
         // Ensure we have more than one validator (_newEigenPodStaker allocates a nonzero amt of eth)

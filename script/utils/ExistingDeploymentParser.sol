@@ -436,9 +436,8 @@ contract ExistingDeploymentParser is Script, Test {
     /**
      * @notice Verify initialization of Transparent Upgradeable Proxies. Also check
      * initialization params if this is the first deployment.
-     * @param isInitialDeployment True if this is the first deployment of contracts from scratch
      */
-    function _verifyContractsInitialized(bool isInitialDeployment) internal virtual {
+    function _verifyContractsInitialized() internal virtual {
         // AVSDirectory
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         avsDirectory.initialize(address(0), eigenLayerPauserReg, AVS_DIRECTORY_INIT_PAUSED_STATUS);

@@ -42,7 +42,7 @@ contract M2_Deploy_Holesky_Preprod is M2_Deploy_Holesky_From_Scratch {
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized({isInitialDeployment: true});
+        _verifyContractsInitialized();
         _verifyInitializationParams(); // override to check contract.owner() is EOAowner instead
 
         logAndOutputContractAddresses("script/output/holesky/M2_deploy_preprod.holesky.config.json");

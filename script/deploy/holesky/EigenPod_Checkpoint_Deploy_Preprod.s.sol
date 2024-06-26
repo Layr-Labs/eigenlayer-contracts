@@ -35,7 +35,7 @@ contract EigenPod_Checkpoint_Deploy_Preprod is ExistingDeploymentParser {
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized({isInitialDeployment: true});
+        _verifyContractsInitialized();
         _verifyInitializationParams();
 
         logAndOutputContractAddresses("script/output/holesky/EigenPod_Checkpoint_Deploy_Preprod.output.json");

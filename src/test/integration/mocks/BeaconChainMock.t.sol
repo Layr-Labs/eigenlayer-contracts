@@ -450,12 +450,12 @@ contract BeaconChainMock is PrintUtils {
         if (validatorIndex % 4 == 0) {
             uint64 dummyBalanceGwei = type(uint64).max - uint64(validators.length);
 
-            bytes memory pubkey = new bytes(48);
-            assembly { mstore(add(48, pubkey), validatorIndex) }
+            bytes memory _dummyPubkey = new bytes(48);
+            assembly { mstore(add(48, _dummyPubkey), validatorIndex) }
             validators.push(Validator({
                 isDummy: true,
                 isSlashed: false,
-                pubkeyHash: sha256(abi.encodePacked(pubkey, bytes16(0))),
+                pubkeyHash: sha256(abi.encodePacked(_dummyPubkey, bytes16(0))),
                 withdrawalCreds: "",
                 effectiveBalanceGwei: dummyBalanceGwei,
                 exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
@@ -466,12 +466,12 @@ contract BeaconChainMock is PrintUtils {
         }
 
         // Use pubkey format from `EigenPod._calculateValidatorPubkeyHash`
-        bytes memory pubkey = new bytes(48);
-        assembly { mstore(add(48, pubkey), validatorIndex) }
+        bytes memory _pubkey = new bytes(48);
+        assembly { mstore(add(48, _pubkey), validatorIndex) }
         validators.push(Validator({
             isDummy: false,
             isSlashed: false,
-            pubkeyHash: sha256(abi.encodePacked(pubkey, bytes16(0))),
+            pubkeyHash: sha256(abi.encodePacked(_pubkey, bytes16(0))),
             withdrawalCreds: withdrawalCreds,
             effectiveBalanceGwei: balanceGwei,
             exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
@@ -981,10 +981,10 @@ contract BeaconChainMock is PrintUtils {
         return validators[validatorIndex].pubkeyHash;
     }
 
-    function pubkey(uint40 validatorIndex) public view returns (bytes memory) {
-        bytes memory pubkey = new bytes(48);
-        assembly { mstore(add(48, pubkey), validatorIndex) }
-        return pubkey;
+    function pubkey(uint40 validatorIndex) public pure returns (bytes memory) {
+        bytes memory _pubkey = new bytes(48);
+        assembly { mstore(add(48, _pubkey), validatorIndex) }
+        return _pubkey;
     }
 
     function getPubkeyHashes(uint40[] memory _validators) public view returns (bytes32[] memory) {
