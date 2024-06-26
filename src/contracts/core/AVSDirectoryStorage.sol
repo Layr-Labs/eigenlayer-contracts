@@ -4,8 +4,6 @@ pragma solidity ^0.8.12;
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
-import "../interfaces/ISlasher.sol";
-import "../interfaces/IEigenPodManager.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice The EIP-712 typehash for the contract's domain
@@ -16,8 +14,19 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     bytes32 public constant OPERATOR_AVS_REGISTRATION_TYPEHASH =
         keccak256("OperatorAVSRegistration(address operator,address avs,bytes32 salt,uint256 expiry)");
 
+    /// @notice The EIP-712 typehash for the `OperatorSetRegistration` struct used by the contract
+    bytes32 public constant OPERATOR_SET_REGISTRATION_TYPEHASH =
+        keccak256("OperatorSetRegistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
+
+    /// @notice The EIP-712 typehash for the `StandbyParams` struct used by the contract
+    bytes32 public constant OPERATOR_STANDBY_UPDATE =
+        keccak256("OperatorStandbyUpdate(StandbyParam[] standbyParams,bytes32 salt,uint256 expiry)");
+    
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
+
+    /// @notice The StrategyManager contract for EigenLayer
+    IStrategyManager public immutable strategyManager;
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -30,11 +39,24 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 
     /// @notice Mapping: operator => 32-byte salt => whether or not the salt has already been used by the operator.
-    /// @dev Salt is used in the `registerOperatorToAVS` function.
+    /// @dev Salt is used in the `registerOperatorToAVS` and `registerOperatorToOperatorSet` function.
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
-    constructor(IDelegationManager _delegation) {
+    /// @notice Mapping: AVS => whether or not the AVS uses operator set
+    mapping(address => bool) public isOperatorSetAVS;
+
+    /// @notice Mapping: avs => operator => operatorSetID => whether the operator is registered for the operator set
+    mapping(address => mapping(address => mapping(uint32 => bool))) public isOperatorInOperatorSet;
+
+    /// @notice Mapping: avs => operator => number of operator sets the operator is registered for the AVS
+    mapping(address => mapping(address => uint256)) public operatorAVSOperatorSetCount;
+
+    /// @notice Mapping: avs = operator => operatorSetId => Whether the given operator set in standby mode or not
+    mapping(address => mapping(address => mapping(uint32 => bool))) public onStandby;
+
+    constructor(IDelegationManager _delegation, IStrategyManager _strategyManager) {
         delegation = _delegation;
+        strategyManager = _strategyManager;
     }
 
     /**
@@ -42,5 +64,5 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[47] private __gap;
+    uint256[43] private __gap;
 }
