@@ -450,10 +450,12 @@ contract BeaconChainMock is PrintUtils {
         if (validatorIndex % 4 == 0) {
             uint64 dummyBalanceGwei = type(uint64).max - uint64(validators.length);
 
+            bytes memory pubkey = new bytes(48);
+            assembly { mstore(add(48, pubkey), validatorIndex) }
             validators.push(Validator({
                 isDummy: true,
                 isSlashed: false,
-                pubkeyHash: keccak256(abi.encodePacked(validatorIndex)),
+                pubkeyHash: sha256(abi.encodePacked(pubkey, bytes16(0))),
                 withdrawalCreds: "",
                 effectiveBalanceGwei: dummyBalanceGwei,
                 exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
@@ -463,10 +465,13 @@ contract BeaconChainMock is PrintUtils {
             validatorIndex++;
         }
 
+        // Use pubkey format from `EigenPod._calculateValidatorPubkeyHash`
+        bytes memory pubkey = new bytes(48);
+        assembly { mstore(add(48, pubkey), validatorIndex) }
         validators.push(Validator({
             isDummy: false,
             isSlashed: false,
-            pubkeyHash: keccak256(abi.encodePacked(validatorIndex)),
+            pubkeyHash: sha256(abi.encodePacked(pubkey, bytes16(0))),
             withdrawalCreds: withdrawalCreds,
             effectiveBalanceGwei: balanceGwei,
             exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
@@ -974,6 +979,12 @@ contract BeaconChainMock is PrintUtils {
 
     function pubkeyHash(uint40 validatorIndex) public view returns (bytes32) {
         return validators[validatorIndex].pubkeyHash;
+    }
+
+    function pubkey(uint40 validatorIndex) public view returns (bytes memory) {
+        bytes memory pubkey = new bytes(48);
+        assembly { mstore(add(48, pubkey), validatorIndex) }
+        return pubkey;
     }
 
     function getPubkeyHashes(uint40[] memory _validators) public view returns (bytes32[] memory) {

@@ -332,6 +332,15 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
         cheats.expectRevert("Initializable: contract is already initialized");
         pod.initialize(address(this));
     }
+
+    function test_initialize_revert_emptyPodOwner() public {
+        EigenPod pod = new EigenPod(ethPOSDepositMock, eigenPodManagerMock, GENESIS_TIME_LOCAL);
+        // un-initialize pod
+        cheats.store(address(pod), 0, 0);
+
+        cheats.expectRevert("EigenPod.initialize: podOwner cannot be zero address");
+        pod.initialize(address(0));
+    }
 }
 
 contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
@@ -883,8 +892,12 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         // Check ValidatorInfo values for each validator
         for (uint i = 0; i < validators.length; i++) {
             bytes32 pubkeyHash = beaconChain.pubkeyHash(validators[i]);
+            bytes memory pubkey = beaconChain.pubkey(validators[i]);
 
             IEigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(pubkeyHash);
+            IEigenPod.ValidatorInfo memory pkInfo = pod.validatorPubkeyToInfo(pubkey);
+            assertTrue(pod.validatorStatus(pubkey) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "validator status should be active");
+            assertEq(keccak256(abi.encode(info)), keccak256(abi.encode(pkInfo)), "validator info should be identical");
             assertEq(info.validatorIndex, validators[i], "should have assigned correct validator index");
             assertEq(info.restakedBalanceGwei, beaconChain.effectiveBalance(validators[i]), "should have restaked full effective balance");
             assertEq(info.lastCheckpointedAt, pod.lastCheckpointTimestamp(), "should have recorded correct update time");
