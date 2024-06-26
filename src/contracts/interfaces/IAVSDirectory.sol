@@ -22,6 +22,51 @@ interface IAVSDirectory is ISignatureUtils {
         bool onStandby;
     }
 
+    /// STRUCTS
+    
+    /**
+     * @notice this struct is used in SlashingMagnitudeParam in order to specify
+     * an operator's slashability for a certain operator set
+     * @param operatorSet the operator set to change slashing parameters for
+     * @param slashableMagnitude the proportional parts of the operator's slashable stake
+     * that the operator set is getting. This ultimately determines how much slashable stake
+     * is delegated to an operator set within a given AVS.
+     * (slashableMagnitude / sum of all slashableMagnitudes for the strategy/operator + nonSlashableMagnitude) of an operator's delegated stake.
+     */
+    struct OperatorSetSlashingParam {
+        OperatorSet operatorSet;
+        uint64 slashableMagnitude; 
+    }
+
+    /**
+     * @notice A structure defining a set of operator-based slashing configurations
+     * to manage slashable stake
+     * @param strategy each slashable stake is defined within a single strategy
+     * @param nonSlashableMagnitude the magnitude that is not slashable by any AVS
+     * @param operatorSetSlashingParams the fine-grained parameters defining the AVSs
+     * ability to slash and whether or not the AVS can register the operator for the
+     * operator set without a signature from the operator.
+     */
+    struct SlashingMagnitudeParam {
+        IStrategy strategy;
+        uint64 nonSlashableMagnitude;
+        OperatorSetSlashingParam[] operatorSetSlashingParams; 
+    }
+
+    /// EVENTS
+
+    event SlashableMagnitudeUpdated(
+        address operator, IStrategy strategy, OperatorSet operatorSet, uint64 slashableMagnitude, uint32 effectEpoch
+    );
+
+    event NonSlashableMagnitudeUpdated(
+        address operator, IStrategy strategy, uint64 nonSlashableMagnitude, uint32 effectEpoch
+    );
+    
+    event MagnitudesLocked(
+        address operator, IStrategy strategy, uint32 epoch
+    );
+
     /**
      *  @notice Emitted when an operator's registration status with an AVS is updated.
      *  Specifically, when an operator enters its first operator set for an AVS, or
@@ -130,6 +175,62 @@ interface IAVSDirectory is ISignatureUtils {
      *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
      */
     function updateAVSMetadataURI(string calldata metadataURI) external;
+
+    /// EXTERNAL - STATE MODIFYING
+    
+    /**
+     * @notice updates the slashing magnitudes for an operator for a set of 
+     * operator sets
+     * 
+     * @param operator the operator whom the slashing parameters are being 
+     * changed
+     * @param slashingMagnitudeParams the new slashing parameters
+     * @param allocatorSignature if non-empty is the signature of the allocator on 
+     * the modification. if empty, the msg.sender must be the allocator for the 
+     * operator
+     *
+     * @dev changes take effect in 3 epochs for when this function is called
+     */
+    function updateSlashingMagnitudes(
+        address operator,
+        SlashingMagnitudeParam[] calldata slashingMagnitudeParams,
+        SignatureWithExpiry calldata allocatorSignature
+    ) external returns(uint32 effectEpoch);
+
+    /**
+     * @notice sets magnitudes for the given operator in the next epoch to the current
+     * epoch's magnitudes decreased by bipsToSlash
+     *
+     * @param operator the operator to decrease and lock magnitude updates for
+     * @param operatorSet the operator set slashing the operator
+     * @param strategies the list of strategies to decrease and lock magnitude updates for
+     * @param bipsToDecrease the bips to decrease the operator set's magnitude
+     *
+     * @dev only called by the Slasher whenever a slashing request is made
+     */
+    function decreaseAndLockMagnitude(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies,
+        uint16 bipsToDecrease
+    ) external;
+    
+    /**
+     * @notice increases magnitudes back when previous slashing requests are cancelled
+     * 
+     * @param operator the operator to increase magnitudes for
+     * @param operatorSet the operator set cancelling slashing for the operator
+     * @param strategies the list of strategies to increase magnitudes for
+     * @param bipsToIncrease the bips to increase the operator set's magnitude 
+     *
+     * @dev only called by the Slasher whenever a slashing request is cancelled
+     */
+    function increaseMagnitude(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies,
+        uint16 bipsToIncrease
+    ) external;
 
     /**
      *  @notice Returns whether the salt has already been used by the operator or not.

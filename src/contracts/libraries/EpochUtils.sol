@@ -23,6 +23,10 @@ library EpochUtils {
         return getEpochFromTimestamp(block.timestamp);
     }
 
+    function getNextSlashingParameterEffectEpoch(uint32 referenceEpoch) internal pure returns (uint32) {
+        return referenceEpoch + 3;
+    }
+
     function getNextSlashingParameterEffectEpoch() internal view returns (uint32) {
         return currentEpoch() + 3;
     }
@@ -31,7 +35,7 @@ library EpochUtils {
         return requestEpoch + 2;
     }
 
-    function getEndOfSlashabilityEpoch(uint32 queuedEpoch) internal view returns (uint32) {
+    function getEndOfSlashabilityEpoch(uint32 queuedEpoch) internal pure returns (uint32) {
         return queuedEpoch + 1;
     }
 }

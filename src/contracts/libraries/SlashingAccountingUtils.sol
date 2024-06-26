@@ -14,7 +14,7 @@ library SlashingAccountingUtils {
     // an amount of shares over this will cause overflow when multiplying by `SHARE_CONVERSION_SCALE`
     uint256 internal constant MAX_VALID_SHARES = type(uint96).max;
 
-    uint256 internal constant BIPS_FACTOR = 10000;
+    uint64 internal constant BIPS_FACTOR = 10000;
 
     uint64 internal constant BIPS_FACTOR_SQUARED = 1e8;
 

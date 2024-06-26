@@ -133,14 +133,11 @@ contract OperatorSetManager is IOperatorSetManager {
             } else if (_lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch + 1 == epoch) {
                 // extend the last lock to this epoch
                 _lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch = epoch;
-                // emit MagnitudeUpdatesLocked(operator, strategy, epoch);
                 return;
             }
+        } else {
+            _lockedMagnitudeUpdates[operator][strategy].push(StakeLock({startEpoch: epoch, endEpoch: epoch}));
         }
-
-        _lockedMagnitudeUpdates[operator][strategy].push(StakeLock({startEpoch: epoch, endEpoch: epoch}));
-
-        // emit MagnitudeUpdatesLocked(operator, strategy, epoch);
     }
 
     /// VIEW

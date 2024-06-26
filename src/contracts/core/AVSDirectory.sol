@@ -6,6 +6,8 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
+import "../libraries/EpochUtils.sol";
+import "../libraries/SlashingAccountingUtils.sol";
 import "./AVSDirectoryStorage.sol";
 
 contract AVSDirectory is
@@ -334,6 +336,279 @@ contract AVSDirectory is
      */
     function cancelSalt(bytes32 salt) external {
         operatorSaltIsSpent[msg.sender][salt] = true;
+    }
+
+    struct TotalMagnitudeUpdate {
+        uint32 epoch;
+        uint64 nonSlashableMagnitude;
+        uint64 totalAllocatedMagnitude;
+    }
+
+    struct MagnitudeUpdate {
+        uint32 epoch;
+        uint64 magnitude;
+    }
+
+    struct StakeLock {
+        uint32 startEpoch;
+        uint32 endEpoch;
+    }
+
+    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => MagnitudeUpdate[])))) private
+        _operatorSetMagnitudeUpdates;
+    mapping(address => mapping(IStrategy => TotalMagnitudeUpdate[])) private _totalMagnitudeUpdates;
+    mapping(address => mapping(IStrategy => StakeLock[])) private _lockedMagnitudeUpdates;
+
+    /**
+     * @notice updates the slashing magnitudes for an operator for a set of
+     * operator sets
+     *
+     * @param operator the operator whom the slashing parameters are being
+     * changed
+     * @param slashingMagnitudeParams the new slashing parameters
+     * @param allocatorSignature if non-empty is the signature of the allocator on
+     * the modification. if empty, the msg.sender must be the allocator for the
+     * operator
+     *
+     * @dev changes take effect in 3 epochs for when this function is called
+     */
+    function updateSlashingMagnitudes(
+        address operator,
+        SlashingMagnitudeParam[] calldata slashingMagnitudeParams,
+        SignatureWithExpiry calldata allocatorSignature
+    ) external returns (uint32 effectEpoch) {
+        require(msg.sender == operator);
+        uint32 currentEpoch = EpochUtils.currentEpoch();
+        effectEpoch = EpochUtils.getNextSlashingParameterEffectEpoch(currentEpoch);
+        // loop through the slashingMagnitudeParams and update the magnitudes
+        for (uint256 i = 0; i < slashingMagnitudeParams.length; i++) {
+            IStrategy strategy = slashingMagnitudeParams[i].strategy;
+
+            TotalMagnitudeUpdate memory totalMagnitudeUpdate;
+            if (_totalMagnitudeUpdates[operator][strategy].length != 0) {
+                totalMagnitudeUpdate =
+                    _totalMagnitudeUpdates[operator][strategy][_totalMagnitudeUpdates[operator][strategy].length - 1];
+            }
+            uint64 newTotalMagnitude;
+
+            for (uint256 j = 0; j < slashingMagnitudeParams[i].operatorSetSlashingParams.length; j++) {
+                {
+                    MagnitudeUpdate[] storage operatorSetMagnitudeUpdates = _operatorSetMagnitudeUpdates[operator][strategy][slashingMagnitudeParams[i]
+                        .operatorSetSlashingParams[j].operatorSet.avs][slashingMagnitudeParams[i].operatorSetSlashingParams[j]
+                        .operatorSet
+                        .id];
+
+                    MagnitudeUpdate memory prevMagnitudeUpdate;
+                    if (operatorSetMagnitudeUpdates.length != 0) {
+                        prevMagnitudeUpdate = operatorSetMagnitudeUpdates[operatorSetMagnitudeUpdates.length - 1];
+                    }
+
+                    uint32 prevMagnitudeEpoch = prevMagnitudeUpdate.epoch;
+                    // push to magnitude updates between current and effect epoch
+                    if (prevMagnitudeUpdate.epoch < currentEpoch) {
+                        prevMagnitudeUpdate.epoch = currentEpoch;
+                    }
+                    // push the previous magnitude for each epoch between current and effect that has not been set yet
+                    while (prevMagnitudeUpdate.epoch < effectEpoch) {
+                        prevMagnitudeUpdate.epoch++;
+                        operatorSetMagnitudeUpdates.push(prevMagnitudeUpdate);
+                    }
+
+                    newTotalMagnitude = totalMagnitudeUpdate.totalAllocatedMagnitude
+                        + slashingMagnitudeParams[i].operatorSetSlashingParams[j].slashableMagnitude
+                        - prevMagnitudeUpdate.magnitude;
+
+                    // update the operator set magnitude in place if possible
+                    if (prevMagnitudeEpoch != effectEpoch) {
+                        operatorSetMagnitudeUpdates.push(
+                            MagnitudeUpdate({
+                                epoch: effectEpoch,
+                                magnitude: slashingMagnitudeParams[i].operatorSetSlashingParams[j].slashableMagnitude
+                            })
+                        );
+                    } else {
+                        operatorSetMagnitudeUpdates[operatorSetMagnitudeUpdates.length - 1].magnitude =
+                            slashingMagnitudeParams[i].operatorSetSlashingParams[j].slashableMagnitude;
+                    }
+                }
+
+                emit SlashableMagnitudeUpdated(
+                    operator,
+                    strategy,
+                    slashingMagnitudeParams[i].operatorSetSlashingParams[j].operatorSet,
+                    slashingMagnitudeParams[i].operatorSetSlashingParams[j].slashableMagnitude,
+                    effectEpoch
+                );
+            }
+
+            uint32 prevTotalMagnitudeEpoch = totalMagnitudeUpdate.epoch;
+            // push to magnitude updates between current and effect epoch
+            if (totalMagnitudeUpdate.epoch < currentEpoch) {
+                totalMagnitudeUpdate.epoch = currentEpoch;
+            }
+
+            // push the previous magnitude for each epoch between current and effect that has not been set yet
+            while (totalMagnitudeUpdate.epoch < effectEpoch) {
+                totalMagnitudeUpdate.epoch++;
+                _totalMagnitudeUpdates[operator][strategy].push(totalMagnitudeUpdate);
+            }
+
+            // update the total magnitude in place if possible
+            if (prevTotalMagnitudeEpoch != effectEpoch) {
+                _totalMagnitudeUpdates[operator][strategy].push(
+                    TotalMagnitudeUpdate({
+                        epoch: effectEpoch,
+                        nonSlashableMagnitude: slashingMagnitudeParams[i].nonSlashableMagnitude,
+                        totalAllocatedMagnitude: newTotalMagnitude
+                    })
+                );
+            } else {
+                _totalMagnitudeUpdates[operator][strategy][_totalMagnitudeUpdates[operator][strategy].length - 1]
+                    .nonSlashableMagnitude = slashingMagnitudeParams[i].nonSlashableMagnitude;
+                _totalMagnitudeUpdates[operator][strategy][_totalMagnitudeUpdates[operator][strategy].length - 1]
+                    .totalAllocatedMagnitude = newTotalMagnitude;
+            }
+
+            emit NonSlashableMagnitudeUpdated(
+                operator, strategy, slashingMagnitudeParams[i].nonSlashableMagnitude, effectEpoch
+            );
+        }
+
+        return effectEpoch;
+    }
+
+    address slasher = address(0);
+
+    /**
+     * @notice sets magnitudes for the given operator in the next epoch to the current
+     * epoch's magnitudes decreased by bipsToSlash
+     *
+     * @param operator the operator to decrease and lock magnitude updates for
+     * @param operatorSet the operator set slashing the operator
+     * @param strategies the list of strategies to decrease and lock magnitude updates for
+     * @param bipsToDecrease the bips to decrease the operator set's magnitude
+     *
+     * @dev only called by the Slasher whenever a slashing request is made
+     */
+    function decreaseAndLockMagnitude(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies,
+        uint16 bipsToDecrease
+    ) external {
+        require(msg.sender == slasher);
+        uint32 currentEpoch = EpochUtils.currentEpoch();
+        for (uint256 i = 0; i < strategies.length; i++) {
+            // get the magnitude update for the current epoch and the epoch before the current epoch
+            uint256 currentIndex;
+            uint64 magnitudeToDecrease;
+            uint64 prevMagnitude;
+
+            // find the operator set magnitude update for the current epoch
+            for (
+                currentIndex =
+                    _operatorSetMagnitudeUpdates[operator][strategies[i]][operatorSet.avs][operatorSet.id].length - 1;
+                currentIndex >= 0;
+                currentIndex--
+            ) {
+                if (
+                    _operatorSetMagnitudeUpdates[operator][strategies[i]][operatorSet.avs][operatorSet.id][currentIndex]
+                        .epoch <= currentEpoch
+                ) {
+                    prevMagnitude = _operatorSetMagnitudeUpdates[operator][strategies[i]][operatorSet.avs][operatorSet
+                        .id][currentIndex].magnitude;
+                    magnitudeToDecrease = prevMagnitude * bipsToDecrease / SlashingAccountingUtils.BIPS_FACTOR;
+                    break;
+                }
+            }
+
+            // push or update the next epoch's magnitude
+            if (
+                currentIndex
+                    == _operatorSetMagnitudeUpdates[operator][strategies[i]][operatorSet.avs][operatorSet.id].length - 1
+            ) {
+                _operatorSetMagnitudeUpdates[operator][strategies[i]][operatorSet.avs][operatorSet.id].push(
+                    MagnitudeUpdate({epoch: currentEpoch, magnitude: prevMagnitude - magnitudeToDecrease})
+                );
+            } else {
+                // decrease the magnitude for the next epoch
+                _operatorSetMagnitudeUpdates[operator][strategies[i]][operatorSet.avs][operatorSet.id][currentIndex + 1]
+                    .magnitude -= magnitudeToDecrease;
+            }
+
+            uint64 prevTotalAllocatedMagnitude;
+
+            // find the total magnitude for the current epoch
+            for (
+                currentIndex = _totalMagnitudeUpdates[operator][strategies[i]].length - 1;
+                currentIndex >= 0;
+                currentIndex--
+            ) {
+                if (_totalMagnitudeUpdates[operator][strategies[i]][currentIndex].epoch <= currentEpoch) {
+                    prevTotalAllocatedMagnitude =
+                        _totalMagnitudeUpdates[operator][strategies[i]][currentIndex].totalAllocatedMagnitude;
+                    break;
+                }
+            }
+
+            // push or update the next epoch's total magnitude
+            if (currentIndex == _totalMagnitudeUpdates[operator][strategies[i]].length - 1) {
+                _totalMagnitudeUpdates[operator][strategies[i]].push(
+                    TotalMagnitudeUpdate({
+                        epoch: currentEpoch,
+                        nonSlashableMagnitude: _totalMagnitudeUpdates[operator][strategies[i]][currentIndex]
+                            .nonSlashableMagnitude,
+                        totalAllocatedMagnitude: prevTotalAllocatedMagnitude - magnitudeToDecrease
+                    })
+                );
+            } else {
+                _totalMagnitudeUpdates[operator][strategies[i]][currentIndex + 1].totalAllocatedMagnitude -=
+                    magnitudeToDecrease;
+            }
+        }
+    }
+
+    /**
+     * @notice increases magnitudes back when previous slashing requests are cancelled
+     *
+     * @param operator the operator to increase magnitudes for
+     * @param operatorSet the operator set cancelling slashing for the operator
+     * @param strategies the list of strategies to increase magnitudes for
+     * @param bipsToIncrease the bips to increase the operator set's magnitude
+     *
+     * @dev only called by the Slasher whenever a slashing request is cancelled
+     */
+    function increaseMagnitude(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies,
+        uint16 bipsToIncrease
+    ) external {}
+
+    /**
+     * @notice Locks magnitude updates for an operator at the current epoch
+     * @param operator that stake updates are locked for
+     * @param strategy that the operator cannot update stake for
+     * @dev Only callable by the Slasher
+     */
+    function _lockMagnitudeUpdatesAtEpoch(address operator, IStrategy strategy) internal {
+        uint32 epoch = EpochUtils.currentEpoch();
+        require(msg.sender == address(slasher), "OperatorSetManager.lockStakeUpdatesAtEpoch: Caller is not the slasher");
+        uint256 lockedMagnitudeUpdatesLength = _lockedMagnitudeUpdates[operator][strategy].length;
+        if (lockedMagnitudeUpdatesLength != 0) {
+            if (_lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch == epoch) {
+                // already locked for this epoch
+                return;
+            } else if (
+                _lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch + 1 == epoch
+            ) {
+                // extend the last lock to this epoch
+                _lockedMagnitudeUpdates[operator][strategy][lockedMagnitudeUpdatesLength - 1].endEpoch = epoch;
+                return;
+            }
+        } else {
+            _lockedMagnitudeUpdates[operator][strategy].push(StakeLock({startEpoch: epoch, endEpoch: epoch}));
+        }
     }
 
     /**
