@@ -36,15 +36,6 @@ contract OperatorSetManager is IOperatorSetManager {
     // operator => strategy => StakeLock updates array
     mapping(address => mapping(IStrategy => StakeLock[])) private _lockedMagnitudeUpdates;
 
-    /**
-    What is my current slashable bips given (operator, operatorSet, strategy, epoch)
-
-
-
-     */
-    // operator => strategy => operatorSet (hash) => epoch => actualSlashableBips
-    mapping(address => mapping(IStrategy => mapping(bytes32 => mapping(uint32 => uint16)))) public slashableBipsForEpoch;
-
     constructor(ISlasher _slasher) {
         slasher = _slasher;
     }
