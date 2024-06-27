@@ -12,7 +12,7 @@ contract DelegationManagerHarness is DelegationManager {
         return operatorShares[operator][strategy];
     }
 
-    function get_stakerDelegateableShares(address staker, IStrategy strategy) public view returns (uint256) {
+    function get_stakerDelegatableShares(address staker, IStrategy strategy) public view returns (uint256) {
         // this is the address of the virtual 'beaconChainETH' strategy
         if (address(strategy) == 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0) {
             int256 beaconChainETHShares = eigenPodManager.podOwnerShares(staker);
@@ -26,3 +26,4 @@ contract DelegationManagerHarness is DelegationManager {
         }
     }
 }
+
