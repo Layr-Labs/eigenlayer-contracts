@@ -67,6 +67,9 @@ methods {
     function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
     function eigenPodManager() external returns (address) envfree;
+    function minWithdrawalDelayBlocks() external returns (uint256) envfree;
+    function calculateWithdrawalRoot(IDelegationManager.Withdrawal) external returns (bytes32) envfree;
+    function pendingWithdrawals(bytes32) external returns (bool) envfree;
 }
 
 /*
@@ -257,6 +260,37 @@ rule sharesBecomeUndelegatedWhenStakerUndelegates(address operator, address stak
     }
 }
 
+rule newWithdrawalsHaveCorrectStartBlock() {
+    IDelegationManager.Withdrawal queuedWithdrawal;
+    bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
+    require(!pendingWithdrawals(withdrawalRoot));
+
+    // perform arbitrary function call
+    method f;
+    env e;
+    calldataarg arg;
+
+    assert(
+        !pendingWithdrawals(withdrawalRoot)
+        || (queuedWithdrawal.startBlock == assert_uint32(e.block.number)),
+        "withdrawal start block set incorrectly"
+    );
+}
+
+rule withdrawalDelayIsEnforced() {
+    IDelegationManager.Withdrawal queuedWithdrawal;
+    address[] tokens;
+    uint256 middlewareTimesIndex;
+    bool receiveAsTokens;
+    env e;
+    completeQueuedWithdrawal(e, queuedWithdrawal, tokens, middlewareTimesIndex, receiveAsTokens);
+    bool callReverted = lastReverted;
+    assert(
+        callReverted
+        || (assert_uint256(queuedWithdrawal.startBlock + minWithdrawalDelayBlocks()) >= e.block.number),
+        "withdrawal delay not properly enforced"
+    );
+}
 
 /*
 rule batchEquivalence {

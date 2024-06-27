@@ -53,7 +53,7 @@ jobs:
     - name: Run coverage
       run: forge coverage --report lcov
     - name: Prune coverage report
-      run: lcov --remove ./lcov.info -o ./lcov.info.pruned 'src/test/*' 'script/*' --ignore-errors inconsistent
+      run: lcov --remove ./lcov.info -o ./lcov.info.pruned 'src/test/*' 'script/*' '*Storage.sol' --ignore-errors inconsistent
     - name: Generate reports
       run: genhtml -o report ./lcov.info.pruned
     - name: Upload coverage results (s3 link here)
