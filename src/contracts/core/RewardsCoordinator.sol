@@ -507,8 +507,15 @@ contract RewardsCoordinator is
 
     /// @notice loop through the distribution roots from reverse and get latest root that is not disabled
     function getCurrentDistributionRoot() external view returns (DistributionRoot memory) {
+        return _distributionRoots[_distributionRoots.length - 1];
+    }
+
+    /// @notice loop through the distribution roots from reverse and get latest root that is not disabled and activated
+    /// i.e. a root that can be claimed against
+    function getCurrentActiveDistributionRoot() external view returns (DistributionRoot memory) {
         for (uint256 i = _distributionRoots.length; i > 0; i--) {
-            if (!_distributionRoots[i - 1].disabled) {
+            DistributionRoot memory root = _distributionRoots[i - 1];
+            if (!root.disabled && block.timestamp >= root.activatedAt) {
                 return _distributionRoots[i - 1];
             }
         }
