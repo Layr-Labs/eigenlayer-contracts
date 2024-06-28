@@ -491,30 +491,20 @@ contract AVSDirectory is
             {
                 uint256 lockedMagnitudeUpdatesLength = _lockedMagnitudeUpdates[operator][strategies[i]].length;
                 if (lockedMagnitudeUpdatesLength != 0) {
-                    if (
-                        _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1].endEpoch
-                            == currentEpoch
-                    ) {
-                        // already locked for this epoch
-                        startEpoch = _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1]
-                            .startEpoch;
-                        return;
-                    } else if (
-                        _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1].endEpoch + 1
-                            == currentEpoch
-                    ) {
-                        // extend the last lock to this epoch
-                        startEpoch = _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1]
-                            .startEpoch;
-                        _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1].endEpoch =
-                            currentEpoch;
+                    StakeLock storage latestStakeLock = _lockedMagnitudeUpdates[operator][strategies[i]][lockedMagnitudeUpdatesLength - 1];
+                    if (latestStakeLock.endEpoch + 1 >= currentEpoch) {
+                        // Either previous epoch was locked or the current epoch is locked
+                        // so we extend the lock to end in the next epoch
+                        startEpoch = latestStakeLock.startEpoch;
+                        latestStakeLock.endEpoch = currentEpoch + 1;
                         return;
                     }
-                } else {
-                    _lockedMagnitudeUpdates[operator][strategies[i]].push(
-                        StakeLock({startEpoch: currentEpoch, endEpoch: currentEpoch + 1})
-                    );
                 }
+
+                // if latest lock not extended or this is the first StakeLock, push a new lock
+                _lockedMagnitudeUpdates[operator][strategies[i]].push(
+                    StakeLock({startEpoch: currentEpoch, endEpoch: currentEpoch + 1})
+                );
             }
 
             // get the magnitude update for the current epoch
