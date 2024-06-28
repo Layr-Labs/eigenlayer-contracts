@@ -102,7 +102,16 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     *  @notice Called by AVSs or operators to remove an operator from an operator set.
+     * @notice Called by an operator to deregister from an operator set
+     * 
+     * @param avs The address of the AVS to deregister the operator from.
+     * @param operatorSetIds The IDs of the operator sets.
+     * 
+     */
+    function deregisterFromAVSOperatorSets(address avs, uint32[] calldata operatorSetIds) external;
+
+    /**
+     *  @notice Called by AVSs to remove an operator from an operator set.
      *
      *  @param operator The address of the operator to be removed from the operator set.
      *  @param operatorSetIds The IDs of the operator sets.

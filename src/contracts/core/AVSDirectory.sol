@@ -197,44 +197,33 @@ contract AVSDirectory is
     }
 
     /**
-     *  @notice Called by AVSs or operators to remove an operator from an operator set.
+     * @notice Called by an operator to deregister from an operator set
+     * 
+     * @param avs The address of the AVS to deregister the operator from.
+     * @param operatorSetIds The IDs of the operator sets.
+     * 
+     * @dev msg.sender used is the operator
+     */
+    function deregisterFromAVSOperatorSets(
+        address avs, 
+        uint32[] calldata operatorSetIds
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+        _deregisterFromOperatorSets(msg.sender, avs, operatorSetIds);
+    }
+
+    /**
+     *  @notice Called by AVSs to remove an operator from an operator set.
      *
      *  @param operator The address of the operator to be removed from the operator set.
      *  @param operatorSetIds The IDs of the operator sets.
      *
      *  @dev msg.sender is used as the AVS.
-     *  @dev The operator must be registered for the msg.sender AVS and the given operator set.
-     *  @dev If this call removes the operator from all operator sets for the msg.sender AVS,
-     *  then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED status.
      */
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        // Loop over `operatorSetIds` array and deregister `operator` for each item.
-        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-            // Assert `operator` is registered for this iterations operator set.
-            require(
-                isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
-                "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
-            );
-
-            // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIds[i]`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = false;
-
-            emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
-        }
-
-        // The above assertion makes underflow logically impossible here.
-        unchecked {
-            operatorAVSOperatorSetCount[msg.sender][operator] -= operatorSetIds.length;
-        }
-
-        // Set the operator as deregistered if no longer registered for any operator sets
-        if (operatorAVSOperatorSetCount[msg.sender][operator] == 0) {
-            avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
-            emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
-        }
+        _deregisterFromOperatorSets(operator, msg.sender, operatorSetIds);
     }
 
     /**
@@ -334,6 +323,51 @@ contract AVSDirectory is
     function cancelSalt(bytes32 salt) external {
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
+
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
+
+    /**
+     * @notice Internal helper function for deregistering an operator from operator sets.
+     * 
+     * @param operator The address of the operator to deregister. 
+     * @param avs The address of the AVS to deregister the operator from. 
+     * @param operatorSetIds The IDs of the operator sets. 
+     * 
+     * @dev The operator must be registered for the msg.sender AVS and the given operator set.
+     * @dev If this call removes the operator from all operator sets for the AVS,
+     * then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED status.
+     */
+    function _deregisterFromOperatorSets(address operator, address avs, uint32[] calldata operatorSetIds) internal {
+        // Loop over `operatorSetIds` array and deregister `operator` for each item.
+        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            // Assert `operator` is registered for this iterations operator set.
+            require(
+                isOperatorInOperatorSet[avs][operator][operatorSetIds[i]],
+                "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
+            );
+
+            // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIds[i]`.
+            isOperatorInOperatorSet[avs][operator][operatorSetIds[i]] = false;
+
+            emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: avs, id: operatorSetIds[i]}));
+        }
+
+        // The above assertion makes underflow logically impossible here.
+        unchecked {
+            operatorAVSOperatorSetCount[avs][operator] -= operatorSetIds.length;
+        }
+
+        // Set the operator as deregistered if no longer registered for any operator sets
+        if (operatorAVSOperatorSetCount[avs][operator] == 0) {
+            avsOperatorStatus[avs][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
+            emit OperatorAVSRegistrationStatusUpdated(operator, avs, OperatorAVSRegistrationStatus.UNREGISTERED);
+        }
+    }
+
 
     /**
      *

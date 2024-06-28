@@ -170,6 +170,30 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         // filter out disallowed stakerOptOutWindowBlocks values
         cheats.assume(operatorDetails.stakerOptOutWindowBlocks <= delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
     }
+
+    function _registerOperatorToOperatorSets(
+        uint256 operatorPk,
+        uint32 operatorSetId,
+        bytes32 salt,
+        uint256 expiry
+    ) internal virtual {
+        expiry = bound(expiry, 1, type(uint256).max);
+        cheats.warp(0);
+
+        uint32[] memory oids = new uint32[](1);
+        oids[0] = operatorSetId;
+
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
+        );
+
+        _registerOperatorWithBaseDetails(operator);
+
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        );
+    }
 }
 
 contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
@@ -470,30 +494,6 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirectoryUnitTests {
     event OperatorRemovedFromOperatorSet(address operator, IAVSDirectory.OperatorSet operatorSet);
 
-    function _registerOperatorToOperatorSets(
-        uint256 operatorPk,
-        uint32 operatorSetId,
-        bytes32 salt,
-        uint256 expiry
-    ) internal virtual {
-        expiry = bound(expiry, 1, type(uint256).max);
-        cheats.warp(0);
-
-        uint32[] memory oids = new uint32[](1);
-        oids[0] = operatorSetId;
-
-        address operator = cheats.addr(operatorPk);
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
-        );
-
-        _registerOperatorWithBaseDetails(operator);
-
-        avsDirectory.registerOperatorToOperatorSets(
-            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
-        );
-    }
-
     function testFuzz_revert_OperatorNotInOperatorSet(uint256 operatorPk, uint32 operatorSetId) public virtual {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
 
@@ -528,6 +528,55 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
         );
 
         avsDirectory.deregisterOperatorFromOperatorSets(operator, oids);
+
+        assertEq(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId), false);
+        assertEq(avsDirectory.operatorAVSOperatorSetCount(address(this), operator), 0);
+        assertEq(
+            uint8(avsDirectory.avsOperatorStatus(address(this), operator)),
+            uint8(IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED)
+        );
+    }
+}
+
+contract AVSDirectoryUnitTests_deregisterFromAVSOperatorSets is AVSDirectoryUnitTests {
+    event OperatorRemovedFromOperatorSet(address operator, IAVSDirectory.OperatorSet operatorSet);
+
+    function testFuzz_revert_OperatorNotInOperatorSet(uint256 operatorPk, uint32 operatorSetId) public virtual {
+        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+
+        address operator = cheats.addr(operatorPk);
+        uint32[] memory oids = new uint32[](1);
+        oids[0] = operatorSetId;
+
+        cheats.expectRevert("AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set");
+        cheats.prank(operator);
+        avsDirectory.deregisterFromAVSOperatorSets(address(this), oids);
+    }
+
+    function testFuzz_Correctness(
+        uint256 operatorPk,
+        uint32 operatorSetId,
+        bytes32 salt,
+        uint256 expiry
+    ) public virtual {
+        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+
+        _registerOperatorToOperatorSets(operatorPk, operatorSetId, salt, expiry);
+
+        address operator = cheats.addr(operatorPk);
+        uint32[] memory oids = new uint32[](1);
+        oids[0] = operatorSetId;
+
+        cheats.expectEmit(true, false, false, false, address(avsDirectory));
+        emit OperatorRemovedFromOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), operatorSetId));
+
+        cheats.expectEmit(true, true, true, false, address(avsDirectory));
+        emit OperatorAVSRegistrationStatusUpdated(
+            operator, address(this), IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+        );
+
+        cheats.prank(operator);
+        avsDirectory.deregisterFromAVSOperatorSets(address(this), oids);
 
         assertEq(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId), false);
         assertEq(avsDirectory.operatorAVSOperatorSetCount(address(this), operator), 0);
