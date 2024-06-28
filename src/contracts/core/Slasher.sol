@@ -31,14 +31,15 @@ contract Slasher is SlasherStorage {
         IStrategy[] memory strategies,
         uint32 bipsToIncrease
     ) external {
-        require(bipsToIncrease > 0, "Slasher.increaseRequestedBipsToSlash: bipsToIncrease must be positive");
         require(
             bipsToIncrease < SlashingAccountingUtils.BIPS_FACTOR,
             "Slasher.increaseRequestedBipsToSlash: bipsToIncrease must be less than BIPS_FACTOR"
         );
 
-        IOperatorSetManager.OperatorSet memory operatorSet =
-            IOperatorSetManager.OperatorSet({avs: msg.sender, id: operatorSetID});
+        IOperatorSetManager.OperatorSet memory operatorSet = IOperatorSetManager.OperatorSet({
+            avs: msg.sender,
+            id: operatorSetID
+        });
         _modifyRequestedBipsToSlash(
             operator,
             operatorSet,
@@ -71,13 +72,14 @@ contract Slasher is SlasherStorage {
             epoch == currentEpoch || epoch + 1 == currentEpoch,
             "Slasher.reduceRequestedBipsToSlash: can only reduce for current or previous epoch"
         );
-        require(bipsToReduce > 0, "Slasher.reduceRequestedBipsToSlash: bipsToReduce must be negative");
         require(
             bipsToReduce < 2 ** 31, "Slasher.reduceRequestedBipsToSlash: bipsToReduce must be less than minimum int32"
         );
 
-        IOperatorSetManager.OperatorSet memory operatorSet =
-            IOperatorSetManager.OperatorSet({avs: msg.sender, id: operatorSetID});
+        IOperatorSetManager.OperatorSet memory operatorSet = IOperatorSetManager.OperatorSet({
+            avs: msg.sender,
+            id: operatorSetID
+        });
         _modifyRequestedBipsToSlash(
             operator,
             operatorSet,
@@ -317,7 +319,7 @@ contract Slasher is SlasherStorage {
         uint32 bipsToModify,
         function(uint32, uint32) view returns (uint32) bipsOperation
     ) internal {
-        require(bipsToModify != 0, "Slasher._modifyRequestedBipsToSlash: cannot modify slashing by 0");
+        require(bipsToModify > 0, "Slasher._modifyRequestedBipsToSlash: bipsToModify must be nonzero");
 
         bytes32 operatorSetHash = _hashOperatorSet(operatorSet);
         for (uint256 i = 0; i < strategies.length; ++i) {
