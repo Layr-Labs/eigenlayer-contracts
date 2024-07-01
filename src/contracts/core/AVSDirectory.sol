@@ -69,8 +69,10 @@ contract AVSDirectory is
      * 
      * @dev msg.sender must be the AVS.
      */
-    function initializeOperatorSet(uint32 operatorSetId) external {
-        _initializeOperatorSet(msg.sender, operatorSetId);
+    function createOperatorSet(uint32 operatorSetId) external {
+        require(!isOperatorSet[avs][operatorSetId], "AVSDirectory._createOperatorSet: operator set already exists");
+        isOperatorSet[avs][operatorSetId] = true;
+        emit OperatorSetInitialized(avs, operatorSetId);    
     }
 
     /**
@@ -81,6 +83,7 @@ contract AVSDirectory is
      * @param standbyParams The new standby parameters for the operator.
      * @param operatorSignature If non-empty, the signature of the operator authorizing the modification.
      *                  If empty, the `msg.sender` must be the operator.
+     * 
      */
     function updateStandbyParams(
         address operator,
@@ -108,16 +111,11 @@ contract AVSDirectory is
             );
             // Spend salt.
             operatorSaltIsSpent[operator][operatorSignature.salt] = true;
-
-            // Initialize operator set if it does not exist.
-            for (uint256 i; i < standbyParams.length; ++i) {
-                if (!isOperatorSet[msg.sender][standbyParams[i].operatorSet.id]) {
-                    _initializeOperatorSet(msg.sender, standbyParams[i].operatorSet.id);
-                }
-            }
         }
 
         for (uint256 i; i < standbyParams.length; ++i) {
+            require(isOperatorSet[standbyParams[i].operatorSet.avs][standbyParams[i].operatorSet.id], "AVSDirectory.updateStandbyParams: operator set does not exist");
+
             onStandby[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id] =
                 standbyParams[i].onStandby;
 
@@ -195,10 +193,8 @@ contract AVSDirectory is
                 );
             }
 
-            // Initialize operator set if it does not exist.
-            if (!isOperatorSet[msg.sender][operatorSetIds[i]]) {
-                _initializeOperatorSet(msg.sender, operatorSetIds[i]);
-            }
+            // Assert the operator set exists.
+            require(isOperatorSet[msg.sender][operatorSetIds[i]], "AVSDirectory.registerOperatorToOperatorSets: operator set does not exist");
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
@@ -356,17 +352,6 @@ contract AVSDirectory is
      */
     function cancelSalt(bytes32 salt) external {
         operatorSaltIsSpent[msg.sender][salt] = true;
-    }
-
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
-    function _initializeOperatorSet(address avs, uint32 operatorSetId) internal {
-        require(!isOperatorSet[avs][operatorSetId], "AVSDirectory._initializeOperatorSet: operator set already exists");
-        isOperatorSet[avs][operatorSetId] = true;
-        emit OperatorSetInitialized(avs, operatorSetId);
     }
 
     /**
