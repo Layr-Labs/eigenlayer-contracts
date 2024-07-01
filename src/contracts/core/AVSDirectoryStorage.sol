@@ -52,7 +52,10 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     mapping(address => mapping(address => uint256)) public operatorAVSOperatorSetCount;
 
     /// @notice Mapping: avs = operator => operatorSetId => Whether the given operator set in standby mode or not
-    mapping(address => mapping(address => mapping(uint32 => bool))) public onStandby;
+    mapping(address => mapping(address => mapping(uint32 => bool))) public onStandby;   
+
+    /// @notice Mapping: avs => operatorSetId => whether the operator set exists
+    mapping(address => mapping(uint32 => bool)) public isOperatorSet;
 
     constructor(IDelegationManager _delegation, IStrategyManager _strategyManager) {
         delegation = _delegation;

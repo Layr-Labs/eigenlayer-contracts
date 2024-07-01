@@ -44,6 +44,18 @@ interface IAVSDirectory is ISignatureUtils {
     /// @notice Emitted when an operator updates their standby parameters.
     event StandbyParamUpdated(address operator, OperatorSet operatorSet, bool onStandby);
 
+    /// @notice Emitted when an operator set is initialized
+    event OperatorSetInitialized(address indexed avs, uint32 operatorSetId);
+
+    /**
+     * @notice Initializes an operator set for an AVS.
+     * 
+     * @param operatorSetId The ID of the operator set to initialize.
+     * 
+     * @dev msg.sender must be the AVS.
+     */
+    function initializeOperatorSet(uint32 operatorSetId) external;
+
     /**
      * @notice Updates the standby parameters for an operator across multiple operator sets.
      * Allows the AVS to add the operator to a given operator set if they are not already registered.

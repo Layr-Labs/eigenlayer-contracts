@@ -29,6 +29,18 @@ var (
 	_ = abi.ConvertType
 )
 
+// IAVSDirectoryOperatorSet is an auto generated low-level Go binding around an user-defined struct.
+type IAVSDirectoryOperatorSet struct {
+	Avs common.Address
+	Id  uint32
+}
+
+// IAVSDirectoryStandbyParam is an auto generated low-level Go binding around an user-defined struct.
+type IAVSDirectoryStandbyParam struct {
+	OperatorSet IAVSDirectoryOperatorSet
+	OnStandby   bool
+}
+
 // ISignatureUtilsSignatureWithSaltAndExpiry is an auto generated low-level Go binding around an user-defined struct.
 type ISignatureUtilsSignatureWithSaltAndExpiry struct {
 	Signature []byte
@@ -38,8 +50,8 @@ type ISignatureUtilsSignatureWithSaltAndExpiry struct {
 
 // AVSDirectoryMetaData contains all meta data concerning the AVSDirectory contract.
 var AVSDirectoryMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_delegation\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"DOMAIN_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_AVS_REGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"avsOperatorStatus\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorAVSRegistrationDigestHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"cancelSalt\",\"inputs\":[{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"domainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_pauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"initialPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"operatorSaltIsSpent\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperatorToAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateAVSMetadataURI\",\"inputs\":[{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AVSMetadataURIUpdated\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAVSRegistrationStatusUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"status\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
-	Bin: "0x60c06040523480156200001157600080fd5b5060405162001f7838038062001f78833981016040819052620000349162000118565b6001600160a01b0381166080526200004b62000056565b504660a0526200014a565b600054610100900460ff1615620000c35760405162461bcd60e51b815260206004820152602760248201527f496e697469616c697a61626c653a20636f6e747261637420697320696e697469604482015266616c697a696e6760c81b606482015260840160405180910390fd5b60005460ff908116101562000116576000805460ff191660ff9081179091556040519081527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b565b6000602082840312156200012b57600080fd5b81516001600160a01b03811681146200014357600080fd5b9392505050565b60805160a051611e01620001776000396000610ea801526000818161032401526109830152611e016000f3fe608060405234801561001057600080fd5b50600436106101425760003560e01c80638da5cb5b116100b8578063d79aceab1161007c578063d79aceab146102f8578063df5cf7231461031f578063ec76f44214610346578063f2fde38b14610359578063f698da251461036c578063fabc1cbc1461037457600080fd5b80638da5cb5b1461029b5780639926ee7d146102ac578063a1060c88146102bf578063a364f4da146102d2578063a98fb355146102e557600080fd5b806349075da31161010a57806349075da3146101fa578063595c6a67146102355780635ac86ab71461023d5780635c975abb14610260578063715018a614610268578063886f11951461027057600080fd5b806310d67a2f14610147578063136439dd1461015c5780631794bb3c1461016f57806320606b7014610182578063374823b5146101bc575b600080fd5b61015a6101553660046118ab565b610387565b005b61015a61016a3660046118cf565b610443565b61015a61017d3660046118e8565b610582565b6101a97f8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a86681565b6040519081526020015b60405180910390f35b6101ea6101ca366004611929565b609960209081526000928352604080842090915290825290205460ff1681565b60405190151581526020016101b3565b610228610208366004611955565b609860209081526000928352604080842090915290825290205460ff1681565b6040516101b391906119a4565b61015a6106ac565b6101ea61024b3660046119cc565b606654600160ff9092169190911b9081161490565b6066546101a9565b61015a610773565b606554610283906001600160a01b031681565b6040516001600160a01b0390911681526020016101b3565b6033546001600160a01b0316610283565b61015a6102ba366004611a5f565b610787565b6101a96102cd366004611b46565b610b1a565b61015a6102e03660046118ab565b610bd3565b61015a6102f3366004611b8c565b610d3c565b6101a97fda2c89bafdd34776a2b8bb9c83c82f419e20cc8c67207f70edd58249b92661bd81565b6102837f000000000000000000000000000000000000000000000000000000000000000081565b61015a6103543660046118cf565b610d83565b61015a6103673660046118ab565b610e2e565b6101a9610ea4565b61015a6103823660046118cf565b610ee2565b606560009054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa1580156103da573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906103fe9190611bfe565b6001600160a01b0316336001600160a01b0316146104375760405162461bcd60e51b815260040161042e90611c1b565b60405180910390fd5b6104408161103e565b50565b60655460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa15801561048b573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104af9190611c65565b6104cb5760405162461bcd60e51b815260040161042e90611c87565b606654818116146105445760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e70617573653a20696e76616c696420617474656d70742060448201527f746f20756e70617573652066756e6374696f6e616c6974790000000000000000606482015260840161042e565b606681905560405181815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d906020015b60405180910390a250565b600054610100900460ff16158080156105a25750600054600160ff909116105b806105bc5750303b1580156105bc575060005460ff166001145b61061f5760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b606482015260840161042e565b6000805460ff191660011790558015610642576000805461ff0019166101001790555b61064c8383611135565b61065461121f565b609755610660846112b6565b80156106a6576000805461ff0019169055604051600181527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b50505050565b60655460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa1580156106f4573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906107189190611c65565b6107345760405162461bcd60e51b815260040161042e90611c87565b600019606681905560405190815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d9060200160405180910390a2565b61077b611308565b61078560006112b6565b565b606654600090600190811614156107dc5760405162461bcd60e51b815260206004820152601960248201527814185d5cd8589b194e881a5b99195e081a5cc81c185d5cd959603a1b604482015260640161042e565b42826040015110156108445760405162461bcd60e51b815260206004820152603e6024820152600080516020611dac83398151915260448201527f56533a206f70657261746f72207369676e617475726520657870697265640000606482015260840161042e565b60013360009081526098602090815260408083206001600160a01b038816845290915290205460ff16600181111561087e5761087e61198e565b14156108e05760405162461bcd60e51b815260206004820152603f6024820152600080516020611dac83398151915260448201527f56533a206f70657261746f7220616c7265616479207265676973746572656400606482015260840161042e565b6001600160a01b038316600090815260996020908152604080832085830151845290915290205460ff16156109645760405162461bcd60e51b81526020600482015260366024820152600080516020611dac8339815191526044820152751594ce881cd85b1d08185b1c9958591e481cdc195b9d60521b606482015260840161042e565b6040516336b87bd760e11b81526001600160a01b0384811660048301527f00000000000000000000000000000000000000000000000000000000000000001690636d70f7ae90602401602060405180830381865afa1580156109ca573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109ee9190611c65565b610a645760405162461bcd60e51b815260206004820152604d6024820152600080516020611dac83398151915260448201527f56533a206f70657261746f72206e6f74207265676973746572656420746f204560648201526c1a59d95b93185e595c881e595d609a1b608482015260a40161042e565b6000610a7a843385602001518660400151610b1a565b9050610a8b84828560000151611362565b3360008181526098602090815260408083206001600160a01b0389168085529083528184208054600160ff199182168117909255609985528386208a860151875290945293829020805490931684179092555190917ff0952b1c65271d819d39983d2abb044b9cace59bcc4d4dd389f586ebdcb15b4191610b0c91906119a4565b60405180910390a350505050565b604080517fda2c89bafdd34776a2b8bb9c83c82f419e20cc8c67207f70edd58249b92661bd6020808301919091526001600160a01b0387811683850152861660608301526080820185905260a08083018590528351808403909101815260c0909201909252805191012060009081610b90610ea4565b60405161190160f01b602082015260228101919091526042810183905260620160408051808303601f190181529190528051602090910120979650505050505050565b60665460009060019081161415610c285760405162461bcd60e51b815260206004820152601960248201527814185d5cd8589b194e881a5b99195e081a5cc81c185d5cd959603a1b604482015260640161042e565b60013360009081526098602090815260408083206001600160a01b038716845290915290205460ff166001811115610c6257610c6261198e565b14610cd55760405162461bcd60e51b815260206004820152603f60248201527f4156534469726563746f72792e646572656769737465724f70657261746f724660448201527f726f6d4156533a206f70657261746f72206e6f74207265676973746572656400606482015260840161042e565b3360008181526098602090815260408083206001600160a01b0387168085529252808320805460ff191690555190917ff0952b1c65271d819d39983d2abb044b9cace59bcc4d4dd389f586ebdcb15b4191610d3091906119a4565b60405180910390a35050565b336001600160a01b03167fa89c1dc243d8908a96dd84944bcc97d6bc6ac00dd78e20621576be6a3c9437138383604051610d77929190611ccf565b60405180910390a25050565b33600090815260996020908152604080832084845290915290205460ff1615610e085760405162461bcd60e51b815260206004820152603160248201527f4156534469726563746f72792e63616e63656c53616c743a2063616e6e6f742060448201527018d85b98d95b081cdc195b9d081cd85b1d607a1b606482015260840161042e565b33600090815260996020908152604080832093835292905220805460ff19166001179055565b610e36611308565b6001600160a01b038116610e9b5760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b606482015260840161042e565b610440816112b6565b60007f0000000000000000000000000000000000000000000000000000000000000000461415610ed5575060975490565b610edd61121f565b905090565b606560009054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa158015610f35573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610f599190611bfe565b6001600160a01b0316336001600160a01b031614610f895760405162461bcd60e51b815260040161042e90611c1b565b6066541981196066541916146110075760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e756e70617573653a20696e76616c696420617474656d7060448201527f7420746f2070617573652066756e6374696f6e616c6974790000000000000000606482015260840161042e565b606681905560405181815233907f3582d1828e26bf56bd801502bc021ac0bc8afb57c826e4986b45593c8fad389c90602001610577565b6001600160a01b0381166110cc5760405162461bcd60e51b815260206004820152604960248201527f5061757361626c652e5f73657450617573657252656769737472793a206e657760448201527f50617573657252656769737472792063616e6e6f7420626520746865207a65726064820152686f206164647265737360b81b608482015260a40161042e565b606554604080516001600160a01b03928316815291831660208301527f6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6910160405180910390a1606580546001600160a01b0319166001600160a01b0392909216919091179055565b6065546001600160a01b031615801561115657506001600160a01b03821615155b6111d85760405162461bcd60e51b815260206004820152604760248201527f5061757361626c652e5f696e697469616c697a655061757365723a205f696e6960448201527f7469616c697a6550617573657228292063616e206f6e6c792062652063616c6c6064820152666564206f6e636560c81b608482015260a40161042e565b606681905560405181815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d9060200160405180910390a261121b8261103e565b5050565b604080518082018252600a81526922b4b3b2b72630bcb2b960b11b60209182015281517f8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a866818301527f71b625cfad44bac63b13dba07f2e1d6084ee04b6f8752101ece6126d584ee6ea81840152466060820152306080808301919091528351808303909101815260a0909101909252815191012090565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b6033546001600160a01b031633146107855760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604482015260640161042e565b6001600160a01b0383163b1561148157604051630b135d3f60e11b808252906001600160a01b03851690631626ba7e906113a29086908690600401611cfe565b602060405180830381865afa1580156113bf573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906113e39190611d5b565b6001600160e01b0319161461147c5760405162461bcd60e51b815260206004820152605360248201527f454950313237315369676e61747572655574696c732e636865636b5369676e6160448201527f747572655f454950313237313a2045524331323731207369676e6174757265206064820152721d995c9a599a58d85d1a5bdb8819985a5b1959606a1b608482015260a40161042e565b505050565b826001600160a01b03166114958383611521565b6001600160a01b03161461147c5760405162461bcd60e51b815260206004820152604760248201527f454950313237315369676e61747572655574696c732e636865636b5369676e6160448201527f747572655f454950313237313a207369676e6174757265206e6f742066726f6d6064820152661039b4b3b732b960c91b608482015260a40161042e565b60008060006115308585611545565b9150915061153d816115b5565b509392505050565b60008082516041141561157c5760208301516040840151606085015160001a61157087828585611770565b945094505050506115ae565b8251604014156115a6576020830151604084015161159b86838361185d565b9350935050506115ae565b506000905060025b9250929050565b60008160048111156115c9576115c961198e565b14156115d25750565b60018160048111156115e6576115e661198e565b14156116345760405162461bcd60e51b815260206004820152601860248201527f45434453413a20696e76616c6964207369676e61747572650000000000000000604482015260640161042e565b60028160048111156116485761164861198e565b14156116965760405162461bcd60e51b815260206004820152601f60248201527f45434453413a20696e76616c6964207369676e6174757265206c656e67746800604482015260640161042e565b60038160048111156116aa576116aa61198e565b14156117035760405162461bcd60e51b815260206004820152602260248201527f45434453413a20696e76616c6964207369676e6174757265202773272076616c604482015261756560f01b606482015260840161042e565b60048160048111156117175761171761198e565b14156104405760405162461bcd60e51b815260206004820152602260248201527f45434453413a20696e76616c6964207369676e6174757265202776272076616c604482015261756560f01b606482015260840161042e565b6000807f7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a08311156117a75750600090506003611854565b8460ff16601b141580156117bf57508460ff16601c14155b156117d05750600090506004611854565b6040805160008082526020820180845289905260ff881692820192909252606081018690526080810185905260019060a0016020604051602081039080840390855afa158015611824573d6000803e3d6000fd5b5050604051601f1901519150506001600160a01b03811661184d57600060019250925050611854565b9150600090505b94509492505050565b6000806001600160ff1b0383168161187a60ff86901c601b611d85565b905061188887828885611770565b935093505050935093915050565b6001600160a01b038116811461044057600080fd5b6000602082840312156118bd57600080fd5b81356118c881611896565b9392505050565b6000602082840312156118e157600080fd5b5035919050565b6000806000606084860312156118fd57600080fd5b833561190881611896565b9250602084013561191881611896565b929592945050506040919091013590565b6000806040838503121561193c57600080fd5b823561194781611896565b946020939093013593505050565b6000806040838503121561196857600080fd5b823561197381611896565b9150602083013561198381611896565b809150509250929050565b634e487b7160e01b600052602160045260246000fd5b60208101600283106119c657634e487b7160e01b600052602160045260246000fd5b91905290565b6000602082840312156119de57600080fd5b813560ff811681146118c857600080fd5b634e487b7160e01b600052604160045260246000fd5b6040516060810167ffffffffffffffff81118282101715611a2857611a286119ef565b60405290565b604051601f8201601f1916810167ffffffffffffffff81118282101715611a5757611a576119ef565b604052919050565b60008060408385031215611a7257600080fd5b8235611a7d81611896565b915060208381013567ffffffffffffffff80821115611a9b57600080fd5b9085019060608288031215611aaf57600080fd5b611ab7611a05565b823582811115611ac657600080fd5b8301601f81018913611ad757600080fd5b803583811115611ae957611ae96119ef565b611afb601f8201601f19168701611a2e565b93508084528986828401011115611b1157600080fd5b808683018786013760008682860101525050818152838301358482015260408301356040820152809450505050509250929050565b60008060008060808587031215611b5c57600080fd5b8435611b6781611896565b93506020850135611b7781611896565b93969395505050506040820135916060013590565b60008060208385031215611b9f57600080fd5b823567ffffffffffffffff80821115611bb757600080fd5b818501915085601f830112611bcb57600080fd5b813581811115611bda57600080fd5b866020828501011115611bec57600080fd5b60209290920196919550909350505050565b600060208284031215611c1057600080fd5b81516118c881611896565b6020808252602a908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526939903ab73830bab9b2b960b11b606082015260800190565b600060208284031215611c7757600080fd5b815180151581146118c857600080fd5b60208082526028908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526739903830bab9b2b960c11b606082015260800190565b60208152816020820152818360408301376000818301604090810191909152601f909201601f19160101919050565b82815260006020604081840152835180604085015260005b81811015611d3257858101830151858201606001528201611d16565b81811115611d44576000606083870101525b50601f01601f191692909201606001949350505050565b600060208284031215611d6d57600080fd5b81516001600160e01b0319811681146118c857600080fd5b60008219821115611da657634e487b7160e01b600052601160045260246000fd5b50019056fe4156534469726563746f72792e72656769737465724f70657261746f72546f41a2646970667358221220b6fe65fd22c565618762f1cf51b51d3e9474528dd8c72aa59d5bf72e7ee9a7b864736f6c634300080c0033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_delegation\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"},{\"name\":\"_strategyManager\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"DOMAIN_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_AVS_REGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_SET_REGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_STANDBY_UPDATE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"avsOperatorStatus\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"beaconChainETHStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorAVSRegistrationDigestHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorSetRegistrationDigestHash\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateUpdateStandbyDigestHash\",\"inputs\":[{\"name\":\"standbyParams\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.StandbyParam[]\",\"components\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"onStandby\",\"type\":\"bool\",\"internalType\":\"bool\"}]},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"cancelSalt\",\"inputs\":[{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"domainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_pauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"initialPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initializeOperatorSet\",\"inputs\":[{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isOperatorInOperatorSet\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorSet\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorSetAVS\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"onStandby\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorAVSOperatorSetCount\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSaltIsSpent\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperatorToAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerOperatorToOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateAVSMetadataURI\",\"inputs\":[{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateStandbyParams\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"standbyParams\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.StandbyParam[]\",\"components\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"onStandby\",\"type\":\"bool\",\"internalType\":\"bool\"}]},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AVSMetadataURIUpdated\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAVSRegistrationStatusUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"status\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAddedToOperatorSet\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorRemovedFromOperatorSet\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetInitialized\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StandbyParamUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"onStandby\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	Bin: "0x60e06040523480156200001157600080fd5b506040516200378438038062003784833981016040819052620000349162000138565b6001600160a01b03808316608052811660a052620000516200005d565b50504660c05262000177565b600054610100900460ff1615620000ca5760405162461bcd60e51b815260206004820152602760248201527f496e697469616c697a61626c653a20636f6e747261637420697320696e697469604482015266616c697a696e6760c81b606482015260840160405180910390fd5b60005460ff90811610156200011d576000805460ff191660ff9081179091556040519081527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b565b6001600160a01b03811681146200013557600080fd5b50565b600080604083850312156200014c57600080fd5b825162000159816200011f565b60208401519092506200016c816200011f565b809150509250929050565b60805160a05160c0516135cf620001b560003960006122cc0152600061030a015260008181610594015281816109e001526117e001526135cf6000f3fe608060405234801561001057600080fd5b50600436106102275760003560e01c80638da5cb5b11610130578063c825fe68116100b8578063ec76f4421161007c578063ec76f442146105ea578063f2fde38b1461061e578063f698da2514610631578063fabc1cbc14610639578063fc5f9fda1461064c57600080fd5b8063c825fe681461050d578063cfc4164714610534578063d79aceab14610568578063df5cf7231461058f578063e62a3015146105b657600080fd5b8063a1060c88116100ff578063a1060c88146104ae578063a364f4da146104c1578063a98fb355146104d4578063af52d990146104e7578063c1a8e2c5146104fa57600080fd5b80638da5cb5b1461045c5780639104c3191461046d578063955e6696146104885780639926ee7d1461049b57600080fd5b806352067137116101b35780635e639cbf116101825780635e639cbf146103dd578063715018a6146103f05780637673e93a146103f857806384d76f7b1461041b578063886f11951461044957600080fd5b8063520671371461037f578063595c6a67146103aa5780635ac86ab7146103b25780635c975abb146103d557600080fd5b806320606b70116101fa57806320606b701461027a578063374823b5146102b4578063394a3053146102f257806339b70e381461030557806349075da31461034457600080fd5b806310d67a2f1461022c578063136439dd146102415780631794bb3c146102545780631e2199e214610267575b600080fd5b61023f61023a366004612ad2565b610673565b005b61023f61024f366004612af6565b61072f565b61023f610262366004612b0f565b61086e565b61023f610275366004612cb4565b610998565b6102a17f8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a86681565b6040519081526020015b60405180910390f35b6102e26102c2366004612d2f565b609960209081526000928352604080842090915290825290205460ff1681565b60405190151581526020016102ab565b61023f610300366004612d9f565b611095565b61032c7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020016102ab565b610372610352366004612e1f565b609860209081526000928352604080842090915290825290205460ff1681565b6040516102ab9190612e6e565b6102a161038d366004612e1f565b609c60209081526000928352604080842090915290825290205481565b61023f6114c6565b6102e26103c0366004612e96565b606654600160ff9092169190911b9081161490565b6066546102a1565b61023f6103eb366004612ed2565b61158d565b61023f611597565b6102e2610406366004612ad2565b609a6020526000908152604090205460ff1681565b6102e2610429366004612eed565b609e60209081526000928352604080842090915290825290205460ff1681565b60655461032c906001600160a01b031681565b6033546001600160a01b031661032c565b61032c73beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac081565b6102a1610496366004612f22565b6115ab565b61023f6104a9366004612f88565b611610565b6102a16104bc366004612fd7565b611a09565b61023f6104cf366004612ad2565b611a73565b61023f6104e236600461301d565b611b9e565b6102a16104f536600461308e565b611be5565b61023f6105083660046130de565b611c23565b6102a17f809c5ac049c45b7a7f050a20f00c16cf63797efbf8b1eb8d749fdfa39ff8f92981565b6102e2610542366004613132565b609d60209081526000938452604080852082529284528284209052825290205460ff1681565b6102a17fda2c89bafdd34776a2b8bb9c83c82f419e20cc8c67207f70edd58249b92661bd81565b61032c7f000000000000000000000000000000000000000000000000000000000000000081565b6102e26105c4366004613132565b609b60209081526000938452604080852082529284528284209052825290205460ff1681565b61023f6105f8366004612af6565b33600090815260996020908152604080832093835292905220805460ff19166001179055565b61023f61062c366004612ad2565b611f06565b6102a1611f7c565b61023f610647366004612af6565b611f8b565b6102a17f3a37d8b4f293f928d67f20e5e8d282aff242a57fc4bb9d4edf94fd389451d50081565b606560009054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa1580156106c6573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106ea9190613179565b6001600160a01b0316336001600160a01b0316146107235760405162461bcd60e51b815260040161071a90613196565b60405180910390fd5b61072c816120e7565b50565b60655460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa158015610777573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061079b91906131ee565b6107b75760405162461bcd60e51b815260040161071a9061320b565b606654818116146108305760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e70617573653a20696e76616c696420617474656d70742060448201527f746f20756e70617573652066756e6374696f6e616c6974790000000000000000606482015260840161071a565b606681905560405181815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d906020015b60405180910390a250565b600054610100900460ff161580801561088e5750600054600160ff909116105b806108a85750303b1580156108a8575060005460ff166001145b61090b5760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b606482015260840161071a565b6000805460ff19166001179055801561092e576000805461ff0019166101001790555b61093883836121de565b6109406122c8565b60975561094c84612391565b8015610992576000805461ff0019169055604051600181527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b50505050565b606654600090600190811614156109c15760405162461bcd60e51b815260040161071a90613253565b6040516336b87bd760e11b81526001600160a01b0386811660048301527f00000000000000000000000000000000000000000000000000000000000000001690636d70f7ae90602401602060405180830381865afa158015610a27573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610a4b91906131ee565b610aca5760405162461bcd60e51b8152602060048201526056602482015260008051602061353a83398151915260448201527f70657261746f72536574733a206f70657261746f72206e6f7420726567697374606482015275195c9959081d1bc8115a59d95b93185e595c881e595d60521b608482015260a40161071a565b4282604001511015610b425760405162461bcd60e51b8152602060048201526047602482015260008051602061353a83398151915260448201527f70657261746f72536574733a206f70657261746f72207369676e617475726520606482015266195e1c1a5c995960ca1b608482015260a40161071a565b6001600160a01b038516600090815260996020908152604080832085830151845290915290205460ff1615610bcd5760405162461bcd60e51b815260206004820152603f602482015260008051602061353a83398151915260448201527f70657261746f72536574733a2073616c7420616c7265616479207370656e7400606482015260840161071a565b81515115610bf557610bf585610bee338787876020015188604001516115ab565b84516123e3565b6001600160a01b03851660008181526099602090815260408083208683015184528252808320805460ff19166001908117909155338452609883528184209484529390915290205460ff1681811115610c5057610c50612e58565b14610caf573360008181526098602090815260408083206001600160a01b038a16808552925291829020805460ff191660019081179091559151909160008051602061355a83398151915291610ca69190612e6e565b60405180910390a35b336000908152609a602052604090205460ff16610ce157336000908152609a60205260409020805460ff191660011790555b60005b8381101561106157825151610db857336000908152609d602090815260408083206001600160a01b038a168452909152812090868684818110610d2957610d2961328a565b9050602002016020810190610d3e9190612ed2565b63ffffffff16815260208101919091526040016000205460ff16610db85760405162461bcd60e51b815260206004820152603f602482015260008051602061353a83398151915260448201527f70657261746f72536574733a20617673206e6f74206f6e207374616e64627900606482015260840161071a565b336000908152609e6020526040812090868684818110610dda57610dda61328a565b9050602002016020810190610def9190612ed2565b63ffffffff16815260208101919091526040016000205460ff16610e3d57610e3d33868684818110610e2357610e2361328a565b9050602002016020810190610e389190612ed2565b6125a2565b336000908152609b602090815260408083206001600160a01b038a168452909152812090868684818110610e7357610e7361328a565b9050602002016020810190610e889190612ed2565b63ffffffff16815260208101919091526040016000205460ff1615610f295760405162461bcd60e51b8152602060048201526058602482015260008051602061353a83398151915260448201527f70657261746f72536574733a206f70657261746f7220616c726561647920726560648201527f676973746572656420746f206f70657261746f72207365740000000000000000608482015260a40161071a565b336000908152609b602090815260408083206001600160a01b038a1684529091528120600191878785818110610f6157610f6161328a565b9050602002016020810190610f769190612ed2565b63ffffffff1663ffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055507f43232edf9071753d2321e5fa7e018363ee248e5f2142e6c08edd3265bfb4895e866040518060400160405280336001600160a01b03168152602001888886818110610ff557610ff561328a565b905060200201602081019061100a9190612ed2565b63ffffffff1690526040516110499291906001600160a01b0392831681528151909216602080840191909152015163ffffffff16604082015260600190565b60405180910390a161105a816132b6565b9050610ce4565b5050336000908152609c602090815260408083206001600160a01b0397909716835295905293909320805490910190555050565b61109f81806132d1565b1515905061112057336001600160a01b0385161461111b5760405162461bcd60e51b815260206004820152603360248201527f4156534469726563746f72792e7570646174655374616e646279506172616d736044820152723a20696e76616c6964207369676e617475726560681b606482015260840161071a565b611356565b428160400135101561119a5760405162461bcd60e51b815260206004820152603c60248201527f4156534469726563746f72792e7570646174655374616e646279506172616d7360448201527f3a206f70657261746f72207369676e6174757265206578706972656400000000606482015260840161071a565b6001600160a01b038416600090815260996020908152604080832084830135845290915290205460ff16156112265760405162461bcd60e51b815260206004820152602c60248201527f4156534469726563746f72792e7570646174655374616e646279506172616d7360448201526b0e881cd85b1d081cdc195b9d60a21b606482015260840161071a565b6112828461123e858585602001358660400135611be5565b61124884806132d1565b8080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152506123e392505050565b6001600160a01b03841660009081526099602090815260408083208483013584529091528120805460ff191660011790555b8281101561135457336000908152609e60205260408120908585848181106112de576112de61328a565b6112f79260406060909202019081019150602001612ed2565b63ffffffff16815260208101919091526040016000205460ff16611344576113443385858481811061132b5761132b61328a565b610e389260406060909202019081019150602001612ed2565b61134d816132b6565b90506112b4565b505b60005b828110156114bf578383828181106113735761137361328a565b905060600201604001602081019061138b9190613317565b609d60008686858181106113a1576113a161328a565b6113b79260206060909202019081019150612ad2565b6001600160a01b03908116825260208083019390935260409182016000908120918a16815292528120908686858181106113f3576113f361328a565b61140c9260406060909202019081019150602001612ed2565b63ffffffff1681526020810191909152604001600020805460ff19169115159190911790557fe830b87799dcc83eb70bb7be1e0f0fdfd3725b71059a38bc05dd790a5ada498b858585848181106114655761146561328a565b9050606002016000018686858181106114805761148061328a565b90506060020160400160208101906114989190613317565b6040516114a793929190613365565b60405180910390a16114b8816132b6565b9050611359565b5050505050565b60655460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa15801561150e573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061153291906131ee565b61154e5760405162461bcd60e51b815260040161071a9061320b565b600019606681905560405190815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d9060200160405180910390a2565b61072c33826125a2565b61159f6126a7565b6115a96000612391565b565b60006116067f809c5ac049c45b7a7f050a20f00c16cf63797efbf8b1eb8d749fdfa39ff8f92987878787876040516020016115eb96959493929190613392565b60405160208183030381529060405280519060200120612701565b9695505050505050565b606654600090600190811614156116395760405162461bcd60e51b815260040161071a90613253565b42826040015110156116a15760405162461bcd60e51b815260206004820152603e602482015260008051602061357a83398151915260448201527f56533a206f70657261746f72207369676e617475726520657870697265640000606482015260840161071a565b60013360009081526098602090815260408083206001600160a01b038816845290915290205460ff1660018111156116db576116db612e58565b141561173d5760405162461bcd60e51b815260206004820152603f602482015260008051602061357a83398151915260448201527f56533a206f70657261746f7220616c7265616479207265676973746572656400606482015260840161071a565b6001600160a01b038316600090815260996020908152604080832085830151845290915290205460ff16156117c15760405162461bcd60e51b8152602060048201526036602482015260008051602061357a8339815191526044820152751594ce881cd85b1d08185b1c9958591e481cdc195b9d60521b606482015260840161071a565b6040516336b87bd760e11b81526001600160a01b0384811660048301527f00000000000000000000000000000000000000000000000000000000000000001690636d70f7ae90602401602060405180830381865afa158015611827573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061184b91906131ee565b6118c15760405162461bcd60e51b815260206004820152604d602482015260008051602061357a83398151915260448201527f56533a206f70657261746f72206e6f74207265676973746572656420746f204560648201526c1a59d95b93185e595c881e595d609a1b608482015260a40161071a565b336000908152609a602052604090205460ff16156119655760405162461bcd60e51b8152602060048201526061602482015260008051602061357a83398151915260448201527f56533a206f70657261746f7220736574204156532063616e6e6f74207265676960648201527f73746572206f70657261746f72732077697468206c6567616379206d6574686f6084820152601960fa1b60a482015260c40161071a565b600061197b843385602001518660400151611a09565b905061198c848285600001516123e3565b3360008181526098602090815260408083206001600160a01b0389168085529083528184208054600160ff199182168117909255609985528386208a8601518752909452938290208054909316841790925551909160008051602061355a833981519152916119fb9190612e6e565b60405180910390a350505050565b604080517fda2c89bafdd34776a2b8bb9c83c82f419e20cc8c67207f70edd58249b92661bd60208201526001600160a01b038087169282019290925290841660608201526080810183905260a08101829052600090611a6a9060c0016115eb565b95945050505050565b60665460009060019081161415611a9c5760405162461bcd60e51b815260040161071a90613253565b60013360009081526098602090815260408083206001600160a01b038716845290915290205460ff166001811115611ad657611ad6612e58565b14611b495760405162461bcd60e51b815260206004820152603f60248201527f4156534469726563746f72792e646572656769737465724f70657261746f724660448201527f726f6d4156533a206f70657261746f72206e6f74207265676973746572656400606482015260840161071a565b3360008181526098602090815260408083206001600160a01b0387168085529252808320805460ff1916905551909160008051602061355a83398151915291611b929190612e6e565b60405180910390a35050565b336001600160a01b03167fa89c1dc243d8908a96dd84944bcc97d6bc6ac00dd78e20621576be6a3c9437138383604051611bd9929190613402565b60405180910390a25050565b6000611a6a7f3a37d8b4f293f928d67f20e5e8d282aff242a57fc4bb9d4edf94fd389451d500868686866040516020016115eb959493929190613431565b60665460009060019081161415611c4c5760405162461bcd60e51b815260040161071a90613253565b60005b82811015611e8a57336000908152609b602090815260408083206001600160a01b0389168452909152812090858584818110611c8d57611c8d61328a565b9050602002016020810190611ca29190612ed2565b63ffffffff16815260208101919091526040016000205460ff16611d545760405162461bcd60e51b815260206004820152605860248201527f4156534469726563746f72792e646572656769737465724f70657261746f724660448201527f726f6d4f70657261746f725365743a206f70657261746f72206e6f742072656760648201527f6973746572656420666f72206f70657261746f72207365740000000000000000608482015260a40161071a565b336000908152609b602090815260408083206001600160a01b0389168452909152812081868685818110611d8a57611d8a61328a565b9050602002016020810190611d9f9190612ed2565b63ffffffff1663ffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055507fad34c3070be1dffbcaa499d000ba2b8d9848aefcac3059df245dd95c4ece14fe856040518060400160405280336001600160a01b03168152602001878786818110611e1e57611e1e61328a565b9050602002016020810190611e339190612ed2565b63ffffffff169052604051611e729291906001600160a01b0392831681528151909216602080840191909152015163ffffffff16604082015260600190565b60405180910390a1611e83816132b6565b9050611c4f565b50336000908152609c602090815260408083206001600160a01b038816845290915290208054838103909155821415610992573360008181526098602090815260408083206001600160a01b0389168085529252808320805460ff1916905551909160008051602061355a833981519152916119fb9190612e6e565b611f0e6126a7565b6001600160a01b038116611f735760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b606482015260840161071a565b61072c81612391565b6000611f866122c8565b905090565b606560009054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa158015611fde573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906120029190613179565b6001600160a01b0316336001600160a01b0316146120325760405162461bcd60e51b815260040161071a90613196565b6066541981196066541916146120b05760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e756e70617573653a20696e76616c696420617474656d7060448201527f7420746f2070617573652066756e6374696f6e616c6974790000000000000000606482015260840161071a565b606681905560405181815233907f3582d1828e26bf56bd801502bc021ac0bc8afb57c826e4986b45593c8fad389c90602001610863565b6001600160a01b0381166121755760405162461bcd60e51b815260206004820152604960248201527f5061757361626c652e5f73657450617573657252656769737472793a206e657760448201527f50617573657252656769737472792063616e6e6f7420626520746865207a65726064820152686f206164647265737360b81b608482015260a40161071a565b606554604080516001600160a01b03928316815291831660208301527f6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6910160405180910390a1606580546001600160a01b0319166001600160a01b0392909216919091179055565b6065546001600160a01b03161580156121ff57506001600160a01b03821615155b6122815760405162461bcd60e51b815260206004820152604760248201527f5061757361626c652e5f696e697469616c697a655061757365723a205f696e6960448201527f7469616c697a6550617573657228292063616e206f6e6c792062652063616c6c6064820152666564206f6e636560c81b608482015260a40161071a565b606681905560405181815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d9060200160405180910390a26122c4826120e7565b5050565b60007f00000000000000000000000000000000000000000000000000000000000000004614156122f9575060975490565b50604080518082018252600a81526922b4b3b2b72630bcb2b960b11b60209182015281517f8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a866818301527f71b625cfad44bac63b13dba07f2e1d6084ee04b6f8752101ece6126d584ee6ea81840152466060820152306080808301919091528351808303909101815260a0909101909252815191012090565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b6001600160a01b0383163b1561250257604051630b135d3f60e11b808252906001600160a01b03851690631626ba7e90612423908690869060040161349a565b602060405180830381865afa158015612440573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061246491906134f7565b6001600160e01b031916146124fd5760405162461bcd60e51b815260206004820152605360248201527f454950313237315369676e61747572655574696c732e636865636b5369676e6160448201527f747572655f454950313237313a2045524331323731207369676e6174757265206064820152721d995c9a599a58d85d1a5bdb8819985a5b1959606a1b608482015260a40161071a565b505050565b826001600160a01b03166125168383612748565b6001600160a01b0316146124fd5760405162461bcd60e51b815260206004820152604760248201527f454950313237315369676e61747572655574696c732e636865636b5369676e6160448201527f747572655f454950313237313a207369676e6174757265206e6f742066726f6d6064820152661039b4b3b732b960c91b608482015260a40161071a565b6001600160a01b0382166000908152609e6020908152604080832063ffffffff8516845290915290205460ff1615612644576040805162461bcd60e51b81526020600482015260248101919091527f4156534469726563746f72792e5f696e697469616c697a654f70657261746f7260448201527f5365743a206f70657261746f722073657420616c726561647920657869737473606482015260840161071a565b6001600160a01b0382166000818152609e6020908152604080832063ffffffff861680855290835292819020805460ff19166001179055519182527f2fd980fe375494188d78c536db132ae25d5f13caff0ef30ccf40e88a8f609b519101611bd9565b6033546001600160a01b031633146115a95760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604482015260640161071a565b600061270b6122c8565b60405161190160f01b6020820152602281019190915260428101839052606201604051602081830303815290604052805190602001209050919050565b6000806000612757858561276c565b91509150612764816127dc565b509392505050565b6000808251604114156127a35760208301516040840151606085015160001a61279787828585612997565b945094505050506127d5565b8251604014156127cd57602083015160408401516127c2868383612a84565b9350935050506127d5565b506000905060025b9250929050565b60008160048111156127f0576127f0612e58565b14156127f95750565b600181600481111561280d5761280d612e58565b141561285b5760405162461bcd60e51b815260206004820152601860248201527f45434453413a20696e76616c6964207369676e61747572650000000000000000604482015260640161071a565b600281600481111561286f5761286f612e58565b14156128bd5760405162461bcd60e51b815260206004820152601f60248201527f45434453413a20696e76616c6964207369676e6174757265206c656e67746800604482015260640161071a565b60038160048111156128d1576128d1612e58565b141561292a5760405162461bcd60e51b815260206004820152602260248201527f45434453413a20696e76616c6964207369676e6174757265202773272076616c604482015261756560f01b606482015260840161071a565b600481600481111561293e5761293e612e58565b141561072c5760405162461bcd60e51b815260206004820152602260248201527f45434453413a20696e76616c6964207369676e6174757265202776272076616c604482015261756560f01b606482015260840161071a565b6000807f7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a08311156129ce5750600090506003612a7b565b8460ff16601b141580156129e657508460ff16601c14155b156129f75750600090506004612a7b565b6040805160008082526020820180845289905260ff881692820192909252606081018690526080810185905260019060a0016020604051602081039080840390855afa158015612a4b573d6000803e3d6000fd5b5050604051601f1901519150506001600160a01b038116612a7457600060019250925050612a7b565b9150600090505b94509492505050565b6000806001600160ff1b03831681612aa160ff86901c601b613521565b9050612aaf87828885612997565b935093505050935093915050565b6001600160a01b038116811461072c57600080fd5b600060208284031215612ae457600080fd5b8135612aef81612abd565b9392505050565b600060208284031215612b0857600080fd5b5035919050565b600080600060608486031215612b2457600080fd5b8335612b2f81612abd565b92506020840135612b3f81612abd565b929592945050506040919091013590565b60008083601f840112612b6257600080fd5b5081356001600160401b03811115612b7957600080fd5b6020830191508360208260051b85010111156127d557600080fd5b634e487b7160e01b600052604160045260246000fd5b604051606081016001600160401b0381118282101715612bcc57612bcc612b94565b60405290565b604051601f8201601f191681016001600160401b0381118282101715612bfa57612bfa612b94565b604052919050565b600060608284031215612c1457600080fd5b612c1c612baa565b905081356001600160401b0380821115612c3557600080fd5b818401915084601f830112612c4957600080fd5b8135602082821115612c5d57612c5d612b94565b612c6f601f8301601f19168201612bd2565b92508183528681838601011115612c8557600080fd5b818185018285013760008183850101528285528086013581860152505050506040820135604082015292915050565b60008060008060608587031215612cca57600080fd5b8435612cd581612abd565b935060208501356001600160401b0380821115612cf157600080fd5b612cfd88838901612b50565b90955093506040870135915080821115612d1657600080fd5b50612d2387828801612c02565b91505092959194509250565b60008060408385031215612d4257600080fd5b8235612d4d81612abd565b946020939093013593505050565b60008083601f840112612d6d57600080fd5b5081356001600160401b03811115612d8457600080fd5b6020830191508360206060830285010111156127d557600080fd5b60008060008060608587031215612db557600080fd5b8435612dc081612abd565b935060208501356001600160401b0380821115612ddc57600080fd5b612de888838901612d5b565b90955093506040870135915080821115612e0157600080fd5b50850160608188031215612e1457600080fd5b939692955090935050565b60008060408385031215612e3257600080fd5b8235612e3d81612abd565b91506020830135612e4d81612abd565b809150509250929050565b634e487b7160e01b600052602160045260246000fd5b6020810160028310612e9057634e487b7160e01b600052602160045260246000fd5b91905290565b600060208284031215612ea857600080fd5b813560ff81168114612aef57600080fd5b803563ffffffff81168114612ecd57600080fd5b919050565b600060208284031215612ee457600080fd5b612aef82612eb9565b60008060408385031215612f0057600080fd5b8235612f0b81612abd565b9150612f1960208401612eb9565b90509250929050565b600080600080600060808688031215612f3a57600080fd5b8535612f4581612abd565b945060208601356001600160401b03811115612f6057600080fd5b612f6c88828901612b50565b9699909850959660408101359660609091013595509350505050565b60008060408385031215612f9b57600080fd5b8235612fa681612abd565b915060208301356001600160401b03811115612fc157600080fd5b612fcd85828601612c02565b9150509250929050565b60008060008060808587031215612fed57600080fd5b8435612ff881612abd565b9350602085013561300881612abd565b93969395505050506040820135916060013590565b6000806020838503121561303057600080fd5b82356001600160401b038082111561304757600080fd5b818501915085601f83011261305b57600080fd5b81358181111561306a57600080fd5b86602082850101111561307c57600080fd5b60209290920196919550909350505050565b600080600080606085870312156130a457600080fd5b84356001600160401b038111156130ba57600080fd5b6130c687828801612d5b565b90989097506020870135966040013595509350505050565b6000806000604084860312156130f357600080fd5b83356130fe81612abd565b925060208401356001600160401b0381111561311957600080fd5b61312586828701612b50565b9497909650939450505050565b60008060006060848603121561314757600080fd5b833561315281612abd565b9250602084013561316281612abd565b915061317060408501612eb9565b90509250925092565b60006020828403121561318b57600080fd5b8151612aef81612abd565b6020808252602a908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526939903ab73830bab9b2b960b11b606082015260800190565b801515811461072c57600080fd5b60006020828403121561320057600080fd5b8151612aef816131e0565b60208082526028908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526739903830bab9b2b960c11b606082015260800190565b60208082526019908201527f5061757361626c653a20696e6465782069732070617573656400000000000000604082015260600190565b634e487b7160e01b600052603260045260246000fd5b634e487b7160e01b600052601160045260246000fd5b60006000198214156132ca576132ca6132a0565b5060010190565b6000808335601e198436030181126132e857600080fd5b8301803591506001600160401b0382111561330257600080fd5b6020019150368190038213156127d557600080fd5b60006020828403121561332957600080fd5b8135612aef816131e0565b803561333f81612abd565b6001600160a01b0316825263ffffffff61335b60208301612eb9565b1660208301525050565b6001600160a01b0384168152608081016133826020830185613334565b8215156060830152949350505050565b8681526001600160a01b03861660208083019190915260a0604083018190528201859052600090869060c08401835b888110156133ea5763ffffffff6133d785612eb9565b16825292820192908201906001016133c1565b50606085019690965250505060800152949350505050565b60208152816020820152818360408301376000818301604090810191909152601f909201601f19160101919050565b858152608060208201819052810184905260008560a08301825b878110156134845761345d8284613334565b60408084013561346c816131e0565b1515908301526060928301929091019060010161344b565b5060408401959095525050606001529392505050565b82815260006020604081840152835180604085015260005b818110156134ce578581018301518582016060015282016134b2565b818111156134e0576000606083870101525b50601f01601f191692909201606001949350505050565b60006020828403121561350957600080fd5b81516001600160e01b031981168114612aef57600080fd5b60008219821115613534576135346132a0565b50019056fe4156534469726563746f72792e72656769737465724f70657261746f72546f4ff0952b1c65271d819d39983d2abb044b9cace59bcc4d4dd389f586ebdcb15b414156534469726563746f72792e72656769737465724f70657261746f72546f41a26469706673582212200f77a64c4a2ce7b33b2a3bd2e0deba353a50208873014a80817a1af00c6d999864736f6c634300080c0033",
 }
 
 // AVSDirectoryABI is the input ABI used to generate the binding from.
@@ -51,7 +63,7 @@ var AVSDirectoryABI = AVSDirectoryMetaData.ABI
 var AVSDirectoryBin = AVSDirectoryMetaData.Bin
 
 // DeployAVSDirectory deploys a new Ethereum contract, binding an instance of AVSDirectory to it.
-func DeployAVSDirectory(auth *bind.TransactOpts, backend bind.ContractBackend, _delegation common.Address) (common.Address, *types.Transaction, *AVSDirectory, error) {
+func DeployAVSDirectory(auth *bind.TransactOpts, backend bind.ContractBackend, _delegation common.Address, _strategyManager common.Address) (common.Address, *types.Transaction, *AVSDirectory, error) {
 	parsed, err := AVSDirectoryMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, nil, err
@@ -60,7 +72,7 @@ func DeployAVSDirectory(auth *bind.TransactOpts, backend bind.ContractBackend, _
 		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(AVSDirectoryBin), backend, _delegation)
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(AVSDirectoryBin), backend, _delegation, _strategyManager)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -271,6 +283,68 @@ func (_AVSDirectory *AVSDirectoryCallerSession) OPERATORAVSREGISTRATIONTYPEHASH(
 	return _AVSDirectory.Contract.OPERATORAVSREGISTRATIONTYPEHASH(&_AVSDirectory.CallOpts)
 }
 
+// OPERATORSETREGISTRATIONTYPEHASH is a free data retrieval call binding the contract method 0xc825fe68.
+//
+// Solidity: function OPERATOR_SET_REGISTRATION_TYPEHASH() view returns(bytes32)
+func (_AVSDirectory *AVSDirectoryCaller) OPERATORSETREGISTRATIONTYPEHASH(opts *bind.CallOpts) ([32]byte, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "OPERATOR_SET_REGISTRATION_TYPEHASH")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// OPERATORSETREGISTRATIONTYPEHASH is a free data retrieval call binding the contract method 0xc825fe68.
+//
+// Solidity: function OPERATOR_SET_REGISTRATION_TYPEHASH() view returns(bytes32)
+func (_AVSDirectory *AVSDirectorySession) OPERATORSETREGISTRATIONTYPEHASH() ([32]byte, error) {
+	return _AVSDirectory.Contract.OPERATORSETREGISTRATIONTYPEHASH(&_AVSDirectory.CallOpts)
+}
+
+// OPERATORSETREGISTRATIONTYPEHASH is a free data retrieval call binding the contract method 0xc825fe68.
+//
+// Solidity: function OPERATOR_SET_REGISTRATION_TYPEHASH() view returns(bytes32)
+func (_AVSDirectory *AVSDirectoryCallerSession) OPERATORSETREGISTRATIONTYPEHASH() ([32]byte, error) {
+	return _AVSDirectory.Contract.OPERATORSETREGISTRATIONTYPEHASH(&_AVSDirectory.CallOpts)
+}
+
+// OPERATORSTANDBYUPDATE is a free data retrieval call binding the contract method 0xfc5f9fda.
+//
+// Solidity: function OPERATOR_STANDBY_UPDATE() view returns(bytes32)
+func (_AVSDirectory *AVSDirectoryCaller) OPERATORSTANDBYUPDATE(opts *bind.CallOpts) ([32]byte, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "OPERATOR_STANDBY_UPDATE")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// OPERATORSTANDBYUPDATE is a free data retrieval call binding the contract method 0xfc5f9fda.
+//
+// Solidity: function OPERATOR_STANDBY_UPDATE() view returns(bytes32)
+func (_AVSDirectory *AVSDirectorySession) OPERATORSTANDBYUPDATE() ([32]byte, error) {
+	return _AVSDirectory.Contract.OPERATORSTANDBYUPDATE(&_AVSDirectory.CallOpts)
+}
+
+// OPERATORSTANDBYUPDATE is a free data retrieval call binding the contract method 0xfc5f9fda.
+//
+// Solidity: function OPERATOR_STANDBY_UPDATE() view returns(bytes32)
+func (_AVSDirectory *AVSDirectoryCallerSession) OPERATORSTANDBYUPDATE() ([32]byte, error) {
+	return _AVSDirectory.Contract.OPERATORSTANDBYUPDATE(&_AVSDirectory.CallOpts)
+}
+
 // AvsOperatorStatus is a free data retrieval call binding the contract method 0x49075da3.
 //
 // Solidity: function avsOperatorStatus(address , address ) view returns(uint8)
@@ -302,6 +376,37 @@ func (_AVSDirectory *AVSDirectoryCallerSession) AvsOperatorStatus(arg0 common.Ad
 	return _AVSDirectory.Contract.AvsOperatorStatus(&_AVSDirectory.CallOpts, arg0, arg1)
 }
 
+// BeaconChainETHStrategy is a free data retrieval call binding the contract method 0x9104c319.
+//
+// Solidity: function beaconChainETHStrategy() view returns(address)
+func (_AVSDirectory *AVSDirectoryCaller) BeaconChainETHStrategy(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "beaconChainETHStrategy")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// BeaconChainETHStrategy is a free data retrieval call binding the contract method 0x9104c319.
+//
+// Solidity: function beaconChainETHStrategy() view returns(address)
+func (_AVSDirectory *AVSDirectorySession) BeaconChainETHStrategy() (common.Address, error) {
+	return _AVSDirectory.Contract.BeaconChainETHStrategy(&_AVSDirectory.CallOpts)
+}
+
+// BeaconChainETHStrategy is a free data retrieval call binding the contract method 0x9104c319.
+//
+// Solidity: function beaconChainETHStrategy() view returns(address)
+func (_AVSDirectory *AVSDirectoryCallerSession) BeaconChainETHStrategy() (common.Address, error) {
+	return _AVSDirectory.Contract.BeaconChainETHStrategy(&_AVSDirectory.CallOpts)
+}
+
 // CalculateOperatorAVSRegistrationDigestHash is a free data retrieval call binding the contract method 0xa1060c88.
 //
 // Solidity: function calculateOperatorAVSRegistrationDigestHash(address operator, address avs, bytes32 salt, uint256 expiry) view returns(bytes32)
@@ -331,6 +436,68 @@ func (_AVSDirectory *AVSDirectorySession) CalculateOperatorAVSRegistrationDigest
 // Solidity: function calculateOperatorAVSRegistrationDigestHash(address operator, address avs, bytes32 salt, uint256 expiry) view returns(bytes32)
 func (_AVSDirectory *AVSDirectoryCallerSession) CalculateOperatorAVSRegistrationDigestHash(operator common.Address, avs common.Address, salt [32]byte, expiry *big.Int) ([32]byte, error) {
 	return _AVSDirectory.Contract.CalculateOperatorAVSRegistrationDigestHash(&_AVSDirectory.CallOpts, operator, avs, salt, expiry)
+}
+
+// CalculateOperatorSetRegistrationDigestHash is a free data retrieval call binding the contract method 0x955e6696.
+//
+// Solidity: function calculateOperatorSetRegistrationDigestHash(address avs, uint32[] operatorSetIds, bytes32 salt, uint256 expiry) view returns(bytes32)
+func (_AVSDirectory *AVSDirectoryCaller) CalculateOperatorSetRegistrationDigestHash(opts *bind.CallOpts, avs common.Address, operatorSetIds []uint32, salt [32]byte, expiry *big.Int) ([32]byte, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "calculateOperatorSetRegistrationDigestHash", avs, operatorSetIds, salt, expiry)
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// CalculateOperatorSetRegistrationDigestHash is a free data retrieval call binding the contract method 0x955e6696.
+//
+// Solidity: function calculateOperatorSetRegistrationDigestHash(address avs, uint32[] operatorSetIds, bytes32 salt, uint256 expiry) view returns(bytes32)
+func (_AVSDirectory *AVSDirectorySession) CalculateOperatorSetRegistrationDigestHash(avs common.Address, operatorSetIds []uint32, salt [32]byte, expiry *big.Int) ([32]byte, error) {
+	return _AVSDirectory.Contract.CalculateOperatorSetRegistrationDigestHash(&_AVSDirectory.CallOpts, avs, operatorSetIds, salt, expiry)
+}
+
+// CalculateOperatorSetRegistrationDigestHash is a free data retrieval call binding the contract method 0x955e6696.
+//
+// Solidity: function calculateOperatorSetRegistrationDigestHash(address avs, uint32[] operatorSetIds, bytes32 salt, uint256 expiry) view returns(bytes32)
+func (_AVSDirectory *AVSDirectoryCallerSession) CalculateOperatorSetRegistrationDigestHash(avs common.Address, operatorSetIds []uint32, salt [32]byte, expiry *big.Int) ([32]byte, error) {
+	return _AVSDirectory.Contract.CalculateOperatorSetRegistrationDigestHash(&_AVSDirectory.CallOpts, avs, operatorSetIds, salt, expiry)
+}
+
+// CalculateUpdateStandbyDigestHash is a free data retrieval call binding the contract method 0xaf52d990.
+//
+// Solidity: function calculateUpdateStandbyDigestHash(((address,uint32),bool)[] standbyParams, bytes32 salt, uint256 expiry) view returns(bytes32)
+func (_AVSDirectory *AVSDirectoryCaller) CalculateUpdateStandbyDigestHash(opts *bind.CallOpts, standbyParams []IAVSDirectoryStandbyParam, salt [32]byte, expiry *big.Int) ([32]byte, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "calculateUpdateStandbyDigestHash", standbyParams, salt, expiry)
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// CalculateUpdateStandbyDigestHash is a free data retrieval call binding the contract method 0xaf52d990.
+//
+// Solidity: function calculateUpdateStandbyDigestHash(((address,uint32),bool)[] standbyParams, bytes32 salt, uint256 expiry) view returns(bytes32)
+func (_AVSDirectory *AVSDirectorySession) CalculateUpdateStandbyDigestHash(standbyParams []IAVSDirectoryStandbyParam, salt [32]byte, expiry *big.Int) ([32]byte, error) {
+	return _AVSDirectory.Contract.CalculateUpdateStandbyDigestHash(&_AVSDirectory.CallOpts, standbyParams, salt, expiry)
+}
+
+// CalculateUpdateStandbyDigestHash is a free data retrieval call binding the contract method 0xaf52d990.
+//
+// Solidity: function calculateUpdateStandbyDigestHash(((address,uint32),bool)[] standbyParams, bytes32 salt, uint256 expiry) view returns(bytes32)
+func (_AVSDirectory *AVSDirectoryCallerSession) CalculateUpdateStandbyDigestHash(standbyParams []IAVSDirectoryStandbyParam, salt [32]byte, expiry *big.Int) ([32]byte, error) {
+	return _AVSDirectory.Contract.CalculateUpdateStandbyDigestHash(&_AVSDirectory.CallOpts, standbyParams, salt, expiry)
 }
 
 // Delegation is a free data retrieval call binding the contract method 0xdf5cf723.
@@ -393,6 +560,161 @@ func (_AVSDirectory *AVSDirectorySession) DomainSeparator() ([32]byte, error) {
 // Solidity: function domainSeparator() view returns(bytes32)
 func (_AVSDirectory *AVSDirectoryCallerSession) DomainSeparator() ([32]byte, error) {
 	return _AVSDirectory.Contract.DomainSeparator(&_AVSDirectory.CallOpts)
+}
+
+// IsOperatorInOperatorSet is a free data retrieval call binding the contract method 0xe62a3015.
+//
+// Solidity: function isOperatorInOperatorSet(address , address , uint32 ) view returns(bool)
+func (_AVSDirectory *AVSDirectoryCaller) IsOperatorInOperatorSet(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "isOperatorInOperatorSet", arg0, arg1, arg2)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsOperatorInOperatorSet is a free data retrieval call binding the contract method 0xe62a3015.
+//
+// Solidity: function isOperatorInOperatorSet(address , address , uint32 ) view returns(bool)
+func (_AVSDirectory *AVSDirectorySession) IsOperatorInOperatorSet(arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	return _AVSDirectory.Contract.IsOperatorInOperatorSet(&_AVSDirectory.CallOpts, arg0, arg1, arg2)
+}
+
+// IsOperatorInOperatorSet is a free data retrieval call binding the contract method 0xe62a3015.
+//
+// Solidity: function isOperatorInOperatorSet(address , address , uint32 ) view returns(bool)
+func (_AVSDirectory *AVSDirectoryCallerSession) IsOperatorInOperatorSet(arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	return _AVSDirectory.Contract.IsOperatorInOperatorSet(&_AVSDirectory.CallOpts, arg0, arg1, arg2)
+}
+
+// IsOperatorSet is a free data retrieval call binding the contract method 0x84d76f7b.
+//
+// Solidity: function isOperatorSet(address , uint32 ) view returns(bool)
+func (_AVSDirectory *AVSDirectoryCaller) IsOperatorSet(opts *bind.CallOpts, arg0 common.Address, arg1 uint32) (bool, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "isOperatorSet", arg0, arg1)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsOperatorSet is a free data retrieval call binding the contract method 0x84d76f7b.
+//
+// Solidity: function isOperatorSet(address , uint32 ) view returns(bool)
+func (_AVSDirectory *AVSDirectorySession) IsOperatorSet(arg0 common.Address, arg1 uint32) (bool, error) {
+	return _AVSDirectory.Contract.IsOperatorSet(&_AVSDirectory.CallOpts, arg0, arg1)
+}
+
+// IsOperatorSet is a free data retrieval call binding the contract method 0x84d76f7b.
+//
+// Solidity: function isOperatorSet(address , uint32 ) view returns(bool)
+func (_AVSDirectory *AVSDirectoryCallerSession) IsOperatorSet(arg0 common.Address, arg1 uint32) (bool, error) {
+	return _AVSDirectory.Contract.IsOperatorSet(&_AVSDirectory.CallOpts, arg0, arg1)
+}
+
+// IsOperatorSetAVS is a free data retrieval call binding the contract method 0x7673e93a.
+//
+// Solidity: function isOperatorSetAVS(address ) view returns(bool)
+func (_AVSDirectory *AVSDirectoryCaller) IsOperatorSetAVS(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "isOperatorSetAVS", arg0)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsOperatorSetAVS is a free data retrieval call binding the contract method 0x7673e93a.
+//
+// Solidity: function isOperatorSetAVS(address ) view returns(bool)
+func (_AVSDirectory *AVSDirectorySession) IsOperatorSetAVS(arg0 common.Address) (bool, error) {
+	return _AVSDirectory.Contract.IsOperatorSetAVS(&_AVSDirectory.CallOpts, arg0)
+}
+
+// IsOperatorSetAVS is a free data retrieval call binding the contract method 0x7673e93a.
+//
+// Solidity: function isOperatorSetAVS(address ) view returns(bool)
+func (_AVSDirectory *AVSDirectoryCallerSession) IsOperatorSetAVS(arg0 common.Address) (bool, error) {
+	return _AVSDirectory.Contract.IsOperatorSetAVS(&_AVSDirectory.CallOpts, arg0)
+}
+
+// OnStandby is a free data retrieval call binding the contract method 0xcfc41647.
+//
+// Solidity: function onStandby(address , address , uint32 ) view returns(bool)
+func (_AVSDirectory *AVSDirectoryCaller) OnStandby(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "onStandby", arg0, arg1, arg2)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// OnStandby is a free data retrieval call binding the contract method 0xcfc41647.
+//
+// Solidity: function onStandby(address , address , uint32 ) view returns(bool)
+func (_AVSDirectory *AVSDirectorySession) OnStandby(arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	return _AVSDirectory.Contract.OnStandby(&_AVSDirectory.CallOpts, arg0, arg1, arg2)
+}
+
+// OnStandby is a free data retrieval call binding the contract method 0xcfc41647.
+//
+// Solidity: function onStandby(address , address , uint32 ) view returns(bool)
+func (_AVSDirectory *AVSDirectoryCallerSession) OnStandby(arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	return _AVSDirectory.Contract.OnStandby(&_AVSDirectory.CallOpts, arg0, arg1, arg2)
+}
+
+// OperatorAVSOperatorSetCount is a free data retrieval call binding the contract method 0x52067137.
+//
+// Solidity: function operatorAVSOperatorSetCount(address , address ) view returns(uint256)
+func (_AVSDirectory *AVSDirectoryCaller) OperatorAVSOperatorSetCount(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "operatorAVSOperatorSetCount", arg0, arg1)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// OperatorAVSOperatorSetCount is a free data retrieval call binding the contract method 0x52067137.
+//
+// Solidity: function operatorAVSOperatorSetCount(address , address ) view returns(uint256)
+func (_AVSDirectory *AVSDirectorySession) OperatorAVSOperatorSetCount(arg0 common.Address, arg1 common.Address) (*big.Int, error) {
+	return _AVSDirectory.Contract.OperatorAVSOperatorSetCount(&_AVSDirectory.CallOpts, arg0, arg1)
+}
+
+// OperatorAVSOperatorSetCount is a free data retrieval call binding the contract method 0x52067137.
+//
+// Solidity: function operatorAVSOperatorSetCount(address , address ) view returns(uint256)
+func (_AVSDirectory *AVSDirectoryCallerSession) OperatorAVSOperatorSetCount(arg0 common.Address, arg1 common.Address) (*big.Int, error) {
+	return _AVSDirectory.Contract.OperatorAVSOperatorSetCount(&_AVSDirectory.CallOpts, arg0, arg1)
 }
 
 // OperatorSaltIsSpent is a free data retrieval call binding the contract method 0x374823b5.
@@ -550,6 +872,37 @@ func (_AVSDirectory *AVSDirectoryCallerSession) PauserRegistry() (common.Address
 	return _AVSDirectory.Contract.PauserRegistry(&_AVSDirectory.CallOpts)
 }
 
+// StrategyManager is a free data retrieval call binding the contract method 0x39b70e38.
+//
+// Solidity: function strategyManager() view returns(address)
+func (_AVSDirectory *AVSDirectoryCaller) StrategyManager(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _AVSDirectory.contract.Call(opts, &out, "strategyManager")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// StrategyManager is a free data retrieval call binding the contract method 0x39b70e38.
+//
+// Solidity: function strategyManager() view returns(address)
+func (_AVSDirectory *AVSDirectorySession) StrategyManager() (common.Address, error) {
+	return _AVSDirectory.Contract.StrategyManager(&_AVSDirectory.CallOpts)
+}
+
+// StrategyManager is a free data retrieval call binding the contract method 0x39b70e38.
+//
+// Solidity: function strategyManager() view returns(address)
+func (_AVSDirectory *AVSDirectoryCallerSession) StrategyManager() (common.Address, error) {
+	return _AVSDirectory.Contract.StrategyManager(&_AVSDirectory.CallOpts)
+}
+
 // CancelSalt is a paid mutator transaction binding the contract method 0xec76f442.
 //
 // Solidity: function cancelSalt(bytes32 salt) returns()
@@ -592,6 +945,27 @@ func (_AVSDirectory *AVSDirectoryTransactorSession) DeregisterOperatorFromAVS(op
 	return _AVSDirectory.Contract.DeregisterOperatorFromAVS(&_AVSDirectory.TransactOpts, operator)
 }
 
+// DeregisterOperatorFromOperatorSets is a paid mutator transaction binding the contract method 0xc1a8e2c5.
+//
+// Solidity: function deregisterOperatorFromOperatorSets(address operator, uint32[] operatorSetIds) returns()
+func (_AVSDirectory *AVSDirectoryTransactor) DeregisterOperatorFromOperatorSets(opts *bind.TransactOpts, operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _AVSDirectory.contract.Transact(opts, "deregisterOperatorFromOperatorSets", operator, operatorSetIds)
+}
+
+// DeregisterOperatorFromOperatorSets is a paid mutator transaction binding the contract method 0xc1a8e2c5.
+//
+// Solidity: function deregisterOperatorFromOperatorSets(address operator, uint32[] operatorSetIds) returns()
+func (_AVSDirectory *AVSDirectorySession) DeregisterOperatorFromOperatorSets(operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _AVSDirectory.Contract.DeregisterOperatorFromOperatorSets(&_AVSDirectory.TransactOpts, operator, operatorSetIds)
+}
+
+// DeregisterOperatorFromOperatorSets is a paid mutator transaction binding the contract method 0xc1a8e2c5.
+//
+// Solidity: function deregisterOperatorFromOperatorSets(address operator, uint32[] operatorSetIds) returns()
+func (_AVSDirectory *AVSDirectoryTransactorSession) DeregisterOperatorFromOperatorSets(operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _AVSDirectory.Contract.DeregisterOperatorFromOperatorSets(&_AVSDirectory.TransactOpts, operator, operatorSetIds)
+}
+
 // Initialize is a paid mutator transaction binding the contract method 0x1794bb3c.
 //
 // Solidity: function initialize(address initialOwner, address _pauserRegistry, uint256 initialPausedStatus) returns()
@@ -611,6 +985,27 @@ func (_AVSDirectory *AVSDirectorySession) Initialize(initialOwner common.Address
 // Solidity: function initialize(address initialOwner, address _pauserRegistry, uint256 initialPausedStatus) returns()
 func (_AVSDirectory *AVSDirectoryTransactorSession) Initialize(initialOwner common.Address, _pauserRegistry common.Address, initialPausedStatus *big.Int) (*types.Transaction, error) {
 	return _AVSDirectory.Contract.Initialize(&_AVSDirectory.TransactOpts, initialOwner, _pauserRegistry, initialPausedStatus)
+}
+
+// InitializeOperatorSet is a paid mutator transaction binding the contract method 0x5e639cbf.
+//
+// Solidity: function initializeOperatorSet(uint32 operatorSetId) returns()
+func (_AVSDirectory *AVSDirectoryTransactor) InitializeOperatorSet(opts *bind.TransactOpts, operatorSetId uint32) (*types.Transaction, error) {
+	return _AVSDirectory.contract.Transact(opts, "initializeOperatorSet", operatorSetId)
+}
+
+// InitializeOperatorSet is a paid mutator transaction binding the contract method 0x5e639cbf.
+//
+// Solidity: function initializeOperatorSet(uint32 operatorSetId) returns()
+func (_AVSDirectory *AVSDirectorySession) InitializeOperatorSet(operatorSetId uint32) (*types.Transaction, error) {
+	return _AVSDirectory.Contract.InitializeOperatorSet(&_AVSDirectory.TransactOpts, operatorSetId)
+}
+
+// InitializeOperatorSet is a paid mutator transaction binding the contract method 0x5e639cbf.
+//
+// Solidity: function initializeOperatorSet(uint32 operatorSetId) returns()
+func (_AVSDirectory *AVSDirectoryTransactorSession) InitializeOperatorSet(operatorSetId uint32) (*types.Transaction, error) {
+	return _AVSDirectory.Contract.InitializeOperatorSet(&_AVSDirectory.TransactOpts, operatorSetId)
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x136439dd.
@@ -674,6 +1069,27 @@ func (_AVSDirectory *AVSDirectorySession) RegisterOperatorToAVS(operator common.
 // Solidity: function registerOperatorToAVS(address operator, (bytes,bytes32,uint256) operatorSignature) returns()
 func (_AVSDirectory *AVSDirectoryTransactorSession) RegisterOperatorToAVS(operator common.Address, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
 	return _AVSDirectory.Contract.RegisterOperatorToAVS(&_AVSDirectory.TransactOpts, operator, operatorSignature)
+}
+
+// RegisterOperatorToOperatorSets is a paid mutator transaction binding the contract method 0x1e2199e2.
+//
+// Solidity: function registerOperatorToOperatorSets(address operator, uint32[] operatorSetIds, (bytes,bytes32,uint256) operatorSignature) returns()
+func (_AVSDirectory *AVSDirectoryTransactor) RegisterOperatorToOperatorSets(opts *bind.TransactOpts, operator common.Address, operatorSetIds []uint32, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectory.contract.Transact(opts, "registerOperatorToOperatorSets", operator, operatorSetIds, operatorSignature)
+}
+
+// RegisterOperatorToOperatorSets is a paid mutator transaction binding the contract method 0x1e2199e2.
+//
+// Solidity: function registerOperatorToOperatorSets(address operator, uint32[] operatorSetIds, (bytes,bytes32,uint256) operatorSignature) returns()
+func (_AVSDirectory *AVSDirectorySession) RegisterOperatorToOperatorSets(operator common.Address, operatorSetIds []uint32, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectory.Contract.RegisterOperatorToOperatorSets(&_AVSDirectory.TransactOpts, operator, operatorSetIds, operatorSignature)
+}
+
+// RegisterOperatorToOperatorSets is a paid mutator transaction binding the contract method 0x1e2199e2.
+//
+// Solidity: function registerOperatorToOperatorSets(address operator, uint32[] operatorSetIds, (bytes,bytes32,uint256) operatorSignature) returns()
+func (_AVSDirectory *AVSDirectoryTransactorSession) RegisterOperatorToOperatorSets(operator common.Address, operatorSetIds []uint32, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectory.Contract.RegisterOperatorToOperatorSets(&_AVSDirectory.TransactOpts, operator, operatorSetIds, operatorSignature)
 }
 
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
@@ -779,6 +1195,27 @@ func (_AVSDirectory *AVSDirectorySession) UpdateAVSMetadataURI(metadataURI strin
 // Solidity: function updateAVSMetadataURI(string metadataURI) returns()
 func (_AVSDirectory *AVSDirectoryTransactorSession) UpdateAVSMetadataURI(metadataURI string) (*types.Transaction, error) {
 	return _AVSDirectory.Contract.UpdateAVSMetadataURI(&_AVSDirectory.TransactOpts, metadataURI)
+}
+
+// UpdateStandbyParams is a paid mutator transaction binding the contract method 0x394a3053.
+//
+// Solidity: function updateStandbyParams(address operator, ((address,uint32),bool)[] standbyParams, (bytes,bytes32,uint256) operatorSignature) returns()
+func (_AVSDirectory *AVSDirectoryTransactor) UpdateStandbyParams(opts *bind.TransactOpts, operator common.Address, standbyParams []IAVSDirectoryStandbyParam, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectory.contract.Transact(opts, "updateStandbyParams", operator, standbyParams, operatorSignature)
+}
+
+// UpdateStandbyParams is a paid mutator transaction binding the contract method 0x394a3053.
+//
+// Solidity: function updateStandbyParams(address operator, ((address,uint32),bool)[] standbyParams, (bytes,bytes32,uint256) operatorSignature) returns()
+func (_AVSDirectory *AVSDirectorySession) UpdateStandbyParams(operator common.Address, standbyParams []IAVSDirectoryStandbyParam, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectory.Contract.UpdateStandbyParams(&_AVSDirectory.TransactOpts, operator, standbyParams, operatorSignature)
+}
+
+// UpdateStandbyParams is a paid mutator transaction binding the contract method 0x394a3053.
+//
+// Solidity: function updateStandbyParams(address operator, ((address,uint32),bool)[] standbyParams, (bytes,bytes32,uint256) operatorSignature) returns()
+func (_AVSDirectory *AVSDirectoryTransactorSession) UpdateStandbyParams(operator common.Address, standbyParams []IAVSDirectoryStandbyParam, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectory.Contract.UpdateStandbyParams(&_AVSDirectory.TransactOpts, operator, standbyParams, operatorSignature)
 }
 
 // AVSDirectoryAVSMetadataURIUpdatedIterator is returned from FilterAVSMetadataURIUpdated and is used to iterate over the raw logs and unpacked data for AVSMetadataURIUpdated events raised by the AVSDirectory contract.
@@ -1214,6 +1651,421 @@ func (_AVSDirectory *AVSDirectoryFilterer) ParseOperatorAVSRegistrationStatusUpd
 	return event, nil
 }
 
+// AVSDirectoryOperatorAddedToOperatorSetIterator is returned from FilterOperatorAddedToOperatorSet and is used to iterate over the raw logs and unpacked data for OperatorAddedToOperatorSet events raised by the AVSDirectory contract.
+type AVSDirectoryOperatorAddedToOperatorSetIterator struct {
+	Event *AVSDirectoryOperatorAddedToOperatorSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AVSDirectoryOperatorAddedToOperatorSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AVSDirectoryOperatorAddedToOperatorSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AVSDirectoryOperatorAddedToOperatorSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AVSDirectoryOperatorAddedToOperatorSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AVSDirectoryOperatorAddedToOperatorSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AVSDirectoryOperatorAddedToOperatorSet represents a OperatorAddedToOperatorSet event raised by the AVSDirectory contract.
+type AVSDirectoryOperatorAddedToOperatorSet struct {
+	Operator    common.Address
+	OperatorSet IAVSDirectoryOperatorSet
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorAddedToOperatorSet is a free log retrieval operation binding the contract event 0x43232edf9071753d2321e5fa7e018363ee248e5f2142e6c08edd3265bfb4895e.
+//
+// Solidity: event OperatorAddedToOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectory *AVSDirectoryFilterer) FilterOperatorAddedToOperatorSet(opts *bind.FilterOpts) (*AVSDirectoryOperatorAddedToOperatorSetIterator, error) {
+
+	logs, sub, err := _AVSDirectory.contract.FilterLogs(opts, "OperatorAddedToOperatorSet")
+	if err != nil {
+		return nil, err
+	}
+	return &AVSDirectoryOperatorAddedToOperatorSetIterator{contract: _AVSDirectory.contract, event: "OperatorAddedToOperatorSet", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorAddedToOperatorSet is a free log subscription operation binding the contract event 0x43232edf9071753d2321e5fa7e018363ee248e5f2142e6c08edd3265bfb4895e.
+//
+// Solidity: event OperatorAddedToOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectory *AVSDirectoryFilterer) WatchOperatorAddedToOperatorSet(opts *bind.WatchOpts, sink chan<- *AVSDirectoryOperatorAddedToOperatorSet) (event.Subscription, error) {
+
+	logs, sub, err := _AVSDirectory.contract.WatchLogs(opts, "OperatorAddedToOperatorSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AVSDirectoryOperatorAddedToOperatorSet)
+				if err := _AVSDirectory.contract.UnpackLog(event, "OperatorAddedToOperatorSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorAddedToOperatorSet is a log parse operation binding the contract event 0x43232edf9071753d2321e5fa7e018363ee248e5f2142e6c08edd3265bfb4895e.
+//
+// Solidity: event OperatorAddedToOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectory *AVSDirectoryFilterer) ParseOperatorAddedToOperatorSet(log types.Log) (*AVSDirectoryOperatorAddedToOperatorSet, error) {
+	event := new(AVSDirectoryOperatorAddedToOperatorSet)
+	if err := _AVSDirectory.contract.UnpackLog(event, "OperatorAddedToOperatorSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// AVSDirectoryOperatorRemovedFromOperatorSetIterator is returned from FilterOperatorRemovedFromOperatorSet and is used to iterate over the raw logs and unpacked data for OperatorRemovedFromOperatorSet events raised by the AVSDirectory contract.
+type AVSDirectoryOperatorRemovedFromOperatorSetIterator struct {
+	Event *AVSDirectoryOperatorRemovedFromOperatorSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AVSDirectoryOperatorRemovedFromOperatorSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AVSDirectoryOperatorRemovedFromOperatorSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AVSDirectoryOperatorRemovedFromOperatorSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AVSDirectoryOperatorRemovedFromOperatorSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AVSDirectoryOperatorRemovedFromOperatorSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AVSDirectoryOperatorRemovedFromOperatorSet represents a OperatorRemovedFromOperatorSet event raised by the AVSDirectory contract.
+type AVSDirectoryOperatorRemovedFromOperatorSet struct {
+	Operator    common.Address
+	OperatorSet IAVSDirectoryOperatorSet
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorRemovedFromOperatorSet is a free log retrieval operation binding the contract event 0xad34c3070be1dffbcaa499d000ba2b8d9848aefcac3059df245dd95c4ece14fe.
+//
+// Solidity: event OperatorRemovedFromOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectory *AVSDirectoryFilterer) FilterOperatorRemovedFromOperatorSet(opts *bind.FilterOpts) (*AVSDirectoryOperatorRemovedFromOperatorSetIterator, error) {
+
+	logs, sub, err := _AVSDirectory.contract.FilterLogs(opts, "OperatorRemovedFromOperatorSet")
+	if err != nil {
+		return nil, err
+	}
+	return &AVSDirectoryOperatorRemovedFromOperatorSetIterator{contract: _AVSDirectory.contract, event: "OperatorRemovedFromOperatorSet", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorRemovedFromOperatorSet is a free log subscription operation binding the contract event 0xad34c3070be1dffbcaa499d000ba2b8d9848aefcac3059df245dd95c4ece14fe.
+//
+// Solidity: event OperatorRemovedFromOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectory *AVSDirectoryFilterer) WatchOperatorRemovedFromOperatorSet(opts *bind.WatchOpts, sink chan<- *AVSDirectoryOperatorRemovedFromOperatorSet) (event.Subscription, error) {
+
+	logs, sub, err := _AVSDirectory.contract.WatchLogs(opts, "OperatorRemovedFromOperatorSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AVSDirectoryOperatorRemovedFromOperatorSet)
+				if err := _AVSDirectory.contract.UnpackLog(event, "OperatorRemovedFromOperatorSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorRemovedFromOperatorSet is a log parse operation binding the contract event 0xad34c3070be1dffbcaa499d000ba2b8d9848aefcac3059df245dd95c4ece14fe.
+//
+// Solidity: event OperatorRemovedFromOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectory *AVSDirectoryFilterer) ParseOperatorRemovedFromOperatorSet(log types.Log) (*AVSDirectoryOperatorRemovedFromOperatorSet, error) {
+	event := new(AVSDirectoryOperatorRemovedFromOperatorSet)
+	if err := _AVSDirectory.contract.UnpackLog(event, "OperatorRemovedFromOperatorSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// AVSDirectoryOperatorSetInitializedIterator is returned from FilterOperatorSetInitialized and is used to iterate over the raw logs and unpacked data for OperatorSetInitialized events raised by the AVSDirectory contract.
+type AVSDirectoryOperatorSetInitializedIterator struct {
+	Event *AVSDirectoryOperatorSetInitialized // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AVSDirectoryOperatorSetInitializedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AVSDirectoryOperatorSetInitialized)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AVSDirectoryOperatorSetInitialized)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AVSDirectoryOperatorSetInitializedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AVSDirectoryOperatorSetInitializedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AVSDirectoryOperatorSetInitialized represents a OperatorSetInitialized event raised by the AVSDirectory contract.
+type AVSDirectoryOperatorSetInitialized struct {
+	Avs           common.Address
+	OperatorSetId uint32
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorSetInitialized is a free log retrieval operation binding the contract event 0x2fd980fe375494188d78c536db132ae25d5f13caff0ef30ccf40e88a8f609b51.
+//
+// Solidity: event OperatorSetInitialized(address indexed avs, uint32 operatorSetId)
+func (_AVSDirectory *AVSDirectoryFilterer) FilterOperatorSetInitialized(opts *bind.FilterOpts, avs []common.Address) (*AVSDirectoryOperatorSetInitializedIterator, error) {
+
+	var avsRule []interface{}
+	for _, avsItem := range avs {
+		avsRule = append(avsRule, avsItem)
+	}
+
+	logs, sub, err := _AVSDirectory.contract.FilterLogs(opts, "OperatorSetInitialized", avsRule)
+	if err != nil {
+		return nil, err
+	}
+	return &AVSDirectoryOperatorSetInitializedIterator{contract: _AVSDirectory.contract, event: "OperatorSetInitialized", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorSetInitialized is a free log subscription operation binding the contract event 0x2fd980fe375494188d78c536db132ae25d5f13caff0ef30ccf40e88a8f609b51.
+//
+// Solidity: event OperatorSetInitialized(address indexed avs, uint32 operatorSetId)
+func (_AVSDirectory *AVSDirectoryFilterer) WatchOperatorSetInitialized(opts *bind.WatchOpts, sink chan<- *AVSDirectoryOperatorSetInitialized, avs []common.Address) (event.Subscription, error) {
+
+	var avsRule []interface{}
+	for _, avsItem := range avs {
+		avsRule = append(avsRule, avsItem)
+	}
+
+	logs, sub, err := _AVSDirectory.contract.WatchLogs(opts, "OperatorSetInitialized", avsRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AVSDirectoryOperatorSetInitialized)
+				if err := _AVSDirectory.contract.UnpackLog(event, "OperatorSetInitialized", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorSetInitialized is a log parse operation binding the contract event 0x2fd980fe375494188d78c536db132ae25d5f13caff0ef30ccf40e88a8f609b51.
+//
+// Solidity: event OperatorSetInitialized(address indexed avs, uint32 operatorSetId)
+func (_AVSDirectory *AVSDirectoryFilterer) ParseOperatorSetInitialized(log types.Log) (*AVSDirectoryOperatorSetInitialized, error) {
+	event := new(AVSDirectoryOperatorSetInitialized)
+	if err := _AVSDirectory.contract.UnpackLog(event, "OperatorSetInitialized", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // AVSDirectoryOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the AVSDirectory contract.
 type AVSDirectoryOwnershipTransferredIterator struct {
 	Event *AVSDirectoryOwnershipTransferred // Event containing the contract specifics and raw log
@@ -1641,6 +2493,142 @@ func (_AVSDirectory *AVSDirectoryFilterer) WatchPauserRegistrySet(opts *bind.Wat
 func (_AVSDirectory *AVSDirectoryFilterer) ParsePauserRegistrySet(log types.Log) (*AVSDirectoryPauserRegistrySet, error) {
 	event := new(AVSDirectoryPauserRegistrySet)
 	if err := _AVSDirectory.contract.UnpackLog(event, "PauserRegistrySet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// AVSDirectoryStandbyParamUpdatedIterator is returned from FilterStandbyParamUpdated and is used to iterate over the raw logs and unpacked data for StandbyParamUpdated events raised by the AVSDirectory contract.
+type AVSDirectoryStandbyParamUpdatedIterator struct {
+	Event *AVSDirectoryStandbyParamUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AVSDirectoryStandbyParamUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AVSDirectoryStandbyParamUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AVSDirectoryStandbyParamUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AVSDirectoryStandbyParamUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AVSDirectoryStandbyParamUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AVSDirectoryStandbyParamUpdated represents a StandbyParamUpdated event raised by the AVSDirectory contract.
+type AVSDirectoryStandbyParamUpdated struct {
+	Operator    common.Address
+	OperatorSet IAVSDirectoryOperatorSet
+	OnStandby   bool
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterStandbyParamUpdated is a free log retrieval operation binding the contract event 0xe830b87799dcc83eb70bb7be1e0f0fdfd3725b71059a38bc05dd790a5ada498b.
+//
+// Solidity: event StandbyParamUpdated(address operator, (address,uint32) operatorSet, bool onStandby)
+func (_AVSDirectory *AVSDirectoryFilterer) FilterStandbyParamUpdated(opts *bind.FilterOpts) (*AVSDirectoryStandbyParamUpdatedIterator, error) {
+
+	logs, sub, err := _AVSDirectory.contract.FilterLogs(opts, "StandbyParamUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &AVSDirectoryStandbyParamUpdatedIterator{contract: _AVSDirectory.contract, event: "StandbyParamUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchStandbyParamUpdated is a free log subscription operation binding the contract event 0xe830b87799dcc83eb70bb7be1e0f0fdfd3725b71059a38bc05dd790a5ada498b.
+//
+// Solidity: event StandbyParamUpdated(address operator, (address,uint32) operatorSet, bool onStandby)
+func (_AVSDirectory *AVSDirectoryFilterer) WatchStandbyParamUpdated(opts *bind.WatchOpts, sink chan<- *AVSDirectoryStandbyParamUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _AVSDirectory.contract.WatchLogs(opts, "StandbyParamUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AVSDirectoryStandbyParamUpdated)
+				if err := _AVSDirectory.contract.UnpackLog(event, "StandbyParamUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseStandbyParamUpdated is a log parse operation binding the contract event 0xe830b87799dcc83eb70bb7be1e0f0fdfd3725b71059a38bc05dd790a5ada498b.
+//
+// Solidity: event StandbyParamUpdated(address operator, (address,uint32) operatorSet, bool onStandby)
+func (_AVSDirectory *AVSDirectoryFilterer) ParseStandbyParamUpdated(log types.Log) (*AVSDirectoryStandbyParamUpdated, error) {
+	event := new(AVSDirectoryStandbyParamUpdated)
+	if err := _AVSDirectory.contract.UnpackLog(event, "StandbyParamUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

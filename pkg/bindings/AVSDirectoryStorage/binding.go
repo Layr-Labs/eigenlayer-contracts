@@ -29,6 +29,18 @@ var (
 	_ = abi.ConvertType
 )
 
+// IAVSDirectoryOperatorSet is an auto generated low-level Go binding around an user-defined struct.
+type IAVSDirectoryOperatorSet struct {
+	Avs common.Address
+	Id  uint32
+}
+
+// IAVSDirectoryStandbyParam is an auto generated low-level Go binding around an user-defined struct.
+type IAVSDirectoryStandbyParam struct {
+	OperatorSet IAVSDirectoryOperatorSet
+	OnStandby   bool
+}
+
 // ISignatureUtilsSignatureWithSaltAndExpiry is an auto generated low-level Go binding around an user-defined struct.
 type ISignatureUtilsSignatureWithSaltAndExpiry struct {
 	Signature []byte
@@ -38,7 +50,7 @@ type ISignatureUtilsSignatureWithSaltAndExpiry struct {
 
 // AVSDirectoryStorageMetaData contains all meta data concerning the AVSDirectoryStorage contract.
 var AVSDirectoryStorageMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"DOMAIN_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_AVS_REGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"avsOperatorStatus\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorAVSRegistrationDigestHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"operatorSaltIsSpent\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperatorToAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateAVSMetadataURI\",\"inputs\":[{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AVSMetadataURIUpdated\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAVSRegistrationStatusUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"status\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"DOMAIN_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_AVS_REGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_SET_REGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_STANDBY_UPDATE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"avsOperatorStatus\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorAVSRegistrationDigestHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorSetRegistrationDigestHash\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initializeOperatorSet\",\"inputs\":[{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isOperatorInOperatorSet\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorSet\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorSetAVS\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"onStandby\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorAVSOperatorSetCount\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSaltIsSpent\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperatorToAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerOperatorToOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"updateAVSMetadataURI\",\"inputs\":[{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateStandbyParams\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"standbyParams\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.StandbyParam[]\",\"components\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"onStandby\",\"type\":\"bool\",\"internalType\":\"bool\"}]},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AVSMetadataURIUpdated\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAVSRegistrationStatusUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"status\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAddedToOperatorSet\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorRemovedFromOperatorSet\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetInitialized\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StandbyParamUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"onStandby\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false}]",
 }
 
 // AVSDirectoryStorageABI is the input ABI used to generate the binding from.
@@ -249,6 +261,68 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OPERATORAVSREGISTR
 	return _AVSDirectoryStorage.Contract.OPERATORAVSREGISTRATIONTYPEHASH(&_AVSDirectoryStorage.CallOpts)
 }
 
+// OPERATORSETREGISTRATIONTYPEHASH is a free data retrieval call binding the contract method 0xc825fe68.
+//
+// Solidity: function OPERATOR_SET_REGISTRATION_TYPEHASH() view returns(bytes32)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) OPERATORSETREGISTRATIONTYPEHASH(opts *bind.CallOpts) ([32]byte, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "OPERATOR_SET_REGISTRATION_TYPEHASH")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// OPERATORSETREGISTRATIONTYPEHASH is a free data retrieval call binding the contract method 0xc825fe68.
+//
+// Solidity: function OPERATOR_SET_REGISTRATION_TYPEHASH() view returns(bytes32)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) OPERATORSETREGISTRATIONTYPEHASH() ([32]byte, error) {
+	return _AVSDirectoryStorage.Contract.OPERATORSETREGISTRATIONTYPEHASH(&_AVSDirectoryStorage.CallOpts)
+}
+
+// OPERATORSETREGISTRATIONTYPEHASH is a free data retrieval call binding the contract method 0xc825fe68.
+//
+// Solidity: function OPERATOR_SET_REGISTRATION_TYPEHASH() view returns(bytes32)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OPERATORSETREGISTRATIONTYPEHASH() ([32]byte, error) {
+	return _AVSDirectoryStorage.Contract.OPERATORSETREGISTRATIONTYPEHASH(&_AVSDirectoryStorage.CallOpts)
+}
+
+// OPERATORSTANDBYUPDATE is a free data retrieval call binding the contract method 0xfc5f9fda.
+//
+// Solidity: function OPERATOR_STANDBY_UPDATE() view returns(bytes32)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) OPERATORSTANDBYUPDATE(opts *bind.CallOpts) ([32]byte, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "OPERATOR_STANDBY_UPDATE")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// OPERATORSTANDBYUPDATE is a free data retrieval call binding the contract method 0xfc5f9fda.
+//
+// Solidity: function OPERATOR_STANDBY_UPDATE() view returns(bytes32)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) OPERATORSTANDBYUPDATE() ([32]byte, error) {
+	return _AVSDirectoryStorage.Contract.OPERATORSTANDBYUPDATE(&_AVSDirectoryStorage.CallOpts)
+}
+
+// OPERATORSTANDBYUPDATE is a free data retrieval call binding the contract method 0xfc5f9fda.
+//
+// Solidity: function OPERATOR_STANDBY_UPDATE() view returns(bytes32)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OPERATORSTANDBYUPDATE() ([32]byte, error) {
+	return _AVSDirectoryStorage.Contract.OPERATORSTANDBYUPDATE(&_AVSDirectoryStorage.CallOpts)
+}
+
 // AvsOperatorStatus is a free data retrieval call binding the contract method 0x49075da3.
 //
 // Solidity: function avsOperatorStatus(address , address ) view returns(uint8)
@@ -311,6 +385,37 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) CalculateOperatorA
 	return _AVSDirectoryStorage.Contract.CalculateOperatorAVSRegistrationDigestHash(&_AVSDirectoryStorage.CallOpts, operator, avs, salt, expiry)
 }
 
+// CalculateOperatorSetRegistrationDigestHash is a free data retrieval call binding the contract method 0x955e6696.
+//
+// Solidity: function calculateOperatorSetRegistrationDigestHash(address avs, uint32[] operatorSetIds, bytes32 salt, uint256 expiry) view returns(bytes32)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) CalculateOperatorSetRegistrationDigestHash(opts *bind.CallOpts, avs common.Address, operatorSetIds []uint32, salt [32]byte, expiry *big.Int) ([32]byte, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "calculateOperatorSetRegistrationDigestHash", avs, operatorSetIds, salt, expiry)
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// CalculateOperatorSetRegistrationDigestHash is a free data retrieval call binding the contract method 0x955e6696.
+//
+// Solidity: function calculateOperatorSetRegistrationDigestHash(address avs, uint32[] operatorSetIds, bytes32 salt, uint256 expiry) view returns(bytes32)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) CalculateOperatorSetRegistrationDigestHash(avs common.Address, operatorSetIds []uint32, salt [32]byte, expiry *big.Int) ([32]byte, error) {
+	return _AVSDirectoryStorage.Contract.CalculateOperatorSetRegistrationDigestHash(&_AVSDirectoryStorage.CallOpts, avs, operatorSetIds, salt, expiry)
+}
+
+// CalculateOperatorSetRegistrationDigestHash is a free data retrieval call binding the contract method 0x955e6696.
+//
+// Solidity: function calculateOperatorSetRegistrationDigestHash(address avs, uint32[] operatorSetIds, bytes32 salt, uint256 expiry) view returns(bytes32)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) CalculateOperatorSetRegistrationDigestHash(avs common.Address, operatorSetIds []uint32, salt [32]byte, expiry *big.Int) ([32]byte, error) {
+	return _AVSDirectoryStorage.Contract.CalculateOperatorSetRegistrationDigestHash(&_AVSDirectoryStorage.CallOpts, avs, operatorSetIds, salt, expiry)
+}
+
 // Delegation is a free data retrieval call binding the contract method 0xdf5cf723.
 //
 // Solidity: function delegation() view returns(address)
@@ -340,6 +445,161 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageSession) Delegation() (common.Add
 // Solidity: function delegation() view returns(address)
 func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) Delegation() (common.Address, error) {
 	return _AVSDirectoryStorage.Contract.Delegation(&_AVSDirectoryStorage.CallOpts)
+}
+
+// IsOperatorInOperatorSet is a free data retrieval call binding the contract method 0xe62a3015.
+//
+// Solidity: function isOperatorInOperatorSet(address , address , uint32 ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) IsOperatorInOperatorSet(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "isOperatorInOperatorSet", arg0, arg1, arg2)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsOperatorInOperatorSet is a free data retrieval call binding the contract method 0xe62a3015.
+//
+// Solidity: function isOperatorInOperatorSet(address , address , uint32 ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) IsOperatorInOperatorSet(arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	return _AVSDirectoryStorage.Contract.IsOperatorInOperatorSet(&_AVSDirectoryStorage.CallOpts, arg0, arg1, arg2)
+}
+
+// IsOperatorInOperatorSet is a free data retrieval call binding the contract method 0xe62a3015.
+//
+// Solidity: function isOperatorInOperatorSet(address , address , uint32 ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) IsOperatorInOperatorSet(arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	return _AVSDirectoryStorage.Contract.IsOperatorInOperatorSet(&_AVSDirectoryStorage.CallOpts, arg0, arg1, arg2)
+}
+
+// IsOperatorSet is a free data retrieval call binding the contract method 0x84d76f7b.
+//
+// Solidity: function isOperatorSet(address , uint32 ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) IsOperatorSet(opts *bind.CallOpts, arg0 common.Address, arg1 uint32) (bool, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "isOperatorSet", arg0, arg1)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsOperatorSet is a free data retrieval call binding the contract method 0x84d76f7b.
+//
+// Solidity: function isOperatorSet(address , uint32 ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) IsOperatorSet(arg0 common.Address, arg1 uint32) (bool, error) {
+	return _AVSDirectoryStorage.Contract.IsOperatorSet(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
+}
+
+// IsOperatorSet is a free data retrieval call binding the contract method 0x84d76f7b.
+//
+// Solidity: function isOperatorSet(address , uint32 ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) IsOperatorSet(arg0 common.Address, arg1 uint32) (bool, error) {
+	return _AVSDirectoryStorage.Contract.IsOperatorSet(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
+}
+
+// IsOperatorSetAVS is a free data retrieval call binding the contract method 0x7673e93a.
+//
+// Solidity: function isOperatorSetAVS(address ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) IsOperatorSetAVS(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "isOperatorSetAVS", arg0)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsOperatorSetAVS is a free data retrieval call binding the contract method 0x7673e93a.
+//
+// Solidity: function isOperatorSetAVS(address ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) IsOperatorSetAVS(arg0 common.Address) (bool, error) {
+	return _AVSDirectoryStorage.Contract.IsOperatorSetAVS(&_AVSDirectoryStorage.CallOpts, arg0)
+}
+
+// IsOperatorSetAVS is a free data retrieval call binding the contract method 0x7673e93a.
+//
+// Solidity: function isOperatorSetAVS(address ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) IsOperatorSetAVS(arg0 common.Address) (bool, error) {
+	return _AVSDirectoryStorage.Contract.IsOperatorSetAVS(&_AVSDirectoryStorage.CallOpts, arg0)
+}
+
+// OnStandby is a free data retrieval call binding the contract method 0xcfc41647.
+//
+// Solidity: function onStandby(address , address , uint32 ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) OnStandby(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "onStandby", arg0, arg1, arg2)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// OnStandby is a free data retrieval call binding the contract method 0xcfc41647.
+//
+// Solidity: function onStandby(address , address , uint32 ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) OnStandby(arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	return _AVSDirectoryStorage.Contract.OnStandby(&_AVSDirectoryStorage.CallOpts, arg0, arg1, arg2)
+}
+
+// OnStandby is a free data retrieval call binding the contract method 0xcfc41647.
+//
+// Solidity: function onStandby(address , address , uint32 ) view returns(bool)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OnStandby(arg0 common.Address, arg1 common.Address, arg2 uint32) (bool, error) {
+	return _AVSDirectoryStorage.Contract.OnStandby(&_AVSDirectoryStorage.CallOpts, arg0, arg1, arg2)
+}
+
+// OperatorAVSOperatorSetCount is a free data retrieval call binding the contract method 0x52067137.
+//
+// Solidity: function operatorAVSOperatorSetCount(address , address ) view returns(uint256)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) OperatorAVSOperatorSetCount(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "operatorAVSOperatorSetCount", arg0, arg1)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// OperatorAVSOperatorSetCount is a free data retrieval call binding the contract method 0x52067137.
+//
+// Solidity: function operatorAVSOperatorSetCount(address , address ) view returns(uint256)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) OperatorAVSOperatorSetCount(arg0 common.Address, arg1 common.Address) (*big.Int, error) {
+	return _AVSDirectoryStorage.Contract.OperatorAVSOperatorSetCount(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
+}
+
+// OperatorAVSOperatorSetCount is a free data retrieval call binding the contract method 0x52067137.
+//
+// Solidity: function operatorAVSOperatorSetCount(address , address ) view returns(uint256)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OperatorAVSOperatorSetCount(arg0 common.Address, arg1 common.Address) (*big.Int, error) {
+	return _AVSDirectoryStorage.Contract.OperatorAVSOperatorSetCount(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
 }
 
 // OperatorSaltIsSpent is a free data retrieval call binding the contract method 0x374823b5.
@@ -373,6 +633,37 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OperatorSaltIsSpen
 	return _AVSDirectoryStorage.Contract.OperatorSaltIsSpent(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
 }
 
+// StrategyManager is a free data retrieval call binding the contract method 0x39b70e38.
+//
+// Solidity: function strategyManager() view returns(address)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) StrategyManager(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "strategyManager")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// StrategyManager is a free data retrieval call binding the contract method 0x39b70e38.
+//
+// Solidity: function strategyManager() view returns(address)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) StrategyManager() (common.Address, error) {
+	return _AVSDirectoryStorage.Contract.StrategyManager(&_AVSDirectoryStorage.CallOpts)
+}
+
+// StrategyManager is a free data retrieval call binding the contract method 0x39b70e38.
+//
+// Solidity: function strategyManager() view returns(address)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) StrategyManager() (common.Address, error) {
+	return _AVSDirectoryStorage.Contract.StrategyManager(&_AVSDirectoryStorage.CallOpts)
+}
+
 // DeregisterOperatorFromAVS is a paid mutator transaction binding the contract method 0xa364f4da.
 //
 // Solidity: function deregisterOperatorFromAVS(address operator) returns()
@@ -392,6 +683,48 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageSession) DeregisterOperatorFromAV
 // Solidity: function deregisterOperatorFromAVS(address operator) returns()
 func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) DeregisterOperatorFromAVS(operator common.Address) (*types.Transaction, error) {
 	return _AVSDirectoryStorage.Contract.DeregisterOperatorFromAVS(&_AVSDirectoryStorage.TransactOpts, operator)
+}
+
+// DeregisterOperatorFromOperatorSets is a paid mutator transaction binding the contract method 0xc1a8e2c5.
+//
+// Solidity: function deregisterOperatorFromOperatorSets(address operator, uint32[] operatorSetIds) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) DeregisterOperatorFromOperatorSets(opts *bind.TransactOpts, operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.contract.Transact(opts, "deregisterOperatorFromOperatorSets", operator, operatorSetIds)
+}
+
+// DeregisterOperatorFromOperatorSets is a paid mutator transaction binding the contract method 0xc1a8e2c5.
+//
+// Solidity: function deregisterOperatorFromOperatorSets(address operator, uint32[] operatorSetIds) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) DeregisterOperatorFromOperatorSets(operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.DeregisterOperatorFromOperatorSets(&_AVSDirectoryStorage.TransactOpts, operator, operatorSetIds)
+}
+
+// DeregisterOperatorFromOperatorSets is a paid mutator transaction binding the contract method 0xc1a8e2c5.
+//
+// Solidity: function deregisterOperatorFromOperatorSets(address operator, uint32[] operatorSetIds) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) DeregisterOperatorFromOperatorSets(operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.DeregisterOperatorFromOperatorSets(&_AVSDirectoryStorage.TransactOpts, operator, operatorSetIds)
+}
+
+// InitializeOperatorSet is a paid mutator transaction binding the contract method 0x5e639cbf.
+//
+// Solidity: function initializeOperatorSet(uint32 operatorSetId) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) InitializeOperatorSet(opts *bind.TransactOpts, operatorSetId uint32) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.contract.Transact(opts, "initializeOperatorSet", operatorSetId)
+}
+
+// InitializeOperatorSet is a paid mutator transaction binding the contract method 0x5e639cbf.
+//
+// Solidity: function initializeOperatorSet(uint32 operatorSetId) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) InitializeOperatorSet(operatorSetId uint32) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.InitializeOperatorSet(&_AVSDirectoryStorage.TransactOpts, operatorSetId)
+}
+
+// InitializeOperatorSet is a paid mutator transaction binding the contract method 0x5e639cbf.
+//
+// Solidity: function initializeOperatorSet(uint32 operatorSetId) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) InitializeOperatorSet(operatorSetId uint32) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.InitializeOperatorSet(&_AVSDirectoryStorage.TransactOpts, operatorSetId)
 }
 
 // RegisterOperatorToAVS is a paid mutator transaction binding the contract method 0x9926ee7d.
@@ -415,6 +748,27 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) RegisterOperat
 	return _AVSDirectoryStorage.Contract.RegisterOperatorToAVS(&_AVSDirectoryStorage.TransactOpts, operator, operatorSignature)
 }
 
+// RegisterOperatorToOperatorSets is a paid mutator transaction binding the contract method 0x1e2199e2.
+//
+// Solidity: function registerOperatorToOperatorSets(address operator, uint32[] operatorSetIds, (bytes,bytes32,uint256) signature) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) RegisterOperatorToOperatorSets(opts *bind.TransactOpts, operator common.Address, operatorSetIds []uint32, signature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.contract.Transact(opts, "registerOperatorToOperatorSets", operator, operatorSetIds, signature)
+}
+
+// RegisterOperatorToOperatorSets is a paid mutator transaction binding the contract method 0x1e2199e2.
+//
+// Solidity: function registerOperatorToOperatorSets(address operator, uint32[] operatorSetIds, (bytes,bytes32,uint256) signature) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) RegisterOperatorToOperatorSets(operator common.Address, operatorSetIds []uint32, signature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.RegisterOperatorToOperatorSets(&_AVSDirectoryStorage.TransactOpts, operator, operatorSetIds, signature)
+}
+
+// RegisterOperatorToOperatorSets is a paid mutator transaction binding the contract method 0x1e2199e2.
+//
+// Solidity: function registerOperatorToOperatorSets(address operator, uint32[] operatorSetIds, (bytes,bytes32,uint256) signature) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) RegisterOperatorToOperatorSets(operator common.Address, operatorSetIds []uint32, signature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.RegisterOperatorToOperatorSets(&_AVSDirectoryStorage.TransactOpts, operator, operatorSetIds, signature)
+}
+
 // UpdateAVSMetadataURI is a paid mutator transaction binding the contract method 0xa98fb355.
 //
 // Solidity: function updateAVSMetadataURI(string metadataURI) returns()
@@ -434,6 +788,27 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageSession) UpdateAVSMetadataURI(met
 // Solidity: function updateAVSMetadataURI(string metadataURI) returns()
 func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) UpdateAVSMetadataURI(metadataURI string) (*types.Transaction, error) {
 	return _AVSDirectoryStorage.Contract.UpdateAVSMetadataURI(&_AVSDirectoryStorage.TransactOpts, metadataURI)
+}
+
+// UpdateStandbyParams is a paid mutator transaction binding the contract method 0x394a3053.
+//
+// Solidity: function updateStandbyParams(address operator, ((address,uint32),bool)[] standbyParams, (bytes,bytes32,uint256) signature) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) UpdateStandbyParams(opts *bind.TransactOpts, operator common.Address, standbyParams []IAVSDirectoryStandbyParam, signature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.contract.Transact(opts, "updateStandbyParams", operator, standbyParams, signature)
+}
+
+// UpdateStandbyParams is a paid mutator transaction binding the contract method 0x394a3053.
+//
+// Solidity: function updateStandbyParams(address operator, ((address,uint32),bool)[] standbyParams, (bytes,bytes32,uint256) signature) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) UpdateStandbyParams(operator common.Address, standbyParams []IAVSDirectoryStandbyParam, signature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.UpdateStandbyParams(&_AVSDirectoryStorage.TransactOpts, operator, standbyParams, signature)
+}
+
+// UpdateStandbyParams is a paid mutator transaction binding the contract method 0x394a3053.
+//
+// Solidity: function updateStandbyParams(address operator, ((address,uint32),bool)[] standbyParams, (bytes,bytes32,uint256) signature) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) UpdateStandbyParams(operator common.Address, standbyParams []IAVSDirectoryStandbyParam, signature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.UpdateStandbyParams(&_AVSDirectoryStorage.TransactOpts, operator, standbyParams, signature)
 }
 
 // AVSDirectoryStorageAVSMetadataURIUpdatedIterator is returned from FilterAVSMetadataURIUpdated and is used to iterate over the raw logs and unpacked data for AVSMetadataURIUpdated events raised by the AVSDirectoryStorage contract.
@@ -729,6 +1104,557 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) WatchOperatorAVSRegistr
 func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) ParseOperatorAVSRegistrationStatusUpdated(log types.Log) (*AVSDirectoryStorageOperatorAVSRegistrationStatusUpdated, error) {
 	event := new(AVSDirectoryStorageOperatorAVSRegistrationStatusUpdated)
 	if err := _AVSDirectoryStorage.contract.UnpackLog(event, "OperatorAVSRegistrationStatusUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// AVSDirectoryStorageOperatorAddedToOperatorSetIterator is returned from FilterOperatorAddedToOperatorSet and is used to iterate over the raw logs and unpacked data for OperatorAddedToOperatorSet events raised by the AVSDirectoryStorage contract.
+type AVSDirectoryStorageOperatorAddedToOperatorSetIterator struct {
+	Event *AVSDirectoryStorageOperatorAddedToOperatorSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AVSDirectoryStorageOperatorAddedToOperatorSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AVSDirectoryStorageOperatorAddedToOperatorSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AVSDirectoryStorageOperatorAddedToOperatorSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AVSDirectoryStorageOperatorAddedToOperatorSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AVSDirectoryStorageOperatorAddedToOperatorSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AVSDirectoryStorageOperatorAddedToOperatorSet represents a OperatorAddedToOperatorSet event raised by the AVSDirectoryStorage contract.
+type AVSDirectoryStorageOperatorAddedToOperatorSet struct {
+	Operator    common.Address
+	OperatorSet IAVSDirectoryOperatorSet
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorAddedToOperatorSet is a free log retrieval operation binding the contract event 0x43232edf9071753d2321e5fa7e018363ee248e5f2142e6c08edd3265bfb4895e.
+//
+// Solidity: event OperatorAddedToOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) FilterOperatorAddedToOperatorSet(opts *bind.FilterOpts) (*AVSDirectoryStorageOperatorAddedToOperatorSetIterator, error) {
+
+	logs, sub, err := _AVSDirectoryStorage.contract.FilterLogs(opts, "OperatorAddedToOperatorSet")
+	if err != nil {
+		return nil, err
+	}
+	return &AVSDirectoryStorageOperatorAddedToOperatorSetIterator{contract: _AVSDirectoryStorage.contract, event: "OperatorAddedToOperatorSet", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorAddedToOperatorSet is a free log subscription operation binding the contract event 0x43232edf9071753d2321e5fa7e018363ee248e5f2142e6c08edd3265bfb4895e.
+//
+// Solidity: event OperatorAddedToOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) WatchOperatorAddedToOperatorSet(opts *bind.WatchOpts, sink chan<- *AVSDirectoryStorageOperatorAddedToOperatorSet) (event.Subscription, error) {
+
+	logs, sub, err := _AVSDirectoryStorage.contract.WatchLogs(opts, "OperatorAddedToOperatorSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AVSDirectoryStorageOperatorAddedToOperatorSet)
+				if err := _AVSDirectoryStorage.contract.UnpackLog(event, "OperatorAddedToOperatorSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorAddedToOperatorSet is a log parse operation binding the contract event 0x43232edf9071753d2321e5fa7e018363ee248e5f2142e6c08edd3265bfb4895e.
+//
+// Solidity: event OperatorAddedToOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) ParseOperatorAddedToOperatorSet(log types.Log) (*AVSDirectoryStorageOperatorAddedToOperatorSet, error) {
+	event := new(AVSDirectoryStorageOperatorAddedToOperatorSet)
+	if err := _AVSDirectoryStorage.contract.UnpackLog(event, "OperatorAddedToOperatorSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// AVSDirectoryStorageOperatorRemovedFromOperatorSetIterator is returned from FilterOperatorRemovedFromOperatorSet and is used to iterate over the raw logs and unpacked data for OperatorRemovedFromOperatorSet events raised by the AVSDirectoryStorage contract.
+type AVSDirectoryStorageOperatorRemovedFromOperatorSetIterator struct {
+	Event *AVSDirectoryStorageOperatorRemovedFromOperatorSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AVSDirectoryStorageOperatorRemovedFromOperatorSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AVSDirectoryStorageOperatorRemovedFromOperatorSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AVSDirectoryStorageOperatorRemovedFromOperatorSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AVSDirectoryStorageOperatorRemovedFromOperatorSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AVSDirectoryStorageOperatorRemovedFromOperatorSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AVSDirectoryStorageOperatorRemovedFromOperatorSet represents a OperatorRemovedFromOperatorSet event raised by the AVSDirectoryStorage contract.
+type AVSDirectoryStorageOperatorRemovedFromOperatorSet struct {
+	Operator    common.Address
+	OperatorSet IAVSDirectoryOperatorSet
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorRemovedFromOperatorSet is a free log retrieval operation binding the contract event 0xad34c3070be1dffbcaa499d000ba2b8d9848aefcac3059df245dd95c4ece14fe.
+//
+// Solidity: event OperatorRemovedFromOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) FilterOperatorRemovedFromOperatorSet(opts *bind.FilterOpts) (*AVSDirectoryStorageOperatorRemovedFromOperatorSetIterator, error) {
+
+	logs, sub, err := _AVSDirectoryStorage.contract.FilterLogs(opts, "OperatorRemovedFromOperatorSet")
+	if err != nil {
+		return nil, err
+	}
+	return &AVSDirectoryStorageOperatorRemovedFromOperatorSetIterator{contract: _AVSDirectoryStorage.contract, event: "OperatorRemovedFromOperatorSet", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorRemovedFromOperatorSet is a free log subscription operation binding the contract event 0xad34c3070be1dffbcaa499d000ba2b8d9848aefcac3059df245dd95c4ece14fe.
+//
+// Solidity: event OperatorRemovedFromOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) WatchOperatorRemovedFromOperatorSet(opts *bind.WatchOpts, sink chan<- *AVSDirectoryStorageOperatorRemovedFromOperatorSet) (event.Subscription, error) {
+
+	logs, sub, err := _AVSDirectoryStorage.contract.WatchLogs(opts, "OperatorRemovedFromOperatorSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AVSDirectoryStorageOperatorRemovedFromOperatorSet)
+				if err := _AVSDirectoryStorage.contract.UnpackLog(event, "OperatorRemovedFromOperatorSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorRemovedFromOperatorSet is a log parse operation binding the contract event 0xad34c3070be1dffbcaa499d000ba2b8d9848aefcac3059df245dd95c4ece14fe.
+//
+// Solidity: event OperatorRemovedFromOperatorSet(address operator, (address,uint32) operatorSet)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) ParseOperatorRemovedFromOperatorSet(log types.Log) (*AVSDirectoryStorageOperatorRemovedFromOperatorSet, error) {
+	event := new(AVSDirectoryStorageOperatorRemovedFromOperatorSet)
+	if err := _AVSDirectoryStorage.contract.UnpackLog(event, "OperatorRemovedFromOperatorSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// AVSDirectoryStorageOperatorSetInitializedIterator is returned from FilterOperatorSetInitialized and is used to iterate over the raw logs and unpacked data for OperatorSetInitialized events raised by the AVSDirectoryStorage contract.
+type AVSDirectoryStorageOperatorSetInitializedIterator struct {
+	Event *AVSDirectoryStorageOperatorSetInitialized // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AVSDirectoryStorageOperatorSetInitializedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AVSDirectoryStorageOperatorSetInitialized)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AVSDirectoryStorageOperatorSetInitialized)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AVSDirectoryStorageOperatorSetInitializedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AVSDirectoryStorageOperatorSetInitializedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AVSDirectoryStorageOperatorSetInitialized represents a OperatorSetInitialized event raised by the AVSDirectoryStorage contract.
+type AVSDirectoryStorageOperatorSetInitialized struct {
+	Avs           common.Address
+	OperatorSetId uint32
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorSetInitialized is a free log retrieval operation binding the contract event 0x2fd980fe375494188d78c536db132ae25d5f13caff0ef30ccf40e88a8f609b51.
+//
+// Solidity: event OperatorSetInitialized(address indexed avs, uint32 operatorSetId)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) FilterOperatorSetInitialized(opts *bind.FilterOpts, avs []common.Address) (*AVSDirectoryStorageOperatorSetInitializedIterator, error) {
+
+	var avsRule []interface{}
+	for _, avsItem := range avs {
+		avsRule = append(avsRule, avsItem)
+	}
+
+	logs, sub, err := _AVSDirectoryStorage.contract.FilterLogs(opts, "OperatorSetInitialized", avsRule)
+	if err != nil {
+		return nil, err
+	}
+	return &AVSDirectoryStorageOperatorSetInitializedIterator{contract: _AVSDirectoryStorage.contract, event: "OperatorSetInitialized", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorSetInitialized is a free log subscription operation binding the contract event 0x2fd980fe375494188d78c536db132ae25d5f13caff0ef30ccf40e88a8f609b51.
+//
+// Solidity: event OperatorSetInitialized(address indexed avs, uint32 operatorSetId)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) WatchOperatorSetInitialized(opts *bind.WatchOpts, sink chan<- *AVSDirectoryStorageOperatorSetInitialized, avs []common.Address) (event.Subscription, error) {
+
+	var avsRule []interface{}
+	for _, avsItem := range avs {
+		avsRule = append(avsRule, avsItem)
+	}
+
+	logs, sub, err := _AVSDirectoryStorage.contract.WatchLogs(opts, "OperatorSetInitialized", avsRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AVSDirectoryStorageOperatorSetInitialized)
+				if err := _AVSDirectoryStorage.contract.UnpackLog(event, "OperatorSetInitialized", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorSetInitialized is a log parse operation binding the contract event 0x2fd980fe375494188d78c536db132ae25d5f13caff0ef30ccf40e88a8f609b51.
+//
+// Solidity: event OperatorSetInitialized(address indexed avs, uint32 operatorSetId)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) ParseOperatorSetInitialized(log types.Log) (*AVSDirectoryStorageOperatorSetInitialized, error) {
+	event := new(AVSDirectoryStorageOperatorSetInitialized)
+	if err := _AVSDirectoryStorage.contract.UnpackLog(event, "OperatorSetInitialized", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// AVSDirectoryStorageStandbyParamUpdatedIterator is returned from FilterStandbyParamUpdated and is used to iterate over the raw logs and unpacked data for StandbyParamUpdated events raised by the AVSDirectoryStorage contract.
+type AVSDirectoryStorageStandbyParamUpdatedIterator struct {
+	Event *AVSDirectoryStorageStandbyParamUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AVSDirectoryStorageStandbyParamUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AVSDirectoryStorageStandbyParamUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AVSDirectoryStorageStandbyParamUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AVSDirectoryStorageStandbyParamUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AVSDirectoryStorageStandbyParamUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AVSDirectoryStorageStandbyParamUpdated represents a StandbyParamUpdated event raised by the AVSDirectoryStorage contract.
+type AVSDirectoryStorageStandbyParamUpdated struct {
+	Operator    common.Address
+	OperatorSet IAVSDirectoryOperatorSet
+	OnStandby   bool
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterStandbyParamUpdated is a free log retrieval operation binding the contract event 0xe830b87799dcc83eb70bb7be1e0f0fdfd3725b71059a38bc05dd790a5ada498b.
+//
+// Solidity: event StandbyParamUpdated(address operator, (address,uint32) operatorSet, bool onStandby)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) FilterStandbyParamUpdated(opts *bind.FilterOpts) (*AVSDirectoryStorageStandbyParamUpdatedIterator, error) {
+
+	logs, sub, err := _AVSDirectoryStorage.contract.FilterLogs(opts, "StandbyParamUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &AVSDirectoryStorageStandbyParamUpdatedIterator{contract: _AVSDirectoryStorage.contract, event: "StandbyParamUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchStandbyParamUpdated is a free log subscription operation binding the contract event 0xe830b87799dcc83eb70bb7be1e0f0fdfd3725b71059a38bc05dd790a5ada498b.
+//
+// Solidity: event StandbyParamUpdated(address operator, (address,uint32) operatorSet, bool onStandby)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) WatchStandbyParamUpdated(opts *bind.WatchOpts, sink chan<- *AVSDirectoryStorageStandbyParamUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _AVSDirectoryStorage.contract.WatchLogs(opts, "StandbyParamUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AVSDirectoryStorageStandbyParamUpdated)
+				if err := _AVSDirectoryStorage.contract.UnpackLog(event, "StandbyParamUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseStandbyParamUpdated is a log parse operation binding the contract event 0xe830b87799dcc83eb70bb7be1e0f0fdfd3725b71059a38bc05dd790a5ada498b.
+//
+// Solidity: event StandbyParamUpdated(address operator, (address,uint32) operatorSet, bool onStandby)
+func (_AVSDirectoryStorage *AVSDirectoryStorageFilterer) ParseStandbyParamUpdated(log types.Log) (*AVSDirectoryStorageStandbyParamUpdated, error) {
+	event := new(AVSDirectoryStorageStandbyParamUpdated)
+	if err := _AVSDirectoryStorage.contract.UnpackLog(event, "StandbyParamUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

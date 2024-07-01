@@ -63,6 +63,17 @@ contract AVSDirectory is
      */
 
     /**
+     * @notice Initializes an operator set for an AVS.
+     * 
+     * @param operatorSetId The ID of the operator set to initialize.
+     * 
+     * @dev msg.sender must be the AVS.
+     */
+    function initializeOperatorSet(uint32 operatorSetId) external {
+        _initializeOperatorSet(msg.sender, operatorSetId);
+    }
+
+    /**
      * @notice Updates the standby parameters for an operator across multiple operator sets.
      * Allows the AVS to add the operator to a given operator set if they are not already registered.
      *
@@ -97,6 +108,13 @@ contract AVSDirectory is
             );
             // Spend salt.
             operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+
+            // Initialize operator set if it does not exist.
+            for (uint256 i; i < standbyParams.length; ++i) {
+                if (!isOperatorSet[msg.sender][standbyParams[i].operatorSet.id]) {
+                    _initializeOperatorSet(msg.sender, standbyParams[i].operatorSet.id);
+                }
+            }
         }
 
         for (uint256 i; i < standbyParams.length; ++i) {
@@ -175,6 +193,11 @@ contract AVSDirectory is
                     onStandby[msg.sender][operator][operatorSetIds[i]],
                     "AVSDirectory.registerOperatorToOperatorSets: avs not on standby"
                 );
+            }
+
+            // Initialize operator set if it does not exist.
+            if (!isOperatorSet[msg.sender][operatorSetIds[i]]) {
+                _initializeOperatorSet(msg.sender, operatorSetIds[i]);
             }
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
@@ -333,6 +356,17 @@ contract AVSDirectory is
      */
     function cancelSalt(bytes32 salt) external {
         operatorSaltIsSpent[msg.sender][salt] = true;
+    }
+
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
+    function _initializeOperatorSet(address avs, uint32 operatorSetId) internal {
+        require(!isOperatorSet[avs][operatorSetId], "AVSDirectory._initializeOperatorSet: operator set already exists");
+        isOperatorSet[avs][operatorSetId] = true;
+        emit OperatorSetInitialized(avs, operatorSetId);
     }
 
     /**
