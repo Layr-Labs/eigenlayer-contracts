@@ -70,9 +70,9 @@ contract AVSDirectory is
      * @dev msg.sender must be the AVS.
      */
     function createOperatorSet(uint32 operatorSetId) external {
-        require(!isOperatorSet[avs][operatorSetId], "AVSDirectory._createOperatorSet: operator set already exists");
-        isOperatorSet[avs][operatorSetId] = true;
-        emit OperatorSetInitialized(avs, operatorSetId);    
+        require(!isOperatorSet[msg.sender][operatorSetId], "AVSDirectory._createOperatorSet: operator set already exists");
+        isOperatorSet[msg.sender][operatorSetId] = true;
+        emit OperatorSetCreated(OperatorSet({avs: msg.sender, id: operatorSetId}));    
     }
 
     /**
