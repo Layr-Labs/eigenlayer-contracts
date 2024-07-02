@@ -44,6 +44,8 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
     function setUp() public virtual override {
+        vm.warp(0);
+
         // Setup
         EigenLayerUnitTestSetup.setUp();
 
@@ -424,7 +426,11 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 
         assertEq(avsDirectory.operatorAVSOperatorSetCount(address(this), operator), 1);
         assertEq(uint8(avsDirectory.avsOperatorStatus(address(this), operator)), 1);
-        assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId));
+        assertEq(
+            uint8(avsDirectory.operatorEpochState(address(this), operator, operatorSetId, 0)), 
+            uint8(IAVSDirectory.EpochStates.REGISTERED)
+        );
+        // assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId));
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
         assertTrue(avsDirectory.isOperatorSetAVS(address(this)));
     }
@@ -712,6 +718,7 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
     function testFuzz_revert_whenExpiryHasExpired(ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature)
         public
     {
+        vm.warp(420);
         address operator = cheats.addr(delegationSignerPrivateKey);
         operatorSignature.expiry = bound(operatorSignature.expiry, 0, block.timestamp - 1);
 

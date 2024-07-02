@@ -64,11 +64,9 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     }
 
     function currentEpoch() public view returns (uint256) {
-        // The parameter `START_TIME` must be less than or equal to `block.timestamp`.
-        uint256 elapsed = block.timestamp - START_TIME;
         unchecked {
-            // If `elapsed` is less than `EPOCH_LENGTH` the quotient is rounded down to zero.
-            return elapsed / EPOCH_LENGTH;
+            // If `timestamp - START_TIME` is less than `EPOCH_LENGTH` the quotient is rounded down to zero.
+            return (block.timestamp - START_TIME) / EPOCH_LENGTH;
         }
     }
 
@@ -78,6 +76,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
         EpochStates state = operatorEpochState[avs][operator][operatorSetId][lastEpoch];
 
         if (state == EpochStates.REGISTERED) return true;
+
+        if (state == EpochStates.NULL) return false;
 
         unchecked {
             // 2**256-2 weeks would need to elapse before overflow is possible.
