@@ -148,19 +148,15 @@ interface ISlasher {
 		uint32 epoch
 	) external view returns (uint32);
 
-	/**
-     * @notice gets whether withdrawals of the given strategy delegated to the given operator can be withdrawn and the scaling factor
-     * @param operator the operator the withdrawal is delegated to
-     * @param strategy the strategy the withdrawal is from
-     * @param epoch the last epoch the withdrawal was slashable until
-     * @return whether the withdrawal can be executed
-     * @return whether there was a slashing request for the given operator and strategy at the given epoch
-     */
-    function getWithdrawabilityAndScalingFactorAtEpoch(
-        address operator,
-        IStrategy strategy,
-        uint32 epoch
-    ) external view returns (bool, uint64);
+	struct WithdrawableAmounts {
+		uint256 withdrawAmount;
+		uint256 redepositAmount;
+	}
+
+	function getWithdrawableAmounts(
+        IDelegationManager.Withdrawal calldata withdrawal,
+        address currentOperator
+    ) external view returns (WithdrawableAmounts[] memory amounts);
 
 	/**
      * @notice gets whether withdrawals of the given strategy delegated to the given operator can be withdrawn

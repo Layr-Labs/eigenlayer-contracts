@@ -10,6 +10,8 @@ import "../libraries/SlashingAccountingUtils.sol";
  * @notice Slasher
  */
 contract Slasher is SlasherStorage {
+    using EpochUtils for *;
+
     constructor(
         IStrategyManager _strategyManager,
         IDelegationManager _delegationManager,
@@ -194,27 +196,39 @@ contract Slasher is SlasherStorage {
         return uint32(totalSlashingRate);
     }
 
-    /**
-     * @notice gets whether withdrawals of the given strategy delegated to the given operator can be withdrawn and the scaling factor
-     * @param operator the operator the withdrawal is delegated to
-     * @param strategy the strategy the withdrawal is from
-     * @param epoch the last epoch the withdrawal was slashable until
-     * @return whether the withdrawal can be executed
-     * @return whether there was a slashing request for the given operator and strategy at the given epoch
-     */
-    function getWithdrawabilityAndScalingFactorAtEpoch(
-        address operator,
-        IStrategy strategy,
-        uint32 epoch
-    ) external view returns (bool, uint64) {
-        bool __canWithdraw = true;
-        uint64 scalingFactor = SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
-        (uint32 lookupEpoch, bool found) = _getLookupEpoch(operator, strategy, epoch);
-        if (found) {
-            __canWithdraw = _canWithdraw(operator, strategy, lookupEpoch);
-            scalingFactor = slashingRequests[operator][strategy][lookupEpoch].scalingFactor;
+    function getWithdrawableAmounts(
+        IDelegationManager.Withdrawal calldata withdrawal,
+        address currentOperator
+    ) external view returns (WithdrawableAmounts[] memory amounts) {
+        amounts = new WithdrawableAmounts[](withdrawal.strategies.length);
+        uint32 slashingEndEpoch = withdrawal.startBlock.slashingEndEpoch();
+
+        for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
+            address prevOperator = withdrawal.delegatedTo;
+            IStrategy strategy = withdrawal.strategies[i];
+            uint256 amount = withdrawal.shares[i];
+
+            (uint32 lookupEpoch, bool found) = _getLookupEpoch(prevOperator, strategy, slashingEndEpoch);
+
+            // Can't withdraw or redeposit here
+            // TODO - may want to add amounts[i].canWithdraw == false?
+            // not sure if we want to treat that differently to just amount == 0
+            if (!found || !_canWithdraw(prevOperator, strategy, lookupEpoch)) {
+                continue;
+            }
+
+            uint64 withdrawScalingFactor = slashingRequests[prevOperator][strategy][lookupEpoch].scalingFactor;
+            amounts[i].withdrawAmount = SlashingAccountingUtils.normalize(amount, withdrawScalingFactor);
+
+            if (currentOperator != address(0)) {
+                uint64 redepositScalingFactor = shareScalingFactor(currentOperator, strategy);
+                amounts[i].redepositAmount = SlashingAccountingUtils.denormalize(amounts[i].withdrawAmount, redepositScalingFactor);
+            } else {
+                amounts[i].redepositAmount = amounts[i].withdrawAmount;
+            }
         }
-        return (__canWithdraw, scalingFactor);
+
+        return amounts;
     }
 
     /**
