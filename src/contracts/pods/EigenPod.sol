@@ -257,7 +257,7 @@ contract EigenPod is
 
         // Verify passed-in `beaconStateRoot` against the beacon block root
         BeaconChainProofs.verifyStateRoot({
-            beaconBlockRoot: _getParentBlockRoot(beaconTimestamp),
+            beaconBlockRoot: getParentBlockRoot(beaconTimestamp),
             proof: stateRootProof
         });
 
@@ -353,7 +353,7 @@ contract EigenPod is
 
         // Verify passed-in `beaconStateRoot` against the beacon block root
         BeaconChainProofs.verifyStateRoot({
-            beaconBlockRoot: _getParentBlockRoot(beaconTimestamp),
+            beaconBlockRoot: getParentBlockRoot(beaconTimestamp),
             proof: stateRootProof
         });
 
@@ -598,7 +598,7 @@ contract EigenPod is
         // `activeValidatorCount` as the number of checkpoint proofs needed to finalize
         // the checkpoint.
         Checkpoint memory checkpoint = Checkpoint({
-            beaconBlockRoot: _getParentBlockRoot(uint64(block.timestamp)),
+            beaconBlockRoot: getParentBlockRoot(uint64(block.timestamp)),
             proofsRemaining: uint24(activeValidatorCount),
             podBalanceGwei: podBalanceGwei,
             balanceDeltasGwei: 0
@@ -640,23 +640,6 @@ contract EigenPod is
         } else {
             _currentCheckpoint = checkpoint;
         }
-    }
-
-    /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
-    /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
-    /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
-    /// will revert.
-    function _getParentBlockRoot(uint64 timestamp) internal view returns (bytes32) {
-        require(
-            block.timestamp - timestamp < BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12,
-            "EigenPod._getParentBlockRoot: timestamp out of range"
-        );
-
-        (bool success, bytes memory result) =
-            BEACON_ROOTS_ADDRESS.staticcall(abi.encode(timestamp));
-
-        require(success && result.length > 0, "EigenPod._getParentBlockRoot: invalid block root returned");
-        return abi.decode(result, (bytes32));
     }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
@@ -701,5 +684,22 @@ contract EigenPod is
     /// @notice Returns the currently-active checkpoint
     function currentCheckpoint() public view returns (Checkpoint memory) {
         return _currentCheckpoint;
+    }
+
+    /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
+    /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
+    /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
+    /// will revert.
+    function getParentBlockRoot(uint64 timestamp) public view returns (bytes32) {
+        require(
+            block.timestamp - timestamp < BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12,
+            "EigenPod.getParentBlockRoot: timestamp out of range"
+        );
+
+        (bool success, bytes memory result) =
+            BEACON_ROOTS_ADDRESS.staticcall(abi.encode(timestamp));
+
+        require(success && result.length > 0, "EigenPod.getParentBlockRoot: invalid block root returned");
+        return abi.decode(result, (bytes32));
     }
 }
