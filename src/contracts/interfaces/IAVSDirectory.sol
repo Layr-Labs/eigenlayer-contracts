@@ -12,6 +12,17 @@ interface IAVSDirectory is ISignatureUtils {
 
     }
 
+    enum EpochStates {
+        NULL,
+        REGISTERED,
+        DEREGISTERED
+    }
+
+    struct OperatorInfo {
+        uint248 lastEpoch;
+        bool onStandby;
+    }
+
     struct OperatorSet {
         address avs;
         uint32 id;

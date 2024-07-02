@@ -21,7 +21,11 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice The EIP-712 typehash for the `StandbyParams` struct used by the contract
     bytes32 public constant OPERATOR_STANDBY_UPDATE =
         keccak256("OperatorStandbyUpdate(StandbyParam[] standbyParams,bytes32 salt,uint256 expiry)");
-    
+
+    uint256 internal constant EPOCH_LENGTH = 7 days;
+
+    uint256 internal immutable START_TIME = block.timestamp;
+
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
@@ -45,18 +49,44 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: AVS => whether or not the AVS uses operator set
     mapping(address => bool) public isOperatorSetAVS;
 
-    /// @notice Mapping: avs => operator => operatorSetID => whether the operator is registered for the operator set
-    mapping(address => mapping(address => mapping(uint32 => bool))) public isOperatorInOperatorSet;
+    /// @notice Mapping: (avs, operator, operatorSetId) => (lastEpoch, onStandby)
+    mapping(address => mapping(address => mapping(uint32 => OperatorInfo))) public operatorInfo;
+
+    /// @notice Mapping: (avs, operator, operatorSetId, epochId) => (state)
+    mapping(address => mapping(address => mapping(uint32 => mapping(uint256 => EpochStates)))) public operatorEpochState;
 
     /// @notice Mapping: avs => operator => number of operator sets the operator is registered for the AVS
     mapping(address => mapping(address => uint256)) public operatorAVSOperatorSetCount;
 
-    /// @notice Mapping: avs = operator => operatorSetId => Whether the given operator set in standby mode or not
-    mapping(address => mapping(address => mapping(uint32 => bool))) public onStandby;
-
     constructor(IDelegationManager _delegation, IStrategyManager _strategyManager) {
         delegation = _delegation;
         strategyManager = _strategyManager;
+    }
+
+    function currentEpoch() public view returns (uint256) {
+        // The parameter `START_TIME` must be less than or equal to `block.timestamp`.
+        uint256 elapsed = block.timestamp - START_TIME;
+        unchecked {
+            // If `elapsed` is less than `EPOCH_LENGTH` the quotient is rounded down to zero.
+            return elapsed / EPOCH_LENGTH;
+        }
+    }
+
+    function isOperatorInOperatorSet(address avs, address operator, uint32 operatorSetId) public view returns (bool) {
+        uint256 lastEpoch = operatorInfo[avs][operator][operatorSetId].lastEpoch;
+
+        EpochStates state = operatorEpochState[avs][operator][operatorSetId][lastEpoch];
+
+        if (state == EpochStates.REGISTERED) return true;
+
+        unchecked {
+            // 2**256-2 weeks would need to elapse before overflow is possible.
+            if (state == EpochStates.DEREGISTERED && currentEpoch() >= lastEpoch + 2) return false;
+        }
+    }
+
+    function onStandby(address avs, address operator, uint32 operatorSetId) public view returns (bool) {
+        return operatorInfo[avs][operator][operatorSetId].onStandby;
     }
 
     /**

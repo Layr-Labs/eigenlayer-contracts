@@ -100,7 +100,7 @@ contract AVSDirectory is
         }
 
         for (uint256 i; i < standbyParams.length; ++i) {
-            onStandby[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id] =
+            operatorInfo[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id].onStandby =
                 standbyParams[i].onStandby;
 
             emit StandbyParamUpdated(operator, standbyParams[i].operatorSet, standbyParams[i].onStandby);
@@ -167,24 +167,34 @@ contract AVSDirectory is
         // Mutate calling AVS to operator set AVS status, preventing further legacy registrations.
         if (!isOperatorSetAVS[msg.sender]) isOperatorSetAVS[msg.sender] = true;
 
+        uint256 epoch = currentEpoch();
+
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            OperatorInfo storage info = operatorInfo[msg.sender][operator][operatorSetIds[i]];
+
+            EpochStates state = operatorEpochState[msg.sender][operator][operatorSetIds[i]][info.lastEpoch];
+
+            bool inOperatorSet = state == EpochStates.REGISTERED;
+
+            unchecked {
+                // 2**256-2 weeks would need to elapse before overflow is possible.
+                if (state == EpochStates.DEREGISTERED && epoch >= info.lastEpoch + 2) inOperatorSet = false;
+            }
+
             // Assert avs is on standby mode for the given `operator` and `operatorSetIds[i]`.
             if (operatorSignature.signature.length == 0) {
-                require(
-                    onStandby[msg.sender][operator][operatorSetIds[i]],
-                    "AVSDirectory.registerOperatorToOperatorSets: avs not on standby"
-                );
+                require(info.onStandby, "AVSDirectory.registerOperatorToOperatorSets: avs not on standby");
             }
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
-                !isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
+                !inOperatorSet,
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
-            // Mutate `isOperatorInOperatorSet` to `true` for `operatorSetIds[i]`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = true;
+            // Mutate `operatorEpochState` to `REGISTERED` for `operatorSetIds[i]`.
+            operatorEpochState[msg.sender][operator][operatorSetIds[i]][epoch] = EpochStates.REGISTERED;
 
             emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
@@ -211,16 +221,18 @@ contract AVSDirectory is
         address operator,
         uint32[] calldata operatorSetIds
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+        uint256 epoch = currentEpoch();
+
         // Loop over `operatorSetIds` array and deregister `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             // Assert `operator` is registered for this iterations operator set.
             require(
-                isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
+                isOperatorInOperatorSet(msg.sender, operator, operatorSetIds[i]),
                 "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
-            // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIds[i]`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = false;
+            // Mutate `operatorEpochState` to `DEREGISTERED` for `operatorSetIds[i]`.
+            operatorEpochState[msg.sender][operator][operatorSetIds[i]][epoch] = EpochStates.DEREGISTERED;
 
             emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
