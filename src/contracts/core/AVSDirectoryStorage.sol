@@ -75,14 +75,16 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
         EpochStates state = operatorEpochState[avs][operator][operatorSetId][lastEpoch];
 
-        if (state == EpochStates.REGISTERED) return true;
-
         if (state == EpochStates.NULL) return false;
+
+        if (state == EpochStates.REGISTERED) return true;
 
         unchecked {
             // 2**256-2 weeks would need to elapse before overflow is possible.
             if (state == EpochStates.DEREGISTERED && currentEpoch() >= lastEpoch + 2) return false;
         }
+
+        return true;
     }
 
     function onStandby(address avs, address operator, uint32 operatorSetId) public view returns (bool) {
