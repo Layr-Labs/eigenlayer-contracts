@@ -187,6 +187,11 @@ contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
 
         cheats.expectRevert("Initializable: contract is already initialized");
         dir.initialize(owner, IPauserRegistry(pauserRegistry), initialPausedStatus);
+
+        // assertEq(dir.owner(), owner);
+        // assertEq(address(dir.pauserRegistry()), pauserRegistry);
+
+        // todo: initialPausedStatus?
     }
 }
 
@@ -198,6 +203,8 @@ contract AVSDirectoryUnitTests_domainSeparator is AVSDirectoryUnitTests {
         avsDirectory.domainSeparator();
     }
 }
+
+// TODO: test mutating large sets of operator set ids
 
 contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUnitTests {
     event OperatorAddedToOperatorSet(address operator, IAVSDirectory.OperatorSet operatorSet);

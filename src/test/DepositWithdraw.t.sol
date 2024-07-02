@@ -374,7 +374,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
-        Slasher slasherImplementation = new Slasher(strategyManager, delegation);
+        // todo: fix
+        Slasher slasherImplementation = new Slasher(strategyManager, delegation, IOperatorSetManager(address(0)));
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -401,16 +402,17 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 0/*initialPausedStatus*/
             )
         );
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation),
-            abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
-                0/*initialPausedStatus*/
-            )
-        );
+        // TODO: fix        
+        // eigenLayerProxyAdmin.upgradeAndCall(
+        //     TransparentUpgradeableProxy(payable(address(slasher))),
+        //     address(slasherImplementation),
+        //     abi.encodeWithSelector(
+        //         Slasher.initialize.selector,
+        //         eigenLayerReputedMultisig,
+        //         eigenLayerPauserReg,
+        //         0/*initialPausedStatus*/
+        //     )
+        // );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation),

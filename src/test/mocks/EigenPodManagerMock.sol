@@ -69,6 +69,10 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
         return podShares[podOwner];
     }
 
+    function nonNormalizedPodOwnerShares(address podOwner) external view returns (int256) {
+        return podShares[podOwner];
+    }
+
     function setPodOwnerShares(address podOwner, int256 shares) external {
         podShares[podOwner] = shares;
     }

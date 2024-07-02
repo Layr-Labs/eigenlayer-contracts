@@ -180,7 +180,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             IEigenPodManager(podManagerAddress),
             slasher
         );
-        Slasher slasherImplementation = new Slasher(strategyManager, delegation);
+        // todo: fix
+        Slasher slasherImplementation = new Slasher(strategyManager, delegation, IOperatorSetManager(address(0)));
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
@@ -225,11 +226,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 0 /*initialPausedStatus*/
             )
         );
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation),
-            abi.encodeWithSelector(Slasher.initialize.selector, initialOwner, pauserReg, 0 /*initialPausedStatus*/)
-        );
+        // TODO: fix
+        // eigenLayerProxyAdmin.upgradeAndCall(
+        //     TransparentUpgradeableProxy(payable(address(slasher))),
+        //     address(slasherImplementation),
+        //     abi.encodeWithSelector(Slasher.initialize.selector, initialOwner, pauserReg, 0 /*initialPausedStatus*/)
+        // );
         // TODO: add `cheats.expectEmit` calls for initialization events
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),

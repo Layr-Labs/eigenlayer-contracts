@@ -12,6 +12,8 @@ import "../permissions/Pausable.sol";
 import "./EigenPodPausingConstants.sol";
 import "./EigenPodManagerStorage.sol";
 
+import "../libraries/SlashingAccountingUtils.sol";
+
 /**
  * @title The contract used for creating and managing EigenPods
  * @author Layr Labs, Inc.
@@ -30,6 +32,24 @@ contract EigenPodManager is
     EigenPodManagerStorage,
     ReentrancyGuardUpgradeable
 {
+    function podOwnerShares(address podOwner) external view returns (int256) {
+        address operator = delegationManager.delegatedTo(podOwner);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
+        return SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedPodOwnerShares[podOwner],
+            scalingFactor: scalingFactor
+        });
+    }
+
+    // includes the effect of all unexecuted but pending slashings
+    function podOwnerSharesIncludingPendingSlashings(address podOwner) external view returns (int256) {
+        address operator = delegationManager.delegatedTo(podOwner);
+        uint64 scalingFactor = slasher.pendingShareScalingFactor(operator, beaconChainETHStrategy);
+        return SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedPodOwnerShares[podOwner],
+            scalingFactor: scalingFactor
+        });
+    }
     
     modifier onlyEigenPod(address podOwner) {
         require(address(ownerToPod[podOwner]) == msg.sender, "EigenPodManager.onlyEigenPod: not a pod");
@@ -111,11 +131,18 @@ contract EigenPodManager is
         int256 sharesDelta
     ) external onlyEigenPod(podOwner) nonReentrant {
         require(podOwner != address(0), "EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address");
-        require(sharesDelta % int256(GWEI_TO_WEI) == 0,
-            "EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount");
-        int256 currentPodOwnerShares = podOwnerShares[podOwner];
-        int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
-        podOwnerShares[podOwner] = updatedPodOwnerShares;
+        int256 currentPodOwnerShares = nonNormalizedPodOwnerShares[podOwner];
+
+        // find the nonNormalizedShares amount
+        address operator = delegationManager.delegatedTo(podOwner);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
+        int256 nonNormalizedSharesDelta = SlashingAccountingUtils.denormalize({
+            shares: sharesDelta,
+            scalingFactor: scalingFactor
+        });
+
+        int256 updatedPodOwnerShares = currentPodOwnerShares + nonNormalizedSharesDelta;
+        nonNormalizedPodOwnerShares[podOwner] = updatedPodOwnerShares;
 
         // inform the DelegationManager of the change in delegateable shares
         int256 changeInDelegatableShares = _calculateChangeInDelegatableShares({
@@ -138,48 +165,48 @@ contract EigenPodManager is
                 });
             }
         }
+        // TODO: decide what should go in event (nonNormalized or not)
         emit PodSharesUpdated(podOwner, sharesDelta);
     }
 
     /**
-     * @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue.
-     * Simply decreases the `podOwner`'s shares by `shares`, down to a minimum of zero.
-     * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
+     * @notice Used by the DelegationManager to remove a pod owner's nonNormalizedShares while they're in the withdrawal queue.
+     * Simply decreases the `podOwner`'s nonNormalizedShares by `nonNormalizedShares`, down to a minimum of zero.
+     * @dev This function reverts if it would result in `nonNormalizedPodOwnerShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
      * result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
-     * shares from the operator to whom the staker is delegated.
-     * @dev Reverts if `shares` is not a whole Gwei amount
+     * nonNormalizedShares from the operator to whom the staker is delegated.
+     * @dev Reverts if `nonNormalizedShares` is not a whole Gwei amount
      * @dev The delegation manager validates that the podOwner is not address(0)
      */
     function removeShares(
         address podOwner, 
-        uint256 shares
+        uint256 nonNormalizedShares
     ) external onlyDelegationManager {
-        require(int256(shares) >= 0, "EigenPodManager.removeShares: shares cannot be negative");
-        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.removeShares: shares must be a whole Gwei amount");
-        int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
-        require(updatedPodOwnerShares >= 0, "EigenPodManager.removeShares: cannot result in pod owner having negative shares");
-        podOwnerShares[podOwner] = updatedPodOwnerShares;
+        require(int256(nonNormalizedShares) >= 0, "EigenPodManager.removeShares: nonNormalizedShares cannot be negative");
+        int256 updatedPodOwnerShares = nonNormalizedPodOwnerShares[podOwner] - int256(nonNormalizedShares);
+        require(updatedPodOwnerShares >= 0, "EigenPodManager.removeShares: cannot result in pod owner having negative nonNormalizedShares");
+        nonNormalizedPodOwnerShares[podOwner] = updatedPodOwnerShares;
     }
 
     /**
-     * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
-     * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
-     * @dev Returns the number of shares added to `podOwnerShares[podOwner]` above zero, which will be less than the `shares` input
-     * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero)
-     * @dev Reverts if `shares` is not a whole Gwei amount
+     * @notice Increases the `podOwner`'s nonNormalizedShares by `nonNormalizedShares`, paying off deficit if possible.
+     * Used by the DelegationManager to award a pod owner nonNormalizedShares on exiting the withdrawal queue
+     * @dev Returns the number of nonNormalizedShares added to `nonNormalizedPodOwnerShares[podOwner]` above zero, which will be less than the `nonNormalizedShares` input
+     * in the event that the podOwner has an existing nonNormalizedShares deficit (i.e. `nonNormalizedPodOwnerShares[podOwner]` starts below zero)
+     * @dev Reverts if `nonNormalizedShares` is not a whole Gwei amount
      */
     function addShares(
         address podOwner,
-        uint256 shares
+        uint256 nonNormalizedShares
     ) external onlyDelegationManager returns (uint256) {
         require(podOwner != address(0), "EigenPodManager.addShares: podOwner cannot be zero address");
-        require(int256(shares) >= 0, "EigenPodManager.addShares: shares cannot be negative");
-        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.addShares: shares must be a whole Gwei amount");
-        int256 currentPodOwnerShares = podOwnerShares[podOwner];
-        int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
-        podOwnerShares[podOwner] = updatedPodOwnerShares;
+        require(int256(nonNormalizedShares) >= 0, "EigenPodManager.addShares: nonNormalizedShares cannot be negative");
+        require(nonNormalizedShares % GWEI_TO_WEI == 0, "EigenPodManager.addShares: nonNormalizedShares must be a whole Gwei amount");
+        int256 currentPodOwnerShares = nonNormalizedPodOwnerShares[podOwner];
+        int256 updatedPodOwnerShares = currentPodOwnerShares + int256(nonNormalizedShares);
+        nonNormalizedPodOwnerShares[podOwner] = updatedPodOwnerShares;
 
-        emit PodSharesUpdated(podOwner, int256(shares));
+        emit PodSharesUpdated(podOwner, int256(nonNormalizedShares));
 
         return uint256(_calculateChangeInDelegatableShares({sharesBefore: currentPodOwnerShares, sharesAfter: updatedPodOwnerShares}));
     }
@@ -189,7 +216,7 @@ contract EigenPodManager is
      * @dev Prioritizes decreasing the podOwner's share deficit, if they have one
      * @dev Reverts if `shares` is not a whole Gwei amount
      * @dev This function assumes that `removeShares` has already been called by the delegationManager, hence why
-     *      we do not need to update the podOwnerShares if `currentPodOwnerShares` is positive
+     *      we do not need to update the nonNormalizedPodOwnerShares if `currentPodOwnerShares` is positive
      */
     function withdrawSharesAsTokens(
         address podOwner, 
@@ -199,24 +226,38 @@ contract EigenPodManager is
         require(podOwner != address(0), "EigenPodManager.withdrawSharesAsTokens: podOwner cannot be zero address");
         require(destination != address(0), "EigenPodManager.withdrawSharesAsTokens: destination cannot be zero address");
         require(int256(shares) >= 0, "EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");
-        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.withdrawSharesAsTokens: shares must be a whole Gwei amount");
-        int256 currentPodOwnerShares = podOwnerShares[podOwner];
+        int256 currentPodOwnerShares = nonNormalizedPodOwnerShares[podOwner];
+
+        // find the nonNormalizedShares amount
+        address operator = delegationManager.delegatedTo(podOwner);
+        uint64 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
+        uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
+            shares: shares,
+            scalingFactor: scalingFactor
+        });
 
         // if there is an existing shares deficit, prioritize decreasing the deficit first
         if (currentPodOwnerShares < 0) {
             uint256 currentShareDeficit = uint256(-currentPodOwnerShares);
             // get rid of the whole deficit if possible, and pass any remaining shares onto destination
-            if (shares > currentShareDeficit) {
-                podOwnerShares[podOwner] = 0;
-                shares -= currentShareDeficit;
+            if (nonNormalizedShares > currentShareDeficit) {
+                nonNormalizedPodOwnerShares[podOwner] = 0;
+                nonNormalizedShares -= currentShareDeficit;
                 emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
             // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
             } else {
-                podOwnerShares[podOwner] += int256(shares);
-                emit PodSharesUpdated(podOwner, int256(shares));
+                nonNormalizedPodOwnerShares[podOwner] += int256(nonNormalizedShares);
+                emit PodSharesUpdated(podOwner, int256(nonNormalizedShares));
                 return;
             }
         }
+
+        // find the remaining share amount
+        shares = SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedShares,
+            scalingFactor: scalingFactor
+        });
+
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }

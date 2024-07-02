@@ -31,7 +31,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
+        assert_HasNoDeposits(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit into strategies

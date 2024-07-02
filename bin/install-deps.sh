@@ -7,11 +7,19 @@ if [[ "$OS" == "linux" ]]; then
     sudo apt-get install -y make curl git software-properties-common jq
     sudo add-apt-repository -y ppa:ethereum/ethereum
     sudo apt-get update
+<<<<<<< HEAD
     sudo apt-get install ethereum=1.14.5+build29958+noble
     curl -L https://foundry.paradigm.xyz | bash
 elif [[ "$OS" == "darwin" ]]; then
     brew tap ethereum/ethereum
     brew install libusb ethereum@1.14.5
+=======
+    sudo apt-get install abigen
+    curl -L https://foundry.paradigm.xyz | bash
+elif [[ "$OS" == "darwin" ]]; then
+    brew tap ethereum/ethereum
+    brew install libusb ethereum
+>>>>>>> a3a410aa (squash)
     curl -L https://foundry.paradigm.xyz | bash
 else
     echo "Unsupported OS: $OS"

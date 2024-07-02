@@ -71,7 +71,8 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         );
         delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
-        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        // todo: fix
+        slasherImplementation = new Slasher(strategyManager, delegationManager, IOperatorSetManager(address(0)));
         eigenPodManagerImplementation = new EigenPodManager(
             IETHPOSDeposit(ETHPOSDepositAddress),
             eigenPodBeacon,
