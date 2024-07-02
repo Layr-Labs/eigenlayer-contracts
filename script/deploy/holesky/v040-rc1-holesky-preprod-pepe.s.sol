@@ -24,11 +24,6 @@ contract EigenPod_Checkpoint_Deploy_Preprod is ExistingDeploymentParser {
 
         emit log_named_address("Deployer Address", msg.sender);
 
-        emit log_named_address("epmimpl", address(eigenPodManagerImplementation));
-        emit log_named_address("actual", eigenLayerProxyAdmin.getProxyImplementation(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager)))
-        ));
-
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
 
