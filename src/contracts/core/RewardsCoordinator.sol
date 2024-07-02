@@ -115,10 +115,10 @@ contract RewardsCoordinator is
     *******************************************************************************/
 
     /**
-     * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
+     * @notice Creates a new rewards submission for an AVS, to be split amongst the
      * set of stakers delegated to operators who are registered to the `avs`
      * @param rewardsSubmissions The rewards submissions being created
-     * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
+     * @dev Expected to be called by the ServiceManager of the AVS for which the submission is being made
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
      * @dev Strategies must be in ascending order of addresses to check for duplicates
@@ -139,6 +139,43 @@ contract RewardsCoordinator is
             submissionNonce[msg.sender] = nonce + 1;
 
             emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+        }
+    }
+
+    /**
+     * @notice Exact same behavior as createAVSRewardsSubmission but allows a rewardsForAllSubmitter to
+     * create a rewards submission on behalf of an AVS. Stakers delegated to operators who are registered to the `avs`
+     * will receive these rewards.
+     * @param avs The address of the AVS for which the rewards submission is being made
+     * @param rewardsSubmissions The rewards submissions being created
+     * @dev Expected to be called by a rewardsForAllSubmitter
+     * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The tokens are sent to the `RewardsCoordinator` contract
+     * @dev Strategies must be in ascending order of addresses to check for duplicates
+     * @dev This function will revert if the `rewardsSubmission` is malformed,
+     * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
+     */
+    function createRewardsSubmissionForAVS(
+        address avs,
+        RewardsSubmission[] calldata rewardsSubmissions
+    )
+        external
+        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
+        onlyRewardsForAllSubmitter
+        nonReentrant
+    {
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[avs];
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(avs, nonce, rewardsSubmission));
+
+            _validateRewardsSubmission(rewardsSubmission);
+
+            isAVSRewardsSubmissionHash[avs][rewardsSubmissionHash] = true;
+            submissionNonce[avs] = nonce + 1;
+
+            emit AVSRewardsSubmissionCreated(avs, nonce, rewardsSubmissionHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
