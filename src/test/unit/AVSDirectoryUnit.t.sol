@@ -177,7 +177,6 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
 contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
     function testFuzz_Correctness(
         address delegationManager,
-        address strategyManager,
         address owner,
         address pauserRegistry,
         uint256 initialPausedStatus
