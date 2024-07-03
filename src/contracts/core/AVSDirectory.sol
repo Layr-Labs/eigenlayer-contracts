@@ -15,15 +15,6 @@ contract AVSDirectory is
     AVSDirectoryStorage,
     ReentrancyGuardUpgradeable
 {
-    /// @dev Index for flag that pauses operator register/deregister to avs when set.
-    uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
-
-    /// @dev Chain ID at the time of contract deployment
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-
-    /// @notice Canonical, virtual beacon chain ETH strategy
-    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
     /**
      *
      *                         INITIALIZING FUNCTIONS
@@ -39,7 +30,6 @@ contract AVSDirectory is
         IStrategyManager _strategyManager
     ) AVSDirectoryStorage(_delegation, _strategyManager) {
         _disableInitializers();
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**
@@ -172,15 +162,7 @@ contract AVSDirectory is
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             OperatorInfo storage info = operatorInfo[msg.sender][operator][operatorSetIds[i]];
-
             EpochStates state = operatorEpochState[msg.sender][operator][operatorSetIds[i]][info.lastEpoch];
-
-            bool inOperatorSet = state == EpochStates.REGISTERED;
-
-            unchecked {
-                // 2**256-2 weeks would need to elapse before overflow is possible.
-                if (state == EpochStates.DEREGISTERED && epoch >= info.lastEpoch + 2) inOperatorSet = false;
-            }
 
             // Assert avs is on standby mode for the given `operator` and `operatorSetIds[i]`.
             if (operatorSignature.signature.length == 0) {
@@ -189,7 +171,7 @@ contract AVSDirectory is
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
-                !inOperatorSet,
+                !_isOperatorInOperatorSet(msg.sender, operator, operatorSetIds[i], info.lastEpoch, state),
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
 

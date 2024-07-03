@@ -6,6 +6,9 @@ import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
+    /// @notice Canonical, virtual beacon chain ETH strategy
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -22,9 +25,17 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     bytes32 public constant OPERATOR_STANDBY_UPDATE =
         keccak256("OperatorStandbyUpdate(StandbyParam[] standbyParams,bytes32 salt,uint256 expiry)");
 
-    uint256 internal constant EPOCH_LENGTH = 7 days;
+    /// @dev Index for flag that pauses operator register/deregister to avs when set.
+    uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
-    uint256 internal immutable START_TIME = block.timestamp;
+    /// @dev The length of time in a given epoch.
+    uint256 internal constant ONE_EPOCH = 7 days;
+
+    /// @dev Chain ID at the time of contract deployment
+    uint256 internal immutable ORIGINAL_CHAIN_ID = block.chainid;
+
+    /// @dev The time that epochs start from.
+    uint256 internal immutable EPOCH_GENESIS_TIME = block.timestamp;
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
@@ -63,30 +74,38 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
         strategyManager = _strategyManager;
     }
 
+    /// @notice Returns the current epoch.
     function currentEpoch() public view returns (uint256) {
         unchecked {
-            // If `timestamp - START_TIME` is less than `EPOCH_LENGTH` the quotient is rounded down to zero.
-            return (block.timestamp - START_TIME) / EPOCH_LENGTH;
+            // If `timestamp - EPOCH_GENESIS_TIME` is less than `ONE_EPOCH` the quotient is rounded down to zero.
+            return (block.timestamp - EPOCH_GENESIS_TIME) / ONE_EPOCH;
         }
     }
 
+    /// @dev Returns whether or not a given operator is registered in an operator set.
+    function _isOperatorInOperatorSet(
+        address avs,
+        address operator,
+        uint32 operatorSetId,
+        uint256 lastEpoch,
+        EpochStates state
+    ) internal view returns (bool) {
+        // Overflow is not reasonably possible...
+        unchecked {
+            return
+                !(state == EpochStates.NULL || (state == EpochStates.DEREGISTERED && currentEpoch() >= lastEpoch + 2));
+        }
+    }
+
+    /// @notice Returns whether or not a given operator is registered in an operator set.
     function isOperatorInOperatorSet(address avs, address operator, uint32 operatorSetId) public view returns (bool) {
         uint256 lastEpoch = operatorInfo[avs][operator][operatorSetId].lastEpoch;
-
-        EpochStates state = operatorEpochState[avs][operator][operatorSetId][lastEpoch];
-
-        if (state == EpochStates.NULL) return false;
-
-        if (state == EpochStates.REGISTERED) return true;
-
-        unchecked {
-            // 2**256-2 weeks would need to elapse before overflow is possible.
-            if (state == EpochStates.DEREGISTERED && currentEpoch() >= lastEpoch + 2) return false;
-        }
-
-        return true;
+        return _isOperatorInOperatorSet(
+            avs, operator, operatorSetId, lastEpoch, operatorEpochState[avs][operator][operatorSetId][lastEpoch]
+        );
     }
 
+    /// @notice Returns whether or not a given operator is in standby mode.
     function onStandby(address avs, address operator, uint32 operatorSetId) public view returns (bool) {
         return operatorInfo[avs][operator][operatorSetId].onStandby;
     }
