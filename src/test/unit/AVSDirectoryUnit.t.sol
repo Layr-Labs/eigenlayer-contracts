@@ -72,7 +72,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         );
 
         // Deploy AVSDirectory implmentation and proxy
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, IStrategyManager(address(strategyManagerMock)));
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -182,10 +182,9 @@ contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
         address pauserRegistry,
         uint256 initialPausedStatus
     ) public virtual {
-        AVSDirectory dir = new AVSDirectory(IDelegationManager(delegationManager), IStrategyManager(strategyManager));
+        AVSDirectory dir = new AVSDirectory(IDelegationManager(delegationManager));
 
         assertEq(address(dir.delegation()), delegationManager);
-        assertEq(address(dir.strategyManager()), strategyManager);
 
         cheats.expectRevert("Initializable: contract is already initialized");
         dir.initialize(owner, IPauserRegistry(pauserRegistry), initialPausedStatus);

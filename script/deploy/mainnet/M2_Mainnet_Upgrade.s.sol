@@ -45,7 +45,7 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
      */
     function _deployImplementationContracts() internal {
         // 1. Deploy New TUPS
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, strategyManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
