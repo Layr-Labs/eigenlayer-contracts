@@ -22,8 +22,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         keccak256("StakerDelegation(address staker,address operator,uint256 nonce,uint256 expiry)");
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
-    bytes32 public constant DELEGATION_APPROVAL_TYPEHASH =
-        keccak256("DelegationApproval(address delegationApprover,address staker,address operator,bytes32 salt,uint256 expiry)");
+    bytes32 public constant DELEGATION_APPROVAL_TYPEHASH = keccak256(
+        "DelegationApproval(address delegationApprover,address staker,address operator,bytes32 salt,uint256 expiry)"
+    );
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -42,7 +43,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     IEigenPodManager public immutable eigenPodManager;
 
     // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216000;
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216_000;
 
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
@@ -79,7 +80,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * @notice Global minimum withdrawal delay for all strategy withdrawals.
      * In a prior Goerli release, we only had a global min withdrawal delay across all strategies.
      * In addition, we now also configure withdrawal delays on a per-strategy basis.
-     * To withdraw from a strategy, max(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy]) number of blocks must have passed. 
+     * To withdraw from a strategy, max(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy]) number of blocks must have passed.
      * See mapping strategyWithdrawalDelayBlocks below for per-strategy withdrawal delays.
      */
     uint256 public minWithdrawalDelayBlocks;

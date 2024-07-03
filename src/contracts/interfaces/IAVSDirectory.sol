@@ -6,8 +6,9 @@ import "./ISignatureUtils.sol";
 interface IAVSDirectory is ISignatureUtils {
     /// @notice Enum representing the status of an operator's registration with an AVS
     enum OperatorAVSRegistrationStatus {
-        UNREGISTERED,       // Operator not registered to AVS
-        REGISTERED          // Operator registered to AVS
+        UNREGISTERED, // Operator not registered to AVS
+        REGISTERED // Operator registered to AVS
+
     }
 
     /**
@@ -17,7 +18,9 @@ interface IAVSDirectory is ISignatureUtils {
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
     /// @notice Emitted when an operator's registration status for an AVS is updated
-    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status);
+    event OperatorAVSRegistrationStatusUpdated(
+        address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status
+    );
 
     /**
      * @notice Called by an avs to register an operator with the avs.

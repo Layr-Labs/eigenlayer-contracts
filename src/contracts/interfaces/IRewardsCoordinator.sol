@@ -83,7 +83,6 @@ interface IRewardsCoordinator {
      * @param earnerTokenRoot The merkle root of the earner's token subtree
      * Each leaf in the earner's token subtree is a TokenTreeMerkleLeaf
      */
-
     struct EarnerTreeMerkleLeaf {
         address earner;
         bytes32 earnerTokenRoot;
@@ -148,9 +147,7 @@ interface IRewardsCoordinator {
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
     event RewardsForAllSubmitterSet(
-        address indexed rewardsForAllSubmitter,
-        bool indexed oldValue,
-        bool indexed newValue
+        address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
@@ -173,13 +170,15 @@ interface IRewardsCoordinator {
         uint256 claimedAmount
     );
 
-    /*******************************************************************************
-                            VIEW FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
 
     /// @notice The address of the entity that can update the contract with new merkle roots
     function rewardsUpdater() external view returns (address);
-    
+
     /**
      * @notice The interval in seconds at which the calculation for a RewardsSubmission distribution is done.
      * @dev Rewards Submission durations must be multiples of this interval.
@@ -239,9 +238,11 @@ interface IRewardsCoordinator {
     /// @notice returns the current distributionRoot
     function getCurrentDistributionRoot() external view returns (DistributionRoot memory);
 
-    /*******************************************************************************
-                            EXTERNAL FUNCTIONS 
-    *******************************************************************************/
+    /**
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
+     */
 
     /**
      * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the

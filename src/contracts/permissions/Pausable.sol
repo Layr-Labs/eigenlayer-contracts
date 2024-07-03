@@ -94,8 +94,7 @@ contract Pausable is IPausable {
     function unpause(uint256 newPausedStatus) external onlyUnpauser {
         // verify that the `newPausedStatus` does not *flip* any bits (i.e. doesn't pause anything, all 0 bits remain)
         require(
-            ((~_paused) & (~newPausedStatus)) == (~_paused),
-            "Pausable.unpause: invalid attempt to pause functionality"
+            ((~_paused) & (~newPausedStatus)) == (~_paused), "Pausable.unpause: invalid attempt to pause functionality"
         );
         _paused = newPausedStatus;
         emit Unpaused(msg.sender, newPausedStatus);

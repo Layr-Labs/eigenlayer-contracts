@@ -21,12 +21,14 @@ contract AVSDirectory is
     // @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
-    /*******************************************************************************
-                            INITIALIZING FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         INITIALIZING FUNCTIONS
+     *
+     */
 
     /**
-     * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher, 
+     * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher,
      * and eigenpodManager contracts
      */
     constructor(IDelegationManager _delegation) AVSDirectoryStorage(_delegation) {
@@ -48,10 +50,11 @@ contract AVSDirectory is
         _transferOwnership(initialOwner);
     }
 
-    /*******************************************************************************
-                            EXTERNAL FUNCTIONS 
-    *******************************************************************************/
-
+    /**
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
+     */
 
     /**
      * @notice Called by the AVS's service manager contract to register an operator with the avs.
@@ -62,7 +65,6 @@ contract AVSDirectory is
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-
         require(
             operatorSignature.expiry >= block.timestamp,
             "AVSDirectory.registerOperatorToAVS: operator signature expired"
@@ -77,7 +79,8 @@ contract AVSDirectory is
         );
         require(
             delegation.isOperator(operator),
-            "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet");
+            "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
+        );
 
         // Calculate the digest hash
         bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
@@ -87,10 +90,11 @@ contract AVSDirectory is
             expiry: operatorSignature.expiry
         });
 
+        // forgefmt: disable-next-item
         // Check that the signature is valid
         EIP1271SignatureUtils.checkSignature_EIP1271(
-            operator,
-            operatorRegistrationDigestHash,
+            operator, 
+            operatorRegistrationDigestHash, 
             operatorSignature.signature
         );
 
@@ -107,7 +111,10 @@ contract AVSDirectory is
      * @notice Called by an avs to deregister an operator with the avs.
      * @param operator The address of the operator to deregister.
      */
-    function deregisterOperatorFromAVS(address operator) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+    function deregisterOperatorFromAVS(address operator)
+        external
+        onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
+    {
         require(
             avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
             "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
@@ -136,9 +143,11 @@ contract AVSDirectory is
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
 
-    /*******************************************************************************
-                            VIEW FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
 
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an AVS
@@ -154,13 +163,9 @@ contract AVSDirectory is
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the struct hash
-        bytes32 structHash = keccak256(
-            abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)
-        );
+        bytes32 structHash = keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry));
         // calculate the digest hash
-        bytes32 digestHash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator(), structHash)
-        );
+        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
         return digestHash;
     }
 

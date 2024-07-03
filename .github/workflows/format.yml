@@ -1,0 +1,30 @@
+name: format
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - "dev"
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge linter
+        run: |
+          forge fmt src/contracts --check
+        id: lint

@@ -14,10 +14,11 @@ import "../interfaces/IRewardsCoordinator.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
-
-    /*******************************************************************************
-                               CONSTANTS AND IMMUTABLES 
-    *******************************************************************************/
+    /**
+     *
+     *                            CONSTANTS AND IMMUTABLES
+     *
+     */
 
     /// @notice The interval in seconds at which the calculation for rewards distribution is done.
     /// @dev RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 week
@@ -31,7 +32,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice absolute min timestamp (seconds) that a rewards submission can start at
     uint32 public immutable GENESIS_REWARDS_TIMESTAMP;
     /// @notice The cadence at which a snapshot is taken offchain for calculating rewards distributions
-    uint32 internal constant SNAPSHOT_CADENCE = 1 days;   
+    uint32 internal constant SNAPSHOT_CADENCE = 1 days;
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegationManager;
@@ -39,9 +40,11 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
 
-    /*******************************************************************************
-                                       STORAGE 
-    *******************************************************************************/
+    /**
+     *
+     *                                    STORAGE
+     *
+     */
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.

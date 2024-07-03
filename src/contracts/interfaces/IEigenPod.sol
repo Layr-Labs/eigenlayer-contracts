@@ -25,6 +25,7 @@ interface IEigenPod {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
         WITHDRAWN // withdrawn from the Beacon Chain
+
     }
 
     struct ValidatorInfo {
@@ -49,7 +50,6 @@ interface IEigenPod {
         int256 sharesDeltaGwei;
     }
 
-
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
         REDEEMED,
         PENDING,
@@ -68,18 +68,12 @@ interface IEigenPod {
 
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
     event FullWithdrawalRedeemed(
-        uint40 validatorIndex,
-        uint64 withdrawalTimestamp,
-        address indexed recipient,
-        uint64 withdrawalAmountGwei
+        uint40 validatorIndex, uint64 withdrawalTimestamp, address indexed recipient, uint64 withdrawalAmountGwei
     );
 
     /// @notice Emitted when a partial withdrawal claim is successfully redeemed
     event PartialWithdrawalRedeemed(
-        uint40 validatorIndex,
-        uint64 withdrawalTimestamp,
-        address indexed recipient,
-        uint64 partialWithdrawalAmountGwei
+        uint40 validatorIndex, uint64 withdrawalTimestamp, address indexed recipient, uint64 partialWithdrawalAmountGwei
     );
 
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
@@ -93,7 +87,6 @@ interface IEigenPod {
 
     /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
-
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
     function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);
@@ -167,15 +160,14 @@ interface IEigenPod {
         uint40[] calldata validatorIndices,
         bytes[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
-    )
-        external;
+    ) external;
 
     /**
-     * @notice This function records an update (either increase or decrease) in the pod's balance in the StrategyManager.  
-               It also verifies a merkle proof of the validator's current beacon chain balance.  
+     * @notice This function records an update (either increase or decrease) in the pod's balance in the StrategyManager.
+     *            It also verifies a merkle proof of the validator's current beacon chain balance.
      * @param oracleTimestamp The oracleTimestamp whose state root the `proof` will be proven against.
      *        Must be within `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` of the current block.
-     * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
+     * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs
      * @param validatorFieldsProofs proofs against the `beaconStateRoot` for each validator in `validatorFields`
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator

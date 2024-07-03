@@ -42,16 +42,27 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
      * @param minters the addresses that are allowed to mint
      * @param mintingAllowances the amount of tokens that each minter is allowed to mint
      */
-    function initialize(address initialOwner, address[] memory minters, uint256[] memory mintingAllowances, uint256[] memory mintAllowedAfters) initializer public {
+    function initialize(
+        address initialOwner,
+        address[] memory minters,
+        uint256[] memory mintingAllowances,
+        uint256[] memory mintAllowedAfters
+    ) public initializer {
         __Ownable_init();
         __ERC20_init("Eigen", "EIGEN");
         _transferOwnership(initialOwner);
         __ERC20Permit_init("EIGEN");
 
-        require(minters.length == mintingAllowances.length, "Eigen.initialize: minters and mintingAllowances must be the same length");
-        require(minters.length == mintAllowedAfters.length, "Eigen.initialize: minters and mintAllowedAfters must be the same length");
+        require(
+            minters.length == mintingAllowances.length,
+            "Eigen.initialize: minters and mintingAllowances must be the same length"
+        );
+        require(
+            minters.length == mintAllowedAfters.length,
+            "Eigen.initialize: minters and mintAllowedAfters must be the same length"
+        );
         // set minting allowances for each minter
-        for (uint i = 0; i < minters.length; i++) {
+        for (uint256 i = 0; i < minters.length; i++) {
             mintingAllowance[minters[i]] = mintingAllowances[i];
             mintAllowedAfter[minters[i]] = mintAllowedAfters[i];
             // allow each minter to transfer tokens
@@ -87,7 +98,10 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
      * @notice Allows the owner to disable transfer restrictions
      */
     function disableTransferRestrictions() external onlyOwner {
-        require(transferRestrictionsDisabledAfter == type(uint256).max, "Eigen.disableTransferRestrictions: transfer restrictions are already disabled");
+        require(
+            transferRestrictionsDisabledAfter == type(uint256).max,
+            "Eigen.disableTransferRestrictions: transfer restrictions are already disabled"
+        );
         transferRestrictionsDisabledAfter = 0;
         emit TransferRestrictionsDisabled();
     }
@@ -125,7 +139,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
      */
     function multisend(address[] calldata receivers, uint256[] calldata amounts) public {
         require(receivers.length == amounts.length, "Eigen.multisend: receivers and amounts must be the same length");
-        for (uint i = 0; i < receivers.length; i++) {
+        for (uint256 i = 0; i < receivers.length; i++) {
             _transfer(msg.sender, receivers[i], amounts[i]);
         }
     }
@@ -141,16 +155,12 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
         if (block.timestamp <= transferRestrictionsDisabledAfter) {
             // if both from and to are not whitelisted
             require(
-                from == address(0) || 
-                from == address(this) || 
-                to == address(this) || 
-                allowedFrom[from] || 
-                allowedTo[to], 
+                from == address(0) || from == address(this) || to == address(this) || allowedFrom[from] || allowedTo[to],
                 "Eigen._beforeTokenTransfer: from or to must be whitelisted"
             );
         }
         super._beforeTokenTransfer(from, to, amount);
-    } 
+    }
 
     /**
      * @dev Clock used for flagging checkpoints. Has been overridden to implement timestamp based

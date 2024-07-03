@@ -37,11 +37,7 @@ contract EigenStrategy is StrategyBase {
     /// @notice Since this contract is designed to be initializable, the constructor simply sets `strategyManager`, the only immutable variable.
     constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
 
-    function initialize(
-        IEigen _EIGEN,
-        IERC20 _bEIGEN,
-        IPauserRegistry _pauserRegistry
-    ) public virtual initializer {
+    function initialize(IEigen _EIGEN, IERC20 _bEIGEN, IPauserRegistry _pauserRegistry) public virtual initializer {
         EIGEN = _EIGEN;
         _initializeStrategyBase(_bEIGEN, _pauserRegistry);
     }
@@ -65,12 +61,16 @@ contract EigenStrategy is StrategyBase {
     }
 
     /**
-     * @notice This function hook is called in EigenStrategy.withdraw() before withdrawn shares are calculated and is 
+     * @notice This function hook is called in EigenStrategy.withdraw() before withdrawn shares are calculated and is
      * overridden here to allow for withdrawing shares either into EIGEN or bEIGEN tokens. If wrapping bEIGEN into EIGEN is needed,
      * it is performed in _afterWithdrawal(). This hook just checks the token paramater is either EIGEN or bEIGEN.
      * @param token token to be withdrawn, can be either EIGEN or bEIGEN. If EIGEN, then bEIGEN is wrapped into EIGEN
      */
-    function _beforeWithdrawal(address /*recipient*/, IERC20 token, uint256 /*amountShares*/) internal virtual override {
+    function _beforeWithdrawal(
+        address, /*recipient*/
+        IERC20 token,
+        uint256 /*amountShares*/
+    ) internal virtual override {
         require(token == underlyingToken || token == EIGEN, "EigenStrategy.withdraw: Can only withdraw bEIGEN or EIGEN");
     }
 

@@ -10,7 +10,7 @@ interface IPauserRegistry {
     event PauserStatusChanged(address pauser, bool canPause);
 
     event UnpauserChanged(address previousUnpauser, address newUnpauser);
-    
+
     /// @notice Mapping of addresses to whether they hold the pauser role.
     function isPauser(address pauser) external view returns (bool);
 

@@ -14,7 +14,7 @@ interface IDelayedWithdrawalRouter {
         DelayedWithdrawal[] delayedWithdrawals;
     }
 
-     /// @notice event for delayedWithdrawal creation
+    /// @notice event for delayedWithdrawal creation
     event DelayedWithdrawalCreated(address podOwner, address recipient, uint256 amount, uint256 index);
 
     /// @notice event for the claiming of delayedWithdrawals
@@ -55,7 +55,10 @@ interface IDelayedWithdrawalRouter {
     function getClaimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory);
 
     /// @notice Getter function for fetching the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array
-    function userDelayedWithdrawalByIndex(address user, uint256 index) external view returns (DelayedWithdrawal memory);
+    function userDelayedWithdrawalByIndex(
+        address user,
+        uint256 index
+    ) external view returns (DelayedWithdrawal memory);
 
     /// @notice Getter function for fetching the length of the delayedWithdrawals array of a specific user
     function userWithdrawalsLength(address user) external view returns (uint256);

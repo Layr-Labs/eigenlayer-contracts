@@ -25,7 +25,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * Use the getter function `domainSeparator` to get the current domain separator for this contract.
      */
     bytes32 internal _DOMAIN_SEPARATOR;
-    
+
     /// @notice Mapping: AVS => operator => enum of operator status to the AVS
     mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 

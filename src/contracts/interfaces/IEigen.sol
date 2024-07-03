@@ -4,7 +4,6 @@ pragma solidity >=0.5.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IEigen is IERC20 {
-
     /**
      * @notice This function allows the owner to set the allowedFrom status of an address
      * @param from the address whose allowedFrom status is being set

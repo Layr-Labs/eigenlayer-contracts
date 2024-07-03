@@ -136,7 +136,7 @@ interface IDelegationManager is ISignatureUtils {
 
     /// @notice Emitted when a queued withdrawal is completed
     event WithdrawalCompleted(bytes32 withdrawalRoot);
-    
+
     /// @notice Emitted when the `minWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event MinWithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
@@ -234,9 +234,9 @@ interface IDelegationManager is ISignatureUtils {
      *
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
-    function queueWithdrawals(
-        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
-    ) external returns (bytes32[] memory);
+    function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams)
+        external
+        returns (bytes32[] memory);
 
     /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
@@ -284,11 +284,7 @@ interface IDelegationManager is ISignatureUtils {
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function increaseDelegatedShares(
-        address staker,
-        IStrategy strategy,
-        uint256 shares
-    ) external;
+    function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external;
 
     /**
      * @notice Decreases a staker's delegated share balance in a strategy.
@@ -299,11 +295,7 @@ interface IDelegationManager is ISignatureUtils {
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedShares(
-        address staker,
-        IStrategy strategy,
-        uint256 shares
-    ) external;
+    function decreaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
@@ -447,12 +439,11 @@ interface IDelegationManager is ISignatureUtils {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
-    
+
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);
-
 }
