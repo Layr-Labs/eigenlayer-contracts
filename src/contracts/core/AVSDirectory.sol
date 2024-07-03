@@ -172,6 +172,9 @@ contract AVSDirectory is
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
+            // Update `info.lastEpoch`.
+            info.lastEpoch = uint248(epoch);
+
             // Mutate `operatorEpochState` to `REGISTERED` for `operatorSetIds[i]`.
             operatorEpochState[msg.sender][operator][operatorSetIds[i]][epoch] = EpochStates.REGISTERED;
 
