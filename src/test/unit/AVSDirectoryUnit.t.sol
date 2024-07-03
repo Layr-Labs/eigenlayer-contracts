@@ -429,7 +429,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
             uint8(avsDirectory.operatorEpochState(address(this), operator, operatorSetId, 0)),
             uint8(IAVSDirectory.EpochStates.REGISTERED)
         );
-        // assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId));
+        assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId));
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
         assertTrue(avsDirectory.isOperatorSetAVS(address(this)));
     }
@@ -534,7 +534,12 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
 
         avsDirectory.deregisterOperatorFromOperatorSets(operator, oids);
 
+        assertEq(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId), true);
+
+        vm.warp(block.timestamp + 14 days);
+
         assertEq(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId), false);
+
         assertEq(avsDirectory.operatorAVSOperatorSetCount(address(this), operator), 0);
         assertEq(
             uint8(avsDirectory.avsOperatorStatus(address(this), operator)),

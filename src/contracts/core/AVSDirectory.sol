@@ -168,7 +168,7 @@ contract AVSDirectory is
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
-                !_isOperatorInOperatorSet(msg.sender, operator, operatorSetIds[i], info.lastEpoch, state),
+                !_isOperatorInOperatorSet(info.lastEpoch, state),
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
 

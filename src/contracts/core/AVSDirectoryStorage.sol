@@ -80,9 +80,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     /// @dev Returns whether or not a given operator is registered in an operator set.
     function _isOperatorInOperatorSet(
-        address avs,
-        address operator,
-        uint32 operatorSetId,
         uint256 lastEpoch,
         EpochStates state
     ) internal view returns (bool) {
@@ -97,7 +94,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     function isOperatorInOperatorSet(address avs, address operator, uint32 operatorSetId) public view returns (bool) {
         uint256 lastEpoch = operatorInfo[avs][operator][operatorSetId].lastEpoch;
         return _isOperatorInOperatorSet(
-            avs, operator, operatorSetId, lastEpoch, operatorEpochState[avs][operator][operatorSetId][lastEpoch]
+            lastEpoch, operatorEpochState[avs][operator][operatorSetId][lastEpoch]
         );
     }
 
