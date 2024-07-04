@@ -100,7 +100,7 @@ contract AVSDirectory is
         }
 
         for (uint256 i; i < standbyParams.length; ++i) {
-            onStandby[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id] =
+            operatorRegistrationInfo[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id].onStandby =
                 standbyParams[i].onStandby;
 
             emit StandbyParamUpdated(operator, standbyParams[i].operatorSet, standbyParams[i].onStandby);
@@ -169,22 +169,24 @@ contract AVSDirectory is
 
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            OperatorRegistrationInfo storage info = operatorRegistrationInfo[msg.sender][operator][operatorSetIds[i]];
+
             // Assert avs is on standby mode for the given `operator` and `operatorSetIds[i]`.
             if (operatorSignature.signature.length == 0) {
                 require(
-                    onStandby[msg.sender][operator][operatorSetIds[i]],
+                    info.onStandby,
                     "AVSDirectory.registerOperatorToOperatorSets: avs not on standby"
                 );
             }
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
-                !isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
+                !_isOperatorInOperatorSet(info),
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
-            // Mutate `isOperatorInOperatorSet` to `true` for `operatorSetIds[i]`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = true;
+            // Mutate `info.isRegistered` to `true` for `operatorSetIds[i]`.
+            info.isRegistered = true;
 
             emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
@@ -213,14 +215,20 @@ contract AVSDirectory is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Loop over `operatorSetIds` array and deregister `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            OperatorRegistrationInfo storage info = operatorRegistrationInfo[msg.sender][operator][operatorSetIds[i]];
+
             // Assert `operator` is registered for this iterations operator set.
             require(
-                isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
+                _isOperatorInOperatorSet(info),
                 "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
             // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIds[i]`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = false;
+            info.isRegistered = false;
+            
+            unchecked {
+                info.deregistrationMaturity = uint240(block.timestamp + 2 weeks);
+            }
 
             emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }

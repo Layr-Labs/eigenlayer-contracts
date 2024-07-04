@@ -21,7 +21,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice The EIP-712 typehash for the `StandbyParams` struct used by the contract
     bytes32 public constant OPERATOR_STANDBY_UPDATE =
         keccak256("OperatorStandbyUpdate(StandbyParam[] standbyParams,bytes32 salt,uint256 expiry)");
-    
+
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
@@ -42,21 +42,39 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @dev Salt is used in the `registerOperatorToAVS` and `registerOperatorToOperatorSet` function.
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
-    /// @notice Mapping: AVS => whether or not the AVS uses operator set
+    /// @notice Mapping: AVS => Whether or not the AVS uses operator set.
     mapping(address => bool) public isOperatorSetAVS;
 
-    /// @notice Mapping: avs => operator => operatorSetID => whether the operator is registered for the operator set
-    mapping(address => mapping(address => mapping(uint32 => bool))) public isOperatorInOperatorSet;
-
-    /// @notice Mapping: avs => operator => number of operator sets the operator is registered for the AVS
+    /// @notice Mapping: avs => operator => Number of operator sets the operator is registered for the AVS.
     mapping(address => mapping(address => uint256)) public operatorAVSOperatorSetCount;
 
-    /// @notice Mapping: avs = operator => operatorSetId => Whether the given operator set in standby mode or not
-    mapping(address => mapping(address => mapping(uint32 => bool))) public onStandby;
+    /// @notice Mapping: avs => operator => Details of an operator's registration status in a given operator set.
+    mapping(address => mapping(address => mapping(uint32 => OperatorRegistrationInfo))) public operatorRegistrationInfo;
 
     constructor(IDelegationManager _delegation, IStrategyManager _strategyManager) {
         delegation = _delegation;
         strategyManager = _strategyManager;
+    }
+
+    function onStandby(
+        address avs,
+        address operator,
+        uint32 operatorSetId
+    ) public view returns (bool) {
+        return operatorRegistrationInfo[avs][operator][operatorSetId].onStandby;
+    }
+
+    function isOperatorInOperatorSet(
+        address avs,
+        address operator,
+        uint32 operatorSetId
+    ) public view returns (bool) {
+        return _isOperatorInOperatorSet(operatorRegistrationInfo[avs][operator][operatorSetId]);
+    }
+
+    function _isOperatorInOperatorSet(OperatorRegistrationInfo memory info) public view returns (bool) {
+        if (!info.isRegistered && block.timestamp > info.deregistrationMaturity) return false;
+        return true;
     }
 
     /**

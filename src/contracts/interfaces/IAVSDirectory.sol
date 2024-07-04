@@ -22,6 +22,16 @@ interface IAVSDirectory is ISignatureUtils {
         bool onStandby;
     }
 
+    /// @dev Details of an operator's registration status in a given operator set.
+    /// @param deregistrationMaturity The time when deregistration becomes effective, if non-zero.
+    /// @param isRegistered True if the operator is registered; false if not registered and `deregistrationMaturity` is zero.
+    /// @param onStandby Whether or not the operator is on standby mode for the given operator set.
+    struct OperatorRegistrationInfo {
+        uint240 deregistrationMaturity;
+        bool isRegistered;
+        bool onStandby;
+    }
+
     /**
      *  @notice Emitted when an operator's registration status with an AVS is updated.
      *  Specifically, when an operator enters its first operator set for an AVS, or
