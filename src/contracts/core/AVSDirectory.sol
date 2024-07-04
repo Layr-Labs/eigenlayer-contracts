@@ -100,8 +100,8 @@ contract AVSDirectory is
         }
 
         for (uint256 i; i < standbyParams.length; ++i) {
-            operatorRegistrationInfo[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id].onStandby =
-                standbyParams[i].onStandby;
+            operatorRegistrationInfo[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id]
+                .onStandby = standbyParams[i].onStandby;
 
             emit StandbyParamUpdated(operator, standbyParams[i].operatorSet, standbyParams[i].onStandby);
         }
@@ -173,10 +173,7 @@ contract AVSDirectory is
 
             // Assert avs is on standby mode for the given `operator` and `operatorSetIds[i]`.
             if (operatorSignature.signature.length == 0) {
-                require(
-                    info.onStandby,
-                    "AVSDirectory.registerOperatorToOperatorSets: avs not on standby"
-                );
+                require(info.onStandby, "AVSDirectory.registerOperatorToOperatorSets: avs not on standby");
             }
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
@@ -225,7 +222,7 @@ contract AVSDirectory is
 
             // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIds[i]`.
             info.isRegistered = false;
-            
+
             unchecked {
                 info.deregistrationMaturity = uint240(block.timestamp + 2 weeks);
             }

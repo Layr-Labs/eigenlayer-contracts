@@ -56,25 +56,16 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
         strategyManager = _strategyManager;
     }
 
-    function onStandby(
-        address avs,
-        address operator,
-        uint32 operatorSetId
-    ) public view returns (bool) {
+    function onStandby(address avs, address operator, uint32 operatorSetId) public view returns (bool) {
         return operatorRegistrationInfo[avs][operator][operatorSetId].onStandby;
     }
 
-    function isOperatorInOperatorSet(
-        address avs,
-        address operator,
-        uint32 operatorSetId
-    ) public view returns (bool) {
+    function isOperatorInOperatorSet(address avs, address operator, uint32 operatorSetId) public view returns (bool) {
         return _isOperatorInOperatorSet(operatorRegistrationInfo[avs][operator][operatorSetId]);
     }
 
     function _isOperatorInOperatorSet(OperatorRegistrationInfo memory info) public view returns (bool) {
-        if (!info.isRegistered && block.timestamp > info.deregistrationMaturity) return false;
-        return true;
+        return info.isRegistered || block.timestamp < info.deregistrationMaturity;
     }
 
     /**

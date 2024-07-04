@@ -529,7 +529,12 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
 
         avsDirectory.deregisterOperatorFromOperatorSets(operator, oids);
 
+        assertEq(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId), true);
+
+        vm.warp(block.timestamp + 2 weeks);
+
         assertEq(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId), false);
+
         assertEq(avsDirectory.operatorAVSOperatorSetCount(address(this), operator), 0);
         assertEq(
             uint8(avsDirectory.avsOperatorStatus(address(this), operator)),
