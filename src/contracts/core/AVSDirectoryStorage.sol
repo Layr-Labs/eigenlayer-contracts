@@ -64,7 +64,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
         return _isOperatorInOperatorSet(operatorRegistrationInfo[avs][operator][operatorSetId]);
     }
 
-    function _isOperatorInOperatorSet(OperatorRegistrationInfo memory info) public view returns (bool) {
+    function _isOperatorInOperatorSet(OperatorRegistrationInfo memory info) internal view returns (bool) {
         return info.isRegistered || block.timestamp < info.deregistrationMaturity;
     }
 
