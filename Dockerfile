@@ -1,13 +1,9 @@
 FROM ubuntu:24.04
 
-RUN apt-get update \
-    && apt-get install -y make curl git software-properties-common jq \
-    && add-apt-repository -y ppa:longsleep/golang-backports \
-    && add-apt-repository -y ppa:ethereum/ethereum \
-    && apt-get update \
-    && apt-get install -y golang-1.22 ethereum=1.14.5+build29958+noble \
-    && curl -L https://foundry.paradigm.xyz | bash \
-    && /root/.foundry/bin/foundryup
+COPY bin /build-bin
 
-RUN cp -R /root/.foundry/bin/* /usr/local/bin/
+RUN apt-get update \
+    && apt-get install -y make curl git software-properties-common jq sudo
+
+RUN /build-bin/install-deps.sh
 

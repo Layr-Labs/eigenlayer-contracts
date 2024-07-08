@@ -8,7 +8,6 @@ install-hooks:
 .PHONY: install-deps
 install-deps:
 	./bin/install-deps.sh
-	foundryup
 
 .PHONY: deps
 deps: install-hooks install-deps
