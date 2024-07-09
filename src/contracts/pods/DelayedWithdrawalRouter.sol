@@ -24,7 +24,7 @@ contract DelayedWithdrawalRouter is
      */
     uint256 public withdrawalDelayBlocks;
     // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216000;
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216_000;
 
     /// @notice The EigenPodManager contract of EigenLayer.
     IEigenPodManager public immutable eigenPodManager;
@@ -70,21 +70,15 @@ contract DelayedWithdrawalRouter is
         address recipient
     ) external payable onlyEigenPod(podOwner) onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS) {
         require(
-            recipient != address(0),
-            "DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address"
+            recipient != address(0), "DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address"
         );
         uint224 withdrawalAmount = uint224(msg.value);
         if (withdrawalAmount != 0) {
-            DelayedWithdrawal memory delayedWithdrawal = DelayedWithdrawal({
-                amount: withdrawalAmount,
-                blockCreated: uint32(block.number)
-            });
+            DelayedWithdrawal memory delayedWithdrawal =
+                DelayedWithdrawal({amount: withdrawalAmount, blockCreated: uint32(block.number)});
             _userWithdrawals[recipient].delayedWithdrawals.push(delayedWithdrawal);
             emit DelayedWithdrawalCreated(
-                podOwner,
-                recipient,
-                withdrawalAmount,
-                _userWithdrawals[recipient].delayedWithdrawals.length - 1
+                podOwner, recipient, withdrawalAmount, _userWithdrawals[recipient].delayedWithdrawals.length - 1
             );
         }
     }
@@ -108,9 +102,11 @@ contract DelayedWithdrawalRouter is
      * @notice Called in order to withdraw delayed withdrawals made to the caller that have passed the `withdrawalDelayBlocks` period.
      * @param maxNumberOfDelayedWithdrawalsToClaim Used to limit the maximum number of delayedWithdrawals to loop through claiming.
      */
-    function claimDelayedWithdrawals(
-        uint256 maxNumberOfDelayedWithdrawalsToClaim
-    ) external nonReentrant onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS) {
+    function claimDelayedWithdrawals(uint256 maxNumberOfDelayedWithdrawalsToClaim)
+        external
+        nonReentrant
+        onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS)
+    {
         _claimDelayedWithdrawals(msg.sender, maxNumberOfDelayedWithdrawalsToClaim);
     }
 
@@ -145,9 +141,8 @@ contract DelayedWithdrawalRouter is
         uint256 firstNonClaimableWithdrawalIndex = userDelayedWithdrawalsLength;
 
         for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
-            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[
-                delayedWithdrawalsCompleted + i
-            ];
+            DelayedWithdrawal memory delayedWithdrawal =
+                _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
             // check if delayedWithdrawal can be claimed. break the loop as soon as a delayedWithdrawal cannot be claimed
             if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
                 firstNonClaimableWithdrawalIndex = i;
@@ -159,9 +154,8 @@ contract DelayedWithdrawalRouter is
 
         if (numberOfClaimableWithdrawals != 0) {
             for (uint256 i = 0; i < numberOfClaimableWithdrawals; i++) {
-                claimableDelayedWithdrawals[i] = _userWithdrawals[user].delayedWithdrawals[
-                    delayedWithdrawalsCompleted + i
-                ];
+                claimableDelayedWithdrawals[i] =
+                    _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
             }
         }
         return claimableDelayedWithdrawals;
@@ -182,8 +176,10 @@ contract DelayedWithdrawalRouter is
 
     /// @notice Convenience function for checking whether or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
     function canClaimDelayedWithdrawal(address user, uint256 index) external view returns (bool) {
-        return ((index >= _userWithdrawals[user].delayedWithdrawalsCompleted) &&
-            (block.number >= _userWithdrawals[user].delayedWithdrawals[index].blockCreated + withdrawalDelayBlocks));
+        return (
+            (index >= _userWithdrawals[user].delayedWithdrawalsCompleted)
+                && (block.number >= _userWithdrawals[user].delayedWithdrawals[index].blockCreated + withdrawalDelayBlocks)
+        );
     }
 
     /// @notice internal function used in both of the overloaded `claimDelayedWithdrawals` functions
@@ -196,9 +192,8 @@ contract DelayedWithdrawalRouter is
             i < maxNumberOfDelayedWithdrawalsToClaim && (delayedWithdrawalsCompletedBefore + i) < _userWithdrawalsLength
         ) {
             // copy delayedWithdrawal from storage to memory
-            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[recipient].delayedWithdrawals[
-                delayedWithdrawalsCompletedBefore + i
-            ];
+            DelayedWithdrawal memory delayedWithdrawal =
+                _userWithdrawals[recipient].delayedWithdrawals[delayedWithdrawalsCompletedBefore + i];
             // check if delayedWithdrawal can be claimed. break the loop as soon as a delayedWithdrawal cannot be claimed
             if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
                 break;

@@ -30,7 +30,6 @@ contract EigenPodManager is
     EigenPodManagerStorage,
     ReentrancyGuardUpgradeable
 {
-    
     modifier onlyEigenPod(address podOwner) {
         require(address(ownerToPod[podOwner]) == msg.sender, "EigenPodManager.onlyEigenPod: not a pod");
         _;
@@ -38,8 +37,7 @@ contract EigenPodManager is
 
     modifier onlyDelegationManager() {
         require(
-            msg.sender == address(delegationManager),
-            "EigenPodManager.onlyDelegationManager: not the DelegationManager"
+            msg.sender == address(delegationManager), "EigenPodManager.onlyDelegationManager: not the DelegationManager"
         );
         _;
     }
@@ -68,7 +66,7 @@ contract EigenPodManager is
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
-     * @dev Returns EigenPod address 
+     * @dev Returns EigenPod address
      */
     function createPod() external onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (address) {
         require(!hasPod(msg.sender), "EigenPodManager.createPod: Sender already has a pod");
@@ -86,8 +84,8 @@ contract EigenPodManager is
      * @param depositDataRoot The root/hash of the deposit data for the validator's deposit.
      */
     function stake(
-        bytes calldata pubkey, 
-        bytes calldata signature, 
+        bytes calldata pubkey,
+        bytes calldata signature,
         bytes32 depositDataRoot
     ) external payable onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) {
         IEigenPod pod = ownerToPod[msg.sender];
@@ -110,9 +108,13 @@ contract EigenPodManager is
         address podOwner,
         int256 sharesDelta
     ) external onlyEigenPod(podOwner) nonReentrant {
-        require(podOwner != address(0), "EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address");
-        require(sharesDelta % int256(GWEI_TO_WEI) == 0,
-            "EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount");
+        require(
+            podOwner != address(0), "EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address"
+        );
+        require(
+            sharesDelta % int256(GWEI_TO_WEI) == 0,
+            "EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount"
+        );
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
         int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
         podOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -150,14 +152,14 @@ contract EigenPodManager is
      * @dev Reverts if `shares` is not a whole Gwei amount
      * @dev The delegation manager validates that the podOwner is not address(0)
      */
-    function removeShares(
-        address podOwner, 
-        uint256 shares
-    ) external onlyDelegationManager {
+    function removeShares(address podOwner, uint256 shares) external onlyDelegationManager {
         require(int256(shares) >= 0, "EigenPodManager.removeShares: shares cannot be negative");
         require(shares % GWEI_TO_WEI == 0, "EigenPodManager.removeShares: shares must be a whole Gwei amount");
         int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
-        require(updatedPodOwnerShares >= 0, "EigenPodManager.removeShares: cannot result in pod owner having negative shares");
+        require(
+            updatedPodOwnerShares >= 0,
+            "EigenPodManager.removeShares: cannot result in pod owner having negative shares"
+        );
         podOwnerShares[podOwner] = updatedPodOwnerShares;
     }
 
@@ -168,10 +170,7 @@ contract EigenPodManager is
      * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero)
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
-    function addShares(
-        address podOwner,
-        uint256 shares
-    ) external onlyDelegationManager returns (uint256) {
+    function addShares(address podOwner, uint256 shares) external onlyDelegationManager returns (uint256) {
         require(podOwner != address(0), "EigenPodManager.addShares: podOwner cannot be zero address");
         require(int256(shares) >= 0, "EigenPodManager.addShares: shares cannot be negative");
         require(shares % GWEI_TO_WEI == 0, "EigenPodManager.addShares: shares must be a whole Gwei amount");
@@ -181,7 +180,12 @@ contract EigenPodManager is
 
         emit PodSharesUpdated(podOwner, int256(shares));
 
-        return uint256(_calculateChangeInDelegatableShares({sharesBefore: currentPodOwnerShares, sharesAfter: updatedPodOwnerShares}));
+        return uint256(
+            _calculateChangeInDelegatableShares({
+                sharesBefore: currentPodOwnerShares,
+                sharesAfter: updatedPodOwnerShares
+            })
+        );
     }
 
     /**
@@ -192,8 +196,8 @@ contract EigenPodManager is
      *      we do not need to update the podOwnerShares if `currentPodOwnerShares` is positive
      */
     function withdrawSharesAsTokens(
-        address podOwner, 
-        address destination, 
+        address podOwner,
+        address destination,
         uint256 shares
     ) external onlyDelegationManager {
         require(podOwner != address(0), "EigenPodManager.withdrawSharesAsTokens: podOwner cannot be zero address");
@@ -210,7 +214,7 @@ contract EigenPodManager is
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
                 emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
-            // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
+                // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
             } else {
                 podOwnerShares[podOwner] += int256(shares);
                 emit PodSharesUpdated(podOwner, int256(shares));
@@ -235,9 +239,14 @@ contract EigenPodManager is
      * @param newDenebForkTimestamp is the new timestamp of the Deneb fork
      */
     function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external onlyOwner {
-        require(newDenebForkTimestamp != 0, "EigenPodManager.setDenebForkTimestamp: cannot set newDenebForkTimestamp to 0");
-        require(_denebForkTimestamp == 0, "EigenPodManager.setDenebForkTimestamp: cannot set denebForkTimestamp more than once");
-        
+        require(
+            newDenebForkTimestamp != 0, "EigenPodManager.setDenebForkTimestamp: cannot set newDenebForkTimestamp to 0"
+        );
+        require(
+            _denebForkTimestamp == 0,
+            "EigenPodManager.setDenebForkTimestamp: cannot set denebForkTimestamp more than once"
+        );
+
         _denebForkTimestamp = newDenebForkTimestamp;
         emit DenebForkTimestampUpdated(newDenebForkTimestamp);
     }
@@ -272,22 +281,25 @@ contract EigenPodManager is
      * @notice Calculates the change in a pod owner's delegateable shares as a result of their beacon chain ETH shares changing
      * from `sharesBefore` to `sharesAfter`. The key concept here is that negative/"deficit" shares are not delegateable.
      */
-    function _calculateChangeInDelegatableShares(int256 sharesBefore, int256 sharesAfter) internal pure returns (int256) {
+    function _calculateChangeInDelegatableShares(
+        int256 sharesBefore,
+        int256 sharesAfter
+    ) internal pure returns (int256) {
         if (sharesBefore <= 0) {
-            // if the shares started negative and stayed negative, then there cannot have been an increase in delegateable shares
             if (sharesAfter <= 0) {
+                // if the shares started negative and stayed negative, then there cannot have been an increase in delegateable shares
                 return 0;
-            // if the shares started negative and became positive, then the increase in delegateable shares is the ending share amount
             } else {
+                // if the shares started negative and became positive, then the increase in delegateable shares is the ending share amount
                 return sharesAfter;
             }
         } else {
-            // if the shares started positive and became negative, then the decrease in delegateable shares is the starting share amount
             if (sharesAfter <= 0) {
+                // if the shares started positive and became negative, then the decrease in delegateable shares is the starting share amount
                 return (-sharesBefore);
-            // if the shares started positive and stayed positive, then the change in delegateable shares
-            // is the difference between starting and ending amounts
             } else {
+                // if the shares started positive and stayed positive, then the change in delegateable shares
+                // is the difference between starting and ending amounts
                 return (sharesAfter - sharesBefore);
             }
         }

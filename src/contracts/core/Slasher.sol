@@ -9,7 +9,6 @@ import "../permissions/Pausable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-
 /**
  * @notice This contract is not in use as of the Eigenlayer M2 release.
  *
@@ -25,16 +24,11 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  *
  * This contract is a stub that maintains its original interface for use in testing
  * and deploy scripts. Otherwise, it does nothing.
- */ 
+ */
 contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
-     
     constructor(IStrategyManager, IDelegationManager) {}
 
-    function initialize(
-        address,
-        IPauserRegistry,
-        uint256
-    ) external {}
+    function initialize(address, IPauserRegistry, uint256) external {}
 
     function optIntoSlashing(address) external {}
 
@@ -44,12 +38,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     function recordFirstStakeUpdate(address, uint32) external {}
 
-    function recordStakeUpdate(
-        address,
-        uint32,
-        uint32,
-        uint256
-    ) external {}
+    function recordStakeUpdate(address, uint32, uint32, uint256) external {}
 
     function recordLastStakeUpdateAndRevokeSlashingAbility(address, uint32) external {}
 
@@ -61,25 +50,15 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     function canSlash(address, address) external view returns (bool) {}
 
-    function contractCanSlashOperatorUntilBlock(
-        address,
-        address
-    ) external view returns (uint32) {}
+    function contractCanSlashOperatorUntilBlock(address, address) external view returns (uint32) {}
 
     function latestUpdateBlock(address, address) external view returns (uint32) {}
 
     function getCorrectValueForInsertAfter(address, uint32) external view returns (uint256) {}
 
-    function canWithdraw(
-        address,
-        uint32,
-        uint256
-    ) external returns (bool) {}
+    function canWithdraw(address, uint32, uint256) external returns (bool) {}
 
-    function operatorToMiddlewareTimes(
-        address,
-        uint256
-    ) external view returns (MiddlewareTimes memory) {}
+    function operatorToMiddlewareTimes(address, uint256) external view returns (MiddlewareTimes memory) {}
 
     function middlewareTimesLength(address) external view returns (uint256) {}
 
@@ -94,9 +73,5 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         address
     ) external view returns (bool, uint256, uint256) {}
 
-    function whitelistedContractDetails(
-        address,
-        address
-    ) external view returns (MiddlewareDetails memory) {}
-
+    function whitelistedContractDetails(address, address) external view returns (MiddlewareDetails memory) {}
 }

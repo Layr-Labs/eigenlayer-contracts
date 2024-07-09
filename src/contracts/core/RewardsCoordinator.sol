@@ -110,9 +110,11 @@ contract RewardsCoordinator is
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
 
-    /*******************************************************************************
-                            EXTERNAL FUNCTIONS 
-    *******************************************************************************/
+    /**
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
+     */
 
     /**
      * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
@@ -125,16 +127,18 @@ contract RewardsCoordinator is
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(
-        RewardsSubmission[] calldata rewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
+    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
+        external
+        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
+        nonReentrant
+    {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
-            
+
             _validateRewardsSubmission(rewardsSubmission);
-            
+
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
             submissionNonce[msg.sender] = nonce + 1;
 
@@ -149,14 +153,17 @@ contract RewardsCoordinator is
      * a permissioned call based on isRewardsForAllSubmitter mapping.
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllSubmission(
-        RewardsSubmission[] calldata rewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
+    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
+        external
+        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
+        onlyRewardsForAllSubmitter
+        nonReentrant
+    {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
-            
+
             _validateRewardsSubmission(rewardsSubmission);
 
             isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionForAllHash] = true;
@@ -246,9 +253,7 @@ contract RewardsCoordinator is
      * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
      * @param rootIndex The index of the root to be disabled
      */
-    function disableRoot(
-        uint32 rootIndex
-    ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
+    function disableRoot(uint32 rootIndex) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
         require(rootIndex < _distributionRoots.length, "RewardsCoordinator.disableRoot: invalid rootIndex");
         DistributionRoot storage root = _distributionRoots[rootIndex];
         require(!root.disabled, "RewardsCoordinator.disableRoot: root already disabled");
@@ -308,17 +313,25 @@ contract RewardsCoordinator is
         isRewardsForAllSubmitter[_submitter] = _newValue;
     }
 
-    /*******************************************************************************
-                            INTERNAL FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
 
     /**
      * @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
      */
     function _validateRewardsSubmission(RewardsSubmission calldata rewardsSubmission) internal view {
-        require(rewardsSubmission.strategiesAndMultipliers.length > 0, "RewardsCoordinator._validateRewardsSubmission: no strategies set");
+        require(
+            rewardsSubmission.strategiesAndMultipliers.length > 0,
+            "RewardsCoordinator._validateRewardsSubmission: no strategies set"
+        );
         require(rewardsSubmission.amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
-        require(rewardsSubmission.amount <= MAX_REWARDS_AMOUNT, "RewardsCoordinator._validateRewardsSubmission: amount too large");
+        require(
+            rewardsSubmission.amount <= MAX_REWARDS_AMOUNT,
+            "RewardsCoordinator._validateRewardsSubmission: amount too large"
+        );
         require(
             rewardsSubmission.duration <= MAX_REWARDS_DURATION,
             "RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
@@ -332,8 +345,8 @@ contract RewardsCoordinator is
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp &&
-                GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp
+                && GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
         );
         require(
@@ -444,11 +457,12 @@ contract RewardsCoordinator is
         );
         // Verify inclusion of earner leaf
         bytes32 earnerLeafHash = calculateEarnerLeafHash(earnerLeaf);
+        // forgefmt: disable-next-item
         require(
             Merkle.verifyInclusionKeccak({
-                root: root,
-                index: earnerLeafIndex,
-                proof: earnerProof,
+                root: root, 
+                index: earnerLeafIndex, 
+                proof: earnerProof, 
                 leaf: earnerLeafHash
             }),
             "RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof"
@@ -470,9 +484,11 @@ contract RewardsCoordinator is
         rewardsUpdater = _rewardsUpdater;
     }
 
-    /*******************************************************************************
-                            VIEW FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {

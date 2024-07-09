@@ -4,7 +4,6 @@ pragma solidity >=0.5.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IBackingEigen is IERC20 {
-
     /**
      * @notice This function allows the owner to set the allowedFrom status of an address
      * @param from the address whose allowedFrom status is being set
@@ -23,7 +22,6 @@ interface IBackingEigen is IERC20 {
      * @notice Allows the owner to disable transfer restrictions
      */
     function disableTransferRestrictions() external;
-
 
     /**
      * @dev Clock used for flagging checkpoints. Has been overridden to implement timestamp based

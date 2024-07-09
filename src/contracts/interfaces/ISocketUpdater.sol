@@ -18,4 +18,3 @@ interface ISocketUpdater {
      */
     function updateSocket(string memory socket) external;
 }
-
