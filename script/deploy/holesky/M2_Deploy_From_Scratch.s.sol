@@ -75,7 +75,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, strategyManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
         delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
         slasherImplementation = new Slasher(strategyManager, delegationManager);
