@@ -40,9 +40,8 @@ contract AVSDirectory is
      * and eigenpodManager contracts
      */
     constructor(
-        IDelegationManager _delegation,
-        IStrategyManager _strategyManager
-    ) AVSDirectoryStorage(_delegation, _strategyManager) {
+        IDelegationManager _delegation
+    ) AVSDirectoryStorage(_delegation) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
