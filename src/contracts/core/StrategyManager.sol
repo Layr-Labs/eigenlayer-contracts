@@ -39,16 +39,6 @@ contract StrategyManager is
         });
     }
 
-    // includes the effect of all unexecuted but pending slashings
-    function stakerStrategySharesIncludingPendingSlashings(address staker, IStrategy strategy) external view returns (uint256) {
-        address operator = delegation.delegatedTo(staker);
-        uint64 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
-        return SlashingAccountingUtils.normalize({
-            nonNormalizedShares: nonNormalizedStakerStrategyShares[staker][strategy],
-            scalingFactor: scalingFactor
-        });
-    }
-
     // index for flag that pauses deposits when set
     uint8 internal constant PAUSED_DEPOSITS = 0;
 

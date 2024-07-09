@@ -40,16 +40,6 @@ contract EigenPodManager is
             scalingFactor: scalingFactor
         });
     }
-
-    // includes the effect of all unexecuted but pending slashings
-    function podOwnerSharesIncludingPendingSlashings(address podOwner) external view returns (int256) {
-        address operator = delegationManager.delegatedTo(podOwner);
-        uint64 scalingFactor = slasher.pendingShareScalingFactor(operator, beaconChainETHStrategy);
-        return SlashingAccountingUtils.normalize({
-            nonNormalizedShares: nonNormalizedPodOwnerShares[podOwner],
-            scalingFactor: scalingFactor
-        });
-    }
     
     modifier onlyEigenPod(address podOwner) {
         require(address(ownerToPod[podOwner]) == msg.sender, "EigenPodManager.onlyEigenPod: not a pod");
