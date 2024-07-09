@@ -563,6 +563,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             );
         }
 
+        uint32 epochForEndOfSlashability = EpochUtils.getEndOfSlashabilityEpoch(withdrawalCreationEpoch(withdrawalRoot));
+        require(
+            EpochUtils.currentEpoch() > epochForEndOfSlashability,
+            "DelegationManager._completeQueuedWithdrawal: withdrawal is still slashable"
+        );
         // Remove `withdrawalRoot` from pending roots
         delete _pendingWithdrawalData[withdrawalRoot];
 
@@ -576,7 +581,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             uint256 shares;
             {
-                uint64 scalingFactor = slasher.shareScalingFactor(withdrawal.delegatedTo, withdrawal.strategies[i]);
+                uint64 scalingFactor = slasher.shareScalingFactorAtEpoch(
+                    withdrawal.delegatedTo,
+                    withdrawal.strategies[i],
+                    epochForEndOfSlashability
+                );
                 shares = SlashingAccountingUtils.normalize({
                     nonNormalizedShares: withdrawal.shares[i], 
                     scalingFactor: scalingFactor
