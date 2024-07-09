@@ -583,6 +583,7 @@ contract DelegationManager is
                     ++i;
                 }
             }
+            // Award shares back in StrategyManager/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
         } else {
             // Award shares back in StrategyManager/EigenPodManager.
             // If withdrawer is delegated, increase the shares delegated to the operator.

@@ -20,7 +20,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice The EIP-712 typehash for the `StandbyParams` struct used by the contract
     bytes32 public constant OPERATOR_STANDBY_UPDATE =
         keccak256("OperatorStandbyUpdate(StandbyParam[] standbyParams,bytes32 salt,uint256 expiry)");
-    
+
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
