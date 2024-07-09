@@ -5,11 +5,14 @@ import "./ISignatureUtils.sol";
 import "./IStrategy.sol";
 
 interface IAVSDirectory is ISignatureUtils {
-    /// @notice Enum representing the registration status of an operator with an AVS.
-    enum OperatorAVSRegistrationStatus {
-        UNREGISTERED, // Operator is not registered with the AVS.
-        REGISTERED // Operator is registered with the AVS.
+    struct MemberInfo {
+        uint248 registrationCount;
+        bool isOperatorForAVS;
+    }
 
+    struct MemberSetInfo {
+        bool isMember;
+        bool onStandby;
     }
 
     struct OperatorSet {
@@ -27,9 +30,7 @@ interface IAVSDirectory is ISignatureUtils {
      *  Specifically, when an operator enters its first operator set for an AVS, or
      *  when it is removed from the last operator set.
      */
-    event OperatorAVSRegistrationStatusUpdated(
-        address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status
-    );
+    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, bool isOperatorForAVS);
 
     /// @notice Emitted when an operator is added to an operator set.
     event OperatorAddedToOperatorSet(address operator, OperatorSet operatorSet);
