@@ -38,9 +38,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @dev Salt is used in the `registerOperatorToAVS` and `registerOperatorToOperatorSet` function.
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
-    /// @notice Mapping: AVS => whether or not the AVS uses operator set
-    mapping(address => bool) public isOperatorSetAVS;
-
     /// @notice Mapping: avs => operator => operatorSetID => whether the operator is registered for the operator set
     mapping(address => mapping(address => mapping(uint32 => bool))) public isOperatorInOperatorSet;
 

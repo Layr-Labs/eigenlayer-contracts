@@ -387,7 +387,6 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         assertEq(avsDirectory.operatorAVSOperatorSetCount(address(this), operator), oids.length);
         assertEq(uint8(avsDirectory.avsOperatorStatus(address(this), operator)), 1);
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
-        assertTrue(avsDirectory.isOperatorSetAVS(address(this)));
     }
 
     function testFuzz_Correctness(
@@ -426,7 +425,6 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         assertEq(uint8(avsDirectory.avsOperatorStatus(address(this), operator)), 1);
         assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId));
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
-        assertTrue(avsDirectory.isOperatorSetAVS(address(this)));
     }
 
     function testFuzz_revert_NoSignatureNoStandby(

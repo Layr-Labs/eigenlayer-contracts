@@ -171,9 +171,6 @@ contract AVSDirectory is
             emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
         }
 
-        // Mutate calling AVS to operator set AVS status, preventing further legacy registrations.
-        if (!isOperatorSetAVS[msg.sender]) isOperatorSetAVS[msg.sender] = true;
-
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             // Assert avs is on standby mode for the given `operator` and `operatorSetIds[i]`.
@@ -274,7 +271,7 @@ contract AVSDirectory is
             "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
         );
         require(
-            !isOperatorSetAVS[msg.sender],
+            operatorAVSOperatorSetCount[msg.sender][operator] == 0,
             "AVSDirectory.registerOperatorToAVS: operator set AVS cannot register operators with legacy method"
         );
 
