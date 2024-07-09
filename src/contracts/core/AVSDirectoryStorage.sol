@@ -24,9 +24,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
-    /// @notice The StrategyManager contract for EigenLayer
-    IStrategyManager public immutable strategyManager;
-
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -53,9 +50,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: avs = operator => operatorSetId => Whether the given operator set in standby mode or not
     mapping(address => mapping(address => mapping(uint32 => bool))) public onStandby;
 
-    constructor(IDelegationManager _delegation, IStrategyManager _strategyManager) {
+    constructor(IDelegationManager _delegation) {
         delegation = _delegation;
-        strategyManager = _strategyManager;
     }
 
     /**

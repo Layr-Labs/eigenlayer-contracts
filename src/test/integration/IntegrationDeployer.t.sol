@@ -409,12 +409,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-<<<<<<< HEAD
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
-=======
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
         avsDirectoryImplementation = new AVSDirectory(delegationManager, strategyManager);
->>>>>>> d7c6f3fe (Feat/operator sets (#579))
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -509,7 +505,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             delegationManager
         );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, strategyManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
