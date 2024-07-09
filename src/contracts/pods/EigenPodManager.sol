@@ -261,6 +261,7 @@ contract EigenPodManager is
             if (sharesAfter <= 0) {
                 // if the shares started negative and stayed negative, then there cannot have been an increase in delegateable shares
                 return 0;
+                // if the shares started negative and became positive, then the increase in delegateable shares is the ending share amount
             } else {
                 // if the shares started negative and became positive, then the increase in delegateable shares is the ending share amount
                 return sharesAfter;
