@@ -31,21 +31,11 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      */
     bytes32 internal _DOMAIN_SEPARATOR;
 
-    /// @notice Mapping: AVS => operator => enum of operator status to the AVS
-    mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
-
-    /// @notice Mapping: operator => 32-byte salt => whether or not the salt has already been used by the operator.
-    /// @dev Salt is used in the `registerOperatorToAVS` and `registerOperatorToOperatorSet` function.
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
-    /// @notice Mapping: avs => operator => operatorSetID => whether the operator is registered for the operator set
-    mapping(address => mapping(address => mapping(uint32 => bool))) public isOperatorInOperatorSet;
+    mapping(address => mapping(address => MemberInfo)) public memberInfo;
 
-    /// @notice Mapping: avs => operator => number of operator sets the operator is registered for the AVS
-    mapping(address => mapping(address => uint256)) public operatorAVSOperatorSetCount;
-
-    /// @notice Mapping: avs = operator => operatorSetId => Whether the given operator set in standby mode or not
-    mapping(address => mapping(address => mapping(uint32 => bool))) public onStandby;
+    mapping(address => mapping(address => mapping(uint32 => MemberSetInfo))) public memberSetInfo;
 
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
