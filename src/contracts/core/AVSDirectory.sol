@@ -103,9 +103,11 @@ contract AVSDirectory is
 
         // Loop through each standby parameter and update the state accordingly.
         for (uint256 i; i < standbyParams.length; ++i) {
+            MemberSetInfo storage setInfo =
+                memberSetInfo[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id];
+
             // Update the standby status for the given operator set.
-            onStandby[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id] =
-                standbyParams[i].onStandby;
+            setInfo.onStandby = standbyParams[i].onStandby;
 
             emit StandbyParamUpdated(operator, standbyParams[i].operatorSet, standbyParams[i].onStandby);
         }
@@ -162,30 +164,31 @@ contract AVSDirectory is
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
 
+        MemberInfo storage info = memberInfo[msg.sender][operator];
+
         // Register `operator` if not already registered.
-        if (avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED) {
-            avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
-            emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
+        if (!info.isOperatorForAVS) {
+            info.isOperatorForAVS = true;
+            emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, true);
         }
 
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            MemberSetInfo storage setInfo = memberSetInfo[msg.sender][operator][operatorSetIds[i]];
+
             // Assert avs is on standby mode for the given `operator` and `operatorSetIds[i]`.
             if (operatorSignature.signature.length == 0) {
-                require(
-                    onStandby[msg.sender][operator][operatorSetIds[i]],
-                    "AVSDirectory.registerOperatorToOperatorSets: avs not on standby"
-                );
+                require(setInfo.onStandby, "AVSDirectory.registerOperatorToOperatorSets: avs not on standby");
             }
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
-                !isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
+                !setInfo.isMember,
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
-            // Mutate `isOperatorInOperatorSet` to `true` for `operatorSetIds[i]`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = true;
+            // Mutate `isMember` to `true` for `operatorSetIds[i]`.
+            setInfo.isMember = true;
 
             emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
@@ -193,7 +196,7 @@ contract AVSDirectory is
         // Increase `operatorAVSOperatorSetCount` by `operatorSetIds.length`.
         // You would have to add the operator to 2**256-2 operator sets before overflow is possible here.
         unchecked {
-            operatorAVSOperatorSetCount[msg.sender][operator] += operatorSetIds.length;
+            info.registrationCount += uint248(operatorSetIds.length);
         }
     }
 
@@ -214,27 +217,31 @@ contract AVSDirectory is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Loop over `operatorSetIds` array and deregister `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            MemberSetInfo storage setInfo = memberSetInfo[msg.sender][operator][operatorSetIds[i]];
+
             // Assert `operator` is registered for this iterations operator set.
             require(
-                isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
+                setInfo.isMember,
                 "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
-            // Mutate `isOperatorInOperatorSet` to `false` for `operatorSetIds[i]`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = false;
+            // Mutate `isMember` to `false` for `operatorSetIds[i]`.
+            setInfo.isMember = false;
 
             emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
 
+        MemberInfo storage info = memberInfo[msg.sender][operator];
+
         // The above assertion makes underflow logically impossible here.
         unchecked {
-            operatorAVSOperatorSetCount[msg.sender][operator] -= operatorSetIds.length;
+            info.registrationCount -= uint248(operatorSetIds.length);
         }
 
         // Set the operator as deregistered if no longer registered for any operator sets
-        if (operatorAVSOperatorSetCount[msg.sender][operator] == 0) {
-            avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
-            emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
+        if (info.registrationCount == 0) {
+            info.isOperatorForAVS = false;
+            emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, false);
         }
     }
 
@@ -255,10 +262,10 @@ contract AVSDirectory is
             operatorSignature.expiry >= block.timestamp,
             "AVSDirectory.registerOperatorToAVS: operator signature expired"
         );
-        require(
-            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.registerOperatorToAVS: operator already registered"
-        );
+
+        MemberInfo storage info = memberInfo[msg.sender][operator];
+
+        require(!info.isOperatorForAVS, "AVSDirectory.registerOperatorToAVS: operator already registered");
         require(
             !operatorSaltIsSpent[operator][operatorSignature.salt],
             "AVSDirectory.registerOperatorToAVS: salt already spent"
@@ -268,7 +275,7 @@ contract AVSDirectory is
             "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
         );
         require(
-            operatorAVSOperatorSetCount[msg.sender][operator] == 0,
+            info.registrationCount == 0,
             "AVSDirectory.registerOperatorToAVS: operator set AVS cannot register operators with legacy method"
         );
 
@@ -289,12 +296,12 @@ contract AVSDirectory is
         });
 
         // Set the operator as registered
-        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
+        info.isOperatorForAVS = true;
 
         // Mark the salt as spent
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
 
-        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
+        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, true);
     }
 
     /**
@@ -308,15 +315,14 @@ contract AVSDirectory is
         external
         onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
     {
-        require(
-            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
-        );
+        MemberInfo storage info = memberInfo[msg.sender][operator];
+
+        require(info.isOperatorForAVS, "AVSDirectory.deregisterOperatorFromAVS: operator not registered");
 
         // Set the operator as deregistered
-        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
+        info.isOperatorForAVS = false;
 
-        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
+        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, false);
     }
 
     /**
