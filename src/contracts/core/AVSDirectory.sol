@@ -18,10 +18,10 @@ contract AVSDirectory is
     /// @dev Index for flag that pauses operator register/deregister to avs when set.
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
-    /// @dev Chain ID at the time of contract deployment
+    /// @dev Returns the chain ID from the time the contract was deployed.
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
-    /// @notice Canonical, virtual beacon chain ETH strategy
+    /// @notice Returns the canonical beacon chain ETH strategy.
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     /**
@@ -73,30 +73,40 @@ contract AVSDirectory is
         StandbyParam[] calldata standbyParams,
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {
+        // Check if the operator's signature is provided or not.
         if (operatorSignature.signature.length == 0) {
-            // Assert caller is `operator` if signature length is zero.
+            // If the signature length is zero, assert that the caller is the operator.
             require(msg.sender == operator, "AVSDirectory.updateStandbyParams: invalid signature");
         } else {
-            // Assert operator's signature has not expired.
+            // If a signature is provided, perform the following checks:
+
+            // Assert that the operator's signature has not expired.
             require(
                 operatorSignature.expiry >= block.timestamp,
                 "AVSDirectory.updateStandbyParams: operator signature expired"
             );
-            // Assert operator's signature cannot be replayed.
+
+            // Assert that the operator's signature cannot be replayed.
             require(
                 !operatorSaltIsSpent[operator][operatorSignature.salt], "AVSDirectory.updateStandbyParams: salt spent"
             );
-            // Assert operator's signature is valid.
-            EIP1271SignatureUtils.checkSignature_EIP1271(
-                operator,
-                calculateUpdateStandbyDigestHash(standbyParams, operatorSignature.salt, operatorSignature.expiry),
-                operatorSignature.signature
-            );
-            // Spend salt.
+
+            // Assert that the operator's signature is valid.
+            EIP1271SignatureUtils.checkSignature_EIP1271({
+                signer: operator,
+                digestHash: calculateUpdateStandbyDigestHash(
+                    standbyParams, operatorSignature.salt, operatorSignature.expiry
+                ),
+                signature: operatorSignature.signature
+            });
+
+            // Mark the salt as spent to prevent replay attacks.
             operatorSaltIsSpent[operator][operatorSignature.salt] = true;
         }
 
+        // Loop through each standby parameter and update the state accordingly.
         for (uint256 i; i < standbyParams.length; ++i) {
+            // Update the standby status for the given operator set.
             onStandby[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id] =
                 standbyParams[i].onStandby;
 
@@ -278,9 +288,11 @@ contract AVSDirectory is
 
         // forgefmt: disable-next-item
         // Check that the signature is valid
-        EIP1271SignatureUtils.checkSignature_EIP1271(
-            operator, operatorRegistrationDigestHash, operatorSignature.signature
-        );
+        EIP1271SignatureUtils.checkSignature_EIP1271({
+            signer: operator, 
+            digestHash: operatorRegistrationDigestHash, 
+            signature: operatorSignature.signature
+        });
 
         // Set the operator as registered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
