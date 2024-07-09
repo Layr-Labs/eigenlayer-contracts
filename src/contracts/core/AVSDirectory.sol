@@ -21,9 +21,6 @@ contract AVSDirectory is
     /// @dev Returns the chain ID from the time the contract was deployed.
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
-    /// @notice Returns the canonical beacon chain ETH strategy.
-    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
     /**
      *
      *                         INITIALIZING FUNCTIONS
