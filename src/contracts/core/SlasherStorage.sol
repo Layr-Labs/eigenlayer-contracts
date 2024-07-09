@@ -15,22 +15,13 @@ abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher,
     IDelegationManager public immutable delegation;
     IOperatorSetManager public immutable operatorSetManager;
 
-    struct SlashingRequest {
-        uint32 id; // an incrementing ID for each slashing request
+    struct SlashingUpdate {
         uint64 slashingRate; // This is parts per (BIPS_FACTOR**2), i.e. parts per 1e8, pphm = parts per hundred million, to slash upon execution
         uint64 scalingFactor; // the scaling factor to apply to the operator's shares. this is only set upon execution
     }
 
-    struct SlashingRequestIds {
-        uint32 lastCreatedSlashingRequestId; // the last slashing request ID that was created
-        uint32 lastExecutedSlashingRequestId; // the last slashing request ID that was executed
-    }
-
-    /// @notice Mapping: Operator => Strategy => SlashingRequestIds
-    mapping(address => mapping(IStrategy => SlashingRequestIds)) public slashingRequestIds;
-
-    /// @notice Mapping: Operator => Strategy => epoch => SlashingRequest
-    mapping(address => mapping(IStrategy => mapping(uint32 => SlashingRequest))) public slashingRequests;
+    /// @notice Mapping: Operator => Strategy => epoch => SlashingUpdate[]
+    mapping(address => mapping(IStrategy => mapping(uint32 => SlashingUpdate))) public slashingUpdates;
 
     /**
      * @notice Mapping: operator => strategy => share scalingFactor,
@@ -41,15 +32,7 @@ abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher,
 
     /// @notice Mapping: operator => strategy => epochs in which the strategy was slashed for the operator
     // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
-    mapping(address => mapping(IStrategy => uint32[])) public slashedEpochHistory;
-
-    /**
-     * @notice Mapping: Operator => Strategy => epoch => operator set hash => requested slashed bips
-     * @dev Note that this is *independent* of the slashable bips that the operator has determined!
-     *      The amount that the operator's delegated shares will actually get slashed (which goes into `pendingSlashingRate`) is linearly proportional
-     *      to *both* this number *and* the slashable bips.
-     */
-    mapping(address => mapping(IStrategy => mapping(uint32 => mapping(bytes32 => uint32)))) public requestedSlashedBips;
+    mapping(address => mapping(IStrategy => uint32[])) public slashingEpochHistory;
 
     constructor(
         IStrategyManager _strategyManager,

@@ -31,15 +31,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         });
     }
 
-    // includes the effect of all unexecuted but pending slashings
-    function operatorSharesIncludingPendingSlashings(address operator, IStrategy strategy) external view returns (uint256) {
-        uint64 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
-        return SlashingAccountingUtils.normalize({
-            nonNormalizedShares: nonNormalizedOperatorShares[operator][strategy],
-            scalingFactor: scalingFactor
-        });
-    }
-
     // TODO: decide if this function needs to go in the interface at all
     function pendingWithdrawalData(bytes32 withdrawalRoot) public view returns (PendingWithdrawalData memory) {
         return _pendingWithdrawalData[withdrawalRoot];        
@@ -572,10 +563,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             );
         }
 
-        uint32 epochForEndOfSlashability = EpochUtils.getEndOfSlashabilityEpoch(withdrawalCreationEpoch(withdrawalRoot));
-        require(EpochUtils.currentEpoch() > epochForEndOfSlashability,
-            "DelegationManager._completeQueuedWithdrawal: withdrawal is still slashable");
-
         // Remove `withdrawalRoot` from pending roots
         delete _pendingWithdrawalData[withdrawalRoot];
 
@@ -589,15 +576,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             uint256 shares;
             {
-                // Check if the withdrawal is withdrawable and get the scaling factor
-                (bool canWithdraw, uint64 scalingFactor) = slasher.getWithdrawabilityAndScalingFactorAtEpoch(
-                    withdrawal.delegatedTo,
-                    withdrawal.strategies[i],
-                    epochForEndOfSlashability
-                );
-
-                require(canWithdraw, "DelegationManager._completeQueuedWithdrawal: withdrawal is still slashable");
-
+                uint64 scalingFactor = slasher.shareScalingFactor(withdrawal.delegatedTo, withdrawal.strategies[i]);
                 shares = SlashingAccountingUtils.normalize({
                     nonNormalizedShares: withdrawal.shares[i], 
                     scalingFactor: scalingFactor
