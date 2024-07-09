@@ -2,7 +2,6 @@
 pragma solidity ^0.8.12;
 
 import "../interfaces/IAVSDirectory.sol";
-import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
@@ -24,9 +23,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
-
-    /// @notice The StrategyManager contract for EigenLayer
-    IStrategyManager public immutable strategyManager;
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -54,9 +50,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: avs = operator => operatorSetId => Whether the given operator set in standby mode or not
     mapping(address => mapping(address => mapping(uint32 => bool))) public onStandby;
 
-    constructor(IDelegationManager _delegation, IStrategyManager _strategyManager) {
+    constructor(IDelegationManager _delegation) {
         delegation = _delegation;
-        strategyManager = _strategyManager;
     }
 
     /**
