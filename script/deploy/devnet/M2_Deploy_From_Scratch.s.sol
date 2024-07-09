@@ -13,6 +13,7 @@ import "../../../src/contracts/core/StrategyManager.sol";
 import "../../../src/contracts/core/Slasher.sol";
 import "../../../src/contracts/core/DelegationManager.sol";
 import "../../../src/contracts/core/AVSDirectory.sol";
+import "../../../src/contracts/core/RewardsCoordinator.sol";
 
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
@@ -32,7 +33,7 @@ import "forge-std/Test.sol";
 // source .env
 
 // # To deploy and verify our contract
-// forge script script/testing/M2_Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- M2_deploy_from_scratch.anvil.config.json
+// forge script script/deploy/devnet/M2_Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- M2_deploy_from_scratch.anvil.config.json
 contract Deployer_M2 is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
@@ -55,6 +56,8 @@ contract Deployer_M2 is Script, Test {
     DelegationManager public delegationImplementation;
     StrategyManager public strategyManager;
     StrategyManager public strategyManagerImplementation;
+    RewardsCoordinator public rewardsCoordinator;
+    RewardsCoordinator public rewardsCoordinatorImplementation;
     AVSDirectory public avsDirectory;
     AVSDirectory public avsDirectoryImplementation;
     EigenPodManager public eigenPodManager;
@@ -85,13 +88,24 @@ contract Deployer_M2 is Script, Test {
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
     uint256 SLASHER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_INIT_PAUSED_STATUS;
-    uint256 DELEGATION_WITHDRAWAL_DELAY_BLOCKS;
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS;
+    uint256 REWARDS_COORDINATOR_INIT_PAUSED_STATUS;
+
+    // RewardsCoordinator
+    uint32 REWARDS_COORDINATOR_MAX_REWARDS_DURATION;
+    uint32 REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH;
+    uint32 REWARDS_COORDINATOR_MAX_FUTURE_LENGTH;
+    uint32 REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP;
+    address REWARDS_COORDINATOR_UPDATER;
+    uint32 REWARDS_COORDINATOR_ACTIVATION_DELAY;
+    uint32 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+    uint32 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
 
     // one week in blocks -- 50400
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
     uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS;
+    uint256 DELEGATION_WITHDRAWAL_DELAY_BLOCKS;
 
     function run(string memory configFileName) external {
         // read and log the chainID
@@ -111,6 +125,25 @@ contract Deployer_M2 is Script, Test {
         DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = stdJson.readUint(
             config_data,
             ".delayedWithdrawalRouter.init_paused_status"
+        );
+        REWARDS_COORDINATOR_INIT_PAUSED_STATUS = stdJson.readUint(
+            config_data,
+            ".rewardsCoordinator.init_paused_status"
+        );
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
+            stdJson.readUint(config_data, ".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS")
+        );
+        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(stdJson.readUint(config_data, ".rewardsCoordinator.MAX_REWARDS_DURATION"));
+        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(config_data, ".rewardsCoordinator.MAX_RETROACTIVE_LENGTH"));
+        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(config_data, ".rewardsCoordinator.MAX_FUTURE_LENGTH"));
+        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(stdJson.readUint(config_data, ".rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP"));
+        REWARDS_COORDINATOR_UPDATER = stdJson.readAddress(config_data, ".rewardsCoordinator.rewards_updater_address");
+        REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(stdJson.readUint(config_data, ".rewardsCoordinator.activation_delay"));
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
+            stdJson.readUint(config_data, ".rewardsCoordinator.calculation_interval_seconds")
+        );
+        REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
+            stdJson.readUint(config_data, ".rewardsCoordinator.global_operator_commission_bips")
         );
 
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(
@@ -175,6 +208,9 @@ contract Deployer_M2 is Script, Test {
         delayedWithdrawalRouter = DelayedWithdrawalRouter(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        rewardsCoordinator = RewardsCoordinator(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
 
         // if on mainnet, use the ETH2 deposit contract address
         if (chainId == 1) {
@@ -206,6 +242,15 @@ contract Deployer_M2 is Script, Test {
             delegation
         );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        rewardsCoordinatorImplementation = new RewardsCoordinator(
+            delegation,
+            strategyManager,
+            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+            REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
+        );
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
@@ -274,6 +319,20 @@ contract Deployer_M2 is Script, Test {
             )
         );
 
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
+            address(rewardsCoordinatorImplementation),
+            abi.encodeWithSelector(
+                RewardsCoordinator.initialize.selector,
+                executorMultisig,
+                eigenLayerPauserReg,
+                REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
+                REWARDS_COORDINATOR_UPDATER,
+                REWARDS_COORDINATOR_ACTIVATION_DELAY,
+                REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS
+            )
+        );
+
         // deploy StrategyBaseTVLLimits contract implementation
         baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         // create upgradeable proxies that each point to the implementation and initialize them
@@ -309,14 +368,16 @@ contract Deployer_M2 is Script, Test {
             strategyManagerImplementation,
             slasherImplementation,
             eigenPodManagerImplementation,
-            delayedWithdrawalRouterImplementation
+            delayedWithdrawalRouterImplementation,
+            rewardsCoordinatorImplementation
         );
         _verifyContractsPointAtOneAnother(
             delegation,
             strategyManager,
             slasher,
             eigenPodManager,
-            delayedWithdrawalRouter
+            delayedWithdrawalRouter,
+            rewardsCoordinator
         );
         _verifyImplementationsSetCorrectly();
         _verifyInitialOwners();
@@ -365,6 +426,12 @@ contract Deployer_M2 is Script, Test {
             "delayedWithdrawalRouterImplementation",
             address(delayedWithdrawalRouterImplementation)
         );
+        vm.serializeAddress(deployed_addresses, "rewardsCoordinator", address(rewardsCoordinator));
+        vm.serializeAddress(
+            deployed_addresses,
+            "rewardsCoordinatorImplementation",
+            address(rewardsCoordinatorImplementation)
+        );
         vm.serializeAddress(deployed_addresses, "eigenPodBeacon", address(eigenPodBeacon));
         vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
         vm.serializeAddress(deployed_addresses, "baseStrategyImplementation", address(baseStrategyImplementation));
@@ -397,7 +464,8 @@ contract Deployer_M2 is Script, Test {
         StrategyManager strategyManagerContract,
         Slasher /*slasherContract*/,
         EigenPodManager eigenPodManagerContract,
-        DelayedWithdrawalRouter delayedWithdrawalRouterContract
+        DelayedWithdrawalRouter delayedWithdrawalRouterContract,
+        RewardsCoordinator rewardsCoordinatorContract
     ) internal view {
         require(delegationContract.slasher() == slasher, "delegation: slasher address not set correctly");
         require(
@@ -440,6 +508,16 @@ contract Deployer_M2 is Script, Test {
             delayedWithdrawalRouterContract.eigenPodManager() == eigenPodManager,
             "delayedWithdrawalRouterContract: eigenPodManager address not set correctly"
         );
+
+        require(
+            rewardsCoordinatorContract.delegationManager() == delegation, 
+            "rewardsCoordinator: delegation address not set correctly"
+        );
+
+        require(
+            rewardsCoordinatorContract.strategyManager() == strategyManager, 
+            "rewardsCoordinator: strategyManager address not set correctly"
+        );
     }
 
     function _verifyImplementationsSetCorrectly() internal view {
@@ -470,6 +548,12 @@ contract Deployer_M2 is Script, Test {
                 TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter)))
             ) == address(delayedWithdrawalRouterImplementation),
             "delayedWithdrawalRouter: implementation set incorrectly"
+        );
+        require(
+            eigenLayerProxyAdmin.getProxyImplementation(
+                TransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
+            ) == address(rewardsCoordinatorImplementation),
+            "rewardsCoordinator: implementation set incorrectly"
         );
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
@@ -517,6 +601,10 @@ contract Deployer_M2 is Script, Test {
         require(
             delayedWithdrawalRouter.pauserRegistry() == eigenLayerPauserReg,
             "delayedWithdrawalRouter: pauser registry not set correctly"
+        );
+        require(
+            rewardsCoordinator.pauserRegistry() == eigenLayerPauserReg,
+            "rewardsCoordinator: pauser registry not set correctly"
         );
 
         require(eigenLayerPauserReg.isPauser(operationsMultisig), "pauserRegistry: operationsMultisig is not pauser");
