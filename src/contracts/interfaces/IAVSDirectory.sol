@@ -6,12 +6,12 @@ import "./IStrategy.sol";
 
 interface IAVSDirectory is ISignatureUtils {
     struct MemberInfo {
-        uint248 registrationCount;
-        bool isOperatorForAVS;
+        uint248 inTotalSets;
+        bool isLegacyOperator;
     }
 
     struct MemberSetInfo {
-        bool isMember;
+        bool isSetOperator;
         bool onStandby;
     }
 
@@ -30,7 +30,7 @@ interface IAVSDirectory is ISignatureUtils {
      *  Specifically, when an operator enters its first operator set for an AVS, or
      *  when it is removed from the last operator set.
      */
-    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, bool isOperatorForAVS);
+    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, bool isLegacyOperator);
 
     /// @notice Emitted when an operator is added to an operator set.
     event OperatorAddedToOperatorSet(address operator, OperatorSet operatorSet);
