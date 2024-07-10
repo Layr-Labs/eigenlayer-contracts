@@ -363,7 +363,7 @@ contract AVSDirectory is
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
-        return _calculateDigestHash(keccak256(abi.encode(OPERATOR_STANDBY_UPDATE, standbyParams, salt, expiry)));
+        return _calculateDigestHash(keccak256(abi.encode(OPERATOR_STANDBY_UPDATE_TYPEHASH, standbyParams, salt, expiry)));
     }
 
     /**
