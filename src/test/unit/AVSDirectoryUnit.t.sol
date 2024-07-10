@@ -379,13 +379,13 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         );
 
         for (uint256 i; i < oids.length; ++i) {
-            (bool isMember, ) = avsDirectory.memberSetInfo(address(this), operator, oids[i]);
-            assertTrue(isMember);
+            (bool isSetOperator, ) = avsDirectory.memberSetInfo(address(this), operator, oids[i]);
+            assertTrue(isSetOperator);
         }
 
-        (uint248 registrationCount, bool isOperatorForAVS) = avsDirectory.memberInfo(address(this), operator);
-        assertEq(registrationCount, oids.length);
-        assertTrue(isOperatorForAVS);
+        (uint248 inTotalSets, bool isLegacyOperator) = avsDirectory.memberInfo(address(this), operator);
+        assertEq(inTotalSets, oids.length);
+        assertTrue(isLegacyOperator);
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
     }
 
@@ -419,11 +419,11 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
 
-        (uint248 registrationCount, bool isOperatorForAVS) = avsDirectory.memberInfo(address(this), operator);
-        assertEq(registrationCount, 1);
-        assertTrue(isOperatorForAVS);
-        (bool isMember, ) = avsDirectory.memberSetInfo(address(this), operator, operatorSetId);
-        assertTrue(isMember);
+        (uint248 inTotalSets, bool isLegacyOperator) = avsDirectory.memberInfo(address(this), operator);
+        assertEq(inTotalSets, 1);
+        assertTrue(isLegacyOperator);
+        (bool isSetOperator, ) = avsDirectory.memberSetInfo(address(this), operator, operatorSetId);
+        assertTrue(isSetOperator);
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
     }
 
@@ -525,11 +525,11 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
 
         avsDirectory.deregisterOperatorFromOperatorSets(operator, oids);
 
-        (bool isMember, ) = avsDirectory.memberSetInfo(address(this), operator, operatorSetId);
-        assertEq(isMember, false);
-        (uint248 registrationCount, bool isOperatorForAVS) = avsDirectory.memberInfo(address(this), operator);
-        assertEq(registrationCount, 0);
-        assertEq(isOperatorForAVS, false);
+        (bool isSetOperator, ) = avsDirectory.memberSetInfo(address(this), operator, operatorSetId);
+        assertEq(isSetOperator, false);
+        (uint248 inTotalSets, bool isLegacyOperator) = avsDirectory.memberInfo(address(this), operator);
+        assertEq(inTotalSets, 0);
+        assertEq(isLegacyOperator, false);
     }
 }
 
