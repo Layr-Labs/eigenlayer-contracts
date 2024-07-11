@@ -118,12 +118,12 @@ contract AVSDirectory is
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
-                !isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
+                !isMember[msg.sender][operator][operatorSetIds[i]],
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
-            // Mutate `isOperatorInOperatorSet` to `true`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = true;
+            // Mutate `isMember` to `true`.
+            isMember[msg.sender][operator][operatorSetIds[i]] = true;
 
             emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
@@ -154,12 +154,12 @@ contract AVSDirectory is
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             // Assert `operator` is registered for this iterations operator set.
             require(
-                isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
+                isMember[msg.sender][operator][operatorSetIds[i]],
                 "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
-            // Mutate `isOperatorInOperatorSet` to `false`.
-            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = false;
+            // Mutate `isMember` to `false`.
+            isMember[msg.sender][operator][operatorSetIds[i]] = false;
 
             emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }

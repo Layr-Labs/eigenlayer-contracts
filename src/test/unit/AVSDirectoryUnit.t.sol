@@ -379,7 +379,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         );
 
         for (uint256 i; i < oids.length; ++i) {
-            assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, oids[i]));
+            assertTrue(avsDirectory.isMember(address(this), operator, oids[i]));
         }
 
         (uint248 inTotalSets, bool isLegacyOperator) = avsDirectory.memberInfo(address(this), operator);
@@ -421,7 +421,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         (uint248 inTotalSets, bool isLegacyOperator) = avsDirectory.memberInfo(address(this), operator);
         assertEq(inTotalSets, 1);
         assertTrue(isLegacyOperator);
-        assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId));
+        assertTrue(avsDirectory.isMember(address(this), operator, operatorSetId));
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
     }
 }
@@ -486,7 +486,7 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
 
         avsDirectory.deregisterOperatorFromOperatorSets(operator, oids);
 
-        assertEq(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId), false);
+        assertEq(avsDirectory.isMember(address(this), operator, operatorSetId), false);
         (uint248 inTotalSets, bool isLegacyOperator) = avsDirectory.memberInfo(address(this), operator);
         assertEq(inTotalSets, 0);
         assertEq(isLegacyOperator, false);
