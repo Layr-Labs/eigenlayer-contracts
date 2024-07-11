@@ -29,15 +29,15 @@ var (
 	_ = abi.ConvertType
 )
 
-// IOperatorSetManagerOperatorSet is an auto generated low-level Go binding around an user-defined struct.
-type IOperatorSetManagerOperatorSet struct {
+// ISlasherOperatorSet is an auto generated low-level Go binding around an user-defined struct.
+type ISlasherOperatorSet struct {
 	Avs common.Address
-	Id  [4]byte
+	Id  uint32
 }
 
 // SlasherStorageMetaData contains all meta data concerning the SlasherStorage contract.
 var SlasherStorageMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashedRate\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIOperatorSetManager.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}]},{\"name\":\"epoch\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIOperatorSetManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"shareScalingFactor\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"shareScalingFactorAtEpoch\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"epoch\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"slashOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"bipsToSlash\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slashingEpochHistory\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"slashingUpdates\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"slashingRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"scalingFactor\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSlashed\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIOperatorSetManager.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}]},{\"name\":\"bipsToSlash\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"slashingRate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashedRate\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structISlasher.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"epoch\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"shareScalingFactor\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"shareScalingFactorAtEpoch\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"epoch\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"slashOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"bipsToSlash\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slashingEpochHistory\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"slashingUpdates\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"slashingRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"scalingFactor\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
 }
 
 // SlasherStorageABI is the input ABI used to generate the binding from.
@@ -217,10 +217,10 @@ func (_SlasherStorage *SlasherStorageCallerSession) Delegation() (common.Address
 	return _SlasherStorage.Contract.Delegation(&_SlasherStorage.CallOpts)
 }
 
-// GetSlashedRate is a free data retrieval call binding the contract method 0xb59d8fdb.
+// GetSlashedRate is a free data retrieval call binding the contract method 0x10c0a606.
 //
-// Solidity: function getSlashedRate(address operator, address strategy, (address,bytes4) operatorSet, uint32 epoch) view returns(uint64)
-func (_SlasherStorage *SlasherStorageCaller) GetSlashedRate(opts *bind.CallOpts, operator common.Address, strategy common.Address, operatorSet IOperatorSetManagerOperatorSet, epoch uint32) (uint64, error) {
+// Solidity: function getSlashedRate(address operator, address strategy, (address,uint32) operatorSet, uint32 epoch) view returns(uint64)
+func (_SlasherStorage *SlasherStorageCaller) GetSlashedRate(opts *bind.CallOpts, operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet, epoch uint32) (uint64, error) {
 	var out []interface{}
 	err := _SlasherStorage.contract.Call(opts, &out, "getSlashedRate", operator, strategy, operatorSet, epoch)
 
@@ -234,49 +234,18 @@ func (_SlasherStorage *SlasherStorageCaller) GetSlashedRate(opts *bind.CallOpts,
 
 }
 
-// GetSlashedRate is a free data retrieval call binding the contract method 0xb59d8fdb.
+// GetSlashedRate is a free data retrieval call binding the contract method 0x10c0a606.
 //
-// Solidity: function getSlashedRate(address operator, address strategy, (address,bytes4) operatorSet, uint32 epoch) view returns(uint64)
-func (_SlasherStorage *SlasherStorageSession) GetSlashedRate(operator common.Address, strategy common.Address, operatorSet IOperatorSetManagerOperatorSet, epoch uint32) (uint64, error) {
+// Solidity: function getSlashedRate(address operator, address strategy, (address,uint32) operatorSet, uint32 epoch) view returns(uint64)
+func (_SlasherStorage *SlasherStorageSession) GetSlashedRate(operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet, epoch uint32) (uint64, error) {
 	return _SlasherStorage.Contract.GetSlashedRate(&_SlasherStorage.CallOpts, operator, strategy, operatorSet, epoch)
 }
 
-// GetSlashedRate is a free data retrieval call binding the contract method 0xb59d8fdb.
+// GetSlashedRate is a free data retrieval call binding the contract method 0x10c0a606.
 //
-// Solidity: function getSlashedRate(address operator, address strategy, (address,bytes4) operatorSet, uint32 epoch) view returns(uint64)
-func (_SlasherStorage *SlasherStorageCallerSession) GetSlashedRate(operator common.Address, strategy common.Address, operatorSet IOperatorSetManagerOperatorSet, epoch uint32) (uint64, error) {
+// Solidity: function getSlashedRate(address operator, address strategy, (address,uint32) operatorSet, uint32 epoch) view returns(uint64)
+func (_SlasherStorage *SlasherStorageCallerSession) GetSlashedRate(operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet, epoch uint32) (uint64, error) {
 	return _SlasherStorage.Contract.GetSlashedRate(&_SlasherStorage.CallOpts, operator, strategy, operatorSet, epoch)
-}
-
-// OperatorSetManager is a free data retrieval call binding the contract method 0xc78d4bcd.
-//
-// Solidity: function operatorSetManager() view returns(address)
-func (_SlasherStorage *SlasherStorageCaller) OperatorSetManager(opts *bind.CallOpts) (common.Address, error) {
-	var out []interface{}
-	err := _SlasherStorage.contract.Call(opts, &out, "operatorSetManager")
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// OperatorSetManager is a free data retrieval call binding the contract method 0xc78d4bcd.
-//
-// Solidity: function operatorSetManager() view returns(address)
-func (_SlasherStorage *SlasherStorageSession) OperatorSetManager() (common.Address, error) {
-	return _SlasherStorage.Contract.OperatorSetManager(&_SlasherStorage.CallOpts)
-}
-
-// OperatorSetManager is a free data retrieval call binding the contract method 0xc78d4bcd.
-//
-// Solidity: function operatorSetManager() view returns(address)
-func (_SlasherStorage *SlasherStorageCallerSession) OperatorSetManager() (common.Address, error) {
-	return _SlasherStorage.Contract.OperatorSetManager(&_SlasherStorage.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -656,24 +625,24 @@ func (_SlasherStorage *SlasherStorageTransactorSession) SetPauserRegistry(newPau
 	return _SlasherStorage.Contract.SetPauserRegistry(&_SlasherStorage.TransactOpts, newPauserRegistry)
 }
 
-// SlashOperator is a paid mutator transaction binding the contract method 0x4a1def9a.
+// SlashOperator is a paid mutator transaction binding the contract method 0x5c120057.
 //
-// Solidity: function slashOperator(address operator, bytes4 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
-func (_SlasherStorage *SlasherStorageTransactor) SlashOperator(opts *bind.TransactOpts, operator common.Address, operatorSetId [4]byte, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
+// Solidity: function slashOperator(address operator, uint32 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
+func (_SlasherStorage *SlasherStorageTransactor) SlashOperator(opts *bind.TransactOpts, operator common.Address, operatorSetId uint32, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
 	return _SlasherStorage.contract.Transact(opts, "slashOperator", operator, operatorSetId, strategies, bipsToSlash)
 }
 
-// SlashOperator is a paid mutator transaction binding the contract method 0x4a1def9a.
+// SlashOperator is a paid mutator transaction binding the contract method 0x5c120057.
 //
-// Solidity: function slashOperator(address operator, bytes4 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
-func (_SlasherStorage *SlasherStorageSession) SlashOperator(operator common.Address, operatorSetId [4]byte, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
+// Solidity: function slashOperator(address operator, uint32 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
+func (_SlasherStorage *SlasherStorageSession) SlashOperator(operator common.Address, operatorSetId uint32, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
 	return _SlasherStorage.Contract.SlashOperator(&_SlasherStorage.TransactOpts, operator, operatorSetId, strategies, bipsToSlash)
 }
 
-// SlashOperator is a paid mutator transaction binding the contract method 0x4a1def9a.
+// SlashOperator is a paid mutator transaction binding the contract method 0x5c120057.
 //
-// Solidity: function slashOperator(address operator, bytes4 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
-func (_SlasherStorage *SlasherStorageTransactorSession) SlashOperator(operator common.Address, operatorSetId [4]byte, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
+// Solidity: function slashOperator(address operator, uint32 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
+func (_SlasherStorage *SlasherStorageTransactorSession) SlashOperator(operator common.Address, operatorSetId uint32, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
 	return _SlasherStorage.Contract.SlashOperator(&_SlasherStorage.TransactOpts, operator, operatorSetId, strategies, bipsToSlash)
 }
 
@@ -847,145 +816,6 @@ func (_SlasherStorage *SlasherStorageFilterer) WatchInitialized(opts *bind.Watch
 func (_SlasherStorage *SlasherStorageFilterer) ParseInitialized(log types.Log) (*SlasherStorageInitialized, error) {
 	event := new(SlasherStorageInitialized)
 	if err := _SlasherStorage.contract.UnpackLog(event, "Initialized", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// SlasherStorageOperatorSlashedIterator is returned from FilterOperatorSlashed and is used to iterate over the raw logs and unpacked data for OperatorSlashed events raised by the SlasherStorage contract.
-type SlasherStorageOperatorSlashedIterator struct {
-	Event *SlasherStorageOperatorSlashed // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *SlasherStorageOperatorSlashedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(SlasherStorageOperatorSlashed)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(SlasherStorageOperatorSlashed)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *SlasherStorageOperatorSlashedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *SlasherStorageOperatorSlashedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// SlasherStorageOperatorSlashed represents a OperatorSlashed event raised by the SlasherStorage contract.
-type SlasherStorageOperatorSlashed struct {
-	Epoch        uint32
-	Operator     common.Address
-	Strategy     common.Address
-	OperatorSet  IOperatorSetManagerOperatorSet
-	BipsToSlash  uint32
-	SlashingRate uint64
-	Raw          types.Log // Blockchain specific contextual infos
-}
-
-// FilterOperatorSlashed is a free log retrieval operation binding the contract event 0x471fe23f2a18902ad4f5859f431c6cc59256d682c861ee3405719f2faa09f937.
-//
-// Solidity: event OperatorSlashed(uint32 epoch, address operator, address strategy, (address,bytes4) operatorSet, uint32 bipsToSlash, uint64 slashingRate)
-func (_SlasherStorage *SlasherStorageFilterer) FilterOperatorSlashed(opts *bind.FilterOpts) (*SlasherStorageOperatorSlashedIterator, error) {
-
-	logs, sub, err := _SlasherStorage.contract.FilterLogs(opts, "OperatorSlashed")
-	if err != nil {
-		return nil, err
-	}
-	return &SlasherStorageOperatorSlashedIterator{contract: _SlasherStorage.contract, event: "OperatorSlashed", logs: logs, sub: sub}, nil
-}
-
-// WatchOperatorSlashed is a free log subscription operation binding the contract event 0x471fe23f2a18902ad4f5859f431c6cc59256d682c861ee3405719f2faa09f937.
-//
-// Solidity: event OperatorSlashed(uint32 epoch, address operator, address strategy, (address,bytes4) operatorSet, uint32 bipsToSlash, uint64 slashingRate)
-func (_SlasherStorage *SlasherStorageFilterer) WatchOperatorSlashed(opts *bind.WatchOpts, sink chan<- *SlasherStorageOperatorSlashed) (event.Subscription, error) {
-
-	logs, sub, err := _SlasherStorage.contract.WatchLogs(opts, "OperatorSlashed")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(SlasherStorageOperatorSlashed)
-				if err := _SlasherStorage.contract.UnpackLog(event, "OperatorSlashed", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseOperatorSlashed is a log parse operation binding the contract event 0x471fe23f2a18902ad4f5859f431c6cc59256d682c861ee3405719f2faa09f937.
-//
-// Solidity: event OperatorSlashed(uint32 epoch, address operator, address strategy, (address,bytes4) operatorSet, uint32 bipsToSlash, uint64 slashingRate)
-func (_SlasherStorage *SlasherStorageFilterer) ParseOperatorSlashed(log types.Log) (*SlasherStorageOperatorSlashed, error) {
-	event := new(SlasherStorageOperatorSlashed)
-	if err := _SlasherStorage.contract.UnpackLog(event, "OperatorSlashed", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

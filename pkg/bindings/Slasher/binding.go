@@ -29,16 +29,40 @@ var (
 	_ = abi.ConvertType
 )
 
-// IOperatorSetManagerOperatorSet is an auto generated low-level Go binding around an user-defined struct.
-type IOperatorSetManagerOperatorSet struct {
+// ISignatureUtilsSignatureWithExpiry is an auto generated low-level Go binding around an user-defined struct.
+type ISignatureUtilsSignatureWithExpiry struct {
+	Signature []byte
+	Expiry    *big.Int
+}
+
+// ISlasherOperatorSet is an auto generated low-level Go binding around an user-defined struct.
+type ISlasherOperatorSet struct {
 	Avs common.Address
-	Id  [4]byte
+	Id  uint32
+}
+
+// SlasherMagnitudeAdjustmentParam is an auto generated low-level Go binding around an user-defined struct.
+type SlasherMagnitudeAdjustmentParam struct {
+	Strategy                   common.Address
+	OperatorSetMagnitudeParams []SlasherOperatorSetMagnitudeParam
+}
+
+// SlasherMagnitudeUpdate is an auto generated low-level Go binding around an user-defined struct.
+type SlasherMagnitudeUpdate struct {
+	Timestamp uint32
+	Magnitude uint64
+}
+
+// SlasherOperatorSetMagnitudeParam is an auto generated low-level Go binding around an user-defined struct.
+type SlasherOperatorSetMagnitudeParam struct {
+	OperatorSet   ISlasherOperatorSet
+	MagnitudeDiff uint64
 }
 
 // SlasherMetaData contains all meta data concerning the Slasher contract.
 var SlasherMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_strategyManager\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"},{\"name\":\"_delegationManager\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"},{\"name\":\"_operatorSetManager\",\"type\":\"address\",\"internalType\":\"contractIOperatorSetManager\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashedRate\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIOperatorSetManager.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}]},{\"name\":\"epoch\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lastSlashed\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIOperatorSetManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"shareScalingFactor\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"shareScalingFactorAtEpoch\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"epoch\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"slashOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"bipsToSlash\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slashingEpochHistory\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"slashingUpdates\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"slashingRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"scalingFactor\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSlashed\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIOperatorSetManager.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}]},{\"name\":\"bipsToSlash\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"slashingRate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
-	Bin: "0x60e06040523480156200001157600080fd5b50604051620019873803806200198783398101604081905262000034916200006b565b6001600160a01b0392831660805290821660a0521660c052620000bf565b6001600160a01b03811681146200006857600080fd5b50565b6000806000606084860312156200008157600080fd5b83516200008e8162000052565b6020850151909350620000a18162000052565b6040850151909250620000b48162000052565b809150509250925092565b60805160a05160c051611891620000f66000396000818161030b015261070701526000610332015260006101f301526118916000f3fe608060405234801561001057600080fd5b506004361061012c5760003560e01c80635c975abb116100ad578063c78d4bcd11610071578063c78d4bcd14610306578063df5cf7231461032d578063e49a1e8414610354578063f2fde38b14610367578063fabc1cbc1461037a57600080fd5b80635c975abb146102b6578063715018a6146102c7578063886f1195146102cf5780638da5cb5b146102e2578063b59d8fdb146102f357600080fd5b80634279a7e6116100f45780634279a7e61461022d5780634a1def9a14610255578063595c6a67146102685780635ab112d6146102705780635ac86ab71461028357600080fd5b80630b1b781e1461013157806310d67a2f1461019b578063136439dd146101b0578063334f00d6146101c357806339b70e38146101ee575b600080fd5b61017661013f3660046112e4565b60976020908152600093845260408085208252928452828420905282529020546001600160401b0380821691600160401b90041682565b604080516001600160401b039384168152929091166020830152015b60405180910390f35b6101ae6101a936600461132b565b61038d565b005b6101ae6101be366004611348565b610449565b6101d66101d1366004611361565b610588565b6040516001600160401b039091168152602001610192565b6102157f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b039091168152602001610192565b61024061023b36600461139a565b6105d8565b60405163ffffffff9091168152602001610192565b6101ae6102633660046113f1565b61062e565b6101ae610a13565b61024061027e366004611361565b610ada565b6102a66102913660046114fa565b606654600160ff9092169190911b9081161490565b6040519015158152602001610192565b606654604051908152602001610192565b6101ae610b7f565b606554610215906001600160a01b031681565b6033546001600160a01b0316610215565b6101d661030136600461151d565b610b93565b6102157f000000000000000000000000000000000000000000000000000000000000000081565b6102157f000000000000000000000000000000000000000000000000000000000000000081565b6101d66103623660046112e4565b610bfa565b6101ae61037536600461132b565b610c6e565b6101ae610388366004611348565b610ce4565b606560009054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa1580156103e0573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104049190611576565b6001600160a01b0316336001600160a01b03161461043d5760405162461bcd60e51b815260040161043490611593565b60405180910390fd5b61044681610e40565b50565b60655460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa158015610491573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104b591906115dd565b6104d15760405162461bcd60e51b8152600401610434906115ff565b6066548181161461054a5760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e70617573653a20696e76616c696420617474656d70742060448201527f746f20756e70617573652066756e6374696f6e616c69747900000000000000006064820152608401610434565b606681905560405181815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d906020015b60405180910390a250565b6001600160a01b0380831660009081526098602090815260408083209385168352929052908120546001600160401b0316806105cf57670de0b6b3a76400009150506105d2565b90505b92915050565b6099602052826000526040600020602052816000526040600020818154811061060057600080fd5b906000526020600020906008918282040191900660040292509250509054906101000a900463ffffffff1681565b8063ffffffff16600010801561064b57506127108163ffffffff16105b6106b05760405162461bcd60e51b815260206004820152603060248201527f536c61736865722e5f736c617368526571756573746564426970733a20696e7660448201526f0c2d8d2c840c4d2e0e6a8dea6d8c2e6d60831b6064820152608401610434565b604080518082019091523381526001600160e01b03198416602082015260006106d7610f37565b905060005b8451811015610a0a5760008582815181106106f9576106f9611647565b6020026020010151905060007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316633f76c6c78a8785886040518563ffffffff1660e01b8152600401610757949392919061167f565b602060405180830381865afa158015610774573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061079891906116bc565b6107ac9061ffff1663ffffffff88166116f6565b905060006107ba8a84610588565b905060006107c88284610f47565b9050609960008c6001600160a01b03166001600160a01b031681526020019081526020016000206000856001600160a01b03166001600160a01b031681526020019081526020016000208690806001815401808255809150506001900390600052602060002090600891828204019190066004029091909190916101000a81548163ffffffff021916908363ffffffff1602179055506040518060400160405280846001600160401b03168152602001826001600160401b0316815250609760008d6001600160a01b03166001600160a01b031681526020019081526020016000206000866001600160a01b03166001600160a01b0316815260200190815260200160002060008863ffffffff1663ffffffff16815260200190815260200160002060008201518160000160006101000a8154816001600160401b0302191690836001600160401b0316021790555060208201518160000160086101000a8154816001600160401b0302191690836001600160401b0316021790555090505080609860008d6001600160a01b03166001600160a01b031681526020019081526020016000206000866001600160a01b03166001600160a01b0316815260200190815260200160002060006101000a8154816001600160401b0302191690836001600160401b031602179055507f471fe23f2a18902ad4f5859f431c6cc59256d682c861ee3405719f2faa09f937868c868a8c886040516109ed96959493929190611725565b60405180910390a15050505080610a039061177b565b90506106dc565b50505050505050565b60655460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa158015610a5b573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610a7f91906115dd565b610a9b5760405162461bcd60e51b8152600401610434906115ff565b600019606681905560405190815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d9060200160405180910390a2565b6001600160a01b03808316600090815260996020908152604080832093851683529290529081205480610b115760009150506105d2565b6001600160a01b038085166000908152609960209081526040808320938716835292905220610b41600183611796565b81548110610b5157610b51611647565b90600052602060002090600891828204019190066004029054906101000a900463ffffffff169150506105d2565b610b8761109c565b610b9160006110f6565b565b600080600080610ba4888887611148565b915091508015610bee576001600160a01b038089166000908152609760209081526040808320938b16835292815282822063ffffffff86168352905220546001600160401b031692505b50909695505050505050565b6000670de0b6b3a76400008180610c12878787611148565b915091508015610c63576001600160a01b038781166000908152609760209081526040808320938a16835292815282822063ffffffff8616835290522054600160401b90046001600160401b031692505b509095945050505050565b610c7661109c565b6001600160a01b038116610cdb5760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152608401610434565b610446816110f6565b606560009054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa158015610d37573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610d5b9190611576565b6001600160a01b0316336001600160a01b031614610d8b5760405162461bcd60e51b815260040161043490611593565b606654198119606654191614610e095760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e756e70617573653a20696e76616c696420617474656d7060448201527f7420746f2070617573652066756e6374696f6e616c69747900000000000000006064820152608401610434565b606681905560405181815233907f3582d1828e26bf56bd801502bc021ac0bc8afb57c826e4986b45593c8fad389c9060200161057d565b6001600160a01b038116610ece5760405162461bcd60e51b815260206004820152604960248201527f5061757361626c652e5f73657450617573657252656769737472793a206e657760448201527f50617573657252656769737472792063616e6e6f7420626520746865207a65726064820152686f206164647265737360b81b608482015260a401610434565b606554604080516001600160a01b03928316815291831660208301527f6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6910160405180910390a1606580546001600160a01b0319166001600160a01b0392909216919091179055565b6000610f4242611213565b905090565b60006001600160401b038216610f955760405162461bcd60e51b815260206004820152601360248201527263616e6e6f7420736c61736820666f7220302560681b6044820152606401610434565b6305f5e1006001600160401b0383161115610ffe5760405162461bcd60e51b815260206004820152602360248201527f63616e6e6f7420736c617368206d6f7265207468616e2031303025206174206f6044820152626e636560e81b6064820152608401610434565b60006001600160401b0383166305f5e100148061105b57506001600160401b03808416908516611042670de0b6b3a76400006bffffffffffffffffffffffff6117ad565b61104e906000196117e2565b61105891906117e2565b10155b1561106e57506001600160401b036105cf565b61107c836305f5e1006117f6565b61108a6305f5e100866116f6565b611094919061181e565b949350505050565b6033546001600160a01b03163314610b915760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152606401610434565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b6001600160a01b0380841660009081526099602090815260408083209386168352929052908120548190819081905b8015611206576001600160a01b038089166000908152609960209081526040808320938b168352929052206111ad600183611796565b815481106111bd576111bd611647565b6000918252602090912060088204015460079091166004026101000a900463ffffffff9081169350861683116111f65760019150611206565b6111ff81611844565b9050611177565b5090969095509350505050565b6000635fc6304082101561128f5760405162461bcd60e51b815260206004820152603d60248201527f45706f63685574696c732e67657445706f636846726f6d54696d657374616d7060448201527f3a2074696d657374616d70206973206265666f72652067656e657369730000006064820152608401610434565b62093a806112a1635fc6304084611796565b6105d291906117e2565b6001600160a01b038116811461044657600080fd5b80356112cb816112ab565b919050565b803563ffffffff811681146112cb57600080fd5b6000806000606084860312156112f957600080fd5b8335611304816112ab565b92506020840135611314816112ab565b9150611322604085016112d0565b90509250925092565b60006020828403121561133d57600080fd5b81356105cf816112ab565b60006020828403121561135a57600080fd5b5035919050565b6000806040838503121561137457600080fd5b823561137f816112ab565b9150602083013561138f816112ab565b809150509250929050565b6000806000606084860312156113af57600080fd5b83356113ba816112ab565b925060208401356113ca816112ab565b929592945050506040919091013590565b634e487b7160e01b600052604160045260246000fd5b6000806000806080858703121561140757600080fd5b8435611412816112ab565b93506020858101356001600160e01b03198116811461143057600080fd5b935060408601356001600160401b038082111561144c57600080fd5b818801915088601f83011261146057600080fd5b813581811115611472576114726113db565b8060051b604051601f19603f83011681018181108582111715611497576114976113db565b60405291825284820192508381018501918b8311156114b557600080fd5b938501935b828510156114da576114cb856112c0565b845293850193928501926114ba565b8097505050505050506114ef606086016112d0565b905092959194509250565b60006020828403121561150c57600080fd5b813560ff811681146105cf57600080fd5b60008060008084860360a081121561153457600080fd5b853561153f816112ab565b9450602086013561154f816112ab565b93506040603f198201121561156357600080fd5b506040850191506114ef608086016112d0565b60006020828403121561158857600080fd5b81516105cf816112ab565b6020808252602a908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526939903ab73830bab9b2b960b11b606082015260800190565b6000602082840312156115ef57600080fd5b815180151581146105cf57600080fd5b60208082526028908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526739903830bab9b2b960c11b606082015260800190565b634e487b7160e01b600052603260045260246000fd5b80516001600160a01b031682526020908101516001600160e01b031916910152565b6001600160a01b03858116825260a082019061169e602084018761165d565b80851660608401525063ffffffff8316608083015295945050505050565b6000602082840312156116ce57600080fd5b815161ffff811681146105cf57600080fd5b634e487b7160e01b600052601160045260246000fd5b60006001600160401b038083168185168183048111821515161561171c5761171c6116e0565b02949350505050565b63ffffffff87811682526001600160a01b0387811660208401528616604083015260e0820190611758606084018761165d565b80851660a0840152506001600160401b03831660c0830152979650505050505050565b600060001982141561178f5761178f6116e0565b5060010190565b6000828210156117a8576117a86116e0565b500390565b60008160001904831182151516156117c7576117c76116e0565b500290565b634e487b7160e01b600052601260045260246000fd5b6000826117f1576117f16117cc565b500490565b60006001600160401b0383811690831681811015611816576118166116e0565b039392505050565b60006001600160401b0380841680611838576118386117cc565b92169190910492915050565b600081611853576118536116e0565b50600019019056fea26469706673582212209c03e3539ed77eb2eba2b44f15246d6e76ba113ae6b557086a5b8fa7b919590964736f6c634300080c0033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_strategyManager\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"},{\"name\":\"_delegationManager\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"_checkPendingUpdates\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structISlasher.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allocatorFor\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getAllocatorFor\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMagnitudeUpdate\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structISlasher.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"timestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"magnitudeUpdate\",\"type\":\"tuple\",\"internalType\":\"structSlasher.MagnitudeUpdate\",\"components\":[{\"name\":\"timestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"magnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashedRate\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structISlasher.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"epoch\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lastSlashed\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"queueAllocation\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"allocationParams\",\"type\":\"tuple[]\",\"internalType\":\"structSlasher.MagnitudeAdjustmentParam[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSetMagnitudeParams\",\"type\":\"tuple[]\",\"internalType\":\"structSlasher.OperatorSetMagnitudeParam[]\",\"components\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structISlasher.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"magnitudeDiff\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}]},{\"name\":\"allocatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[{\"name\":\"effectTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"queueDeallocation\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"deallocationParams\",\"type\":\"tuple[]\",\"internalType\":\"structSlasher.MagnitudeAdjustmentParam[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSetMagnitudeParams\",\"type\":\"tuple[]\",\"internalType\":\"structSlasher.OperatorSetMagnitudeParam[]\",\"components\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structISlasher.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"magnitudeDiff\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}]},{\"name\":\"allocatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[{\"name\":\"effectTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"queueMagnitudeConcentration\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonslashableDecremented\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"allocatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[{\"name\":\"newNonslashableMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"newTotalMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"queueMagnitudeDilution\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonslashableAdded\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"allocatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[{\"name\":\"newNonslashableMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"newTotalMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"shareScalingFactor\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"shareScalingFactorAtEpoch\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"epoch\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"slashOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"bipsToSlash\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slashingEpochHistory\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"slashingUpdates\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"slashingRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"scalingFactor\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"QueuedAllocation\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structISlasher.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"effectTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"slashableMagnitude\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"QueuedDeallocation\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structISlasher.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"effectTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"slashableMagnitude\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TotalAndNonSlashableMagnitudeUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"effectTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"nonSlashableMagnitude\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"totalSlashableMagnitude\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	Bin: "0x60c06040523480156200001157600080fd5b50604051620027a4380380620027a4833981016040819052620000349162000065565b6001600160a01b039182166080521660a052620000a4565b6001600160a01b03811681146200006257600080fd5b50565b600080604083850312156200007957600080fd5b825162000086816200004c565b602084015190925062000099816200004c565b809150509250929050565b60805160a0516126da620000ca600039600061046c015260006102c001526126da6000f3fe608060405234801561001057600080fd5b50600436106101a95760003560e01c80635c975abb116100f957806392d4fb9911610097578063df5cf72311610071578063df5cf72314610467578063e49a1e841461048e578063f2fde38b146104a1578063fabc1cbc146104b457600080fd5b806392d4fb9914610441578063a33820fc146103bd578063a3bf9e661461045457600080fd5b8063715018a6116100d3578063715018a614610402578063886f11951461040a5780638da5cb5b1461041d5780638f96d9c71461042e57600080fd5b80635c975abb146103ac5780635f83102a146103bd57806367e988de146103d657600080fd5b806339b70e3811610166578063595c6a6711610140578063595c6a671461034b5780635ab112d6146103535780635ac86ab7146103665780635c1200571461039957600080fd5b806339b70e38146102bb5780634279a7e6146102fa57806353fb2adf1461032257600080fd5b80630b1b781e146101ae57806310c0a6061461021857806310d67a2f14610243578063136439dd1461025857806316449dae1461026b578063334f00d6146102a8575b600080fd5b6101f36101bc366004611fb8565b60976020908152600093845260408085208252928452828420905282529020546001600160401b0380821691600160401b90041682565b604080516001600160401b039384168152929091166020830152015b60405180910390f35b61022b610226366004612017565b6104c7565b6040516001600160401b03909116815260200161020f565b610256610251366004612070565b61052e565b005b61025661026636600461208d565b6105ea565b61027e610279366004612017565b610729565b60408051825163ffffffff1681526020928301516001600160401b0316928101929092520161020f565b61022b6102b63660046120a6565b610970565b6102e27f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200161020f565b61030d6103083660046120df565b6109c0565b60405163ffffffff909116815260200161020f565b6102e2610330366004612070565b609c602052600090815260409020546001600160a01b031681565b610256610a16565b61030d6103613660046120a6565b610add565b610389610374366004612120565b606654600160ff9092169190911b9081161490565b604051901515815260200161020f565b6102566103a7366004612159565b610b82565b60665460405190815260200161020f565b6101f36103cb36600461225f565b600080935093915050565b6102e26103e4366004612070565b6001600160a01b039081166000908152609c60205260409020541690565b610256610d77565b6065546102e2906001600160a01b031681565b6033546001600160a01b03166102e2565b61030d61043c3660046122be565b610d8b565b61025661044f36600461236a565b611058565b61030d6104623660046122be565b61125c565b6102e27f000000000000000000000000000000000000000000000000000000000000000081565b61022b61049c366004611fb8565b611501565b6102566104af366004612070565b611575565b6102566104c236600461208d565b6115eb565b6000806000806104d8888887611747565b915091508015610522576001600160a01b038089166000908152609760209081526040808320938b16835292815282822063ffffffff86168352905220546001600160401b031692505b50909695505050505050565b606560009054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa158015610581573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906105a591906123a9565b6001600160a01b0316336001600160a01b0316146105de5760405162461bcd60e51b81526004016105d5906123c6565b60405180910390fd5b6105e781611812565b50565b60655460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa158015610632573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106569190612410565b6106725760405162461bcd60e51b81526004016105d590612432565b606654818116146106eb5760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e70617573653a20696e76616c696420617474656d70742060448201527f746f20756e70617573652066756e6374696f6e616c697479000000000000000060648201526084016105d5565b606681905560405181815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d906020015b60405180910390a250565b604080518082018252600080825260208083018290526001600160a01b038881168352609a8252848320908816835281529281209192909190829061077090870187612070565b6001600160a01b03166001600160a01b0316815260200190815260200160002060008560200160208101906107a5919061247a565b63ffffffff168152602081019190915260400160009081205491506107cb6001836124b2565b90505b6001600160a01b038088166000908152609a60209081526040808320938a16835292815291812063ffffffff87169290919061080c90890189612070565b6001600160a01b03166001600160a01b031681526020019081526020016000206000876020016020810190610841919061247a565b63ffffffff1663ffffffff168152602001908152602001600020828154811061086c5761086c6124c9565b60009182526020909120015463ffffffff1611610956576001600160a01b038088166000908152609a60209081526040808320938a168352928152918120916108b790880188612070565b6001600160a01b03166001600160a01b0316815260200190815260200160002060008660200160208101906108ec919061247a565b63ffffffff1663ffffffff1681526020019081526020016000208181548110610917576109176124c9565b60009182526020918290206040805180820190915291015463ffffffff81168252600160201b90046001600160401b0316918101919091529250610966565b61095f816124df565b90506107ce565b5050949350505050565b6001600160a01b0380831660009081526098602090815260408083209385168352929052908120546001600160401b0316806109b757670de0b6b3a76400009150506109ba565b90505b92915050565b609960205282600052604060002060205281600052604060002081815481106109e857600080fd5b906000526020600020906008918282040191900660040292509250509054906101000a900463ffffffff1681565b60655460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa158015610a5e573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610a829190612410565b610a9e5760405162461bcd60e51b81526004016105d590612432565b600019606681905560405190815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d9060200160405180910390a2565b6001600160a01b03808316600090815260996020908152604080832093851683529290529081205480610b145760009150506109ba565b6001600160a01b038085166000908152609960209081526040808320938716835292905220610b446001836124b2565b81548110610b5457610b546124c9565b90600052602060002090600891828204019190066004029054906101000a900463ffffffff169150506109ba565b8063ffffffff166000108015610b9f57506127108163ffffffff16105b610c045760405162461bcd60e51b815260206004820152603060248201527f536c61736865722e5f736c617368526571756573746564426970733a20696e7660448201526f0c2d8d2c840c4d2e0e6a8dea6d8c2e6d60831b60648201526084016105d5565b6040805180820190915233815263ffffffff841660208201526000610c27611909565b905060005b8451811015610d6e576000858281518110610c4957610c496124c9565b60200260200101519050600080610c608a84610970565b90506000610c6e8284611919565b6001600160a01b03808d1660008181526099602090815260408083209990941680835298815283822080546001810182559083528183206008820401805463ffffffff808f1660046007909516949094026101000a848102910219909116179055845180860186526001600160401b03998a168152958916868301818152858552609784528685208c865284528685209285529183528584209651875492518b16600160401b026fffffffffffffffffffffffffffffffff199093169a1699909917179094559081526098835281812096815295909152909320805467ffffffffffffffff191690921790915550610d679050816124f6565b9050610c2c565b50505050505050565b610d7f611a6e565b610d896000611ac8565b565b6000336001600160a01b03861614801590610dc057506001600160a01b038581166000908152609c6020526040902054163314155b50610dce621baf8042612511565b905060005b8381101561104f576000858583818110610def57610def6124c9565b9050602002810190610e019190612529565b610e0f906020810190612070565b90506000610e1d8883611b1a565b8054909150600160601b90046001600160401b031660005b888886818110610e4757610e476124c9565b9050602002810190610e599190612529565b610e67906020810190612549565b90508110156110175736898987818110610e8357610e836124c9565b9050602002810190610e959190612529565b610ea3906020810190612549565b83818110610eb357610eb36124c9565b905060600201600001905060008a8a88818110610ed257610ed26124c9565b9050602002810190610ee49190612529565b610ef2906020810190612549565b84818110610f0257610f026124c9565b9050606002016040016020810190610f1a9190612598565b9050610f278c8784611058565b836001600160401b0316816001600160401b03161115610fbd5760405162461bcd60e51b8152602060048201526044602482018190527f536c61736865722e7175657565416c6c6f636174696f6e3a206d61676e697475908201527f6465446966662065786365656473206e6f6e736c61736861626c654d61676e696064820152637475646560e01b608482015260a4016105d5565b6000610fca8d8885611b72565b8054909150600160201b90046001600160401b0316610ff68e898685610ff088876125b3565b8f611ca6565b61100083876125de565b95505050505080611010906124f6565b9050610e35565b50815461103b908a9085908590600160201b90046001600160401b0316858a611dcd565b50505080611048906124f6565b9050610dd3565b50949350505050565b6001600160a01b038084166000908152609a6020908152604080832093861683529281529181209091829061108f90850185612070565b6001600160a01b03166001600160a01b0316815260200190815260200160002060008360200160208101906110c4919061247a565b63ffffffff1681526020810191909152604001600020549050806110e85750505050565b60006110f56001836124b2565b90505b6001600160a01b038086166000908152609a602090815260408083209388168352928152918120429290919061113090870187612070565b6001600160a01b03166001600160a01b031681526020019081526020016000206000856020016020810190611165919061247a565b63ffffffff1663ffffffff1681526020019081526020016000208281548110611190576111906124c9565b60009182526020909120015463ffffffff16116111ac57611255565b6003816111ba6001856124b2565b6111c491906124b2565b106112455760405162461bcd60e51b815260206004820152604560248201527f536c61736865722e5f636865636b50656e64696e67557064617465733a20636160448201527f6e6e6f742068617665206d6f7265207468616e20332070656e64696e67207570606482015264646174657360d81b608482015260a4016105d5565b61124e816124df565b90506110f8565b5050505050565b6000336001600160a01b0386161480159061129157506001600160a01b038581166000908152609c6020526040902054163314155b5061129f621baf8042612511565b905060005b8381101561104f5760008585838181106112c0576112c06124c9565b90506020028101906112d29190612529565b6112e0906020810190612070565b905060006112ee8883611b1a565b8054909150600160601b90046001600160401b031660005b888886818110611318576113186124c9565b905060200281019061132a9190612529565b611338906020810190612549565b90508110156114c95736898987818110611354576113546124c9565b90506020028101906113669190612529565b611374906020810190612549565b83818110611384576113846124c9565b905060600201600001905060008a8a888181106113a3576113a36124c9565b90506020028101906113b59190612529565b6113c3906020810190612549565b848181106113d3576113d36124c9565b90506060020160400160208101906113eb9190612598565b905060006113fa8d8885611b72565b80549091506001600160401b03600160201b90910481169083168110156114975760405162461bcd60e51b8152602060048201526044602482018190527f536c61736865722e71756575654465616c6c6f636174696f6e3a206d61676e69908201527f7475646544696666206578636565647320616c6c6f6361746564206d61676e696064820152637475646560e01b608482015260a4016105d5565b6114a88e898685610ff088876125de565b6114b283876125b3565b955050505050806114c2906124f6565b9050611306565b5081546114ed908a9085908590600160201b90046001600160401b0316858a611dcd565b505050806114fa906124f6565b90506112a4565b6000670de0b6b3a76400008180611519878787611747565b91509150801561156a576001600160a01b038781166000908152609760209081526040808320938a16835292815282822063ffffffff8616835290522054600160401b90046001600160401b031692505b509095945050505050565b61157d611a6e565b6001600160a01b0381166115e25760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b60648201526084016105d5565b6105e781611ac8565b606560009054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa15801561163e573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061166291906123a9565b6001600160a01b0316336001600160a01b0316146116925760405162461bcd60e51b81526004016105d5906123c6565b6066541981196066541916146117105760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e756e70617573653a20696e76616c696420617474656d7060448201527f7420746f2070617573652066756e6374696f6e616c697479000000000000000060648201526084016105d5565b606681905560405181815233907f3582d1828e26bf56bd801502bc021ac0bc8afb57c826e4986b45593c8fad389c9060200161071e565b6001600160a01b0380841660009081526099602090815260408083209386168352929052908120548190819081905b8015611805576001600160a01b038089166000908152609960209081526040808320938b168352929052206117ac6001836124b2565b815481106117bc576117bc6124c9565b6000918252602090912060088204015460079091166004026101000a900463ffffffff9081169350861683116117f55760019150611805565b6117fe816124df565b9050611776565b5090969095509350505050565b6001600160a01b0381166118a05760405162461bcd60e51b815260206004820152604960248201527f5061757361626c652e5f73657450617573657252656769737472793a206e657760448201527f50617573657252656769737472792063616e6e6f7420626520746865207a65726064820152686f206164647265737360b81b608482015260a4016105d5565b606554604080516001600160a01b03928316815291831660208301527f6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6910160405180910390a1606580546001600160a01b0319166001600160a01b0392909216919091179055565b600061191442611ee7565b905090565b60006001600160401b0382166119675760405162461bcd60e51b815260206004820152601360248201527263616e6e6f7420736c61736820666f7220302560681b60448201526064016105d5565b6305f5e1006001600160401b03831611156119d05760405162461bcd60e51b815260206004820152602360248201527f63616e6e6f7420736c617368206d6f7265207468616e2031303025206174206f6044820152626e636560e81b60648201526084016105d5565b60006001600160401b0383166305f5e1001480611a2d57506001600160401b03808416908516611a14670de0b6b3a76400006bffffffffffffffffffffffff612606565b611a209060001961263b565b611a2a919061263b565b10155b15611a4057506001600160401b036109b7565b611a4e836305f5e1006125de565b611a5c6305f5e1008661264f565b611a66919061267e565b949350505050565b6033546001600160a01b03163314610d895760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657260448201526064016105d5565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b6001600160a01b038281166000908152609b602090815260408083209385168352929052908120805490611b4f6001836124b2565b81548110611b5f57611b5f6124c9565b9060005260206000200191505092915050565b6001600160a01b038084166000908152609a60209081526040808320938616835292815291812090918291908290611bac90860186612070565b6001600160a01b03166001600160a01b031681526020019081526020016000206000846020016020810190611be1919061247a565b63ffffffff16815260208082019290925260409081016000908120546001600160a01b03808a168352609a8552838320908916835284529181209193509091611c2c90860186612070565b6001600160a01b03166001600160a01b031681526020019081526020016000206000846020016020810190611c61919061247a565b63ffffffff1681526020810191909152604001600020611c826001836124b2565b81548110611c9257611c926124c9565b906000526020600020019150509392505050565b825463ffffffff82811691161415611ce15782546bffffffffffffffff000000001916600160201b6001600160401b03841602178355611dc5565b6001600160a01b038087166000908152609a60209081526040808320938916835292815291812091611d1590870187612070565b6001600160a01b03166001600160a01b031681526020019081526020016000206000856020016020810190611d4a919061247a565b63ffffffff908116825260208083019390935260409182016000908120835180850190945285831684526001600160401b038088168587019081528254600181018455928452959092209351930180549451909116600160201b026bffffffffffffffffffffffff1990941692909116919091179190911790555b505050505050565b835463ffffffff82811691161415611e315783546001600160401b03838116600160601b0267ffffffffffffffff60601b19918616600160201b029190911673ffffffffffffffffffffffffffffffff000000001990921691909117178455611dc5565b6001600160a01b038087166000908152609b602090815260408083209389168352928152828220835160608101855263ffffffff80871682526001600160401b03808a168386019081528982169784019788528454600181018655948752949095209151919092018054935195518516600160601b0267ffffffffffffffff60601b1996909516600160201b026bffffffffffffffffffffffff1990941691909216179190911792909216179055505050505050565b6000635fc63040821015611f635760405162461bcd60e51b815260206004820152603d60248201527f45706f63685574696c732e67657445706f636846726f6d54696d657374616d7060448201527f3a2074696d657374616d70206973206265666f72652067656e6573697300000060648201526084016105d5565b62093a80611f75635fc63040846124b2565b6109ba919061263b565b6001600160a01b03811681146105e757600080fd5b8035611f9f81611f7f565b919050565b803563ffffffff81168114611f9f57600080fd5b600080600060608486031215611fcd57600080fd5b8335611fd881611f7f565b92506020840135611fe881611f7f565b9150611ff660408501611fa4565b90509250925092565b60006040828403121561201157600080fd5b50919050565b60008060008060a0858703121561202d57600080fd5b843561203881611f7f565b9350602085013561204881611f7f565b92506120578660408701611fff565b915061206560808601611fa4565b905092959194509250565b60006020828403121561208257600080fd5b81356109b781611f7f565b60006020828403121561209f57600080fd5b5035919050565b600080604083850312156120b957600080fd5b82356120c481611f7f565b915060208301356120d481611f7f565b809150509250929050565b6000806000606084860312156120f457600080fd5b83356120ff81611f7f565b9250602084013561210f81611f7f565b929592945050506040919091013590565b60006020828403121561213257600080fd5b813560ff811681146109b757600080fd5b634e487b7160e01b600052604160045260246000fd5b6000806000806080858703121561216f57600080fd5b843561217a81611f7f565b93506020612189868201611fa4565b935060408601356001600160401b03808211156121a557600080fd5b818801915088601f8301126121b957600080fd5b8135818111156121cb576121cb612143565b8060051b604051601f19603f830116810181811085821117156121f0576121f0612143565b60405291825284820192508381018501918b83111561220e57600080fd5b938501935b828510156122335761222485611f94565b84529385019392850192612213565b80975050505050505061206560608601611fa4565b80356001600160401b0381168114611f9f57600080fd5b60008060006060848603121561227457600080fd5b833561227f81611f7f565b925061228d60208501612248565b915060408401356001600160401b038111156122a857600080fd5b6122b486828701611fff565b9150509250925092565b600080600080606085870312156122d457600080fd5b84356122df81611f7f565b935060208501356001600160401b03808211156122fb57600080fd5b818701915087601f83011261230f57600080fd5b81358181111561231e57600080fd5b8860208260051b850101111561233357600080fd5b60208301955080945050604087013591508082111561235157600080fd5b5061235e87828801611fff565b91505092959194509250565b60008060006080848603121561237f57600080fd5b833561238a81611f7f565b9250602084013561239a81611f7f565b9150611ff68560408601611fff565b6000602082840312156123bb57600080fd5b81516109b781611f7f565b6020808252602a908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526939903ab73830bab9b2b960b11b606082015260800190565b60006020828403121561242257600080fd5b815180151581146109b757600080fd5b60208082526028908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526739903830bab9b2b960c11b606082015260800190565b60006020828403121561248c57600080fd5b61249582611fa4565b9392505050565b634e487b7160e01b600052601160045260246000fd5b6000828210156124c4576124c461249c565b500390565b634e487b7160e01b600052603260045260246000fd5b6000816124ee576124ee61249c565b506000190190565b600060001982141561250a5761250a61249c565b5060010190565b600082198211156125245761252461249c565b500190565b60008235603e1983360301811261253f57600080fd5b9190910192915050565b6000808335601e1984360301811261256057600080fd5b8301803591506001600160401b0382111561257a57600080fd5b602001915060608102360382131561259157600080fd5b9250929050565b6000602082840312156125aa57600080fd5b61249582612248565b60006001600160401b038083168185168083038211156125d5576125d561249c565b01949350505050565b60006001600160401b03838116908316818110156125fe576125fe61249c565b039392505050565b60008160001904831182151516156126205761262061249c565b500290565b634e487b7160e01b600052601260045260246000fd5b60008261264a5761264a612625565b500490565b60006001600160401b03808316818516818304811182151516156126755761267561249c565b02949350505050565b60006001600160401b038084168061269857612698612625565b9216919091049291505056fea26469706673582212200dd229189ef3bbb5b81571a82f22315b0ced05db7a97ae8b41089b8fd687a4b764736f6c634300080c0033",
 }
 
 // SlasherABI is the input ABI used to generate the binding from.
@@ -50,7 +74,7 @@ var SlasherABI = SlasherMetaData.ABI
 var SlasherBin = SlasherMetaData.Bin
 
 // DeploySlasher deploys a new Ethereum contract, binding an instance of Slasher to it.
-func DeploySlasher(auth *bind.TransactOpts, backend bind.ContractBackend, _strategyManager common.Address, _delegationManager common.Address, _operatorSetManager common.Address) (common.Address, *types.Transaction, *Slasher, error) {
+func DeploySlasher(auth *bind.TransactOpts, backend bind.ContractBackend, _strategyManager common.Address, _delegationManager common.Address) (common.Address, *types.Transaction, *Slasher, error) {
 	parsed, err := SlasherMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, nil, err
@@ -59,7 +83,7 @@ func DeploySlasher(auth *bind.TransactOpts, backend bind.ContractBackend, _strat
 		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(SlasherBin), backend, _strategyManager, _delegationManager, _operatorSetManager)
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(SlasherBin), backend, _strategyManager, _delegationManager)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -208,6 +232,66 @@ func (_Slasher *SlasherTransactorRaw) Transact(opts *bind.TransactOpts, method s
 	return _Slasher.Contract.contract.Transact(opts, method, params...)
 }
 
+// CheckPendingUpdates is a free data retrieval call binding the contract method 0x92d4fb99.
+//
+// Solidity: function _checkPendingUpdates(address operator, address strategy, (address,uint32) operatorSet) view returns()
+func (_Slasher *SlasherCaller) CheckPendingUpdates(opts *bind.CallOpts, operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet) error {
+	var out []interface{}
+	err := _Slasher.contract.Call(opts, &out, "_checkPendingUpdates", operator, strategy, operatorSet)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+
+}
+
+// CheckPendingUpdates is a free data retrieval call binding the contract method 0x92d4fb99.
+//
+// Solidity: function _checkPendingUpdates(address operator, address strategy, (address,uint32) operatorSet) view returns()
+func (_Slasher *SlasherSession) CheckPendingUpdates(operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet) error {
+	return _Slasher.Contract.CheckPendingUpdates(&_Slasher.CallOpts, operator, strategy, operatorSet)
+}
+
+// CheckPendingUpdates is a free data retrieval call binding the contract method 0x92d4fb99.
+//
+// Solidity: function _checkPendingUpdates(address operator, address strategy, (address,uint32) operatorSet) view returns()
+func (_Slasher *SlasherCallerSession) CheckPendingUpdates(operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet) error {
+	return _Slasher.Contract.CheckPendingUpdates(&_Slasher.CallOpts, operator, strategy, operatorSet)
+}
+
+// AllocatorFor is a free data retrieval call binding the contract method 0x53fb2adf.
+//
+// Solidity: function allocatorFor(address ) view returns(address)
+func (_Slasher *SlasherCaller) AllocatorFor(opts *bind.CallOpts, arg0 common.Address) (common.Address, error) {
+	var out []interface{}
+	err := _Slasher.contract.Call(opts, &out, "allocatorFor", arg0)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// AllocatorFor is a free data retrieval call binding the contract method 0x53fb2adf.
+//
+// Solidity: function allocatorFor(address ) view returns(address)
+func (_Slasher *SlasherSession) AllocatorFor(arg0 common.Address) (common.Address, error) {
+	return _Slasher.Contract.AllocatorFor(&_Slasher.CallOpts, arg0)
+}
+
+// AllocatorFor is a free data retrieval call binding the contract method 0x53fb2adf.
+//
+// Solidity: function allocatorFor(address ) view returns(address)
+func (_Slasher *SlasherCallerSession) AllocatorFor(arg0 common.Address) (common.Address, error) {
+	return _Slasher.Contract.AllocatorFor(&_Slasher.CallOpts, arg0)
+}
+
 // Delegation is a free data retrieval call binding the contract method 0xdf5cf723.
 //
 // Solidity: function delegation() view returns(address)
@@ -239,10 +323,72 @@ func (_Slasher *SlasherCallerSession) Delegation() (common.Address, error) {
 	return _Slasher.Contract.Delegation(&_Slasher.CallOpts)
 }
 
-// GetSlashedRate is a free data retrieval call binding the contract method 0xb59d8fdb.
+// GetAllocatorFor is a free data retrieval call binding the contract method 0x67e988de.
 //
-// Solidity: function getSlashedRate(address operator, address strategy, (address,bytes4) operatorSet, uint32 epoch) view returns(uint64)
-func (_Slasher *SlasherCaller) GetSlashedRate(opts *bind.CallOpts, operator common.Address, strategy common.Address, operatorSet IOperatorSetManagerOperatorSet, epoch uint32) (uint64, error) {
+// Solidity: function getAllocatorFor(address operator) view returns(address)
+func (_Slasher *SlasherCaller) GetAllocatorFor(opts *bind.CallOpts, operator common.Address) (common.Address, error) {
+	var out []interface{}
+	err := _Slasher.contract.Call(opts, &out, "getAllocatorFor", operator)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// GetAllocatorFor is a free data retrieval call binding the contract method 0x67e988de.
+//
+// Solidity: function getAllocatorFor(address operator) view returns(address)
+func (_Slasher *SlasherSession) GetAllocatorFor(operator common.Address) (common.Address, error) {
+	return _Slasher.Contract.GetAllocatorFor(&_Slasher.CallOpts, operator)
+}
+
+// GetAllocatorFor is a free data retrieval call binding the contract method 0x67e988de.
+//
+// Solidity: function getAllocatorFor(address operator) view returns(address)
+func (_Slasher *SlasherCallerSession) GetAllocatorFor(operator common.Address) (common.Address, error) {
+	return _Slasher.Contract.GetAllocatorFor(&_Slasher.CallOpts, operator)
+}
+
+// GetMagnitudeUpdate is a free data retrieval call binding the contract method 0x16449dae.
+//
+// Solidity: function getMagnitudeUpdate(address operator, address strategy, (address,uint32) operatorSet, uint32 timestamp) view returns((uint32,uint64) magnitudeUpdate)
+func (_Slasher *SlasherCaller) GetMagnitudeUpdate(opts *bind.CallOpts, operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet, timestamp uint32) (SlasherMagnitudeUpdate, error) {
+	var out []interface{}
+	err := _Slasher.contract.Call(opts, &out, "getMagnitudeUpdate", operator, strategy, operatorSet, timestamp)
+
+	if err != nil {
+		return *new(SlasherMagnitudeUpdate), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(SlasherMagnitudeUpdate)).(*SlasherMagnitudeUpdate)
+
+	return out0, err
+
+}
+
+// GetMagnitudeUpdate is a free data retrieval call binding the contract method 0x16449dae.
+//
+// Solidity: function getMagnitudeUpdate(address operator, address strategy, (address,uint32) operatorSet, uint32 timestamp) view returns((uint32,uint64) magnitudeUpdate)
+func (_Slasher *SlasherSession) GetMagnitudeUpdate(operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet, timestamp uint32) (SlasherMagnitudeUpdate, error) {
+	return _Slasher.Contract.GetMagnitudeUpdate(&_Slasher.CallOpts, operator, strategy, operatorSet, timestamp)
+}
+
+// GetMagnitudeUpdate is a free data retrieval call binding the contract method 0x16449dae.
+//
+// Solidity: function getMagnitudeUpdate(address operator, address strategy, (address,uint32) operatorSet, uint32 timestamp) view returns((uint32,uint64) magnitudeUpdate)
+func (_Slasher *SlasherCallerSession) GetMagnitudeUpdate(operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet, timestamp uint32) (SlasherMagnitudeUpdate, error) {
+	return _Slasher.Contract.GetMagnitudeUpdate(&_Slasher.CallOpts, operator, strategy, operatorSet, timestamp)
+}
+
+// GetSlashedRate is a free data retrieval call binding the contract method 0x10c0a606.
+//
+// Solidity: function getSlashedRate(address operator, address strategy, (address,uint32) operatorSet, uint32 epoch) view returns(uint64)
+func (_Slasher *SlasherCaller) GetSlashedRate(opts *bind.CallOpts, operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet, epoch uint32) (uint64, error) {
 	var out []interface{}
 	err := _Slasher.contract.Call(opts, &out, "getSlashedRate", operator, strategy, operatorSet, epoch)
 
@@ -256,17 +402,17 @@ func (_Slasher *SlasherCaller) GetSlashedRate(opts *bind.CallOpts, operator comm
 
 }
 
-// GetSlashedRate is a free data retrieval call binding the contract method 0xb59d8fdb.
+// GetSlashedRate is a free data retrieval call binding the contract method 0x10c0a606.
 //
-// Solidity: function getSlashedRate(address operator, address strategy, (address,bytes4) operatorSet, uint32 epoch) view returns(uint64)
-func (_Slasher *SlasherSession) GetSlashedRate(operator common.Address, strategy common.Address, operatorSet IOperatorSetManagerOperatorSet, epoch uint32) (uint64, error) {
+// Solidity: function getSlashedRate(address operator, address strategy, (address,uint32) operatorSet, uint32 epoch) view returns(uint64)
+func (_Slasher *SlasherSession) GetSlashedRate(operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet, epoch uint32) (uint64, error) {
 	return _Slasher.Contract.GetSlashedRate(&_Slasher.CallOpts, operator, strategy, operatorSet, epoch)
 }
 
-// GetSlashedRate is a free data retrieval call binding the contract method 0xb59d8fdb.
+// GetSlashedRate is a free data retrieval call binding the contract method 0x10c0a606.
 //
-// Solidity: function getSlashedRate(address operator, address strategy, (address,bytes4) operatorSet, uint32 epoch) view returns(uint64)
-func (_Slasher *SlasherCallerSession) GetSlashedRate(operator common.Address, strategy common.Address, operatorSet IOperatorSetManagerOperatorSet, epoch uint32) (uint64, error) {
+// Solidity: function getSlashedRate(address operator, address strategy, (address,uint32) operatorSet, uint32 epoch) view returns(uint64)
+func (_Slasher *SlasherCallerSession) GetSlashedRate(operator common.Address, strategy common.Address, operatorSet ISlasherOperatorSet, epoch uint32) (uint64, error) {
 	return _Slasher.Contract.GetSlashedRate(&_Slasher.CallOpts, operator, strategy, operatorSet, epoch)
 }
 
@@ -299,37 +445,6 @@ func (_Slasher *SlasherSession) LastSlashed(operator common.Address, strategy co
 // Solidity: function lastSlashed(address operator, address strategy) view returns(uint32)
 func (_Slasher *SlasherCallerSession) LastSlashed(operator common.Address, strategy common.Address) (uint32, error) {
 	return _Slasher.Contract.LastSlashed(&_Slasher.CallOpts, operator, strategy)
-}
-
-// OperatorSetManager is a free data retrieval call binding the contract method 0xc78d4bcd.
-//
-// Solidity: function operatorSetManager() view returns(address)
-func (_Slasher *SlasherCaller) OperatorSetManager(opts *bind.CallOpts) (common.Address, error) {
-	var out []interface{}
-	err := _Slasher.contract.Call(opts, &out, "operatorSetManager")
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// OperatorSetManager is a free data retrieval call binding the contract method 0xc78d4bcd.
-//
-// Solidity: function operatorSetManager() view returns(address)
-func (_Slasher *SlasherSession) OperatorSetManager() (common.Address, error) {
-	return _Slasher.Contract.OperatorSetManager(&_Slasher.CallOpts)
-}
-
-// OperatorSetManager is a free data retrieval call binding the contract method 0xc78d4bcd.
-//
-// Solidity: function operatorSetManager() view returns(address)
-func (_Slasher *SlasherCallerSession) OperatorSetManager() (common.Address, error) {
-	return _Slasher.Contract.OperatorSetManager(&_Slasher.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -667,6 +782,90 @@ func (_Slasher *SlasherTransactorSession) PauseAll() (*types.Transaction, error)
 	return _Slasher.Contract.PauseAll(&_Slasher.TransactOpts)
 }
 
+// QueueAllocation is a paid mutator transaction binding the contract method 0x8f96d9c7.
+//
+// Solidity: function queueAllocation(address operator, (address,((address,uint32),uint64)[])[] allocationParams, (bytes,uint256) allocatorSignature) returns(uint32 effectTimestamp)
+func (_Slasher *SlasherTransactor) QueueAllocation(opts *bind.TransactOpts, operator common.Address, allocationParams []SlasherMagnitudeAdjustmentParam, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.contract.Transact(opts, "queueAllocation", operator, allocationParams, allocatorSignature)
+}
+
+// QueueAllocation is a paid mutator transaction binding the contract method 0x8f96d9c7.
+//
+// Solidity: function queueAllocation(address operator, (address,((address,uint32),uint64)[])[] allocationParams, (bytes,uint256) allocatorSignature) returns(uint32 effectTimestamp)
+func (_Slasher *SlasherSession) QueueAllocation(operator common.Address, allocationParams []SlasherMagnitudeAdjustmentParam, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.Contract.QueueAllocation(&_Slasher.TransactOpts, operator, allocationParams, allocatorSignature)
+}
+
+// QueueAllocation is a paid mutator transaction binding the contract method 0x8f96d9c7.
+//
+// Solidity: function queueAllocation(address operator, (address,((address,uint32),uint64)[])[] allocationParams, (bytes,uint256) allocatorSignature) returns(uint32 effectTimestamp)
+func (_Slasher *SlasherTransactorSession) QueueAllocation(operator common.Address, allocationParams []SlasherMagnitudeAdjustmentParam, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.Contract.QueueAllocation(&_Slasher.TransactOpts, operator, allocationParams, allocatorSignature)
+}
+
+// QueueDeallocation is a paid mutator transaction binding the contract method 0xa3bf9e66.
+//
+// Solidity: function queueDeallocation(address operator, (address,((address,uint32),uint64)[])[] deallocationParams, (bytes,uint256) allocatorSignature) returns(uint32 effectTimestamp)
+func (_Slasher *SlasherTransactor) QueueDeallocation(opts *bind.TransactOpts, operator common.Address, deallocationParams []SlasherMagnitudeAdjustmentParam, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.contract.Transact(opts, "queueDeallocation", operator, deallocationParams, allocatorSignature)
+}
+
+// QueueDeallocation is a paid mutator transaction binding the contract method 0xa3bf9e66.
+//
+// Solidity: function queueDeallocation(address operator, (address,((address,uint32),uint64)[])[] deallocationParams, (bytes,uint256) allocatorSignature) returns(uint32 effectTimestamp)
+func (_Slasher *SlasherSession) QueueDeallocation(operator common.Address, deallocationParams []SlasherMagnitudeAdjustmentParam, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.Contract.QueueDeallocation(&_Slasher.TransactOpts, operator, deallocationParams, allocatorSignature)
+}
+
+// QueueDeallocation is a paid mutator transaction binding the contract method 0xa3bf9e66.
+//
+// Solidity: function queueDeallocation(address operator, (address,((address,uint32),uint64)[])[] deallocationParams, (bytes,uint256) allocatorSignature) returns(uint32 effectTimestamp)
+func (_Slasher *SlasherTransactorSession) QueueDeallocation(operator common.Address, deallocationParams []SlasherMagnitudeAdjustmentParam, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.Contract.QueueDeallocation(&_Slasher.TransactOpts, operator, deallocationParams, allocatorSignature)
+}
+
+// QueueMagnitudeConcentration is a paid mutator transaction binding the contract method 0xa33820fc.
+//
+// Solidity: function queueMagnitudeConcentration(address operator, uint64 nonslashableDecremented, (bytes,uint256) allocatorSignature) returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude)
+func (_Slasher *SlasherTransactor) QueueMagnitudeConcentration(opts *bind.TransactOpts, operator common.Address, nonslashableDecremented uint64, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.contract.Transact(opts, "queueMagnitudeConcentration", operator, nonslashableDecremented, allocatorSignature)
+}
+
+// QueueMagnitudeConcentration is a paid mutator transaction binding the contract method 0xa33820fc.
+//
+// Solidity: function queueMagnitudeConcentration(address operator, uint64 nonslashableDecremented, (bytes,uint256) allocatorSignature) returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude)
+func (_Slasher *SlasherSession) QueueMagnitudeConcentration(operator common.Address, nonslashableDecremented uint64, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.Contract.QueueMagnitudeConcentration(&_Slasher.TransactOpts, operator, nonslashableDecremented, allocatorSignature)
+}
+
+// QueueMagnitudeConcentration is a paid mutator transaction binding the contract method 0xa33820fc.
+//
+// Solidity: function queueMagnitudeConcentration(address operator, uint64 nonslashableDecremented, (bytes,uint256) allocatorSignature) returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude)
+func (_Slasher *SlasherTransactorSession) QueueMagnitudeConcentration(operator common.Address, nonslashableDecremented uint64, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.Contract.QueueMagnitudeConcentration(&_Slasher.TransactOpts, operator, nonslashableDecremented, allocatorSignature)
+}
+
+// QueueMagnitudeDilution is a paid mutator transaction binding the contract method 0x5f83102a.
+//
+// Solidity: function queueMagnitudeDilution(address operator, uint64 nonslashableAdded, (bytes,uint256) allocatorSignature) returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude)
+func (_Slasher *SlasherTransactor) QueueMagnitudeDilution(opts *bind.TransactOpts, operator common.Address, nonslashableAdded uint64, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.contract.Transact(opts, "queueMagnitudeDilution", operator, nonslashableAdded, allocatorSignature)
+}
+
+// QueueMagnitudeDilution is a paid mutator transaction binding the contract method 0x5f83102a.
+//
+// Solidity: function queueMagnitudeDilution(address operator, uint64 nonslashableAdded, (bytes,uint256) allocatorSignature) returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude)
+func (_Slasher *SlasherSession) QueueMagnitudeDilution(operator common.Address, nonslashableAdded uint64, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.Contract.QueueMagnitudeDilution(&_Slasher.TransactOpts, operator, nonslashableAdded, allocatorSignature)
+}
+
+// QueueMagnitudeDilution is a paid mutator transaction binding the contract method 0x5f83102a.
+//
+// Solidity: function queueMagnitudeDilution(address operator, uint64 nonslashableAdded, (bytes,uint256) allocatorSignature) returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude)
+func (_Slasher *SlasherTransactorSession) QueueMagnitudeDilution(operator common.Address, nonslashableAdded uint64, allocatorSignature ISignatureUtilsSignatureWithExpiry) (*types.Transaction, error) {
+	return _Slasher.Contract.QueueMagnitudeDilution(&_Slasher.TransactOpts, operator, nonslashableAdded, allocatorSignature)
+}
+
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
 //
 // Solidity: function renounceOwnership() returns()
@@ -709,24 +908,24 @@ func (_Slasher *SlasherTransactorSession) SetPauserRegistry(newPauserRegistry co
 	return _Slasher.Contract.SetPauserRegistry(&_Slasher.TransactOpts, newPauserRegistry)
 }
 
-// SlashOperator is a paid mutator transaction binding the contract method 0x4a1def9a.
+// SlashOperator is a paid mutator transaction binding the contract method 0x5c120057.
 //
-// Solidity: function slashOperator(address operator, bytes4 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
-func (_Slasher *SlasherTransactor) SlashOperator(opts *bind.TransactOpts, operator common.Address, operatorSetId [4]byte, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
+// Solidity: function slashOperator(address operator, uint32 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
+func (_Slasher *SlasherTransactor) SlashOperator(opts *bind.TransactOpts, operator common.Address, operatorSetId uint32, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
 	return _Slasher.contract.Transact(opts, "slashOperator", operator, operatorSetId, strategies, bipsToSlash)
 }
 
-// SlashOperator is a paid mutator transaction binding the contract method 0x4a1def9a.
+// SlashOperator is a paid mutator transaction binding the contract method 0x5c120057.
 //
-// Solidity: function slashOperator(address operator, bytes4 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
-func (_Slasher *SlasherSession) SlashOperator(operator common.Address, operatorSetId [4]byte, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
+// Solidity: function slashOperator(address operator, uint32 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
+func (_Slasher *SlasherSession) SlashOperator(operator common.Address, operatorSetId uint32, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
 	return _Slasher.Contract.SlashOperator(&_Slasher.TransactOpts, operator, operatorSetId, strategies, bipsToSlash)
 }
 
-// SlashOperator is a paid mutator transaction binding the contract method 0x4a1def9a.
+// SlashOperator is a paid mutator transaction binding the contract method 0x5c120057.
 //
-// Solidity: function slashOperator(address operator, bytes4 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
-func (_Slasher *SlasherTransactorSession) SlashOperator(operator common.Address, operatorSetId [4]byte, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
+// Solidity: function slashOperator(address operator, uint32 operatorSetId, address[] strategies, uint32 bipsToSlash) returns()
+func (_Slasher *SlasherTransactorSession) SlashOperator(operator common.Address, operatorSetId uint32, strategies []common.Address, bipsToSlash uint32) (*types.Transaction, error) {
 	return _Slasher.Contract.SlashOperator(&_Slasher.TransactOpts, operator, operatorSetId, strategies, bipsToSlash)
 }
 
@@ -900,145 +1099,6 @@ func (_Slasher *SlasherFilterer) WatchInitialized(opts *bind.WatchOpts, sink cha
 func (_Slasher *SlasherFilterer) ParseInitialized(log types.Log) (*SlasherInitialized, error) {
 	event := new(SlasherInitialized)
 	if err := _Slasher.contract.UnpackLog(event, "Initialized", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// SlasherOperatorSlashedIterator is returned from FilterOperatorSlashed and is used to iterate over the raw logs and unpacked data for OperatorSlashed events raised by the Slasher contract.
-type SlasherOperatorSlashedIterator struct {
-	Event *SlasherOperatorSlashed // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *SlasherOperatorSlashedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(SlasherOperatorSlashed)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(SlasherOperatorSlashed)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *SlasherOperatorSlashedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *SlasherOperatorSlashedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// SlasherOperatorSlashed represents a OperatorSlashed event raised by the Slasher contract.
-type SlasherOperatorSlashed struct {
-	Epoch        uint32
-	Operator     common.Address
-	Strategy     common.Address
-	OperatorSet  IOperatorSetManagerOperatorSet
-	BipsToSlash  uint32
-	SlashingRate uint64
-	Raw          types.Log // Blockchain specific contextual infos
-}
-
-// FilterOperatorSlashed is a free log retrieval operation binding the contract event 0x471fe23f2a18902ad4f5859f431c6cc59256d682c861ee3405719f2faa09f937.
-//
-// Solidity: event OperatorSlashed(uint32 epoch, address operator, address strategy, (address,bytes4) operatorSet, uint32 bipsToSlash, uint64 slashingRate)
-func (_Slasher *SlasherFilterer) FilterOperatorSlashed(opts *bind.FilterOpts) (*SlasherOperatorSlashedIterator, error) {
-
-	logs, sub, err := _Slasher.contract.FilterLogs(opts, "OperatorSlashed")
-	if err != nil {
-		return nil, err
-	}
-	return &SlasherOperatorSlashedIterator{contract: _Slasher.contract, event: "OperatorSlashed", logs: logs, sub: sub}, nil
-}
-
-// WatchOperatorSlashed is a free log subscription operation binding the contract event 0x471fe23f2a18902ad4f5859f431c6cc59256d682c861ee3405719f2faa09f937.
-//
-// Solidity: event OperatorSlashed(uint32 epoch, address operator, address strategy, (address,bytes4) operatorSet, uint32 bipsToSlash, uint64 slashingRate)
-func (_Slasher *SlasherFilterer) WatchOperatorSlashed(opts *bind.WatchOpts, sink chan<- *SlasherOperatorSlashed) (event.Subscription, error) {
-
-	logs, sub, err := _Slasher.contract.WatchLogs(opts, "OperatorSlashed")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(SlasherOperatorSlashed)
-				if err := _Slasher.contract.UnpackLog(event, "OperatorSlashed", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseOperatorSlashed is a log parse operation binding the contract event 0x471fe23f2a18902ad4f5859f431c6cc59256d682c861ee3405719f2faa09f937.
-//
-// Solidity: event OperatorSlashed(uint32 epoch, address operator, address strategy, (address,bytes4) operatorSet, uint32 bipsToSlash, uint64 slashingRate)
-func (_Slasher *SlasherFilterer) ParseOperatorSlashed(log types.Log) (*SlasherOperatorSlashed, error) {
-	event := new(SlasherOperatorSlashed)
-	if err := _Slasher.contract.UnpackLog(event, "OperatorSlashed", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -1472,6 +1532,420 @@ func (_Slasher *SlasherFilterer) WatchPauserRegistrySet(opts *bind.WatchOpts, si
 func (_Slasher *SlasherFilterer) ParsePauserRegistrySet(log types.Log) (*SlasherPauserRegistrySet, error) {
 	event := new(SlasherPauserRegistrySet)
 	if err := _Slasher.contract.UnpackLog(event, "PauserRegistrySet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// SlasherQueuedAllocationIterator is returned from FilterQueuedAllocation and is used to iterate over the raw logs and unpacked data for QueuedAllocation events raised by the Slasher contract.
+type SlasherQueuedAllocationIterator struct {
+	Event *SlasherQueuedAllocation // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *SlasherQueuedAllocationIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(SlasherQueuedAllocation)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(SlasherQueuedAllocation)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *SlasherQueuedAllocationIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *SlasherQueuedAllocationIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// SlasherQueuedAllocation represents a QueuedAllocation event raised by the Slasher contract.
+type SlasherQueuedAllocation struct {
+	Operator           common.Address
+	Strategy           common.Address
+	OperatorSet        ISlasherOperatorSet
+	EffectTimestamp    uint32
+	SlashableMagnitude uint64
+	Raw                types.Log // Blockchain specific contextual infos
+}
+
+// FilterQueuedAllocation is a free log retrieval operation binding the contract event 0xd58fe98b8f837e1054e94eceb068193fdba71e6636654ef1e1a880008b306649.
+//
+// Solidity: event QueuedAllocation(address operator, address strategy, (address,uint32) operatorSet, uint32 effectTimestamp, uint64 slashableMagnitude)
+func (_Slasher *SlasherFilterer) FilterQueuedAllocation(opts *bind.FilterOpts) (*SlasherQueuedAllocationIterator, error) {
+
+	logs, sub, err := _Slasher.contract.FilterLogs(opts, "QueuedAllocation")
+	if err != nil {
+		return nil, err
+	}
+	return &SlasherQueuedAllocationIterator{contract: _Slasher.contract, event: "QueuedAllocation", logs: logs, sub: sub}, nil
+}
+
+// WatchQueuedAllocation is a free log subscription operation binding the contract event 0xd58fe98b8f837e1054e94eceb068193fdba71e6636654ef1e1a880008b306649.
+//
+// Solidity: event QueuedAllocation(address operator, address strategy, (address,uint32) operatorSet, uint32 effectTimestamp, uint64 slashableMagnitude)
+func (_Slasher *SlasherFilterer) WatchQueuedAllocation(opts *bind.WatchOpts, sink chan<- *SlasherQueuedAllocation) (event.Subscription, error) {
+
+	logs, sub, err := _Slasher.contract.WatchLogs(opts, "QueuedAllocation")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(SlasherQueuedAllocation)
+				if err := _Slasher.contract.UnpackLog(event, "QueuedAllocation", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseQueuedAllocation is a log parse operation binding the contract event 0xd58fe98b8f837e1054e94eceb068193fdba71e6636654ef1e1a880008b306649.
+//
+// Solidity: event QueuedAllocation(address operator, address strategy, (address,uint32) operatorSet, uint32 effectTimestamp, uint64 slashableMagnitude)
+func (_Slasher *SlasherFilterer) ParseQueuedAllocation(log types.Log) (*SlasherQueuedAllocation, error) {
+	event := new(SlasherQueuedAllocation)
+	if err := _Slasher.contract.UnpackLog(event, "QueuedAllocation", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// SlasherQueuedDeallocationIterator is returned from FilterQueuedDeallocation and is used to iterate over the raw logs and unpacked data for QueuedDeallocation events raised by the Slasher contract.
+type SlasherQueuedDeallocationIterator struct {
+	Event *SlasherQueuedDeallocation // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *SlasherQueuedDeallocationIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(SlasherQueuedDeallocation)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(SlasherQueuedDeallocation)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *SlasherQueuedDeallocationIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *SlasherQueuedDeallocationIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// SlasherQueuedDeallocation represents a QueuedDeallocation event raised by the Slasher contract.
+type SlasherQueuedDeallocation struct {
+	Operator           common.Address
+	Strategy           common.Address
+	OperatorSet        ISlasherOperatorSet
+	EffectTimestamp    uint32
+	SlashableMagnitude uint64
+	Raw                types.Log // Blockchain specific contextual infos
+}
+
+// FilterQueuedDeallocation is a free log retrieval operation binding the contract event 0xd08c2525f2c69887cf902b3aece56919812bd91bbcd8360517381141beb2c413.
+//
+// Solidity: event QueuedDeallocation(address operator, address strategy, (address,uint32) operatorSet, uint32 effectTimestamp, uint64 slashableMagnitude)
+func (_Slasher *SlasherFilterer) FilterQueuedDeallocation(opts *bind.FilterOpts) (*SlasherQueuedDeallocationIterator, error) {
+
+	logs, sub, err := _Slasher.contract.FilterLogs(opts, "QueuedDeallocation")
+	if err != nil {
+		return nil, err
+	}
+	return &SlasherQueuedDeallocationIterator{contract: _Slasher.contract, event: "QueuedDeallocation", logs: logs, sub: sub}, nil
+}
+
+// WatchQueuedDeallocation is a free log subscription operation binding the contract event 0xd08c2525f2c69887cf902b3aece56919812bd91bbcd8360517381141beb2c413.
+//
+// Solidity: event QueuedDeallocation(address operator, address strategy, (address,uint32) operatorSet, uint32 effectTimestamp, uint64 slashableMagnitude)
+func (_Slasher *SlasherFilterer) WatchQueuedDeallocation(opts *bind.WatchOpts, sink chan<- *SlasherQueuedDeallocation) (event.Subscription, error) {
+
+	logs, sub, err := _Slasher.contract.WatchLogs(opts, "QueuedDeallocation")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(SlasherQueuedDeallocation)
+				if err := _Slasher.contract.UnpackLog(event, "QueuedDeallocation", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseQueuedDeallocation is a log parse operation binding the contract event 0xd08c2525f2c69887cf902b3aece56919812bd91bbcd8360517381141beb2c413.
+//
+// Solidity: event QueuedDeallocation(address operator, address strategy, (address,uint32) operatorSet, uint32 effectTimestamp, uint64 slashableMagnitude)
+func (_Slasher *SlasherFilterer) ParseQueuedDeallocation(log types.Log) (*SlasherQueuedDeallocation, error) {
+	event := new(SlasherQueuedDeallocation)
+	if err := _Slasher.contract.UnpackLog(event, "QueuedDeallocation", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// SlasherTotalAndNonSlashableMagnitudeUpdatedIterator is returned from FilterTotalAndNonSlashableMagnitudeUpdated and is used to iterate over the raw logs and unpacked data for TotalAndNonSlashableMagnitudeUpdated events raised by the Slasher contract.
+type SlasherTotalAndNonSlashableMagnitudeUpdatedIterator struct {
+	Event *SlasherTotalAndNonSlashableMagnitudeUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *SlasherTotalAndNonSlashableMagnitudeUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(SlasherTotalAndNonSlashableMagnitudeUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(SlasherTotalAndNonSlashableMagnitudeUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *SlasherTotalAndNonSlashableMagnitudeUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *SlasherTotalAndNonSlashableMagnitudeUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// SlasherTotalAndNonSlashableMagnitudeUpdated represents a TotalAndNonSlashableMagnitudeUpdated event raised by the Slasher contract.
+type SlasherTotalAndNonSlashableMagnitudeUpdated struct {
+	Operator                common.Address
+	Strategy                common.Address
+	EffectTimestamp         uint32
+	NonSlashableMagnitude   uint64
+	TotalSlashableMagnitude uint64
+	Raw                     types.Log // Blockchain specific contextual infos
+}
+
+// FilterTotalAndNonSlashableMagnitudeUpdated is a free log retrieval operation binding the contract event 0x8e4b2526d5017d7ee3bd97a75c94a5f6d86cf704be2d442410238633b388c5f2.
+//
+// Solidity: event TotalAndNonSlashableMagnitudeUpdated(address operator, address strategy, uint32 effectTimestamp, uint64 nonSlashableMagnitude, uint64 totalSlashableMagnitude)
+func (_Slasher *SlasherFilterer) FilterTotalAndNonSlashableMagnitudeUpdated(opts *bind.FilterOpts) (*SlasherTotalAndNonSlashableMagnitudeUpdatedIterator, error) {
+
+	logs, sub, err := _Slasher.contract.FilterLogs(opts, "TotalAndNonSlashableMagnitudeUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &SlasherTotalAndNonSlashableMagnitudeUpdatedIterator{contract: _Slasher.contract, event: "TotalAndNonSlashableMagnitudeUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchTotalAndNonSlashableMagnitudeUpdated is a free log subscription operation binding the contract event 0x8e4b2526d5017d7ee3bd97a75c94a5f6d86cf704be2d442410238633b388c5f2.
+//
+// Solidity: event TotalAndNonSlashableMagnitudeUpdated(address operator, address strategy, uint32 effectTimestamp, uint64 nonSlashableMagnitude, uint64 totalSlashableMagnitude)
+func (_Slasher *SlasherFilterer) WatchTotalAndNonSlashableMagnitudeUpdated(opts *bind.WatchOpts, sink chan<- *SlasherTotalAndNonSlashableMagnitudeUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _Slasher.contract.WatchLogs(opts, "TotalAndNonSlashableMagnitudeUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(SlasherTotalAndNonSlashableMagnitudeUpdated)
+				if err := _Slasher.contract.UnpackLog(event, "TotalAndNonSlashableMagnitudeUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseTotalAndNonSlashableMagnitudeUpdated is a log parse operation binding the contract event 0x8e4b2526d5017d7ee3bd97a75c94a5f6d86cf704be2d442410238633b388c5f2.
+//
+// Solidity: event TotalAndNonSlashableMagnitudeUpdated(address operator, address strategy, uint32 effectTimestamp, uint64 nonSlashableMagnitude, uint64 totalSlashableMagnitude)
+func (_Slasher *SlasherFilterer) ParseTotalAndNonSlashableMagnitudeUpdated(log types.Log) (*SlasherTotalAndNonSlashableMagnitudeUpdated, error) {
+	event := new(SlasherTotalAndNonSlashableMagnitudeUpdated)
+	if err := _Slasher.contract.UnpackLog(event, "TotalAndNonSlashableMagnitudeUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
