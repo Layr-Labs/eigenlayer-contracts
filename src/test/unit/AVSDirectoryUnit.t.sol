@@ -379,8 +379,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         );
 
         for (uint256 i; i < oids.length; ++i) {
-            (bool isSetOperator, ) = avsDirectory.memberSetInfo(address(this), operator, oids[i]);
-            assertTrue(isSetOperator);
+            assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, oids[i]));
         }
 
         (uint248 inTotalSets, bool isLegacyOperator) = avsDirectory.memberInfo(address(this), operator);
@@ -422,46 +421,8 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         (uint248 inTotalSets, bool isLegacyOperator) = avsDirectory.memberInfo(address(this), operator);
         assertEq(inTotalSets, 1);
         assertTrue(isLegacyOperator);
-        (bool isSetOperator, ) = avsDirectory.memberSetInfo(address(this), operator, operatorSetId);
-        assertTrue(isSetOperator);
+        assertTrue(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId));
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
-    }
-
-    function testFuzz_revert_NoSignatureNoStandby(
-        uint256 operatorPk,
-        uint32 operatorSetId,
-        bytes32 salt,
-        uint256 expiry
-    ) public virtual {
-        // Make sure sigature is always non-expired.
-        cheats.warp(0);
-        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
-
-        uint32[] memory oids = new uint32[](1);
-        oids[0] = operatorSetId;
-
-        IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
-        params[0] = IAVSDirectory.StandbyParam(IAVSDirectory.OperatorSet(address(this), operatorSetId), true);
-
-        address operator = cheats.addr(operatorPk);
-        (uint8 v, bytes32 r, bytes32 s) =
-            cheats.sign(operatorPk, avsDirectory.calculateUpdateStandbyDigestHash(params, keccak256(""), expiry));
-
-        _registerOperatorWithBaseDetails(operator);
-
-        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: avs not on standby");
-        avsDirectory.registerOperatorToOperatorSets(
-            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
-        );
-
-        avsDirectory.updateStandbyParams(
-            operator,
-            params,
-            ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), keccak256(""), expiry)
-        );
-        avsDirectory.registerOperatorToOperatorSets(
-            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), 0, 0)
-        );
     }
 }
 
@@ -525,108 +486,10 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
 
         avsDirectory.deregisterOperatorFromOperatorSets(operator, oids);
 
-        (bool isSetOperator, ) = avsDirectory.memberSetInfo(address(this), operator, operatorSetId);
-        assertEq(isSetOperator, false);
+        assertEq(avsDirectory.isOperatorInOperatorSet(address(this), operator, operatorSetId), false);
         (uint248 inTotalSets, bool isLegacyOperator) = avsDirectory.memberInfo(address(this), operator);
         assertEq(inTotalSets, 0);
         assertEq(isLegacyOperator, false);
-    }
-}
-
-contract AVSDirectoryUnitTests_updateStandbyParams is AVSDirectoryUnitTests {
-    event StandbyParamUpdated(address operator, IAVSDirectory.OperatorSet operatorSet, bool onStandby);
-
-    function testFuzz_revert_CallerNotOperatorNoSignature(
-        address operator,
-        address avs,
-        uint32 operatorSetId,
-        bool standby
-    ) public virtual {
-        IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
-        params[0] = IAVSDirectory.StandbyParam(IAVSDirectory.OperatorSet(avs, operatorSetId), standby);
-
-        cheats.expectRevert("AVSDirectory.updateStandbyParams: invalid signature");
-        avsDirectory.updateStandbyParams(
-            operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), bytes32(0), 0)
-        );
-    }
-
-    function testFuzz_revert_OperatorSignatureExpired(
-        address operator,
-        address avs,
-        uint32 operatorSetId,
-        bool standby,
-        uint256 expiry
-    ) public virtual {
-        // Make sure signature is always expired.
-        cheats.warp(type(uint256).max);
-        expiry = bound(expiry, 0, type(uint256).max - 1);
-
-        IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
-        params[0] = IAVSDirectory.StandbyParam(IAVSDirectory.OperatorSet(avs, operatorSetId), standby);
-
-        // Assert operator signature reverts when non-zero.
-        cheats.expectRevert("AVSDirectory.updateStandbyParams: operator signature expired");
-        avsDirectory.updateStandbyParams(
-            operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(1), bytes32(0), expiry)
-        );
-    }
-
-    function testFuzz_revert_SaltSpent(
-        uint256 operatorPk,
-        address avs,
-        uint32 operatorSetId,
-        bytes32 salt,
-        uint256 expiry,
-        bool standby
-    ) public virtual {
-        // Make sure sigature is always non-expired.
-        cheats.warp(0);
-        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
-
-        IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
-        params[0] = IAVSDirectory.StandbyParam(IAVSDirectory.OperatorSet(avs, operatorSetId), standby);
-
-        address operator = cheats.addr(operatorPk);
-        (uint8 v, bytes32 r, bytes32 s) =
-            cheats.sign(operatorPk, avsDirectory.calculateUpdateStandbyDigestHash(params, salt, expiry));
-
-        avsDirectory.updateStandbyParams(
-            operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
-        );
-
-        cheats.expectRevert("AVSDirectory.updateStandbyParams: salt spent");
-        avsDirectory.updateStandbyParams(
-            operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
-        );
-    }
-
-    function testFuzz_Correctness(
-        uint256 operatorPk,
-        address avs,
-        uint32 operatorSetId,
-        bytes32 salt,
-        uint256 expiry,
-        bool standby
-    ) public virtual {
-        // Make sure sigature is always non-expired.
-        cheats.warp(0);
-        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
-
-        IAVSDirectory.StandbyParam[] memory params = new IAVSDirectory.StandbyParam[](1);
-        params[0] = IAVSDirectory.StandbyParam(IAVSDirectory.OperatorSet(avs, operatorSetId), standby);
-
-        address operator = cheats.addr(operatorPk);
-        (uint8 v, bytes32 r, bytes32 s) =
-            cheats.sign(operatorPk, avsDirectory.calculateUpdateStandbyDigestHash(params, salt, expiry));
-
-        cheats.expectEmit(true, false, false, false, address(avsDirectory));
-        emit StandbyParamUpdated(operator, IAVSDirectory.OperatorSet(avs, operatorSetId), standby);
-        avsDirectory.updateStandbyParams(
-            operator, params, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
-        );
-        (, bool onStandby) = avsDirectory.memberSetInfo(avs, operator, operatorSetId);
-        assertEq(onStandby, standby);
     }
 }
 
