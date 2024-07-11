@@ -90,20 +90,17 @@ contract AVSDirectory is
             "AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
         );
         
-        // If a signature is not provided...
-        if (operatorSignature.signature.length != 0) {
-            // Assert that `operatorSignature.signature` is a valid signature for operator set registrations.
-            EIP1271SignatureUtils.checkSignature_EIP1271(
-                operator,
-                calculateOperatorSetRegistrationDigestHash({
-                    avs: msg.sender,
-                    operatorSetIds: operatorSetIds,
-                    salt: operatorSignature.salt,
-                    expiry: operatorSignature.expiry
-                }),
-                operatorSignature.signature
-            );
-        }
+        // Assert that `operatorSignature.signature` is a valid signature for operator set registrations.
+        EIP1271SignatureUtils.checkSignature_EIP1271(
+            operator,
+            calculateOperatorSetRegistrationDigestHash({
+                avs: msg.sender,
+                operatorSetIds: operatorSetIds,
+                salt: operatorSignature.salt,
+                expiry: operatorSignature.expiry
+            }),
+            operatorSignature.signature
+        );
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
@@ -118,21 +115,15 @@ contract AVSDirectory is
 
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-            MemberSetInfo storage setMember = memberSetInfo[msg.sender][operator][operatorSetIds[i]];
-
-            // Assert avs is on standby mode for the given `operator` and `operatorSetIds[i]`.
-            if (operatorSignature.signature.length == 0) {
-                require(setMember.onStandby, "AVSDirectory.registerOperatorToOperatorSets: avs not on standby");
-            }
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
-                !setMember.isSetOperator,
+                !isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
                 "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
-            // Mutate `setMember.isSetOperator` to `true`.
-            setMember.isSetOperator = true;
+            // Mutate `isOperatorInOperatorSet` to `true`.
+            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = true;
 
             emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
@@ -161,16 +152,14 @@ contract AVSDirectory is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Loop over `operatorSetIds` array and deregister `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-            MemberSetInfo storage setMember = memberSetInfo[msg.sender][operator][operatorSetIds[i]];
-
             // Assert `operator` is registered for this iterations operator set.
             require(
-                setMember.isSetOperator,
+                isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]],
                 "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
-            // Mutate `setMember.isSetOperator` to `false`.
-            setMember.isSetOperator = false;
+            // Mutate `isOperatorInOperatorSet` to `false`.
+            isOperatorInOperatorSet[msg.sender][operator][operatorSetIds[i]] = false;
 
             emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
@@ -275,63 +264,6 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Updates the standby parameters for an operator across multiple operator sets.
-     * Allows the AVS to add the operator to a given operator set if they are not already registered.
-     *
-     * @param operator The address of the operator for which the standby parameters are being updated.
-     * @param standbyParams The new standby parameters for the operator.
-     * @param operatorSignature If non-empty, the signature of the operator authorizing the modification.
-     *                  If empty, the `msg.sender` must be the operator.
-     */
-    function updateStandbyParams(
-        address operator,
-        StandbyParam[] calldata standbyParams,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external {
-        // Check if the operator's signature is provided or not.
-        if (operatorSignature.signature.length == 0) {
-            // If the signature length is zero, assert that the caller is the operator.
-            require(msg.sender == operator, "AVSDirectory.updateStandbyParams: invalid signature");
-        } else {
-            // If a signature is provided, perform the following checks:
-
-            // Assert that the operator's signature has not expired.
-            require(
-                operatorSignature.expiry >= block.timestamp,
-                "AVSDirectory.updateStandbyParams: operator signature expired"
-            );
-
-            // Assert that the operator's signature cannot be replayed.
-            require(
-                !operatorSaltIsSpent[operator][operatorSignature.salt], "AVSDirectory.updateStandbyParams: salt spent"
-            );
-
-            // Assert that the operator's signature is valid.
-            EIP1271SignatureUtils.checkSignature_EIP1271({
-                signer: operator,
-                digestHash: calculateUpdateStandbyDigestHash(
-                    standbyParams, operatorSignature.salt, operatorSignature.expiry
-                ),
-                signature: operatorSignature.signature
-            });
-
-            // Mark the salt as spent to prevent replay attacks.
-            operatorSaltIsSpent[operator][operatorSignature.salt] = true;
-        }
-
-        // Loop through each standby parameter and update the state accordingly.
-        for (uint256 i; i < standbyParams.length; ++i) {
-            MemberSetInfo storage setMember =
-                memberSetInfo[standbyParams[i].operatorSet.avs][operator][standbyParams[i].operatorSet.id];
-
-            // Update the standby status for the given operator set.
-            setMember.onStandby = standbyParams[i].onStandby;
-
-            emit StandbyParamUpdated(operator, standbyParams[i].operatorSet, standbyParams[i].onStandby);
-        }
-    }
-
-    /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
      *  @param metadataURI The URI for metadata associated with an AVS.
@@ -357,22 +289,6 @@ contract AVSDirectory is
      *                         VIEW FUNCTIONS
      *
      */
-
-    /**
-     *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
-     *
-     *  @param standbyParams The newly updated standby mode parameters.
-     *  @param salt A unique and single-use value associated with the approver's signature.
-     *  @param expiry The time after which the approver's signature becomes invalid.
-     */
-    function calculateUpdateStandbyDigestHash(
-        StandbyParam[] calldata standbyParams,
-        bytes32 salt,
-        uint256 expiry
-    ) public view returns (bytes32) {
-        return
-            _calculateDigestHash(keccak256(abi.encode(OPERATOR_STANDBY_UPDATE_TYPEHASH, standbyParams, salt, expiry)));
-    }
 
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
