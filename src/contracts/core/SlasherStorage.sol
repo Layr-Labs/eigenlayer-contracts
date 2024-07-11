@@ -13,7 +13,6 @@ abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher,
     // system contracts
     IStrategyManager public immutable strategyManager;
     IDelegationManager public immutable delegation;
-    IOperatorSetManager public immutable operatorSetManager;
 
     struct SlashingUpdate {
         uint64 slashingRate; // This is parts per (BIPS_FACTOR**2), i.e. parts per 1e8, pphm = parts per hundred million, to slash upon execution
@@ -36,11 +35,9 @@ abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher,
 
     constructor(
         IStrategyManager _strategyManager,
-        IDelegationManager _delegationManager,
-        IOperatorSetManager _operatorSetManager
+        IDelegationManager _delegationManager
     ) {
         strategyManager = _strategyManager;
         delegation = _delegationManager;
-        operatorSetManager = _operatorSetManager;
     }
 }

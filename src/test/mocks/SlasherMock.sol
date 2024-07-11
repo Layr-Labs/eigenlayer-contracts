@@ -8,7 +8,6 @@ import "../../contracts/interfaces/ISlasher.sol";
 contract SlasherMock is ISlasher, Test {
     function strategyManager() external view override returns (IStrategyManager) {}
     function delegation() external view override returns (IDelegationManager) {}
-    function operatorSetManager() external view override returns (IOperatorSetManager) {}
 	
 	/**
 	 * @notice Called by an AVS to slash an operator for given operatorSetId,
@@ -22,7 +21,7 @@ contract SlasherMock is ISlasher, Test {
 	 */
     function slashOperator(
         address operator,
-        bytes4 operatorSetId,
+        uint32 operatorSetId,
         IStrategy[] memory strategies,
         uint32 bipsToSlash
     ) external {}
@@ -41,7 +40,7 @@ contract SlasherMock is ISlasher, Test {
 	function getSlashedRate(
 		address operator,
 		IStrategy strategy,
-		IOperatorSetManager.OperatorSet calldata operatorSet,
+		OperatorSet calldata operatorSet,
 		uint32 epoch
 	) external view returns (uint64) {}
 	

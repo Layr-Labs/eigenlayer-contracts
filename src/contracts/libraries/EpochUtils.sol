@@ -31,7 +31,7 @@ library EpochUtils {
         return requestEpoch + 2;
     }
 
-    function getEndOfSlashabilityEpoch(uint32 queuedEpoch) internal view returns (uint32) {
+    function getEndOfSlashabilityEpoch(uint32 queuedEpoch) internal pure returns (uint32) {
         return queuedEpoch + 1;
     }
 }

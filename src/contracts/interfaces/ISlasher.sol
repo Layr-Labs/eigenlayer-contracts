@@ -3,7 +3,8 @@ pragma solidity >=0.5.0;
 
 import "./IStrategyManager.sol";
 import "./IDelegationManager.sol";
-import "./IOperatorSetManager.sol";
+import "./ISignatureUtils.sol";
+import "./IStrategy.sol";
 
 /**
  * @title Interface for the primary 'slashing' contract for EigenLayer.
@@ -11,18 +12,14 @@ import "./IOperatorSetManager.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice See the `Slasher` contract itself for implementation details.
  */
-interface ISlasher {
+interface ISlasher is ISignatureUtils {
+
+	struct OperatorSet {
+        address avs;
+        uint32 id;
+    }
 
     /// EVENTS
-
-	event OperatorSlashed(
-		uint32 epoch,
-		address operator,
-		IStrategy strategy,
-		IOperatorSetManager.OperatorSet operatorSet,
-		uint32 bipsToSlash,
-		uint64 slashingRate
-	);
 
     /// EXTERNAL - STATE MODIFYING
 
@@ -38,7 +35,7 @@ interface ISlasher {
 	 */
     function slashOperator(
         address operator,
-        bytes4 operatorSetId,
+        uint32 operatorSetId,
         IStrategy[] memory strategies,
         uint32 bipsToSlash
     ) external;
@@ -47,7 +44,6 @@ interface ISlasher {
 
 	function strategyManager() external view returns (IStrategyManager);
     function delegation() external view returns (IDelegationManager);
-    function operatorSetManager() external view returns (IOperatorSetManager);
 
     /**
      * @notice gets the scaling factor for the given operator and strategy
@@ -85,7 +81,7 @@ interface ISlasher {
 	function getSlashedRate(
 		address operator,
 		IStrategy strategy,
-		IOperatorSetManager.OperatorSet calldata operatorSet,
+		OperatorSet calldata operatorSet,
 		uint32 epoch
 	) external view returns (uint64);
 }

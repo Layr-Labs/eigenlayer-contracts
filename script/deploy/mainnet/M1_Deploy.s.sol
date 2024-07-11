@@ -193,7 +193,7 @@ contract Deployer_M1 is Script, Test {
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         // todo: fix
-        slasherImplementation = new Slasher(strategyManager, delegation, IOperatorSetManager(address(0)));
+        slasherImplementation = new Slasher(strategyManager, delegation);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,

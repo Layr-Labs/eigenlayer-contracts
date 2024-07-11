@@ -262,7 +262,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
         // todo: fix
-        slasherImplementation = new Slasher(strategyManager, delegationManager, IOperatorSetManager(address(0)));
+        slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
@@ -402,7 +402,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
         // todo: fix
-        slasherImplementation = new Slasher(strategyManager, delegationManager, IOperatorSetManager(address(0)));
+        slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
@@ -513,7 +513,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
         // todo: fix
-        slasherImplementation = new Slasher(strategyManager, delegationManager, IOperatorSetManager(address(0)));
+        slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,

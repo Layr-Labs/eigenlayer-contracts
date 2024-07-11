@@ -62,7 +62,7 @@ contract GoerliUpgrade1 is Script, Test {
 
         address slasherImplementation = address(
             // todo: fix
-            new Slasher(strategyManager, delegation, IOperatorSetManager(address(0)))
+            new Slasher(strategyManager, delegation)
         );
 
         address eigenPodImplementation = address(

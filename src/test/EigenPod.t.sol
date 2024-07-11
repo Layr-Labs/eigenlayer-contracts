@@ -181,7 +181,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             slasher
         );
         // todo: fix
-        Slasher slasherImplementation = new Slasher(strategyManager, delegation, IOperatorSetManager(address(0)));
+        Slasher slasherImplementation = new Slasher(strategyManager, delegation);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,

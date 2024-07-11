@@ -375,7 +375,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         // todo: fix
-        Slasher slasherImplementation = new Slasher(strategyManager, delegation, IOperatorSetManager(address(0)));
+        Slasher slasherImplementation = new Slasher(strategyManager, delegation);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(

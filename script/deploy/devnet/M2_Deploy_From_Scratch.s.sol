@@ -198,7 +198,7 @@ contract Deployer_M2 is Script, Test {
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         avsDirectoryImplementation = new AVSDirectory(delegation, strategyManager);
         // todo: fix
-        slasherImplementation = new Slasher(strategyManager, delegation, IOperatorSetManager(address(0)));
+        slasherImplementation = new Slasher(strategyManager, delegation);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
