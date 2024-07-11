@@ -31,7 +31,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     mapping(address => mapping(address => MemberInfo)) public memberInfo;
 
-    mapping(address => mapping(address => mapping(uint32 => bool))) public isOperatorInOperatorSet;
+    mapping(address => mapping(address => mapping(uint32 => bool))) public isMember;
 
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
