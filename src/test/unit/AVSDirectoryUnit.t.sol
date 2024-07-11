@@ -117,7 +117,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
 
     function _registerOperatorWithBaseDetails(address operator) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            __deprecated_earningsReceiver: operator,
+            allocator: operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
@@ -126,7 +126,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
 
     function _registerOperatorWithDelegationApprover(address operator) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            __deprecated_earningsReceiver: operator,
+            allocator: operator,
             delegationApprover: cheats.addr(delegationSignerPrivateKey),
             stakerOptOutWindowBlocks: 0
         });
@@ -142,7 +142,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         ERC1271WalletMock wallet = new ERC1271WalletMock(delegationSigner);
 
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            __deprecated_earningsReceiver: operator,
+            allocator: operator,
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });

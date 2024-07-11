@@ -18,8 +18,9 @@ import "./IStrategyManager.sol";
 interface IDelegationManager is ISignatureUtils {
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
-        /// @notice DEPRECATED -- this field is no longer used, payments are handled in PaymentCoordinator.sol
-        address __deprecated_earningsReceiver;
+        /// @notice This slot was previously the earningsReceiver address that ended up being unused.
+        /// Now overwritten in Slashing release to be the allocator role. See Slasher.sol for more details
+        address allocator;
         /**
          * @notice Address to verify signatures when a staker wishes to delegate to the operator, as well as controlling "forced undelegations".
          * @dev Signature verification follows these rules:

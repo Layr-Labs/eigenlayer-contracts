@@ -2,7 +2,6 @@
 pragma solidity ^0.8.12;
 
 import "./SlasherStorage.sol";
-
 import "../libraries/EpochUtils.sol";
 import "../libraries/SlashingAccountingUtils.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
@@ -99,9 +98,6 @@ contract Slasher is SlasherStorage {
 
     /// operator => strategy => TotalAndNonslashableUpdate[]
     mapping(address => mapping(IStrategy => TotalAndNonslashableUpdate[])) private _totalMagnitudeUpdates;
-    /// operator => allocator
-    /// could perhaps use 
-    mapping(address => address) public allocatorFor;
 
     constructor(
         IStrategyManager _strategyManager,
@@ -130,8 +126,8 @@ contract Slasher is SlasherStorage {
         MagnitudeAdjustmentParam[] calldata deallocationParams,
         SignatureWithExpiry calldata allocatorSignature // TODO: implement signature verification
     ) external returns(uint32 effectTimestamp) {
-        // perform allocator signature verification if not allocator or operator
-        if (msg.sender != operator && msg.sender != getAllocatorFor(operator)) {
+        // perform allocator signature verification if not allocator
+        if (msg.sender != getAllocatorFor(operator)) {
             // TODO
         }
         effectTimestamp = uint32(block.timestamp + MAGNITUDE_DEALLOCATION_DELAY);
@@ -151,7 +147,6 @@ contract Slasher is SlasherStorage {
                     decrementedMagnitude <= allocatedMagnitude,
                     "Slasher.queueDeallocation: magnitudeDiff exceeds allocated magnitude"
                 );
-
                 _updateMagnitudeHistory({
                     operator: operator,
                     strategy: strategy,
@@ -160,6 +155,7 @@ contract Slasher is SlasherStorage {
                     newMagnitude: allocatedMagnitude - decrementedMagnitude,
                     effectTimestamp: effectTimestamp
                 });
+                emit QueuedDeallocation(operator, strategy, operatorSet, effectTimestamp, allocatedMagnitude - decrementedMagnitude);
                 // add decremented magnitude back to nonslashableMagnitude
                 nonslashableMagnitude += decrementedMagnitude;
             }
@@ -173,6 +169,13 @@ contract Slasher is SlasherStorage {
                 newNonslashableMagnitude: nonslashableMagnitude,
                 effectTimestamp: effectTimestamp
             });
+            emit TotalAndNonSlashableMagnitudeUpdated(
+                operator,
+                strategy,
+                effectTimestamp,
+                nonslashableMagnitude,
+                totalMagnitudeUpdate.totalMagnitude
+            );
         }
 
     }
@@ -200,8 +203,8 @@ contract Slasher is SlasherStorage {
         MagnitudeAdjustmentParam[] calldata allocationParams,
         SignatureWithExpiry calldata allocatorSignature // TODO: implement signature verification
     ) external returns(uint32 effectTimestamp) {
-        // perform allocator signature verification if not allocator or operator
-        if (msg.sender != operator && msg.sender != getAllocatorFor(operator)) {
+        // perform allocator signature verification if not allocator
+        if (msg.sender != getAllocatorFor(operator)) {
             // TODO
         }
         effectTimestamp = uint32(block.timestamp + MAGNITUDE_ALLOCATION_DELAY);
@@ -218,7 +221,7 @@ contract Slasher is SlasherStorage {
                 uint64 addedMagnitude = allocationParams[i].operatorSetMagnitudeParams[j].magnitudeDiff;
                 
                 // check pending updates, if more than 3 pushed updates than revert
-                _checkPendingUpdates(operator, strategy, operatorSet);
+                require(checkPendingUpdates(operator, strategy, operatorSet), "Slasher.queueAllocation: too many pending updates");
                 // check magnitude increase is backed by nonslashableMagnitude
                 require(
                     addedMagnitude <= nonslashableMagnitude,
@@ -236,6 +239,7 @@ contract Slasher is SlasherStorage {
                     newMagnitude: prevMagnitude + addedMagnitude,
                     effectTimestamp: effectTimestamp
                 });
+                emit QueuedAllocation(operator, strategy, operatorSet, effectTimestamp, prevMagnitude + addedMagnitude);
                 // subtract from nonslashable which was allocated to this operatorSet
                 nonslashableMagnitude -= addedMagnitude;
             }
@@ -249,8 +253,14 @@ contract Slasher is SlasherStorage {
                 newNonslashableMagnitude: nonslashableMagnitude,
                 effectTimestamp: effectTimestamp
             });
+            emit TotalAndNonSlashableMagnitudeUpdated(
+                operator,
+                strategy,
+                effectTimestamp,
+                nonslashableMagnitude,
+                totalMagnitudeUpdate.totalMagnitude
+            );
         }
-
     }
 
     /**
@@ -264,7 +274,9 @@ contract Slasher is SlasherStorage {
         address operator,
         uint64 nonslashableAdded,
         SignatureWithExpiry calldata allocatorSignature
-    ) external returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude) {}
+    ) external returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude) {
+
+    }
 
     /**
      * @notice Decrement from nonslashable magnitude to concentrate all relative magnitude
@@ -277,7 +289,9 @@ contract Slasher is SlasherStorage {
         address operator,
         uint64 nonslashableDecremented,
         SignatureWithExpiry calldata allocatorSignature
-    ) external returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude) {}
+    ) external returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude) {
+
+    }
 
 	/**
 	 * @notice Called by an AVS to slash an operator for given operatorSetId,
@@ -311,9 +325,7 @@ contract Slasher is SlasherStorage {
             IStrategy strategy = strategies[i];
 
             // calculate slashingRate based off allocated magnitude
-            uint64 slashingRate;
-            // uint64 slashingRate = 
-            //     uint64(bipsToSlash) * uint64(operatorSetManager.getSlashableBips(operator, operatorSet, strategy, epoch));
+            uint64 slashingRate = uint64(bipsToSlash) * uint64(getSlashableBips(operator, operatorSet, strategy));
             // calculate and apply new scaling factor
             uint64 scalingFactorBefore = shareScalingFactor(operator, strategy);
             uint64 scalingFactorAfter = SlashingAccountingUtils.findNewScalingFactor({
@@ -378,101 +390,123 @@ contract Slasher is SlasherStorage {
         }
     }
 
-    /// @notice Rate limit number of allocations/deallocation updates to 3
+    /// @notice Rate limit number of allocations/deallocation updates and return whether a new update could be pushed
     /// for a given (operator, strategy, and operatorSet)
-    function _checkPendingUpdates(
+    function checkPendingUpdates(
         address operator,
         IStrategy strategy,
         OperatorSet calldata operatorSet
-    ) public view {
+    ) public view returns (bool) {
         uint256 magnitudeUpdatesLength = _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id].length;
-        if (magnitudeUpdatesLength == 0) {
-            return;
+        if (magnitudeUpdatesLength < MAX_PENDING_MAGNITUDE_UPDATES) {
+            return true;
         }
-        /// loop backwards from magnitude update history until either the the current magnitude is found
-        /// or 3 pending updates are found in wich case we revert.
-        for (uint256 i = magnitudeUpdatesLength - 1; i >= 0; --i) {
-            if (_magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id][i].timestamp <= block.timestamp) {
-                break;
-            } else {
-                /// could just subtract 1 from MAX_PENDING_MAGNITUDE_UPDATES constant instead of here
-                require(
-                    magnitudeUpdatesLength - 1 - i < MAX_PENDING_MAGNITUDE_UPDATES,
-                    "Slasher._checkPendingUpdates: cannot have more than 3 pending updates"
-                );
-            }
-        }
+
+        return _magnitudeUpdates
+            [operator]
+            [strategy]
+            [operatorSet.avs]
+            [operatorSet.id]
+            [magnitudeUpdatesLength - MAX_PENDING_MAGNITUDE_UPDATES].timestamp < block.timestamp;
     }
 
     /*******************************************************************************
                                  VIEW FUNCTIONS
     *******************************************************************************/
-    // function getOperatorSetMagnitudeUpdates(
-    //     address operator,
-    //     IStrategy strategy,
-    //     address avs,
-    //     uint32 operatorSetId,
-    //     uint32 epoch
-    // ) external view returns (MagnitudeUpdate memory) {
-    //     return _operatorSetMagnitudeUpdates[operator][strategy][avs][operatorSetId];
 
-    //     magnitudeUpdatesLength = _magnitudeUpdates[operator][strategy][avs][operatorSetId].length;
-    //     for (uint256 i = 0; i < magnitudeUpdatesLength; ++i) {
-    //         if (operatorSetMagnitudeUpdates[i].epoch <= startEpoch) {
-    //             operatorSetMagnitude = operatorSetMagnitudeUpdates[i].magnitude;
-    //             break;
-    //         }
-    //     }
+    /**
+     * @notice Get the current slashable bips an operatorSet has for a given operator and strategy
+     * @param operator the operator to get the slashable bips for
+     * @param operatorSet the operator set to get the slashable bips for
+     * @param strategy the strategy to get the slashable bips for
+     *
+     * @return slashableBips the slashable bips of the given strategy owned by
+     * the given OperatorSet for the given operator and epoch
+     */
+    function getSlashableBips(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) public view returns (uint16 slashableBips) {
+        MagnitudeUpdate memory magnitudeUpdate = getMagnitudeUpdate(
+            operator,
+            strategy,
+            operatorSet,
+            uint32(block.timestamp)
+        );
+        TotalAndNonslashableUpdate memory totalAndNonslashableUpdate = getTotalAndNonslashableUpdate(
+            operator,
+            strategy,
+            uint32(block.timestamp)
+        );
 
+        return uint16(magnitudeUpdate.magnitude * SlashingAccountingUtils.BIPS_FACTOR / totalAndNonslashableUpdate.totalMagnitude);
+    }
 
-    //     // iterate from the latest operator set magnitude update to the oldest
-    //     for (uint256 i = operatorSetMagnitudeUpdates.length - 1; i >= 0; i--) {
-    //         if (operatorSetMagnitudeUpdates[i].epoch <= startEpoch) {
-    //             if (operatorSetMagnitudeUpdates[i].lockedUntilEpoch == epoch) {
-    //                 // this is the end of the lock and the operator set has not slashed in the epoch yet,
-    //                 // so the real magnitude is the lockedMagnitude
-    //                 // todo: should we update storage to move lockedMagnitude to magnitude here or in the decreaseAndLockMagnitude function?
-    //                 operatorSetMagnitude = operatorSetMagnitudeUpdates[i].lockedMagnitude;
-    //             } else {
-    //                 operatorSetMagnitude = operatorSetMagnitudeUpdates[i].magnitude;
-    //             }
-    //             break;
-    //         }
-    //     }
-    // }
-
+    /// @notice Get the magnitude for a given operator, strategy, operatorSet, timestamp
     function getMagnitudeUpdate(
         address operator,
         IStrategy strategy,
-        OperatorSet calldata operatorSet,
+        OperatorSet memory operatorSet,
         uint32 timestamp
-    ) external view returns (MagnitudeUpdate memory magnitudeUpdate) {
+    ) public view returns (MagnitudeUpdate memory magnitudeUpdate) {
         uint256 magnitudeUpdatesLength = _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id].length;
-        for (uint256 i = magnitudeUpdatesLength - 1; i >= 0; --i) {
-            if (_magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id][i].timestamp <= timestamp) {
-                magnitudeUpdate = _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id][i];
+        for (uint256 i = magnitudeUpdatesLength; i > 0; --i) {
+            if (_magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id][i - 1].timestamp <= timestamp) {
+                magnitudeUpdate = _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id][i - 1];
                 break;
             }
         }
-        // perhaps revert if reaches here?
+        revert("Slasher.getMagnitudeUpdate: no magnitude update found at timestamp");
     }
 
-    /// TODO Handle reverting case if no updates exist, length == 0
+    /// @notice Get the total and nonslashable magnitudes for a given operator, strategy, timestamp
+    function getTotalAndNonslashableUpdate(
+        address operator,
+        IStrategy strategy,
+        uint32 timestamp
+    ) public view returns (TotalAndNonslashableUpdate memory totalAndNonslashableUpdate) {
+        uint256 totalMagnitudeUpdatesLength = _totalMagnitudeUpdates[operator][strategy].length;
+        for (uint256 i = totalMagnitudeUpdatesLength; i > 0; --i) {
+            if (_totalMagnitudeUpdates[operator][strategy][i - 1].timestamp <= timestamp) {
+                totalAndNonslashableUpdate = _totalMagnitudeUpdates[operator][strategy][i - 1];
+                break;
+            }
+        }
+        revert("Slasher.getTotalAndNonslashableUpdate: no totalandnonslashable magnitude update found at timestamp");
+    }
+
+    /// @notice Return latest magnitude update for the given operator, strategy, and operatorSet
+    /// if empty array, push an empty update
     function _getLatestMagnitudeUpdate(
         address operator,
         IStrategy strategy,
         OperatorSet calldata operatorSet
-    ) internal view returns (MagnitudeUpdate storage) {
+    ) internal returns (MagnitudeUpdate storage) {
         uint256 magnitudeUpdatesLength = _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id].length;
+        if (magnitudeUpdatesLength == 0) {
+            _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id].push(MagnitudeUpdate({
+                timestamp: 0,
+                magnitude: 0
+            }));
+        }
         return _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id][magnitudeUpdatesLength - 1];
     }
 
-    /// TODO Handle reverting case if no updates exist, length == 0
+    /// @notice Return latest total and nonslashable update for the given operator and strategy
+    /// if empty array, push an empty update
     function _getLatestTotalAndNonslashableUpdate(
         address operator,
         IStrategy strategy
-    ) internal view returns (TotalAndNonslashableUpdate storage) {
+    ) internal returns (TotalAndNonslashableUpdate storage) {
         uint256 totalMagnitudeUpdatesLength = _totalMagnitudeUpdates[operator][strategy].length;
+        if (totalMagnitudeUpdatesLength == 0) {
+            _totalMagnitudeUpdates[operator][strategy].push(TotalAndNonslashableUpdate({
+                timestamp: 0,
+                totalMagnitude: 0,
+                nonSlashableMagnitude: 0
+            }));
+        }
         return _totalMagnitudeUpdates[operator][strategy][totalMagnitudeUpdatesLength - 1];
     }
 
@@ -549,10 +583,9 @@ contract Slasher is SlasherStorage {
         }
     }
 
-    /// @notice TODO: could replace this mapping with __deprecated_earningsReceiver in
-    /// IDelegationManager.OperatorDetails struct
+    /// @notice Read from operator details in DelegationManager to get operator's allocator
     function getAllocatorFor(address operator) public view returns (address) {
-        return allocatorFor[operator];
+        return delegation.operatorDetails(operator).allocator;
     }
 
     /// @notice Returns the epoch for lookup in the slashing history and whether

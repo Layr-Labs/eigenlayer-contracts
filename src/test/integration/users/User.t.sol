@@ -79,7 +79,7 @@ contract User is Test {
         emit log(_name(".registerAsOperator"));
 
         IDelegationManager.OperatorDetails memory details = IDelegationManager.OperatorDetails({
-            __deprecated_earningsReceiver: address(this),
+            allocator: address(this),
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
