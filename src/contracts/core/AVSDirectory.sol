@@ -169,17 +169,17 @@ contract AVSDirectory is
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             // Assert `operator` is registered for this iterations operator set.
             require(
-                isMember[msg.sender][operator][operatorSetIds[i]],
+                isMember[avs][operator][operatorSetIds[i]],
                 "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
             // Mutate `isMember` to `false`.
-            isMember[msg.sender][operator][operatorSetIds[i]] = false;
+            isMember[avs][operator][operatorSetIds[i]] = false;
 
-            emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
+            emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: avs, id: operatorSetIds[i]}));
         }
 
-        MemberInfo storage member = memberInfo[msg.sender][operator];
+        MemberInfo storage member = memberInfo[avs][operator];
 
         // The above assertion makes underflow logically impossible here.
         unchecked {
@@ -189,7 +189,7 @@ contract AVSDirectory is
         // Set the operator as deregistered if no longer registered for any operator sets
         if (member.inTotalSets == 0) {
             member.isLegacyOperator = false;
-            emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, false);
+            emit OperatorAVSRegistrationStatusUpdated(operator, avs, false);
         }
     }
 
