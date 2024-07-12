@@ -89,7 +89,7 @@ contract AVSDirectory is
             delegation.isOperator(operator),
             "AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
         );
-        
+
         // Assert that `operatorSignature.signature` is a valid signature for operator set registrations.
         EIP1271SignatureUtils.checkSignature_EIP1271(
             operator,
@@ -115,7 +115,6 @@ contract AVSDirectory is
 
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
                 !isMember[msg.sender][operator][operatorSetIds[i]],
@@ -234,7 +233,7 @@ contract AVSDirectory is
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
-        
+
         // Mutate `member.isLegacyOperator` to `true`.
         member.isLegacyOperator = true;
 
