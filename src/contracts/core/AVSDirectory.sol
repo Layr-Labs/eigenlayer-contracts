@@ -136,14 +136,14 @@ contract AVSDirectory is
 
     /**
      * @notice Called by an operator to deregister from an operator set
-     * 
+     *
      * @param avs The address of the AVS to deregister the operator from.
      * @param operatorSetIds The IDs of the operator sets.
-     * 
+     *
      * @dev msg.sender used is the operator
      */
     function deregisterFromAVSOperatorSets(
-        address avs, 
+        address avs,
         uint32[] calldata operatorSetIds
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         _deregisterFromOperatorSets(avs, msg.sender, operatorSetIds);
@@ -164,11 +164,7 @@ contract AVSDirectory is
         _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
-    function _deregisterFromOperatorSets(
-        address avs,
-        address operator,
-        uint32[] calldata operatorSetIds
-    ) internal {
+    function _deregisterFromOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) internal {
         // Loop over `operatorSetIds` array and deregister `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             // Assert `operator` is registered for this iterations operator set.
