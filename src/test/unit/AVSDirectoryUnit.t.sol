@@ -224,7 +224,7 @@ contract AVSDirectoryUnitTests_domainSeparator is AVSDirectoryUnitTests {
 }
 
 contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUnitTests {
-    event OperatorAddedToOperatorSet(address operator, IAVSDirectory.OperatorSet operatorSet);
+    event OperatorAddedToOperatorSet(address operator, address avs, uint32 operatorSetId);
 
     function testFuzz_revert_SignatureIsExpired(
         address operator,
@@ -395,7 +395,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 
         for (uint256 i; i < oids.length; ++i) {
             cheats.expectEmit(true, false, false, false, address(avsDirectory));
-            emit OperatorAddedToOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), oids[i]));
+            emit OperatorAddedToOperatorSet(operator, address(this), oids[i]);
         }
 
         avsDirectory.registerOperatorToOperatorSets(
@@ -437,7 +437,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         emit OperatorAVSRegistrationStatusUpdated(operator, address(this), true);
 
         cheats.expectEmit(true, false, false, false, address(avsDirectory));
-        emit OperatorAddedToOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), operatorSetId));
+        emit OperatorAddedToOperatorSet(operator, address(this), operatorSetId);
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
@@ -451,7 +451,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 }
 
 contract AVSDirectoryUnitTests_deregisterFromAVSOperatorSets is AVSDirectoryUnitTests {
-    event OperatorRemovedFromOperatorSet(address operator, IAVSDirectory.OperatorSet operatorSet);
+    event OperatorRemovedFromOperatorSet(address operator, address avs, uint32 operatorSetId);
 
     function testFuzz_revert_OperatorNotInOperatorSet(uint256 operatorPk, uint32 operatorSetId) public virtual {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
@@ -480,7 +480,7 @@ contract AVSDirectoryUnitTests_deregisterFromAVSOperatorSets is AVSDirectoryUnit
         oids[0] = operatorSetId;
 
         cheats.expectEmit(true, false, false, false, address(avsDirectory));
-        emit OperatorRemovedFromOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), operatorSetId));
+        emit OperatorRemovedFromOperatorSet(operator, address(this), operatorSetId);
 
         cheats.expectEmit(true, true, true, false, address(avsDirectory));
         emit OperatorAVSRegistrationStatusUpdated(operator, address(this), true);
@@ -496,7 +496,7 @@ contract AVSDirectoryUnitTests_deregisterFromAVSOperatorSets is AVSDirectoryUnit
 }
 
 contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirectoryUnitTests {
-    event OperatorRemovedFromOperatorSet(address operator, IAVSDirectory.OperatorSet operatorSet);
+    event OperatorRemovedFromOperatorSet(address operator, address avs, uint32 operatorSetId);
 
     function testFuzz_revert_OperatorNotInOperatorSet(uint256 operatorPk, uint32 operatorSetId) public virtual {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
@@ -524,7 +524,7 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
         oids[0] = operatorSetId;
 
         cheats.expectEmit(true, false, false, false, address(avsDirectory));
-        emit OperatorRemovedFromOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), operatorSetId));
+        emit OperatorRemovedFromOperatorSet(operator, address(this), operatorSetId);
 
         cheats.expectEmit(true, true, true, false, address(avsDirectory));
         emit OperatorAVSRegistrationStatusUpdated(operator, address(this), true);

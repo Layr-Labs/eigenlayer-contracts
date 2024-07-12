@@ -124,7 +124,7 @@ contract AVSDirectory is
             // Mutate `isMember` to `true`.
             isMember[msg.sender][operator][operatorSetIds[i]] = true;
 
-            emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
+            emit OperatorAddedToOperatorSet(operator, msg.sender, operatorSetIds[i]);
         }
 
         // Increase `member.inTotalSets` by `operatorSetIds.length`.
@@ -176,7 +176,7 @@ contract AVSDirectory is
             // Mutate `isMember` to `false`.
             isMember[avs][operator][operatorSetIds[i]] = false;
 
-            emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: avs, id: operatorSetIds[i]}));
+            emit OperatorRemovedFromOperatorSet(operator, avs, operatorSetIds[i]);
         }
 
         MemberInfo storage member = memberInfo[avs][operator];
