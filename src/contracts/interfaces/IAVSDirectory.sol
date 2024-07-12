@@ -9,11 +9,6 @@ interface IAVSDirectory is ISignatureUtils {
         bool isLegacyOperator;
     }
 
-    struct OperatorSet {
-        address avs;
-        uint32 id;
-    }
-
     /**
      *  @notice Emitted when an operator's registration status with an AVS is updated.
      *  Specifically, when an operator enters its first operator set for an AVS, or
@@ -22,10 +17,10 @@ interface IAVSDirectory is ISignatureUtils {
     event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, bool isLegacyOperator);
 
     /// @notice Emitted when an operator is added to an operator set.
-    event OperatorAddedToOperatorSet(address operator, OperatorSet operatorSet);
+    event OperatorAddedToOperatorSet(address operator, address avs, uint32 operatorSetId);
 
     /// @notice Emitted when an operator is removed from an operator set.
-    event OperatorRemovedFromOperatorSet(address operator, OperatorSet operatorSet);
+    event OperatorRemovedFromOperatorSet(address operator, address avs, uint32 operatorSetId);
 
     /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
     /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
