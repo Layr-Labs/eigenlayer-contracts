@@ -14,84 +14,12 @@ contract Slasher is SlasherStorage {
     uint256 constant MAGNITUDE_ALLOCATION_DELAY = 21 days;
     uint256 constant MAGNITUDE_DEALLOCATION_DELAY = 21 days;
     uint256 constant MAX_PENDING_MAGNITUDE_UPDATES = 3;
+    uint256 constant MAX_PENDING_TOTAL_MAGNITUDE_UPDATES = 6;
+    /// TODO Figure out reasonable limit for this
+    uint256 constant FIXED_TOTAL_MAGNITUDE_LIMIT = 1e28;
 
-    /**
-     * @notice this struct is used in MagnitudeAdjustmentParam in order to specify
-     * an operator's slashability for a certain operator set
-     * @param operatorSet the operator set to change slashing parameters for
-     * @param magnitudeDiff magnitude difference; the difference in proportional parts of the operator's slashable stake
-     * that the operator set is getting. This struct is used either in allocating or deallocating
-     * slashable stake to an operator set. Slashable stake for an operator set is
-     * (slashableMagnitude / sum of all slashableMagnitudes for the strategy/operator + nonSlashableMagnitude) of
-     * an operator's delegated stake.
-     */
-    struct OperatorSetMagnitudeParam {
-        OperatorSet operatorSet;
-        uint64 magnitudeDiff; 
-    }
-
-    /**
-     * @notice Input param struct used for functions queueAllocation and queueDeallocation.
-     * A structure defining a set of operator-based slashing configurations
-     * to manage slashable stake.
-     * @param strategy each magnitude param is defined within a single strategy
-     * @param operatorSetMagnitudeParams the input magnitude parameters defining the amount
-     * the operator set is able to slash an operator. This is passed as an array of
-     * operator sets and magnitudes for a given
-     */
-    struct MagnitudeAdjustmentParam {
-        IStrategy strategy;
-        OperatorSetMagnitudeParam[] operatorSetMagnitudeParams;
-    }
-
-    /**
-     * @notice Used for historical magnitude updates in mapping
-     * operator => IStrategy => avs => operatorSetId => MagnitudeUpdate[]
-     * New updates are pushed whenever queueDeallocations
-     * or completeAllocations is called.
-     */
-    struct MagnitudeUpdate {
-        uint32 timestamp;
-        uint64 magnitude;
-    }
-    
-    /**
-     * @notice Used for historical magnitude updates in mapping
-     * operator => IStrategy => TotalAndNonslashableUpdate[]
-     * New total magnitude updates are pushed whenever queueDeallocations
-     * or completeAllocations is called.
-     */
-    struct TotalAndNonslashableUpdate {
-        uint32 timestamp;
-        uint64 totalMagnitude;
-        uint64 nonSlashableMagnitude;
-    }
-
-    /// EVENTS
-    
-    event QueuedAllocation(
-        address operator,
-        IStrategy strategy,
-        OperatorSet operatorSet,
-        uint32 effectTimestamp,
-        uint64 slashableMagnitude
-    );
-    
-    event QueuedDeallocation(
-        address operator,
-        IStrategy strategy,
-        OperatorSet operatorSet,
-        uint32 effectTimestamp,
-        uint64 slashableMagnitude
-    );
-
-    event TotalAndNonSlashableMagnitudeUpdated(
-        address operator,
-        IStrategy strategy,
-        uint32 effectTimestamp,
-        uint64 nonSlashableMagnitude,
-        uint64 totalSlashableMagnitude
-    );
+    /// @dev Chain ID at the time of contract deployment
+    uint256 internal immutable ORIGINAL_CHAIN_ID;
 
     /// operator => strategy => avs => operatorSetId => MagnitudeUpdate[]
     mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => MagnitudeUpdate[])))) private _magnitudeUpdates;
@@ -102,164 +30,68 @@ contract Slasher is SlasherStorage {
     constructor(
         IStrategyManager _strategyManager,
         IDelegationManager _delegationManager
-    ) SlasherStorage(_strategyManager, _delegationManager) {}
-
-    /**
-     * @notice Queues slashing magnitude deallocation for an 
-     * (operator, strategy, operatorSet) tuple.
-     * Queues magnitude deallocation 21 days from now which will be automatically applied
-     * at that respective time.
-     * 
-     * @param operator the operator whom the slashing parameters are being changed
-     * @param deallocationParams deallocation params with differences to subtract from current magnitudes
-     * @param allocatorSignature if non-empty is the signature of the allocator on 
-     * the modification. if empty, the msg.sender must be the allocator for the 
-     * operator
-     *
-     * @dev pushes a MagnitudeUpdate and TotalAndNonslashableUpdate to take effect in 21 days
-     * @dev reverts if magnitudeDiff > allocated magnitude
-     * since you cannot deallocate more than is already allocated
-     * @dev emits event queueDeallocation
-     */
-    function queueDeallocation(
-        address operator,
-        MagnitudeAdjustmentParam[] calldata deallocationParams,
-        SignatureWithExpiry calldata allocatorSignature // TODO: implement signature verification
-    ) external returns(uint32 effectTimestamp) {
-        // perform allocator signature verification if not allocator
-        if (msg.sender != getAllocatorFor(operator)) {
-            // TODO
-        }
-        effectTimestamp = uint32(block.timestamp + MAGNITUDE_DEALLOCATION_DELAY);
-
-        for (uint256 i = 0; i < deallocationParams.length; ++i) {
-            IStrategy strategy = deallocationParams[i].strategy;
-            TotalAndNonslashableUpdate storage totalMagnitudeUpdate = _getLatestTotalAndNonslashableUpdate(operator, strategy);
-            uint64 nonslashableMagnitude = totalMagnitudeUpdate.nonSlashableMagnitude;
-            
-            for (uint256 j = 0; j < deallocationParams[i].operatorSetMagnitudeParams.length; ++j) {
-                OperatorSet calldata operatorSet = deallocationParams[i].operatorSetMagnitudeParams[j].operatorSet;
-                uint64 decrementedMagnitude = deallocationParams[i].operatorSetMagnitudeParams[j].magnitudeDiff;
-                // Get either current or queued allocated magnitude for operatorSet
-                MagnitudeUpdate storage prevMagnitudeUpdate = _getLatestMagnitudeUpdate(operator, strategy, operatorSet);
-                uint64 allocatedMagnitude = prevMagnitudeUpdate.magnitude;
-                require(
-                    decrementedMagnitude <= allocatedMagnitude,
-                    "Slasher.queueDeallocation: magnitudeDiff exceeds allocated magnitude"
-                );
-                _updateMagnitudeHistory({
-                    operator: operator,
-                    strategy: strategy,
-                    operatorSet: operatorSet,
-                    magnitudeUpdate: prevMagnitudeUpdate,
-                    newMagnitude: allocatedMagnitude - decrementedMagnitude,
-                    effectTimestamp: effectTimestamp
-                });
-                emit QueuedDeallocation(operator, strategy, operatorSet, effectTimestamp, allocatedMagnitude - decrementedMagnitude);
-                // add decremented magnitude back to nonslashableMagnitude
-                nonslashableMagnitude += decrementedMagnitude;
-            }
-
-            // After updating magnitudes for each operatorSet, push/update a TotalAndNonslashableUpdate with updated nonslashableMagnitude
-            _updateTotalAndNonslashableHistory({
-                operator: operator,
-                strategy: strategy,
-                totalAndNonslashableUpdate: totalMagnitudeUpdate,
-                newTotalMagnitude: totalMagnitudeUpdate.totalMagnitude,
-                newNonslashableMagnitude: nonslashableMagnitude,
-                effectTimestamp: effectTimestamp
-            });
-            emit TotalAndNonSlashableMagnitudeUpdated(
-                operator,
-                strategy,
-                effectTimestamp,
-                nonslashableMagnitude,
-                totalMagnitudeUpdate.totalMagnitude
-            );
-        }
-
+    ) SlasherStorage(_strategyManager, _delegationManager) {
+        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
+    function initialize(
+        address initialOwner,
+        IPauserRegistry _pauserRegistry,
+        uint256 initialPausedStatus
+    ) external initializer {
+        _DOMAIN_SEPARATOR = _calculateDomainSeparator();
+        _initializePauser(_pauserRegistry, initialPausedStatus);
+        _transferOwnership(initialOwner);
+    }
+
+    /*******************************************************************************
+                                 EXTERNAL FUNCTIONS
+    *******************************************************************************/
+
     /**
-     * @notice Queues slashing magnitude allocation for an
-     * (operator, strategy, operatorSet) tuple.
-     * Queues magnitude allocation 21 days from now which will be automatically applied
-     * at that respective time.
-     * 
-     * @param operator the operator whom the slashing parameters are being changed
-     * @param allocationParams allocation params with differences to add to current magnitudes
-     * @param allocatorSignature if non-empty is the signature of the allocator on 
-     * the modification. if empty, the msg.sender must be the allocator for the 
+     * @notice Queues magnitude adjustment updates of type ALLOCATION or DEALLOCATION
+     * The magnitude allocation takes 21 days from time when it is queued to take effect.
+     *
+     * @param operator the operator whom the magnitude parameters are being adjusted
+     * @param adjustmentParams allocation adjustment params with differences to add/subtract to current magnitudes
+     * @param allocatorSignature if non-empty is the signature of the allocator on
+     * the modification. if empty, the msg.sender must be the allocator for the
      * operator
      *
      * @dev pushes a MagnitudeUpdate and TotalAndNonslashableUpdate to take effect in 21 days
-     * overrwrites update if already exists for that effective timestamp
-     * @dev reverts if nonslashableMagnitude < total magnitude increase
-     * since queued allocation needs to be backed by nonslashableMagnitude portion
-     * @dev emits event queueAllocation
+     * @dev If ALLOCATION adjustment type:
+     * reverts if sum of magnitudeDiffs > nonslashable magnitude for the latest pending update - sum of all pending allocations
+     * since one cannot allocate more than is nonslahsable
+     * @dev if DEALLOCATION adjustment type:
+     * reverts if magnitudeDiff > allocated magnitude for the latest pending update
+     * since one cannot deallocate more than is already allocated
+     * @dev reverts if there are more than 3 pending allocations/deallocations for the given (operator, strategy, operatorSet) tuple
+     * @dev emits events MagnitudeUpdated, TotalAndNonslashableMagnitudeUpdated
      */
-    function queueAllocation(
+    function queueReallocation(
         address operator,
-        MagnitudeAdjustmentParam[] calldata allocationParams,
-        SignatureWithExpiry calldata allocatorSignature // TODO: implement signature verification
-    ) external returns(uint32 effectTimestamp) {
+        MagnitudeAdjustmentsParam[] calldata adjustmentParams,
+        SignatureWithSaltAndExpiry calldata allocatorSignature
+    ) external returns (uint32 effectTimestamp) {
         // perform allocator signature verification if not allocator
-        if (msg.sender != getAllocatorFor(operator)) {
-            // TODO
-        }
-        effectTimestamp = uint32(block.timestamp + MAGNITUDE_ALLOCATION_DELAY);
-
-        for (uint256 i = 0; i < allocationParams.length; ++i) {
-            // iterate for each strategy
-            IStrategy strategy = allocationParams[i].strategy;
-            TotalAndNonslashableUpdate storage totalMagnitudeUpdate = _getLatestTotalAndNonslashableUpdate(operator, strategy);
-            uint64 nonslashableMagnitude = totalMagnitudeUpdate.nonSlashableMagnitude;
-
-            for (uint256 j = 0; j < allocationParams[i].operatorSetMagnitudeParams.length; ++j) {
-                // iterate for each operatorSet for a given strategy
-                OperatorSet calldata operatorSet = allocationParams[i].operatorSetMagnitudeParams[j].operatorSet;
-                uint64 addedMagnitude = allocationParams[i].operatorSetMagnitudeParams[j].magnitudeDiff;
-                
-                // check pending updates, if more than 3 pushed updates than revert
-                require(checkPendingUpdates(operator, strategy, operatorSet), "Slasher.queueAllocation: too many pending updates");
-                // check magnitude increase is backed by nonslashableMagnitude
-                require(
-                    addedMagnitude <= nonslashableMagnitude,
-                    "Slasher.queueAllocation: magnitudeDiff exceeds nonslashableMagnitude"
-                );
-
-                // Get either current or queued allocated magnitude for operatorSet to add to
-                MagnitudeUpdate storage prevMagnitudeUpdate = _getLatestMagnitudeUpdate(operator, strategy, operatorSet);
-                uint64 prevMagnitude = prevMagnitudeUpdate.magnitude;
-                _updateMagnitudeHistory({
-                    operator: operator,
-                    strategy: strategy,
-                    operatorSet: operatorSet,
-                    magnitudeUpdate: prevMagnitudeUpdate,
-                    newMagnitude: prevMagnitude + addedMagnitude,
-                    effectTimestamp: effectTimestamp
-                });
-                emit QueuedAllocation(operator, strategy, operatorSet, effectTimestamp, prevMagnitude + addedMagnitude);
-                // subtract from nonslashable which was allocated to this operatorSet
-                nonslashableMagnitude -= addedMagnitude;
-            }
-
-            // After updating magnitudes for each operatorSet, push/update a TotalAndNonslashableUpdate with updated nonslashableMagnitude
-            _updateTotalAndNonslashableHistory({
-                operator: operator,
-                strategy: strategy,
-                totalAndNonslashableUpdate: totalMagnitudeUpdate,
-                newTotalMagnitude: totalMagnitudeUpdate.totalMagnitude,
-                newNonslashableMagnitude: nonslashableMagnitude,
-                effectTimestamp: effectTimestamp
-            });
-            emit TotalAndNonSlashableMagnitudeUpdated(
+        address allocator = getAllocatorFor(operator);
+        if (msg.sender != allocator) {
+            bytes32 digestHash = calculateReallocationDigestHash(
                 operator,
-                strategy,
-                effectTimestamp,
-                nonslashableMagnitude,
-                totalMagnitudeUpdate.totalMagnitude
+                adjustmentParams,
+                allocatorSignature.salt,
+                allocatorSignature.expiry
             );
+            _verifyAllocatorSignature(allocator, digestHash, allocatorSignature);
+        }
+
+        effectTimestamp = uint32(block.timestamp + MAGNITUDE_ALLOCATION_DELAY);
+        for (uint256 i = 0; i < adjustmentParams.length; ++i) {
+            if (adjustmentParams[i].magnitudeAdjustmentType == MagnitudeAdjustmentType.ALLOCATION) {
+                _queueAllocation(operator, adjustmentParams[i], effectTimestamp);
+            } else {
+                _queueDeallocation(operator, adjustmentParams[i], effectTimestamp);
+            }
         }
     }
 
@@ -272,14 +104,54 @@ contract Slasher is SlasherStorage {
      */
     function queueMagnitudeDilution(
         address operator,
-        uint64 nonslashableAdded,
-        SignatureWithExpiry calldata allocatorSignature
+        IStrategy[] calldata strategies,
+        uint64[] calldata nonslashableToAdd,
+        SignatureWithSaltAndExpiry calldata allocatorSignature
     ) external returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude) {
+        // perform allocator signature verification if not allocator
+        address allocator = getAllocatorFor(operator);
+        if (msg.sender != allocator) {
+            bytes32 digestHash = calculateMagnitudeDilutionDigestHash(
+                operator,
+                strategies,
+                nonslashableToAdd,
+                allocatorSignature.salt,
+                allocatorSignature.expiry
+            );
+            _verifyAllocatorSignature(allocator, digestHash, allocatorSignature);
+        }
 
+        uint32 effectTimestamp = uint32(block.timestamp + MAGNITUDE_ALLOCATION_DELAY);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            require(
+                checkPendingTotalMagnitudeUpdates(operator, strategies[i]),
+                "Slasher.queueMagnitudeConcentration: too many pending total magnitude updates"
+            );
+            TotalAndNonslashableUpdate storage totalMagnitudeUpdate = _getLatestTotalAndNonslashableUpdate(operator, strategies[i]);
+            uint64 nonslashableMagnitude = totalMagnitudeUpdate.nonslashableMagnitude;
+            uint64 totalMagnitude = totalMagnitudeUpdate.totalMagnitude;
+
+            require(
+                nonslashableToAdd[i] <= FIXED_TOTAL_MAGNITUDE_LIMIT,
+                "Slasher.queueMagnitudeConcentration: nonslashableAdded exceeds FIXED_TOTAL_MAGNITUDE_LIMIT"
+            );
+            newTotalMagnitude = totalMagnitude + nonslashableToAdd[i];
+            newNonslashableMagnitude = nonslashableMagnitude + nonslashableToAdd[i];
+            // update total magnitude with decremented nonslashableMagnitude
+            _updateTotalAndNonslashableHistory({
+                operator: operator,
+                strategy: strategies[i],
+                totalAndNonslashableUpdate: totalMagnitudeUpdate,
+                newTotalMagnitude: newTotalMagnitude,
+                newNonslashableMagnitude: newNonslashableMagnitude,
+                newCumulativeAllocationSum: totalMagnitudeUpdate.cumulativeAllocationSum,
+                effectTimestamp: effectTimestamp
+            });
+        }
     }
 
     /**
-     * @notice Decrement from nonslashable magnitude to concentrate all relative magnitude
+     * @notice For a strategy, decrement from nonslashable magnitude to concentrate all relative magnitude
      * proportions for already allocated magnitudes. Efficient way to adjust total magnitude
      * and increase risk expsore across all operatorSets. 
      *
@@ -287,10 +159,50 @@ contract Slasher is SlasherStorage {
      */
     function queueMagnitudeConcentration(
         address operator,
-        uint64 nonslashableDecremented,
-        SignatureWithExpiry calldata allocatorSignature
+        IStrategy[] calldata strategies,
+        uint64[] calldata nonslashableToDecrement,
+        SignatureWithSaltAndExpiry calldata allocatorSignature
     ) external returns(uint64 newNonslashableMagnitude, uint64 newTotalMagnitude) {
+        // perform allocator signature verification if not allocator
+        address allocator = getAllocatorFor(operator);
+        if (msg.sender != allocator) {
+            bytes32 digestHash = calculateMagnitudeConcentrationDigestHash(
+                operator,
+                strategies,
+                nonslashableToDecrement,
+                allocatorSignature.salt,
+                allocatorSignature.expiry
+            );
+            _verifyAllocatorSignature(allocator, digestHash, allocatorSignature);
+        }
 
+        uint32 effectTimestamp = uint32(block.timestamp + MAGNITUDE_ALLOCATION_DELAY);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            require(
+                checkPendingTotalMagnitudeUpdates(operator, strategies[i]),
+                "Slasher.queueMagnitudeConcentration: too many pending total magnitude updates"
+            );
+            TotalAndNonslashableUpdate storage totalMagnitudeUpdate = _getLatestTotalAndNonslashableUpdate(operator, strategies[i]);
+            uint64 nonslashableMagnitude = totalMagnitudeUpdate.nonslashableMagnitude;
+            uint64 totalMagnitude = totalMagnitudeUpdate.totalMagnitude;
+
+            require(
+                nonslashableToDecrement[i] <= nonslashableMagnitude,
+                "Slasher.queueMagnitudeConcentration: nonslashableDecremented exceeds nonslashableMagnitude"
+            );
+            newTotalMagnitude = totalMagnitude - nonslashableToDecrement[i];
+            newNonslashableMagnitude = nonslashableMagnitude - nonslashableToDecrement[i];
+            // update total magnitude with decremented nonslashableMagnitude
+            _updateTotalAndNonslashableHistory({
+                operator: operator,
+                strategy: strategies[i],
+                totalAndNonslashableUpdate: totalMagnitudeUpdate,
+                newTotalMagnitude: newTotalMagnitude,
+                newNonslashableMagnitude: newNonslashableMagnitude,
+                newCumulativeAllocationSum: totalMagnitudeUpdate.cumulativeAllocationSum,
+                effectTimestamp: effectTimestamp
+            });
+        }
     }
 
 	/**
@@ -348,6 +260,144 @@ contract Slasher is SlasherStorage {
                                  INTERNAL FUNCTIONS
     *******************************************************************************/
 
+    function _verifyAllocatorSignature(
+        address allocator,
+        bytes32 allocatorDigestHash,
+        SignatureWithSaltAndExpiry calldata allocatorSignature
+    ) internal {
+        // check the signature expiry
+        require(
+            allocatorSignature.expiry >= block.timestamp,
+            "Slasher._verifyAllocatorSignature: allocator signature expired"
+        );
+        // Assert allocator's signature cannot be replayed.
+        require(
+            !allocatorSaltIsSpent[allocator][allocatorSignature.salt],
+            "AVSDirectory.updateStandbyParams: salt spent"
+        );
+
+        // Assert allocator's signature is valid.
+        EIP1271SignatureUtils.checkSignature_EIP1271(
+            allocator,
+            allocatorDigestHash,
+            allocatorSignature.signature
+        );
+        // Spend salt.
+        allocatorSaltIsSpent[allocator][allocatorSignature.salt] = true;
+    }
+
+    /// TODO natspec
+    function _queueAllocation(
+        address operator,
+        MagnitudeAdjustmentsParam calldata allocationParam,
+        uint32 effectTimestamp
+    ) internal {
+        IStrategy strategy = allocationParam.strategy;
+        TotalAndNonslashableUpdate storage latestTotalUpdate = _getLatestTotalAndNonslashableUpdate(operator, strategy);
+        TotalAndNonslashableUpdate memory currentTotalUpdate = getTotalAndNonslashableUpdate(operator, strategy, uint32(block.timestamp));
+        // notice that we need to take the current available nonslashableMagnitude subtracted the pending queued allocations
+        // since the queued allocations will also be backed by the current non slashable magnitude and we can't double count the current
+        // nonslashable magnitude
+        // shouldn't revert since amount is cumulative and monotonically increasing
+        // and pending allocations previously queued could only be backed from current nonslashableMagnitude
+        uint64 nonslashableMagnitude = currentTotalUpdate.nonslashableMagnitude - (latestTotalUpdate.cumulativeAllocationSum - currentTotalUpdate.cumulativeAllocationSum);
+        uint64 allocationSum = 0;
+
+        for (uint256 i = 0; i < allocationParam.magnitudeAdjustments.length; ++i) {
+            // iterate for each operatorSet for a given strategy
+            OperatorSet calldata operatorSet = allocationParam.magnitudeAdjustments[i].operatorSet;
+            uint64 addedMagnitude = allocationParam.magnitudeAdjustments[i].magnitudeDiff;
+            
+            // check pending updates, if more than 3 pushed updates than revert
+            require(checkPendingMagnitudeUpdates(operator, strategy, operatorSet), "Slasher._queueAllocation: too many pending updates");
+            // check magnitude increase is backed by nonslashableMagnitude
+            require(
+                addedMagnitude <= nonslashableMagnitude,
+                "Slasher._queueAllocation: magnitudeDiff exceeds nonslashableMagnitude"
+            );
+
+            // Get either current or queued allocated magnitude for operatorSet to add to
+            MagnitudeUpdate storage prevMagnitudeUpdate = _getLatestMagnitudeUpdate(operator, strategy, operatorSet);
+            _updateMagnitudeHistory({
+                operator: operator,
+                strategy: strategy,
+                operatorSet: operatorSet,
+                magnitudeUpdate: prevMagnitudeUpdate,
+                newMagnitude: prevMagnitudeUpdate.magnitude + addedMagnitude,
+                effectTimestamp: effectTimestamp
+            });
+            // subtract from nonslashable which was allocated to this operatorSet
+            nonslashableMagnitude -= addedMagnitude;
+            allocationSum += addedMagnitude;
+        }
+
+        // After updating magnitudes for each operatorSet, push/update a TotalAndNonslashableUpdate with updated queued nonslashableMagnitude
+        _updateTotalAndNonslashableHistory({
+            operator: operator,
+            strategy: strategy,
+            totalAndNonslashableUpdate: latestTotalUpdate,
+            newTotalMagnitude: latestTotalUpdate.totalMagnitude,
+            newNonslashableMagnitude: nonslashableMagnitude,
+            newCumulativeAllocationSum: latestTotalUpdate.cumulativeAllocationSum + allocationSum,
+            effectTimestamp: effectTimestamp
+        });
+    }
+
+    /// TODO natspec
+    function _queueDeallocation(
+        address operator,
+        MagnitudeAdjustmentsParam calldata deallocationParam,
+        uint32 effectTimestamp
+    ) internal {
+        IStrategy strategy = deallocationParam.strategy;
+        TotalAndNonslashableUpdate storage latestTotalUpdate = _getLatestTotalAndNonslashableUpdate(operator, strategy);
+        uint64 nonslashableMagnitude = latestTotalUpdate.nonslashableMagnitude;
+        
+        for (uint256 i = 0; i < deallocationParam.magnitudeAdjustments.length; ++i) {
+            OperatorSet calldata operatorSet = deallocationParam.magnitudeAdjustments[i].operatorSet;
+            uint64 decrementedMagnitude = deallocationParam.magnitudeAdjustments[i].magnitudeDiff;
+            // check pending updates, if more than 3 pushed updates than revert
+            require(checkPendingMagnitudeUpdates(operator, strategy, operatorSet), "Slasher._queueAllocation: too many pending updates");
+            // Get either current or queued allocated magnitude for operatorSet
+            MagnitudeUpdate storage prevMagnitudeUpdate = _getLatestMagnitudeUpdate(operator, strategy, operatorSet);
+            uint64 allocatedMagnitude = prevMagnitudeUpdate.magnitude;
+            require(
+                decrementedMagnitude <= allocatedMagnitude,
+                "Slasher.queueDeallocation: magnitudeDiff exceeds allocated magnitude"
+            );
+            _updateMagnitudeHistory({
+                operator: operator,
+                strategy: strategy,
+                operatorSet: operatorSet,
+                magnitudeUpdate: prevMagnitudeUpdate,
+                newMagnitude: allocatedMagnitude - decrementedMagnitude,
+                effectTimestamp: effectTimestamp
+            });
+            emit MagnitudeUpdated(operator, strategy, operatorSet, effectTimestamp, allocatedMagnitude - decrementedMagnitude);
+            // add decremented magnitude back to nonslashableMagnitude
+            nonslashableMagnitude += decrementedMagnitude;
+        }
+
+        // After updating magnitudes for each operatorSet, push/update a TotalAndNonslashableUpdate with updated nonslashableMagnitude
+        _updateTotalAndNonslashableHistory({
+            operator: operator,
+            strategy: strategy,
+            totalAndNonslashableUpdate: latestTotalUpdate,
+            newTotalMagnitude: latestTotalUpdate.totalMagnitude,
+            newNonslashableMagnitude: nonslashableMagnitude,
+            newCumulativeAllocationSum: latestTotalUpdate.cumulativeAllocationSum,
+            effectTimestamp: effectTimestamp
+        });
+        emit TotalAndNonslashableMagnitudeUpdated(
+            operator,
+            strategy,
+            effectTimestamp,
+            latestTotalUpdate.totalMagnitude,
+            nonslashableMagnitude,
+            latestTotalUpdate.cumulativeAllocationSum
+        );
+    }
+
     /// @notice push or update the latest magnitude update for the given operator, strategy, and operatorSet
     /// depending on the current effectTimestamp
     function _updateMagnitudeHistory(
@@ -366,6 +416,7 @@ contract Slasher is SlasherStorage {
                 magnitude: newMagnitude
             }));
         }
+        emit MagnitudeUpdated(operator, strategy, operatorSet, effectTimestamp, newMagnitude);
     }
 
     /// @notice push or update the latest TotalAndNonslashable update for the given operator, strategy
@@ -376,23 +427,72 @@ contract Slasher is SlasherStorage {
         TotalAndNonslashableUpdate storage totalAndNonslashableUpdate,
         uint64 newTotalMagnitude,
         uint64 newNonslashableMagnitude,
+        uint64 newCumulativeAllocationSum,
         uint32 effectTimestamp
     ) internal {
         if (totalAndNonslashableUpdate.timestamp == effectTimestamp) {
             totalAndNonslashableUpdate.totalMagnitude = newTotalMagnitude;
-            totalAndNonslashableUpdate.nonSlashableMagnitude = newNonslashableMagnitude;
+            totalAndNonslashableUpdate.nonslashableMagnitude = newNonslashableMagnitude;
         } else {
             _totalMagnitudeUpdates[operator][strategy].push(TotalAndNonslashableUpdate({
                 timestamp: effectTimestamp,
                 totalMagnitude: newTotalMagnitude,
-                nonSlashableMagnitude: newNonslashableMagnitude
+                nonslashableMagnitude: newNonslashableMagnitude,
+                cumulativeAllocationSum: newCumulativeAllocationSum
             }));
         }
+        emit TotalAndNonslashableMagnitudeUpdated(
+            operator,
+            strategy,
+            effectTimestamp,
+            newTotalMagnitude,
+            newNonslashableMagnitude,
+            newCumulativeAllocationSum
+        );
     }
+
+    /// @notice Return latest magnitude update for the given operator, strategy, and operatorSet
+    /// if empty array, push an empty update
+    function _getLatestMagnitudeUpdate(
+        address operator,
+        IStrategy strategy,
+        OperatorSet calldata operatorSet
+    ) internal returns (MagnitudeUpdate storage) {
+        uint256 magnitudeUpdatesLength = _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id].length;
+        if (magnitudeUpdatesLength == 0) {
+            _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id].push(MagnitudeUpdate({
+                timestamp: 0,
+                magnitude: 0
+            }));
+        }
+        return _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id][magnitudeUpdatesLength - 1];
+    }
+
+    /// @notice Return latest total and nonslashable update for the given operator and strategy
+    /// if empty array, push an empty update
+    function _getLatestTotalAndNonslashableUpdate(
+        address operator,
+        IStrategy strategy
+    ) internal returns (TotalAndNonslashableUpdate storage) {
+        uint256 totalMagnitudeUpdatesLength = _totalMagnitudeUpdates[operator][strategy].length;
+        if (totalMagnitudeUpdatesLength == 0) {
+            _totalMagnitudeUpdates[operator][strategy].push(TotalAndNonslashableUpdate({
+                timestamp: 0,
+                totalMagnitude: 0,
+                nonslashableMagnitude: 0,
+                cumulativeAllocationSum: 0
+            }));
+        }
+        return _totalMagnitudeUpdates[operator][strategy][totalMagnitudeUpdatesLength - 1];
+    }
+
+    /*******************************************************************************
+                                 VIEW FUNCTIONS
+    *******************************************************************************/
 
     /// @notice Rate limit number of allocations/deallocation updates and return whether a new update could be pushed
     /// for a given (operator, strategy, and operatorSet)
-    function checkPendingUpdates(
+    function checkPendingMagnitudeUpdates(
         address operator,
         IStrategy strategy,
         OperatorSet calldata operatorSet
@@ -410,9 +510,22 @@ contract Slasher is SlasherStorage {
             [magnitudeUpdatesLength - MAX_PENDING_MAGNITUDE_UPDATES].timestamp < block.timestamp;
     }
 
-    /*******************************************************************************
-                                 VIEW FUNCTIONS
-    *******************************************************************************/
+    /// @notice Rate limit number of allocations/deallocation updates and return whether a new update could be pushed
+    /// for a given (operator, strategy, and operatorSet)
+    function checkPendingTotalMagnitudeUpdates(
+        address operator,
+        IStrategy strategy
+    ) public view returns (bool) {
+        uint256 totalMagnitudeUpdatesLength = _totalMagnitudeUpdates[operator][strategy].length;
+        if (totalMagnitudeUpdatesLength < MAX_PENDING_TOTAL_MAGNITUDE_UPDATES) {
+            return true;
+        }
+
+        return _totalMagnitudeUpdates
+            [operator]
+            [strategy]
+            [totalMagnitudeUpdatesLength - MAX_PENDING_TOTAL_MAGNITUDE_UPDATES].timestamp < block.timestamp;
+    }
 
     /**
      * @notice Get the current slashable bips an operatorSet has for a given operator and strategy
@@ -474,40 +587,6 @@ contract Slasher is SlasherStorage {
             }
         }
         revert("Slasher.getTotalAndNonslashableUpdate: no totalandnonslashable magnitude update found at timestamp");
-    }
-
-    /// @notice Return latest magnitude update for the given operator, strategy, and operatorSet
-    /// if empty array, push an empty update
-    function _getLatestMagnitudeUpdate(
-        address operator,
-        IStrategy strategy,
-        OperatorSet calldata operatorSet
-    ) internal returns (MagnitudeUpdate storage) {
-        uint256 magnitudeUpdatesLength = _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id].length;
-        if (magnitudeUpdatesLength == 0) {
-            _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id].push(MagnitudeUpdate({
-                timestamp: 0,
-                magnitude: 0
-            }));
-        }
-        return _magnitudeUpdates[operator][strategy][operatorSet.avs][operatorSet.id][magnitudeUpdatesLength - 1];
-    }
-
-    /// @notice Return latest total and nonslashable update for the given operator and strategy
-    /// if empty array, push an empty update
-    function _getLatestTotalAndNonslashableUpdate(
-        address operator,
-        IStrategy strategy
-    ) internal returns (TotalAndNonslashableUpdate storage) {
-        uint256 totalMagnitudeUpdatesLength = _totalMagnitudeUpdates[operator][strategy].length;
-        if (totalMagnitudeUpdatesLength == 0) {
-            _totalMagnitudeUpdates[operator][strategy].push(TotalAndNonslashableUpdate({
-                timestamp: 0,
-                totalMagnitude: 0,
-                nonSlashableMagnitude: 0
-            }));
-        }
-        return _totalMagnitudeUpdates[operator][strategy][totalMagnitudeUpdatesLength - 1];
     }
 
     /**
@@ -606,5 +685,59 @@ contract Slasher is SlasherStorage {
             }
         }
         return (epochForLookup, found);
+    }
+
+    function calculateReallocationDigestHash(
+        address operator,
+        MagnitudeAdjustmentsParam[] calldata adjustmentParams,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        return _calculateDigestHash(
+            keccak256(abi.encode(REALLOCATION_TYPEHASH, operator, adjustmentParams, salt, expiry))
+        );
+    }
+
+    function calculateMagnitudeDilutionDigestHash(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint64[] calldata nonslashableToAdd,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        return _calculateDigestHash(
+            keccak256(abi.encode(MAGNITUDE_DILUTION_TYPEHASH, operator, strategies, nonslashableToAdd, salt, expiry))
+        );
+    }
+
+    function calculateMagnitudeConcentrationDigestHash(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint64[] calldata nonslashableToDecrement,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        return _calculateDigestHash(
+            keccak256(abi.encode(MAGNITUDE_CONCENTRATION_TYPEHASH, operator, strategies, nonslashableToDecrement, salt, expiry))
+        );
+    }
+
+    /// @notice Getter function for the current EIP-712 domain separator for this contract.
+    /// @dev The domain separator will change in the event of a fork that changes the ChainID.
+    function domainSeparator() public view returns (bytes32) {
+        return _calculateDomainSeparator();
+    }
+
+    /// @notice Internal function for calculating the current domain separator of this contract
+    function _calculateDomainSeparator() internal view returns (bytes32) {
+        if (block.chainid == ORIGINAL_CHAIN_ID) {
+            return _DOMAIN_SEPARATOR;
+        } else {
+            return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
+        }
+    }
+
+    function _calculateDigestHash(bytes32 structHash) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
     }
 }

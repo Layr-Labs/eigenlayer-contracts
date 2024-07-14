@@ -10,6 +10,26 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  * @notice SlasherStorage
  */
 abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher, Pausable {
+    /// @notice The EIP-712 typehash for the contract's domain
+    bytes32 public constant DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    /// @notice The EIP-712 typehash for the `QueueReallocation` struct used by the contract
+    bytes32 public constant REALLOCATION_TYPEHASH =
+        keccak256("Reallocation(address operator,MagnitudeAdjustmentsParam[],bytes32 salt,uint256 expiry)");
+    /// @notice The EIP-712 typehash for the `MagnitudeDilution` struct used by the contract
+    bytes32 public constant MAGNITUDE_DILUTION_TYPEHASH =
+        keccak256("MagnitudeDilution(address operator,IStrategy[] strategies,uint64[] nonslashableToAdd,bytes32 salt,uint256 expiry)");
+    /// @notice The EIP-712 typehash for the `MagnitudeConcentration` struct used by the contract
+    bytes32 public constant MAGNITUDE_CONCENTRATION_TYPEHASH =
+        keccak256("MagnitudeConcentration(address operator,IStrategy[] strategies,uint64[] nonslashableToDecrement,bytes32 salt,uint256 expiry)");
+
+    /**
+     * @notice Original EIP-712 Domain separator for this contract.
+     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
+     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
+     */
+    bytes32 internal _DOMAIN_SEPARATOR;
+
     // system contracts
     IStrategyManager public immutable strategyManager;
     IDelegationManager public immutable delegation;
@@ -32,6 +52,10 @@ abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher,
     /// @notice Mapping: operator => strategy => epochs in which the strategy was slashed for the operator
     // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
     mapping(address => mapping(IStrategy => uint32[])) public slashingEpochHistory;
+
+    /// @notice Mapping: allocator => 32-byte salt => whether or not the salt has already been used by the operator.
+    /// @dev Salt is used in the `queueReallocation`, `queueMagnitudeConcentration`, `queueMagnitudeDilution` functions.
+    mapping(address => mapping(bytes32 => bool)) public allocatorSaltIsSpent;
 
     constructor(
         IStrategyManager _strategyManager,
