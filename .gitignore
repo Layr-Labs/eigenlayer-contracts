@@ -27,6 +27,7 @@ broadcast
 # Certora Outputs
 .certora_internal/
 .certora_recent_jobs.json
+emv*certora*/*
 
 #script config file
 # script/M1_deploy.config.json
