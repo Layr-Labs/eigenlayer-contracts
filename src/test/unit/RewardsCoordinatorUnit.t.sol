@@ -2358,7 +2358,3 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         );
     }
 }
-
-contract RewardsCoordinatorUnitTests_viewFunctions is RewardsCoordinatorUnitTests {
-
-}
