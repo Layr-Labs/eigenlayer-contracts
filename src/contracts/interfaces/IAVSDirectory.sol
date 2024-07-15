@@ -118,7 +118,7 @@ interface IAVSDirectory is ISignatureUtils {
 
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 
-    // function memberInfo(address avs, address operator) external view returns (MemberInfo memory);
+    function memberInfo(address avs, address operator) external view returns (uint248 inTotalSets, bool isLegacyOperator);
 
     function isMember(address avs, address operator, uint32 operatorSetId) external view returns (bool);
 
