@@ -27,6 +27,51 @@ interface IAVSDirectory is ISignatureUtils {
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
     /**
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
+     */
+
+    /**
+     *  @notice Called by AVSs to add an operator to an operator set.
+     *
+     *  @param operator The address of the operator to be added to the operator set.
+     *  @param operatorSetIds The IDs of the operator sets.
+     *  @param operatorSignature The signature of the operator on their intent to register.
+     *
+     *  @dev msg.sender is used as the AVS.
+     *  @dev The operator must not have a pending deregistration from the operator set.
+     *  @dev If this is the first operator set in the AVS that the operator is
+     *  registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with
+     *  a REGISTERED status.
+     */
+    function registerOperatorToOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external;
+
+    /**
+     * @notice Called by an operator to deregister from an operator set
+     *
+     * @param avs The address of the AVS to deregister the operator from.
+     * @param operatorSetIds The IDs of the operator sets.
+     *
+     * @dev msg.sender used is the operator
+     */
+    function deregisterFromAVSOperatorSets(address avs, uint32[] calldata operatorSetIds) external;
+
+    /**
+     *  @notice Called by AVSs to remove an operator from an operator set.
+     *
+     *  @param operator The address of the operator to be removed from the operator set.
+     *  @param operatorSetIds The IDs of the operator sets.
+     *
+     *  @dev msg.sender is used as the AVS.
+     */
+    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
+
+    /**
      *  @notice Called by the AVS's service manager contract to register an operator with the AVS.
      *
      *  @param operator The address of the operator to register.
@@ -50,40 +95,6 @@ interface IAVSDirectory is ISignatureUtils {
     function deregisterOperatorFromAVS(address operator) external;
 
     /**
-     *  @notice Called by AVSs to add an operator to an operator set.
-     *
-     *  @param operator The address of the operator to be added to the operator set.
-     *  @param operatorSetIds The IDs of the operator sets.
-     *  @param signature The signature of the operator on their intent to register.
-     *
-     *  @dev msg.sender is used as the AVS.
-     *  @dev The operator must not have a pending deregistration from the operator set.
-     *  @dev If this is the first operator set in the AVS that the operator is
-     *  registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with
-     *  a REGISTERED status.
-     */
-    function registerOperatorToOperatorSets(
-        address operator,
-        uint32[] calldata operatorSetIds,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signature
-    ) external;
-
-    /**
-     *  @notice Called by AVSs or operators to remove an operator from an operator set.
-     *
-     *  @param operator The address of the operator to be removed from the operator set.
-     *  @param operatorSetIds The IDs of the operator sets.
-     *
-     *  @dev msg.sender is used as the AVS.
-     *  @dev The operator must be registered for the msg.sender AVS and the given operator set.
-     *  @dev If this removes the operator from all operator sets for the msg.sender AVS,
-     *  then an OperatorAVSRegistrationStatusUpdated event is emitted with a DEREGISTERED status.
-     */
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
-
-    // VIEW
-
-    /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
      *  @param metadataURI The URI for metadata associated with an AVS.
@@ -93,11 +104,23 @@ interface IAVSDirectory is ISignatureUtils {
     function updateAVSMetadataURI(string calldata metadataURI) external;
 
     /**
-     *  @notice Returns whether the salt has already been used by the operator or not.
+     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
      *
-     *  @dev The salt is used in the `registerOperatorToAVS` function.
+     * @param salt A unique and single use value associated with the approver signature.
      */
+    function cancelSalt(bytes32 salt) external;
+
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
+
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
+
+    // function memberInfo(address avs, address operator) external view returns (MemberInfo memory);
+
+    function isMember(address avs, address operator, uint32 operatorSetId) external view returns (bool);
 
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
@@ -124,10 +147,14 @@ interface IAVSDirectory is ISignatureUtils {
      */
     function calculateOperatorSetRegistrationDigestHash(
         address avs,
-        uint32[] memory operatorSetIds,
+        uint32[] calldata operatorSetIds,
         bytes32 salt,
         uint256 expiry
     ) external view returns (bytes32);
+
+    /// @notice Getter function for the current EIP-712 domain separator for this contract.
+    /// @dev The domain separator will change in the event of a fork that changes the ChainID.
+    function domainSeparator() external view returns (bytes32);
 
     /// @notice The EIP-712 typehash for the Registration struct used by the contract.
     function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32);
