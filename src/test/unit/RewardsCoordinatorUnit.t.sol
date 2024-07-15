@@ -57,6 +57,10 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
 
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
+    /// @notice The activation delay until an updated operator's commission bips takes effect
+    uint32 OPERATOR_COMMISSION_ACTIVATION_DELAY = 17.5 days;
+    /// @notice The maximum commission bips that can be set for an operator
+    uint16 MAX_COMMISSION_BIPS = 10000;
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
 
@@ -74,7 +78,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
 
     /// @dev Index for flag that pauses submitRoots
-    uint8 internal constant PAUSED_SUBMIT_ROOTS = 3;
+    uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
 
     // RewardsCoordinator entities
     address rewardsUpdater = address(1000);
@@ -1123,7 +1127,7 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
 
     function test_Revert_WhenSubmitRootPaused() public {
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_ROOTS);
+        rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_DISABLE_ROOTS);
 
         cheats.expectRevert("Pausable: index is paused");
         rewardsCoordinator.submitRoot(bytes32(0), 0);
@@ -2040,4 +2044,321 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
 
         return claims;
     }
+}
+
+contract RewardsCoordinatorUnitTests_disableRoot is RewardsCoordinatorUnitTests {
+    function testFuzz_disableRoot_Revert_WhenNotRewardsUpdater(
+        bytes32 root,
+        uint32 rootIndex,
+        uint256 randSalt,
+        address invalidRewardsUpdater
+    ) public filterFuzzedAddressInputs(invalidRewardsUpdater) {
+        cheats.prank(invalidRewardsUpdater);
+
+        cheats.expectRevert("RewardsCoordinator: caller is not the rewardsUpdater");
+        rewardsCoordinator.disableRoot(0);
+    }
+
+    function testFuzz_disableRoot_Revert_WhenPaused(
+        bytes32 root,
+        uint32 rootIndex,
+        uint256 randSalt
+    ) public {
+        cheats.prank(pauser);
+        rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_DISABLE_ROOTS);
+
+        cheats.expectRevert("Pausable: index is paused");
+        rewardsCoordinator.disableRoot(0);
+    }
+
+    function testFuzz_disableRoot_Revert_WhenRootIndexOutOfBounds(
+        bytes32 root,
+        uint32 rootIndex
+    ) public {
+        // submitRoots with indexes 0,1,2
+        _submitRoots();
+        cheats.assume(rootIndex > 2);
+
+        cheats.expectRevert("RewardsCoordinator.disableRoot: invalid rootIndex");
+        cheats.prank(rewardsUpdater);
+        rewardsCoordinator.disableRoot(rootIndex);
+    }
+
+    function testFuzz_disableRoot_Revert_WhenRootAlreadyDisabled(
+        bytes32 root,
+        uint32 rootIndex
+    ) public {
+        // submitRoots with indexes 0,1,2
+        _submitRoots();
+        rootIndex = uint32(bound(uint256(rootIndex), 0, 2));
+        
+        cheats.startPrank(rewardsUpdater);
+        rewardsCoordinator.disableRoot(rootIndex);
+
+        cheats.expectRevert("RewardsCoordinator.disableRoot: root already disabled");
+        rewardsCoordinator.disableRoot(rootIndex);
+        cheats.stopPrank();
+    }
+
+    function testeFuzz_disableRoot_Revert_WhenRootAlreadyActivated(
+        bytes32 root,
+        uint32 rootIndex
+    ) public {
+        // submitRoots with indexes 0,1,2
+        _submitRoots();
+        rootIndex = uint32(bound(uint256(rootIndex), 0, 2));
+        cheats.warp(block.timestamp + activationDelay);
+
+        cheats.expectRevert("RewardsCoordinator.disableRoot: root already activated");
+        cheats.prank(rewardsUpdater);
+        rewardsCoordinator.disableRoot(rootIndex);
+    }
+
+    function testFuzz_disableRoot(uint32 rootIndex, uint256 randSalt) public {
+        // Set timestamp to some value in the future
+        cheats.warp(bound(randSalt, 1e5, 1e6));
+        uint256 currTimestamp = block.timestamp;
+        // submitRoots with indexes 0,1,2
+        _submitRoots();
+        rootIndex = uint32(bound(uint256(rootIndex), 0, 2));
+
+        cheats.warp(currTimestamp);
+
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit DistributionRootDisabled(rootIndex);
+        cheats.prank(rewardsUpdater);
+        rewardsCoordinator.disableRoot(rootIndex);
+
+        assertEq(
+            rewardsCoordinator.getDistributionRootAtIndex(rootIndex).disabled,
+            true,
+            "root should be disabled"
+        );
+    }
+
+    function _submitRoots() internal {
+        cheats.warp(1e6);
+        uint256 currTimestamp = block.timestamp;
+        
+        // submitRoots with indexes 0,1,2
+        cheats.startPrank(rewardsUpdater);
+        rewardsCoordinator.submitRoot(bytes32("0"), uint32(block.timestamp - 1));
+
+        cheats.warp(block.timestamp + 2);
+        rewardsCoordinator.submitRoot(bytes32("1"), uint32(block.timestamp - 1));
+
+        cheats.warp(block.timestamp + 2);
+        rewardsCoordinator.submitRoot(bytes32("2"), uint32(block.timestamp - 1));
+
+        cheats.stopPrank();
+    }
+}
+
+contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUnitTests {
+    function testFuzz_operatorCommissionBips_EmptyHistory(
+        address operator,
+        address avs,
+        uint32 operatorSetId
+    ) public {
+        // Check operator commission
+        uint32 operatorCommissionBipsStored = rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId);
+        assertEq(
+            globalCommissionBips,
+            operatorCommissionBipsStored,
+            "Incorrect default operator commission bips"
+        );
+    }
+
+    function testFuzz_setOperatorCommissionBips_Reverts_WhenBipsGreaterThanMax(
+        address operator,
+        address avs,
+        uint32 operatorSetId,
+        uint16 newOperatorCommissionBips
+    ) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(newOperatorCommissionBips > MAX_COMMISSION_BIPS);
+        cheats.expectRevert("RewardsCoordinator.setOperatorCommissionBips: commissionBips too high");
+        cheats.prank(operator);
+        rewardsCoordinator.setOperatorCommissionBips(operator, avs, operatorSetId, newOperatorCommissionBips);
+    }
+
+    function testFuzz_setOperatorCommissionBips_Reverts_OnlyOperator(
+        address operator,
+        address avs,
+        uint32 operatorSetId,
+        uint16 newOperatorCommissionBips,
+        address invalidCaller
+    ) public filterFuzzedAddressInputs(invalidCaller) {
+        cheats.expectRevert("RewardsCoordinator.setOperatorCommissionBips: caller is not operator");
+        cheats.prank(invalidCaller);
+        rewardsCoordinator.setOperatorCommissionBips(operator, avs, operatorSetId, newOperatorCommissionBips);
+    }
+
+    /// @notice test setting operator commission bips to a new value with empty history
+    function testFuzz_setOperatorCommissionBips_EmptyHistory(
+        address operator,
+        address avs,
+        uint32 operatorSetId,
+        uint16 newOperatorCommissionBips,
+        uint256 randSalt
+    ) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(newOperatorCommissionBips != globalCommissionBips);
+        cheats.assume(newOperatorCommissionBips <= MAX_COMMISSION_BIPS);
+        // 1. Set operator commission and check updated value hasn't taken effect yet
+        uint16 prevOperatorCommissionBips = rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId);
+        cheats.prank(operator);
+        uint32 effectTimestamp = rewardsCoordinator.setOperatorCommissionBips(
+            operator,
+            avs,
+            operatorSetId,
+            newOperatorCommissionBips
+        );
+        assertTrue(
+            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == prevOperatorCommissionBips,
+            "Operator commission bips should not be updated"
+        );
+        assertTrue(
+            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) != newOperatorCommissionBips,
+            "Operator commission bips should not be updated"
+        );
+
+        // 2. warp timestamp forwards to random time that is not the effectTimestamp
+        uint256 warpTimestamp = bound(randSalt, block.timestamp, effectTimestamp - 1);
+        cheats.warp(warpTimestamp);
+        assertTrue(
+            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) != newOperatorCommissionBips,
+            "Operator commission bips should still be not updated"
+        );
+
+        // 3. warp timestamp forwards to effectTimestamp, operator commission should be updated now
+        cheats.warp(effectTimestamp);
+        assertTrue(
+            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == newOperatorCommissionBips,
+            "Operator commission bips should be updated"
+        );
+    }
+
+    /// @notice test setting operator commission bips to a new value with non empty history
+    function testFuzz_setOperatorCommissionBips_WithHistory(
+        address operator,
+        address avs,
+        uint32 operatorSetId,
+        uint16 newOperatorCommissionBips,
+        uint256 randSalt
+    ) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(newOperatorCommissionBips <= MAX_COMMISSION_BIPS);
+
+        // 1. Set operator commission to initial value with existing history
+        uint16 prevOperatorCommissionBips = uint16(bound(randSalt, 0, MAX_COMMISSION_BIPS));
+        cheats.assume(prevOperatorCommissionBips != newOperatorCommissionBips);
+        cheats.prank(operator);
+        uint32 effectTimestamp = rewardsCoordinator.setOperatorCommissionBips(
+            operator,
+            avs,
+            operatorSetId,
+            prevOperatorCommissionBips
+        );
+        cheats.warp(effectTimestamp);
+        assertTrue(
+            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == prevOperatorCommissionBips,
+            "1. Operator commission bips should be initialized properly"
+        );
+        assertEq(
+            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, avs, operatorSetId),
+            1,
+            "2. Invalid commission history length"
+        );
+
+        // 2. Set operator commission and check updated value hasn't taken effect yet
+        cheats.prank(operator);
+        effectTimestamp = rewardsCoordinator.setOperatorCommissionBips(
+            operator,
+            avs,
+            operatorSetId,
+            newOperatorCommissionBips
+        );
+        assertEq(
+            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, avs, operatorSetId),
+            2,
+            "3. Invalid commission history length"
+        );
+        assertTrue(
+            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == prevOperatorCommissionBips,
+            "4. Operator commission bips should not be updated"
+        );
+        assertTrue(
+            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) != newOperatorCommissionBips,
+            "5. Operator commission bips should not be updated"
+        );
+
+        // 3. warp timestamp forwards to random time that is not the effectTimestamp
+        uint256 warpTimestamp = bound(randSalt, block.timestamp, effectTimestamp - 1);
+
+        console.log(warpTimestamp, effectTimestamp);
+        console.log(warpTimestamp < effectTimestamp);
+        cheats.warp(warpTimestamp);
+        assertTrue(
+            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == prevOperatorCommissionBips,
+            "6. Operator commission bips should still be not updated"
+        );
+
+        // 4. warp timestamp forwards to effectTimestamp, operator commission should be updated now
+        cheats.warp(effectTimestamp);
+        assertTrue(
+            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == newOperatorCommissionBips,
+            "7.Operator commission bips should be updated"
+        );
+    }
+
+    /// @notice test setting operator commission bips to a new value with pending update
+    /// has same effectTimestamp. Should overrwrite previous value
+    function testFuzz_setOperatorCommissionBips_SameBlockUpdate(
+        address operator,
+        address avs,
+        uint32 operatorSetId,
+        uint16 pendingCommissionBips,
+        uint16 overwriteCommissionBips,
+        uint256 randSalt
+    ) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(pendingCommissionBips <= MAX_COMMISSION_BIPS);
+        cheats.assume(overwriteCommissionBips <= MAX_COMMISSION_BIPS);
+        cheats.prank(operator);
+        uint32 effectTimestamp = rewardsCoordinator.setOperatorCommissionBips(
+            operator,
+            avs,
+            operatorSetId,
+            pendingCommissionBips
+        );
+        assertEq(
+            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, avs, operatorSetId),
+            1,
+            "1. Invalid commission history length"
+        );
+        cheats.prank(operator);
+        uint32 effectTimestamp2 = rewardsCoordinator.setOperatorCommissionBips(
+            operator,
+            avs,
+            operatorSetId,
+            overwriteCommissionBips
+        );
+        assertEq(
+            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, avs, operatorSetId),
+            1,
+            "2. Invalid commission history length"
+        );
+        assertEq(
+            effectTimestamp,
+            effectTimestamp2,
+            "3. Effect timestamp should be the same"
+        );
+        cheats.warp(effectTimestamp);
+        assertEq(
+            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId),
+            overwriteCommissionBips,
+            "4. Operator commission bips should be updated"
+        );
+    }
+}
+
+contract RewardsCoordinatorUnitTests_viewFunctions is RewardsCoordinatorUnitTests {
+
 }

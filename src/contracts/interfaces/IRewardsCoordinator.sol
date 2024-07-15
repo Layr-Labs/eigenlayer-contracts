@@ -128,6 +128,12 @@ interface IRewardsCoordinator {
         TokenTreeMerkleLeaf[] tokenLeaves;
     }
 
+    /// @notice used for setting operator commission bips per operator set
+    struct OperatorCommissionUpdate {
+        uint16 commissionBips;
+        uint32 effectTimestamp;
+    }
+
     /// EVENTS ///
 
     /// @notice emitted when an AVS creates a valid RewardsSubmission
@@ -151,6 +157,14 @@ interface IRewardsCoordinator {
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+    /// @notice emitted when an operator commission is set for a specific OperatorSet
+    event OperatorCommissionBipsSet(
+        address indexed operator,
+        address avs,
+        uint32 operatorSetId,
+        uint16 indexed newCommissionBips,
+        uint32 effectTimestamp
+    );
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
@@ -211,7 +225,7 @@ interface IRewardsCoordinator {
 
     /// @notice the commission for a specific operator for a specific avs
     /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16);
+    function operatorCommissionBips(address operator, address avs, uint32 operatorSetId) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
@@ -326,4 +340,20 @@ interface IRewardsCoordinator {
      * @param _newValue The new value for isRewardsForAllSubmitter
      */
     function setRewardsForAllSubmitter(address _submitter, bool _newValue) external;
+
+    /**
+     * @notice Sets the commission for a specific operator for a specific operatorSet (avs, operatorSetId)
+     * @param operator The operator address
+     * @param avs The address of the AVS
+     * @param operatorSetId The operatorSetId of the AVS
+     * @param commissionBips The commission in bips for the operator, must be <= MAX_COMMISSION_BIPS
+     * @return effectTimestamp The timestamp at which the operator commission update will take effect
+     * @dev Only callable by the operator
+     */
+    function setOperatorCommissionBips(
+        address operator,
+        address avs,
+        uint32 operatorSetId,
+        uint16 commissionBips
+    ) external returns (uint32);
 }

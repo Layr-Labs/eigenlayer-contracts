@@ -35,6 +35,10 @@ contract RewardsCoordinator is
     uint256 internal immutable ORIGINAL_CHAIN_ID;
     /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
     uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
+    /// @notice The activation delay until an updated operator's commission bips takes effect
+    uint32 internal constant OPERATOR_COMMISSION_ACTIVATION_DELAY = 17.5 days;
+    /// @notice The maximum commission bips that can be set for an operator
+    uint16 internal constant MAX_COMMISSION_BIPS = 10000;
 
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
@@ -275,6 +279,47 @@ contract RewardsCoordinator is
     }
 
     /**
+     * @notice Sets the commission for a specific operator for a specific operatorSet (avs, operatorSetId)
+     * @param operator The operator address
+     * @param avs The address of the AVS
+     * @param operatorSetId The operatorSetId of the AVS
+     * @param commissionBips The commission in bips for the operator, must be <= MAX_COMMISSION_BIPS
+     * @return effectTimestamp The timestamp at which the operator commission update will take effect
+     * @dev Only callable by the operator
+     */
+    function setOperatorCommissionBips(
+        address operator,
+        address avs,
+        uint32 operatorSetId,
+        uint16 commissionBips
+    ) external returns (uint32) {
+        require(
+            msg.sender == operator,
+            "RewardsCoordinator.setOperatorCommissionBips: caller is not operator"
+        );
+        require(
+            commissionBips <= MAX_COMMISSION_BIPS,
+            "RewardsCoordinator.setOperatorCommissionBips: commissionBips too high"
+        );
+        uint32 effectTimestamp = uint32(block.timestamp + OPERATOR_COMMISSION_ACTIVATION_DELAY);
+        OperatorCommissionUpdate[] storage commissionHistory = operatorCommissionUpdates[operator][avs][operatorSetId];
+        uint256 updateLength = operatorCommissionUpdates[operator][avs][operatorSetId].length;
+
+        // If no updates or latest update is not for current effective timestamp, push a new commission update
+        // otherwise modify current storage
+        if (updateLength == 0 || commissionHistory[updateLength - 1].effectTimestamp != effectTimestamp) {
+            commissionHistory.push(OperatorCommissionUpdate({
+                commissionBips: commissionBips,
+                effectTimestamp: effectTimestamp
+            }));
+        } else {
+            commissionHistory[updateLength - 1].commissionBips = commissionBips;
+        }
+        emit OperatorCommissionBipsSet(operator, avs, operatorSetId, commissionBips, effectTimestamp);
+        return effectTimestamp;
+    }
+
+    /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
      * @dev Only callable by the contract owner
      * @param _activationDelay The new value for activationDelay
@@ -509,8 +554,22 @@ contract RewardsCoordinator is
 
     /// @notice the commission for a specific operator for a specific avs
     /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16) {
-        return globalOperatorCommissionBips;
+    function operatorCommissionBips(
+        address operator,
+        address avs,
+        uint32 operatorSetId
+    ) external view returns (uint16) {
+        // if no value set, default to globalOperatorCommissionBips
+        uint16 commissionBips = globalOperatorCommissionBips;
+        OperatorCommissionUpdate[] memory commissionHistory = operatorCommissionUpdates[operator][avs][operatorSetId];
+
+        for (uint256 i = commissionHistory.length; i > 0; --i) {
+            if (commissionHistory[i - 1].effectTimestamp <= uint32(block.timestamp)) {
+                commissionBips = commissionHistory[i - 1].commissionBips;
+                break;
+            }
+        }
+        return commissionBips;
     }
 
     function getDistributionRootsLength() public view returns (uint256) {
@@ -545,6 +604,14 @@ contract RewardsCoordinator is
             }
         }
         revert("RewardsCoordinator.getRootIndexFromHash: root not found");
+    }
+
+    function getOperatorCommissionUpdateHistoryLength(
+        address operator,
+        address avs,
+        uint32 operatorSetId
+    ) external view returns (uint256) {
+        return operatorCommissionUpdates[operator][avs][operatorSetId].length;
     }
 
     /**
