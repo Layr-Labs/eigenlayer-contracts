@@ -2,7 +2,7 @@
 
 ## EigenLayer M2 Docs
 
-This repo contains the EigenLayer core contracts, which enable restaking of liquid staking tokens (LSTs) and beacon chain ETH to secure new services, called AVSs (actively validated services). For more info on AVSs, check out the EigenLayer middleware contracts [here][middleware-repo].
+This repo contains the EigenLayer core contracts, which enable restaking of tokens and beacon chain ETH to secure new services, called AVSs (actively validated services). For more info on AVSs, check out the EigenLayer middleware contracts [here][middleware-repo].
 
 This document provides an overview of system components, contracts, and user roles. Further documentation on the major system contracts can be found in [/core](./core/).
 
@@ -49,11 +49,11 @@ See full documentation in [`/core/EigenPodManager.md`](./core/EigenPodManager.md
 | File | Type | Proxy |
 | -------- | -------- | -------- |
 | [`StrategyManager.sol`](../src/contracts/core/StrategyManager.sol) | Singleton | Transparent proxy |
-| [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | One instance per supported LST | Transparent proxy |
+| [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | One instance per supported token | Transparent proxy |
 
-These contracts work together to enable restaking for LSTs:
-* The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits into LST-specific strategies, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
-* `StrategyBaseTVLLimits` is deployed as multiple separate instances, one for each supported LST. When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of shares in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
+These contracts work together to enable restaking for supported token assets (LSTs, $EIGEN, and other ERC20 tokens):
+* The `StrategyManager` acts as the entry and exit point for tokens in EigenLayer. It handles deposits into token-specific strategies, and manages accounting+interactions between users with restaked tokens and the `DelegationManager`.
+* `StrategyBaseTVLLimits` is deployed as multiple separate instances, one for each supported tokens. When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of shares in the strategy. When a user withdraws, the strategy contract sends the tokens back to the user.
 
 See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md).
 
@@ -117,7 +117,7 @@ A Staker is any party who has assets deposited (or "restaked") into EigenLayer. 
 Stakers can restake any combination of these: a Staker may hold ALL of these assets, or only one of them.
 
 *Flows:*
-* Stakers **deposit** assets into EigenLayer via either the StrategyManager (for LSTs) or EigenPodManager (for beacon chain ETH)
+* Stakers **deposit** assets into EigenLayer via either the StrategyManager (for tokens) or EigenPodManager (for beacon chain ETH)
 * Stakers **withdraw** assets via the DelegationManager, *no matter what assets they're withdrawing*
 * Stakers **delegate** to an Operator via the DelegationManager
 
@@ -144,7 +144,16 @@ An Operator is a user who helps run the software built on top of EigenLayer (AVS
 
 ##### Depositing Into EigenLayer
 
-Depositing into EigenLayer varies depending on whether the Staker is depositing Native ETH or LSTs:
+Depositing into EigenLayer varies depending on whether the Staker is depositing Natively Restaked beacon chain ETH or tokens.
+
+Depositing tokens includes the following high level steps:
+- StrategyManager.depositIntoStrategy().
+
+Depositing Natively Restaked beacon chain ETH includes the following high level steps:
+- EigenPodManager.createPod().
+- User modifies their validator withdrawal credentials to point to the EigenPod address.
+- Generate Proof via (eigenpod-proofs-generation)[https://github.com/Layr-Labs/eigenpod-proofs-generation] library.
+- EigenPod.verifyWithdrawalCredentials().
 
 ![.](./images/Staker%20Flow%20Diagrams/Depositing.png)
 
@@ -166,7 +175,7 @@ This flow is mostly useful if a Staker wants to change which Operator they are d
 
 ##### Completing a Withdrawal as Tokens
 
-Completing a queued withdrawal as tokens is roughly the same for both native ETH and LSTs. 
+Completing a queued withdrawal as tokens is roughly the same for both native ETH and tokens. 
 
 However, note that *before* a withdrawal can be completed, native ETH stakers will need to perform additional steps, detailed in the "Withdrawal Processing" diagrams below. 
 
