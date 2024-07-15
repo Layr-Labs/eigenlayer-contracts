@@ -73,7 +73,7 @@ contract AVSDirectory is
         address operator,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert operator's signature has not expired.
         require(
             operatorSignature.expiry >= block.timestamp,
@@ -145,7 +145,7 @@ contract AVSDirectory is
     function deregisterFromAVSOperatorSets(
         address avs,
         uint32[] calldata operatorSetIds
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         _deregisterFromOperatorSets(avs, msg.sender, operatorSetIds);
     }
 
@@ -160,7 +160,7 @@ contract AVSDirectory is
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
@@ -205,7 +205,7 @@ contract AVSDirectory is
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert `operatorSignature.expiry` has not elapsed.
         require(
             operatorSignature.expiry >= block.timestamp,
@@ -265,6 +265,7 @@ contract AVSDirectory is
      */
     function deregisterOperatorFromAVS(address operator)
         external
+        override
         onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
     {
         MemberInfo storage member = memberInfo[msg.sender][operator];
@@ -285,7 +286,7 @@ contract AVSDirectory is
      *
      *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
      */
-    function updateAVSMetadataURI(string calldata metadataURI) external {
+    function updateAVSMetadataURI(string calldata metadataURI) external override {
         emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
@@ -294,7 +295,7 @@ contract AVSDirectory is
      *
      * @param salt A unique and single use value associated with the approver signature.
      */
-    function cancelSalt(bytes32 salt) external {
+    function cancelSalt(bytes32 salt) external override {
         // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
@@ -318,7 +319,7 @@ contract AVSDirectory is
         address avs,
         bytes32 salt,
         uint256 expiry
-    ) public view returns (bytes32) {
+    ) public view override returns (bytes32) {
         return
             _calculateDigestHash(keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)));
     }
@@ -336,7 +337,7 @@ contract AVSDirectory is
         uint32[] calldata operatorSetIds,
         bytes32 salt,
         uint256 expiry
-    ) public view returns (bytes32) {
+    ) public view override returns (bytes32) {
         return _calculateDigestHash(
             keccak256(abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry))
         );
@@ -344,7 +345,7 @@ contract AVSDirectory is
 
     /// @notice Getter function for the current EIP-712 domain separator for this contract.
     /// @dev The domain separator will change in the event of a fork that changes the ChainID.
-    function domainSeparator() public view returns (bytes32) {
+    function domainSeparator() public view override returns (bytes32) {
         return _calculateDomainSeparator();
     }
 
