@@ -29,6 +29,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
+    mapping(address => mapping(uint32 => bool)) public isOperatorSet;
+
     mapping(address => mapping(address => MemberInfo)) public memberInfo;
 
     mapping(address => mapping(address => mapping(uint32 => bool))) public isMember;

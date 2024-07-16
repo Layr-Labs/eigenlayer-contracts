@@ -9,6 +9,9 @@ interface IAVSDirectory is ISignatureUtils {
         bool isLegacyOperator;
     }
 
+    /// @notice Emitted when an operator set is created by an AVS.
+    event OperatorSetCreated(address indexed avs, uint32 operatorSetId);
+
     /**
      *  @notice Emitted when an operator's registration status with an AVS is updated.
      *  Specifically, when an operator enters its first operator set for an AVS, or
@@ -115,10 +118,12 @@ interface IAVSDirectory is ISignatureUtils {
      *                         VIEW FUNCTIONS
      *
      */
-
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 
-    function memberInfo(address avs, address operator) external view returns (uint248 inTotalSets, bool isLegacyOperator);
+    function memberInfo(
+        address avs,
+        address operator
+    ) external view returns (uint248 inTotalSets, bool isLegacyOperator);
 
     function isMember(address avs, address operator, uint32 operatorSetId) external view returns (bool);
 

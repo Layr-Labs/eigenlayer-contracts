@@ -57,6 +57,21 @@ contract AVSDirectory is
      */
 
     /**
+     * @notice Initializes an operator set for an AVS.
+     *
+     * @param operatorSetId The ID of the operator set to initialize.
+     *
+     * @dev msg.sender must be the AVS.
+     */
+    function createOperatorSet(uint32 operatorSetId) external {
+        require(
+            !isOperatorSet[msg.sender][operatorSetId], "AVSDirectory._createOperatorSet: operator set already exists"
+        );
+        isOperatorSet[msg.sender][operatorSetId] = true;
+        emit OperatorSetCreated(msg.sender, operatorSetId);
+    }
+
+    /**
      *  @notice Called by AVSs to add an operator to an operator set.
      *
      *  @param operator The address of the operator to be added to the operator set.
@@ -115,6 +130,11 @@ contract AVSDirectory is
 
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            require(
+                isOperatorSet[msg.sender][operatorSetIds[i]],
+                "AVSDirectory.registerOperatorToOperatorSets: invalid operator set"
+            );
+
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
                 !isMember[msg.sender][operator][operatorSetIds[i]],
