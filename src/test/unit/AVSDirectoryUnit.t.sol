@@ -235,6 +235,8 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         expiry = bound(expiry, 0, type(uint256).max - 1);
         cheats.warp(type(uint256).max);
 
+        avsDirectory.createOperatorSet(operatorSetId);
+
         _registerOperatorWithBaseDetails(operator);
 
         uint32[] memory oids = new uint32[](1);
@@ -256,6 +258,8 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         expiry = bound(expiry, 1, type(uint256).max);
 
         cheats.warp(0);
+
+        avsDirectory.createOperatorSet(operatorSetId);
 
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
@@ -292,6 +296,8 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         expiry = bound(expiry, 1, type(uint256).max);
         cheats.warp(0);
 
+        avsDirectory.createOperatorSet(operatorSetId);
+
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
 
@@ -312,6 +318,8 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         expiry = bound(expiry, 1, type(uint256).max);
 
         cheats.warp(0);
+
+        avsDirectory.createOperatorSet(operatorSetId);
 
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
@@ -348,6 +356,8 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 
         cheats.warp(0);
 
+        avsDirectory.createOperatorSet(operatorSetId);
+
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
 
@@ -381,6 +391,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         uint32[] memory oids = new uint32[](operatorSetIdsLength);
         for (uint256 i; i < oids.length; ++i) {
             oids[i] = uint32(uint256(keccak256(abi.encodePacked(i))) % type(uint32).max);
+            avsDirectory.createOperatorSet(oids[i]);
         }
 
         address operator = cheats.addr(operatorPk);
@@ -423,6 +434,8 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 
         cheats.warp(0);
 
+        avsDirectory.createOperatorSet(operatorSetId);
+
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
 
@@ -460,6 +473,8 @@ contract AVSDirectoryUnitTests_deregisterFromAVSOperatorSets is AVSDirectoryUnit
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
 
+        avsDirectory.createOperatorSet(operatorSetId);
+
         cheats.prank(operator);
         cheats.expectRevert("AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set");
         avsDirectory.deregisterFromAVSOperatorSets(address(this), oids);
@@ -472,6 +487,8 @@ contract AVSDirectoryUnitTests_deregisterFromAVSOperatorSets is AVSDirectoryUnit
         uint256 expiry
     ) public virtual {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+
+        avsDirectory.createOperatorSet(operatorSetId);
 
         _registerOperatorToOperatorSets(operatorPk, operatorSetId, salt, expiry);
 
@@ -501,6 +518,8 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
     function testFuzz_revert_OperatorNotInOperatorSet(uint256 operatorPk, uint32 operatorSetId) public virtual {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
 
+        avsDirectory.createOperatorSet(operatorSetId);
+
         address operator = cheats.addr(operatorPk);
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
@@ -516,6 +535,8 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
         uint256 expiry
     ) public virtual {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+
+        avsDirectory.createOperatorSet(operatorSetId);
 
         _registerOperatorToOperatorSets(operatorPk, operatorSetId, salt, expiry);
 
