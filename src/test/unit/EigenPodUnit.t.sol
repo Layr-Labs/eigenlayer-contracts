@@ -359,10 +359,13 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     function test_setProofSubmitter(address newProofSubmitter) public {
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
         EigenPod pod = staker.pod();
+        address prevProofSubmitter = pod.proofSubmitter();
 
         cheats.prank(address(staker));
+        cheats.expectEmit(true, true, true, true, address(pod));
+        emit ProofSubmitterUpdated(prevProofSubmitter, newProofSubmitter);
         pod.setProofSubmitter(newProofSubmitter);
-        
+
         assertEq(pod.proofSubmitter(), newProofSubmitter, "did not update proof submitter");
     }
 }
