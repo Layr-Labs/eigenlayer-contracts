@@ -71,10 +71,16 @@ abstract contract EigenPodStorage is IEigenPod {
     /// @notice The current checkpoint, if there is one active
     Checkpoint internal _currentCheckpoint;
 
+    /// @notice An address with permissions to call `startCheckpoint` and `verifyCheckpointProofs`, set
+    /// by the podOwner. This role exists to allow a podOwner to designate a hot wallet that can call
+    /// these methods, allowing the podOwner to remain a cold wallet that is only used to manage funds.
+    /// @dev If this address is NOT set, only the podOwner can call `startCheckpoint` and `verifyCheckpointProofs`
+    address public proofSubmitter;
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[37] private __gap;
+    uint256[36] private __gap;
 }
