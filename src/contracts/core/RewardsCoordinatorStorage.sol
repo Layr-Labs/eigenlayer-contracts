@@ -89,6 +89,15 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     mapping(address => mapping(address => mapping(uint32 => mapping(RewardType => OperatorCommissionUpdate[])))) public
         operatorCommissionUpdates;
 
+    function operatorCommissionUpdatesLength(
+        address operator,
+        address avs,
+        uint32 operatorSetId,
+        RewardType rewardType
+    ) external view returns (uint256) {
+        return operatorCommissionUpdates[operator][avs][operatorSetId][rewardType].length;
+    }
+
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
