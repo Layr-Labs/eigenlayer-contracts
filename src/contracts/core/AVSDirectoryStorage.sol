@@ -2,10 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "../interfaces/IAVSDirectory.sol";
-import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
-import "../interfaces/ISlasher.sol";
-import "../interfaces/IEigenPodManager.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice The EIP-712 typehash for the contract's domain

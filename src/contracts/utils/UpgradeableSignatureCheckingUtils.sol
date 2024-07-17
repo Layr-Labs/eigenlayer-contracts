@@ -2,7 +2,6 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "../libraries/EIP1271SignatureUtils.sol";
 
 /**
  * @title Abstract contract that implements minimal signature-related storage & functionality for upgradeable contracts.

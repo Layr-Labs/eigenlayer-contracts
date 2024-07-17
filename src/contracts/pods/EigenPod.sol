@@ -2,15 +2,11 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/utils/AddressUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/BeaconChainProofs.sol";
 import "../libraries/BytesLib.sol";
-import "../libraries/Endian.sol";
 
 import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPodManager.sol";

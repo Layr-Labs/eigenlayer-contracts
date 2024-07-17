@@ -3,7 +3,6 @@ pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
-import "./IPauserRegistry.sol";
 
 /**
  * @title Interface for the `IRewardsCoordinator` contract.
