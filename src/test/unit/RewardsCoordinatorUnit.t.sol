@@ -1743,8 +1743,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
     /// @notice tests with earnerIndex and tokenIndex set to max value and using alternate claim proofs
     function testFuzz_processClaim_WhenMaxEarnerIndexAndTokenIndex(
         bool setClaimerFor,
-        address claimerFor,
-        uint8 numShift
+        address claimerFor
     ) public filterFuzzedAddressInputs(claimerFor) {
         // Hardcode earner address to earner in alternate claim proofs
         earner = 0x25A1B7322f9796B26a4Bec125913b34C292B28D6;
@@ -1812,8 +1811,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
     /// @notice tests with single token leaf for the earner's subtree. tokenTreeProof for the token in the claim should be empty
     function testFuzz_processClaim_WhenSingleTokenLeaf(
         bool setClaimerFor,
-        address claimerFor,
-        uint8 numShift
+        address claimerFor
     ) public filterFuzzedAddressInputs(claimerFor) {
         // if setClaimerFor is true, set the earners claimer to the fuzzed address
         address claimer;
@@ -1875,8 +1873,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
     /// @notice tests with single earner leaf in the merkle tree. earnerTreeProof in claim should be empty
     function testFuzz_processClaim_WhenSingleEarnerLeaf(
         bool setClaimerFor,
-        address claimerFor,
-        uint8 numShift
+        address claimerFor
     ) public filterFuzzedAddressInputs(claimerFor) {
         // Hardcode earner address to earner in alternate claim proofs
         earner = 0x0D6bA28b9919CfCDb6b233469Cc5Ce30b979e08E;
@@ -2048,9 +2045,6 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
 
 contract RewardsCoordinatorUnitTests_disableRoot is RewardsCoordinatorUnitTests {
     function testFuzz_disableRoot_Revert_WhenNotRewardsUpdater(
-        bytes32 root,
-        uint32 rootIndex,
-        uint256 randSalt,
         address invalidRewardsUpdater
     ) public filterFuzzedAddressInputs(invalidRewardsUpdater) {
         cheats.prank(invalidRewardsUpdater);
@@ -2059,11 +2053,7 @@ contract RewardsCoordinatorUnitTests_disableRoot is RewardsCoordinatorUnitTests 
         rewardsCoordinator.disableRoot(0);
     }
 
-    function testFuzz_disableRoot_Revert_WhenPaused(
-        bytes32 root,
-        uint32 rootIndex,
-        uint256 randSalt
-    ) public {
+    function test_disableRoot_Revert_WhenPaused() public {
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_DISABLE_ROOTS);
 
@@ -2071,10 +2061,7 @@ contract RewardsCoordinatorUnitTests_disableRoot is RewardsCoordinatorUnitTests 
         rewardsCoordinator.disableRoot(0);
     }
 
-    function testFuzz_disableRoot_Revert_WhenRootIndexOutOfBounds(
-        bytes32 root,
-        uint32 rootIndex
-    ) public {
+    function testFuzz_disableRoot_Revert_WhenRootIndexOutOfBounds(uint32 rootIndex) public {
         // submitRoots with indexes 0,1,2
         _submitRoots();
         cheats.assume(rootIndex > 2);
@@ -2084,10 +2071,7 @@ contract RewardsCoordinatorUnitTests_disableRoot is RewardsCoordinatorUnitTests 
         rewardsCoordinator.disableRoot(rootIndex);
     }
 
-    function testFuzz_disableRoot_Revert_WhenRootAlreadyDisabled(
-        bytes32 root,
-        uint32 rootIndex
-    ) public {
+    function testFuzz_disableRoot_Revert_WhenRootAlreadyDisabled(uint32 rootIndex) public {
         // submitRoots with indexes 0,1,2
         _submitRoots();
         rootIndex = uint32(bound(uint256(rootIndex), 0, 2));
@@ -2100,10 +2084,7 @@ contract RewardsCoordinatorUnitTests_disableRoot is RewardsCoordinatorUnitTests 
         cheats.stopPrank();
     }
 
-    function testeFuzz_disableRoot_Revert_WhenRootAlreadyActivated(
-        bytes32 root,
-        uint32 rootIndex
-    ) public {
+    function testeFuzz_disableRoot_Revert_WhenRootAlreadyActivated(uint32 rootIndex) public {
         // submitRoots with indexes 0,1,2
         _submitRoots();
         rootIndex = uint32(bound(uint256(rootIndex), 0, 2));
@@ -2138,7 +2119,6 @@ contract RewardsCoordinatorUnitTests_disableRoot is RewardsCoordinatorUnitTests 
 
     function _submitRoots() internal {
         cheats.warp(1e6);
-        uint256 currTimestamp = block.timestamp;
         
         // submitRoots with indexes 0,1,2
         cheats.startPrank(rewardsUpdater);
@@ -2304,8 +2284,7 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         IAVSDirectory.OperatorSet calldata operatorSet,
         uint8 rewardTypeEnum,
         uint16 pendingCommissionBips,
-        uint16 overwriteCommissionBips,
-        uint256 randSalt
+        uint16 overwriteCommissionBips
     ) public filterFuzzedAddressInputs(operator) {
         IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
         cheats.assume(pendingCommissionBips <= MAX_COMMISSION_BIPS);

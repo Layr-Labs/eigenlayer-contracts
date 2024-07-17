@@ -33,7 +33,7 @@ interface IRewardsCoordinatorEvents {
     event OperatorCommissionUpdated(
         address indexed operator,
         IAVSDirectory.OperatorSet indexed operatorSet,
-        RewardType rewardType,
+        IRewardsCoordinator.RewardType rewardType,
         uint16 newCommissionBips,
         uint32 effectTimestamp
     );
