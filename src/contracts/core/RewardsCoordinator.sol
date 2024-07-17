@@ -135,7 +135,7 @@ contract RewardsCoordinator is
         onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
         nonReentrant
     {
-        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
@@ -143,7 +143,11 @@ contract RewardsCoordinator is
             _validateRewardsSubmission(rewardsSubmission);
 
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
-            submissionNonce[msg.sender] = nonce + 1;
+
+            // Cannot reasonably overflow...
+            unchecked {
+                submissionNonce[msg.sender] = nonce + 1;
+            }
 
             emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
@@ -162,7 +166,7 @@ contract RewardsCoordinator is
         onlyRewardsForAllSubmitter
         nonReentrant
     {
-        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
@@ -170,7 +174,11 @@ contract RewardsCoordinator is
             _validateRewardsSubmission(rewardsSubmission);
 
             isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionForAllHash] = true;
-            submissionNonce[msg.sender] = nonce + 1;
+
+            // Cannot reasonably overflow...
+            unchecked {
+                submissionNonce[msg.sender] = nonce + 1;
+            }
 
             emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
@@ -202,7 +210,7 @@ contract RewardsCoordinator is
             claimer = earner;
         }
         require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
-        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
+        for (uint256 i = 0; i < claim.tokenIndices.length; ++i) {
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
 
             uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
