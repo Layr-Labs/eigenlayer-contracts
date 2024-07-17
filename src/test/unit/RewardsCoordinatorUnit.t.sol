@@ -2157,11 +2157,13 @@ contract RewardsCoordinatorUnitTests_disableRoot is RewardsCoordinatorUnitTests 
 contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUnitTests {
     function testFuzz_operatorCommissionBips_EmptyHistory(
         address operator,
-        address avs,
-        uint32 operatorSetId
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        uint8 rewardTypeEnum
     ) public {
+        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
+        rewardType = IRewardsCoordinator.RewardType(uint8(bound(uint256(rewardType), 0, 1)));
         // Check operator commission
-        uint32 operatorCommissionBipsStored = rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId);
+        uint32 operatorCommissionBipsStored = rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType);
         assertEq(
             globalCommissionBips,
             operatorCommissionBipsStored,
@@ -2171,53 +2173,42 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
 
     function testFuzz_setOperatorCommissionBips_Reverts_WhenBipsGreaterThanMax(
         address operator,
-        address avs,
-        uint32 operatorSetId,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        uint8 rewardTypeEnum,
         uint16 newOperatorCommissionBips
     ) public filterFuzzedAddressInputs(operator) {
+        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
         cheats.assume(newOperatorCommissionBips > MAX_COMMISSION_BIPS);
         cheats.expectRevert("RewardsCoordinator.setOperatorCommissionBips: commissionBips too high");
         cheats.prank(operator);
-        rewardsCoordinator.setOperatorCommissionBips(operator, avs, operatorSetId, newOperatorCommissionBips);
-    }
-
-    function testFuzz_setOperatorCommissionBips_Reverts_OnlyOperator(
-        address operator,
-        address avs,
-        uint32 operatorSetId,
-        uint16 newOperatorCommissionBips,
-        address invalidCaller
-    ) public filterFuzzedAddressInputs(invalidCaller) {
-        cheats.expectRevert("RewardsCoordinator.setOperatorCommissionBips: caller is not operator");
-        cheats.prank(invalidCaller);
-        rewardsCoordinator.setOperatorCommissionBips(operator, avs, operatorSetId, newOperatorCommissionBips);
+        rewardsCoordinator.setOperatorCommissionBips(operatorSet, rewardType, newOperatorCommissionBips);
     }
 
     /// @notice test setting operator commission bips to a new value with empty history
     function testFuzz_setOperatorCommissionBips_EmptyHistory(
         address operator,
-        address avs,
-        uint32 operatorSetId,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        uint8 rewardTypeEnum,
         uint16 newOperatorCommissionBips,
         uint256 randSalt
     ) public filterFuzzedAddressInputs(operator) {
+        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
         cheats.assume(newOperatorCommissionBips != globalCommissionBips);
         cheats.assume(newOperatorCommissionBips <= MAX_COMMISSION_BIPS);
         // 1. Set operator commission and check updated value hasn't taken effect yet
-        uint16 prevOperatorCommissionBips = rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId);
+        uint16 prevOperatorCommissionBips = rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType);
         cheats.prank(operator);
         uint32 effectTimestamp = rewardsCoordinator.setOperatorCommissionBips(
-            operator,
-            avs,
-            operatorSetId,
+            operatorSet,
+            rewardType,
             newOperatorCommissionBips
         );
         assertTrue(
-            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == prevOperatorCommissionBips,
+            rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType) == prevOperatorCommissionBips,
             "Operator commission bips should not be updated"
         );
         assertTrue(
-            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) != newOperatorCommissionBips,
+            rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType) != newOperatorCommissionBips,
             "Operator commission bips should not be updated"
         );
 
@@ -2225,14 +2216,14 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         uint256 warpTimestamp = bound(randSalt, block.timestamp, effectTimestamp - 1);
         cheats.warp(warpTimestamp);
         assertTrue(
-            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) != newOperatorCommissionBips,
+            rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType) != newOperatorCommissionBips,
             "Operator commission bips should still be not updated"
         );
 
         // 3. warp timestamp forwards to effectTimestamp, operator commission should be updated now
         cheats.warp(effectTimestamp);
         assertTrue(
-            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == newOperatorCommissionBips,
+            rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType) == newOperatorCommissionBips,
             "Operator commission bips should be updated"
         );
     }
@@ -2240,11 +2231,12 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
     /// @notice test setting operator commission bips to a new value with non empty history
     function testFuzz_setOperatorCommissionBips_WithHistory(
         address operator,
-        address avs,
-        uint32 operatorSetId,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        uint8 rewardTypeEnum,
         uint16 newOperatorCommissionBips,
         uint256 randSalt
     ) public filterFuzzedAddressInputs(operator) {
+        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
         cheats.assume(newOperatorCommissionBips <= MAX_COMMISSION_BIPS);
 
         // 1. Set operator commission to initial value with existing history
@@ -2252,18 +2244,17 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         cheats.assume(prevOperatorCommissionBips != newOperatorCommissionBips);
         cheats.prank(operator);
         uint32 effectTimestamp = rewardsCoordinator.setOperatorCommissionBips(
-            operator,
-            avs,
-            operatorSetId,
+            operatorSet,
+            rewardType,
             prevOperatorCommissionBips
         );
         cheats.warp(effectTimestamp);
         assertTrue(
-            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == prevOperatorCommissionBips,
+            rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType) == prevOperatorCommissionBips,
             "1. Operator commission bips should be initialized properly"
         );
         assertEq(
-            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, avs, operatorSetId),
+            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, operatorSet, rewardType),
             1,
             "2. Invalid commission history length"
         );
@@ -2271,40 +2262,37 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         // 2. Set operator commission and check updated value hasn't taken effect yet
         cheats.prank(operator);
         effectTimestamp = rewardsCoordinator.setOperatorCommissionBips(
-            operator,
-            avs,
-            operatorSetId,
+            operatorSet,
+            rewardType,
             newOperatorCommissionBips
         );
         assertEq(
-            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, avs, operatorSetId),
+            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, operatorSet, rewardType),
             2,
             "3. Invalid commission history length"
         );
         assertTrue(
-            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == prevOperatorCommissionBips,
+            rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType) == prevOperatorCommissionBips,
             "4. Operator commission bips should not be updated"
         );
         assertTrue(
-            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) != newOperatorCommissionBips,
+            rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType) != newOperatorCommissionBips,
             "5. Operator commission bips should not be updated"
         );
 
         // 3. warp timestamp forwards to random time that is not the effectTimestamp
         uint256 warpTimestamp = bound(randSalt, block.timestamp, effectTimestamp - 1);
 
-        console.log(warpTimestamp, effectTimestamp);
-        console.log(warpTimestamp < effectTimestamp);
         cheats.warp(warpTimestamp);
         assertTrue(
-            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == prevOperatorCommissionBips,
+            rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType) == prevOperatorCommissionBips,
             "6. Operator commission bips should still be not updated"
         );
 
         // 4. warp timestamp forwards to effectTimestamp, operator commission should be updated now
         cheats.warp(effectTimestamp);
         assertTrue(
-            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId) == newOperatorCommissionBips,
+            rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType) == newOperatorCommissionBips,
             "7.Operator commission bips should be updated"
         );
     }
@@ -2313,35 +2301,34 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
     /// has same effectTimestamp. Should overrwrite previous value
     function testFuzz_setOperatorCommissionBips_SameBlockUpdate(
         address operator,
-        address avs,
-        uint32 operatorSetId,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        uint8 rewardTypeEnum,
         uint16 pendingCommissionBips,
         uint16 overwriteCommissionBips,
         uint256 randSalt
     ) public filterFuzzedAddressInputs(operator) {
+        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
         cheats.assume(pendingCommissionBips <= MAX_COMMISSION_BIPS);
         cheats.assume(overwriteCommissionBips <= MAX_COMMISSION_BIPS);
         cheats.prank(operator);
         uint32 effectTimestamp = rewardsCoordinator.setOperatorCommissionBips(
-            operator,
-            avs,
-            operatorSetId,
+            operatorSet,
+            rewardType,
             pendingCommissionBips
         );
         assertEq(
-            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, avs, operatorSetId),
+            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, operatorSet, rewardType),
             1,
             "1. Invalid commission history length"
         );
         cheats.prank(operator);
         uint32 effectTimestamp2 = rewardsCoordinator.setOperatorCommissionBips(
-            operator,
-            avs,
-            operatorSetId,
+            operatorSet,
+            rewardType,
             overwriteCommissionBips
         );
         assertEq(
-            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, avs, operatorSetId),
+            rewardsCoordinator.getOperatorCommissionUpdateHistoryLength(operator, operatorSet, rewardType),
             1,
             "2. Invalid commission history length"
         );
@@ -2352,7 +2339,7 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         );
         cheats.warp(effectTimestamp);
         assertEq(
-            rewardsCoordinator.operatorCommissionBips(operator, avs, operatorSetId),
+            rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType),
             overwriteCommissionBips,
             "4. Operator commission bips should be updated"
         );

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./IAVSDirectory.sol";
 import "./IStrategy.sol";
 import "./IPauserRegistry.sol";
 
@@ -16,6 +17,13 @@ import "./IPauserRegistry.sol";
  */
 interface IRewardsCoordinator {
     /// STRUCTS ///
+
+    /// @notice Reward type 
+    enum RewardType {
+        DELEGATED_STAKE,
+        UNIFORM
+    }
+
     /**
      * @notice A linear combination of strategies and multipliers for AVSs to weigh
      * EigenLayer strategies.
@@ -54,6 +62,16 @@ interface IRewardsCoordinator {
      * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION
      */
     struct RewardsSubmission {
+        StrategyAndMultiplier[] strategiesAndMultipliers;
+        IERC20 token;
+        uint256 amount;
+        uint32 startTimestamp;
+        uint32 duration;
+    }
+
+    struct OperatorSetRewardsSubmission {
+        RewardType rewardType;
+        uint32 operatorSetId;
         StrategyAndMultiplier[] strategiesAndMultipliers;
         IERC20 token;
         uint256 amount;
@@ -157,11 +175,11 @@ interface IRewardsCoordinator {
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
-    /// @notice emitted when an operator commission is set for a specific OperatorSet
-    event OperatorCommissionBipsSet(
+    /// @notice emitted when an operator commission is set for a specific OperatorSet and RewardType
+    event OperatorCommissionUpdated(
         address indexed operator,
-        address avs,
-        uint32 operatorSetId,
+        IAVSDirectory.OperatorSet indexed operatorSet,
+        RewardType rewardType,
         uint16 indexed newCommissionBips,
         uint32 effectTimestamp
     );
@@ -225,7 +243,11 @@ interface IRewardsCoordinator {
 
     /// @notice the commission for a specific operator for a specific avs
     /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
-    function operatorCommissionBips(address operator, address avs, uint32 operatorSetId) external view returns (uint16);
+    function getOperatorCommissionBips(
+        address operator,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType
+    ) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
@@ -342,18 +364,18 @@ interface IRewardsCoordinator {
     function setRewardsForAllSubmitter(address _submitter, bool _newValue) external;
 
     /**
-     * @notice Sets the commission for a specific operator for a specific operatorSet (avs, operatorSetId)
-     * @param operator The operator address
-     * @param avs The address of the AVS
-     * @param operatorSetId The operatorSetId of the AVS
+     * @notice Sets the commission an operator takes in bips for a given reward type and operatorSet
+     * @param operatorSet The operatorSet to update commission for
+     * @param rewardType The associated rewardType to update commission for
      * @param commissionBips The commission in bips for the operator, must be <= MAX_COMMISSION_BIPS
      * @return effectTimestamp The timestamp at which the operator commission update will take effect
-     * @dev Only callable by the operator
+     *
+     * @dev The commission can range from 1 to 10000
+     * @dev The commission update takes effect after 7 days
      */
     function setOperatorCommissionBips(
-        address operator,
-        address avs,
-        uint32 operatorSetId,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType,
         uint16 commissionBips
     ) external returns (uint32);
 }
