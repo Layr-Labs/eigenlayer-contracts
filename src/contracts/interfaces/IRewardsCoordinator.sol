@@ -180,7 +180,7 @@ interface IRewardsCoordinator {
         address indexed operator,
         IAVSDirectory.OperatorSet indexed operatorSet,
         RewardType rewardType,
-        uint16 indexed newCommissionBips,
+        uint16 newCommissionBips,
         uint32 effectTimestamp
     );
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);

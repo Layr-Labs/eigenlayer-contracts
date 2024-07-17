@@ -30,11 +30,11 @@ interface IRewardsCoordinatorEvents {
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     /// @notice emitted when an operator commission is set for a specific OperatorSet
-    event OperatorCommissionBipsSet(
+    event OperatorCommissionUpdated(
         address indexed operator,
-        address avs,
-        uint32 operatorSetId,
-        uint16 indexed newCommissionBips,
+        IAVSDirectory.OperatorSet indexed operatorSet,
+        RewardType rewardType,
+        uint16 newCommissionBips,
         uint32 effectTimestamp
     );
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
