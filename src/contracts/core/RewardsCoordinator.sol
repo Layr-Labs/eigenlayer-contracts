@@ -38,7 +38,7 @@ contract RewardsCoordinator is
     /// @notice The activation delay until an updated operator's commission bips takes effect
     uint32 internal constant OPERATOR_COMMISSION_ACTIVATION_DELAY = 7 days;
     /// @notice The maximum commission bips that can be set for an operator
-    uint16 internal constant MAX_COMMISSION_BIPS = 10000;
+    uint16 internal constant MAX_COMMISSION_BIPS = 10_000;
 
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
@@ -300,16 +300,16 @@ contract RewardsCoordinator is
         // timestamp can't overflow and 0 length case is handled below
         unchecked {
             effectTimestamp = uint32(block.timestamp + OPERATOR_COMMISSION_ACTIVATION_DELAY);
-            OperatorCommissionUpdate[] storage commissionHistory = operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.id][rewardType];
+            OperatorCommissionUpdate[] storage commissionHistory =
+                operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.id][rewardType];
             uint256 updateLength = commissionHistory.length;
 
             // If no updates or latest update is not for current effective timestamp, push a new commission update
             // otherwise modify current storage
             if (updateLength == 0 || commissionHistory[updateLength - 1].effectTimestamp != effectTimestamp) {
-                commissionHistory.push(OperatorCommissionUpdate({
-                    commissionBips: commissionBips,
-                    effectTimestamp: effectTimestamp
-                }));
+                commissionHistory.push(
+                    OperatorCommissionUpdate({commissionBips: commissionBips, effectTimestamp: effectTimestamp})
+                );
             } else {
                 commissionHistory[updateLength - 1].commissionBips = commissionBips;
             }
@@ -559,7 +559,8 @@ contract RewardsCoordinator is
     ) external view returns (uint16) {
         // if no value set, default to globalOperatorCommissionBips
         uint16 commissionBips = globalOperatorCommissionBips;
-        OperatorCommissionUpdate[] memory commissionHistory = operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.id][rewardType];
+        OperatorCommissionUpdate[] memory commissionHistory =
+            operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.id][rewardType];
 
         for (uint256 i = commissionHistory.length; i > 0;) {
             unchecked {

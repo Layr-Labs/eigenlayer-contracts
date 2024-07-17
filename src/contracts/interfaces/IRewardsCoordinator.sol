@@ -18,7 +18,7 @@ import "./IPauserRegistry.sol";
 interface IRewardsCoordinator {
     /// STRUCTS ///
 
-    /// @notice Reward type 
+    /// @notice Reward type
     enum RewardType {
         DELEGATED_STAKE,
         UNIFORM
