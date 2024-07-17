@@ -197,6 +197,12 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
     }
+
+    function _createOperatorSet(uint32 operatorSetId) internal {
+        uint32[] memory oids = new uint32[](1);
+        oids[0] = operatorSetId;
+        avsDirectory.createOperatorSets(oids);
+    }
 }
 
 contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
@@ -234,7 +240,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         expiry = bound(expiry, 0, type(uint256).max - 1);
         cheats.warp(type(uint256).max);
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         _registerOperatorWithBaseDetails(operator);
 
@@ -258,7 +264,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 
         cheats.warp(0);
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
@@ -288,7 +294,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 
         cheats.warp(0);
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
@@ -326,7 +332,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         expiry = bound(expiry, 1, type(uint256).max);
         cheats.warp(0);
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
@@ -350,7 +356,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 
         cheats.warp(0);
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
@@ -387,7 +393,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 
         cheats.warp(0);
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
@@ -425,7 +431,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
         uint32[] memory oids = new uint32[](operatorSetIdsLength);
         for (uint256 i; i < oids.length; ++i) {
             oids[i] = uint32(uint256(keccak256(abi.encodePacked(i))) % type(uint32).max);
-            avsDirectory.createOperatorSet(oids[i]);
+            _createOperatorSet(oids[i]);
         }
 
         address operator = cheats.addr(operatorPk);
@@ -463,7 +469,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSets is AVSDirectoryUni
 
         cheats.warp(0);
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
@@ -495,7 +501,7 @@ contract AVSDirectoryUnitTests_deregisterFromOperatorSets is AVSDirectoryUnitTes
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         cheats.prank(operator);
         cheats.expectRevert("AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set");
@@ -510,7 +516,7 @@ contract AVSDirectoryUnitTests_deregisterFromOperatorSets is AVSDirectoryUnitTes
     ) public virtual {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         _registerOperatorToOperatorSets(operatorPk, operatorSetId, salt, expiry);
 
@@ -533,7 +539,7 @@ contract AVSDirectoryUnitTests_avsDeregisterFromOperatorSets is AVSDirectoryUnit
     function testFuzz_revert_OperatorNotInOperatorSet(uint256 operatorPk, uint32 operatorSetId) public virtual {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         address operator = cheats.addr(operatorPk);
         uint32[] memory oids = new uint32[](1);
@@ -551,7 +557,7 @@ contract AVSDirectoryUnitTests_avsDeregisterFromOperatorSets is AVSDirectoryUnit
     ) public virtual {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
 
-        avsDirectory.createOperatorSet(operatorSetId);
+        _createOperatorSet(operatorSetId);
 
         _registerOperatorToOperatorSets(operatorPk, operatorSetId, salt, expiry);
 
@@ -570,18 +576,26 @@ contract AVSDirectoryUnitTests_avsDeregisterFromOperatorSets is AVSDirectoryUnit
 
 contract AVSDirectoryUnitTests_createOperatorSet is AVSDirectoryUnitTests {
     function test_createOperatorSet() public {
-        cheats.expectEmit(true, true, true, true, address(avsDirectory));
-        emit OperatorSetCreated(address(this), 1);
 
-        avsDirectory.createOperatorSet(1);
+        uint32[] memory oids = new uint32[](2);
+        oids[0] = 1;
+        oids[1] = 2;
 
-        assertTrue(avsDirectory.isOperatorSet(address(this), 1));
+        for(uint i = 0; i < oids.length; i++) {
+            cheats.expectEmit(true, true, true, true, address(avsDirectory));
+            emit OperatorSetCreated(address(this), oids[i]);
+        }
+
+        avsDirectory.createOperatorSets(oids);
+
+        assertTrue(avsDirectory.isOperatorSet(address(this), oids[0]));
+        assertTrue(avsDirectory.isOperatorSet(address(this), oids[1]));
     }
 
-    function test_revert_operatorSetExistsI() public {
-        avsDirectory.createOperatorSet(1);
+    function test_revert_operatorSetExists() public {
+        _createOperatorSet(1);
         cheats.expectRevert("AVSDirectory.createOperatorSet: operator set already exists");
-        avsDirectory.createOperatorSet(1);
+        _createOperatorSet(1);
     }
 }
 

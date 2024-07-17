@@ -40,6 +40,23 @@ interface IAVSDirectory is ISignatureUtils {
      */
 
     /**
+     * @notice Called by an AVS to create a list of new operatorSets. 
+     *
+     * @param operatorSetIds The IDs of the operator set to initialize.
+     *
+     * @dev msg.sender must be the AVS.
+     * @dev The AVS may create operator sets before it becomes an operator set AVS.
+     */
+    function createOperatorSets(uint32[] calldata operatorSetIds) external;
+
+    /**
+     * @notice Sets the AVS as an operator set AVS, preventing legacy M2 operator registrations.
+     * 
+     * @dev msg.sender must be the AVS. 
+     */
+    function becomeOperatorSetAVS() external;
+
+    /**
      *  @notice Called by AVSs to add an operator to an operator set.
      *
      *  @param operator The address of the operator to be added to the operator set.
