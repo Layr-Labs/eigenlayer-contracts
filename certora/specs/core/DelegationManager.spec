@@ -180,12 +180,13 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
 rule canOnlyDelegateWithSpecificFunctions(address staker) {
     requireInvariant operatorsAlwaysDelegatedToSelf(staker);
     // assume the staker begins as undelegated
-    require(!isDelegated(staker));
+    require(!isDelegated(staker) && staker != 0);
     // perform arbitrary function call
     method f;
     env e;
     if (f.selector == sig:delegateTo(address, ISignatureUtils.SignatureWithExpiry, bytes32).selector) {
         address operator;
+        require(operator != 0);
         ISignatureUtils.SignatureWithExpiry approverSignatureAndExpiry;
         bytes32 salt;
         delegateTo(e, operator, approverSignatureAndExpiry, salt);
@@ -198,6 +199,7 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
     } else if (f.selector == sig:delegateToBySignature(address, address, ISignatureUtils.SignatureWithExpiry, ISignatureUtils.SignatureWithExpiry, bytes32).selector) {
         address toDelegateFrom;
         address operator;
+        require(operator != 0);
         ISignatureUtils.SignatureWithExpiry stakerSignatureAndExpiry;
         ISignatureUtils.SignatureWithExpiry approverSignatureAndExpiry;
         bytes32 salt;
