@@ -62,13 +62,25 @@ contract AVSDirectory is
      * @param operatorSetId The ID of the operator set to initialize.
      *
      * @dev msg.sender must be the AVS.
+     * @dev The AVS may create operator sets before it becomes an operator set AVS.
      */
     function createOperatorSet(uint32 operatorSetId) external {
         require(
-            !isOperatorSet[msg.sender][operatorSetId], "AVSDirectory._createOperatorSet: operator set already exists"
+            !isOperatorSet[msg.sender][operatorSetId], "AVSDirectory.createOperatorSet: operator set already exists"
         );
         isOperatorSet[msg.sender][operatorSetId] = true;
         emit OperatorSetCreated(msg.sender, operatorSetId);
+    }
+
+    /**
+     * @notice Sets the AVS as an operator set AVS, preventing legacy M2 operator registrations.
+     * 
+     * @dev msg.sender must be the AVS. 
+     */
+    function becomeOperatorSetAVS() external {
+        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.becomeOperatorSetAVS: already an operator set AVS");
+        isOperatorSetAVS[msg.sender] = true;
+        emit AVSMigratedToOperatorSets(msg.sender);
     }
 
     /**
@@ -99,6 +111,11 @@ contract AVSDirectory is
             !operatorSaltIsSpent[operator][operatorSignature.salt],
             "AVSDirectory.registerOperatorToOperatorSets: salt already spent"
         );
+        // Assert that the AVS is an operator set AVS.
+        require(
+            isOperatorSetAVS[msg.sender],
+            "AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS"
+        );
         // Assert `operator` is actually an operator.
         require(
             delegation.isOperator(operator),
@@ -120,14 +137,6 @@ contract AVSDirectory is
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
 
-        MemberInfo storage member = memberInfo[msg.sender][operator];
-
-        // Register `operator` if not already registered.
-        if (!member.isLegacyOperator) {
-            member.isLegacyOperator = true;
-            emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, true);
-        }
-
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             require(
@@ -146,12 +155,6 @@ contract AVSDirectory is
 
             emit OperatorAddedToOperatorSet(operator, msg.sender, operatorSetIds[i]);
         }
-
-        // Increase `member.inTotalSets` by `operatorSetIds.length`.
-        // You would have to add the operator to 2**256-2 operator sets before overflow is possible here.
-        unchecked {
-            member.inTotalSets += uint248(operatorSetIds.length);
-        }
     }
 
     /**
@@ -162,7 +165,7 @@ contract AVSDirectory is
      *
      * @dev msg.sender used is the operator
      */
-    function deregisterFromAVSOperatorSets(
+    function deregisterFromOperatorSets(
         address avs,
         uint32[] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
@@ -177,7 +180,7 @@ contract AVSDirectory is
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function deregisterOperatorFromOperatorSets(
+    function avsDeregisterFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
@@ -197,19 +200,6 @@ contract AVSDirectory is
             isMember[avs][operator][operatorSetIds[i]] = false;
 
             emit OperatorRemovedFromOperatorSet(operator, avs, operatorSetIds[i]);
-        }
-
-        MemberInfo storage member = memberInfo[avs][operator];
-
-        // The above assertion makes underflow logically impossible here.
-        unchecked {
-            member.inTotalSets -= uint248(operatorSetIds.length);
-        }
-
-        // Set the operator as deregistered if no longer registered for any operator sets
-        if (member.inTotalSets == 0) {
-            member.isLegacyOperator = false;
-            emit OperatorAVSRegistrationStatusUpdated(operator, avs, false);
         }
     }
 
@@ -232,17 +222,18 @@ contract AVSDirectory is
             "AVSDirectory.registerOperatorToAVS: operator signature expired"
         );
 
-        MemberInfo storage member = memberInfo[msg.sender][operator];
-
-        // Assert `operator` is not already registered to the (caller) avs.
-        require(!member.isLegacyOperator, "AVSDirectory.registerOperatorToAVS: operator already registered");
-
-        // Assert `operator` is not actively registered to any operator sets.
+        // Assert that the AVS is not an operator set AVS.
         require(
-            member.inTotalSets == 0,
-            "AVSDirectory.registerOperatorToAVS: operator set AVS cannot register operators with legacy method"
+            !isOperatorSetAVS[msg.sender], 
+            "AVSDirectory.registerOperatorToAVS: AVS is an operator set AVS"
         );
 
+        // Assert that the `operator` is not actively registered to the AVS.
+        require(
+            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
+            "AVSDirectory.registerOperatorToAVS: operator already registered"
+        );
+        
         // Assert `operator` has not already spent `operatorSignature.salt`.
         require(
             !operatorSaltIsSpent[operator][operatorSignature.salt],
@@ -270,10 +261,10 @@ contract AVSDirectory is
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
 
-        // Mutate `member.isLegacyOperator` to `true`.
-        member.isLegacyOperator = true;
+        // Set the operator as registered
+        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
 
-        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, true);
+        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
     }
 
     /**
@@ -288,15 +279,15 @@ contract AVSDirectory is
         override
         onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
     {
-        MemberInfo storage member = memberInfo[msg.sender][operator];
+        require(
+            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
+            "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
+        );
 
-        // Assert `member.isLegacyOperator` is actively registered to the (caller) avs.
-        require(member.isLegacyOperator, "AVSDirectory.deregisterOperatorFromAVS: operator not registered");
+        // Set the operator as deregistered
+        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
 
-        // Mutate `member.isLegacyOperator` to `false`.
-        member.isLegacyOperator = false;
-
-        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, false);
+        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
     }
 
     /**

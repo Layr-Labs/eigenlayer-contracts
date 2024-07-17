@@ -4,20 +4,21 @@ pragma solidity >=0.5.0;
 import "./ISignatureUtils.sol";
 
 interface IAVSDirectory is ISignatureUtils {
-    struct MemberInfo {
-        uint248 inTotalSets;
-        bool isLegacyOperator;
+    /// @notice Enum representing the registration status of an operator with an AVS.
+    /// @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
+    enum OperatorAVSRegistrationStatus {
+        UNREGISTERED, // Operator not registered to AVS
+        REGISTERED // Operator registered to AVS
     }
 
     /// @notice Emitted when an operator set is created by an AVS.
     event OperatorSetCreated(address indexed avs, uint32 operatorSetId);
 
     /**
-     *  @notice Emitted when an operator's registration status with an AVS is updated.
-     *  Specifically, when an operator enters its first operator set for an AVS, or
-     *  when it is removed from the last operator set.
+     *  @notice Emitted when an operator's registration status with an AVS id udpated
+     *  @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
      */
-    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, bool isLegacyOperator);
+    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status);
 
     /// @notice Emitted when an operator is added to an operator set.
     event OperatorAddedToOperatorSet(address operator, address avs, uint32 operatorSetId);
@@ -28,6 +29,9 @@ interface IAVSDirectory is ISignatureUtils {
     /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
     /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+
+    /// @notice Emitted when an AVS migrates to using operator sets.abi
+    event AVSMigratedToOperatorSets(address indexed avs);
 
     /**
      *
@@ -62,7 +66,7 @@ interface IAVSDirectory is ISignatureUtils {
      *
      * @dev msg.sender used is the operator
      */
-    function deregisterFromAVSOperatorSets(address avs, uint32[] calldata operatorSetIds) external;
+    function deregisterFromOperatorSets(address avs, uint32[] calldata operatorSetIds) external;
 
     /**
      *  @notice Called by AVSs to remove an operator from an operator set.
@@ -72,7 +76,7 @@ interface IAVSDirectory is ISignatureUtils {
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
+    function avsDeregisterFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
 
     /**
      *  @notice Called by the AVS's service manager contract to register an operator with the AVS.
@@ -119,11 +123,6 @@ interface IAVSDirectory is ISignatureUtils {
      *
      */
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
-
-    function memberInfo(
-        address avs,
-        address operator
-    ) external view returns (uint248 inTotalSets, bool isLegacyOperator);
 
     function isMember(address avs, address operator, uint32 operatorSetId) external view returns (bool);
 

@@ -27,12 +27,19 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      */
     bytes32 internal _DOMAIN_SEPARATOR;
 
+    /// @notice Mapping: avs => operator => OperatorAVSRegistrationStatus struct
+    mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
+
+    /// @notice Mapping: operator => salt => whether the salt has been used
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
+    /// @notice Mapping: avs => whether it is a an operator set AVS
+    mapping (address => bool) public isOperatorSetAVS;
+
+    /// @notice Mapping: avs => operatorSetId => whether the operatorSet exists
     mapping(address => mapping(uint32 => bool)) public isOperatorSet;
 
-    mapping(address => mapping(address => MemberInfo)) public memberInfo;
-
+    /// @notice Mapping: avs = operator => operatorSetId => whether the operator is a member of the operatorSet
     mapping(address => mapping(address => mapping(uint32 => bool))) public isMember;
 
     constructor(IDelegationManager _delegation) {

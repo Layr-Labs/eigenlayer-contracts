@@ -4,12 +4,25 @@ pragma solidity ^0.8.12;
 import "src/contracts/interfaces/IAVSDirectory.sol";
 
 interface IAVSDirectoryEvents {
+    /// @notice Emitted when an operator set is created by an AVS.
+    event OperatorSetCreated(address indexed avs, uint32 operatorSetId);
+
     /**
-     * @notice Emitted when @param avs indicates that they are updating their MetadataURI string
-     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
+     *  @notice Emitted when an operator's registration status with an AVS id udpated
+     *  @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
      */
+    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, IAVSDirectory.OperatorAVSRegistrationStatus status);
+
+    /// @notice Emitted when an operator is added to an operator set.
+    event OperatorAddedToOperatorSet(address operator, address avs, uint32 operatorSetId);
+
+    /// @notice Emitted when an operator is removed from an operator set.
+    event OperatorRemovedFromOperatorSet(address operator, address avs, uint32 operatorSetId);
+
+    /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
+    /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
-    /// @notice Emitted when an operator's registration status for an AVS is updated
-    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, bool status);
+    /// @notice Emitted when an AVS migrates to using operator sets.abi
+    event AVSMigratedToOperatorSets(address indexed avs);
 }
