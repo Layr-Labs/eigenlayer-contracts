@@ -98,7 +98,7 @@ contract AVSDirectory is
      * @dev The operator is deregistered from the M2 legacy AVS once migrated
      */
     function migrateOperatorsToOperatorSets(
-        address[] operators,
+        address[] calldata operators,
         uint32[][] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that the AVS is an operator set AVS.
@@ -108,7 +108,7 @@ contract AVSDirectory is
             // Assert that the operator is registered & has not been migrated.
             require(
                 avsOperatorStatus[msg.sender][operators[i]] == OperatorAVSRegistrationStatus.REGISTERED,
-                "AVSDirectory.migrateOperatorsToOperatorSets: operator already migrated"
+                "AVSDirectory.migrateOperatorsToOperatorSets: operator already migrated or not a legacy registered operator"
             );
 
             // Migrate operator to operator sets.
@@ -120,7 +120,7 @@ contract AVSDirectory is
             emit OperatorAVSRegistrationStatusUpdated(
                 operators[i], msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED
             );
-            emit OperatorMigratedToOperatorSets(operator, msg.sender, operatorSetIds[i]);
+            emit OperatorMigratedToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
         }
     }
 
@@ -144,6 +144,11 @@ contract AVSDirectory is
             operatorSignature.expiry >= block.timestamp,
             "AVSDirectory.registerOperatorToOperatorSets: operator signature expired"
         );
+        // Assert `operator` is actually an operator.
+        require(
+            delegation.isOperator(operator),
+            "AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
+        );
         // Assert operator's signature `salt` has not already been spent.
         require(
             !operatorSaltIsSpent[operator][operatorSignature.salt],
@@ -164,6 +169,8 @@ contract AVSDirectory is
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+
+        _registerToOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
     /**
@@ -346,26 +353,28 @@ contract AVSDirectory is
      *                         INTERNAL FUNCTIONS
      *
      */
+
+    /**
+     * @notice Helper function used by migration & registration functions to register an operator to operator sets.
+     * @param avs The AVS that the operator is registering to.
+     * @param operator The operator to register.
+     * @param operatorSetIds The IDs of the operator sets.
+     */
     function _registerToOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) internal {
         // Assert that the AVS is an operator set AVS.
         require(isOperatorSetAVS[avs], "AVSDirectory._registerOperatorToOperatorSets: AVS is not an operator set AVS");
-        // Assert `operator` is actually an operator.
-        require(
-            delegation.isOperator(operator),
-            "AVSDirectory._registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
-        );
 
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             require(
-                isOperatorSet[AVSMetadataURIUpdated][operatorSetIds[i]],
-                "AVSDirectory.registerOperatorToOperatorSets: invalid operator set"
+                isOperatorSet[avs][operatorSetIds[i]],
+                "AVSDirectory._registerOperatorToOperatorSets: invalid operator set"
             );
 
             // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
                 !isMember[avs][operator][operatorSetIds[i]],
-                "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
+                "AVSDirectory._registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
             // Mutate `isMember` to `true`.
