@@ -73,16 +73,6 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Called by an operator to deregister from an operator set
-     *
-     * @param avs The address of the AVS to deregister the operator from.
-     * @param operatorSetIds The IDs of the operator sets.
-     *
-     * @dev msg.sender used is the operator
-     */
-    function deregisterFromOperatorSets(address avs, uint32[] calldata operatorSetIds) external;
-
-    /**
      *  @notice Called by AVSs to remove an operator from an operator set.
      *
      *  @param operator The address of the operator to be removed from the operator set.
@@ -90,7 +80,25 @@ interface IAVSDirectory is ISignatureUtils {
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function avsDeregisterFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
+    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
+
+    /**
+     * @notice Called by an operator to deregister from an operator set
+     *
+     * @param operator The operator to deregister from the operatorSets.
+     * @param avs The address of the AVS to deregister the operator from.
+     * @param operatorSetIds The IDs of the operator sets.
+	 * @param operatorSignature the signature of the operator on their intent to deregister or empty if the operator itself is calling
+	 *
+	 * @dev if the operatorSignature is empty, the caller must be the operator
+	 * @dev this will likely only be called in case the AVS contracts are in a state that prevents operators from deregistering
+     */
+    function forceDeregisterFromOperatorSets(
+        address operator,
+        address avs,
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external;
 
     /**
      *  @notice Called by the AVS's service manager contract to register an operator with the AVS.
@@ -164,6 +172,21 @@ interface IAVSDirectory is ISignatureUtils {
      * @param expiry Time after which the approver's signature becomes invalid.
      */
     function calculateOperatorSetRegistrationDigestHash(
+        address avs,
+        uint32[] calldata operatorSetIds,
+        bytes32 salt,
+        uint256 expiry
+    ) external view returns (bytes32);
+
+    /**
+     * @notice Calculates the digest hash to be signed by an operator to force deregister from an operator set.
+     *
+     * @param avs The AVS that operator is deregistering from.
+     * @param operatorSetIds An array of operator set IDs the operator is deregistering from.
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid.
+     */
+    function calculateOperatorSetForceDeregistrationTypehash(
         address avs,
         uint32[] calldata operatorSetIds,
         bytes32 salt,

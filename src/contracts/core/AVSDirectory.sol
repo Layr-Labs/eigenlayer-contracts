@@ -159,16 +159,50 @@ contract AVSDirectory is
     /**
      * @notice Called by an operator to deregister from an operator set
      *
+     * @param operator The operator to deregister from the operatorSets.
      * @param avs The address of the AVS to deregister the operator from.
      * @param operatorSetIds The IDs of the operator sets.
-     *
-     * @dev msg.sender used is the operator
+	 * @param operatorSignature the signature of the operator on their intent to deregister or empty if the operator itself is calling
+	 *
+	 * @dev if the operatorSignature is empty, the caller must be the operator
+	 * @dev this will likely only be called in case the AVS contracts are in a state that prevents operators from deregistering
      */
-    function deregisterFromOperatorSets(
+    function forceDeregisterFromOperatorSets(
+        address operator,
         address avs,
-        uint32[] calldata operatorSetIds
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        _deregisterFromOperatorSets(avs, msg.sender, operatorSetIds);
+        if (operatorSignature.signature.length == 0) {
+            require(msg.sender == operator, "AVSDirectory.forceDeregisterFromOperatorSets: caller must be operator");
+        } else {
+            // Assert operator's signature has not expired.
+            require(
+                operatorSignature.expiry >= block.timestamp,
+                "AVSDirectory.forceDeregisterFromOperatorSets: operator signature expired"
+            );
+            // Assert operator's signature `salt` has not already been spent.
+            require(
+                !operatorSaltIsSpent[operator][operatorSignature.salt],
+                "AVSDirectory.forceDeregisterFromOperatorSets: salt already spent"
+            );
+
+            // Assert that `operatorSignature.signature` is a valid signature for operator set deregistrations.
+            EIP1271SignatureUtils.checkSignature_EIP1271(
+                operator,
+                calculateOperatorSetForceDeregistrationTypehash({
+                    avs: avs,
+                    operatorSetIds: operatorSetIds,
+                    salt: operatorSignature.salt,
+                    expiry: operatorSignature.expiry
+                }),
+                operatorSignature.signature
+            );
+
+            // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
+            operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+        }
+        _deregisterFromOperatorSets(avs, operator, operatorSetIds);
     }
 
     /**
@@ -179,7 +213,7 @@ contract AVSDirectory is
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function avsDeregisterFromOperatorSets(
+    function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
@@ -350,6 +384,25 @@ contract AVSDirectory is
     ) public view override returns (bytes32) {
         return _calculateDigestHash(
             keccak256(abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry))
+        );
+    }
+
+    /**
+     * @notice Calculates the digest hash to be signed by an operator to force deregister from an operator set.
+     *
+     * @param avs The AVS that operator is deregistering from.
+     * @param operatorSetIds An array of operator set IDs the operator is deregistering from.
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid.
+     */
+    function calculateOperatorSetForceDeregistrationTypehash(
+        address avs,
+        uint32[] calldata operatorSetIds,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        return _calculateDigestHash(
+            keccak256(abi.encode(OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry))
         );
     }
 
