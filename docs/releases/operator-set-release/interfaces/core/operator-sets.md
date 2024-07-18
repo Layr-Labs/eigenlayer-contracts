@@ -18,6 +18,9 @@ interface IAVSDirectory {
 	
 	/// EVENTS
 
+	/// @notice Emitted when an operator set is created by an AVS.
+    event OperatorSetCreated(address indexed avs, uint32 operatorSetId);
+
 	/// @notice Emitted when an operator's legacy M2 registration status with an AVS is updated.
 	event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status);
 
@@ -26,6 +29,16 @@ interface IAVSDirectory {
 
 	/// @notice Emitted when an operator is removed from an operatorSet.
 	event OperatorRemovedFromOperatorSet(address operator, OperatorSet operatorSet);
+
+	/// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
+    /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
+    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+
+    /// @notice Emitted when an AVS migrates to using operator sets.
+    event AVSMigratedToOperatorSets(address indexed avs);
+
+    /// @notice Emitted when an operator is migrated from M2 registration to operator sets.
+    event OperatorMigratedToOperatorSets(address indexed operator, address indexed avs, uint32[] operatorSetIds);
 	
 	/// EXTERNAL - STATE MODIFYING
 
@@ -36,6 +49,14 @@ interface IAVSDirectory {
 	 */
 	function createOperatorSets(uint32[] calldata operatorSetIds) external;
 	
+	/**
+     * @notice Sets the AVS as an operator set AVS, preventing legacy M2 operator registrations.
+     * 
+     * @dev msg.sender must be the AVS. 
+	 * @dev The AVS CANNOT go back to M2 legacy registration after becoming an operator set AVS. 
+     */
+    function becomeOperatorSetAVS() external;
+
 	/**
 	 * @notice Called by an AVS to register an operator with the AVS.
 	 * 
@@ -188,12 +209,15 @@ Reverts if:
 
 ### migrateOperatorsToOperatorSets
 
-This is called by an AVS to migrate its M2 legacy registered operators to a list of operator sets. This function can only be called once for a given operator that is already registered to the AVS. No consent is required by the operator. If the operator disagrees with the migration, it can unilaterally remove itself from any operatorSet. The operator is deregistered once this function is called - the `OperatorAVSRegistrationStatus` with the UNREGISTERED parameter is emitted. 
+This is called by an AVS to migrate its M2 legacy registered operators to a list of operator sets. This function can only be called once for a given operator that is already registered to the AVS. No consent is required by the operator. If the operator disagrees with the migration, it can unilaterally remove itself from any operatorSet. The operator is deregistered from legacy M2 registration once this function is called - the `OperatorAVSRegistrationStatus` with the UNREGISTERED parameter is emitted. 
+
+Emits a `OperatorAddedToOperatorSet` event for each operatorSet the operator is added to. Also emits an `OperatorMigratedToOperatorSets` for all operatorSets the operator is migrated to. 
 
 Reverts If:
 1. The operator does not have a legacy M2 registration with the AVS
 2. The operator has already been migrated
 3. Any of the target operatorSets have not been created
+4. The operator has already been registered for any of the operatorSets
 
 
 ### deregisterOperatorFromOperatorSets
