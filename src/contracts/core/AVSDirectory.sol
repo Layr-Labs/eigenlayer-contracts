@@ -102,7 +102,9 @@ contract AVSDirectory is
         uint32[][] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that the AVS is an operator set AVS.
-        require(isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS");
+        require(
+            isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS"
+        );
 
         for (uint256 i = 0; i < operators.length; i++) {
             // Assert that the operator is registered & has not been migrated.
@@ -151,8 +153,7 @@ contract AVSDirectory is
         );
         // Assert that the AVS is an operator set AVS.
         require(
-            isOperatorSetAVS[msg.sender], 
-            "AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS"
+            isOperatorSetAVS[msg.sender], "AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS"
         );
         // Assert operator's signature `salt` has not already been spent.
         require(
