@@ -52,7 +52,7 @@ contract AVSDirectory is
 
     /**
      *
-     *                         EXTERNAL FUNCTIONS
+     *                    EXTERNAL FUNCTIONS
      *
      */
 
@@ -87,6 +87,46 @@ contract AVSDirectory is
     }
 
     /**
+     * @notice Called by an AVS to migrate operators that have a legacy M2 registration to operator sets.
+     *
+     * @param operators The list of operators to migrate
+     * @param operatorSetIds The list of operatorSets to migrate the operators to
+     *
+     * @dev The msg.sender used is the AVS
+     * @dev The operator can only be migrated at most once per AVS
+     * @dev The AVS can no longer register operators via the legacy M2 registration path once it begins migration
+     * @dev The operator is deregistered from the M2 legacy AVS once migrated
+     */
+    function migrateOperatorsToOperatorSets(
+        address[] calldata operators,
+        uint32[][] calldata operatorSetIds
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+        // Assert that the AVS is an operator set AVS.
+        require(
+            isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS"
+        );
+
+        for (uint256 i = 0; i < operators.length; i++) {
+            // Assert that the operator is registered & has not been migrated.
+            require(
+                avsOperatorStatus[msg.sender][operators[i]] == OperatorAVSRegistrationStatus.REGISTERED,
+                "AVSDirectory.migrateOperatorsToOperatorSets: operator already migrated or not a legacy registered operator"
+            );
+
+            // Migrate operator to operator sets.
+            _registerToOperatorSets(msg.sender, operators[i], operatorSetIds[i]);
+
+            // Deregister operator from AVS - this prevents the operator from being migrated again since
+            // the AVS can no longer use the legacy M2 registration path
+            avsOperatorStatus[msg.sender][operators[i]] = OperatorAVSRegistrationStatus.UNREGISTERED;
+            emit OperatorAVSRegistrationStatusUpdated(
+                operators[i], msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED
+            );
+            emit OperatorMigratedToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
+        }
+    }
+
+    /**
      *  @notice Called by AVSs to add an operator to a list of operatorSets.
      *
      *  @param operator The address of the operator to be added to the operator set.
@@ -106,19 +146,19 @@ contract AVSDirectory is
             operatorSignature.expiry >= block.timestamp,
             "AVSDirectory.registerOperatorToOperatorSets: operator signature expired"
         );
-        // Assert operator's signature `salt` has not already been spent.
+        // Assert `operator` is actually an operator.
         require(
-            !operatorSaltIsSpent[operator][operatorSignature.salt],
-            "AVSDirectory.registerOperatorToOperatorSets: salt already spent"
+            delegation.isOperator(operator),
+            "AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
         );
         // Assert that the AVS is an operator set AVS.
         require(
             isOperatorSetAVS[msg.sender], "AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS"
         );
-        // Assert `operator` is actually an operator.
+        // Assert operator's signature `salt` has not already been spent.
         require(
-            delegation.isOperator(operator),
-            "AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
+            !operatorSaltIsSpent[operator][operatorSignature.salt],
+            "AVSDirectory.registerOperatorToOperatorSets: salt already spent"
         );
 
         // Assert that `operatorSignature.signature` is a valid signature for operator set registrations.
@@ -136,24 +176,7 @@ contract AVSDirectory is
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
 
-        // Loop over `operatorSetIds` array and register `operator` for each item.
-        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-            require(
-                isOperatorSet[msg.sender][operatorSetIds[i]],
-                "AVSDirectory.registerOperatorToOperatorSets: invalid operator set"
-            );
-
-            // Assert `operator` has not already been registered to `operatorSetIds[i]`.
-            require(
-                !isMember[msg.sender][operator][operatorSetIds[i]],
-                "AVSDirectory.registerOperatorToOperatorSets: operator already registered to operator set"
-            );
-
-            // Mutate `isMember` to `true`.
-            isMember[msg.sender][operator][operatorSetIds[i]] = true;
-
-            emit OperatorAddedToOperatorSet(operator, msg.sender, operatorSetIds[i]);
-        }
+        _registerToOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
     /**
@@ -220,21 +243,32 @@ contract AVSDirectory is
         _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
-    function _deregisterFromOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) internal {
-        // Loop over `operatorSetIds` array and deregister `operator` for each item.
-        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-            // Assert `operator` is registered for this iterations operator set.
-            require(
-                isMember[avs][operator][operatorSetIds[i]],
-                "AVSDirectory.deregisterOperatorFromOperatorSet: operator not registered for operator set"
-            );
-
-            // Mutate `isMember` to `false`.
-            isMember[avs][operator][operatorSetIds[i]] = false;
-
-            emit OperatorRemovedFromOperatorSet(operator, avs, operatorSetIds[i]);
-        }
+    /**
+     *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+     *
+     *  @param metadataURI The URI for metadata associated with an AVS.
+     *
+     *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
+     */
+    function updateAVSMetadataURI(string calldata metadataURI) external override {
+        emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
+
+    /**
+     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
+     *
+     * @param salt A unique and single use value associated with the approver signature.
+     */
+    function cancelSalt(bytes32 salt) external override {
+        // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
+        operatorSaltIsSpent[msg.sender][salt] = true;
+    }
+
+    /**
+     *
+     *        LEGACY EXTERNAL FUNCTIONS - SUPPORT DEPRECATED BY SLASHING RELEASE
+     *
+     */
 
     /**
      *  @notice Called by the AVS's service manager contract to register an operator with the AVS.
@@ -321,24 +355,59 @@ contract AVSDirectory is
     }
 
     /**
-     *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
-     *  @param metadataURI The URI for metadata associated with an AVS.
+     *                         INTERNAL FUNCTIONS
      *
-     *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
      */
-    function updateAVSMetadataURI(string calldata metadataURI) external override {
-        emit AVSMetadataURIUpdated(msg.sender, metadataURI);
+
+    /**
+     * @notice Helper function used by migration & registration functions to register an operator to operator sets.
+     * @param avs The AVS that the operator is registering to.
+     * @param operator The operator to register.
+     * @param operatorSetIds The IDs of the operator sets.
+     */
+    function _registerToOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) internal {
+        // Loop over `operatorSetIds` array and register `operator` for each item.
+        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            require(
+                isOperatorSet[avs][operatorSetIds[i]],
+                "AVSDirectory._registerOperatorToOperatorSets: invalid operator set"
+            );
+
+            // Assert `operator` has not already been registered to `operatorSetIds[i]`.
+            require(
+                !isMember[avs][operator][operatorSetIds[i]],
+                "AVSDirectory._registerOperatorToOperatorSets: operator already registered to operator set"
+            );
+
+            // Mutate `isMember` to `true`.
+            isMember[avs][operator][operatorSetIds[i]] = true;
+
+            emit OperatorAddedToOperatorSet(operator, avs, operatorSetIds[i]);
+        }
     }
 
     /**
-     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
+     * @notice Internal function to deregister an operator from an operator set.
      *
-     * @param salt A unique and single use value associated with the approver signature.
+     * @param avs The AVS that the operator is deregistering from.
+     * @param operator The operator to deregister.
+     * @param operatorSetIds The IDs of the operator sets.
      */
-    function cancelSalt(bytes32 salt) external override {
-        // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
-        operatorSaltIsSpent[msg.sender][salt] = true;
+    function _deregisterFromOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) internal {
+        // Loop over `operatorSetIds` array and deregister `operator` for each item.
+        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            // Assert `operator` is registered for this iterations operator set.
+            require(
+                isMember[avs][operator][operatorSetIds[i]],
+                "AVSDirectory._deregisterOperatorFromOperatorSet: operator not registered for operator set"
+            );
+
+            // Mutate `isMember` to `false`.
+            isMember[avs][operator][operatorSetIds[i]] = false;
+
+            emit OperatorRemovedFromOperatorSet(operator, avs, operatorSetIds[i]);
+        }
     }
 
     /**
