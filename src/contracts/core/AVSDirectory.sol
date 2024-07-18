@@ -151,7 +151,7 @@ contract AVSDirectory is
         );
         // Assert that the AVS is an operator set AVS.
         require(
-            isOperatorSetAVS[avs], 
+            isOperatorSetAVS[msg.sender], 
             "AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS"
         );
         // Assert operator's signature `salt` has not already been spent.
