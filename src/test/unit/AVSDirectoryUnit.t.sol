@@ -289,7 +289,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
         _registerOperatorWithBaseDetails(operator);
 
-        cheats.expectRevert("AVSDirectory._registerOperatorToOperatorSets: AVS is not an operator set AVS");
+        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS");
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
@@ -782,7 +782,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
     }
 
     function test_revert_notOperatorSetAVS() public {
-        cheats.expectRevert("AVSDirectory.migrateOperatorsToOperatorSets: not an operator set AVS");
+        cheats.expectRevert("AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS");
         cheats.prank(defaultAVS);
         avsDirectory.migrateOperatorsToOperatorSets(operators, operatorSetIds);
     }

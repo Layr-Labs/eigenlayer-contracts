@@ -102,7 +102,7 @@ contract AVSDirectory is
         uint32[][] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that the AVS is an operator set AVS.
-        require(isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: not an operator set AVS");
+        require(isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS");
 
         for (uint256 i = 0; i < operators.length; i++) {
             // Assert that the operator is registered & has not been migrated.
@@ -148,6 +148,11 @@ contract AVSDirectory is
         require(
             delegation.isOperator(operator),
             "AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
+        );
+        // Assert that the AVS is an operator set AVS.
+        require(
+            isOperatorSetAVS[avs], 
+            "AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS"
         );
         // Assert operator's signature `salt` has not already been spent.
         require(
@@ -361,9 +366,6 @@ contract AVSDirectory is
      * @param operatorSetIds The IDs of the operator sets.
      */
     function _registerToOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) internal {
-        // Assert that the AVS is an operator set AVS.
-        require(isOperatorSetAVS[avs], "AVSDirectory._registerOperatorToOperatorSets: AVS is not an operator set AVS");
-
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             require(
