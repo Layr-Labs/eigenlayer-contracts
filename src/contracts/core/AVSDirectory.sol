@@ -71,7 +71,7 @@ contract AVSDirectory is
                 "AVSDirectory.createOperatorSet: operator set already exists"
             );
             isOperatorSet[msg.sender][operatorSetIds[i]] = true;
-            emit OperatorSetCreated(msg.sender, operatorSetIds[i]);
+            emit OperatorSetCreated(OperatorSet({avs: msg.sender, operatorSetId: operatorSetIds[i]}));
         }
     }
 
@@ -383,7 +383,7 @@ contract AVSDirectory is
             // Mutate `isMember` to `true`.
             isMember[avs][operator][operatorSetIds[i]] = true;
 
-            emit OperatorAddedToOperatorSet(operator, avs, operatorSetIds[i]);
+            emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
         }
     }
 
@@ -406,7 +406,7 @@ contract AVSDirectory is
             // Mutate `isMember` to `false`.
             isMember[avs][operator][operatorSetIds[i]] = false;
 
-            emit OperatorRemovedFromOperatorSet(operator, avs, operatorSetIds[i]);
+            emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
         }
     }
 

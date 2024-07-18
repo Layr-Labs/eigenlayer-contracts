@@ -484,7 +484,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
         for (uint256 i; i < oids.length; ++i) {
             cheats.expectEmit(true, false, false, false, address(avsDirectory));
-            emit OperatorAddedToOperatorSet(operator, address(this), oids[i]);
+            emit OperatorAddedToOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), oids[i]));
         }
 
         avsDirectory.registerOperatorToOperatorSets(
@@ -523,7 +523,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         _registerOperatorWithBaseDetails(operator);
 
         cheats.expectEmit(true, false, false, false, address(avsDirectory));
-        emit OperatorAddedToOperatorSet(operator, address(this), operatorSetId);
+        emit OperatorAddedToOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), operatorSetId));
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
@@ -590,7 +590,7 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
         cheats.prank(operator);
         for(uint i = 0; i < oids.length; i++) {
             cheats.expectEmit(true, true, true, true, address(avsDirectory));
-            emit OperatorRemovedFromOperatorSet(operator, address(this), oids[i]);
+            emit OperatorRemovedFromOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), oids[i]));
         }
         avsDirectory.forceDeregisterFromOperatorSets(operator, address(this), oids, emptySig);
 
@@ -660,7 +660,7 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
         
         for (uint i = 0; i < oids.length; i++) {
             cheats.expectEmit(true, true, true, true, address(avsDirectory));
-            emit OperatorRemovedFromOperatorSet(operator, address(this), oids[i]);
+            emit OperatorRemovedFromOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), oids[i]));
         }
 
         avsDirectory.forceDeregisterFromOperatorSets(operator, address(this), oids, operatorSig);
@@ -715,7 +715,7 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
         oids[0] = operatorSetId;
 
         cheats.expectEmit(true, false, false, false, address(avsDirectory));
-        emit OperatorRemovedFromOperatorSet(operator, address(this), operatorSetId);
+        emit OperatorRemovedFromOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), operatorSetId));
 
         avsDirectory.deregisterOperatorFromOperatorSets(operator, oids);
 
@@ -732,7 +732,7 @@ contract AVSDirectoryUnitTests_createOperatorSet is AVSDirectoryUnitTests {
 
         for(uint i = 0; i < oids.length; i++) {
             cheats.expectEmit(true, true, true, true, address(avsDirectory));
-            emit OperatorSetCreated(address(this), oids[i]);
+            emit OperatorSetCreated(IAVSDirectory.OperatorSet({avs: address(this), operatorSetId: oids[i]}));
         }
 
         avsDirectory.createOperatorSets(oids);
@@ -909,7 +909,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
 
         // Expect Emits
         cheats.expectEmit(true, true, true, true, address(avsDirectory));
-        emit OperatorAddedToOperatorSet(operator, address(this), 1);
+        emit OperatorAddedToOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), 1));
         cheats.expectEmit(true, true, true, true, address(avsDirectory));
         emit OperatorAVSRegistrationStatusUpdated(operator, address(this), IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED);
         cheats.expectEmit(true, true, true, true, address(avsDirectory));
@@ -948,7 +948,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
         for (uint i = 0; i < numOperators; i++) {
             for (uint j = 0; j < oids.length; j++) {
                 cheats.expectEmit(true, true, true, true, address(avsDirectory));
-                emit OperatorAddedToOperatorSet(operators[i], address(this), oids[j]);
+                emit OperatorAddedToOperatorSet(operators[i], IAVSDirectory.OperatorSet(address(this), oids[j]));
             }
             cheats.expectEmit(true, true, true, true, address(avsDirectory));
             emit OperatorAVSRegistrationStatusUpdated(operators[i], address(this), IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED);
