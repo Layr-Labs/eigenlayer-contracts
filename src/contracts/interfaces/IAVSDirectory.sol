@@ -9,6 +9,7 @@ interface IAVSDirectory is ISignatureUtils {
     enum OperatorAVSRegistrationStatus {
         UNREGISTERED, // Operator not registered to AVS
         REGISTERED // Operator registered to AVS
+
     }
 
     /// @notice Emitted when an operator set is created by an AVS.
@@ -18,7 +19,9 @@ interface IAVSDirectory is ISignatureUtils {
      *  @notice Emitted when an operator's registration status with an AVS id udpated
      *  @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
      */
-    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status);
+    event OperatorAVSRegistrationStatusUpdated(
+        address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status
+    );
 
     /// @notice Emitted when an operator is added to an operator set.
     event OperatorAddedToOperatorSet(address operator, address avs, uint32 operatorSetId);
@@ -40,7 +43,7 @@ interface IAVSDirectory is ISignatureUtils {
      */
 
     /**
-     * @notice Called by an AVS to create a list of new operatorSets. 
+     * @notice Called by an AVS to create a list of new operatorSets.
      *
      * @param operatorSetIds The IDs of the operator set to initialize.
      *
@@ -51,8 +54,8 @@ interface IAVSDirectory is ISignatureUtils {
 
     /**
      * @notice Sets the AVS as an operator set AVS, preventing legacy M2 operator registrations.
-     * 
-     * @dev msg.sender must be the AVS. 
+     *
+     * @dev msg.sender must be the AVS.
      */
     function becomeOperatorSetAVS() external;
 
@@ -88,10 +91,10 @@ interface IAVSDirectory is ISignatureUtils {
      * @param operator The operator to deregister from the operatorSets.
      * @param avs The address of the AVS to deregister the operator from.
      * @param operatorSetIds The IDs of the operator sets.
-	 * @param operatorSignature the signature of the operator on their intent to deregister or empty if the operator itself is calling
-	 *
-	 * @dev if the operatorSignature is empty, the caller must be the operator
-	 * @dev this will likely only be called in case the AVS contracts are in a state that prevents operators from deregistering
+     * @param operatorSignature the signature of the operator on their intent to deregister or empty if the operator itself is calling
+     *
+     * @dev if the operatorSignature is empty, the caller must be the operator
+     * @dev this will likely only be called in case the AVS contracts are in a state that prevents operators from deregistering
      */
     function forceDeregisterFromOperatorSets(
         address operator,

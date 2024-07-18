@@ -57,7 +57,7 @@ contract AVSDirectory is
      */
 
     /**
-     * @notice Called by an AVS to create a list of new operatorSets. 
+     * @notice Called by an AVS to create a list of new operatorSets.
      *
      * @param operatorSetIds The IDs of the operator set to initialize.
      *
@@ -67,17 +67,18 @@ contract AVSDirectory is
     function createOperatorSets(uint32[] calldata operatorSetIds) external {
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             require(
-                !isOperatorSet[msg.sender][operatorSetIds[i]], "AVSDirectory.createOperatorSet: operator set already exists"
+                !isOperatorSet[msg.sender][operatorSetIds[i]],
+                "AVSDirectory.createOperatorSet: operator set already exists"
             );
             isOperatorSet[msg.sender][operatorSetIds[i]] = true;
-            emit OperatorSetCreated(msg.sender, operatorSetIds[i]);        
+            emit OperatorSetCreated(msg.sender, operatorSetIds[i]);
         }
     }
 
     /**
      * @notice Sets the AVS as an operator set AVS, preventing legacy M2 operator registrations.
-     * 
-     * @dev msg.sender must be the AVS. 
+     *
+     * @dev msg.sender must be the AVS.
      */
     function becomeOperatorSetAVS() external {
         require(!isOperatorSetAVS[msg.sender], "AVSDirectory.becomeOperatorSetAVS: already an operator set AVS");
@@ -112,8 +113,7 @@ contract AVSDirectory is
         );
         // Assert that the AVS is an operator set AVS.
         require(
-            isOperatorSetAVS[msg.sender],
-            "AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS"
+            isOperatorSetAVS[msg.sender], "AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS"
         );
         // Assert `operator` is actually an operator.
         require(
@@ -162,10 +162,10 @@ contract AVSDirectory is
      * @param operator The operator to deregister from the operatorSets.
      * @param avs The address of the AVS to deregister the operator from.
      * @param operatorSetIds The IDs of the operator sets.
-	 * @param operatorSignature the signature of the operator on their intent to deregister or empty if the operator itself is calling
-	 *
-	 * @dev if the operatorSignature is empty, the caller must be the operator
-	 * @dev this will likely only be called in case the AVS contracts are in a state that prevents operators from deregistering
+     * @param operatorSignature the signature of the operator on their intent to deregister or empty if the operator itself is calling
+     *
+     * @dev if the operatorSignature is empty, the caller must be the operator
+     * @dev this will likely only be called in case the AVS contracts are in a state that prevents operators from deregistering
      */
     function forceDeregisterFromOperatorSets(
         address operator,
@@ -256,17 +256,14 @@ contract AVSDirectory is
         );
 
         // Assert that the AVS is not an operator set AVS.
-        require(
-            !isOperatorSetAVS[msg.sender], 
-            "AVSDirectory.registerOperatorToAVS: AVS is an operator set AVS"
-        );
+        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.registerOperatorToAVS: AVS is an operator set AVS");
 
         // Assert that the `operator` is not actively registered to the AVS.
         require(
             avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
             "AVSDirectory.registerOperatorToAVS: operator already registered"
         );
-        
+
         // Assert `operator` has not already spent `operatorSignature.salt`.
         require(
             !operatorSaltIsSpent[operator][operatorSignature.salt],
