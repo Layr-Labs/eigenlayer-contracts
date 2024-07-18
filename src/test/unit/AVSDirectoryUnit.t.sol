@@ -761,6 +761,10 @@ contract AVSDirectoryUnitTests_becomeOperatorSetAVS is AVSDirectoryUnitTests {
     }
 }
 
+contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUnitTests {
+
+}
+
 contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnitTests {
     function test_revert_whenRegisterDeregisterToAVSPaused() public {
         // set the pausing flag
