@@ -57,7 +57,7 @@ interface IAVSDirectory is ISignatureUtils {
     function becomeOperatorSetAVS() external;
 
     /**
-     *  @notice Called by AVSs to add an operator to an operator set.
+     *  @notice Called by AVSs to add an operator to list of operatorSets.
      *
      *  @param operator The address of the operator to be added to the operator set.
      *  @param operatorSetIds The IDs of the operator sets.
@@ -65,9 +65,6 @@ interface IAVSDirectory is ISignatureUtils {
      *
      *  @dev msg.sender is used as the AVS.
      *  @dev The operator must not have a pending deregistration from the operator set.
-     *  @dev If this is the first operator set in the AVS that the operator is
-     *  registering for, a OperatorAVSRegistrationStatusUpdated event is emitted with
-     *  a REGISTERED status.
      */
     function registerOperatorToOperatorSets(
         address operator,
