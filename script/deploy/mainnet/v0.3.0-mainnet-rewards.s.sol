@@ -65,7 +65,7 @@ contract MainnetRewardsCoordinatorDeploy is ExistingDeploymentParser {
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         RewardsCoordinator.initialize.selector,
-                        executorMultisig,
+                        operationsMultisig,
                         eigenLayerPauserReg,
                         REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                         REWARDS_COORDINATOR_UPDATER,
