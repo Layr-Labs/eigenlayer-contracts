@@ -1,6 +1,6 @@
 # AVS Considerations
 
-The operatorSet release solves 3 painpoints for AVSs:
+The operatorSet release solves 4 painpoints for AVSs:
 
 1. Quorums cannot be displayed on the UI with their proper TVL and strategies
 2. MetaAVSs are not supported
@@ -81,4 +81,4 @@ Several AVSs have noted about the high operational costs associated with operati
 
 # Migration
 
-AVSs can migrate operators to operatorSets that have already been registered (via M2 registration) for the AVS. This functionality is added for convenience to the AVS. Operators may only be migrated ONCE to a list of operator set IDs for a given AVS. Operators can unilaterally deregister from the operator set if they disagree with the migration. 
+AVSs can migrate operators to operatorSets that have already been registered (via M2 registration) for the AVS. This functionality is added for convenience to the AVS. Operators may only be migrated ONCE to a list of operator set IDs for a given AVS. Operators can unilaterally deregister from the operator set if they disagree with the migration. Once an AVS begins migration, it can no longer use the legacy M2 registration pathway.

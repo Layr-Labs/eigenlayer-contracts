@@ -104,6 +104,7 @@ interface IAVSDirectory {
 	 * @param operatorSignature the signature of the operator on their intent to register
 	 *
 	 * @dev msg.sender is used as the AVS
+	 * @dev An AVS can no longer use this method once it migrates to using operatorSets
 	 */
 	function registerOperatorToOperatorSets(
 		address operator,
@@ -121,6 +122,7 @@ interface IAVSDirectory {
 	 * @dev msg.sender is used as the AVS
 	 * @dev operator must be registered for msg.sender AVS and the given 
 	 * operatorSet
+	 * @dev An AVS can no longer use this method once it migrates to using operatorSets
 	 */
 	function deregisterOperatorFromOperatorSets(
 		address operator, 
@@ -148,23 +150,41 @@ interface IAVSDirectory {
 	// VIEW
 	
 	/**
-	 * @param operatorSet the operatorSet to check existence for
+	 * @param avs to check operator set existence for
+	 * @param operatorSetId of the operatorSet to check existence for
 	 *
 	 * @return whether the operatorSet exists
+	 * 
+	 * @dev This is a mapping in storage
 	 */
-	function doesOperatorSetExist(OperatorSet calldata operatorSet) returns (bool);
+	function isOperatorSet(address avs, uint32 operatorSetId) returns (bool);
 	
 	/**
 	 * @param operator the operator to get the status of
-	 * @param operatorSet the operatorSet to check whether the operator was in
+	 * @param avs to check operatorSet membership in
+	 * @param operatorSetId of the operatorSet to check whether the operator was in
 	 * 
 	 * @return whether the operator was in a given operatorSet
+	 *
+	 * @dev This is a mapping in storage
 	 */
-	function isOperatorInOperatorSet(
-		address operator, 
-		OperatorSet calldata operatorSet, 
+	function isMember(
+		address avs, 
+		address operator,
+		uint32 operatorSetId
 	) external view returns(bool);
-	
+
+
+	/**
+	 * @param avs to check operatorSet status of
+	 * 
+	 * @return whether the avs is an operatorSet AVS
+	 *
+	 * @dev This is a mapping in storage
+	 */
+	function isOperatorSetAVS(
+		address avs, 
+	) external view returns(bool);
 }
 ```
 ### createOperatorSets
@@ -177,14 +197,14 @@ Reverts if:
 
 ### registerOperatorToAVS - M2 Legacy
 
-This is called by AVSs when operators initially register for their AVS. It requires a [EIP 1271](https://eips.ethereum.org/EIPS/eip-1271) signature from the operator. This is used in legacy M2 AVSs.
+This is called by AVSs when operators initially register for their AVS. It requires a [EIP 1271](https://eips.ethereum.org/EIPS/eip-1271) signature from the operator. This is used in legacy M2 AVSs. Once the AVS begins migrating to operatorSet based registration, it can no longer use the legacy functions. 
 
 Reverts if:
 
 1. The `operatorSignature` is not from `operator`
 2. If `operator` is not registered with the DelegationManager
 3. If `operator` is already registered with the AVS
-4. The AVS has ever created an operatorSet
+4. The AVS is an operatorSet AVS.
 
 ### deregisterOperatorFromAVS - M2 Legacy
 
