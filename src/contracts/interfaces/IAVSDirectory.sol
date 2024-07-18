@@ -62,21 +62,21 @@ interface IAVSDirectory is ISignatureUtils {
      */
     function becomeOperatorSetAVS() external;
 
-	/**
-	 * @notice Called by an AVS to migrate operators that have a legacy M2 registration to operator sets.
-	 *
-	 * @param operators The list of operators to migrate
-	 * @param operatorSetIds The list of operatorSets to migrate the operators to
-	 *
-	 * @dev The msg.sender used is the AVS
-	 * @dev The operator can only be migrated at most once per AVS
-	 * @dev The AVS can no longer register operators via the legacy M2 registration path once it begins migration
-	 * @dev The operator is deregistered from the M2 legacy AVS once migrated
-	 */
-	function migrateOperatorsToOperatorSets(
-		address[] calldata operators,
-		uint32[][] calldata operatorSetIds
-	) external;
+    /**
+     * @notice Called by an AVS to migrate operators that have a legacy M2 registration to operator sets.
+     *
+     * @param operators The list of operators to migrate
+     * @param operatorSetIds The list of operatorSets to migrate the operators to
+     *
+     * @dev The msg.sender used is the AVS
+     * @dev The operator can only be migrated at most once per AVS
+     * @dev The AVS can no longer register operators via the legacy M2 registration path once it begins migration
+     * @dev The operator is deregistered from the M2 legacy AVS once migrated
+     */
+    function migrateOperatorsToOperatorSets(
+        address[] calldata operators,
+        uint32[][] calldata operatorSetIds
+    ) external;
 
     /**
      *  @notice Called by AVSs to add an operator to list of operatorSets.
