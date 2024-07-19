@@ -547,7 +547,7 @@ contract ExistingDeploymentParser is Script, Test {
             "rewardsCoordinator: pauser registry not set correctly"
         );
         require(
-            rewardsCoordinator.owner() == operationsMultisig,
+            rewardsCoordinator.owner() == executorMultisig,
             "rewardsCoordinator: owner not set correctly"
         );
         require(
