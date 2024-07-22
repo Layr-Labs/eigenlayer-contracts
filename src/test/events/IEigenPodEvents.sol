@@ -25,7 +25,7 @@ interface IEigenPodEvents {
     event NonBeaconChainETHReceived(uint256 amountReceived);
 
     /// @notice Emitted when a checkpoint is created
-    event CheckpointCreated(uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot);
+    event CheckpointCreated(uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot, uint256 validatorCount);
 
     /// @notice Emitted when a checkpoint is finalized
     event CheckpointFinalized(uint64 indexed checkpointTimestamp, int256 totalShareDeltaWei);

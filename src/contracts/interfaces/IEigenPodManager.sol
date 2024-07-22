@@ -23,7 +23,7 @@ interface IEigenPodManager is IPausable {
     event BeaconChainETHDeposited(address indexed podOwner, uint256 amount);
 
     /// @notice Emitted when the balance of an EigenPod is updated
-    event PodSharesUpdated(address indexed podOwner, IEigenPod indexed pod, int256 newTotalShares, int256 sharesDelta);
+    event PodSharesUpdated(address indexed podOwner, int256 sharesDelta, int256 newTotalShares);
 
     /// @notice Emitted when a withdrawal of beacon chain ETH is completed
     event BeaconChainETHWithdrawalCompleted(

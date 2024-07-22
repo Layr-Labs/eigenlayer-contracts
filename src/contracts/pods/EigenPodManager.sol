@@ -134,7 +134,7 @@ contract EigenPodManager is
                 });
             }
         }
-        emit PodSharesUpdated(podOwner, ownerToPod[podOwner], updatedPodOwnerShares, sharesDelta);
+        emit PodSharesUpdated(podOwner, sharesDelta, updatedPodOwnerShares);
     }
 
     /**
@@ -156,7 +156,7 @@ contract EigenPodManager is
         require(updatedPodOwnerShares >= 0, "EigenPodManager.removeShares: cannot result in pod owner having negative shares");
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
-        emit PodSharesUpdated(podOwner, ownerToPod[podOwner], updatedPodOwnerShares, -int256(shares));
+        emit PodSharesUpdated(podOwner, -int256(shares), updatedPodOwnerShares);
     }
 
     /**
@@ -177,7 +177,7 @@ contract EigenPodManager is
         int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
-        emit PodSharesUpdated(podOwner, ownerToPod[podOwner], updatedPodOwnerShares, int256(shares));
+        emit PodSharesUpdated(podOwner, int256(shares), updatedPodOwnerShares);
 
         return uint256(_calculateChangeInDelegatableShares({sharesBefore: currentPodOwnerShares, sharesAfter: updatedPodOwnerShares}));
     }
@@ -199,7 +199,6 @@ contract EigenPodManager is
         require(int256(shares) >= 0, "EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");
         require(shares % GWEI_TO_WEI == 0, "EigenPodManager.withdrawSharesAsTokens: shares must be a whole Gwei amount");
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
-        IEigenPod pod = ownerToPod[podOwner];
 
         // if there is an existing shares deficit, prioritize decreasing the deficit first
         if (currentPodOwnerShares < 0) {
@@ -208,17 +207,17 @@ contract EigenPodManager is
             if (shares > currentShareDeficit) {
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
-                emit PodSharesUpdated(podOwner, pod, 0, int256(currentShareDeficit));
+                emit PodSharesUpdated(podOwner, int256(currentShareDeficit), 0);
             // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
             } else {
                 int256 updatedPodOwnerShares = podOwnerShares[podOwner] + int256(shares);
                 podOwnerShares[podOwner] = updatedPodOwnerShares;
-                emit PodSharesUpdated(podOwner, pod, updatedPodOwnerShares, int256(shares));
+                emit PodSharesUpdated(podOwner, int256(shares), updatedPodOwnerShares);
                 return;
             }
         }
         // Actually withdraw to the destination
-        pod.withdrawRestakedBeaconChainETH(destination, shares);
+        ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }
 
     // INTERNAL FUNCTIONS

@@ -9,5 +9,5 @@ interface IEigenPodManagerEvents {
     event PodDeployed(address indexed eigenPod, address indexed podOwner);
 
     /// @notice Emitted when the balance of an EigenPod is updated
-    event PodSharesUpdated(address indexed podOwner, int256 sharesDelta);
+    event PodSharesUpdated(address indexed podOwner, int256 sharesDelta, int256 newTotalShares);
 }
