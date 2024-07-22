@@ -202,10 +202,10 @@ interface IEigenPod {
                                    VIEW METHODS
     *******************************************************************************/
 
-    /// @notice An address with permissions to call `startCheckpoint` and `verifyCheckpointProofs`, set
+    /// @notice An address with permissions to call `startCheckpoint` and `verifyWithdrawalCredentials`, set
     /// by the podOwner. This role exists to allow a podOwner to designate a hot wallet that can call
     /// these methods, allowing the podOwner to remain a cold wallet that is only used to manage funds.
-    /// @dev If this address is NOT set, only the podOwner can call `startCheckpoint` and `verifyCheckpointProofs`
+    /// @dev If this address is NOT set, only the podOwner can call `startCheckpoint` and `verifyWithdrawalCredentials`
     function proofSubmitter() external view returns (address);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),

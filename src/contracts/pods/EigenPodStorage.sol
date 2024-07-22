@@ -71,10 +71,10 @@ abstract contract EigenPodStorage is IEigenPod {
     /// @notice The current checkpoint, if there is one active
     Checkpoint internal _currentCheckpoint;
 
-    /// @notice An address with permissions to call `startCheckpoint` and `verifyCheckpointProofs`, set
+    /// @notice An address with permissions to call `startCheckpoint` and `verifyWithdrawalCredentials`, set
     /// by the podOwner. This role exists to allow a podOwner to designate a hot wallet that can call
     /// these methods, allowing the podOwner to remain a cold wallet that is only used to manage funds.
-    /// @dev If this address is NOT set, only the podOwner can call `startCheckpoint` and `verifyCheckpointProofs`
+    /// @dev If this address is NOT set, only the podOwner can call `startCheckpoint` and `verifyWithdrawalCredentials`
     address public proofSubmitter;
 
     /**
