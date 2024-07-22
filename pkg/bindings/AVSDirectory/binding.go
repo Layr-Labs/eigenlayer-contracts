@@ -341,33 +341,33 @@ func (_AVSDirectory *AVSDirectoryCallerSession) OPERATORSETREGISTRATIONTYPEHASH(
 
 // AvsOperatorStatus is a free data retrieval call binding the contract method 0x49075da3.
 //
-// Solidity: function avsOperatorStatus(address , address ) view returns(uint8)
-func (_AVSDirectory *AVSDirectoryCaller) AvsOperatorStatus(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address) (uint8, error) {
+// Solidity: function OPERATOR_SET_REGISTRATION_TYPEHASH() view returns(bytes32)
+func (_AVSDirectory *AVSDirectoryCaller) OPERATORSETREGISTRATIONTYPEHASH(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _AVSDirectory.contract.Call(opts, &out, "avsOperatorStatus", arg0, arg1)
+	err := _AVSDirectory.contract.Call(opts, &out, "OPERATOR_SET_REGISTRATION_TYPEHASH")
 
 	if err != nil {
-		return *new(uint8), err
+		return *new([32]byte), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
 
 	return out0, err
 
 }
 
-// AvsOperatorStatus is a free data retrieval call binding the contract method 0x49075da3.
+// OPERATORSETREGISTRATIONTYPEHASH is a free data retrieval call binding the contract method 0xc825fe68.
 //
-// Solidity: function avsOperatorStatus(address , address ) view returns(uint8)
-func (_AVSDirectory *AVSDirectorySession) AvsOperatorStatus(arg0 common.Address, arg1 common.Address) (uint8, error) {
-	return _AVSDirectory.Contract.AvsOperatorStatus(&_AVSDirectory.CallOpts, arg0, arg1)
+// Solidity: function OPERATOR_SET_REGISTRATION_TYPEHASH() view returns(bytes32)
+func (_AVSDirectory *AVSDirectorySession) OPERATORSETREGISTRATIONTYPEHASH() ([32]byte, error) {
+	return _AVSDirectory.Contract.OPERATORSETREGISTRATIONTYPEHASH(&_AVSDirectory.CallOpts)
 }
 
-// AvsOperatorStatus is a free data retrieval call binding the contract method 0x49075da3.
+// OPERATORSETREGISTRATIONTYPEHASH is a free data retrieval call binding the contract method 0xc825fe68.
 //
-// Solidity: function avsOperatorStatus(address , address ) view returns(uint8)
-func (_AVSDirectory *AVSDirectoryCallerSession) AvsOperatorStatus(arg0 common.Address, arg1 common.Address) (uint8, error) {
-	return _AVSDirectory.Contract.AvsOperatorStatus(&_AVSDirectory.CallOpts, arg0, arg1)
+// Solidity: function OPERATOR_SET_REGISTRATION_TYPEHASH() view returns(bytes32)
+func (_AVSDirectory *AVSDirectoryCallerSession) OPERATORSETREGISTRATIONTYPEHASH() ([32]byte, error) {
+	return _AVSDirectory.Contract.OPERATORSETREGISTRATIONTYPEHASH(&_AVSDirectory.CallOpts)
 }
 
 // CalculateOperatorAVSRegistrationDigestHash is a free data retrieval call binding the contract method 0xa1060c88.
@@ -1746,15 +1746,15 @@ func (it *AVSDirectoryOperatorAVSRegistrationStatusUpdatedIterator) Close() erro
 
 // AVSDirectoryOperatorAVSRegistrationStatusUpdated represents a OperatorAVSRegistrationStatusUpdated event raised by the AVSDirectory contract.
 type AVSDirectoryOperatorAVSRegistrationStatusUpdated struct {
-	Operator common.Address
-	Avs      common.Address
-	Status   uint8
-	Raw      types.Log // Blockchain specific contextual infos
+	Operator         common.Address
+	Avs              common.Address
+	IsLegacyOperator bool
+	Raw              types.Log // Blockchain specific contextual infos
 }
 
-// FilterOperatorAVSRegistrationStatusUpdated is a free log retrieval operation binding the contract event 0xf0952b1c65271d819d39983d2abb044b9cace59bcc4d4dd389f586ebdcb15b41.
+// FilterOperatorAVSRegistrationStatusUpdated is a free log retrieval operation binding the contract event 0x1864cf493d2c3314abbcef95e20acb37a637bccf3c51f4fe2f6f9492fbeabd7f.
 //
-// Solidity: event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, uint8 status)
+// Solidity: event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, bool isLegacyOperator)
 func (_AVSDirectory *AVSDirectoryFilterer) FilterOperatorAVSRegistrationStatusUpdated(opts *bind.FilterOpts, operator []common.Address, avs []common.Address) (*AVSDirectoryOperatorAVSRegistrationStatusUpdatedIterator, error) {
 
 	var operatorRule []interface{}
@@ -1773,9 +1773,9 @@ func (_AVSDirectory *AVSDirectoryFilterer) FilterOperatorAVSRegistrationStatusUp
 	return &AVSDirectoryOperatorAVSRegistrationStatusUpdatedIterator{contract: _AVSDirectory.contract, event: "OperatorAVSRegistrationStatusUpdated", logs: logs, sub: sub}, nil
 }
 
-// WatchOperatorAVSRegistrationStatusUpdated is a free log subscription operation binding the contract event 0xf0952b1c65271d819d39983d2abb044b9cace59bcc4d4dd389f586ebdcb15b41.
+// WatchOperatorAVSRegistrationStatusUpdated is a free log subscription operation binding the contract event 0x1864cf493d2c3314abbcef95e20acb37a637bccf3c51f4fe2f6f9492fbeabd7f.
 //
-// Solidity: event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, uint8 status)
+// Solidity: event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, bool isLegacyOperator)
 func (_AVSDirectory *AVSDirectoryFilterer) WatchOperatorAVSRegistrationStatusUpdated(opts *bind.WatchOpts, sink chan<- *AVSDirectoryOperatorAVSRegistrationStatusUpdated, operator []common.Address, avs []common.Address) (event.Subscription, error) {
 
 	var operatorRule []interface{}
@@ -1819,9 +1819,9 @@ func (_AVSDirectory *AVSDirectoryFilterer) WatchOperatorAVSRegistrationStatusUpd
 	}), nil
 }
 
-// ParseOperatorAVSRegistrationStatusUpdated is a log parse operation binding the contract event 0xf0952b1c65271d819d39983d2abb044b9cace59bcc4d4dd389f586ebdcb15b41.
+// ParseOperatorAVSRegistrationStatusUpdated is a log parse operation binding the contract event 0x1864cf493d2c3314abbcef95e20acb37a637bccf3c51f4fe2f6f9492fbeabd7f.
 //
-// Solidity: event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, uint8 status)
+// Solidity: event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, bool isLegacyOperator)
 func (_AVSDirectory *AVSDirectoryFilterer) ParseOperatorAVSRegistrationStatusUpdated(log types.Log) (*AVSDirectoryOperatorAVSRegistrationStatusUpdated, error) {
 	event := new(AVSDirectoryOperatorAVSRegistrationStatusUpdated)
 	if err := _AVSDirectory.contract.UnpackLog(event, "OperatorAVSRegistrationStatusUpdated", log); err != nil {
