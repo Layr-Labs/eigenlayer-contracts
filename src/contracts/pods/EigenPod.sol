@@ -75,6 +75,14 @@ contract EigenPod is
         _;
     }
 
+    modifier onlyOwnerOrProofSubmitter() {
+        require(
+            msg.sender == podOwner || msg.sender == proofSubmitter, 
+            "EigenPod.onlyOwnerOrProofSubmitter: caller is not pod owner or proof submitter"
+        );
+        _;
+    }
+
     /**
      * @notice Based on 'Pausable' code, but uses the storage of the EigenPodManager instead of this contract. This construction
      * is necessary for enabling pausing all EigenPods at the same time (due to EigenPods being Beacon Proxies).
@@ -132,7 +140,7 @@ contract EigenPod is
      */
     function startCheckpoint(bool revertIfNoBalance)
         external
-        onlyEigenPodOwner() 
+        onlyOwnerOrProofSubmitter() 
         onlyWhenNotPaused(PAUSED_START_CHECKPOINT) 
     {
         _startCheckpoint(revertIfNoBalance);
@@ -238,7 +246,7 @@ contract EigenPod is
         bytes32[][] calldata validatorFields
     )
         external
-        onlyEigenPodOwner
+        onlyOwnerOrProofSubmitter
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
     {
         require(
@@ -382,6 +390,18 @@ contract EigenPod is
         for (uint256 i = 0; i < tokenList.length; i++) {
             tokenList[i].safeTransfer(recipient, amountsToWithdraw[i]);
         }
+    }
+
+    /// @notice Allows the owner of a pod to update the proof submitter, a permissioned
+    /// address that can call `startCheckpoint` and `verifyWithdrawalCredentials`.
+    /// @dev Note that EITHER the podOwner OR proofSubmitter can access these methods,
+    /// so it's fine to set your proofSubmitter to 0 if you want the podOwner to be the
+    /// only address that can call these methods.
+    /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
+    /// pod owner will be able to call `startCheckpoint` and `verifyWithdrawalCredentials`
+    function setProofSubmitter(address newProofSubmitter) external onlyEigenPodOwner {
+        emit ProofSubmitterUpdated(proofSubmitter, newProofSubmitter);
+        proofSubmitter = newProofSubmitter;
     }
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.

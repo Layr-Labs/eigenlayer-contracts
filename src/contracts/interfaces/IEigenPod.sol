@@ -49,6 +49,9 @@ interface IEigenPod {
     /// @notice Emitted when an ETH validator stakes via this eigenPod
     event EigenPodStaked(bytes pubkey);
 
+    /// @notice Emitted when a pod owner updates the proof submitter address
+    event ProofSubmitterUpdated(address prevProofSubmitter, address newProofSubmitter);
+
     /// @notice Emitted when an ETH validator's withdrawal credentials are successfully verified to be pointed to this eigenPod
     event ValidatorRestaked(uint40 validatorIndex);
 
@@ -186,9 +189,24 @@ interface IEigenPod {
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
+    /// @notice Allows the owner of a pod to update the proof submitter, a permissioned
+    /// address that can call `startCheckpoint` and `verifyWithdrawalCredentials`.
+    /// @dev Note that EITHER the podOwner OR proofSubmitter can access these methods,
+    /// so it's fine to set your proofSubmitter to 0 if you want the podOwner to be the
+    /// only address that can call these methods.
+    /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
+    /// pod owner will be able to call `startCheckpoint` and `verifyWithdrawalCredentials`
+    function setProofSubmitter(address newProofSubmitter) external;
+
     /*******************************************************************************
                                    VIEW METHODS
     *******************************************************************************/
+
+    /// @notice An address with permissions to call `startCheckpoint` and `verifyWithdrawalCredentials`, set
+    /// by the podOwner. This role exists to allow a podOwner to designate a hot wallet that can call
+    /// these methods, allowing the podOwner to remain a cold wallet that is only used to manage funds.
+    /// @dev If this address is NOT set, only the podOwner can call `startCheckpoint` and `verifyWithdrawalCredentials`
+    function proofSubmitter() external view returns (address);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);

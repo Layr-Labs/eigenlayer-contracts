@@ -41,6 +41,8 @@ Because beacon chain proofs are processed asynchronously from the beacon chain i
 * _Pod Owners_ can delegate their `EigenPodManager` shares to Operators (via `DelegationManager`).
 * These shares correspond to the amount of restaked beacon chain ETH held by the _Pod Owner_ via their `EigenPod`.
 
+**_Proof Submitter_**: An address designated by the Pod Owner with permissions to call certain `EigenPod` methods. This role is provided to allow Pod Owners to manage their day-to-day `EigenPod` tasks via hot wallets, rather than the Pod Owner address which controls all funds. The Proof Submitter can call `verifyWithdrawalCredentials` and `startCheckpoint`. See [`setProofSubmitter` docs](#setproofsubmitter) for more details.
+
 **_Active validator set_**: This term is used frequently in this document to describe the set of validators whose withdrawal credentials have been verified to be pointed at an `EigenPod`. The _active validator set_ is used to determine the number of proofs required to complete a checkpoint (see [Checkpointing Validators](#checkpointing-validators)).
 * A validator enters the _active validator set_ when their withdrawal credentials are verified (see [`verifyWithdrawalCredentials`](#verifywithdrawalcredentials))
 * A validator leaves the _active validator set_ when a checkpoint proof shows they have 0 balance (see [`verifyCheckpointProofs`](#verifycheckpointproofs))
@@ -90,7 +92,7 @@ function verifyWithdrawalCredentials(
     bytes32[][] calldata validatorFields
 )
     external
-    onlyEigenPodOwner
+    onlyOwnerOrProofSubmitter
     onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
 
 struct StateRootProof {
@@ -121,7 +123,7 @@ _Note that it is not required to verify your validator's withdrawal credentials_
 * The Pod Owner is awarded shares according to the sum of effective balances proven. See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](./EigenPodManager.md#recordbeaconchainethbalanceupdate)
 
 *Requirements*:
-* Caller MUST be the Pod Owner
+* Caller MUST be EITHER the Pod Owner or Proof Submitter
 * Pause status MUST NOT be set: `PAUSED_EIGENPODS_VERIFY_CREDENTIALS`
 * Input array lengths MUST be equal
 * `beaconTimestamp`:
@@ -161,11 +163,11 @@ _Methods:_
 ```solidity
 function startCheckpoint(bool revertIfNoBalance)
     external
-    onlyEigenPodOwner() 
+    onlyOwnerOrProofSubmitter() 
     onlyWhenNotPaused(PAUSED_START_CHECKPOINT) 
 ```
 
-This method allows a Pod Owner to start a checkpoint, beginning the process of proving a pod's _active validator set_. `startCheckpoint` takes a snapshot of three things:
+This method allows a Pod Owner (or Proof Submitter) to start a checkpoint, beginning the process of proving a pod's _active validator set_. `startCheckpoint` takes a snapshot of three things:
 * `podBalanceGwei`: the `EigenPod's` native ETH balance, minus any balance already credited with shares through previous checkpoints
     * Note: if `revertIfNoBalance == true`, this method will revert if `podBalanceGwei == 0`. This is to allow a Pod Owner to avoid creating a checkpoint unintentionally.
 * `activeValidatorCount`: the number of validators in the pod's _active validator set_, aka the number of validators with verified withdrawal credentials who have NOT been proven exited via a previous checkpoint
@@ -193,7 +195,7 @@ This guarantee means that, if we use the checkpoint to sum up the beacon chain b
     * The Pod Owner's shares are updated (see [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](./EigenPodManager.md#recordbeaconchainethbalanceupdate))
 
 *Requirements*:
-* Caller MUST be the Pod Owner
+* Caller MUST be EITHER the Pod Owner or Proof Submitter
 * Pause status MUST NOT be set: `PAUSED_START_CHECKPOINT`
 * A checkpoint MUST NOT be active (`currentCheckpointTimestamp == 0`)
 * The last checkpoint completed MUST NOT have been started in the current block (`lastCheckpointTimestamp != block.timestamp`)
@@ -311,9 +313,28 @@ If these requirements are met and the proofs are valid against a beacon block ro
 ### Other Methods
 
 Minor methods that do not fit well into other sections:
+* [`setProofSubmitter`](#setproofsubmitter)
 * [`stake`](#stake)
 * [`withdrawRestakedBeaconChainETH`](#withdrawrestakedbeaconchaineth)
 * [`recoverTokens`](#recovertokens)
+
+#### `setProofSubmitter`
+
+```solidity
+function setProofSubmitter(address newProofSubmitter) external onlyEigenPodOwner
+```
+
+Allows the Pod Owner to update the Proof Submitter address for the `EigenPod`. The Proof Submitter can call `verifyWithdrawalCredentials` and `startCheckpoint` just like the Pod Owner. This is intended to allow the Pod Owner to create a hot wallet to manage calls to these methods.
+
+If set, EITHER the Pod Owner OR Proof Submitter may call `verifyWithdrawalCredentials`/`startCheckpoint`.
+
+The Pod Owner can call this with `newProofSubmitter == 0` to remove the current Proof Submitter. If there is no designated Proof Submitter, ONLY the Pod Owner can call `verifyWithdrawalCredentials`/`startCheckpoint`.
+
+*Effects*:
+* Updates `proofSubmitter` to `newProofSubmitter`
+
+*Requirements*:
+* Caller MUST be the Pod Owner
 
 #### `stake`
 
