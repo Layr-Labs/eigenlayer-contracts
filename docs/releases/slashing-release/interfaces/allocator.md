@@ -4,49 +4,49 @@ The `OperatorDetails` is modified to replace the `earningsReciever` field with t
 
 ```solidity
 interface IDelegationManager {
-	/// STRUCTS
-	
-	// @notice Struct used for storing information about a single operator who has registered with EigenLayer
-	struct OperatorDetails {
-		// @notice address that can allocate slashable stake and register/deregister the operator to AVS operatorSets
-		address allocator;
-		/**
-		 * @notice Address to verify signatures when a staker wishes to delegate to the operator, as well as controlling "forced undelegations".
-		 * @dev Signature verification follows these rules:
-		 * 1) If this address is left as address(0), then any staker will be free to delegate to the operator, i.e. no signature verification will be performed.
-		 * 2) If this address is an EOA (i.e. it has no code), then we follow standard ECDSA signature verification for delegations to the operator.
-		 * 3) If this address is a contract (i.e. it has code) then we forward a call to the contract and verify that it returns the correct EIP-1271 "magic value".
-		 */
-		address delegationApprover;
-		// @notice noop
-		uint32 stakerOptOutWindowBlocks;
-	}
-
 	/// EVENTS
 
 	/// @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
-	event OperatorDetailsModified(address indexed operator, OperatorDetails newOperatorDetails);
+	event AllocatorHandoffQueued(address operator, address allocator, uint32 effectTimestamp);
+
+	
+	event AllocatorHandoffCompleted(address operator, address allocator, IStrategy[] strategies);
 	
 	/// EXTERNAL - STATE MODIFYING
-	
+
 	/**
-	* @notice Updates an operator's stored `OperatorDetails`.
-	* @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
-	*
-	* @dev The caller must have previously registered as an operator in EigenLayer.
-	*/
-	function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external
+	 * @notice Queues a handoff of the calling operator's delegated stake to a target allocator in 14 days
+	 *
+	 * @param allocator the target allocator to handoff delegated stake to
+	 * @param allocatorSignatureAndExpiry the signature of the allocator
+	 *
+	 * @dev the handoff must be completed in a separate tx in 14 days. it is permissionless to complete
+	 * @dev further delegations and deposits to the operator are prohibited after this function is called
+	 */
+	function queueAllocatorHandoff(address allocator, SignatureWithExpiry memory allocatorSignatureAndExpiry) external;
+
+	/**
+	 * @notice Completes a handoff queued via queueHandoff.
+	 *
+	 * @param operator the operator in the queued handoff
+	 * @param allocator the allocator in the queued handoff
+	 * @param strategies the strategies to be handed off
+	 * 
+	 * @dev must be called 14 days after the handoff was queued
+	 * @dev the allocator's shares are incremented by the operators shares for each strategy
+	 * @dev if all strategies are not handed off, this function can be called by anyone else to 
+	 * complete the handoff for different strategies
+	 */
+	function completeAllocatorHandoff(address operator, address allocator, IStrategy[] calldata strategies) external;
 	
 	/// VIEW
 	
 	/**
-	 * @param operator the operator to get the allocator of
+	 * @param staker the staker to get the allocator of
 	 *
-	 * @returns allocator the operator's allocator
-	 * @dev an operator's default allocator is themselves if they don't set it
+	 * @returns allocator the staker's allocator
 	 */
-	function getAllocator(address operator) 
-		external view returns(address stakeAllocator);
+	function allocatorFor(address staker) external view returns(address stakeAllocator);
 }
 ```
 
