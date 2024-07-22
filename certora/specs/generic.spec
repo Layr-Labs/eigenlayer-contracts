@@ -1,8 +1,8 @@
 /*
-This rule find which functions are privileged.
-A function is privileged if there is only one address that can call it.
+	This rule find which functions are privileged.
+	A function is privileged if there is only one address that can call it.
 
-The rules finds this by finding which functions can be called by two different users.
+	The rules finds this by finding which functions can be called by two different users.
 */
 rule privilegedOperation(method f, address privileged) {
 	env e1;
@@ -39,7 +39,7 @@ rule simpleFrontRunning(method f, address privileged) filtered { f-> !f.isView }
 	calldataarg arg;
 	require e1.msg.sender == privileged;  
 	storage initialStorage = lastStorage;
-	f(e1, arg); 
+	f@withrevert(e1, arg); 
 	bool firstSucceeded = !lastReverted;
 	env e2;
 	calldataarg arg2;

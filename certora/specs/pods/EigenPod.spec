@@ -1,3 +1,4 @@
+import "./../setup.spec";
 
 methods {
     // Internal, NONDET-summarized EigenPod library functions
@@ -10,60 +11,16 @@ methods {
     // when sending ETH using `Address.sendValue()`
     function _._sendETH(address recipient, uint256 amountWei) internal => NONDET;
 
-    // summarize the deployment of EigenPods to avoid default, HAVOC behavior
-    function _.deploy(uint256, bytes32, bytes memory bytecode) internal => NONDET;
-
     //// External Calls
-	// external calls to DelegationManager 
-    function _.undelegate(address) external => DISPATCHER(true);
-    function _.decreaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
-	function _.increaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
-
-    // external calls from DelegationManager to ServiceManager
-    function _.updateStakes(address[]) external => NONDET;
 
 	// external calls to Slasher
-    function _.isFrozen(address) external => DISPATCHER(true);
-	function _.canWithdraw(address,uint32,uint256) external => DISPATCHER(true);
     function _.recordStakeUpdate(address,uint32,uint32,uint256) external => NONDET;
 
-	// external calls to StrategyManager
-    function _.getDeposits(address) external => DISPATCHER(true);
-    function _.slasher() external => DISPATCHER(true);
-    function _.addShares(address,address,uint256) external => DISPATCHER(true);
-    function _.removeShares(address,address,uint256) external => DISPATCHER(true);
-    function _.withdrawSharesAsTokens(address, address, uint256, address) external => DISPATCHER(true);
-
     // external calls to Strategy contracts
-    function _.deposit(address, uint256) external => NONDET;
-    function _.withdraw(address, address, uint256) external => NONDET;
+    //function _.deposit(address, uint256) external => NONDET;
+    //function _.withdraw(address, address, uint256) external => NONDET;
 
-	// external calls to EigenPodManager
-    function _.addShares(address,uint256) external => DISPATCHER(true);
-    function _.removeShares(address,uint256) external => DISPATCHER(true);
-    function _.withdrawSharesAsTokens(address, address, uint256) external => DISPATCHER(true);
-    function _.podOwnerShares(address) external => DISPATCHER(true);
 
-    // external calls to EigenPod
-	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
-    function _.stake(bytes, bytes, bytes32) external => DISPATCHER(true);
-    function _.initialize(address) external => DISPATCHER(true);
-
-    // external calls to ETH2Deposit contract
-    function _.deposit(bytes, bytes, bytes, bytes32) external => NONDET;
-
-    // external calls to DelayedWithdrawalRouter (from EigenPod)
-    function _.createDelayedWithdrawal(address, address) external => DISPATCHER(true);
-
-    // external calls to PauserRegistry
-    function _.isPauser(address) external => DISPATCHER(true);
-	function _.unpauser() external => DISPATCHER(true);
-
-    // external calls to ERC20 token
-    function _.transfer(address, uint256) external => DISPATCHER(true);
-    function _.transferFrom(address, address, uint256) external => DISPATCHER(true);
-    function _.approve(address, uint256) external => DISPATCHER(true);
-	
     // envfree functions
     function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external returns (uint64) envfree;
     function withdrawableRestakedExecutionLayerGwei() external returns (uint64) envfree;
@@ -242,3 +199,18 @@ invariant consistentAccounting() {
         to_mathint(get_withdrawableRestakedExecutionLayerGwei()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei());
 }
 */
+
+////******************** Added by Certora *************//////////
+
+rule whoCanChangeBalanceUpdateTimestamp(bytes32 validatorPubkeyHash, env e, method f) 
+{
+    IEigenPod.ValidatorInfo validatorInfoBefore = validatorPubkeyHashToInfo(validatorPubkeyHash);
+    calldataarg args;
+    f(e,args);
+    IEigenPod.ValidatorInfo validatorInfoAfter = validatorPubkeyHashToInfo(validatorPubkeyHash);
+    
+    assert validatorInfoAfter.mostRecentBalanceUpdateTimestamp > validatorInfoBefore.mostRecentBalanceUpdateTimestamp
+        => canIncreaseBalanceUpdateTimestamp(f);
+    assert validatorInfoAfter.mostRecentBalanceUpdateTimestamp < validatorInfoBefore.mostRecentBalanceUpdateTimestamp
+        => canDecreaseBalanceUpdateTimestamp(f);
+}
