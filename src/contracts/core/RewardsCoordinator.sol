@@ -34,6 +34,10 @@ contract RewardsCoordinator is
     uint256 internal immutable ORIGINAL_CHAIN_ID;
     /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
     uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
+    /// @notice The activation delay until an updated operator's commission bips takes effect
+    uint32 internal constant OPERATOR_COMMISSION_ACTIVATION_DELAY = 7 days;
+    /// @notice The maximum commission bips that can be set for an operator
+    uint16 internal constant MAX_COMMISSION_BIPS = 10_000;
 
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
@@ -131,7 +135,7 @@ contract RewardsCoordinator is
         onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
         nonReentrant
     {
-        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+        for (uint256 i = 0; i < rewardsSubmissions.length;) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
@@ -143,6 +147,10 @@ contract RewardsCoordinator is
 
             emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -158,7 +166,7 @@ contract RewardsCoordinator is
         onlyRewardsForAllSubmitter
         nonReentrant
     {
-        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+        for (uint256 i = 0; i < rewardsSubmissions.length;) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
@@ -170,6 +178,10 @@ contract RewardsCoordinator is
 
             emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -198,7 +210,7 @@ contract RewardsCoordinator is
             claimer = earner;
         }
         require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
-        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
+        for (uint256 i = 0; i < claim.tokenIndices.length; ++i) {
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
 
             uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
@@ -271,6 +283,42 @@ contract RewardsCoordinator is
         address prevClaimer = claimerFor[earner];
         claimerFor[earner] = claimer;
         emit ClaimerForSet(earner, prevClaimer, claimer);
+    }
+
+    /**
+     * @notice Sets the commission an operator takes in bips for a given reward type and operatorSet
+     * @param operatorSet The operatorSet to update commission for
+     * @param rewardType The associated rewardType to update commission for
+     * @param commissionBips The commission in bips for the operator, must be <= MAX_COMMISSION_BIPS
+     * @return effectTimestamp The timestamp at which the operator commission update will take effect
+     *
+     * @dev The commission can range from 1 to 10000
+     * @dev The commission update takes effect after 7 days
+     */
+    function setOperatorCommissionBips(
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType,
+        uint16 commissionBips
+    ) external returns (uint32 effectTimestamp) {
+        require(
+            commissionBips <= MAX_COMMISSION_BIPS,
+            "RewardsCoordinator.setOperatorCommissionBips: commissionBips too high"
+        );
+        effectTimestamp = uint32(block.timestamp + OPERATOR_COMMISSION_ACTIVATION_DELAY);
+        OperatorCommissionUpdate[] storage commissionHistory =
+            operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.id][rewardType];
+        uint256 updateLength = commissionHistory.length;
+
+        // If no updates or latest update is not for current effective timestamp, push a new commission update
+        // otherwise modify current storage
+        if (updateLength == 0 || commissionHistory[updateLength - 1].effectTimestamp != effectTimestamp) {
+            commissionHistory.push(
+                OperatorCommissionUpdate({commissionBips: commissionBips, effectTimestamp: effectTimestamp})
+            );
+        } else {
+            commissionHistory[updateLength - 1].commissionBips = commissionBips;
+        }
+        emit OperatorCommissionUpdated(msg.sender, operatorSet, rewardType, commissionBips, effectTimestamp);
     }
 
     /**
@@ -506,10 +554,29 @@ contract RewardsCoordinator is
         return true;
     }
 
-    /// @notice the commission for a specific operator for a specific avs
+    /// @notice the commission for an operator for a specific operatorSet and reward type
     /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16) {
-        return globalOperatorCommissionBips;
+    function getOperatorCommissionBips(
+        address operator,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType
+    ) external view returns (uint16) {
+        // if no value set, default to globalOperatorCommissionBips
+        uint16 commissionBips = globalOperatorCommissionBips;
+        OperatorCommissionUpdate[] memory commissionHistory =
+            operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.id][rewardType];
+
+        for (uint256 i = commissionHistory.length; i > 0;) {
+            if (commissionHistory[i - 1].effectTimestamp <= uint32(block.timestamp)) {
+                commissionBips = commissionHistory[i - 1].commissionBips;
+                break;
+            }
+
+            unchecked {
+                --i;
+            }
+        }
+        return commissionBips;
     }
 
     function getDistributionRootsLength() public view returns (uint256) {
@@ -544,6 +611,15 @@ contract RewardsCoordinator is
             }
         }
         revert("RewardsCoordinator.getRootIndexFromHash: root not found");
+    }
+
+    /// @notice returns the length of the operator commission update history
+    function getOperatorCommissionUpdateHistoryLength(
+        address operator,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType
+    ) external view returns (uint256) {
+        return operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.id][rewardType].length;
     }
 
     /**
