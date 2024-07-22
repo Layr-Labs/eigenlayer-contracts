@@ -115,13 +115,13 @@ contract ProofParsing is Test {
         return slotProof;
     }
 
-    function getStateRootProof() public returns(bytes32[] memory) {
+    function getStateRootProof() public returns(bytes memory) {
         bytes32[] memory stateRootProof = new bytes32[](3);
         for (uint i = 0; i < 3; i++) {
             prefix = string.concat(".StateRootAgainstLatestBlockHeaderProof[", string.concat(vm.toString(i), "]"));
             stateRootProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-        return stateRootProof;
+        return abi.encodePacked(stateRootProof);
     }
 
     function getWithdrawalProofDeneb() public returns(bytes32[10] memory) {
@@ -174,18 +174,18 @@ contract ProofParsing is Test {
         return validatorFields;
     }
 
-    function getBalanceUpdateProof() public returns(bytes32[] memory) {
+    function getBalanceUpdateProof() public returns(bytes memory) {
         // Balance update proofs are the same as withdrawal credential proofs
         return getWithdrawalCredentialProof();
     }
 
-    function getWithdrawalCredentialProof() public returns(bytes32[] memory) {
+    function getWithdrawalCredentialProof() public returns(bytes memory) {
         bytes32[] memory withdrawalCredentialProof = new bytes32[](46);
         for (uint i = 0; i < 46; i++) {
             prefix = string.concat(".WithdrawalCredentialProof[", string.concat(vm.toString(i), "]"));
             withdrawalCredentialProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-        return withdrawalCredentialProof;
+        return abi.encodePacked(withdrawalCredentialProof);
     }
 
     function getValidatorFieldsProof() public returns(bytes32[] memory) {
