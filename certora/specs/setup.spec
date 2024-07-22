@@ -4,8 +4,6 @@ definition isPrivileged(method f) returns bool =
 	//f.selector == sig:transferOwnership(address).selector || 
 	//f.selector == sig:renounceOwnership().selector ||  
 	
-	f.selector == sig:DelayedWithdrawalRouter.setWithdrawalDelayBlocks(uint256).selector || 
-
 	f.selector == sig:DelegationManagerHarness.setMinWithdrawalDelayBlocks(uint256).selector || 
 	f.selector == sig:DelegationManagerHarness.setStrategyWithdrawalDelayBlocks(address[],uint256[]).selector ||
 
@@ -24,10 +22,10 @@ definition isPrivileged(method f) returns bool =
 	(
 		f.selector == sig:EigenPodManagerHarness.addShares(address,uint256).selector ||
 		f.selector == sig:EigenPodManagerHarness.removeShares(address,uint256).selector ||
-		f.selector == sig:EigenPodManagerHarness.setDenebForkTimestamp(uint64).selector ||
-		f.selector == sig:EigenPodManagerHarness.initialize(address,address,address,uint256).selector ||
-		f.selector == sig:EigenPodManagerHarness.withdrawSharesAsTokens(address,address,uint256).selector ||
-		f.selector == sig:EigenPodManagerHarness.updateBeaconChainOracle(address).selector
+		//f.selector == sig:EigenPodManagerHarness.setDenebForkTimestamp(uint64).selector ||
+		//f.selector == sig:EigenPodManagerHarness.initialize(address,address,address,uint256).selector ||
+		f.selector == sig:EigenPodManagerHarness.withdrawSharesAsTokens(address,address,uint256).selector
+		//f.selector == sig:EigenPodManagerHarness.updateBeaconChainOracle(address).selector
 	)) ||
 
 	f.selector == sig:EigenStrategy.withdraw(address,address,uint256).selector ||
@@ -58,7 +56,6 @@ function isPrivilegedSender(env e) returns bool
 		sender == DummyERC20AAlias ||
 		sender == DummyERC20BAlias ||
 		sender == DelegationManagerHarnessAlias ||
-		sender == DelayedWithdrawalRouterAlias ||
 		sender == EigenStrategyAlias ||
 		sender == PausableHarnessAlias ||
 		sender == ETHPOSDepositMockAlias ||

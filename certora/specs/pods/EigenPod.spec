@@ -3,9 +3,8 @@ import "./../setup.spec";
 methods {
     // Internal, NONDET-summarized EigenPod library functions
     function _.verifyValidatorFields(bytes32, bytes32[] calldata, bytes calldata, uint40) internal => NONDET;
-    function _.verifyValidatorBalance(bytes32, bytes32, bytes calldata, uint40) internal => NONDET;
-    function _.verifyStateRootAgainstLatestBlockRoot(bytes32, bytes32, bytes calldata) internal => NONDET;
-    function _.verifyWithdrawal(bytes32, bytes32[] calldata, BeaconChainProofs.WithdrawalProof calldata) internal => NONDET;
+    function _.verifyValidatorBalance(bytes32, uint40, BeaconChainProofs.BalanceProof calldata) internal => NONDET;
+    function _.verifyStateRoot(bytes32, BeaconChainProofs.StateRootProof calldata) internal => NONDET;
 
     // Internal, NONDET-summarized "send ETH" function -- unsound summary used to avoid HAVOC behavior
     // when sending ETH using `Address.sendValue()`
@@ -22,17 +21,17 @@ methods {
 
 
     // envfree functions
-    function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external returns (uint64) envfree;
+    //function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external returns (uint64) envfree;
     function withdrawableRestakedExecutionLayerGwei() external returns (uint64) envfree;
-    function nonBeaconChainETHBalanceWei() external returns (uint256) envfree;
+    //function nonBeaconChainETHBalanceWei() external returns (uint256) envfree;
     function eigenPodManager() external returns (address) envfree;
     function podOwner() external returns (address) envfree;
-    function hasRestaked() external returns (bool) envfree;
-    function mostRecentWithdrawalTimestamp() external returns (uint64) envfree;
+    //function hasRestaked() external returns (bool) envfree;
+    //function mostRecentWithdrawalTimestamp() external returns (uint64) envfree;
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external returns (IEigenPod.ValidatorInfo) envfree;
-    function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external returns (bool) envfree;
+    //function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external returns (bool) envfree;
     function validatorStatus(bytes32 pubkeyHash) external returns (IEigenPod.VALIDATOR_STATUS) envfree;
-    function nonBeaconChainETHBalanceWei() external returns (uint256) envfree;
+    //function nonBeaconChainETHBalanceWei() external returns (uint256) envfree;
 
     // harnessed functions
     function get_validatorIndex(bytes32 pubkeyHash) external returns (uint64) envfree;
@@ -71,7 +70,7 @@ rule mostRecentBalanceUpdateTimestampOnlyIncreases(bytes32 validatorPubkeyHash) 
     calldataarg args;
     f(e,args);
     IEigenPod.ValidatorInfo validatorInfoAfter = validatorPubkeyHashToInfo(validatorPubkeyHash);
-    assert(validatorInfoAfter.mostRecentBalanceUpdateTimestamp >= validatorInfoBefore.mostRecentBalanceUpdateTimestamp,
+    assert(validatorInfoAfter.lastCheckpointedAt >= validatorInfoBefore.lastCheckpointedAt,
         "mostRecentBalanceUpdateTimestamp decreased");
 }
 
@@ -203,13 +202,11 @@ invariant consistentAccounting() {
 
 rule whoCanChangeBalanceUpdateTimestamp(bytes32 validatorPubkeyHash, env e, method f) 
 {
-    IEigenPod.ValidatorInfo validatorInfoBefore = validatorPubkeyHashToInfo(validatorPubkeyHash);
+    uint64 timestampBefore = get_mostRecentBalanceUpdateTimestamp(validatorPubkeyHash);
     calldataarg args;
     f(e,args);
-    IEigenPod.ValidatorInfo validatorInfoAfter = validatorPubkeyHashToInfo(validatorPubkeyHash);
+    uint64 timestampAfter = get_mostRecentBalanceUpdateTimestamp(validatorPubkeyHash);
     
-    assert validatorInfoAfter.mostRecentBalanceUpdateTimestamp > validatorInfoBefore.mostRecentBalanceUpdateTimestamp
-        => canIncreaseBalanceUpdateTimestamp(f);
-    assert validatorInfoAfter.mostRecentBalanceUpdateTimestamp < validatorInfoBefore.mostRecentBalanceUpdateTimestamp
-        => canDecreaseBalanceUpdateTimestamp(f);
+    assert timestampAfter > timestampBefore => canIncreaseBalanceUpdateTimestamp(f);
+    assert timestampAfter < timestampBefore => canDecreaseBalanceUpdateTimestamp(f);
 }

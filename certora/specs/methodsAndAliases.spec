@@ -5,7 +5,6 @@ using DummyEigenPodB as DummyEigenPodBAlias;
 using DummyERC20A as DummyERC20AAlias;
 using DummyERC20B as DummyERC20BAlias;
 using DelegationManagerHarness as DelegationManagerHarnessAlias;
-using DelayedWithdrawalRouter as DelayedWithdrawalRouterAlias;
 using EigenStrategy as EigenStrategyAlias;
 using PausableHarness as PausableHarnessAlias;
 using ETHPOSDepositMock as ETHPOSDepositMockAlias;
@@ -38,6 +37,9 @@ methods {
 	function _.deposit(bytes, bytes, bytes, bytes32) external => NONDET;
 
 
+	// Address
+	function _.sendValue(address, uint256) internal => NONDET;
+
 	// external calls to DelegationManager 
     function _.undelegate(address) external => DISPATCHER(true);
     function _.decreaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
@@ -59,10 +61,6 @@ methods {
     function _.withdrawSharesAsTokens(address, address, uint256, address) external => DISPATCHER(true);
 
 
-    // external calls to DelayedWithdrawalRouter (from EigenPod)
-    function _.createDelayedWithdrawal(address, address) external => DISPATCHER(true);
-
-
 	/////  EigenPodManager ///////////////
 
 	// external calls to EigenPodManager
@@ -76,8 +74,8 @@ methods {
     function EigenPodManagerHarness.getPod(address podOwner) external returns (address) envfree;
     function EigenPodManagerHarness.ethPOS() external returns (address) envfree;
     function EigenPodManagerHarness.eigenPodBeacon() external returns (address) envfree;
-    function EigenPodManagerHarness.beaconChainOracle() external returns (address) envfree;
-    function EigenPodManagerHarness.getBlockRootAtTimestamp(uint64 timestamp) external returns (bytes32) envfree;
+    //function EigenPodManagerHarness.beaconChainOracle() external returns (address) envfree;
+    //function EigenPodManagerHarness.getBlockRootAtTimestamp(uint64 timestamp) external returns (bytes32) envfree;
     function EigenPodManagerHarness.strategyManager() external returns (address) envfree;
     function EigenPodManagerHarness.slasher() external returns (address) envfree;
     function EigenPodManagerHarness.hasPod(address podOwner) external returns (bool) envfree;
@@ -94,6 +92,9 @@ methods {
     function _.transferFrom(address, address, uint256) external => DISPATCHER(true);
     function _.approve(address, uint256) external => DISPATCHER(true);
 	
+	// IEigen
+	function _.wrap(uint256) external => NONDET;
+	function _.unwrap(uint256) external => NONDET;
 
 }
 
