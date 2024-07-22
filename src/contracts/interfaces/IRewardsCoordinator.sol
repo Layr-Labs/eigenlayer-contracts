@@ -93,6 +93,16 @@ interface IRewardsCoordinator {
         uint32 duration;
     }
 
+    struct OperatorSetRewardsSubmission {
+        RewardType rewardType;
+        uint32 operatorSetId;
+        StrategyAndMultiplier[] strategiesAndMultipliers;
+        IERC20 token;
+        uint256 amount;
+        uint32 startTimestamp;
+        uint32 duration;
+    }
+
     /**
      * @notice A distribution root is a merkle root of the distribution of earnings for a given period.
      * The RewardsCoordinator stores all historical distribution roots so that earners can claim their earnings against older roots
@@ -202,7 +212,6 @@ interface IRewardsCoordinator {
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
 
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
-
     /// @notice emitted when an operator commission is set for a specific OperatorSet and RewardType
     event OperatorCommissionUpdated(
         address indexed operator,
@@ -211,7 +220,6 @@ interface IRewardsCoordinator {
         uint16 newCommissionBips,
         uint32 effectTimestamp
     );
-
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
 
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
