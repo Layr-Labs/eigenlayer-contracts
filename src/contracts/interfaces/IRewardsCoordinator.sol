@@ -19,8 +19,7 @@ interface IRewardsCoordinator {
 
     /// @notice Reward type
     enum RewardType {
-        DELEGATED_STAKE,
-        UNIFORM
+        DELEGATED_STAKE
     }
 
     /**
@@ -67,7 +66,19 @@ interface IRewardsCoordinator {
         uint32 startTimestamp;
         uint32 duration;
     }
-
+    /**
+     * @notice OperatorSetRewardsSubmission struct submitted by AVSs when making rewards to operatorSets
+     * @notice The retroactive range applies from RewardsSubmission
+     * @param RewardType The type of reward to be distributed for. 
+     * @param operatorSetId The operatorSetId to distribute rewards to
+     * @param strategiesAndMultipliers The strategies and their relative weights
+     * cannot have duplicate strategies and need to be sorted in ascending address order
+     * @param token The rewards token to be distributed
+     * @param amount The total amount of tokens to be distributed
+     * @param startTimestamp The timestamp (seconds) at which the submission range is considered for distribution
+     * could start in the past or in the future but within a valid range. See the diagram above.
+     * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION
+     */
     struct OperatorSetRewardsSubmission {
         RewardType rewardType;
         uint32 operatorSetId;
@@ -160,6 +171,15 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+
+    /// @notice emitted when an AVS creates a valid OperatorSetRewardsSubmission
+    event OperatorSetRewardCreated(
+        address indexed avs,
+        uint256 indexed submissionNonce,
+        bytes32 indexed rewardsSubmissionHash,
+        OperatorSetRewardsSubmission rewardsSubmission
+    );
+
     /// @notice emitted when a valid RewardsSubmission is created for all stakers by a valid submitter
     event RewardsSubmissionForAllCreated(
         address indexed submitter,
@@ -167,13 +187,20 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+
+
+
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
+
     event RewardsForAllSubmitterSet(
         address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
+
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
+
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+
     /// @notice emitted when an operator commission is set for a specific OperatorSet and RewardType
     event OperatorCommissionUpdated(
         address indexed operator,
@@ -182,7 +209,9 @@ interface IRewardsCoordinator {
         uint16 newCommissionBips,
         uint32 effectTimestamp
     );
+
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
+
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
@@ -190,7 +219,9 @@ interface IRewardsCoordinator {
         uint32 indexed rewardsCalculationEndTimestamp,
         uint32 activatedAt
     );
+
     event DistributionRootDisabled(uint32 indexed rootIndex);
+
     /// @notice root is one of the submitted distribution roots that was claimed against
     event RewardsClaimed(
         bytes32 root,
@@ -298,6 +329,22 @@ interface IRewardsCoordinator {
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
     function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions) external;
+
+    /**
+     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet, 
+     * to be split amongst the set of stakers delegated to operators who are 
+     * registered to the msg.sender AVS and the given operatorSetId
+     *
+     * @param rewardsSubmissions The operatorSet rewards submission being created for
+     *
+     * @dev msg.sender is the AVS in the operatorSet the rewards submission is being made to
+     * @dev AVSs set their reward type depending on what metric they want rewards
+     * distributed proportional to
+     * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
+     * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
+     */
+    function rewardOperatorSetForRange(
+        OperatorSetRewardsSubmission[] calldata rewardsSubmissions) external;
 
     /**
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers

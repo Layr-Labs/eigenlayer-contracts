@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IRewardsCoordinator.sol";
 
 /**
@@ -37,6 +38,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
 
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
+
+    /// @notice The AVSDirectory contract for EigenLayer
+    IAVSDirectory public immutable avsDirectory;
 
     /**
      *
@@ -77,12 +81,19 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
 
     /// @notice Used for unique rewardsSubmissionHashes per AVS and for RewardsForAllSubmitters
     mapping(address => uint256) public submissionNonce;
+
     /// @notice Mapping: avs => avsRewardsSubmissionHash => bool to check if rewards submission hash has been submitted
     mapping(address => mapping(bytes32 => bool)) public isAVSRewardsSubmissionHash;
+
     /// @notice Mapping: avs => rewardsSubmissionForALlHash => bool to check if rewards submission hash for all has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllHash;
-    /// @notice Mapping: address => bool to check if the address is permissioned to call createRewardsForAllSubmission
+
+    /// @notice Mapping: address => bool to check if the address is permissi oned to call createRewardsForAllSubmission
     mapping(address => bool) public isRewardsForAllSubmitter;
+
+    /// @notice Mapping: avs => rewardsSubmissionHash => bool to check if operatorSet rewards submission hash has been submitted
+    mapping(address => mapping(bytes32 => bool)) isOperatorSetRewardsSubmissionHash;
+
     /// @notice Mapping: operator => avs => operatorSetId => OperatorCommissionUpdate history
     mapping(address => mapping(address => mapping(uint32 => mapping(RewardType => OperatorCommissionUpdate[])))) public
         operatorCommissionUpdates;
@@ -90,6 +101,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
+        IAVSDirectory _avsDirectory,
         uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
@@ -106,6 +118,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         );
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
+        avsDirectory = _avsDirectory;
         CALCULATION_INTERVAL_SECONDS = _CALCULATION_INTERVAL_SECONDS;
         MAX_REWARDS_DURATION = _MAX_REWARDS_DURATION;
         MAX_RETROACTIVE_LENGTH = _MAX_RETROACTIVE_LENGTH;
@@ -118,5 +131,5 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[39] private __gap;
+    uint256[38] private __gap;
 }

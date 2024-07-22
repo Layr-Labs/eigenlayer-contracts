@@ -46,6 +46,7 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            avsDirectory,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
@@ -79,6 +80,7 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            avsDirectory,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,

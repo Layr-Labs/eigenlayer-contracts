@@ -94,6 +94,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManagerMock,
             strategyManagerMock,
+            avsDirectoryMock,
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
