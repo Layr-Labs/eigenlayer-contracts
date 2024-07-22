@@ -1,6 +1,6 @@
 # Allocator
 
-The `OperatorDetails` is modified to replace the `earningsReciever` field with the new `allocator` role that allocates slashable stake to operatorSets.
+TODO: Handle elimination of operator delegation and deposits
 
 ```solidity
 interface IDelegationManager {
@@ -14,7 +14,7 @@ interface IDelegationManager {
     struct Withdrawal {
         // The address that originated the Withdrawal
         address staker;
-        // The staker's allocator at the time of thhe queing of the withdrawal
+        // NEW: The staker's allocator at the time of thhe queing of the withdrawal
         address allocator;
         // The address that can complete the Withdrawal + will receive funds when completing the withdrawal
         address withdrawer;
@@ -42,12 +42,6 @@ interface IDelegationManager {
      */
     event AllocatorMetadataURIUpdated(address indexed allocator, string metadataURI);
 
-	/// @notice Emitted when an operator queues a handoff of their stake to a target allocator
-	event AllocatorHandoffQueued(address operator, address allocator, uint32 effectTimestamp);
-
-	/// @notice Emitted when a handoff from an operator to an allocator is completed for a set of strategies
-	event AllocatorHandoffCompleted(address operator, address allocator, IStrategy[] strategies);
-
 	/// @notice Emitted whenever an allocator's shares are increased for a given strategy. Note that shares is the delta in the allocator's shares.
     event AllocatorSharesIncreased(address indexed allocator, address staker, IStrategy strategy, uint256 shares);
 
@@ -62,6 +56,12 @@ interface IDelegationManager {
 
     /// @notice Emitted when @param staker unselects an allocator via a call not originating from the staker themself
     event StakerForceUnselected(address indexed staker, address indexed allocator);
+
+	/// @notice Emitted when an operator queues a handoff of their stake to a target allocator
+	event AllocatorHandoffQueued(address operator, address allocator, uint32 effectTimestamp);
+
+	/// @notice Emitted when a handoff from an operator to an allocator is completed for a set of strategies
+	event AllocatorHandoffCompleted(address operator, address allocator, IStrategy[] strategies);
 	
 	/// EXTERNAL - STATE MODIFYING
 
@@ -94,32 +94,6 @@ interface IDelegationManager {
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `AllocatorMetadataURIUpdated` event
      */
     function updateAllocatorMetadataURI(string calldata metadataURI) external;
-
-	/**
-	 * @notice Queues a handoff of the calling operator's delegated stake to a target allocator in 14 days
-	 *
-	 * @param allocator the target allocator to handoff delegated stake to
-	 * @param allocatorSignatureAndExpiry the signature of the allocator
-	 * @param allocatorSalt A unique single use value tied to an individual signature.
-	 *
-	 * @dev the handoff must be completed in a separate tx in 14 days. it is permissionless to complete
-	 * @dev further delegations and deposits to the operator are prohibited after this function is called
-	 */
-	function queueAllocatorHandoff(address allocator, SignatureWithExpiry memory allocatorSignatureAndExpiry, bytes32 allocatorSalt) external;
-
-	/**
-	 * @notice Completes a handoff queued via queueHandoff.
-	 *
-	 * @param operator the operator in the queued handoff
-	 * @param allocator the allocator in the queued handoff
-	 * @param strategies the strategies to be handed off
-	 * 
-	 * @dev must be called 14 days after the handoff was queued
-	 * @dev the allocator's shares are incremented by the operators shares for each strategy
-	 * @dev if all strategies are not handed off, this function can be called by anyone else to 
-	 * complete the handoff for different strategies
-	 */
-	function completeAllocatorHandoff(address operator, address allocator, IStrategy[] calldata strategies) external;
 
 	/**
 	 * @notice Selects an allocator for the calling staker
@@ -160,6 +134,44 @@ interface IDelegationManager {
         SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 approverSalt
     ) external;
+
+	/**
+     * @notice Unselects the staker's currently selected allocator and queues a withdrawal of all of the staker's shares
+     * @param staker The account to be unselected.
+     * @return withdrawalRoot The root of the newly queued withdrawal, if a withdrawal was queued. Otherwise just bytes32(0).
+     *
+     * @dev Reverts if the `staker` is also an allocator, since allocator are not allowed to undelegate from themselves.
+     * @dev Reverts if the caller is not the staker, nor the allocator who the staker is delegated to, nor the allocator's specified "selectionApprover"
+     * @dev Reverts if the `staker` is already unselected..
+     */
+    function unselect(address staker) external returns (bytes32[] memory withdrawalRoot);
+
+	/**
+	 * @notice Queues a handoff of the calling operator's delegated stake to a target allocator in 14 days
+	 *
+	 * @param allocator the target allocator to handoff delegated stake to
+	 * @param approverSignatureAndExpiry the signature of the allocator's selection approver on their intent to accept the handoff
+	 * @param allocatorSalt A unique single use value tied to an individual signature.
+	 *
+	 * @dev the handoff can be completed in a separate tx in 14 days. it is permissionless to complete
+	 * @dev further delegations and deposits to the operator are prohibited after this function is called
+	 */
+	function queueAllocatorHandoff(address allocator, SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 allocatorSalt) external;
+
+	/**
+	 * @notice Completes a handoff queued via queueHandoff.
+	 *
+	 * @param operator the operator in the queued handoff
+	 * @param allocator the allocator in the queued handoff
+	 * @param strategies the strategies to be handed off
+	 * 
+	 * @dev must be called 14 days after the handoff was queued
+	 * @dev the allocator's shares are incremented by the operator's shares for each strategy and the operator's shares are decremented by the operator's
+	 * shares for each strategy.
+	 * @dev if all strategies are not handed off, this function can be called by anyone else to 
+	 * complete the handoff for different strategies
+	 */
+	function completeAllocatorHandoff(address operator, address allocator, IStrategy[] calldata strategies) external;
 	
 	/// VIEW
 	
@@ -172,12 +184,94 @@ interface IDelegationManager {
 }
 ```
 
-### modifyOperatorDetails
+### registerAsAllocator
 
-Updates the operator details for the operator (`msg.sender`) immediately. Emits a `OperatorDetailsModified` event.
+This is called by accounts that wish to become allocators in EigenLayer. Allocators are responsible for allocating slashable stake to operatorSets. The `selectionApprover` is the address that must approve of the selection of a staker's stake to the allocator. If set to 0, no approval is required.
 
-Never reverts.
+Emits an `AllocatorRegistered` event.
 
-### getAllocator
+Reverts if:
+1. The caller is already an operator
 
-Returns the current allocator for the given operator. If the allocator has never been set, it returns the operator.
+### setSelectionApprover
+
+This is called by an allocator to update their selection approver. The `selectionApprover` is the address that must approve of the selection of a staker's stake to the allocator. If set to 0, no approval is required.
+
+Emits a `SelectionApproverUpdated` event.
+
+Reverts if:
+1. The caller is not an allocator
+
+### updateAllocatorMetadataURI
+
+This is called by an allocator to update their metadata URI. The `metadataURI` is a URI for the allocator's metadata, i.e. a link providing more details on the allocator.
+
+Emits a `AllocatorMetadataURIUpdated` event.
+
+Reverts if:
+1. The caller is not an allocator
+
+### select
+
+This is called by stakers to select an allocator. The `allocator` is the allocator selected by the calling staker. An EIP-1271 signature from the allocator's selection approver is required.
+
+Stakers that are delegated to an M2 operator that has queued a handoff to an allocator are not allowed to select an allocator. However, stakers that are delegated to an M2 operator that has not queued a handoff to an allocator are allowed to select an allocator and instanaeously move their stake to the allocator.
+
+Emits a `StakerSelected` event.
+
+Reverts if:
+1. `approverSignatureAndExpiry` is not from the allocator's `selectionApprover` and the allocator's `selectionApprover` is set to a non-zero value
+2. the allocator for the staker is already set
+3. the staker is delegated to an M2 operator that has queued a handoff to an allocator
+
+### selectBySignature
+
+Similar to `select`, but uses a signature from the staker. The staker's signature is verified to be a valid ECDSA signature from the staker, indicating their intention for this action. If the staker is a contract, the signature will be checked according to EIP-1271.
+
+Emits a `StakerSelected` event.
+
+Reverts if:
+1. `stakerSignatureAndExpiry` is not from the staker
+2. `approverSignatureAndExpiry` is not from the allocator's `selectionApprover` and the allocator's `selectionApprover` is set to a non-zero value
+3. the allocator for the staker is already set
+4. the staker is delegated to an M2 operator that has queued a handoff to an allocator
+
+### unselect
+
+This is called by stakers to unselect their currently selected allocator and queue a withdrawal of all of the staker's shares.
+
+The staker's allocator and the allocator's selection approver are allowed to unselect the staker. This is intended to help for compliance reasons.
+
+Emits a `StakerUnselected` event.
+
+Reverts if:
+1. the staker is also an allocator
+2. the caller is not the staker, nor the allocator who the staker is delegated to, nor the allocator's specified selection approver
+3. the staker is already unselected
+
+### queueAllocatorHandoff
+
+This is called by operators to queue a handoff of their delegated stake to a target allocator in 14 days. This allows stake to flow from staker-determined-operators to staker-determined-allocators initially without any staker involvement. A EIP-1271 signature from the allocator's selection approver is required.
+
+The handoff must be completed in a separate transaction.
+
+Emits a `AllocatorHandoffQueued` event.
+
+Reverts if:
+1. the operator is not registered with the DelegationManager
+2. the allocator is not registered with the DelegationManager
+3. `approverSignatureAndExpiry` is not from the allocator's selection approver and the allocator's selection approver is set to a non-zero value
+2. the operator has already queued a handoff to an allocator
+
+### completeAllocatorHandoff
+
+This is called permissionlessly by anyone to complete a handoff queued via `queueAllocatorHandoff`. The handoff can be completed 14 days after it was queued. The call accepts an array of strategies to be handed off. If all strategies are not handed off, this function can be called by anyone else to complete the handoff for different strategies.
+
+The allocator's shares are incremented by the operator's shares for each strategy and the operator's shares are decremented by the operator's shares for each strategy.
+
+Emits a `AllocatorHandoffCompleted` event.
+
+Reverts if:
+1. the handoff doesn't exist
+2. the handoff is not 14 days old
+3. at least one of the provided strategies has already been handed off
