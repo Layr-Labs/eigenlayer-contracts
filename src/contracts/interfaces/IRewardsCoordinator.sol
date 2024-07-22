@@ -273,6 +273,13 @@ interface IRewardsCoordinator {
     /// @notice returns the current distributionRoot
     function getCurrentDistributionRoot() external view returns (DistributionRoot memory);
 
+    /// @notice returns the length of the operator commission update history
+    function getOperatorCommissionUpdateHistoryLength(
+        address operator,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        RewardType rewardType
+    ) external view returns (uint256);
+
     /**
      *
      *                         EXTERNAL FUNCTIONS

@@ -135,7 +135,7 @@ contract RewardsCoordinator is
         onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
         nonReentrant
     {
-        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+        for (uint256 i = 0; i < rewardsSubmissions.length;) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
@@ -143,14 +143,14 @@ contract RewardsCoordinator is
             _validateRewardsSubmission(rewardsSubmission);
 
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
-
-            // Cannot reasonably overflow...
-            unchecked {
-                submissionNonce[msg.sender] = nonce + 1;
-            }
+            submissionNonce[msg.sender] = nonce + 1;
 
             emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -166,7 +166,7 @@ contract RewardsCoordinator is
         onlyRewardsForAllSubmitter
         nonReentrant
     {
-        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+        for (uint256 i = 0; i < rewardsSubmissions.length;) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
@@ -174,14 +174,14 @@ contract RewardsCoordinator is
             _validateRewardsSubmission(rewardsSubmission);
 
             isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionForAllHash] = true;
-
-            // Cannot reasonably overflow...
-            unchecked {
-                submissionNonce[msg.sender] = nonce + 1;
-            }
+            submissionNonce[msg.sender] = nonce + 1;
 
             emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -304,24 +304,21 @@ contract RewardsCoordinator is
             commissionBips <= MAX_COMMISSION_BIPS,
             "RewardsCoordinator.setOperatorCommissionBips: commissionBips too high"
         );
-        // timestamp can't overflow and 0 length case is handled below
-        unchecked {
-            effectTimestamp = uint32(block.timestamp + OPERATOR_COMMISSION_ACTIVATION_DELAY);
-            OperatorCommissionUpdate[] storage commissionHistory =
-                operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.id][rewardType];
-            uint256 updateLength = commissionHistory.length;
+        effectTimestamp = uint32(block.timestamp + OPERATOR_COMMISSION_ACTIVATION_DELAY);
+        OperatorCommissionUpdate[] storage commissionHistory =
+            operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.id][rewardType];
+        uint256 updateLength = commissionHistory.length;
 
-            // If no updates or latest update is not for current effective timestamp, push a new commission update
-            // otherwise modify current storage
-            if (updateLength == 0 || commissionHistory[updateLength - 1].effectTimestamp != effectTimestamp) {
-                commissionHistory.push(
-                    OperatorCommissionUpdate({commissionBips: commissionBips, effectTimestamp: effectTimestamp})
-                );
-            } else {
-                commissionHistory[updateLength - 1].commissionBips = commissionBips;
-            }
-            emit OperatorCommissionUpdated(msg.sender, operatorSet, rewardType, commissionBips, effectTimestamp);
+        // If no updates or latest update is not for current effective timestamp, push a new commission update
+        // otherwise modify current storage
+        if (updateLength == 0 || commissionHistory[updateLength - 1].effectTimestamp != effectTimestamp) {
+            commissionHistory.push(
+                OperatorCommissionUpdate({commissionBips: commissionBips, effectTimestamp: effectTimestamp})
+            );
+        } else {
+            commissionHistory[updateLength - 1].commissionBips = commissionBips;
         }
+        emit OperatorCommissionUpdated(msg.sender, operatorSet, rewardType, commissionBips, effectTimestamp);
     }
 
     /**
@@ -570,12 +567,12 @@ contract RewardsCoordinator is
             operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.id][rewardType];
 
         for (uint256 i = commissionHistory.length; i > 0;) {
-            unchecked {
-                if (commissionHistory[i - 1].effectTimestamp <= uint32(block.timestamp)) {
-                    commissionBips = commissionHistory[i - 1].commissionBips;
-                    break;
-                }
+            if (commissionHistory[i - 1].effectTimestamp <= uint32(block.timestamp)) {
+                commissionBips = commissionHistory[i - 1].commissionBips;
+                break;
+            }
 
+            unchecked {
                 --i;
             }
         }
@@ -616,6 +613,7 @@ contract RewardsCoordinator is
         revert("RewardsCoordinator.getRootIndexFromHash: root not found");
     }
 
+    /// @notice returns the length of the operator commission update history
     function getOperatorCommissionUpdateHistoryLength(
         address operator,
         IAVSDirectory.OperatorSet calldata operatorSet,
