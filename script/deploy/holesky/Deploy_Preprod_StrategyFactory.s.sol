@@ -10,8 +10,14 @@ import "forge-std/Test.sol";
 import "../../../src/contracts/strategies/EigenStrategy.sol";
 import "../../../src/contracts/strategies/StrategyFactory.sol";
 
-// forge script script/Deploy_StrategyManager.s.sol:Deploy_StrategyManager --rpc-url $--HOL private-key $DATN -vvvv --etherscan-api-key D6ZFHU3MWZXE4Z17ICWBA1IR8A4JEPK1ZJ --verify
-contract Deploy_StrategyManager is Script, Test {
+// forge script script/Deploy_Preprod_StrategyFactory.s.sol:Deploy_Preprod_StrategyFactory
+//      --rpc-url $RPC_URL
+//      --private-key $PRIVATE_KEY
+//      --etherscan-api-key $ETHERSCAN_API_KEY
+//      --verify
+//      --broadcast
+//      --vvvv
+contract Deploy_Preprod_StrategyManager is Script, Test {
     // https://docs.google.com/spreadsheets/d/1w8ckBfdVyv-Xh6iPwZ3hseDfX1gEptoJfomuwA8h3Jo/edit?gid=1046619329#gid=1046619329
     address owner = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
     IPauserRegistry pauserRegistry = IPauserRegistry(0x9Ab2FEAf0465f0eD51Fc2b663eF228B418c9Dad1);
