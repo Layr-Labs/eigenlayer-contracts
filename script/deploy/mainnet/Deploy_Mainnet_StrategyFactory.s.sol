@@ -17,6 +17,10 @@ import "../../../src/contracts/strategies/StrategyFactory.sol";
 //      --broadcast
 //      --vvvv
 contract Deploy_Mainnet_StrategyFactory is Script, Test {
+    UpgradeableBeacon strategyBeacon;
+    StrategyFactory strategyFactoryImplementation;
+    StrategyFactory strategyFactory;
+
     function _addr(bytes memory b) internal pure returns (address) {
         return address(uint160(uint256(bytes32(b))));
     }
@@ -34,14 +38,14 @@ contract Deploy_Mainnet_StrategyFactory is Script, Test {
         uint256 initialPausedStatus = uint256(bytes32(vm.parseJson(json, "initialPausedStatus")));
 
         // Deploy a Proxy Beacon for the strategy and transfer ownership.
-        UpgradeableBeacon strategyBeacon = new UpgradeableBeacon(strategyImplementation);
+        strategyBeacon = new UpgradeableBeacon(strategyImplementation);
 
         strategyBeacon.transferOwnership(owner);
 
         // Deploy a Strategy Factory implementation.
-        StrategyFactory strategyFactoryImplementation = new StrategyFactory(IStrategyManager(strategyManager));
+        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(strategyManager));
         // Deploy a Upgradeable Strategy Factory proxy.
-        StrategyFactory strategyFactory = StrategyFactory(
+        strategyFactory = StrategyFactory(
             address(
                 new TransparentUpgradeableProxy(
                     address(strategyFactoryImplementation),
