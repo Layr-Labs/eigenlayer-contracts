@@ -5,6 +5,7 @@ import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IAllocatorManager.sol";
 import "../interfaces/ISlasher.sol";
 
 /**
@@ -25,6 +26,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     // system contracts
     IDelegationManager public immutable delegation;
+    IAllocatorManager public immutable allocatorManager = IAllocatorManager(address(0));
     IEigenPodManager public immutable eigenPodManager;
     ISlasher public immutable slasher;
 

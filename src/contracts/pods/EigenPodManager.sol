@@ -35,9 +35,9 @@ contract EigenPodManager is
         _;
     }
 
-    modifier onlyDelegationManager() {
+    modifier onlyDelegationManagerOrAllocatorManager() {
         require(
-            msg.sender == address(delegationManager), "EigenPodManager.onlyDelegationManager: not the DelegationManager"
+            msg.sender == address(delegationManager) || msg.sender == address(allocatorManager), "EigenPodManager.onlyDelegationManagerOrAllocatorManager: not the DelegationManager"
         );
         _;
     }
@@ -152,7 +152,7 @@ contract EigenPodManager is
      * @dev Reverts if `shares` is not a whole Gwei amount
      * @dev The delegation manager validates that the podOwner is not address(0)
      */
-    function removeShares(address podOwner, uint256 shares) external onlyDelegationManager {
+    function removeShares(address podOwner, uint256 shares) external onlyDelegationManagerOrAllocatorManager {
         require(int256(shares) >= 0, "EigenPodManager.removeShares: shares cannot be negative");
         require(shares % GWEI_TO_WEI == 0, "EigenPodManager.removeShares: shares must be a whole Gwei amount");
         int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
@@ -170,7 +170,7 @@ contract EigenPodManager is
      * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero)
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
-    function addShares(address podOwner, uint256 shares) external onlyDelegationManager returns (uint256) {
+    function addShares(address podOwner, uint256 shares) external onlyDelegationManagerOrAllocatorManager returns (uint256) {
         require(podOwner != address(0), "EigenPodManager.addShares: podOwner cannot be zero address");
         require(int256(shares) >= 0, "EigenPodManager.addShares: shares cannot be negative");
         require(shares % GWEI_TO_WEI == 0, "EigenPodManager.addShares: shares must be a whole Gwei amount");
@@ -199,7 +199,7 @@ contract EigenPodManager is
         address podOwner,
         address destination,
         uint256 shares
-    ) external onlyDelegationManager {
+    ) external onlyDelegationManagerOrAllocatorManager {
         require(podOwner != address(0), "EigenPodManager.withdrawSharesAsTokens: podOwner cannot be zero address");
         require(destination != address(0), "EigenPodManager.withdrawSharesAsTokens: destination cannot be zero address");
         require(int256(shares) >= 0, "EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");

@@ -49,8 +49,8 @@ contract StrategyManager is
         _;
     }
 
-    modifier onlyDelegationManager() {
-        require(msg.sender == address(delegation), "StrategyManager.onlyDelegationManager: not the DelegationManager");
+    modifier onlyDelegationManagerOrAllocationManager() {
+        require(msg.sender == address(delegation) || msg.sender == address(allocatorManager), "StrategyManager.onlyDelegationManagerOrAllocationManager: not the DelegationManager");
         _;
     }
 
@@ -166,7 +166,7 @@ contract StrategyManager is
     }
 
     /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
-    function removeShares(address staker, IStrategy strategy, uint256 shares) external onlyDelegationManager {
+    function removeShares(address staker, IStrategy strategy, uint256 shares) external onlyDelegationManagerOrAllocationManager {
         _removeShares(staker, strategy, shares);
     }
 
@@ -176,7 +176,7 @@ contract StrategyManager is
         IERC20 token,
         IStrategy strategy,
         uint256 shares
-    ) external onlyDelegationManager {
+    ) external onlyDelegationManagerOrAllocationManager {
         _addShares(staker, token, strategy, shares);
     }
 
@@ -186,7 +186,7 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 shares,
         IERC20 token
-    ) external onlyDelegationManager {
+    ) external onlyDelegationManagerOrAllocationManager {
         strategy.withdraw(recipient, token, shares);
     }
 

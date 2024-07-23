@@ -7,6 +7,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IAllocatorManager.sol";
 import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPod.sol";
 
@@ -22,6 +23,8 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
 
     /// @notice EigenLayer's Slasher contract
     ISlasher public immutable slasher;
+
+    IAllocatorManager public immutable allocatorManager = IAllocatorManager(address(0));
 
     /// @notice EigenLayer's DelegationManager contract
     IDelegationManager public immutable delegationManager;
