@@ -306,7 +306,7 @@ contract RewardsCoordinator is
         );
         effectTimestamp = uint32(block.timestamp + OPERATOR_COMMISSION_ACTIVATION_DELAY);
         OperatorCommissionUpdate[] storage commissionHistory =
-            operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.id][rewardType];
+            operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.operatorSetId][rewardType];
         uint256 updateLength = commissionHistory.length;
 
         // If no updates or latest update is not for current effective timestamp, push a new commission update
@@ -564,7 +564,7 @@ contract RewardsCoordinator is
         // if no value set, default to globalOperatorCommissionBips
         uint16 commissionBips = globalOperatorCommissionBips;
         OperatorCommissionUpdate[] memory commissionHistory =
-            operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.id][rewardType];
+            operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.operatorSetId][rewardType];
 
         for (uint256 i = commissionHistory.length; i > 0;) {
             if (commissionHistory[i - 1].effectTimestamp <= uint32(block.timestamp)) {
@@ -619,7 +619,7 @@ contract RewardsCoordinator is
         IAVSDirectory.OperatorSet calldata operatorSet,
         RewardType rewardType
     ) external view returns (uint256) {
-        return operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.id][rewardType].length;
+        return operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.operatorSetId][rewardType].length;
     }
 
     /**
