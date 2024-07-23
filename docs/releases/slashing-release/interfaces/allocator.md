@@ -4,24 +4,6 @@ TODO: Handle elimination of operator delegation and deposits
 
 ```solidity
 interface IDelegationManager {
-
-	/// @notice Emitted when an operator queues a handoff of their stake to a target allocator
-	event AllocatorHandoffQueued(address operator, address allocator, uint32 effectTimestamp);
-
-	/**
-	 * @notice Queues a handoff of the calling operator's delegated stake to a target allocator in 14 days
-	 *
-	 * @param allocator the target allocator to handoff delegated stake to
-	 * @param approverSignatureAndExpiry the signature of the allocator's delegation approver on their intent to accept the handoff
-	 * @param allocatorSalt A unique single use value tied to an individual signature.
-	 *
-	 * @dev the handoff can be completed in a separate tx in 14 days. it is permissionless to complete
-	 * @dev further delegations and deposits to the operator are prohibited after this function is called
-	 */
-	function queueAllocatorHandoff(address allocator, SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 allocatorSalt) external;
-}
-
-interface IAllocatorManager {
 	/// STRUCTS
 	
 	/**
@@ -164,6 +146,18 @@ interface IAllocatorManager {
      * @dev Reverts if the `staker` is already undelegated.
      */
     function undelegate(address staker) external returns (bytes32[] memory withdrawalRoot);
+
+	/**
+	 * @notice Queues a handoff of the calling operator's delegated stake to a target allocator in 14 days
+	 *
+	 * @param allocator the target allocator to handoff delegated stake to
+	 * @param approverSignatureAndExpiry the signature of the allocator's delegation approver on their intent to accept the handoff
+	 * @param allocatorSalt A unique single use value tied to an individual signature.
+	 *
+	 * @dev the handoff can be completed in a separate tx in 14 days. it is permissionless to complete
+	 * @dev further delegations and deposits to the operator are prohibited after this function is called
+	 */
+	function queueAllocatorHandoff(address allocator, SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 allocatorSalt) external;
 
 	/**
 	 * @notice Completes a handoff queued via queueHandoff.
