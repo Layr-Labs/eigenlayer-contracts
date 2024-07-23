@@ -61,11 +61,14 @@ abstract contract AllocatorManagerStorage is IAllocatorManager {
 
     mapping(address => AllocatorDetails) internal _allocatorDetails;
 
+    /// @notice Mapping: staker => whether the staker is a post SDA staker (i.e. they have no left over state unmigrated from the DelegationManager).
+    mapping(address => bool) public isPostSDAStaker;
+
     /**
      * @notice Mapping: staker => allocator whom the staker is currently delegated to.
      * @dev Note that returning address(0) indicates that the staker is not actively delegated to any allocator.
      */
-    mapping(address => address) public delegatedTo;
+    mapping(address => address) internal _delegatedTo;
 
     /// @notice Mapping: staker => number of signed messages (used in `delegateToBySignature`) from the staker that this contract has already checked.
     mapping(address => uint256) public stakerNonce;

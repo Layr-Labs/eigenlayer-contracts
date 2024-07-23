@@ -152,7 +152,7 @@ contract DelegationManager is
         require(isOperator(msg.sender), "DelegationManager.queueAllocatorHandoff: caller must be an operator");
         require(!isPendingHandoff(msg.sender), "DelegationManager.queueAllocatorHandoff: handoff already queued");
         // TODO: require that allocator is a registered allocator
-        handoffs[msg.sender] = Handoff({
+        _handoffs[msg.sender] = Handoff({
             allocator: allocator,
             completableTimestamp: uint32(block.timestamp + 14 days) // TODO: make this a constant
         });
@@ -865,11 +865,15 @@ contract DelegationManager is
     }
 
     function isPendingHandoff(address operator) public view returns (bool) {
-        return handoffs[operator].completableTimestamp != 0;
+        return _handoffs[operator].completableTimestamp != 0;
     }
 
     function isCompletableHandoff(address operator) public view returns (bool) {
-        return handoffs[operator].completableTimestamp != 0 && handoffs[operator].completableTimestamp <= block.timestamp;
+        return _handoffs[operator].completableTimestamp != 0 && _handoffs[operator].completableTimestamp <= block.timestamp;
+    }
+
+    function getHandoff(address staker) public view returns (Handoff memory) {
+        return _handoffs[delegatedTo[staker]];
     }
 
     /**
@@ -902,7 +906,7 @@ contract DelegationManager is
      */
     function getMigratableOperatorShares(address operator, address allocator, IStrategy[] calldata strategies) external returns (uint256[] memory) {
         // TODO: onlyAllocatorRegistry
-        require(handoffs[operator].allocator == allocator, "DelegationManager.getMigratableOperatorShares: allocator mismatch");
+        require(_handoffs[operator].allocator == allocator, "DelegationManager.getMigratableOperatorShares: allocator mismatch");
         require(isCompletableHandoff(operator), "DelegationManager.getMigratableOperatorShares: handoff not completable");
         uint256[] memory shares = _getOperatorShares(operator, strategies);
         for (uint256 i = 0; i < strategies.length; ++i) {

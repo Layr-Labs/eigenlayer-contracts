@@ -109,7 +109,7 @@ contract AllocationManager is
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         require(!isAllocator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
-        address allocator = delegatedTo[staker];
+        address allocator = delegatedTo(staker);
         require(
             msg.sender == staker || msg.sender == allocator
                 || msg.sender == _allocatorDetails[allocator].delegationApprover,
@@ -127,7 +127,7 @@ contract AllocationManager is
 
         // undelegate the staker
         emit StakerUndelegated(staker, allocator);
-        delegatedTo[staker] = address(0);
+        _delegatedTo[staker] = address(0);
 
         // if no delegatable shares, return an empty array, and don't queue a withdrawal
         if (strategies.length == 0) {
@@ -167,7 +167,7 @@ contract AllocationManager is
         address delegationApprover,
         string calldata metadataURI
     ) external{
-        require(delegatedTo[msg.sender] == address(0), "DelegationManager.registerAsAllocator: caller is an operator or a staker");
+        require(delegatedTo(msg.sender) == address(0), "DelegationManager.registerAsAllocator: caller is an operator or a staker");
         _allocatorDetails[msg.sender] = AllocatorDetails({
             delegationApprover: delegationApprover,
             isAllocator: true
@@ -244,7 +244,7 @@ contract AllocationManager is
         bytes32 approverSalt
 	) external {
         require(delegationManager.isDelegated(msg.sender), "DelegationManager.delegateTo: staker is already actively delegated in pre-SDA");
-        require(delegatedTo[msg.sender] == address(0), "DelegationManager.delegateTo: staker is already actively delegated");
+        require(delegatedTo(msg.sender) == address(0), "DelegationManager.delegateTo: staker is already actively delegated");
         require(isAllocator(allocator), "DelegationManager.delegateTo: allocator is not registered in EigenLayer");
         // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
         _delegate(msg.sender, allocator, approverSignatureAndExpiry, approverSalt);
@@ -263,7 +263,7 @@ contract AllocationManager is
         returns (bytes32[] memory)
     {
         bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
-        address allocator = delegatedTo[msg.sender];
+        address allocator = delegatedTo(msg.sender);
 
         for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
             require(
@@ -347,9 +347,8 @@ contract AllocationManager is
         uint256 shares
     ) external onlyStrategyManagerOrEigenPodManager {
         // if the staker is delegated to an operator
-        if (isDelegated(staker)) {
-            address allocator = delegatedTo[staker];
-
+        address allocator = delegatedTo(staker);
+        if (allocator != address(0)) {
             // add strategy shares to delegate's shares
             _increaseAllocatorShares({allocator: allocator, staker: staker, strategy: strategy, shares: shares});
         }
@@ -370,9 +369,8 @@ contract AllocationManager is
         uint256 shares
     ) external onlyStrategyManagerOrEigenPodManager {
         // if the staker is delegated to an allocator
-        if (isDelegated(staker)) {
-            address allocator = delegatedTo[staker];
-
+        address allocator = delegatedTo(staker);
+        if (allocator != address(0)) {
             // forgefmt: disable-next-item
             // subtract strategy shares from delegate's shares
             _decreaseAllocatorShares({
@@ -471,7 +469,7 @@ contract AllocationManager is
         }
 
         // record the delegation relation between the staker and allocators, and emit an event
-        delegatedTo[staker] = allocator;
+        _delegatedTo[staker] = allocator;
         emit StakerDelegated(staker, allocator);
 
         (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
@@ -551,7 +549,7 @@ contract AllocationManager is
         } else {
             // Award shares back in StrategyManager/EigenPodManager.
             // If withdrawer is delegated, increase the shares delegated to the allocator.
-            address currentAllocator = delegatedTo[msg.sender];
+            address currentAllocator = delegatedTo(msg.sender);
             for (uint256 i = 0; i < withdrawal.strategies.length;) {
                 require(
                     withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
@@ -570,7 +568,7 @@ contract AllocationManager is
                      */
                     uint256 increaseInDelegateableShares =
                         eigenPodManager.addShares({podOwner: staker, shares: withdrawal.shares[i]});
-                    address podOwnerAllocator = delegatedTo[staker];
+                    address podOwnerAllocator = delegatedTo(staker);
                     // Similar to `isDelegated` logic
                     if (podOwnerAllocator != address(0)) {
                         _increaseAllocatorShares({
@@ -773,7 +771,7 @@ contract AllocationManager is
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
      */
     function isDelegated(address staker) public view returns (bool) {
-        return (delegatedTo[staker] != address(0));
+        return (delegatedToView(staker) != address(0));
     }
 
     function getDelegationApprover(address allocator) public view returns (address) {
@@ -782,6 +780,36 @@ contract AllocationManager is
     
     function isAllocator(address allocator) public view returns (bool) {
         return _allocatorDetails[allocator].isAllocator;
+    }
+
+    function delegatedToView(address staker) public view returns (address) {
+        address allocator = _delegatedTo[staker];
+        // If the staker is not actively delegated, check if they have a handoff
+        if (allocator == address(0) && !isPostSDAStaker[staker]) {
+            IDelegationManager.Handoff memory handoff = delegationManager.getHandoff(staker);
+            if (handoff.completableTimestamp != 0 && handoff.completableTimestamp <= block.timestamp) {
+                // If the handoff is completable, return the allocator and overwrite the allocator
+                allocator = handoff.allocator;
+            }
+        }
+        return allocator;
+    }
+
+    function delegatedTo(address staker) public returns (address) {
+        address allocator = _delegatedTo[staker];
+        // If the staker is not actively delegated, check if they have a handoff
+        if (allocator == address(0) && !isPostSDAStaker[staker]) {
+            IDelegationManager.Handoff memory handoff = delegationManager.getHandoff(staker);
+            if (handoff.completableTimestamp != 0 && handoff.completableTimestamp <= block.timestamp) {
+                // If the handoff is completable, return the allocator and overwrite the allocator
+                isPostSDAStaker[staker] = true;
+                _delegatedTo[staker] = handoff.allocator;
+                allocator = handoff.allocator;
+            }
+        }
+
+        isPostSDAStaker[staker] = true;
+        return allocator;
     }
 
     /// @notice Given array of strategies, returns array of shares for the allocator

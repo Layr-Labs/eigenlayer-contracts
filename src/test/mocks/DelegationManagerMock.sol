@@ -63,6 +63,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return returnValue;
     }
 
+    function getHandoff(address staker) public view returns (Handoff memory) {}
+
     function delegationApprover(address operator) external pure returns (address) {
         return operator;
     }

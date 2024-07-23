@@ -103,13 +103,8 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks;
 
-    struct Handoff {
-        address allocator;
-        uint32 completableTimestamp;
-    }
-
     /// @notice Mapping: M2 operator => their pending handoff to an allocator
-    mapping(address => Handoff) public handoffs;
+    mapping(address => Handoff) internal _handoffs;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;

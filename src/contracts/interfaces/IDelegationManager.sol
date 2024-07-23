@@ -362,6 +362,13 @@ interface IDelegationManager is ISignatureUtils {
      */
     function isOperator(address operator) external view returns (bool);
 
+    struct Handoff {
+        address allocator;
+        uint32 completableTimestamp;
+    }
+
+    function getHandoff(address staker) external view returns (Handoff memory);
+
     /// @notice Mapping: staker => number of signed delegation nonces (used in `delegateToBySignature`) from the staker that the contract has already checked
     function stakerNonce(address staker) external view returns (uint256);
 

@@ -268,7 +268,7 @@ interface IAllocatorManager is ISignatureUtils {
      * @notice Mapping: staker => operator whom the staker is currently delegated to.
      * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
      */
-    function delegatedTo(address staker) external view returns (address);
+    function delegatedToView(address staker) external view returns (address);
 
     /**
      * @notice Returns the delegationApprover account for an operator
