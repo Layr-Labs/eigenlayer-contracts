@@ -490,4 +490,117 @@ contract AVSDirectory is
     function _calculateDigestHash(bytes32 structHash) internal view returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
     }
+
+
+    /**
+     *
+     *                         SLASHING FUNCTIONS POC
+     *
+     */
+
+    /**
+     * @param bipsSlashed bips slashed by the operatorSet
+     * @param timestamp when the slashing was performed
+     * @param totalMagnitudeUpdateIndex array index of the corresponding total magnitude update
+     */
+    struct SlashingUpdate {
+        uint32 bipsSlashed;
+        uint32 timestamp;
+        uint32 totalMagnitudeUpdateIndex;
+    }
+
+    /**
+     * @notice Used for historical magnitude updates in mapping
+     * operator => hash(strategy, avs, operatorSetId) => TotalAndNonslashableUpdate[]
+     * New total magnitude updates are pushed whenever magnitude changing functions are called
+     * @param timestamp timestamp of TotalAndNonslashableUpdate, if timestamp > block.timestamp then it is currently pending
+     * @param totalMagnitude total magnitude amount for a strategy which equals
+     * nonslashableMagnitude amount + sum of each operatorSet's allocated magnitudes
+     * @param nonslashableMagnitude nonslashable magnitude that CANNOT be slashed if timestamp <= block.timestamp
+     * Note if timestamp > block.timestamp, this is an upper bound on the slashable amount
+     * as it may still be a pending deallocation (still slashable)
+     * @param cumulativeAllocationSum monotonically increasing sum of all magnitudes when allocating
+     * required to ensure all allocations are backed by nonslashable magnitude
+     */
+    struct TotalAndNonslashableUpdate {
+        uint32 timestamp;
+        uint64 totalMagnitude;
+        uint64 nonslashableMagnitude;
+        uint64 cumulativeAllocationSum;
+    }
+
+    event OperatorSlashed(
+        address operator,
+        IStrategy strategy,
+        OperatorSet opSet,
+        address allocator,
+        uint32 bipsToSlash
+    );
+
+    uint256 constant MAX_ALLOCATORS_PER_OPERATOR = 10; 
+    /// TODO move to slashing accounting library
+    uint256 internal constant BIPS_FACTOR = 10000;
+
+
+
+    /// Note: that we reuse hash of (strategy, avs, operatorSetId) as the key for the mappings below for
+    /// to reduce number of key lookups and mapping hashes
+    /// @notice all the allocators for a given (operator, strategy, OperatorSet) 
+    /// cannot be more than MAX_ALLOCATORS_PER_OPERATOR
+    /// mapping: operator => hash(strategy, avs, operatorSetId) => address[] (operator's allocators for a strategy)
+    mapping(address => mapping(bytes32 => address[])) private _operatorAllocators;
+
+    /// @notice total magnitude updates for a given (operator, strategy, OperatorSet, allocator)
+    /// mapping: operator => hash(strategy, avs, operatorSetId) => allocator => TotalAndNonslashableUpdate[]
+    mapping(address => mapping(bytes32 => mapping(address => TotalAndNonslashableUpdate[]))) private _totalMagnitudeUpdates;
+
+    /// @notice all slashing events for a given (operator, strategy, OperatorSet)
+    /// mapping: operator => hash(strategy, avs, operatorSetId) => SlashingUpdate[]
+    mapping(address => mapping(bytes32 => SlashingUpdate[])) private _slashingUpdates;
+
+    /**
+     * @notice Called by an AVS to slash an operator for a given operatorSetId, list of strategies, and bipsToSlash
+     * @param operator the operator to slash
+     * @param operatorSetId which operator set the operator is being slashed from
+     * @param strategies list of strategies to slash the operator for
+     * @param bipsToSlash the amount of bips to slash the operator by
+     */
+    function slashOperator(
+        address operator,
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies,
+        uint32 bipsToSlash
+    ) external {
+        require(
+            0 < bipsToSlash && bipsToSlash < BIPS_FACTOR,
+            "AVSDirectory.slashOperator: invalid bipsToSlash"
+        );
+        // Slash the operator for each strategy
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            OperatorSet memory opSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
+            bytes32 opSetKey = _hashStrategyAndOperatorSet(strategies[i], opSet);
+            address[] memory allocators = _operatorAllocators[operator][opSetKey];
+
+            // For each strategy, slash each of its allocators and reduce their total magnitudes
+            for (uint256 j = 0; j < allocators.length; ++j) {
+                _slashAllocator(operator, opSetKey, allocators[j], bipsToSlash);
+                emit OperatorSlashed(operator, strategies[i], opSet, allocators[j], bipsToSlash);
+            }
+        }
+    }
+
+    /// @notice slash an operator's allocator
+    function _slashAllocator(
+        address operator,
+        bytes32 opSetKey,
+        address allocator,
+        uint32 bipsToSlash
+    ) internal {
+        /// TODO
+
+    }
+
+    function _hashStrategyAndOperatorSet(IStrategy strategy, OperatorSet memory opSet) internal pure returns (bytes32) {
+        return keccak256(abi.encode(strategy, opSet));
+    }
 }
