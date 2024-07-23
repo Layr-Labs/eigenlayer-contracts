@@ -600,6 +600,11 @@ contract DelegationManager is
         // Remove `withdrawalRoot` from pending roots
         delete pendingWithdrawals[withdrawalRoot];
 
+        require(
+            !isPendingHandoff(withdrawal.delegatedTo) || receiveAsTokens,
+            "DelegationManager._completeQueuedWithdrawal: a staker pending handoff cannot withdraw as shares"
+        );
+
         if (receiveAsTokens) {
             // Finalize action by converting shares to tokens for each strategy, or
             // by re-awarding shares in each strategy.
