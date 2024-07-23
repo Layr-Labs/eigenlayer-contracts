@@ -306,6 +306,11 @@ contract AVSDirectory is
      *
      */
 
+    function totalMagnitude(address allocator, IStrategy strategy) external view override returns (uint256) {
+        // TODO
+        return 0;
+    }
+
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
      *

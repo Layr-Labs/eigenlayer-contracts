@@ -85,6 +85,15 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external pure returns (uint256) {
         return 0;
     }
+
+    /**
+     * @notice Returns the migratable shares for an operator across given strategies and overwrite them to 0
+     * @param operator the operator to get migratable shares for
+     * @param allocator the allocator to get migratable shares to migrate to
+     * @param strategies the strategies to get migratable shares for
+     * @dev if any of the shares are 0, it will revert
+     */
+    function getMigratableOperatorShares(address operator, address allocator, IStrategy[] calldata strategies) external returns (uint256[] memory) {}
     
     function getOperatorShares(
         address operator,

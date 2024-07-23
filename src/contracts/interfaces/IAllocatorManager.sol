@@ -15,30 +15,7 @@ import "./IStrategyManager.sol";
  * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
-interface IDelegationManager is ISignatureUtils {
-    // @notice Struct used for storing information about a single operator who has registered with EigenLayer
-    struct OperatorDetails {
-        /// @notice DEPRECATED -- this field is no longer used, payments are handled in PaymentCoordinator.sol
-        address __deprecated_earningsReceiver;
-        /**
-         * @notice Address to verify signatures when a staker wishes to delegate to the operator, as well as controlling "forced undelegations".
-         * @dev Signature verification follows these rules:
-         * 1) If this address is left as address(0), then any staker will be free to delegate to the operator, i.e. no signature verification will be performed.
-         * 2) If this address is an EOA (i.e. it has no code), then we follow standard ECDSA signature verification for delegations to the operator.
-         * 3) If this address is a contract (i.e. it has code) then we forward a call to the contract and verify that it returns the correct EIP-1271 "magic value".
-         */
-        address delegationApprover;
-        /**
-         * @notice A minimum delay -- measured in blocks -- enforced between:
-         * 1) the operator signalling their intent to register for a service, via calling `Slasher.optIntoSlashing`
-         * and
-         * 2) the operator completing registration for the service, via the service ultimately calling `Slasher.recordFirstStakeUpdate`
-         * @dev note that for a specific operator, this value *cannot decrease*, i.e. if the operator wishes to modify their OperatorDetails,
-         * then they are only allowed to either increase this value or keep it the same.
-         */
-        uint32 stakerOptOutWindowBlocks;
-    }
-
+interface IAllocatorManager is ISignatureUtils {
     /**
      * @notice Abstract struct used in calculating an EIP712 signature for a staker to approve that they (the staker themselves) delegate to a specific operator.
      * @dev Used in computing the `STAKER_DELEGATION_TYPEHASH` and as a reference in the computation of the stakerDigestHash in the `delegateToBySignature` function.
@@ -100,23 +77,11 @@ interface IDelegationManager is ISignatureUtils {
         address withdrawer;
     }
 
-    // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
-    event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
-
-    /// @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
-    event OperatorDetailsModified(address indexed operator, OperatorDetails newOperatorDetails);
-
     /**
-     * @notice Emitted when @param operator indicates that they are updating their MetadataURI string
-     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
-     */
-    event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
-
-    /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
-
-    /// @notice Emitted whenever an operator's shares are decreased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+	 * @notice Emitted when @param allocator indicates that they are updating their MetadataURI string
+	 * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
+	 */
+	event AllocatorMetadataURIUpdated(address indexed allocator, string metadataURI);
 
     /// @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
@@ -144,85 +109,86 @@ interface IDelegationManager is ISignatureUtils {
     event StrategyWithdrawalDelayBlocksSet(IStrategy strategy, uint256 previousValue, uint256 newValue);
 
     /**
-     * @notice Registers the caller as an operator in EigenLayer.
-     * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
-     * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
+     * @notice Registers the caller as an allocator in EigenLayer.
+     * @param delegationApprover is the address that must approve of the delegation of a staker's stake to the allocator. If set to 0, no approval is 
+	 * required.
+     * @param metadataURI is a URI for the allocator's metadata, i.e. a link providing more details on the allocator.
      *
-     * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
-     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
+     * @dev Once an allocator is registered, they cannot 'allocator' as an operator, and they will forever be considered "delegated themself".
+     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `AllocatorMetadataURIUpdated` event
+	 * @dev reverts if the caller is delegated to a pre-SDA operator
      */
-    function registerAsOperator(
-        OperatorDetails calldata registeringOperatorDetails,
+    function registerAsAllocator(
+        address delegationApprover,
         string calldata metadataURI
     ) external;
 
-    /**
-     * @notice Updates an operator's stored `OperatorDetails`.
-     * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
-     *
-     * @dev The caller must have previously registered as an operator in EigenLayer.
-     */
-    function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external;
+	/**
+	 * @notice Updates the delegation approver for the calling allocator.
+	 *
+	 * @param delegationApprover is the address that must approve of the delegations of a staker's stake to the allocator. If set to 0, no approval is
+	 * required.
+	 */
+    function setDelegationApprover(address delegationApprover) external;
 
     /**
-     * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
-     * @param metadataURI The URI for metadata associated with an operator
-     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
+     * @notice Called by an allocator to emit an `AllocatorMetadataURIUpdated` event indicating the information has updated.
+     * @param metadataURI The URI for metadata associated with an allocator
+     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `AllocatorMetadataURIUpdated` event
      */
-    function updateOperatorMetadataURI(string calldata metadataURI) external;
+    function updateAllocatorMetadataURI(string calldata metadataURI) external;
 
-    /**
-     * @notice Caller delegates their stake to an operator.
-     * @param operator The account (`msg.sender`) is delegating its assets to for use in serving applications built on EigenLayer.
-     * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
+	/**
+	 * @notice Delegates to an allocator for the calling staker
+	 *
+	 * @param allocator the allocator delegated to by the calling staker
+	 * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
      * @param approverSalt A unique single use value tied to an individual signature.
      * @dev The approverSignatureAndExpiry is used in the event that:
-     *          1) the operator's `delegationApprover` address is set to a non-zero value.
+     *          1) the allocator's `delegationApprover` address is set to a non-zero value.
      *                  AND
-     *          2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator
+     *          2) neither the allocator nor their `delegationApprover` is the `msg.sender`, since in the event that the allocator
      *             or their delegationApprover is the `msg.sender`, then approval is assumed.
-     * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
-     * in this case to save on complexity + gas costs
-     */
-    function delegateTo(
-        address operator,
-        SignatureWithExpiry memory approverSignatureAndExpiry,
+	 *
+	 * @dev Reverts if the allocatorFor the staker is already set or if the staker's M2 operator has handed off to an allocator
+	 */
+	function delegateTo(
+		address allocator,
+		SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 approverSalt
-    ) external;
+	) external;
 
-    /**
-     * @notice Caller delegates a staker's stake to an operator with valid signatures from both parties.
+	/**
+     * @notice Caller delegates a staker to an allocator with valid signatures from both parties.
      * @param staker The account delegating stake to an `operator` account
-     * @param operator The account (`staker`) is delegating its assets to for use in serving applications built on EigenLayer.
-     * @param stakerSignatureAndExpiry Signed data from the staker authorizing delegating stake to an operator
-     * @param approverSignatureAndExpiry is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
+     * @param allocator The account (`staker`) is delegating to
+     * @param stakerSignatureAndExpiry Signed data from the staker authorizing assinging stake to an allocator
+     * @param approverSignatureAndExpiry is a parameter that will be used for verifying that the allocator approves of this delegation action in the event that:
      * @param approverSalt Is a salt used to help guarantee signature uniqueness. Each salt can only be used once by a given approver.
      *
      * @dev If `staker` is an EOA, then `stakerSignature` is verified to be a valid ECDSA stakerSignature from `staker`, indicating their intention for this action.
      * @dev If `staker` is a contract, then `stakerSignature` will be checked according to EIP-1271.
-     * @dev the operator's `delegationApprover` address is set to a non-zero value.
+     * @dev the allocator's `delegationApprover` address is set to a non-zero value.
      * @dev neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
      * is the `msg.sender`, then approval is assumed.
-     * @dev This function will revert if the current `block.timestamp` is equal to or exceeds the expiry
      * @dev In the case that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
      * in this case to save on complexity + gas costs
      */
-    function delegateToBySignature(
-        address staker,
-        address operator,
-        SignatureWithExpiry memory stakerSignatureAndExpiry,
-        SignatureWithExpiry memory approverSignatureAndExpiry,
-        bytes32 approverSalt
-    ) external;
+    // function delegateToBySignature(
+    //     address staker,
+    //     address allocator,
+    //     SignatureWithExpiry memory stakerSignatureAndExpiry,
+    //     SignatureWithExpiry memory approverSignatureAndExpiry,
+    //     bytes32 approverSalt
+    // ) external;
 
-    /**
-     * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
-     * and queues a withdrawal of all of the staker's shares in the StrategyManager (to the staker), if necessary.
+	/**
+     * @notice Undelegates the staker's currently chosed allocator and queues a withdrawal of all of the staker's shares
      * @param staker The account to be undelegated.
      * @return withdrawalRoot The root of the newly queued withdrawal, if a withdrawal was queued. Otherwise just bytes32(0).
      *
-     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
-     * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
+     * @dev Reverts if the `staker` is also an allocator, since allocator are not allowed to undelegate from themselves.
+     * @dev Reverts if the caller is not the staker, nor the allocator who the staker is delegated to, nor the allocator's specified "delegationApprover"
      * @dev Reverts if the `staker` is already undelegated.
      */
     function undelegate(address staker) external returns (bytes32[] memory withdrawalRoot);
@@ -305,25 +271,13 @@ interface IDelegationManager is ISignatureUtils {
     function delegatedTo(address staker) external view returns (address);
 
     /**
-     * @notice Returns the OperatorDetails struct associated with an `operator`.
-     */
-    function operatorDetails(address operator) external view returns (OperatorDetails memory);
-
-    /**
      * @notice Returns the delegationApprover account for an operator
      */
-    function delegationApprover(address operator) external view returns (address);
+    function getDelegationApprover(address operator) external view returns (address);
 
-    /**
-     * @notice Returns the stakerOptOutWindowBlocks for an operator
-     */
-    function stakerOptOutWindowBlocks(address operator) external view returns (uint256);
-
-    /**
-     * @notice Given array of strategies, returns array of shares for the operator
-     */
-    function getOperatorShares(
-        address operator,
+    /// @notice Given array of strategies, returns array of shares for the allocator
+    function getScaledDelegatedShares(
+        address allocator,
         IStrategy[] memory strategies
     ) external view returns (uint256[] memory);
 
@@ -335,22 +289,13 @@ interface IDelegationManager is ISignatureUtils {
     function getWithdrawalDelay(IStrategy[] calldata strategies) external view returns (uint256);
 
     /**
-     * @notice Returns the migratable shares for an operator across given strategies and overwrite them to 0
-     * @param operator the operator to get migratable shares for
-     * @param allocator the allocator to get migratable shares to migrate to
-     * @param strategies the strategies to get migratable shares for
-     * @dev if any of the shares are 0, it will revert
-     */
-    function getMigratableOperatorShares(address operator, address allocator, IStrategy[] calldata strategies) external returns (uint256[] memory);
-
-    /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
      * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
      * @dev By design, the following invariant should hold for each Strategy:
      * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
      * = sum (delegateable shares of all stakers delegated to the operator)
      */
-    function operatorShares(address operator, IStrategy strategy) external view returns (uint256);
+    function scaledDelegatedShares(address operator, IStrategy strategy) external view returns (uint256);
 
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
@@ -358,9 +303,9 @@ interface IDelegationManager is ISignatureUtils {
     function isDelegated(address staker) external view returns (bool);
 
     /**
-     * @notice Returns true is an operator has previously registered for delegation.
+     * @notice Returns true is an allocator has previously registered for delegation.
      */
-    function isOperator(address operator) external view returns (bool);
+    function isAllocator(address allocator) external view returns (bool);
 
     /// @notice Mapping: staker => number of signed delegation nonces (used in `delegateToBySignature`) from the staker that the contract has already checked
     function stakerNonce(address staker) external view returns (uint256);
@@ -368,7 +313,7 @@ interface IDelegationManager is ISignatureUtils {
     /**
      * @notice Mapping: delegationApprover => 32-byte salt => whether or not the salt has already been used by the delegationApprover.
      * @dev Salts are used in the `delegateTo` and `delegateToBySignature` functions. Note that these functions only process the delegationApprover's
-     * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
+     * signature + the provided salt if the allocator being delegated to has specified a nonzero address as their `delegationApprover`.
      */
     function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 
 interface IAVSDirectory is ISignatureUtils {
@@ -121,6 +122,8 @@ interface IAVSDirectory is ISignatureUtils {
     function memberInfo(address avs, address operator) external view returns (uint248 inTotalSets, bool isLegacyOperator);
 
     function isMember(address avs, address operator, uint32 operatorSetId) external view returns (bool);
+
+    function totalMagnitude(address allocator, IStrategy strategy) external view returns (uint256);
 
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
