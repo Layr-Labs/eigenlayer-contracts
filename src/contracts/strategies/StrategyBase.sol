@@ -223,8 +223,8 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @return The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function sharesToUnderlying(uint256 amountShares) public view virtual override returns (uint256) {
-        return sharesToUnderlyingView(amountShares);
+    function sharesToUnderlying(uint256 amountShares) public virtual override returns (uint256 underlying) {
+        emit SharesToUnderlying(underlying = sharesToUnderlyingView(amountShares));
     }
 
     /**
