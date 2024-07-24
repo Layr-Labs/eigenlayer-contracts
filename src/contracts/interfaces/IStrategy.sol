@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @notice Custom `Strategy` implementations may expand extensively on this interface.
  */
 interface IStrategy {
+    event SharesToUnderlying(uint256 rate);
+
     /**
      * @notice Used to deposit tokens into this Strategy
      * @param token is the ERC20 token being deposited

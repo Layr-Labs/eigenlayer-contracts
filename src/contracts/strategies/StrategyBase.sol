@@ -220,11 +220,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
      * @notice In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
-     * @return The amount of underlying tokens corresponding to the input `amountShares`
+     * @return underlying The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function sharesToUnderlying(uint256 amountShares) public virtual override returns (uint256 underlying) {
-        emit SharesToUnderlying(underlying = sharesToUnderlyingView(amountShares));
+        emit SharesToUnderlying(1e8 * amountShares / (underlying = sharesToUnderlyingView(amountShares)));
     }
 
     /**

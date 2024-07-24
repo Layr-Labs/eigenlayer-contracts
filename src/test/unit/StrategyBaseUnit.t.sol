@@ -299,7 +299,7 @@ contract StrategyBaseUnitTests is Test {
     }
 
     // uint240 input to prevent overflow
-    function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint240 amountSharesToQuery) public view {
+    function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint240 amountSharesToQuery) public {
         uint256 underlyingFromShares = strategy.sharesToUnderlying(amountSharesToQuery);
         require(underlyingFromShares == amountSharesToQuery, "underlyingFromShares != amountSharesToQuery");
 
