@@ -580,9 +580,8 @@ contract DelegationManager is
         if (!isAllocator(operatorOrAllocator)) {
             operatorShares[operatorOrAllocator][strategy] += shares;
         } else {
-            // TODO: note that this makes it so the default return value of avsDirectory.totalMagnitude() *MUST* be `BIG_NUMBER`
             scaledDelegatedShares[operatorOrAllocator][strategy] +=
-                (shares * BIG_NUMBER) / avsDirectory.totalMagnitude(operatorOrAllocator, strategy);
+                _convertToNonNormalizedShares(operatorOrAllocator, strategy, shares);
         }
         // TODO: figure out if 'staker' field in this event can be safely eliminated
         emit OperatorSharesIncreased(operatorOrAllocator, /*staker*/ address(0), strategy, shares);
@@ -595,13 +594,31 @@ contract DelegationManager is
         if (!isAllocator(operatorOrAllocator)) {
             operatorShares[operatorOrAllocator][strategy] -= shares;
         } else {
-            // TODO: Decide scaling
-            // TODO: note that this makes it so the default return value of avsDirectory.totalMagnitude() *MUST* be `BIG_NUMBER`
             scaledDelegatedShares[operatorOrAllocator][strategy] -=
-                (shares * BIG_NUMBER) / avsDirectory.totalMagnitude(operatorOrAllocator, strategy);
+                _convertToNonNormalizedShares(operatorOrAllocator, strategy, shares);
         }
         // TODO: figure out if 'staker' field in this event can be safely eliminated
         emit OperatorSharesDecreased(operatorOrAllocator, /*staker*/ address(0), strategy, shares);
+    }
+
+    // TODO: documentation / possibly put this in a library instead
+    function _convertToNonNormalizedShares(
+        address operatorOrAllocator,
+        IStrategy strategy, 
+        uint256 shares
+    ) internal view returns (uint256) {
+        // TODO: note that this makes it so the default return value of avsDirectory.totalMagnitude() *MUST* be `BIG_NUMBER`
+        return (shares * BIG_NUMBER) / avsDirectory.totalMagnitude(operatorOrAllocator, strategy);
+    }
+
+    // TODO: documentation / possibly put this in a library instead
+    function _convertToNormalizedShares(
+        address operatorOrAllocator,
+        IStrategy strategy, 
+        uint256 nonNormalizedShares
+    ) internal view returns (uint256) {
+        // TODO: note that this makes it so the default return value of avsDirectory.totalMagnitude() *MUST* be `BIG_NUMBER`
+        return (nonNormalizedShares * avsDirectory.totalMagnitude(operatorOrAllocator, strategy)) / BIG_NUMBER;
     }
 
     /**
