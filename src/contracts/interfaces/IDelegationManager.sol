@@ -38,6 +38,12 @@ interface IDelegationManager is ISignatureUtils {
         // bool allocatorHandoffInitiated;
     }
 
+    struct AllocatorDetails {
+        address delegationApprover;
+        // if true, then the address is an allocator. Needed beacause delegationApprover can be 0.
+        bool isAllocator;
+    }
+
     /**
      * @notice Abstract struct used in calculating an EIP712 signature for a staker to approve that they (the staker themselves) delegate to a specific operator.
      * @dev Used in computing the `STAKER_DELEGATION_TYPEHASH` and as a reference in the computation of the stakerDigestHash in the `delegateToBySignature` function.
@@ -110,6 +116,12 @@ interface IDelegationManager is ISignatureUtils {
      * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
      */
     event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
+
+    /**
+     * @notice Emitted when @param allocator indicates that they are updating their MetadataURI string
+     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
+     */
+    event AllocatorMetadataURIUpdated(address indexed allocator, string metadataURI);
 
     /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
     event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);

@@ -61,11 +61,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(address => OperatorDetails) internal _operatorDetails;
 
-    // TODO: proper documentation
-    /**
-     * @notice Mapping: staker => allocator whom the staker is currently delegated to.
-     * @dev Note that returning address(0) indicates that the staker is not actively delegated to any allocator.
-     */
     /**
      * @notice Mapping: staker => operator whom the staker is currently delegated to.
      * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
@@ -135,16 +130,21 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice Mapping: allocator => the number of shares assigned to the allocator scaled up by the allocator's total magnitude.
     mapping(address => mapping(IStrategy => uint256)) public scaledDelegatedShares;
 
-    struct AllocatorDetails {
-        address delegationApprover;
-        bool isAllocator; // if true, then the address is an allocator. Needed beacause delegationApprover can be 0.
-    }
-
     mapping(address => AllocatorDetails) internal _allocatorDetails;
 
     // TODO: combine with other storage for optimization
-    /// @notice Mapping: staker => whether the staker is a post SDA staker (i.e. they have no left over state unmigrated from the DelegationManager).
+    /// @notice Mapping: staker => whether the staker is a post SDA staker (i.e. they have no left over state unmigrated from the shift
+    /// from delegating to operator to delegating to allocators).
     mapping(address => bool) public isPostSDAStaker;
+
+    // TODO: proper documentation
+    // TODO: figure out if this essentially duplicate storage is really necessary
+    /**
+     * @notice Mapping: staker => allocator whom the staker is currently delegated to.
+     * @dev Note that returning address(0) indicates that the staker is not actively delegated to any allocator.
+     */
+    mapping(address => address) public _allocatorOf;
+
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;

@@ -29,12 +29,6 @@ contract DelegationManager is
     uint256 constant public ALLOCATOR_HANDOFF_DELAY = 14 days;
 
     /**
-     * @notice Emitted when @param allocator indicates that they are updating their MetadataURI string
-     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
-     */
-    event AllocatorMetadataURIUpdated(address indexed allocator, string metadataURI);
-
-    /**
      * @notice Queues a handoff of the calling operator's delegated stake to a target allocator in ALLOCATOR_HANDOFF_DELAY
      *
      * @param allocator the target allocator to handoff delegated stake to
@@ -137,7 +131,7 @@ contract DelegationManager is
             // overwrite to 0 because they're migrated
             operatorShares[operator][strategies[i]] = 0;
             // increment the allocator's shares by the operator's shares for each strategy
-            _increaseAllocatorShares({allocator: allocator, strategy: strategies[i], shares: shares[i]});
+            _increaseDelegatedShares({operatorOrAllocator: allocator, strategy: strategies[i], shares: shares[i]});
         }
     }
 
@@ -167,18 +161,6 @@ contract DelegationManager is
         _delegate(msg.sender, allocator, approverSignatureAndExpiry, approverSalt);
     }
 
-    /// @notice Increases `allocator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
-    function _increaseAllocatorShares(address allocator, IStrategy strategy, uint256 shares) internal {
-        scaledDelegatedShares[allocator][strategy] += (shares * BIG_NUMBER) / avsDirectory.totalMagnitude(allocator, strategy);
-    }
-
-    /// @notice Decreases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesDecreased` event
-    function _decreaseAllocatorShares(address allocator, IStrategy strategy, uint256 shares) internal {
-        // This will revert on underflow, so no check needed
-        // TODO: Decide scaling
-        scaledDelegatedShares[allocator][strategy] -= (shares * BIG_NUMBER) / avsDirectory.totalMagnitude(allocator, strategy);
-    }
-
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
      */
@@ -195,7 +177,7 @@ contract DelegationManager is
     }
 
     function delegatedToView(address staker) public view returns (address) {
-        address allocator = _delegatedTo[staker];
+        address allocator = _allocatorOf[staker];
         // If the staker is not actively delegated, check if they have a handoff
         if (allocator == address(0) && !isPostSDAStaker[staker]) {
             Handoff memory handoff = getHandoff(staker);
@@ -208,14 +190,14 @@ contract DelegationManager is
     }
 
     function delegatedTo(address staker) public returns (address) {
-        address allocator = _delegatedTo[staker];
+        address allocator = _allocatorOf[staker];
         // If the staker is not actively delegated, check if they have a handoff
         if (allocator == address(0) && !isPostSDAStaker[staker]) {
             Handoff memory handoff = getHandoff(staker);
             if (handoff.completableTimestamp != 0 && handoff.completableTimestamp <= block.timestamp) {
                 // If the handoff is completable, return the allocator and overwrite the allocator
                 isPostSDAStaker[staker] = true;
-                _delegatedTo[staker] = handoff.allocator;
+                _allocatorOf[staker] = handoff.allocator;
                 allocator = handoff.allocator;
             }
         }
@@ -442,7 +424,7 @@ contract DelegationManager is
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
-        address operator = _delegatedTo[staker];
+        address operator = delegatedTo(staker);
         require(
             msg.sender == staker || msg.sender == operator
                 || msg.sender == _operatorDetails[operator].delegationApprover,
@@ -461,6 +443,8 @@ contract DelegationManager is
         // undelegate the staker
         emit StakerUndelegated(staker, operator);
         _delegatedTo[staker] = address(0);
+        // TODO: figure out less ugly storage model if possible
+        _allocatorOf[staker] = address(0);
 
         // if no delegatable shares, return an empty array, and don't queue a withdrawal
         if (strategies.length == 0) {
@@ -499,7 +483,7 @@ contract DelegationManager is
         returns (bytes32[] memory)
     {
         bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
-        address operator = _delegatedTo[msg.sender];
+        address operator = delegatedTo(msg.sender);
 
         for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
             require(
@@ -582,13 +566,42 @@ contract DelegationManager is
         IStrategy strategy,
         uint256 shares
     ) external onlyStrategyManagerOrEigenPodManager {
-        // if the staker is delegated to an operator
-        if (isDelegated(staker)) {
-            address operator = _delegatedTo[staker];
-
+        address _stakerDelegate = delegatedTo(staker);
+        // if the staker is delegated to an operator/allocator
+        if (_stakerDelegate != address(0)) {
             // add strategy shares to delegate's shares
-            _increaseOperatorShares({operator: operator, staker: staker, strategy: strategy, shares: shares});
+            _increaseDelegatedShares({operatorOrAllocator: _stakerDelegate, strategy: strategy, shares: shares});
         }
+    }
+
+    // @notice Increases `operatorOrAllocator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
+    function _increaseDelegatedShares(address operatorOrAllocator, IStrategy strategy, uint256 shares) internal {
+        // TODO: figure out if conditional logic can be eliminated
+        if (!isAllocator(operatorOrAllocator)) {
+            operatorShares[operatorOrAllocator][strategy] += shares;
+        } else {
+            // TODO: note that this makes it so the default return value of avsDirectory.totalMagnitude() *MUST* be `BIG_NUMBER`
+            scaledDelegatedShares[operatorOrAllocator][strategy] +=
+                (shares * BIG_NUMBER) / avsDirectory.totalMagnitude(operatorOrAllocator, strategy);
+        }
+        // TODO: figure out if 'staker' field in this event can be safely eliminated
+        emit OperatorSharesIncreased(operatorOrAllocator, /*staker*/ address(0), strategy, shares);
+    }
+
+    /// @notice Decreases `operatorOrAllocator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesDecreased` event
+    function _decreaseDelegatedShares(address operatorOrAllocator, IStrategy strategy, uint256 shares) internal {
+        // This will revert on underflow, so no check needed
+        // TODO: figure out if conditional logic can be eliminated
+        if (!isAllocator(operatorOrAllocator)) {
+            operatorShares[operatorOrAllocator][strategy] -= shares;
+        } else {
+            // TODO: Decide scaling
+            // TODO: note that this makes it so the default return value of avsDirectory.totalMagnitude() *MUST* be `BIG_NUMBER`
+            scaledDelegatedShares[operatorOrAllocator][strategy] -=
+                (shares * BIG_NUMBER) / avsDirectory.totalMagnitude(operatorOrAllocator, strategy);
+        }
+        // TODO: figure out if 'staker' field in this event can be safely eliminated
+        emit OperatorSharesDecreased(operatorOrAllocator, /*staker*/ address(0), strategy, shares);
     }
 
     /**
@@ -611,9 +624,8 @@ contract DelegationManager is
 
             // forgefmt: disable-next-item
             // subtract strategy shares from delegate's shares
-            _decreaseOperatorShares({
-                operator: operator, 
-                staker: staker, 
+            _decreaseDelegatedShares({
+                operatorOrAllocator: operator, 
                 strategy: strategy, 
                 shares: shares
             });
@@ -725,16 +737,15 @@ contract DelegationManager is
         }
 
         // record the delegation relation between the staker and operator, and emit an event
-        _delegatedTo[staker] = operator;
+        _allocatorOf[staker] = operator;
         emit StakerDelegated(staker, operator);
 
         (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
 
         for (uint256 i = 0; i < strategies.length;) {
             // forgefmt: disable-next-item
-            _increaseOperatorShares({
-                operator: operator, 
-                staker: staker, 
+            _increaseDelegatedShares({
+                operatorOrAllocator: operator, 
                 strategy: strategies[i], 
                 shares: shares[i]
             });
@@ -811,7 +822,7 @@ contract DelegationManager is
         } else {
             // Award shares back in StrategyManager/EigenPodManager.
             // If withdrawer is delegated, increase the shares delegated to the operator.
-            address currentOperator = _delegatedTo[msg.sender];
+            address currentOperator = delegatedTo(msg.sender);
             for (uint256 i = 0; i < withdrawal.strategies.length;) {
                 require(
                     withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
@@ -830,13 +841,11 @@ contract DelegationManager is
                      */
                     uint256 increaseInDelegateableShares =
                         eigenPodManager.addShares({podOwner: staker, shares: withdrawal.shares[i]});
-                    address podOwnerOperator = _delegatedTo[staker];
+                    address podOwnerOperator = delegatedTo(staker);
                     // Similar to `isDelegated` logic
                     if (podOwnerOperator != address(0)) {
-                        _increaseOperatorShares({
-                            operator: podOwnerOperator,
-                            // the 'staker' here is the address receiving new shares
-                            staker: staker,
+                        _increaseDelegatedShares({
+                            operatorOrAllocator: podOwnerOperator,
                             strategy: withdrawal.strategies[i],
                             shares: increaseInDelegateableShares
                         });
@@ -845,10 +854,8 @@ contract DelegationManager is
                     strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], withdrawal.shares[i]);
                     // Similar to `isDelegated` logic
                     if (currentOperator != address(0)) {
-                        _increaseOperatorShares({
-                            operator: currentOperator,
-                            // the 'staker' here is the address receiving new shares
-                            staker: msg.sender,
+                        _increaseDelegatedShares({
+                            operatorOrAllocator: currentOperator,
                             strategy: withdrawal.strategies[i],
                             shares: withdrawal.shares[i]
                         });
@@ -861,19 +868,6 @@ contract DelegationManager is
         }
 
         emit WithdrawalCompleted(withdrawalRoot);
-    }
-
-    // @notice Increases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
-    function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
-        operatorShares[operator][strategy] += shares;
-        emit OperatorSharesIncreased(operator, staker, strategy, shares);
-    }
-
-    // @notice Decreases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesDecreased` event
-    function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
-        // This will revert on underflow, so no check needed
-        operatorShares[operator][strategy] -= shares;
-        emit OperatorSharesDecreased(operator, staker, strategy, shares);
     }
 
     /**
@@ -902,9 +896,8 @@ contract DelegationManager is
             // Similar to `isDelegated` logic
             if (operator != address(0)) {
                 // forgefmt: disable-next-item
-                _decreaseOperatorShares({
-                    operator: operator, 
-                    staker: staker, 
+                _decreaseDelegatedShares({
+                    operatorOrAllocator: operator, 
                     strategy: strategies[i], 
                     shares: shares[i]
                 });
