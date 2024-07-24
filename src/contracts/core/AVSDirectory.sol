@@ -6,6 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
+import "../libraries/SlashingAccountingUtils.sol";
 import "./AVSDirectoryStorage.sol";
 
 contract AVSDirectory is
@@ -498,35 +499,43 @@ contract AVSDirectory is
      *
      */
 
-    /**
-     * @param bipsSlashed bips slashed by the operatorSet
-     * @param timestamp when the slashing was performed
-     * @param totalMagnitudeUpdateIndex array index of the corresponding total magnitude update
-     */
-    struct SlashingUpdate {
-        uint32 bipsSlashed;
-        uint32 timestamp;
-        uint32 totalMagnitudeUpdateIndex;
+    /// For queue/complete reallocations
+    enum MagnitudeAdjustmentType {
+        ALLOCATION,
+        DEALLOCATION
     }
 
-    /**
-     * @notice Used for historical magnitude updates in mapping
-     * operator => hash(strategy, avs, operatorSetId) => TotalAndNonslashableUpdate[]
-     * New total magnitude updates are pushed whenever magnitude changing functions are called
-     * @param timestamp timestamp of TotalAndNonslashableUpdate, if timestamp > block.timestamp then it is currently pending
-     * @param totalMagnitude total magnitude amount for a strategy which equals
-     * nonslashableMagnitude amount + sum of each operatorSet's allocated magnitudes
-     * @param nonslashableMagnitude nonslashable magnitude that CANNOT be slashed if timestamp <= block.timestamp
-     * Note if timestamp > block.timestamp, this is an upper bound on the slashable amount
-     * as it may still be a pending deallocation (still slashable)
-     * @param cumulativeAllocationSum monotonically increasing sum of all magnitudes when allocating
-     * required to ensure all allocations are backed by nonslashable magnitude
-     */
+    struct MagnitudeAdjustment {
+        OperatorSet operatorSet;
+        uint64 magnitudeDiff;
+    }
+
+    struct AllocatorOperatorDetails {
+        bool isAllocatorFor;
+        uint32 reallocationNonce;
+    }
+
+    struct QueuedReallocation {
+        MagnitudeAdjustmentType magnitudeAdjustmentType;
+        address allocator;
+        address operator;
+        OperatorSet operatorSet;
+        IStrategy strategy;
+        uint64 magnitudeDiff;
+        uint32 nonce;
+        uint64 queuedScalingFactor;
+        uint32 timestamp;
+    }
+
+    struct ScalingFactorUpdate {
+        uint32 timestamp;
+        uint64 scalingFactor;
+    }
+
     struct TotalAndNonslashableUpdate {
         uint32 timestamp;
         uint64 totalMagnitude;
         uint64 nonslashableMagnitude;
-        uint64 cumulativeAllocationSum;
     }
 
     event OperatorSlashed(
@@ -538,25 +547,112 @@ contract AVSDirectory is
     );
 
     uint256 constant MAX_ALLOCATORS_PER_OPERATOR = 10; 
-    /// TODO move to slashing accounting library
-    uint256 internal constant BIPS_FACTOR = 10000;
+    uint256 constant QUEUED_REALLOCATION_DELAY = 21 days; // placeholder val for now
+
+    uint64 constant DEFAULT_TOTAL_MAGNITUDE = 1e18; // 1e18 = 1
 
 
+    /**
+     *
+     *                         SLASHING UTILS ACCOUNTING
+     *
+     */
+
+    /// mapping: allocator => operator => AllocatorOperatorDetails
+    mapping(address => mapping(address => AllocatorOperatorDetails)) public allocatorOperatorDetails;
+
+    /// @notice queued reallocation updates
+    /// mapping: hash(operator, strategy, avs, operatorSetId, allocator, allocatorNonce) => allocator => bool
+    mapping(bytes32 => bool) public queuedReallocationHashes;
 
     /// Note: that we reuse hash of (strategy, avs, operatorSetId) as the key for the mappings below for
     /// to reduce number of key lookups and mapping hashes
     /// @notice all the allocators for a given (operator, strategy, OperatorSet) 
-    /// cannot be more than MAX_ALLOCATORS_PER_OPERATOR
+    /// length cannot be more than MAX_ALLOCATORS_PER_OPERATOR
     /// mapping: operator => hash(strategy, avs, operatorSetId) => address[] (operator's allocators for a strategy)
     mapping(address => mapping(bytes32 => address[])) private _operatorAllocators;
 
-    /// @notice total magnitude updates for a given (operator, strategy, OperatorSet, allocator)
-    /// mapping: operator => hash(strategy, avs, operatorSetId) => allocator => TotalAndNonslashableUpdate[]
-    mapping(address => mapping(bytes32 => mapping(address => TotalAndNonslashableUpdate[]))) private _totalMagnitudeUpdates;
 
-    /// @notice all slashing events for a given (operator, strategy, OperatorSet)
-    /// mapping: operator => hash(strategy, avs, operatorSetId) => SlashingUpdate[]
-    mapping(address => mapping(bytes32 => SlashingUpdate[])) private _slashingUpdates;
+    /// @notice Updated whenever the operator gets slashed and their scaling factor is reduced.
+    /// Scaling factors lie in the range [0,1]
+    /// mapping: operator => hash(strategy, avs, operatorSetId) => ScalingFactorUpdate
+    mapping(address => mapping(bytes32 => ScalingFactorUpdate[])) private _scalingFactorUpdates;
+
+    /// mapping: operator => hash(strategy, avs, operatorSetId) => allocator => nonNormalizedMagnitude
+    mapping(address => mapping(bytes32 => mapping(address => uint64))) private _nonNormalizedMagnitudes;
+
+    /// mapping: operator => IStrategy => allocator => TotalAndNonslashableUpdate[]
+    mapping(address => mapping(IStrategy => mapping(address => TotalAndNonslashableUpdate[]))) private _totalMagnitudeUpdates;
+
+
+    /**
+     * @notice Queues magnitude adjustment updates of type ALLOCATION or DEALLOCATION
+     * The magnitude allocation takes 21 days from time when it is queued to take effect.
+     *
+     * @param allocator the allocator who is adjusting the magnitudes
+     * @param operator the operator whom the magnitude parameters are being adjusted
+     * @param strategy the strategy for which the magnitudes are being adjusted
+     * @param magnitudeAdjustmentType the type of adjustment, either ALLOCATION or DEALLOCATION
+     * @param magnitudeAdjustments an array of magnitude adjustments to be made for each operatorSet
+     * @param allocatorSignature if non-empty is the signature of the allocator on
+     * the modification. if empty, the msg.sender must be the allocator for the
+     * operator
+     *
+     * @dev pushes a MagnitudeUpdate and TotalAndNonslashableUpdate to take effect in 21 days
+     * @dev If ALLOCATION adjustment type:
+     * reverts if sum of magnitudeDiffs > nonslashable magnitude for the latest pending update - sum of all pending allocations
+     * since one cannot allocate more than is nonslahsable
+     * @dev if DEALLOCATION adjustment type:
+     * reverts if magnitudeDiff > allocated magnitude for the latest pending update
+     * since one cannot deallocate more than is already allocated
+     * @dev reverts if there are more than 3 pending allocations/deallocations for the given (operator, strategy, operatorSet) tuple
+     * @dev emits events MagnitudeUpdated, TotalAndNonslashableMagnitudeUpdated
+     */
+    function queueReallocation(
+        address allocator,
+        address operator,
+        IStrategy strategy,
+        MagnitudeAdjustmentType magnitudeAdjustmentType,
+        MagnitudeAdjustment[] calldata magnitudeAdjustments,
+        SignatureWithSaltAndExpiry calldata allocatorSignature
+    ) external returns (QueuedReallocation[] memory queuedReallocations) {
+        AllocatorOperatorDetails storage allocatorDetails = allocatorOperatorDetails[allocator][operator];
+        require(
+            allocatorDetails.isAllocatorFor,
+            "AVSDirectory.queueReallocation: allocator is not an allocator for operator"
+        );
+        if (msg.sender != allocator) {
+            _verifyAllocatorSignature(allocator, operator, allocatorSignature);
+        }
+        uint32 reallocationNonce = allocatorDetails.reallocationNonce;
+
+        if (magnitudeAdjustmentType == MagnitudeAdjustmentType.ALLOCATION) {
+            queuedReallocations = _queueAllocation(allocator, operator, strategy, magnitudeAdjustments, allocatorDetails);
+        } else {
+            queuedReallocations = _queueDeallocation(allocator, operator, strategy, magnitudeAdjustments, allocatorDetails);
+        }
+    }
+
+    function completeReallocation(QueuedReallocation[] memory queuedReallocations) external {
+        for (uint256 i = 0; i < queuedReallocations.length; ++i) {
+            bytes32 reallocationHash = calculateQueuedReallocationHash(queuedReallocations[i]);
+            require(
+                queuedReallocationHashes[reallocationHash],
+                "AVSDirectory.completeReallocation: reallocation hash was not queued"
+            );
+            require(
+                queuedReallocations[i].timestamp + QUEUED_REALLOCATION_DELAY < block.timestamp,
+                "AVSDirectory.completeReallocation: queued reallocation not completable yet"
+            );
+            delete queuedReallocationHashes[reallocationHash];
+
+            if (queuedReallocations[i].magnitudeAdjustmentType == MagnitudeAdjustmentType.ALLOCATION) {
+                _completeAllocation(queuedReallocations[i]);
+            } else {
+                _completeDeallocation(queuedReallocations[i]);
+            }
+        }
+    }
 
     /**
      * @notice Called by an AVS to slash an operator for a given operatorSetId, list of strategies, and bipsToSlash
@@ -572,7 +668,7 @@ contract AVSDirectory is
         uint32 bipsToSlash
     ) external {
         require(
-            0 < bipsToSlash && bipsToSlash < BIPS_FACTOR,
+            0 < bipsToSlash && bipsToSlash < SlashingAccountingUtils.BIPS_FACTOR,
             "AVSDirectory.slashOperator: invalid bipsToSlash"
         );
         // Slash the operator for each strategy
@@ -589,6 +685,128 @@ contract AVSDirectory is
         }
     }
 
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
+
+    function _queueAllocation(
+        address allocator,
+        address operator,
+        IStrategy strategy,
+        MagnitudeAdjustment[] calldata magnitudeAdjustments,
+        AllocatorOperatorDetails storage allocatorDetails
+    ) internal returns (QueuedReallocation[] memory) {
+        TotalAndNonslashableUpdate storage totalMagnitudeUpdate = _getLatestTotalAndNonslashableUpdate(operator, strategy, allocator);
+        uint64 nonslashableMagnitude = totalMagnitudeUpdate.nonslashableMagnitude;
+        uint32 nonce = allocatorDetails.reallocationNonce;
+
+        QueuedReallocation[] memory queuedAllocations = new QueuedReallocation[](magnitudeAdjustments.length);
+
+        for (uint256 i = 0; i < magnitudeAdjustments.length; ++i) {
+            uint64 scalingFactor = _getCurrentScalingFactor(
+                operator,
+                _hashStrategyAndOperatorSet(strategy, magnitudeAdjustments[i].operatorSet)
+            );
+            uint64 normalizedMagnitudeIncrement = SlashingAccountingUtils.normalizeMagnitude({
+                nonNormalizedMagnitude: magnitudeAdjustments[i].magnitudeDiff,
+                scalingFactor: scalingFactor
+            });
+            require(
+                normalizedMagnitudeIncrement <= nonslashableMagnitude,
+                "AVSDirectory._queueAllocation: normalized magnitude increment exceeds nonslashable magnitude"
+            );
+            
+            queuedAllocations[i] = QueuedReallocation({
+                magnitudeAdjustmentType: MagnitudeAdjustmentType.ALLOCATION,
+                allocator: allocator,
+                operator: operator,
+                operatorSet: magnitudeAdjustments[i].operatorSet,
+                strategy: strategy,
+                magnitudeDiff: magnitudeAdjustments[i].magnitudeDiff,
+                nonce: nonce,
+                queuedScalingFactor: scalingFactor,
+                timestamp: uint32(block.timestamp)
+            });
+
+            // set queued allocation hash struct in mapping as pending
+            bytes32 reallocationHash = calculateQueuedReallocationHash(queuedAllocations[i]);
+            queuedReallocationHashes[reallocationHash] = true;
+
+            // decrement from non slashable magnitude
+            nonslashableMagnitude -= normalizedMagnitudeIncrement;
+            ++nonce;
+        }
+        allocatorDetails.reallocationNonce = nonce;
+
+        return queuedAllocations;
+    }
+
+    function _queueDeallocation(
+        address allocator,
+        address operator,
+        IStrategy strategy,
+        MagnitudeAdjustment[] calldata magnitudeAdjustments,
+        AllocatorOperatorDetails storage allocatorDetails
+    ) internal returns (QueuedReallocation[] memory) {
+        uint32 nonce = allocatorDetails.reallocationNonce;
+        QueuedReallocation[] memory queuedDeallocations = new QueuedReallocation[](magnitudeAdjustments.length);
+
+        for (uint256 i = 0; i < magnitudeAdjustments.length; ++i) {
+            bytes32 opSetKey = _hashStrategyAndOperatorSet(strategy, magnitudeAdjustments[i].operatorSet);
+            uint64 scalingFactor = _getCurrentScalingFactor(
+                operator,
+                _hashStrategyAndOperatorSet(strategy, magnitudeAdjustments[i].operatorSet)
+            );
+            uint64 normalizedMagnitudeDecrement = SlashingAccountingUtils.normalizeMagnitude({
+                nonNormalizedMagnitude: magnitudeAdjustments[i].magnitudeDiff,
+                scalingFactor: scalingFactor
+            });
+            require(
+                normalizedMagnitudeDecrement <= _nonNormalizedMagnitudes[operator][opSetKey][allocator],
+                "AVSDirectory._queueDeallocation: normalized magnitude decrement exceeds allocated magnitude"
+            );
+            
+            queuedDeallocations[i] = QueuedReallocation({
+                magnitudeAdjustmentType: MagnitudeAdjustmentType.ALLOCATION,
+                allocator: allocator,
+                operator: operator,
+                operatorSet: magnitudeAdjustments[i].operatorSet,
+                strategy: strategy,
+                magnitudeDiff: magnitudeAdjustments[i].magnitudeDiff,
+                nonce: nonce,
+                queuedScalingFactor: scalingFactor,
+                timestamp: uint32(block.timestamp)
+            });
+
+            // set queued allocation hash struct in mapping as pending
+            bytes32 reallocationHash = calculateQueuedReallocationHash(queuedDeallocations[i]);
+            queuedReallocationHashes[reallocationHash] = true;
+            ++nonce;
+        }
+        allocatorDetails.reallocationNonce = nonce;
+
+        return queuedDeallocations;
+    }
+
+    function _completeAllocation(QueuedReallocation memory allocation) internal {}
+
+    function _completeDeallocation(QueuedReallocation memory deallocation) internal {}
+
+
+    function _verifyAllocatorSignature(
+        address allocator,
+        address operator,
+        SignatureWithSaltAndExpiry calldata allocatorSignature
+    ) internal {
+        require(
+            allocatorSignature.expiry >= block.timestamp,
+            "AVSDirectory._verifyAllocatorSignature: allocator signature expired"
+        );
+        // TODO with added storage
+    }
+
     /// @notice slash an operator's allocator
     function _slashAllocator(
         address operator,
@@ -597,10 +815,57 @@ contract AVSDirectory is
         uint32 bipsToSlash
     ) internal {
         /// TODO
-
     }
 
-    function _hashStrategyAndOperatorSet(IStrategy strategy, OperatorSet memory opSet) internal pure returns (bytes32) {
+    /// @notice Return latest total and nonslashable update for the given operator and strategy
+    /// if empty array, push an empty update
+    function _getLatestTotalAndNonslashableUpdate(
+        address operator,
+        IStrategy strategy,
+        address allocator
+    ) internal returns (TotalAndNonslashableUpdate storage) {
+        uint256 totalMagnitudeUpdatesLength = _totalMagnitudeUpdates[operator][strategy][allocator].length;
+        if (totalMagnitudeUpdatesLength == 0) {
+            // used for very first reallocation so use default values
+            _totalMagnitudeUpdates[operator][strategy][allocator].push(TotalAndNonslashableUpdate({
+                timestamp: 0,
+                totalMagnitude: DEFAULT_TOTAL_MAGNITUDE,
+                nonslashableMagnitude: DEFAULT_TOTAL_MAGNITUDE
+            }));
+        }
+        return _totalMagnitudeUpdates[operator][strategy][allocator][totalMagnitudeUpdatesLength - 1];
+    }
+
+    function getCurrentScalingFactor(
+        address operator,
+        IStrategy strategy,
+        OperatorSet calldata operatorSet
+    ) public returns (uint64) {
+        bytes32 opSetKey = _hashStrategyAndOperatorSet(strategy, operatorSet);
+        return _getCurrentScalingFactor(operator, opSetKey);
+    }
+
+    function _getCurrentScalingFactor(address operator, bytes32 opSetKey) internal returns (uint64 scalingFactor) {
+        uint256 scalingFactorUpdatesLength = _scalingFactorUpdates[operator][opSetKey].length;
+        if (scalingFactorUpdatesLength == 0) {
+            return SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
+        } else {
+            return _scalingFactorUpdates[operator][opSetKey][scalingFactorUpdatesLength - 1].scalingFactor;
+        }
+    }
+
+    function calculateQueuedReallocationHash(QueuedReallocation memory reallocation) internal pure returns (bytes32) {
+        return keccak256(abi.encode(reallocation));
+    }
+
+    function _hashStrategyAndOperatorSet(
+        IStrategy strategy,
+        OperatorSet memory opSet
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encode(strategy, opSet));
+    }
+
+    function _hashReallocation() internal pure returns (bytes32) {
+
     }
 }
