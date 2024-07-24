@@ -53,6 +53,10 @@ contract Pausable is IPausable {
         _;
     }
 
+    function _onlyWhenNotPaused(uint8 index) internal {
+        require(!paused(index), "Pausable: index is paused");
+    }
+
     /// @notice One-time function for setting the `pauserRegistry` and initializing the value of `_paused`.
     function _initializePauser(IPauserRegistry _pauserRegistry, uint256 initPausedStatus) internal {
         require(

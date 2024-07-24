@@ -29,14 +29,13 @@ interface IDelegationManager is ISignatureUtils {
          */
         address delegationApprover;
         /**
-         * @notice A minimum delay -- measured in blocks -- enforced between:
-         * 1) the operator signalling their intent to register for a service, via calling `Slasher.optIntoSlashing`
-         * and
-         * 2) the operator completing registration for the service, via the service ultimately calling `Slasher.recordFirstStakeUpdate`
-         * @dev note that for a specific operator, this value *cannot decrease*, i.e. if the operator wishes to modify their OperatorDetails,
-         * then they are only allowed to either increase this value or keep it the same.
+         * @notice DEPRECATED -- this field indicated a guaranteed staker opt-out window in a previous slashing design.
+         * This window is now enforced on a protocol level.
          */
+        // TODO: rename to more fully deprecate
         uint32 stakerOptOutWindowBlocks;
+        // TODO: pack into this struct for more efficient storage
+        // bool allocatorHandoffInitiated;
     }
 
     /**
@@ -302,7 +301,7 @@ interface IDelegationManager is ISignatureUtils {
      * @notice Mapping: staker => operator whom the staker is currently delegated to.
      * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
      */
-    function delegatedTo(address staker) external view returns (address);
+    function delegatedTo(address staker) external returns (address);
 
     /**
      * @notice Returns the OperatorDetails struct associated with an `operator`.

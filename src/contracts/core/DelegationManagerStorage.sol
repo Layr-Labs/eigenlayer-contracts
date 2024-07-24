@@ -5,6 +5,7 @@ import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
 import "../interfaces/IEigenPodManager.sol";
+import "../interfaces/IAVSDirectory.sol";
 
 /**
  * @title Storage variables for the `DelegationManager` contract.
@@ -60,11 +61,16 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(address => OperatorDetails) internal _operatorDetails;
 
+    // TODO: proper documentation
+    /**
+     * @notice Mapping: staker => allocator whom the staker is currently delegated to.
+     * @dev Note that returning address(0) indicates that the staker is not actively delegated to any allocator.
+     */
     /**
      * @notice Mapping: staker => operator whom the staker is currently delegated to.
      * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
      */
-    mapping(address => address) public delegatedTo;
+    mapping(address => address) public _delegatedTo;
 
     /// @notice Mapping: staker => number of signed messages (used in `delegateToBySignature`) from the staker that this contract has already checked.
     mapping(address => uint256) public stakerNonce;
@@ -102,16 +108,55 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks;
 
+
+
+    // TODO: pack this with other storage or otherwise optimize
+    /**
+     * @notice Mapping: operator => whether or not they can no longer hand-off to an allocator. This is set to 'true' for all new operators
+     * registered after the allocator migration feature was introduced. Operators registered before this time have the ability to do a
+     * one-time hand-off / migration to an allocator
+     */
+    mapping(address => bool) public operatorCannotHandoff;
+
+    uint256 internal constant BIG_NUMBER = 1e18;
+
+    struct Handoff {
+        address allocator;
+        uint32 completableTimestamp;
+    }
+
+    /// @notice Mapping: M2 operator => their pending handoff to an allocator
+    mapping(address => Handoff) internal _handoffs;
+
+    /// @notice The AVSDirectory contract for EigenLayer
+    // TODO: set in constructor
+    IAVSDirectory public immutable avsDirectory = IAVSDirectory(address(0));
+
+    /// @notice Mapping: allocator => the number of shares assigned to the allocator scaled up by the allocator's total magnitude.
+    mapping(address => mapping(IStrategy => uint256)) public scaledDelegatedShares;
+
+    struct AllocatorDetails {
+        address delegationApprover;
+        bool isAllocator; // if true, then the address is an allocator. Needed beacause delegationApprover can be 0.
+    }
+
+    mapping(address => AllocatorDetails) internal _allocatorDetails;
+
+    // TODO: combine with other storage for optimization
+    /// @notice Mapping: staker => whether the staker is a post SDA staker (i.e. they have no left over state unmigrated from the DelegationManager).
+    mapping(address => bool) public isPostSDAStaker;
+
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
         slasher = _slasher;
     }
 
+    // TODO: get correct size for this
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[39] private __gap;
+    uint256[34] private __gap;
 }

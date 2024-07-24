@@ -484,7 +484,6 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         uint256 shareAmount
     )
         internal
-        view
         returns (
             IDelegationManager.Withdrawal memory queuedWithdrawal,
             IERC20[] memory tokensArray,

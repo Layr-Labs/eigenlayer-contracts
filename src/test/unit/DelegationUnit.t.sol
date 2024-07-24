@@ -340,7 +340,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         address withdrawer,
         IStrategy strategy,
         uint256 withdrawalAmount
-    ) internal view returns (
+    ) internal returns (
         IDelegationManager.QueuedWithdrawalParams[] memory,
         IDelegationManager.Withdrawal memory,
         bytes32
@@ -376,7 +376,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         address withdrawer,
         IStrategy[] memory strategies,
         uint256[] memory withdrawalAmounts
-    ) internal view returns (
+    ) internal returns (
         IDelegationManager.QueuedWithdrawalParams[] memory,
         IDelegationManager.Withdrawal memory,
         bytes32

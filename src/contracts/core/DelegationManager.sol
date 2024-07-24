@@ -25,6 +25,223 @@ contract DelegationManager is
     DelegationManagerStorage,
     ReentrancyGuardUpgradeable
 {
+    // TODO: move new code to appropriate locations
+    uint256 constant public ALLOCATOR_HANDOFF_DELAY = 14 days;
+
+    /**
+     * @notice Emitted when @param allocator indicates that they are updating their MetadataURI string
+     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
+     */
+    event AllocatorMetadataURIUpdated(address indexed allocator, string metadataURI);
+
+    /**
+     * @notice Queues a handoff of the calling operator's delegated stake to a target allocator in ALLOCATOR_HANDOFF_DELAY
+     *
+     * @param allocator the target allocator to handoff delegated stake to
+     * @param approverSignatureAndExpiry the signature of the allocator's delegation approver on their intent to accept the handoff
+     * @param allocatorSalt A unique single use value tied to an individual signature.
+     *
+     * @dev the handoff can be completed in a separate tx in ALLOCATOR_HANDOFF_DELAY. it is permissionless to complete
+     * @dev further delegations and deposits to the operator are prohibited after this function is called
+     */
+    function queueAllocatorHandoff(address allocator, SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 allocatorSalt) external {
+        require(isOperator(msg.sender), "DelegationManager.queueAllocatorHandoff: caller must be an operator");
+        require(!operatorHasInitiatedHandoff(msg.sender), "DelegationManager.queueAllocatorHandoff: handoff already queued");
+        // TODO: require that allocator is a registered allocator
+        _handoffs[msg.sender] = Handoff({
+            allocator: allocator,
+            completableTimestamp: uint32(block.timestamp + ALLOCATOR_HANDOFF_DELAY)
+        });
+        operatorCannotHandoff[msg.sender] = true;
+    }
+
+    function operatorHasInitiatedHandoff(address operator) public view returns (bool) {
+        return _handoffs[operator].completableTimestamp != 0;
+    }
+
+    function operatorHandoffIsCompletable(address operator) public view returns (bool) {
+        return _handoffs[operator].completableTimestamp != 0 && _handoffs[operator].completableTimestamp <= block.timestamp;
+    }
+
+    function getHandoff(address staker) public view returns (Handoff memory) {
+        return _handoffs[_delegatedTo[staker]];
+    }
+
+    /**
+     * @notice Registers the caller as an allocator in EigenLayer.
+     * @param delegationApprover is the address that must approve of the delegation of a staker's stake to the allocator. If set to 0, no approval is 
+     * required.
+     * @param metadataURI is a URI for the allocator's metadata, i.e. a link providing more details on the allocator.
+     *
+     * @dev Once an allocator is registered, they cannot 'allocator' as an operator, and they will forever be considered "delegated themself".
+     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `AllocatorMetadataURIUpdated` event
+     * @dev reverts if the caller is delegated to a pre-SDA operator
+     */
+    function registerAsAllocator(
+        address delegationApprover,
+        string calldata metadataURI
+    ) external{
+        require(delegatedTo(msg.sender) == address(0), "DelegationManager.registerAsAllocator: caller is an operator or a staker");
+        _allocatorDetails[msg.sender] = AllocatorDetails({
+            delegationApprover: delegationApprover,
+            isAllocator: true
+        });
+        _setDelegationApprover(msg.sender, delegationApprover);
+        // TODO: events
+    }
+
+    /**
+     * @notice Called by an allocator to emit an `AllocatorMetadataURIUpdated` event indicating the information has updated.
+     * @param metadataURI The URI for metadata associated with an allocator
+     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `AllocatorMetadataURIUpdated` event
+     */
+    function updateAllocatorMetadataURI(string calldata metadataURI) external {
+        require(isAllocator(msg.sender), "DelegationManager.updateOperatorMetadataURI: caller must be an operator");
+        emit AllocatorMetadataURIUpdated(msg.sender, metadataURI);
+    }
+
+    /**
+     * @notice Updates the delegation approver for the calling allocator.
+     *
+     * @param delegationApprover is the address that must approve of the delegations of a staker's stake to the allocator. If set to 0, no approval is
+     * required.
+     */
+    function setDelegationApprover(address delegationApprover) external {
+        _setDelegationApprover(msg.sender, delegationApprover);
+    }
+
+    function _setDelegationApprover(address allocator, address delegationApprover) internal {
+        require(isAllocator(allocator), "DelegationManager._setDelegationApprover: allocator is not registered in EigenLayer");
+        _allocatorDetails[allocator].delegationApprover = delegationApprover;
+        // TODO: events
+    }
+
+    /**
+     * @notice Completes a handoff queued via queueHandoff.
+     *
+     * @param operator the operator in the queued handoff
+     * @param allocator the allocator in the queued handoff
+     * @param strategies the strategies to be handed off
+     * 
+     * @dev must be called ALLOCATOR_HANDOFF_DELAY after the handoff was queued
+     * @dev the allocator's shares are incremented by the operator's shares for each strategy and the operator's shares are
+     * reduced to zero for each strategy.
+     * @dev if all strategies are not handed off, this function can be called by anyone else to 
+     * complete the handoff for any remaining non-migrated strategies
+     */
+    function completeAllocatorHandoff(address operator, address allocator, IStrategy[] calldata strategies) external {
+        require(_handoffs[operator].allocator == allocator, "DelegationManager.getMigratableOperatorShares: allocator mismatch");
+        require(operatorHandoffIsCompletable(operator), "DelegationManager.getMigratableOperatorShares: handoff not completable");
+        uint256[] memory shares = getOperatorShares(operator, strategies);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            // overwrite to 0 because they're migrated
+            operatorShares[operator][strategies[i]] = 0;
+            // increment the allocator's shares by the operator's shares for each strategy
+            _increaseAllocatorShares({allocator: allocator, strategy: strategies[i], shares: shares[i]});
+        }
+    }
+
+    /**
+     * @notice Delegates to an allocator for the calling staker
+     *
+     * @param allocator the allocator delegated to by the calling staker
+     * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
+     * @param approverSalt A unique single use value tied to an individual signature.
+     * @dev The approverSignatureAndExpiry is used in the event that:
+     *          1) the allocator's `delegationApprover` address is set to a non-zero value.
+     *                  AND
+     *          2) neither the allocator nor their `delegationApprover` is the `msg.sender`, since in the event that the allocator
+     *             or their delegationApprover is the `msg.sender`, then approval is assumed.
+     *
+     * @dev Reverts if the staker is delegated to an allocator or if the staker's M2 operator has handed off to an allocator
+     */
+    function delegateToAllocator(
+        address allocator,
+        SignatureWithExpiry memory approverSignatureAndExpiry,
+        bytes32 approverSalt
+    ) external {
+        require(isDelegated(msg.sender), "DelegationManager.delegateTo: staker is already actively delegated in pre-SDA");
+        require(delegatedTo(msg.sender) == address(0), "DelegationManager.delegateTo: staker is already actively delegated");
+        require(isAllocator(allocator), "DelegationManager.delegateTo: allocator is not registered in EigenLayer");
+        // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
+        _delegate(msg.sender, allocator, approverSignatureAndExpiry, approverSalt);
+    }
+
+    /// @notice Increases `allocator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
+    function _increaseAllocatorShares(address allocator, IStrategy strategy, uint256 shares) internal {
+        scaledDelegatedShares[allocator][strategy] += (shares * BIG_NUMBER) / avsDirectory.totalMagnitude(allocator, strategy);
+    }
+
+    /// @notice Decreases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesDecreased` event
+    function _decreaseAllocatorShares(address allocator, IStrategy strategy, uint256 shares) internal {
+        // This will revert on underflow, so no check needed
+        // TODO: Decide scaling
+        scaledDelegatedShares[allocator][strategy] -= (shares * BIG_NUMBER) / avsDirectory.totalMagnitude(allocator, strategy);
+    }
+
+    /**
+     * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
+     */
+    function isDelegated(address staker) public view returns (bool) {
+        return (delegatedToView(staker) != address(0));
+    }
+
+    function getDelegationApprover(address allocator) public view returns (address) {
+        return _allocatorDetails[allocator].delegationApprover;
+    }
+
+    function isAllocator(address allocator) public view returns (bool) {
+        return _allocatorDetails[allocator].isAllocator;
+    }
+
+    function delegatedToView(address staker) public view returns (address) {
+        address allocator = _delegatedTo[staker];
+        // If the staker is not actively delegated, check if they have a handoff
+        if (allocator == address(0) && !isPostSDAStaker[staker]) {
+            Handoff memory handoff = getHandoff(staker);
+            if (handoff.completableTimestamp != 0 && handoff.completableTimestamp <= block.timestamp) {
+                // If the handoff is completable, return the allocator and overwrite the allocator
+                allocator = handoff.allocator;
+            }
+        }
+        return allocator;
+    }
+
+    function delegatedTo(address staker) public returns (address) {
+        address allocator = _delegatedTo[staker];
+        // If the staker is not actively delegated, check if they have a handoff
+        if (allocator == address(0) && !isPostSDAStaker[staker]) {
+            Handoff memory handoff = getHandoff(staker);
+            if (handoff.completableTimestamp != 0 && handoff.completableTimestamp <= block.timestamp) {
+                // If the handoff is completable, return the allocator and overwrite the allocator
+                isPostSDAStaker[staker] = true;
+                _delegatedTo[staker] = handoff.allocator;
+                allocator = handoff.allocator;
+            }
+        }
+
+        isPostSDAStaker[staker] = true;
+        return allocator;
+    }
+
+    /// @notice Given array of strategies, returns array of shares for the allocator
+    function getScaledDelegatedShares(
+        address allocator,
+        IStrategy[] memory strategies
+    ) public view returns (uint256[] memory) {
+        uint256[] memory shares = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            shares[i] = scaledDelegatedShares[allocator][strategies[i]];
+        }
+        return shares;
+    }
+
+
+
+
+
+
+
     // @dev Index for flag that pauses new delegations when set
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
@@ -116,6 +333,7 @@ contract DelegationManager is
         // emit events
         emit OperatorRegistered(msg.sender, registeringOperatorDetails);
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
+        operatorCannotHandoff[msg.sender] = true;
     }
 
     /**
@@ -224,7 +442,7 @@ contract DelegationManager is
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
-        address operator = delegatedTo[staker];
+        address operator = _delegatedTo[staker];
         require(
             msg.sender == staker || msg.sender == operator
                 || msg.sender == _operatorDetails[operator].delegationApprover,
@@ -242,7 +460,7 @@ contract DelegationManager is
 
         // undelegate the staker
         emit StakerUndelegated(staker, operator);
-        delegatedTo[staker] = address(0);
+        _delegatedTo[staker] = address(0);
 
         // if no delegatable shares, return an empty array, and don't queue a withdrawal
         if (strategies.length == 0) {
@@ -281,7 +499,7 @@ contract DelegationManager is
         returns (bytes32[] memory)
     {
         bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
-        address operator = delegatedTo[msg.sender];
+        address operator = _delegatedTo[msg.sender];
 
         for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
             require(
@@ -366,7 +584,7 @@ contract DelegationManager is
     ) external onlyStrategyManagerOrEigenPodManager {
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
-            address operator = delegatedTo[staker];
+            address operator = _delegatedTo[staker];
 
             // add strategy shares to delegate's shares
             _increaseOperatorShares({operator: operator, staker: staker, strategy: strategy, shares: shares});
@@ -389,7 +607,7 @@ contract DelegationManager is
     ) external onlyStrategyManagerOrEigenPodManager {
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
-            address operator = delegatedTo[staker];
+            address operator = _delegatedTo[staker];
 
             // forgefmt: disable-next-item
             // subtract strategy shares from delegate's shares
@@ -507,7 +725,7 @@ contract DelegationManager is
         }
 
         // record the delegation relation between the staker and operator, and emit an event
-        delegatedTo[staker] = operator;
+        _delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
 
         (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
@@ -563,6 +781,12 @@ contract DelegationManager is
         // Remove `withdrawalRoot` from pending roots
         delete pendingWithdrawals[withdrawalRoot];
 
+        // TODO: decide if adding this require statement is appropriate
+        require(
+            !operatorHasInitiatedHandoff(withdrawal.delegatedTo) || receiveAsTokens,
+            "DelegationManager._completeQueuedWithdrawal: a staker pending handoff cannot withdraw as shares"
+        );
+
         if (receiveAsTokens) {
             // Finalize action by converting shares to tokens for each strategy, or
             // by re-awarding shares in each strategy.
@@ -587,7 +811,7 @@ contract DelegationManager is
         } else {
             // Award shares back in StrategyManager/EigenPodManager.
             // If withdrawer is delegated, increase the shares delegated to the operator.
-            address currentOperator = delegatedTo[msg.sender];
+            address currentOperator = _delegatedTo[msg.sender];
             for (uint256 i = 0; i < withdrawal.strategies.length;) {
                 require(
                     withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
@@ -606,7 +830,7 @@ contract DelegationManager is
                      */
                     uint256 increaseInDelegateableShares =
                         eigenPodManager.addShares({podOwner: staker, shares: withdrawal.shares[i]});
-                    address podOwnerOperator = delegatedTo[staker];
+                    address podOwnerOperator = _delegatedTo[staker];
                     // Similar to `isDelegated` logic
                     if (podOwnerOperator != address(0)) {
                         _increaseOperatorShares({
@@ -664,6 +888,9 @@ contract DelegationManager is
         IStrategy[] memory strategies,
         uint256[] memory shares
     ) internal returns (bytes32) {
+        // TODO: decide if this added require statement is necessary
+        require(!operatorHandoffIsCompletable(operator),
+            "DelegationManager._removeSharesAndQueueWithdrawal: staker's operator is in the middle of a handoff");        
         require(
             staker != address(0), "DelegationManager._removeSharesAndQueueWithdrawal: staker cannot be zero address"
         );
@@ -808,17 +1035,10 @@ contract DelegationManager is
     }
 
     /**
-     * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
-     */
-    function isDelegated(address staker) public view returns (bool) {
-        return (delegatedTo[staker] != address(0));
-    }
-
-    /**
      * @notice Returns true is an operator has previously registered for delegation.
      */
     function isOperator(address operator) public view returns (bool) {
-        return delegatedTo[operator] == operator;
+        return _delegatedTo[operator] == operator;
     }
 
     /**
