@@ -50,7 +50,7 @@
 //         require(operators.length <= MAX_OPERATOR_SET_SIZE, "AVSSyncTree._verifyOperatorStatus: operator set too large");
 //         for (uint256 i = 0; i < operators.length; i++) {
 //             require(delegation.isOperator(operators[i]), "AVSSyncTree.getOperatorSetRoot: operator not registered");
-//             require(avsOperatorStatus[avs][operators[i]] == OperatorAVSRegistrationStatus.Registered, "AVSSyncTree.getOperatorSetRoot: operator not registered to AVS");
+//             require(avsOperatorStatus[avs][operators[i]] == OperatorAVSRegistrationStatus.REGISTERED, "AVSSyncTree.getOperatorSetRoot: operator not registered to AVS");
 //             require(isMember[avs][operators[i]][operatorSetId], "AVSSyncTree.getOperatorSetRoot: operator not in operator set");
 //         }
 //     }
