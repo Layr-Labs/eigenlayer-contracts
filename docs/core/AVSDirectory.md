@@ -14,7 +14,7 @@ Currently, the only interactions between AVSs and the core contracts is to track
 * [`AVSDirectory.registerOperatorToAVS`](#registeroperatortoavs)
 * [`AVSDirectory.deregisterOperatorFromAVS`](#deregisteroperatorfromavs)
 
-In a future release, this contract will implement additional interactions that relate to (i) rewarding Operators for the services they provide and (ii) slashing Operators that misbehave. Currently, these features are not implemented.
+In a future release, this contract will implement additional interactions that relate to (i) rewarding Operators for the services they provide and (ii) slashing Operators who misbehave. Currently, these features are not implemented.
 
 ---
 
