@@ -99,7 +99,7 @@ For more information on AVS contracts, see the [middleware repo][middleware-repo
 | [`Slasher.sol`](../src/contracts/core/Slasher.sol) | - | - |
 
 <p align="center"><b>
-🚧 The Slasher contract is under active development and its interface expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. Although the Slasher is deployed, it will remain completely paused/unusable during M2. No contracts interact with it, and its design is not finalized. 🚧
+🚧 The Slasher contract is under active development and its interface is expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. Although the Slasher is deployed, it will remain completely paused/unusable during M2. No contracts interact with it, and its design is not finalized. 🚧
 </b><p>
 
 ---
