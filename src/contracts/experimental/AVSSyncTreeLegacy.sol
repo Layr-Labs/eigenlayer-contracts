@@ -54,9 +54,9 @@ contract AVSSyncTree {
             require(avsDirectory.avsOperatorStatus(avs,operators[i]) == IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED, "AVSSyncTree.getOperatorSetRoot: operator not registered to AVS");
         }
     }
-    function _retrieveStrategyShares(address operator, IStrategy[] memory strategies) internal view returns (uint256[] memory) {
+    function _retrieveStrategyShares(address operator, address[] memory strategies) internal view returns (uint256[] memory) {
         require(strategies.length <= MAX_NUM_STRATEGIES, "AVSSyncTree._retrieveStrategyShares: too many strategies");
-        return delegation.getOperatorShares(operator, convertToIStrategy(strategies));
+        return delegation.getOperatorShares(operator, convertToStrategy(strategies));
     }
 
     function convertToStrategy(address[] memory addresses) public pure returns (IStrategy[] memory) {
