@@ -23,7 +23,8 @@ contract AVSSyncTree {
         avsDirectory = _avsDirectory;
     }
 
-    function getOperatorSetRoot(address avs, address[] calldata operators, IStrategy[] calldata strategies) external view returns (bytes32) {
+
+    function getOperatorSetRoot(address avs, address[] calldata operators, address[] calldata strategies) external view returns (bytes32) {
 
         // verify that provided operators are members of provided operator set and are registered to the AVS
         _verifyOperatorStatus(avs, operators);
@@ -38,7 +39,7 @@ contract AVSSyncTree {
         return Merkle.merkleizeSha256(operatorLeaves);
     }
 
-    function _computeOperatorRoot(IStrategy[] memory  strategies, uint256[] memory shares) internal pure returns (bytes32) {
+    function _computeOperatorRoot(address[] memory  strategies, uint256[] memory shares) internal pure returns (bytes32) {
         bytes32[] memory leaves = new bytes32[](strategies.length);
         for (uint256 i = 0; i < strategies.length; i++) {
             leaves[i] = keccak256(abi.encodePacked(strategies[i], shares[i]));
@@ -55,7 +56,15 @@ contract AVSSyncTree {
     }
     function _retrieveStrategyShares(address operator, IStrategy[] memory strategies) internal view returns (uint256[] memory) {
         require(strategies.length <= MAX_NUM_STRATEGIES, "AVSSyncTree._retrieveStrategyShares: too many strategies");
-        return delegation.getOperatorShares(operator, strategies);
+        return delegation.getOperatorShares(operator, convertToIStrategy(strategies));
+    }
+
+    function convertToStrategy(address[] memory addresses) public pure returns (IStrategy[] memory) {
+        IStrategy[] memory strategies = new IStrategy[](addresses.length);
+        for (uint256 i = 0; i < addresses.length; i++) {
+            strategies[i] = IStrategy(addresses[i]);
+        }
+        return strategies;
     }
 
 }
