@@ -25,7 +25,7 @@ contract AVSSyncTree {
 
 
     function getAVSSyncTreeRoot(bytes32[] calldata operatorSetRoots, bytes32 challengedRoot) external pure returns (bool) {
-        return Merkle.merkleizeSha256(operatorSetRoots) == challengedRoot;
+        return Merkle.merkleizeKeccak256(operatorSetRoots) == challengedRoot;
     }
 
 
@@ -41,7 +41,7 @@ contract AVSSyncTree {
             bytes32 operatorRoot = _computeOperatorRoot(strategies, shares);
             operatorLeaves[i] = keccak256(abi.encodePacked(operators[i], operatorRoot));     
         }
-        return Merkle.merkleizeSha256(operatorLeaves);
+        return Merkle.merkleizeKeccak256(operatorLeaves);
     }
 
     function _computeOperatorRoot(address[] memory  strategies, uint256[] memory shares) internal pure returns (bytes32) {
@@ -49,7 +49,7 @@ contract AVSSyncTree {
         for (uint256 i = 0; i < strategies.length; i++) {
             leaves[i] = keccak256(abi.encodePacked(strategies[i], shares[i]));
         }
-        return Merkle.merkleizeSha256(leaves);
+        return Merkle.merkleizeKeccak256(leaves);
     }
 
     function _verifyOperatorStatus(address avs, address[] memory operators) internal view {
