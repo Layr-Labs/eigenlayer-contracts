@@ -629,7 +629,7 @@ contract EigenPod is
         currentCheckpointTimestamp = uint64(block.timestamp);
         _updateCheckpoint(checkpoint);
 
-        emit CheckpointCreated(uint64(block.timestamp), checkpoint.beaconBlockRoot);
+        emit CheckpointCreated(uint64(block.timestamp), checkpoint.beaconBlockRoot, checkpoint.proofsRemaining);
     }
 
     /**

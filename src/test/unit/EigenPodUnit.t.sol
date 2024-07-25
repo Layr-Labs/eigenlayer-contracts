@@ -1018,7 +1018,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
         staker.verifyWithdrawalCredentials(validators);
 
         cheats.expectEmit(true, true, true, true, address(staker.pod()));
-        emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp));
+        emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp), validators.length);
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
         assertEq(pod.currentCheckpoint().proofsRemaining, uint24(validators.length), "should have one proof remaining pre verified validator");
@@ -1033,7 +1033,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
         staker.verifyWithdrawalCredentials(validators);
 
         cheats.expectEmit(true, true, true, true, address(staker.pod()));
-        emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp));
+        emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp), validators.length);
         cheats.prank(pod.proofSubmitter());
         pod.startCheckpoint(false);
         check_StartCheckpoint_State(staker);
@@ -1666,7 +1666,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
         cheats.expectEmit(true, true, true, true, address(staker.pod()));
-        emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp));
+        emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp), validators.length);
         pod.verifyStaleBalance({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,

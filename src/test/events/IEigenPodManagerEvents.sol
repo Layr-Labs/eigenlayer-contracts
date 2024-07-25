@@ -10,4 +10,7 @@ interface IEigenPodManagerEvents {
 
     /// @notice Emitted when the balance of an EigenPod is updated
     event PodSharesUpdated(address indexed podOwner, int256 sharesDelta);
+
+    /// @notice Emitted every time the total shares of a pod are updated
+    event NewTotalShares(address indexed podOwner, int256 newTotalShares);
 }

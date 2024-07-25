@@ -135,6 +135,7 @@ contract EigenPodManager is
             }
         }
         emit PodSharesUpdated(podOwner, sharesDelta);
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
     }
 
     /**
@@ -155,6 +156,8 @@ contract EigenPodManager is
         int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
         require(updatedPodOwnerShares >= 0, "EigenPodManager.removeShares: cannot result in pod owner having negative shares");
         podOwnerShares[podOwner] = updatedPodOwnerShares;
+
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
     }
 
     /**
@@ -176,6 +179,7 @@ contract EigenPodManager is
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
         emit PodSharesUpdated(podOwner, int256(shares));
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
 
         return uint256(_calculateChangeInDelegatableShares({sharesBefore: currentPodOwnerShares, sharesAfter: updatedPodOwnerShares}));
     }
@@ -206,10 +210,13 @@ contract EigenPodManager is
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
                 emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
+                emit NewTotalShares(podOwner, 0);
             // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
             } else {
-                podOwnerShares[podOwner] += int256(shares);
+                int256 updatedPodOwnerShares = podOwnerShares[podOwner] + int256(shares);
+                podOwnerShares[podOwner] = updatedPodOwnerShares;
                 emit PodSharesUpdated(podOwner, int256(shares));
+                emit NewTotalShares(podOwner, updatedPodOwnerShares);
                 return;
             }
         }

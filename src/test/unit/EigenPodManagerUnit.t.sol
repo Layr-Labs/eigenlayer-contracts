@@ -428,6 +428,8 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         // Update balance
         cheats.expectEmit(true, true, true, true);
         emit PodSharesUpdated(defaultStaker, scaledSharesDelta);
+        cheats.expectEmit(true, true, true, true);
+        emit NewTotalShares(defaultStaker, scaledSharesBefore + scaledSharesDelta);
         cheats.prank(address(defaultPod));
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, scaledSharesDelta);
 
