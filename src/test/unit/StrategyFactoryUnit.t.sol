@@ -123,7 +123,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
     function test_deployNewStrategy_revert_StrategyAlreadyExists() public {
         test_deployNewStrategy();
-        cheats.expectRevert("StrategyFactory.deployNewStrategy: Strategy cannot be deployed");
+        cheats.expectRevert("StrategyFactory.deployNewStrategy: Strategy already exists for token");
         strategyFactory.deployNewStrategy(underlyingToken);
     }
 
@@ -136,7 +136,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         emit TokenBlacklisted(token);
         strategyFactory.blacklistTokens(tokens);
 
-        cheats.expectRevert("StrategyFactory.deployNewStrategy: Strategy cannot be deployed");
+        cheats.expectRevert("StrategyFactory.deployNewStrategy: Token is blacklisted");
         strategyFactory.deployNewStrategy(token);
     }
 

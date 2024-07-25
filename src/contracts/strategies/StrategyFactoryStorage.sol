@@ -15,6 +15,9 @@ abstract contract StrategyFactoryStorage is IStrategyFactory {
     // @notice Mapping token => Strategy contract for the token
     mapping(IERC20 => IStrategy) public tokenStrategy;
 
+    // @notice Mapping token => Whether or not a strategy can be deployed for the token
+    mapping(IERC20 => bool) public isBlacklisted;
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
