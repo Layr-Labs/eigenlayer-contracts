@@ -220,11 +220,15 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
      * @notice In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
-     * @return underlying The amount of underlying tokens corresponding to the input `amountShares`
+     * @return The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function sharesToUnderlying(uint256 amountShares) public virtual override returns (uint256 underlying) {
-        emit SharesToUnderlying(1e8 * amountShares / (underlying = sharesToUnderlyingView(amountShares)));
+    function sharesToUnderlying(uint256 amountShares) public virtual override returns (uint256) {
+        // account for virtual shares and balance
+        uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
+        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
+        // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
+        return (virtualTokenBalance * amountShares) / virtualTotalShares;
     }
 
     /**
@@ -281,6 +285,15 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     // slither-disable-next-line dead-code
     function _tokenBalance() internal view virtual returns (uint256) {
         return underlyingToken.balanceOf(address(this));
+    }
+
+    /// @notice Emits the current exchange rate denominated in wad (18 decimals).
+    function emitExchangeRate() public virtual {
+        // Cache virtual shares and balance.
+        uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
+        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
+        // Emit asset over shares ratio.
+        emit LogExchangeRate(1e18 * virtualTokenBalance / virtualTotalShares);
     }
 
     /**
