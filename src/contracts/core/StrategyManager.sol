@@ -36,8 +36,7 @@ contract StrategyManager is
 
     modifier onlyStrategyWhitelister() {
         require(
-            msg.sender == strategyWhitelister,
-            "StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister"
+            msg.sender == strategyWhitelister, "StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister"
         );
         _;
     }
@@ -167,11 +166,7 @@ contract StrategyManager is
     }
 
     /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
-    function removeShares(
-        address staker,
-        IStrategy strategy,
-        uint256 shares
-    ) external onlyDelegationManager {
+    function removeShares(address staker, IStrategy strategy, uint256 shares) external onlyDelegationManager {
         _removeShares(staker, strategy, shares);
     }
 
@@ -202,10 +197,7 @@ contract StrategyManager is
      * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
      * @param value bool value to set `thirdPartyTransfersForbidden` to
      */
-    function setThirdPartyTransfersForbidden(
-        IStrategy strategy,
-        bool value
-    ) external onlyStrategyWhitelister {
+    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external onlyStrategyWhitelister {
         _setThirdPartyTransfersForbidden(strategy, value);
     }
 
@@ -231,7 +223,7 @@ contract StrategyManager is
             "StrategyManager.addStrategiesToDepositWhitelist: array lengths do not match"
         );
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
-        for (uint256 i = 0; i < strategiesToWhitelistLength; ) {
+        for (uint256 i = 0; i < strategiesToWhitelistLength;) {
             // change storage and emit event only if strategy is not already in whitelist
             if (!strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
@@ -248,11 +240,12 @@ contract StrategyManager is
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
      */
-    function removeStrategiesFromDepositWhitelist(
-        IStrategy[] calldata strategiesToRemoveFromWhitelist
-    ) external onlyStrategyWhitelister {
+    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist)
+        external
+        onlyStrategyWhitelister
+    {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
-        for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength; ) {
+        for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength;) {
             // change storage and emit event only if strategy is already in whitelist
             if (strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]] = false;
@@ -336,11 +329,7 @@ contract StrategyManager is
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
-    function _removeShares(
-        address staker,
-        IStrategy strategy,
-        uint256 shareAmount
-    ) internal returns (bool) {
+    function _removeShares(address staker, IStrategy strategy, uint256 shareAmount) internal returns (bool) {
         // sanity checks on inputs
         require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
 
@@ -372,22 +361,19 @@ contract StrategyManager is
      * @param staker The user whose array will have an entry removed
      * @param strategy The Strategy to remove from `stakerStrategyList[staker]`
      */
-    function _removeStrategyFromStakerStrategyList(
-        address staker,
-        IStrategy strategy
-    ) internal {
+    function _removeStrategyFromStakerStrategyList(address staker, IStrategy strategy) internal {
         //loop through all of the strategies, find the right one, then replace
         uint256 stratsLength = stakerStrategyList[staker].length;
         uint256 j = 0;
-        for (; j < stratsLength; ) {
+        for (; j < stratsLength;) {
             if (stakerStrategyList[staker][j] == strategy) {
                 //replace the strategy with the last strategy in the list
-                stakerStrategyList[staker][j] = stakerStrategyList[staker][
-                    stakerStrategyList[staker].length - 1
-                ];
+                stakerStrategyList[staker][j] = stakerStrategyList[staker][stakerStrategyList[staker].length - 1];
                 break;
             }
-            unchecked { ++j; }
+            unchecked {
+                ++j;
+            }
         }
         // if we didn't find the strategy, revert
         require(j != stratsLength, "StrategyManager._removeStrategyFromStakerStrategyList: strategy not found");
@@ -425,7 +411,7 @@ contract StrategyManager is
         uint256 strategiesLength = stakerStrategyList[staker].length;
         uint256[] memory shares = new uint256[](strategiesLength);
 
-        for (uint256 i = 0; i < strategiesLength; ) {
+        for (uint256 i = 0; i < strategiesLength;) {
             shares[i] = stakerStrategyShares[staker][stakerStrategyList[staker][i]];
             unchecked {
                 ++i;

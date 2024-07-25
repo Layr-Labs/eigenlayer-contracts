@@ -167,9 +167,10 @@ This method is identical in function to [`createAVSRewardsSubmission`](#createav
 
 ### Distributing and Claiming Rewards
 
-The *rewards updater* calculates rewards distributions and submit claimable roots through the following function:
+The *rewards updater* calculates rewards distributions and submit claimable roots through the following function `submitRoot`. They can also disable the root if it has not yet been activated:
 
 * [`RewardsCoordinator.submitRoot`](#submitroot)
+* [`RewardsCoordinator.disableRoot`](#disableroot)
 
 Earners configure and claim these rewards using the following functions: 
 
@@ -184,7 +185,7 @@ function submitRoot(
     uint32 rewardsCalculationEndTimestamp
 ) 
     external
-    onlyWhenNotPaused(PAUSED_SUBMIT_ROOTS) 
+    onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) 
     onlyRewardsUpdater
 ```
 
@@ -201,10 +202,38 @@ Called only by the `rewardsUpdater` address to create a new `DistributionRoot` i
 * Emits a `DistributionRootSubmitted` event
 
 *Requirements*:
-* Pause status MUST NOT be set: `PAUSED_SUBMIT_ROOTS`
+* Pause status MUST NOT be set: `PAUSED_SUBMIT_DISABLE_ROOTS`
 * `msg.sender` MUST be the `rewardsUpdater`
 * `rewardsCalculationEndTimestamp > currRewardsCalculationEndTimestamp`
 * `rewardsCalculationEndTimestamp < block.timestamp`
+
+#### `disableRoot`
+
+```solidity
+function disableRoot(
+    uint32 rootIndex
+) 
+    external
+    onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) 
+    onlyRewardsUpdater
+```
+
+Called only by the `rewardsUpdater` address to disable a pending `DistributionRoot` that has not yet been activated (activatedAt timestamp hasn't been reached yet) in the RewardsCoordinator. Once the activatedAt timestamp has been reached, a root can no longer be disabled and is deemed finalized and claimable against.
+This is to add additional measures to prevent invalid roots posted to the contract, either from error or potentially malicious roots posted.
+
+*Effects*:
+* Sets the `disabled` field to True for the corresponding `DistributionRoot`
+* `DistributionRoot` can no longer be claimed against in `processClaim` 
+* Emits a `DistributionRootDisabled` event
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_SUBMIT_DISABLE_ROOTS`
+* `msg.sender` MUST be the `rewardsUpdater`
+* `rootIndex < distributionRoots.length`
+* `root.disabled == False`
+* `block.timestamp < root.activatedAt`
+* `rewardsCalculationEndTimestamp < block.timestamp`
+
 
 #### `setClaimerFor`
 

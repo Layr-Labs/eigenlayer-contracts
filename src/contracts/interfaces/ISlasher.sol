@@ -31,10 +31,7 @@ interface ISlasher {
 
     /// @notice Emitted when a middleware times is added to `operator`'s array.
     event MiddlewareTimesAdded(
-        address operator,
-        uint256 index,
-        uint32 stalestUpdateBlock,
-        uint32 latestServeUntilBlock
+        address operator, uint256 index, uint32 stalestUpdateBlock, uint32 latestServeUntilBlock
     );
 
     /// @notice Emitted when `operator` begins to allow `contractAddress` to slash them.
@@ -42,9 +39,7 @@ interface ISlasher {
 
     /// @notice Emitted when `contractAddress` signals that it will no longer be able to slash `operator` after the `contractCanSlashOperatorUntilBlock`.
     event SlashingAbilityRevoked(
-        address indexed operator,
-        address indexed contractAddress,
-        uint32 contractCanSlashOperatorUntilBlock
+        address indexed operator, address indexed contractAddress, uint32 contractCanSlashOperatorUntilBlock
     );
 
     /**

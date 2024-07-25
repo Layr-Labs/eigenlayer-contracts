@@ -75,7 +75,7 @@ library BeaconChainProofs {
     /// @notice The number of seconds in a slot in the beacon chain
     uint64 internal constant SECONDS_PER_SLOT = 12;
 
-    /// @notice Number of seconds per epoch: 384 == 32 slots/epoch * 12 seconds/slot 
+    /// @notice Number of seconds per epoch: 384 == 32 slots/epoch * 12 seconds/slot
     uint64 internal constant SECONDS_PER_EPOCH = SLOTS_PER_EPOCH * SECONDS_PER_SLOT;
 
     bytes8 internal constant UINT64_MASK = 0xffffffffffffffff;
@@ -203,15 +203,17 @@ library BeaconChainProofs {
         );
 
         //Note: post deneb hard fork, the number of exection payload header fields increased from 15->17, adding an extra level to the tree height
-        uint256 executionPayloadHeaderFieldTreeHeight = (getWithdrawalTimestamp(withdrawalProof) < denebForkTimestamp) ? EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA : EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB;
+        uint256 executionPayloadHeaderFieldTreeHeight = (getWithdrawalTimestamp(withdrawalProof) < denebForkTimestamp)
+            ? EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA
+            : EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB;
         require(
-            withdrawalProof.withdrawalProof.length ==
-                32 * (executionPayloadHeaderFieldTreeHeight + WITHDRAWALS_TREE_HEIGHT + 1),
+            withdrawalProof.withdrawalProof.length
+                == 32 * (executionPayloadHeaderFieldTreeHeight + WITHDRAWALS_TREE_HEIGHT + 1),
             "BeaconChainProofs.verifyWithdrawal: withdrawalProof has incorrect length"
         );
         require(
-            withdrawalProof.executionPayloadProof.length ==
-                32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT + BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT),
+            withdrawalProof.executionPayloadProof.length
+                == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT + BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawal: executionPayloadProof has incorrect length"
         );
         require(
@@ -224,12 +226,9 @@ library BeaconChainProofs {
         );
 
         require(
-            withdrawalProof.historicalSummaryBlockRootProof.length ==
-                32 *
-                    (BEACON_STATE_FIELD_TREE_HEIGHT +
-                        (HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) +
-                        1 +
-                        (BLOCK_ROOTS_TREE_HEIGHT)),
+            withdrawalProof.historicalSummaryBlockRootProof.length
+                == 32
+                    * (BEACON_STATE_FIELD_TREE_HEIGHT + (HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)),
             "BeaconChainProofs.verifyWithdrawal: historicalSummaryBlockRootProof has incorrect length"
         );
         /**
@@ -237,11 +236,10 @@ library BeaconChainProofs {
          * "historical_summary". Everywhere else it signifies merkelize_with_mixin, where the length of an array is hashed with the root of the array,
          * but not here.
          */
-        uint256 historicalBlockHeaderIndex = (HISTORICAL_SUMMARIES_INDEX <<
-            ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT))) |
-            (uint256(withdrawalProof.historicalSummaryIndex) << (1 + (BLOCK_ROOTS_TREE_HEIGHT))) |
-            (BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT)) |
-            uint256(withdrawalProof.blockRootIndex);
+        uint256 historicalBlockHeaderIndex = (
+            HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT))
+        ) | (uint256(withdrawalProof.historicalSummaryIndex) << (1 + (BLOCK_ROOTS_TREE_HEIGHT)))
+            | (BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT)) | uint256(withdrawalProof.blockRootIndex);
 
         require(
             Merkle.verifyInclusionSha256({
@@ -266,8 +264,8 @@ library BeaconChainProofs {
 
         {
             // Next we verify the executionPayloadRoot against the blockRoot
-            uint256 executionPayloadIndex = (BODY_ROOT_INDEX << (BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT)) |
-                EXECUTION_PAYLOAD_INDEX;
+            uint256 executionPayloadIndex =
+                (BODY_ROOT_INDEX << (BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT)) | EXECUTION_PAYLOAD_INDEX;
             require(
                 Merkle.verifyInclusionSha256({
                     proof: withdrawalProof.executionPayloadProof,
@@ -293,14 +291,14 @@ library BeaconChainProofs {
         {
             /**
              * Next we verify the withdrawal fields against the executionPayloadRoot:
-             * First we compute the withdrawal_index, then we merkleize the 
+             * First we compute the withdrawal_index, then we merkleize the
              * withdrawalFields container to calculate the withdrawalRoot.
              *
              * Note: Merkleization of the withdrawals root tree uses MerkleizeWithMixin, i.e., the length of the array is hashed with the root of
              * the array.  Thus we shift the WITHDRAWALS_INDEX over by WITHDRAWALS_TREE_HEIGHT + 1 and not just WITHDRAWALS_TREE_HEIGHT.
              */
-            uint256 withdrawalIndex = (WITHDRAWALS_INDEX << (WITHDRAWALS_TREE_HEIGHT + 1)) |
-                uint256(withdrawalProof.withdrawalIndex);
+            uint256 withdrawalIndex =
+                (WITHDRAWALS_INDEX << (WITHDRAWALS_TREE_HEIGHT + 1)) | uint256(withdrawalProof.withdrawalIndex);
             bytes32 withdrawalRoot = Merkle.merkleizeSha256(withdrawalFields);
             require(
                 Merkle.verifyInclusionSha256({
@@ -330,16 +328,14 @@ library BeaconChainProofs {
      * @dev Retrieve the withdrawal timestamp
      */
     function getWithdrawalTimestamp(WithdrawalProof memory withdrawalProof) internal pure returns (uint64) {
-        return
-            Endian.fromLittleEndianUint64(withdrawalProof.timestampRoot);
+        return Endian.fromLittleEndianUint64(withdrawalProof.timestampRoot);
     }
 
     /**
      * @dev Converts the withdrawal's slot to an epoch
      */
     function getWithdrawalEpoch(WithdrawalProof memory withdrawalProof) internal pure returns (uint64) {
-        return
-            Endian.fromLittleEndianUint64(withdrawalProof.slotRoot) / SLOTS_PER_EPOCH;
+        return Endian.fromLittleEndianUint64(withdrawalProof.slotRoot) / SLOTS_PER_EPOCH;
     }
 
     /**
@@ -358,29 +354,25 @@ library BeaconChainProofs {
      * @dev Retrieves a validator's pubkey hash
      */
     function getPubkeyHash(bytes32[] memory validatorFields) internal pure returns (bytes32) {
-        return 
-            validatorFields[VALIDATOR_PUBKEY_INDEX];
+        return validatorFields[VALIDATOR_PUBKEY_INDEX];
     }
 
     function getWithdrawalCredentials(bytes32[] memory validatorFields) internal pure returns (bytes32) {
-        return
-            validatorFields[VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX];
+        return validatorFields[VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX];
     }
 
     /**
      * @dev Retrieves a validator's effective balance (in gwei)
      */
     function getEffectiveBalanceGwei(bytes32[] memory validatorFields) internal pure returns (uint64) {
-        return 
-            Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_BALANCE_INDEX]);
+        return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_BALANCE_INDEX]);
     }
 
     /**
      * @dev Retrieves a validator's withdrawable epoch
      */
     function getWithdrawableEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
-        return 
-            Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
+        return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
     }
 
     /**
@@ -395,15 +387,13 @@ library BeaconChainProofs {
      * @dev Retrieves a withdrawal's validator index
      */
     function getValidatorIndex(bytes32[] memory withdrawalFields) internal pure returns (uint40) {
-        return 
-            uint40(Endian.fromLittleEndianUint64(withdrawalFields[WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
+        return uint40(Endian.fromLittleEndianUint64(withdrawalFields[WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
     }
 
     /**
      * @dev Retrieves a withdrawal's withdrawal amount (in gwei)
      */
     function getWithdrawalAmountGwei(bytes32[] memory withdrawalFields) internal pure returns (uint64) {
-        return
-            Endian.fromLittleEndianUint64(withdrawalFields[WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
+        return Endian.fromLittleEndianUint64(withdrawalFields[WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
     }
 }

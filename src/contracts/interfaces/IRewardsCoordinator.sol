@@ -3,7 +3,6 @@ pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
-import "./IPauserRegistry.sol";
 
 /**
  * @title Interface for the `IRewardsCoordinator` contract.
@@ -74,6 +73,7 @@ interface IRewardsCoordinator {
         bytes32 root;
         uint32 rewardsCalculationEndTimestamp;
         uint32 activatedAt;
+        bool disabled;
     }
 
     /**
@@ -82,7 +82,6 @@ interface IRewardsCoordinator {
      * @param earnerTokenRoot The merkle root of the earner's token subtree
      * Each leaf in the earner's token subtree is a TokenTreeMerkleLeaf
      */
-
     struct EarnerTreeMerkleLeaf {
         address earner;
         bytes32 earnerTokenRoot;
@@ -147,9 +146,7 @@ interface IRewardsCoordinator {
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
     event RewardsForAllSubmitterSet(
-        address indexed rewardsForAllSubmitter,
-        bool indexed oldValue,
-        bool indexed newValue
+        address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
@@ -161,6 +158,7 @@ interface IRewardsCoordinator {
         uint32 indexed rewardsCalculationEndTimestamp,
         uint32 activatedAt
     );
+    event DistributionRootDisabled(uint32 indexed rootIndex);
     /// @notice root is one of the submitted distribution roots that was claimed against
     event RewardsClaimed(
         bytes32 root,
@@ -171,13 +169,15 @@ interface IRewardsCoordinator {
         uint256 claimedAmount
     );
 
-    /*******************************************************************************
-                            VIEW FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
 
     /// @notice The address of the entity that can update the contract with new merkle roots
     function rewardsUpdater() external view returns (address);
-    
+
     /**
      * @notice The interval in seconds at which the calculation for a RewardsSubmission distribution is done.
      * @dev Rewards Submission durations must be multiples of this interval.
@@ -237,9 +237,11 @@ interface IRewardsCoordinator {
     /// @notice returns the current distributionRoot
     function getCurrentDistributionRoot() external view returns (DistributionRoot memory);
 
-    /*******************************************************************************
-                            EXTERNAL FUNCTIONS 
-    *******************************************************************************/
+    /**
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
+     */
 
     /**
      * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
@@ -282,6 +284,12 @@ interface IRewardsCoordinator {
      * @dev Only callable by the rewardsUpdater
      */
     function submitRoot(bytes32 root, uint32 rewardsCalculationEndTimestamp) external;
+
+    /**
+     * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
+     * @param rootIndex The index of the root to be disabled
+     */
+    function disableRoot(uint32 rootIndex) external;
 
     /**
      * @notice Sets the address of the entity that can call `processClaim` on behalf of the earner (msg.sender)

@@ -312,18 +312,13 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".rewardsCoordinator.init_paused_status"
         );
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
-            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS")
-        );
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS"));
         REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_REWARDS_DURATION"));
         REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_RETROACTIVE_LENGTH"));
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_FUTURE_LENGTH"));
         REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP"));
         REWARDS_COORDINATOR_UPDATER = stdJson.readAddress(initialDeploymentData, ".rewardsCoordinator.rewards_updater_address");
         REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.activation_delay"));
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
-            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.calculation_interval_seconds")
-        );
         REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
             stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.global_operator_commission_bips")
         );

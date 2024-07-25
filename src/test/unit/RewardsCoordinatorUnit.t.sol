@@ -1437,6 +1437,39 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
     }
 
+    function testFuzz_processClaim_Revert_WhenRootDisabled(
+        bool setClaimerFor,
+        address claimerFor,
+        bytes32 merkleRoot
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            rewardsCoordinator.setClaimerFor(claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Submit a root and disable it
+        cheats.startPrank(rewardsUpdater);
+        rewardsCoordinator.submitRoot(merkleRoot, 1);
+        uint32 rootIndex = 0;
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        rewardsCoordinator.disableRoot(rootIndex);
+        cheats.stopPrank();
+        
+        cheats.warp(distributionRoot.activatedAt);
+
+        cheats.startPrank(claimer);
+        // rootIndex in claim is 0, which is disabled
+        IRewardsCoordinator.RewardsMerkleClaim memory claim;
+        cheats.expectRevert("RewardsCoordinator._checkClaim: root is disabled");
+        rewardsCoordinator.processClaim(claim, claimer);
+        cheats.stopPrank();
+    }
+
     /// @notice Claim against rootIndex 0 and claim again. Balances should not increment.
     /// forge-config: default.fuzz.runs = 10
     function testFuzz_processClaim_Revert_WhenReuseSameClaimAgain(

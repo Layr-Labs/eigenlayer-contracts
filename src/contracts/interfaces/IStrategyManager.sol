@@ -83,7 +83,7 @@ interface IStrategyManager {
 
     /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
     function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external;
-    
+
     /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
     function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external;
 

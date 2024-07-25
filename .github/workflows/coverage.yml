@@ -26,7 +26,7 @@ jobs:
       id: get_issue_number
       with:
         script: |
-          if (context.issue.number) {
+          if (context.issue && context.issue.number) {
             // Return issue number if present
             return context.issue.number;
           } else {

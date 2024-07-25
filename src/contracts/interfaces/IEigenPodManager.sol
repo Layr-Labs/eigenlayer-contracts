@@ -15,7 +15,6 @@ import "./IStrategy.sol";
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-
 interface IEigenPodManager is IPausable {
     /// @notice Emitted to notify the update of the beaconChainOracle address
     event BeaconOracleUpdated(address indexed newOracleAddress);
@@ -44,7 +43,7 @@ interface IEigenPodManager is IPausable {
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
-     * @dev Returns EigenPod address 
+     * @dev Returns EigenPod address
      */
     function createPod() external returns (address);
 
@@ -148,12 +147,11 @@ interface IEigenPodManager is IPausable {
      */
     function denebForkTimestamp() external view returns (uint64);
 
-     /**
+    /**
      * setting the deneb hard fork timestamp by the eigenPodManager owner
-     * @dev this function is designed to be called twice.  Once, it is set to type(uint64).max 
-     * prior to the actual deneb fork timestamp being set, and then the second time it is set 
+     * @dev this function is designed to be called twice.  Once, it is set to type(uint64).max
+     * prior to the actual deneb fork timestamp being set, and then the second time it is set
      * to the actual deneb fork timestamp.
      */
     function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external;
-
 }

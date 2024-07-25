@@ -6,7 +6,6 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../libraries/Merkle.sol";
-import "../libraries/EIP1271SignatureUtils.sol";
 import "../permissions/Pausable.sol";
 import "./RewardsCoordinatorStorage.sol";
 
@@ -42,8 +41,8 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_REWARDS_FOR_ALL_SUBMISSION = 1;
     /// @dev Index for flag that pauses calling processClaim
     uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
-    /// @dev Index for flag that pauses submitRoots
-    uint8 internal constant PAUSED_SUBMIT_ROOTS = 3;
+    /// @dev Index for flag that pauses submitRoots and disableRoot
+    uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -110,9 +109,11 @@ contract RewardsCoordinator is
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
 
-    /*******************************************************************************
-                            EXTERNAL FUNCTIONS 
-    *******************************************************************************/
+    /**
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
+     */
 
     /**
      * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
@@ -125,16 +126,18 @@ contract RewardsCoordinator is
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(
-        RewardsSubmission[] calldata rewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
+    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
+        external
+        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
+        nonReentrant
+    {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
-            
+
             _validateRewardsSubmission(rewardsSubmission);
-            
+
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
             submissionNonce[msg.sender] = nonce + 1;
 
@@ -149,14 +152,17 @@ contract RewardsCoordinator is
      * a permissioned call based on isRewardsForAllSubmitter mapping.
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllSubmission(
-        RewardsSubmission[] calldata rewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
+    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
+        external
+        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
+        onlyRewardsForAllSubmitter
+        nonReentrant
+    {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
-            
+
             _validateRewardsSubmission(rewardsSubmission);
 
             isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionForAllHash] = true;
@@ -219,7 +225,7 @@ contract RewardsCoordinator is
     function submitRoot(
         bytes32 root,
         uint32 rewardsCalculationEndTimestamp
-    ) external onlyWhenNotPaused(PAUSED_SUBMIT_ROOTS) onlyRewardsUpdater {
+    ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
         require(
             rewardsCalculationEndTimestamp > currRewardsCalculationEndTimestamp,
             "RewardsCoordinator.submitRoot: new root must be for newer calculated period"
@@ -234,11 +240,25 @@ contract RewardsCoordinator is
             DistributionRoot({
                 root: root,
                 activatedAt: activatedAt,
-                rewardsCalculationEndTimestamp: rewardsCalculationEndTimestamp
+                rewardsCalculationEndTimestamp: rewardsCalculationEndTimestamp,
+                disabled: false
             })
         );
         currRewardsCalculationEndTimestamp = rewardsCalculationEndTimestamp;
         emit DistributionRootSubmitted(rootIndex, root, rewardsCalculationEndTimestamp, activatedAt);
+    }
+
+    /**
+     * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
+     * @param rootIndex The index of the root to be disabled
+     */
+    function disableRoot(uint32 rootIndex) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
+        require(rootIndex < _distributionRoots.length, "RewardsCoordinator.disableRoot: invalid rootIndex");
+        DistributionRoot storage root = _distributionRoots[rootIndex];
+        require(!root.disabled, "RewardsCoordinator.disableRoot: root already disabled");
+        require(block.timestamp < root.activatedAt, "RewardsCoordinator.disableRoot: root already activated");
+        root.disabled = true;
+        emit DistributionRootDisabled(rootIndex);
     }
 
     /**
@@ -292,17 +312,25 @@ contract RewardsCoordinator is
         isRewardsForAllSubmitter[_submitter] = _newValue;
     }
 
-    /*******************************************************************************
-                            INTERNAL FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
 
     /**
      * @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
      */
     function _validateRewardsSubmission(RewardsSubmission calldata rewardsSubmission) internal view {
-        require(rewardsSubmission.strategiesAndMultipliers.length > 0, "RewardsCoordinator._validateRewardsSubmission: no strategies set");
+        require(
+            rewardsSubmission.strategiesAndMultipliers.length > 0,
+            "RewardsCoordinator._validateRewardsSubmission: no strategies set"
+        );
         require(rewardsSubmission.amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
-        require(rewardsSubmission.amount <= MAX_REWARDS_AMOUNT, "RewardsCoordinator._validateRewardsSubmission: amount too large");
+        require(
+            rewardsSubmission.amount <= MAX_REWARDS_AMOUNT,
+            "RewardsCoordinator._validateRewardsSubmission: amount too large"
+        );
         require(
             rewardsSubmission.duration <= MAX_REWARDS_DURATION,
             "RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
@@ -316,8 +344,8 @@ contract RewardsCoordinator is
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp &&
-                GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp
+                && GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
         );
         require(
@@ -342,6 +370,7 @@ contract RewardsCoordinator is
     }
 
     function _checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root) internal view {
+        require(!root.disabled, "RewardsCoordinator._checkClaim: root is disabled");
         require(block.timestamp >= root.activatedAt, "RewardsCoordinator._checkClaim: root not activated yet");
         require(
             claim.tokenIndices.length == claim.tokenTreeProofs.length,
@@ -427,11 +456,12 @@ contract RewardsCoordinator is
         );
         // Verify inclusion of earner leaf
         bytes32 earnerLeafHash = calculateEarnerLeafHash(earnerLeaf);
+        // forgefmt: disable-next-item
         require(
             Merkle.verifyInclusionKeccak({
-                root: root,
-                index: earnerLeafIndex,
-                proof: earnerProof,
+                root: root, 
+                index: earnerLeafIndex, 
+                proof: earnerProof, 
                 leaf: earnerLeafHash
             }),
             "RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof"
@@ -453,9 +483,11 @@ contract RewardsCoordinator is
         rewardsUpdater = _rewardsUpdater;
     }
 
-    /*******************************************************************************
-                            VIEW FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
@@ -488,8 +520,20 @@ contract RewardsCoordinator is
         return _distributionRoots[index];
     }
 
+    /// @notice loop through the distribution roots from reverse and get latest root that is not disabled
     function getCurrentDistributionRoot() external view returns (DistributionRoot memory) {
         return _distributionRoots[_distributionRoots.length - 1];
+    }
+
+    /// @notice loop through the distribution roots from reverse and get latest root that is not disabled and activated
+    /// i.e. a root that can be claimed against
+    function getCurrentClaimableDistributionRoot() external view returns (DistributionRoot memory) {
+        for (uint256 i = _distributionRoots.length; i > 0; i--) {
+            DistributionRoot memory root = _distributionRoots[i - 1];
+            if (!root.disabled && block.timestamp >= root.activatedAt) {
+                return root;
+            }
+        }
     }
 
     /// @notice loop through distribution roots from reverse and return hash
