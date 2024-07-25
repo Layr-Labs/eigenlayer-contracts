@@ -37,6 +37,8 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     // @notice Emitted whenever a slot is set in the `tokenStrategy` mapping
     event StrategySetForToken(IERC20 token, IStrategy strategy);
 
+    event TokenBlacklisted(IERC20 token);
+
     function setUp() virtual override public {
         EigenLayerUnitTestSetup.setUp();
 
@@ -121,8 +123,21 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
     function test_deployNewStrategy_revert_StrategyAlreadyExists() public {
         test_deployNewStrategy();
-        cheats.expectRevert("StrategyFactory.deployNewStrategy: Strategy already exists for token");
+        cheats.expectRevert("StrategyFactory.deployNewStrategy: Strategy cannot be deployed");
         strategyFactory.deployNewStrategy(underlyingToken);
+    }
+
+    function test_blacklistTokens(IERC20 token) public {
+        IERC20[] memory tokens = new IERC20[](1);
+        tokens[0] = token;
+
+        vm.prank(strategyFactory.owner());
+        cheats.expectEmit(true, false, false, false, address(strategyFactory));
+        emit TokenBlacklisted(token);
+        strategyFactory.blacklistTokens(tokens);
+
+        cheats.expectRevert("StrategyFactory.deployNewStrategy: Strategy cannot be deployed");
+        strategyFactory.deployNewStrategy(token);
     }
 
     function test_whitelistStrategies() public {

@@ -50,7 +50,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     {
         require(
             tokenStrategy[token] == IStrategy(address(0)),
-            "StrategyFactory.deployNewStrategy: Strategy already exists for token"
+            "StrategyFactory.deployNewStrategy: Strategy cannot be deployed"
         );
         IStrategy strategy = IStrategy(
             address(
@@ -67,6 +67,23 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         thirdPartyTransfersForbiddenValues[0] = false;
         strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
         return strategy;
+    }
+
+    /**
+     * @notice Owner-only function to prevent strategies from being created for given tokens.
+     * @param tokens An array of token addresses to blaclist.
+     */
+    function blacklistTokens(IERC20[] calldata tokens) external onlyOwner {
+        for (uint256 i; i < tokens.length; ++i) {
+            require(
+                tokenStrategy[tokens[i]] == IStrategy(address(0)),
+                "StrategyFactory.blacklistTokens: Cannot blacklist deployed strategy"
+            );
+
+            tokenStrategy[tokens[i]] = IStrategy(address(1));
+
+            emit TokenBlacklisted(tokens[i]);
+        }
     }
 
     /**

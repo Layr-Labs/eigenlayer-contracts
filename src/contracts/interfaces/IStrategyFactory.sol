@@ -12,6 +12,8 @@ import "./IStrategy.sol";
  * @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
  */
 interface IStrategyFactory {
+    event TokenBlacklisted(IERC20 token);
+
     // @notice Upgradeable beacon which new Strategies deployed by this contract point to
     function strategyBeacon() external view returns (IBeacon);
 
