@@ -24,6 +24,11 @@ contract AVSSyncTree {
     }
 
 
+    function getAVSSyncTreeRoot(bytes32[] calldata operatorSetRoots, bytes32 challengedRoot) external pure returns (bool) {
+        return Merkle.merkleizeSha256(operatorSetRoots) == challengedRoot;
+    }
+
+
     function getOperatorSetRoot(address avs, address[] calldata operators, address[] calldata strategies) external view returns (bytes32) {
 
         // verify that provided operators are members of provided operator set and are registered to the AVS
