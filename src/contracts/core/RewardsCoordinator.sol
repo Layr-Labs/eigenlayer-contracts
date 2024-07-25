@@ -200,8 +200,8 @@ contract RewardsCoordinator is
     }
 
     /**
-     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet, 
-     * to be split amongst the set of stakers delegated to operators who are 
+     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet,
+     * to be split amongst the set of stakers delegated to operators who are
      * registered to the msg.sender AVS and the given operatorSetId
      *
      * @param rewardsSubmissions The operatorSet rewards submission being created for
@@ -212,7 +212,7 @@ contract RewardsCoordinator is
      * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
      * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
      */
-    function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions) 
+    function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions)
         external
         onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
         nonReentrant
@@ -222,7 +222,10 @@ contract RewardsCoordinator is
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
 
-            require(avsDirectory.isOperatorSet(msg.sender, rewardsSubmission.operatorSetId), "RewardsCoordinator.rewardOperatorSetForRange: invalid operatorSet");
+            require(
+                avsDirectory.isOperatorSet(msg.sender, rewardsSubmission.operatorSetId),
+                "RewardsCoordinator.rewardOperatorSetForRange: invalid operatorSet"
+            );
             _validateRewardsSubmission(
                 rewardsSubmission.strategiesAndMultipliers,
                 rewardsSubmission.token,
@@ -435,15 +438,9 @@ contract RewardsCoordinator is
         uint32 startTimestamp,
         uint32 duration
     ) internal view {
-        require(
-            strategiesAndMultipliers.length > 0,
-            "RewardsCoordinator._validateRewardsSubmission: no strategies set"
-        );
+        require(strategiesAndMultipliers.length > 0, "RewardsCoordinator._validateRewardsSubmission: no strategies set");
         require(amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
-        require(
-            amount <= MAX_REWARDS_AMOUNT,
-            "RewardsCoordinator._validateRewardsSubmission: amount too large"
-        );
+        require(amount <= MAX_REWARDS_AMOUNT, "RewardsCoordinator._validateRewardsSubmission: amount too large");
         require(
             duration <= MAX_REWARDS_DURATION,
             "RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
@@ -457,8 +454,7 @@ contract RewardsCoordinator is
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= startTimestamp
-                && GENESIS_REWARDS_TIMESTAMP <= startTimestamp,
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= startTimestamp && GENESIS_REWARDS_TIMESTAMP <= startTimestamp,
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
         );
         require(

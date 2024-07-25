@@ -69,7 +69,7 @@ interface IRewardsCoordinator {
     /**
      * @notice OperatorSetRewardsSubmission struct submitted by AVSs when making rewards to operatorSets
      * @notice The retroactive range applies from RewardsSubmission
-     * @param RewardType The type of reward to be distributed for. 
+     * @param RewardType The type of reward to be distributed for.
      * @param operatorSetId The operatorSetId to distribute rewards to
      * @param strategiesAndMultipliers The strategies and their relative weights
      * cannot have duplicate strategies and need to be sorted in ascending address order
@@ -79,6 +79,7 @@ interface IRewardsCoordinator {
      * could start in the past or in the future but within a valid range. See the diagram above.
      * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION
      */
+
     struct OperatorSetRewardsSubmission {
         RewardType rewardType;
         uint32 operatorSetId;
@@ -187,8 +188,6 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
-
-
 
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
@@ -331,8 +330,8 @@ interface IRewardsCoordinator {
     function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions) external;
 
     /**
-     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet, 
-     * to be split amongst the set of stakers delegated to operators who are 
+     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet,
+     * to be split amongst the set of stakers delegated to operators who are
      * registered to the msg.sender AVS and the given operatorSetId
      *
      * @param rewardsSubmissions The operatorSet rewards submission being created for
@@ -343,8 +342,7 @@ interface IRewardsCoordinator {
      * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
      * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
      */
-    function rewardOperatorSetForRange(
-        OperatorSetRewardsSubmission[] calldata rewardsSubmissions) external;
+    function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions) external;
 
     /**
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
