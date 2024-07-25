@@ -43,6 +43,8 @@ contract StrategyBaseUnitTests is Test {
      */
     uint256 internal constant BALANCE_OFFSET = 1e3;
 
+    event LogExchangeRate(uint256 rate);
+
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
 
@@ -299,12 +301,16 @@ contract StrategyBaseUnitTests is Test {
     }
 
     // uint240 input to prevent overflow
-    function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint240 amountSharesToQuery) public view {
+    function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint240 amountSharesToQuery) public {
         uint256 underlyingFromShares = strategy.sharesToUnderlying(amountSharesToQuery);
         require(underlyingFromShares == amountSharesToQuery, "underlyingFromShares != amountSharesToQuery");
 
         uint256 underlyingFromSharesView = strategy.sharesToUnderlyingView(amountSharesToQuery);
         require(underlyingFromSharesView == amountSharesToQuery, "underlyingFromSharesView != amountSharesToQuery");
+    
+        cheats.expectEmit(true, false, false, false, address(strategy));
+        emit LogExchangeRate(1e18);
+        strategy.emitExchangeRate();
     }
 
     function testDeposit_ZeroAmount() public {
@@ -336,6 +342,10 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 underlyingFromSharesView = strategy.sharesToUnderlyingView(amountSharesToQuery);
         require(underlyingFromSharesView == expectedValueOut, "underlyingFromSharesView != expectedValueOut");
+    
+        cheats.expectEmit(true, false, false, false, address(strategy));
+        emit LogExchangeRate(1e18);
+        strategy.emitExchangeRate();
     }
 
     // amountUnderlyingToQuery input is uint96 to prevent overflow
