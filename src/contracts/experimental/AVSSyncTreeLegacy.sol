@@ -24,8 +24,14 @@ contract AVSSyncTree {
     }
 
 
-    function getAVSSyncTreeRoot(bytes32[] calldata operatorSetRoots, bytes32 challengedRoot) external pure returns (bool) {
-        return Merkle.merkleizeKeccak256(operatorSetRoots) == challengedRoot;
+    function getAVSSyncTreeRoot(address[] calldata avsList, address[] calldata strategies, address[][] calldata operatorListPerAVS) external pure returns (bytes32) {
+        
+        bytes32[] memory operatorSetRoots = new bytes32[](avsList.length);
+        for (uint256 i = 0; i < avsList.length; i++) {
+            require(avsList[i] != address(0), "AVSSyncTree.getAVSSyncTreeRoot: AVS address cannot be 0");
+            operatorSetRoots[i] = getOperatorSetRoot(avsList[i], operatorListPerAVS[i], strategies);
+        }
+        return Merkle.merkleizeKeccak256(operatorSetRoots);
     }
 
 
