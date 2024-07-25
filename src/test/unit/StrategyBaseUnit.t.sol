@@ -14,7 +14,6 @@ import "../mocks/ERC20_SetTransferReverting_Mock.sol";
 import "forge-std/Test.sol";
 
 contract StrategyBaseUnitTests is Test {
-
     Vm cheats = Vm(HEVM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;
@@ -43,7 +42,7 @@ contract StrategyBaseUnitTests is Test {
      */
     uint256 internal constant BALANCE_OFFSET = 1e3;
 
-    event LogExchangeRate(uint256 rate);
+    event ExchangeRateEmitted(uint256 rate);
 
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
@@ -93,12 +92,15 @@ contract StrategyBaseUnitTests is Test {
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.startPrank(address(strategyManager));
+        cheats.expectEmit(true, true, true, true, address(strategy));
+        emit ExchangeRateEmitted(1e18);
         uint256 newShares = strategy.deposit(underlyingToken, amountToDeposit);
         cheats.stopPrank();
 
         require(newShares == amountToDeposit, "newShares != amountToDeposit");
         uint256 totalSharesAfter = strategy.totalShares();
         require(totalSharesAfter - totalSharesBefore == newShares, "totalSharesAfter - totalSharesBefore != newShares");
+        require(strategy.sharesToUnderlying(1e18) == 1e18);
     }
 
     function testDepositWithNonzeroPriorBalanceAndNonzeroPriorShares(uint256 priorTotalShares, uint256 amountToDeposit) public virtual {
@@ -114,6 +116,7 @@ contract StrategyBaseUnitTests is Test {
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.startPrank(address(strategyManager));
+
         uint256 newShares = strategy.deposit(underlyingToken, amountToDeposit);
         cheats.stopPrank();
 
@@ -170,7 +173,10 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
         cheats.startPrank(address(strategyManager));
+        cheats.expectEmit(true, true, true, true, address(strategy));
+        emit ExchangeRateEmitted(1e18);
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
+
         cheats.stopPrank();
 
         uint256 tokenBalanceAfter = underlyingToken.balanceOf(address(this));
@@ -307,10 +313,6 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 underlyingFromSharesView = strategy.sharesToUnderlyingView(amountSharesToQuery);
         require(underlyingFromSharesView == amountSharesToQuery, "underlyingFromSharesView != amountSharesToQuery");
-    
-        cheats.expectEmit(true, false, false, false, address(strategy));
-        emit LogExchangeRate(1e18);
-        strategy.emitExchangeRate();
     }
 
     function testDeposit_ZeroAmount() public {
@@ -342,10 +344,6 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 underlyingFromSharesView = strategy.sharesToUnderlyingView(amountSharesToQuery);
         require(underlyingFromSharesView == expectedValueOut, "underlyingFromSharesView != expectedValueOut");
-    
-        cheats.expectEmit(true, false, false, false, address(strategy));
-        emit LogExchangeRate(1e18);
-        strategy.emitExchangeRate();
     }
 
     // amountUnderlyingToQuery input is uint96 to prevent overflow
