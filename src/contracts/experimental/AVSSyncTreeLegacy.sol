@@ -10,8 +10,8 @@ import "../interfaces/IStrategy.sol";
 
 contract AVSSyncTree {
 
-    uint32 public constant MAX_OPERATOR_SET_SIZE = 512;
-    uint32 public constant MAX_NUM_STRATEGIES = 32;
+    uint32 public immutable MAX_OPERATOR_SET_SIZE = 512;
+    uint32 public immutable MAX_NUM_STRATEGIES = 32;
 
     IDelegationManager public delegation;
     AVSDirectory public avsDirectory;
