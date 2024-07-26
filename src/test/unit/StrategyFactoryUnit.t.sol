@@ -9,10 +9,8 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 
 /**
- * @notice Unit testing of the AVSDirectory contract. An AVSs' service manager contract will
- * call this to register an operator with the AVS.
- * Contracts tested: AVSDirectory
- * Contracts not mocked: DelegationManager
+ * @notice Unit testing of the StrategyFactory contract.
+ * Contracts tested: StrategyFactory
  */
 contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     // Contract under test
@@ -141,23 +139,14 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     }
 
     function test_whitelistStrategies() public {
-        StrategyBase strategy = StrategyBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(strategyImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, pauserRegistry)
-                )
-            )
-        );
-
-
+        StrategyBase strategy = _deployStrategy();
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](1);
         bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         strategiesToWhitelist[0] = strategy;
         thirdPartyTransfersForbiddenValues[0] = true;
         strategyFactory.whitelistStrategies(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
 
+        assertTrue(strategyManagerMock.strategyIsWhitelistedForDeposit(strategy), "Strategy not whitelisted");
         require(strategyManagerMock.thirdPartyTransfersForbidden(strategy), "3rd party transfers forbidden not set correctly");
     }
 
@@ -168,5 +157,50 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(notOwner);
         strategyFactory.whitelistStrategies(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
+    }
+
+    function test_setThirdPartyTransfersForbidden_revert_notOwner() public {
+        IStrategy strategy;
+
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(notOwner);
+        strategyFactory.setThirdPartyTransfersForbidden(strategy, true);
+    }
+
+    function test_setThirdPartyTransfersFrobidden() public {
+        StrategyBase strategy = _deployStrategy();
+        bool thirdPartyTransfersForbidden = true;
+
+        strategyFactory.setThirdPartyTransfersForbidden(strategy, thirdPartyTransfersForbidden);
+        assertTrue(strategyManagerMock.thirdPartyTransfersForbidden(strategy), "3rd party transfers forbidden not set");
+    }
+
+    function test_removeStrategiesFromWhitelist_revert_notOwner() public {
+        IStrategy[] memory strategiesToRemove = new IStrategy[](1);
+
+        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.prank(notOwner);
+        strategyFactory.removeStrategiesFromWhitelist(strategiesToRemove);
+    }
+
+    function test_removeStrategiesFromWhitelist() public {
+        IStrategy[] memory strategiesToRemove = new IStrategy[](1);
+        strategiesToRemove[0] = IStrategy(_deployStrategy());
+
+        strategyFactory.removeStrategiesFromWhitelist(strategiesToRemove);
+        assertFalse(strategyManagerMock.strategyIsWhitelistedForDeposit(strategiesToRemove[0]), "Strategy not removed from whitelist");
+    }
+
+
+    function _deployStrategy() internal returns (StrategyBase) {
+        return StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(strategyImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, pauserRegistry)
+                )
+            )
+        );
     }
 }
