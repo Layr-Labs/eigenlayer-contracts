@@ -22,6 +22,7 @@ interface IStrategyFactory {
 
     /**
      * @notice Deploy a new strategyBeacon contract for the ERC20 token.
+     * @param token the token to deploy a strategy for
      * @dev A strategy contract must not yet exist for the token.
      * $dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
      * like those that conform to ERC777.
@@ -36,6 +37,16 @@ interface IStrategyFactory {
         IStrategy[] calldata strategiesToWhitelist,
         bool[] calldata thirdPartyTransfersForbiddenValues
     ) external;
+
+    /**
+     * @notice Owner-only function to pass through a call to `StrategyManager.setThirdPartyTransfersForbidden`
+     */
+    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external;
+
+    /**
+     * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
+     */
+    function removeStrategiesFromWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
 
     // @notice Emitted when the `strategyBeacon` is changed
     event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);

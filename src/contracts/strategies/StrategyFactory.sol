@@ -93,6 +93,20 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
     }
 
+    /**
+     * @notice Owner-only function to pass through a call to `StrategyManager.setThirdPartyTransfersForbidden`
+     */
+    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external onlyOwner {
+        strategyManager.setThirdPartyTransfersForbidden(strategy, value);
+    }
+
+    /**
+     * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
+     */
+    function removeStrategiesFromWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external onlyOwner {
+        strategyManager.removeStrategiesFromDepositWhitelist(strategiesToRemoveFromWhitelist);
+    }
+
     function _setStrategyForToken(IERC20 token, IStrategy strategy) internal {
         tokenStrategy[token] = strategy;
         emit StrategySetForToken(token, strategy);
