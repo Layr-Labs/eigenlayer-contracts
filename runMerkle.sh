@@ -1,0 +1,1 @@
+certoraRun.py certora/confs/merkle.conf
