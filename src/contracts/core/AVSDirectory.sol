@@ -73,6 +73,8 @@ contract AVSDirectory is
             isOperatorSet[msg.sender][operatorSetIds[i]] = true;
             emit OperatorSetCreated(OperatorSet({avs: msg.sender, operatorSetId: operatorSetIds[i]}));
         }
+        operatorSetCount += operatorSetIds.length;
+        avsOperatorSetCount[msg.sender] += operatorSetIds.length;
     }
 
     /**
@@ -382,6 +384,10 @@ contract AVSDirectory is
 
             // Mutate `isMember` to `true`.
             isMember[avs][operator][operatorSetIds[i]] = true;
+
+            unchecked {
+                ++operatorSetMemberCount[avs][operatorSetIds[i]];
+            }
 
             emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
         }
