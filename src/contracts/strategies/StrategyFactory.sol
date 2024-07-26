@@ -103,9 +103,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     /**
      * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
      */
-    function removeStrategiesFromWhitelist (
-        IStrategy[] calldata strategiesToRemoveFromWhitelist
-    ) external onlyOwner {
+    function removeStrategiesFromWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external onlyOwner {
         strategyManager.removeStrategiesFromDepositWhitelist(strategiesToRemoveFromWhitelist);
     }
 

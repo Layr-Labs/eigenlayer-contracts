@@ -46,9 +46,7 @@ interface IStrategyFactory {
     /**
      * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
      */
-    function removeStrategiesFromWhitelist (
-        IStrategy[] calldata strategiesToRemoveFromWhitelist
-    ) external;
+    function removeStrategiesFromWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
 
     // @notice Emitted when the `strategyBeacon` is changed
     event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);
