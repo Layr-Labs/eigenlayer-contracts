@@ -24,7 +24,7 @@ contract AVSSyncTree {
     }
 
 
-    function getAVSSyncTreeRoot(address[] calldata avsList, address[] calldata strategies, address[][] calldata operatorListPerAVS) external pure returns (bytes32) {
+    function getAVSSyncTreeRoot(address[] calldata avsList, address[] calldata strategies, address[][] calldata operatorListPerAVS) external view returns (bytes32) {
         
         bytes32[] memory operatorSetRoots = new bytes32[](avsList.length);
         for (uint256 i = 0; i < avsList.length; i++) {
@@ -35,13 +35,12 @@ contract AVSSyncTree {
     }
 
 
-    function getOperatorSetRoot(address avs, address[] calldata operators, address[] calldata strategies) external view returns (bytes32) {
-
-        // verify that provided operators are members of provided operator set and are registered to the AVS
-        _verifyOperatorStatus(avs, operators);
-
+    function getOperatorSetRoot(address avs, address[] calldata operators, address[] calldata strategies) public view returns (bytes32) {
         bytes32[] memory operatorLeaves = new bytes32[](operators.length);
         for (uint256 i = 0; i < operators.length; i++) {
+            // verify that provided operators are members of provided operator set and are registered to the AVS
+            require(delegation.isOperator(operators[i]), "AVSSyncTree.getOperatorSetRoot: operator not registered");
+            require(avsDirectory.avsOperatorStatus(avs,operators[i]) == IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED, "AVSSyncTree.getOperatorSetRoot: operator not registered to AVS");
             // shares associated with this operator and these strategies
             uint256[] memory shares = _retrieveStrategyShares(operators[i], strategies);
             bytes32 operatorRoot = _computeOperatorRoot(strategies, shares);
@@ -58,13 +57,6 @@ contract AVSSyncTree {
         return Merkle.merkleizeKeccak256(leaves);
     }
 
-    function _verifyOperatorStatus(address avs, address[] memory operators) internal view {
-        require(operators.length <= MAX_OPERATOR_SET_SIZE, "AVSSyncTree._verifyOperatorStatus: operator set too large");
-        for (uint256 i = 0; i < operators.length; i++) {
-            require(delegation.isOperator(operators[i]), "AVSSyncTree.getOperatorSetRoot: operator not registered");
-            require(avsDirectory.avsOperatorStatus(avs,operators[i]) == IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED, "AVSSyncTree.getOperatorSetRoot: operator not registered to AVS");
-        }
-    }
     function _retrieveStrategyShares(address operator, address[] memory strategies) internal view returns (uint256[] memory) {
         require(strategies.length <= MAX_NUM_STRATEGIES, "AVSSyncTree._retrieveStrategyShares: too many strategies");
         return delegation.getOperatorShares(operator, convertToStrategy(strategies));
