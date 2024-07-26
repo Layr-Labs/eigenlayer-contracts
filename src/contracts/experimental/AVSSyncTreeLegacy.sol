@@ -36,14 +36,23 @@ contract AVSSyncTree {
 
 
     function getOperatorSetRoot(address avs, address[] calldata operators, address[] calldata strategies) public view returns (bytes32) {
+        require(strategies.length <= MAX_NUM_STRATEGIES, "AVSSyncTree._retrieveStrategyShares: too many strategies");
+
+        IStrategy[] memory strategiesConverted = new IStrategy[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            strategiesConverted[i] = IStrategy(strategies[i]);
+        }
+
         bytes32[] memory operatorLeaves = new bytes32[](operators.length);
         for (uint256 i = 0; i < operators.length; i++) {
             // verify that provided operators are members of provided operator set and are registered to the AVS
             require(delegation.isOperator(operators[i]), "AVSSyncTree.getOperatorSetRoot: operator not registered");
             require(avsDirectory.avsOperatorStatus(avs,operators[i]) == IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED, "AVSSyncTree.getOperatorSetRoot: operator not registered to AVS");
+            
             // shares associated with this operator and these strategies
-            uint256[] memory shares = _retrieveStrategyShares(operators[i], strategies);
+            uint256[] memory shares = delegation.getOperatorShares(operators[i], strategiesConverted);
             bytes32 operatorRoot = _computeOperatorRoot(strategies, shares);
+            
             operatorLeaves[i] = keccak256(abi.encodePacked(operators[i], operatorRoot));     
         }
         return Merkle.merkleizeKeccak256(operatorLeaves);
@@ -55,11 +64,6 @@ contract AVSSyncTree {
             leaves[i] = keccak256(abi.encodePacked(strategies[i], shares[i]));
         }
         return Merkle.merkleizeKeccak256(leaves);
-    }
-
-    function _retrieveStrategyShares(address operator, address[] memory strategies) internal view returns (uint256[] memory) {
-        require(strategies.length <= MAX_NUM_STRATEGIES, "AVSSyncTree._retrieveStrategyShares: too many strategies");
-        return delegation.getOperatorShares(operator, convertToStrategy(strategies));
     }
 
     function convertToStrategy(address[] memory addresses) public pure returns (IStrategy[] memory) {

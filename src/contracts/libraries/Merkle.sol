@@ -169,9 +169,20 @@ library Merkle {
      * @notice this function returns the merkle root of a tree created from a set of leaves using keccak256 as its hash function
      *  @param leaves the leaves of the merkle tree
      *  @return The computed Merkle root of the tree.
-     *  @dev A pre-condition to this function is that leaves.length is a power of two.  If not, the function will merkleize the inputs incorrectly.
+     *  @dev This pads to the next power of 2. very inefficient! just for POC
      */
     function merkleizeKeccak256(bytes32[] memory leaves) internal pure returns (bytes32) {
+        uint256 paddedLength = 2;
+        while(paddedLength < leaves.length) {
+            paddedLength <<= 1;
+        }
+
+        bytes32[] memory paddedLeaves = new bytes32[](paddedLength);
+        for (uint256 i = 0; i < leaves.length; i++) {
+            paddedLeaves[i] = leaves[i];
+        }
+        leaves = paddedLeaves;
+
         //there are half as many nodes in the layer above the leaves
         uint256 numNodesInLayer = leaves.length / 2;
         //create a layer to store the internal nodes
