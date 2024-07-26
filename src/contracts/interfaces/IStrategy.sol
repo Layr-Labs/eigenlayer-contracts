@@ -19,12 +19,11 @@ interface IStrategy {
 
     /**
      * Used to emit the underlying token and its decimals on strategy creation
-     * @notice token 
+     * @notice token
      * @param token is the ERC20 token of the strategy
-     * @param decimals are the decimals of the ERC20 token in the strategy 
+     * @param decimals are the decimals of the ERC20 token in the strategy
      */
     event StrategyTokenSet(IERC20 token, uint8 decimals);
-
 
     /**
      * @notice Used to deposit tokens into this Strategy
