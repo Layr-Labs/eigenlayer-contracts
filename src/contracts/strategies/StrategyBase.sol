@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
@@ -78,6 +79,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     ) internal onlyInitializing {
         underlyingToken = _underlyingToken;
         _initializePauser(_pauserRegistry, UNPAUSE_ALL);
+        emit StrategyTokenSet(underlyingToken, IERC20Metadata(address(_underlyingToken)).decimals());
     }
 
     /**
@@ -119,6 +121,10 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         // update total share amount to account for deposit
         totalShares = (priorTotalShares + newShares);
+
+        // emit exchange rate
+        _emitExchangeRate(virtualTokenBalance, totalShares + SHARES_OFFSET);
+
         return newShares;
     }
 
@@ -159,6 +165,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         // Decrease the `totalShares` value to reflect the withdrawal
         totalShares = priorTotalShares - amountShares;
+
+        // emit exchange rate
+        _emitExchangeRate(virtualTokenBalance - amountToSend, totalShares + SHARES_OFFSET);
 
         _afterWithdrawal(recipient, token, amountToSend);
     }
@@ -223,12 +232,8 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @return The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function sharesToUnderlying(uint256 amountShares) public virtual override returns (uint256) {
-        // account for virtual shares and balance
-        uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
-        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
-        // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
-        return (virtualTokenBalance * amountShares) / virtualTotalShares;
+    function sharesToUnderlying(uint256 amountShares) public view virtual override returns (uint256) {
+        return sharesToUnderlyingView(amountShares);
     }
 
     /**
@@ -287,13 +292,12 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         return underlyingToken.balanceOf(address(this));
     }
 
-    /// @notice Emits the current exchange rate denominated in wad (18 decimals).
-    function emitExchangeRate() public virtual {
-        // Cache virtual shares and balance.
-        uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
-        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
+    /// @notice Internal function used to return the exchange rate of the strategy in wad (18 decimals)
+    /// @dev Assumes no tokens will be greater than 18 decimals
+    /// @dev Tokens less than 18 decimals must have offchain services scale the exchange rate down to proper magnitude
+    function _emitExchangeRate(uint256 virtualTokenBalance, uint256 virtualTotalShares) internal {
         // Emit asset over shares ratio.
-        emit LogExchangeRate(1e18 * virtualTokenBalance / virtualTotalShares);
+        emit ExchangeRateEmitted((1e18 * virtualTokenBalance) / virtualTotalShares);
     }
 
     /**
