@@ -2,19 +2,26 @@
 pragma solidity ^0.8.12;
 
 import "../interfaces/IAVSDirectory.sol";
+import "../interfaces/IAVSSyncTree.sol";
 import "../core/AVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../libraries/Merkle.sol";
 import "../interfaces/IStrategy.sol";
+import "@risc0-ethereum/contracts/src/IRiscZeroVerifier.sol";
 
 
-contract AVSSyncTree {
+contract AVSSyncTree is IAVSSyncTree {
 
     uint32 public immutable MAX_OPERATOR_SET_SIZE = 512;
     uint32 public immutable MAX_NUM_STRATEGIES = 32;
 
+    address public verifier;
+
     IDelegationManager public delegation;
     AVSDirectory public avsDirectory;
+
+    event VerifierChanged(address oldVerifier, address newVerifier);
+    event SnarkProofVerified(bytes journal, bytes seal);
     constructor(
         IDelegationManager _delegation,
         AVSDirectory _avsDirectory
@@ -72,6 +79,27 @@ contract AVSSyncTree {
             strategies[i] = IStrategy(addresses[i]);
         }
         return strategies;
+    }
+
+    //TODO: make imageID only settable by owner
+    function verifySnarkProof(
+        bytes calldata _journal,
+        bytes32 imageId,
+        bytes calldata _seal
+    ) external {
+        IRiscZeroVerifier(verifier).verify(
+                _seal,
+                imageId,
+                sha256(_journal)
+            );
+        
+        emit SnarkProofVerified(_journal, _seal);
+    }
+
+    function setVerifier(address _verifier) external {
+        address oldVerifier = verifier; 
+        verifier = _verifier;
+        emit VerifierChanged(oldVerifier, verifier);
     }
 
 }
