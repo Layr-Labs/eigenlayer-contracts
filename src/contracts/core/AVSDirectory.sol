@@ -412,6 +412,10 @@ contract AVSDirectory is
             // Mutate `isMember` to `false`.
             isMember[avs][operator][operatorSetIds[i]] = false;
 
+            unchecked {
+                --operatorSetMemberCount[avs][operatorSetIds[i]];
+            }
+
             emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
         }
     }
