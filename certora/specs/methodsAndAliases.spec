@@ -20,6 +20,14 @@ methods {
     function _.withdrawRestakedBeaconChainETH(address, uint256) external => DISPATCHER(true);
     function _.initialize(address) external => DISPATCHER(true);
     function _.stake(bytes, bytes, bytes32) external => DISPATCHER(true);
+	    
+    function _._ external => DISPATCH [
+      DummyEigenPodA.initialize(address),
+      DummyEigenPodA.stake(bytes, bytes, bytes32),
+
+	  DummyEigenPodB.initialize(address),
+      DummyEigenPodB.stake(bytes, bytes, bytes32),
+   ] default NONDET;
 
     // IERC1271
     function _.isValidSignature(bytes32, bytes) external => DISPATCHER(true); 

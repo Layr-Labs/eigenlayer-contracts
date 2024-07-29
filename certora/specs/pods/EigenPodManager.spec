@@ -59,5 +59,113 @@ rule whoCanChangePodOwnerShares(env e, method f) filtered { f -> !f.isView && !i
 
     assert sharesAfter > sharesBefore => canIncreasePodOwnerShares(f);
     assert sharesAfter < sharesBefore => canDecreasePodOwnerShares(f);
+
+    satisfy canIncreasePodOwnerShares(f) => sharesAfter > sharesBefore;
+    satisfy canDecreasePodOwnerShares(f) => sharesAfter < sharesBefore;
 }
 
+invariant noPodNoShares(address owner)
+    get_podByOwner(owner) == 0 => get_podOwnerShares(owner) == 0;
+
+rule addShares_additivity(env e)
+{
+    uint256 shares1; uint256 shares2; uint256 sharesSum;
+    require shares1 + shares2 == sharesSum * 1;
+    address owner;
+    storage init = lastStorage;
+    addShares(e, owner, shares1); 
+    addShares(e, owner, shares2);
+    mathint sharesAfter12 = get_podOwnerShares(owner);
+    addShares(e, owner, sharesSum) at init;
+    mathint sharesAfterSum = get_podOwnerShares(owner);
+    assert sharesAfter12 == sharesAfterSum;
+}
+
+rule removeShares_additivity(env e)
+{
+    uint256 shares1; uint256 shares2; uint256 sharesSum;
+    require shares1 + shares2 == sharesSum * 1;
+    address owner;
+    storage init = lastStorage;
+    removeShares(e, owner, shares1); 
+    removeShares(e, owner, shares2);
+    mathint sharesAfter12 = get_podOwnerShares(owner);
+    removeShares(e, owner, sharesSum) at init;
+    mathint sharesAfterSum = get_podOwnerShares(owner);
+    assert sharesAfter12 == sharesAfterSum;
+}
+
+rule add_remove_inverse(env e)
+{
+    uint256 shares;
+    address owner;
+    mathint sharesBefore = get_podOwnerShares(owner);
+    addShares(e, owner, shares); 
+    removeShares(e, owner, shares);
+    mathint sharesAfter = get_podOwnerShares(owner);
+    assert sharesBefore == sharesAfter;
+}
+
+rule addShares_integrity(env e)
+{
+    uint256 shares;
+    address owner;
+    mathint sharesBefore = get_podOwnerShares(owner);
+    addShares(e, owner, shares); 
+    mathint sharesAfter = get_podOwnerShares(owner);
+    assert sharesBefore + shares == sharesAfter;
+}
+
+rule removeShares_integrity(env e)
+{
+    uint256 shares;
+    address owner;
+    mathint sharesBefore = get_podOwnerShares(owner);
+    removeShares(e, owner, shares); 
+    mathint sharesAfter = get_podOwnerShares(owner);
+    assert sharesBefore - shares == sharesAfter;
+}
+
+rule addShares_independence(env e)
+{
+    uint256 shares1; uint256 shares2;
+    address owner;
+    storage init = lastStorage;
+    addShares(e, owner, shares1);
+    addShares(e, owner, shares2); 
+    storage storageAfter12 = lastStorage;
+
+    addShares(e, owner, shares2) at init;
+    addShares(e, owner, shares1); 
+    storage storageAfter21 = lastStorage;
+    assert storageAfter12 == storageAfter21;
+}
+
+rule add_remove_independence(env e)
+{
+    uint256 shares1; uint256 shares2;
+    address owner;
+    storage init = lastStorage;
+    addShares(e, owner, shares1);
+    removeShares(e, owner, shares2); 
+    storage storageAfter12 = lastStorage;
+
+    removeShares(e, owner, shares2) at init;
+    addShares(e, owner, shares1); 
+    storage storageAfter21 = lastStorage;
+    assert storageAfter12 == storageAfter21;
+}
+
+rule withdrawShares_additivity(env e)
+{
+    uint256 shares1; uint256 shares2; uint256 sharesSum;
+    require shares1 + shares2 == sharesSum * 1;
+    address owner; address receiver;
+    storage init = lastStorage;
+    withdrawSharesAsTokens(e, owner, receiver, shares1); 
+    withdrawSharesAsTokens(e, owner, receiver, shares2);
+    storage after12 = lastStorage;
+    withdrawSharesAsTokens(e, owner, receiver, sharesSum) at init;
+    storage afterSum = lastStorage;
+    assert after12 == afterSum;
+}

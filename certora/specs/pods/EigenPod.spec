@@ -40,6 +40,12 @@ methods {
     function get_podOwnerShares() external returns (int256) envfree;
     function get_withdrawableRestakedExecutionLayerGwei() external returns (uint256) envfree;
     function get_ETH_Balance() external returns (uint256) envfree;
+    function get_currentCheckpointTimestamp() external returns (uint64) envfree;
+    function get_lastCheckpointTimestamp() external returns (uint64) envfree;
+    function validatorIsActive(bytes32) external returns (bool) envfree;   
+    function get_validatorLastCheckpointed(bytes32) external returns (uint64) envfree;
+    function activeValidatorCount() external returns (uint256) envfree;
+    function currentCheckpoint() external returns (IEigenPod.Checkpoint) envfree;
 }
 
 // defines the allowed validator status transitions
@@ -202,6 +208,7 @@ invariant consistentAccounting() {
 
 rule whoCanChangeBalanceUpdateTimestamp(bytes32 validatorPubkeyHash, env e, method f) 
 {
+    requireInvariant checkpointsTimestampRemainsCorrect();
     uint64 timestampBefore = get_mostRecentBalanceUpdateTimestamp(validatorPubkeyHash);
     calldataarg args;
     f(e,args);
@@ -210,3 +217,95 @@ rule whoCanChangeBalanceUpdateTimestamp(bytes32 validatorPubkeyHash, env e, meth
     assert timestampAfter > timestampBefore => canIncreaseBalanceUpdateTimestamp(f);
     assert timestampAfter < timestampBefore => canDecreaseBalanceUpdateTimestamp(f);
 }
+
+invariant checkpointsTimestampRemainsCorrect()
+    get_currentCheckpointTimestamp() > 0 => 
+        get_lastCheckpointTimestamp() < get_currentCheckpointTimestamp();
+
+invariant lastCheckpointedEqualsLastChPTS(bytes32 hash)
+    validatorIsActive(hash) => 
+        get_validatorLastCheckpointed(hash) == get_lastCheckpointTimestamp();
+
+rule methodsOnlyChangeOneValidatorStatus(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
+{
+    bytes32 validatorHash1; bytes32 validatorHash2;
+    IEigenPod.VALIDATOR_STATUS status1Before = validatorStatus(validatorHash1);
+    IEigenPod.VALIDATOR_STATUS status2Before = validatorStatus(validatorHash2);
+    
+    calldataarg args;
+    f(e, args);
+    IEigenPod.VALIDATOR_STATUS status1After = validatorStatus(validatorHash1);
+    IEigenPod.VALIDATOR_STATUS status2After = validatorStatus(validatorHash2);
+    
+    assert status1Before == status1After ||
+        status2Before == status2After;
+}
+
+rule activeValidatorsCount_correctness(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
+{
+    mathint activeValsBefore = activeValidatorCount();
+    bytes32 validatorHash;
+    IEigenPod.VALIDATOR_STATUS statusBefore = validatorStatus(validatorHash);
+    calldataarg args;
+    f(e, args);
+    IEigenPod.VALIDATOR_STATUS statusAfter = validatorStatus(validatorHash);
+    mathint activeValsAfter = activeValidatorCount();
+
+    bool wasActivated = (
+        statusBefore != IEigenPod.VALIDATOR_STATUS.ACTIVE &&
+        statusAfter == IEigenPod.VALIDATOR_STATUS.ACTIVE);
+
+    bool wasDeactivated = (
+        statusBefore == IEigenPod.VALIDATOR_STATUS.ACTIVE &&
+        statusAfter != IEigenPod.VALIDATOR_STATUS.ACTIVE);
+    assert wasActivated => activeValsAfter == activeValsBefore + 1;
+    assert wasDeactivated => activeValsAfter == activeValsBefore - 1;
+
+    //to prove the other side of the implication
+    satisfy wasActivated || activeValsAfter <= activeValsBefore;
+    satisfy wasDeactivated || activeValsAfter >= activeValsBefore;
+}
+
+/*    struct Checkpoint {
+        bytes32 beaconBlockRoot;
+        uint24 proofsRemaining;
+        uint64 podBalanceGwei;
+        int128 balanceDeltasGwei;
+    }*/
+invariant checkpointInfoIsEmpty()
+    get_currentCheckpointTimestamp() == 0 <=> (
+        currentCheckpoint().beaconBlockRoot == to_bytes32(0) &&
+        currentCheckpoint().proofsRemaining == 0 &&
+        currentCheckpoint().podBalanceGwei == 0 &&
+        currentCheckpoint().balanceDeltasGwei == 0
+);
+
+rule proofsRemainingCannotIncreaseInChP(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
+{
+    uint24 proofsRemainingBefore = currentCheckpoint().proofsRemaining;
+    calldataarg args;
+    f(e, args);
+    uint24 proofsRemainingAfter = currentCheckpoint().proofsRemaining;
+    assert proofsRemainingBefore > 0 => proofsRemainingAfter <= proofsRemainingBefore;
+}
+
+rule podBalanceGweiDoesntChangeInChP(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
+{
+    uint64 podBalanceGweiBefore = currentCheckpoint().podBalanceGwei;
+    calldataarg args;
+    f(e, args);
+    uint64 podBalanceGweiAfter = currentCheckpoint().podBalanceGwei;
+    assert get_currentCheckpointTimestamp() > 0 => 
+        podBalanceGweiBefore == podBalanceGweiAfter;
+}
+
+rule beaconBlockRootDoesntChangeInChP(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
+{
+    bytes32 beaconBlockRootBefore = currentCheckpoint().beaconBlockRoot;
+    calldataarg args;
+    f(e, args);
+    bytes32 beaconBlockRootAfter = currentCheckpoint().beaconBlockRoot;
+    assert get_currentCheckpointTimestamp() > 0 => 
+        beaconBlockRootBefore == beaconBlockRootAfter;
+}
+

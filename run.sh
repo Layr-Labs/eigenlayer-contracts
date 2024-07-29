@@ -1,1 +1,1 @@
-certoraRun.py certora/confs/main.conf
+certoraRun.py certora/confs/full.conf

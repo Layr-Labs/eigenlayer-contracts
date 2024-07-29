@@ -17,6 +17,24 @@ contract EigenPodHarness is EigenPod {
         return _validatorPubkeyHashToInfo[pubkeyHash].validatorIndex;
     }
 
+    function get_validatorLastCheckpointed(bytes32 pubkeyHash) public view returns (uint64) {
+        return _validatorPubkeyHashToInfo[pubkeyHash].lastCheckpointedAt;
+    }
+
+    function validatorIsActive(bytes32 pubkeyHash) public view returns (bool) {
+        return _validatorPubkeyHashToInfo[pubkeyHash].status == IEigenPod.VALIDATOR_STATUS.ACTIVE;
+    }
+   
+    function get_lastCheckpointTimestamp() public view returns (uint64)
+    {
+        return lastCheckpointTimestamp;
+    }
+
+    function get_currentCheckpointTimestamp() public view returns (uint64)
+    {
+        return currentCheckpointTimestamp;
+    }    
+
     function get_restakedBalanceGwei(bytes32 pubkeyHash) public view returns (uint64) {
         return _validatorPubkeyHashToInfo[pubkeyHash].restakedBalanceGwei;
     }
