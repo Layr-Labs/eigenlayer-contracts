@@ -293,8 +293,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     }
 
     /// @notice Internal function used to return the exchange rate of the strategy in wad (18 decimals)
-    /// @dev Assumes no tokens will be greater than 18 decimals
-    /// @dev Tokens less than 18 decimals must have offchain services scale the exchange rate down to proper magnitude
+    /// @dev Tokens != 18 decimals must have offchain services scale the exchange rate to proper magnitude
     function _emitExchangeRate(uint256 virtualTokenBalance, uint256 virtualTotalShares) internal {
         // Emit asset over shares ratio.
         emit ExchangeRateEmitted((1e18 * virtualTokenBalance) / virtualTotalShares);
