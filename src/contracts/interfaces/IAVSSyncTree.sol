@@ -14,4 +14,7 @@ interface IAVSSyncTree {
         bytes calldata _seal
     ) external;
 
+    function setImageId(bytes32 _imageId) external;
+
+    function setVerifier(address _verifier) external;
 }
