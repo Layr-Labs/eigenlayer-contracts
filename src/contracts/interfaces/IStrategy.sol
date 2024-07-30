@@ -13,7 +13,7 @@ interface IStrategy {
     /**
      * @notice Used to emit an event for the exchange rate between 1 share and underlying token in a strategy contract
      * @param rate is the exchange rate in wad 18 decimals
-     * @dev Tokens != 18 decimals must have offchain services scale the exchange rate to proper magnitude
+     * @dev Tokens that do not have decimals must have offchain services scale the exchange rate to proper magnitude
      */
     event ExchangeRateEmitted(uint256 rate);
 
