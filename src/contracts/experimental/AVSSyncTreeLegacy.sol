@@ -1,33 +1,47 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import "../core/AVSDirectory.sol";
+import "../libraries/Merkle.sol";
+
+import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IStrategy.sol";
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IAVSSyncTree.sol";
-import "../core/AVSDirectory.sol";
-import "../interfaces/IDelegationManager.sol";
-import "../libraries/Merkle.sol";
-import "../interfaces/IStrategy.sol";
+
 import "@risc0-ethereum/contracts/src/IRiscZeroVerifier.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 
-contract AVSSyncTree is IAVSSyncTree {
+
+contract AVSSyncTree is IAVSSyncTree, OwnableUpgradeable {
 
     uint32 public immutable MAX_OPERATOR_SET_SIZE = 512;
     uint32 public immutable MAX_NUM_STRATEGIES = 32;
 
     address public verifier;
+    bytes32 public imageId;
 
     IDelegationManager public delegation;
     AVSDirectory public avsDirectory;
 
     event VerifierChanged(address oldVerifier, address newVerifier);
     event SnarkProofVerified(bytes journal, bytes seal);
+    event ImageIdChanged(bytes32 oldImageId, bytes32 newImageId);
+
+
     constructor(
         IDelegationManager _delegation,
         AVSDirectory _avsDirectory
     ) {
         delegation = _delegation;
         avsDirectory = _avsDirectory;
+    }
+
+    function initialize(
+        address initialOwner
+    ) external initializer {
+        _transferOwnership(initialOwner);
     }
 
 
@@ -84,7 +98,6 @@ contract AVSSyncTree is IAVSSyncTree {
     //TODO: make imageID only settable by owner
     function verifySnarkProof(
         bytes calldata _journal,
-        bytes32 imageId,
         bytes calldata _seal
     ) external {
         IRiscZeroVerifier(verifier).verify(
@@ -96,10 +109,15 @@ contract AVSSyncTree is IAVSSyncTree {
         emit SnarkProofVerified(_journal, _seal);
     }
 
-    function setVerifier(address _verifier) external {
+    function setVerifier(address _verifier) external onlyOwner {
         address oldVerifier = verifier; 
         verifier = _verifier;
         emit VerifierChanged(oldVerifier, verifier);
     }
 
+    function setImageId(bytes32 _imageId) external onlyOwner {
+        bytes32 oldImageId = imageId;
+        imageId = _imageId;
+        emit ImageIdChanged(oldImageId, imageId);
+    }
 }
