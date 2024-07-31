@@ -76,6 +76,7 @@ methods {
     function _.removeShares(address,uint256) external => DISPATCHER(true);
     function _.withdrawSharesAsTokens(address, address, uint256) external => DISPATCHER(true);
 	//function _.podOwnerShares(address) external => DISPATCHER(true);
+	function _.recordBeaconChainETHBalanceUpdate(address, int256) external => DISPATCHER(true);
 
     // envfree functions
     function EigenPodManagerHarness.ownerToPod(address podOwner) external returns (address) envfree;
@@ -89,7 +90,7 @@ methods {
     function EigenPodManagerHarness.hasPod(address podOwner) external returns (bool) envfree;
     function EigenPodManagerHarness.numPods() external returns (uint256) envfree;
     function EigenPodManagerHarness.podOwnerShares(address podOwner) external returns (int256) envfree;
-    function EigenPodManagerHarness.beaconChainETHStrategy() external returns (address) envfree;
+    function EigenPodManagerHarness.beaconChainETHStrategy() external returns (address) envfree; 
 
     // harnessed functions
     function EigenPodManagerHarness.get_podOwnerShares(address) external returns (int256) envfree;

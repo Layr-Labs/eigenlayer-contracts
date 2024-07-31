@@ -61,7 +61,19 @@ function isPrivilegedSender(env e) returns bool
 		sender == PauserRegistryAlias)
 		return true;
 	return false;
-} 
+}
+
+function timestampsNotFromFuture(env e) returns bool
+{
+	return e.block.timestamp > 0 &&
+		e.block.timestamp >= require_uint256(get_currentCheckpointTimestamp()) &&
+		e.block.timestamp >= require_uint256(get_lastCheckpointTimestamp());
+}
+
+function validatorDataNotFromFuture(env e, bytes32 validatorHash) returns bool
+{
+	return e.block.timestamp >= require_uint256(get_validatorLastCheckpointed(validatorHash));
+}
 	
 definition canIncreasePodOwnerShares(method f) returns bool = 
 	f.selector == sig:EigenPodManagerHarness.addShares(address,uint256).selector ||
