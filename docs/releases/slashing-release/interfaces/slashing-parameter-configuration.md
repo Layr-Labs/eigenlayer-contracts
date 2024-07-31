@@ -1,6 +1,6 @@
 # Slashing Parameter Configuration
 
-Allocator functionality is explained [here](https://www.notion.so/eigen-labs/Allocator-Functionality-282a008ab7a14c79a25ec2954f8f5912).
+Allocation functionality is explained [here](https://www.notion.so/eigen-labs/Allocator-Functionality-282a008ab7a14c79a25ec2954f8f5912).
 
 ```solidity
 interface IAVSDirectory {
@@ -10,7 +10,8 @@ interface IAVSDirectory {
      * @notice this struct is used in queueAllocation, queueDeallocation in order to specify
      * an operator's slashability for a certain operator set
      *
-     * @param operatorSet the operator set to change slashing parameters for
+     * @param strategy strategy to adjust allocations/deallocations for
+     * @param operatorSets the operator sets to adjust magnitudes for
      * @param magnitudeDiff magnitude difference; the difference in proportional parts of the operator's slashable stake
      * that the operator set is getting. This struct is used either in allocating or deallocating
      * slashable stake to an operator set. Slashable stake for an operator set is
@@ -18,20 +19,24 @@ interface IAVSDirectory {
      * an operator's delegated stake.
      */
     struct MagnitudeAdjustment {
-        OperatorSet operatorSet;
-        uint64 magnitudeDiff;
+        IStrategy strategy;
+        OperatorSet[] operatorSets;
+        uint64[] magnitudeDiffs;
     }
 
     /**
-     * @notice struct used for queued deallocations. Hash of struct is set to true in a mapping
+     * @notice struct used for queued deallocations. Hash of struct is set in storage to be referenced later
+     * when completing deallocations.
+     * @param operator address for performing deallocations for
+     * @param nonce
      */
     struct QueuedDeallocation {
         address operator;
         uint16 nonce;
-        IStrategy strategy;
-        OperatorSet operatorSet;
-        uint64 deallocationAmount;
         uint64 queuedTotalMagnitude;
+        IStrategy strategy;
+        OperatorSet[] operatorSets;
+        uint64[] deallocationAmounts;
     }
 
     /// EVENTS
@@ -59,29 +64,53 @@ interface IAVSDirectory {
 
     /// EXTERNAL - STATE MODIFYING
     
-    function queueAllocation(
+    /**
+     * @notice Allocate slashable magnitude for an operator.
+     * For each strategy, takes an array of magnitude adjustments(increments)
+     * and allocates them to their respective operatorSets. 
+     * Nonslashable magnitude for the strategy will decrement by the sum of all 
+     * allocations and these allocation increases will take effect 21 days(in blocks) from now.
+     *
+     * @param operator address to increase allocations for
+     * @param allocations array of magnitude adjustments for multiple strategies and
+     * corresponding operator sets
+     * @param operatorSignature signature of the operator if msg.sender is not the operator
+     */
+    function allocate(
         address operator,
-        IStrategy strategy,
         MagnitudeAdjustment[] calldata allocations,
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external;
 
+    /**
+     * @notice Queue deallocate slashable magnitude for an operator.
+     * For each strategy, takes an array of magnitude adjustments(increments)
+     * and deallocates them to their respective operatorSets. These deallocations are queued
+     * and can be completable 21 days(in blocks) from now.
+     * NOTE: queued deallocations are still subject to slashing until completed.
+     *
+     * @param operator address to increase allocations for
+     * @param deallocations array of magnitude adjustments for multiple strategies and
+     * corresponding operator sets
+     * @param operatorSignature signature of the operator if msg.sender is not the operator
+     * @return queuedDeallocations the queued deallocation structs used as inputs to completeDeallocation
+     */
     function queueDeallocation(
         address operator,
-        IStrategy strategy,
         MagnitudeAdjustment[] calldata deallocations,
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external returns (QueuedDeallocation[]);
 
+    /**
+     * @notice Complete queued deallocations of magnitude for an operator.
+     * Deallocates magnitude from an operatorSet that currently has allocations.
+     * Decrementing the operatorSet magnitude and incrementing the nonslashable magnitude as a result.
+     * NOTE: that the nonslashable amounts from deallocationAmounts may actually be less than expected due to slashing
+     *
+     * @param queuedDeallocations deallocations that were queued and are to be completed
+     */
     function completeDeallocation(
-        QueuedDeallocation[] calldata deallocations
-    ) external;
-
-    function slashOperator(
-        address operator,
-        OperatorSet operatorSet,
-        IStrategy[] calldata strategies,
-        uint16 bipsToSlash
+        QueuedDeallocation[] calldata queuedDeallocations
     ) external;
 
     /// VIEW
@@ -104,75 +133,61 @@ interface IAVSDirectory {
 }
 ```
 
-### queueReallocation
+### allocate
 
-Allocators call this to queue allocation/deallocation to their slashable stake(magnitudes) for a given (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple. For each strategy param given, it queues magnitude updates to the specified operatorSets which will take effect 21 days from the time of calling. This gives stakers 3.5 days to queue withdrawals if they decide
-
-Whether or not an adjustment update is an allocation or deallocation is defined by the `MagnitudeAdjustmentType` enum. For implementation complexity reasons, this is set at the per Strategy level.
+Operators call this to allocate to their slashable stake(magnitudes) for a given (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple. For each strategy param given, it queues magnitude updates to the specified operatorSets which will take effect 21 days from the time of calling. This gives stakers 3.5 days to queue withdrawals if they decide
 
 All allocations in the call summed with all pending allocations must be less than the operator's current nonslashable magnitude in the strategy in order for all pending allocations to be backed stake that will be slashable when the update takes effect.
 
-A deallocation from a (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple is bounded by the latest pending slashable magnitude defined, as one cannot deallocate more than what is going to be allocated.
-
-The function can be called with an EIP1271 signature from the operator's allocator or by the allocator itself.
+The function can be called with an EIP1271 signature from the operator or by the operator itself.
 
 Emits
 
 1. `MagnitudeUpdated` for each updated (operator, IStrategy, operatorSet)
-2. `TotalAndNonslashableMagnitudeUpdated` for each Strategy
+2. `NonslashableMagnitudeUpdated` for each Strategy
 
 Reverts if
 
-1. The `allocatorSignature` is invalid or `msg.sender` is not the `operator`'s allocator
-2. if MagnitudeAdjustmentType == ALLOCATION:
-    - The magnitude queued for allocation to operatorSets is greater than the `operator`'s latest pending nonslashable magnitude for the `strategy` (cannot allocate more than nonslashable)
-3. if MagnitudeAdjustmentType == DEALLOCATION:
-    - The magnitude queued for deallocation from an operatorSet is greater than the `operator`'s latest pending magnitude for the `strategy` (cannot deallocate more than is allocated)
-4. There are > 3 pending magnitude updates for any of the operatorSets being updated for the given `operator` and strategy
-    1. This is due to gas constraints during slashing
+1. The `operatorSignature` is invalid or `msg.sender` is not the `operator`
+2. The magnitude queued for allocation to operatorSets summed with all pending allocations is greater than the `operator`'s latest pending nonslashable magnitude for the `strategy` (cannot allocate more than nonslashable)
 
-### queueMagnitudeDilution
+### queueDeallocation
 
-Allocators call this and for each given strategy decreases all relative proportions of currently allocated magnitudes allowing the allocator to reduce the total slashable proportion. This is done cheaply by increasing their non slashable magnitude to the desired proportion of the new total magnitude. The function can be called with an EIP1271 signature from the operator's allocator or by the allocator itself.
 
-For example, to add 1% to an operator's nonslashable proportion for a given strategy, if the operator's total magnitude for the strategy was 100e18, their allocator would queue a dilution of 1.0101...e18 magnitude. This would result in their nonslashable magnitude being increased by 1% of the total magnitude.
+Operators call this to deallocate from their slashable stake(magnitudes) for a given (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple.
+A queued deallocation from a (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple is bounded by the latest pending slashable magnitude defined, as one cannot deallocate more than what is going to be allocated.
+These deallocations must be completed in a 2-tx step process by `queueDeallocation` and `comepleteDeallocation`. Queued deallocations are only completable after 21 days and are still subject to slashing from the operatorSet
+while queued.
 
-Dilution reduces allocations from all existing operatorSets for the operator and strategy.
-
-Note that, upon slashing, magnitudes for dilution will be decremented to preserve the proportion being diluted because the total magnitude decrements during slashing.
+The function can be called with an EIP1271 signature from the operator or by the operator itself.
 
 Emits
 
-1. `TotalAndNonslashableMagnitudeUpdated` for each Strategy
-
-Reverts if:
-
-1. The `allocatorSignature` is invalid or `msg.sender` is not the `operator`'s allocator
-2. The total magnitude after dilution is greater than `FIXED_TOTAL_MAG_LIMIT`
-3. `strategies.length != nonslashableToAdd.length`
-4. There are >6 pending updates to the nonslashable magnitude for the given `operator` and strategy
-    1. This is due to gas constraints during slashing
-
-### queueMagnitudeConcentration
-
-Allocators call this and for each given strategy increases all relative proportions of currently allocated magnitudes allowing the allocator to increase their total slashable proportion. This is done cheaply by decreasing their non slashable magnitude to the desired proportion of the new total magnitude. The function can be called with an EIP1271 signature from the operator's allocator or by the allocator itself.
-
-For example, to remove 1% from an operator's nonslashable proportion for a given strategy, if the operator's total magnitude for the strategy was 100e18, their allocator would queue a contration of 0.990099e18 magnitude. This would result in their nonslashable magnitude being decreased by 1% of the total magnitude.
-
-Concentration increases allocations from all existing operatorSets for the operator and strategy.
-
-Emits
-
-1. `TotalAndNonSlashableMagnitudeUpdated` for each updated (operator, IStrategy)
-
+1. `MagnitudeUpdated` for each updated (operator, IStrategy, operatorSet)
 
 Reverts if
 
-1. The `allocatorSignature` is invalid or `msg.sender` is not the `operator`'s allocator
-2. The allocator is attempting to remove more nonslashable magnitude than the `operator`'s latest pending nonslashable magnitude for the `strategy`
-3. `strategies.length != nonslashableToAdd.length`
-4. There are >6 pending updates to the nonslashable magnitude for the given `operator` and strategy
-    1. This is due to gas constraints during slashing
+1. The `operatorSignature` is invalid or `msg.sender` is not the `operator`
+2. The magnitude queued for deallocation from an operatorSet is greater than the `operator`'s latest pending magnitude for the `strategy` (cannot deallocate more than is allocated)
+
+### completeDeallocation
+
+Operators call this to complete their queued deallocations after they have been queued for at least 21 days. Deallocations must all be completed in the order they were queued (tracked by an incrementing nonce).
+Deallocation amounts may increment nonslashable magnitude upon completion less than expected due to slashing events while they were queued. This is done by keeping track of the totalMagnitude
+at time of queuing and the totalMagnitude at the time of deallocation completion.
+
+This function can be called permissionlessly by anyone once it is completable.
+
+Emits
+
+1. `NonslashableMagnitudeUpdated` for each updated (operator, IStrategy)
+
+Reverts if
+
+1. Any of the queued deallocations have not been queued for long enough
+2. Queued deallocations are not provided sequentially and in order of the last completed nonce.
+3. Any of the hashes of the queued deallocation inputs were not set in storage i.e were not actually previously queued
+
 
 ### getSlashableBips
 
