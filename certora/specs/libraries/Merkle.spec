@@ -36,7 +36,8 @@ rule merkleizeSha256IsInjective_onSameLengths()
     assert res1 == res2 => equals(leaves1, leaves2);
 }
 
-//(Proof1.length == Proof2.length && index1 == index2) => processInclusionProofSha256(proof1, leaf1, index1) == processInclusionProofSha256(proof2, leaf2, index2)            //easy to implement, might run long
+//Proof1.length == Proof2.length && index1 == index2 && leaf1 != leaf2) => 
+//  processInclusionProofSha256(proof1, leaf1, index1) != processInclusionProofSha256(proof2, leaf2, index2)           
 rule processInclusionProofSha256_correctness()
 {
 	bytes proof1; bytes32 leaf1; uint256 index1;
@@ -44,11 +45,12 @@ rule processInclusionProofSha256_correctness()
     bytes32 res1 = processInclusionProofSha256(proof1, leaf1, index1);
     bytes32 res2 = processInclusionProofSha256(proof2, leaf2, index2);
 
-    satisfy res1 == res2;
-    assert proof1.length == proof2.length && index1 == index2 => res1 == res2;
+    satisfy res1 != res2;
+    assert proof1.length == proof2.length && index1 == index2 && leaf1 != leaf2 => res1 != res2;
 }
 
-//(Proof1.length == Proof2.length && index1 == index2) => processInclusionProofSha256(proof1, leaf1, index1) == processInclusionProofSha256(proof2, leaf2, index2)            //easy to implement, might run long
+//Proof1.length == Proof2.length && index1 == index2 && leaf1 != leaf2) => 
+//  processInclusionProofKeccak(proof1, leaf1, index1) != processInclusionProofKeccak(proof2, leaf2, index2)           
 rule processInclusionProofKeccak_correctness()
 {
 	bytes proof1; bytes32 leaf1; uint256 index1;
@@ -56,8 +58,8 @@ rule processInclusionProofKeccak_correctness()
     bytes32 res1 = processInclusionProofKeccak(proof1, leaf1, index1);
     bytes32 res2 = processInclusionProofKeccak(proof2, leaf2, index2);
 
-    satisfy res1 == res2;
-    assert proof1.length == proof2.length && index1 == index2 => res1 == res2;
+    satisfy res1 != res2;
+    assert proof1.length == proof2.length && index1 == index2 && leaf1 != leaf2 => res1 != res2;
 }
 
 function isPowerOfTwo(uint256 x) returns bool
