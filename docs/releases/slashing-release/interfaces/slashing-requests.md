@@ -27,8 +27,6 @@ interface IAVSDirectory {
      * @param strategies the set of strategies to slash
      * @param bipsToSlash the number of bips to slash, this will be proportional to the
      * operator's slashable stake allocation for the operatorSet
-     *
-     * @dev emits OperatorSlashed
      */
     function slashOperator(
         address operator,

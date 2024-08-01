@@ -1,6 +1,6 @@
 # Slashing Parameter Configuration
 
-Allocation functionality is explained [here](https://www.notion.so/eigen-labs/Allocator-Functionality-282a008ab7a14c79a25ec2954f8f5912).
+Allocation functionality and magnitudes are explained [here](https://www.notion.so/eigen-labs/Allocator-Functionality-282a008ab7a14c79a25ec2954f8f5912).
 
 ```solidity
 interface IAVSDirectory {
@@ -123,7 +123,7 @@ interface IAVSDirectory {
 
 Operators call this to allocate to their slashable stake (magnitudes) for a list of (operator, IStrategy, operatorSet(avs, operatorSetId)) tuples. For each adjustment param given, it queues magnitude updates to the specified operatorSets which will take effect 21 days from the time of calling. This gives the operator's stakers 3.5 days to queue withdrawals if they disagree with the changes to their staking portfolio.
 
-All allocations in the call are summed and checked to be less than the nonslashable magnitude that is not pending allocation for the `strategy`. This is in order for all allocations to be backed stake that will be slashable when the update takes effect.
+All allocations in the call are summed and checked to be less than the nonslashable magnitude available for allocation for the `strategy`. This is in order for all allocations to be backed stake that will be slashable when the update takes effect.
 
 The function can be called with an EIP1271 signature from the operator or by the operator itself.
 
@@ -134,13 +134,14 @@ Emits
 Reverts if
 
 1. The `operatorSignature` is invalid or `msg.sender` is not the `operator`
-2. The magnitude queued for allocation to operatorSets summed with all pending allocations is greater than the `operator`'s less than the nonslashable magnitude that is not pending allocation for the `strategy` (cannot allocate more than nonslashable)
+2. The magnitude queued for allocation to operatorSets summed with all pending allocations for the `(operator, strategy)` pair is greater less than the nonslashable magnitude for the `strategy` (cannot allocate more than nonslashable)
 
 ### queueDeallocation
 
-Operators call this to deallocate from their slashable stake (magnitudes) for a list of (operator, IStrategy, operatorSet(avs, operatorSetId)) tuples.
-A queued deallocation from a (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple is bounded by the latest pending slashable magnitude defined, as one cannot deallocate more than what is going to be allocated. Queued deallocations are no longer slashable after 21 days from the time of queueing.
-These deallocations must be completed in a 2-tx step process by calling `completeDeallocations` after 21 days have passed in order to increment the nonslashable magnitude of the operator.
+Operators call this to deallocate from their slashable stake (magnitudes) for a list of (operator, IStrategy, operatorSet(avs, operatorSetId)) tuples. Queued deallocations are no longer slashable after 21 days from the time of queueing.
+These deallocations must be completed in a 2-tx step process by calling `completeDeallocations` after 21 days have passed which increments the nonslashable magnitude of the operator, to be allocated to different operatorSets.
+
+The sum of all pending deallocations from a (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple are verified to be less than the currently allocated magnitude. This is order to make sure that the operator cannot deallocate more than they have allocated.
 
 The function can be called with an EIP1271 signature from the operator or by the operator itself.
 
@@ -151,11 +152,11 @@ Emits
 Reverts if
 
 1. The `operatorSignature` is invalid or `msg.sender` is not the `operator`
-2. The magnitude queued for deallocation from an operatorSet is greater than the `operator`'s latest pending magnitude for the `strategy` (cannot deallocate more than is allocated)
+2. The sum of all pending deallocations from an operatorSet is greater than the `operator`'s current magnitude for the operatorSet and `strategy` (cannot deallocate more than is allocated)
 
 ### completeDeallocations
 
-Operators call this to complete their queued deallocations for a list of (operator, IStrategy, operatorSet(avs, operatorSetId)) tuples. This increments the nonslashable magnitude of the operator by the sum of all deallocation amounts for each strategy.
+Operators call this to complete their queued deallocations for a list of (operator, IStrategy, operatorSet(avs, operatorSetId)) tuples. This increments the nonslashable magnitude of the operator by the sum of all completable deallocations.
 
 Deallocations may increment nonslashable magnitude upon completion less than expected due to slashing events while they were queued. See [here](https://www.notion.so/eigen-labs/Allocator-Functionality-282a008ab7a14c79a25ec2954f8f5912) for more information.
 
@@ -165,7 +166,7 @@ Emits
 
 1. `MagnitudeDeallocationCompleted` for each updated (operator, IStrategy, operatorSet)
 
-Never reverts.
+Never reverts. If there are no completable deallocations, the function will return without emitting any events.
 
 ### getSlashableBips
 
