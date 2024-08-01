@@ -140,7 +140,7 @@ Reverts if
 Operators call this to deallocate from their slashable stake (magnitudes) for a list of (operator, IStrategy, operatorSet(avs, operatorSetId)) tuples. Queued deallocations are no longer slashable after 21 days from the time of queueing.
 These deallocations must be completed in a 2-tx step process by calling `completeDeallocations` after 21 days have passed which increments the nonslashable magnitude of the operator, to be allocated to different operatorSets.
 
-The sum of all pending deallocations from a (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple are verified to be less than the currently allocated magnitude. This is order to make sure that the operator cannot deallocate more than they have allocated.
+The sum of all pending deallocations from a (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple are verified to be less than the currently allocated magnitude. This is in order to make sure that the operator cannot deallocate more than they have allocated.
 
 The function can be called with an EIP1271 signature from the operator or by the operator itself.
 
