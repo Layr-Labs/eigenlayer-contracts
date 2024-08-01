@@ -86,16 +86,15 @@ interface IAVSDirectory {
      *
      * @param operator address to complete deallocations for
      * @param operatorSets the sets of operator sets to complete deallocations for
-     * @param strategies the list of strategies to complete deallocations for, must be 1:1 with the operatorSets
+     * @param strategies a 2d list of strategies to complete deallocations for, one list for each operatorSet
      * @param operatorSignature signature of the operator if msg.sender is not the operator
      *
      * @dev can be called permissionlessly by anyone
-     * @dev must have the same number of operatorSets and strategies
      */
     function completeDeallocations(
         address operator,
         OperatorSet[] calldata operatorSets,
-        IStrategy[] calldata strategies,
+        IStrategy[][] calldata strategies,
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external;
 
@@ -166,7 +165,10 @@ Emits
 
 1. `MagnitudeDeallocationCompleted` for each updated (operator, IStrategy, operatorSet)
 
-Never reverts. If there are no completable deallocations, the function will return without emitting any events.
+Reverts if:
+
+1. The `operatorSignature` is invalid or `msg.sender` is not the `operator`
+2. The number of `operatorSets` is not the same as the number of `strategies` lists
 
 ### getSlashableBips
 
