@@ -169,6 +169,7 @@ Reverts if:
 
 1. The `operatorSignature` is invalid or `msg.sender` is not the `operator`
 2. The number of `operatorSets` is not the same as the number of `strategies` lists
+3. There are duplicate strategies in any of the `strategies` lists
 
 ### getSlashableBips
 
