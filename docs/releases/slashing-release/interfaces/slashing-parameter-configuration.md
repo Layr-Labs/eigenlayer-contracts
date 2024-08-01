@@ -39,21 +39,15 @@ interface IAVSDirectory {
         address operator,
         IStrategy strategy,
         OperatorSet operatorSet,
+        uint64 magnitude,
         uint32 effectTimestamp,
-        uint64 magnitude
-    );
-
-    event TotalMagnitudeUpdated(
-        address operator,
-        IStrategy strategy,
-        uint64 totalMagnitude
     );
 
     event NonSlashableMagnitudeUpdated(
         address operator,
         IStrategy strategy,
-        uint32 effectTimestamp,
-        uint64 nonSlashableMagnitude
+        uint64 nonSlashableMagnitude,
+        uint32 effectTimestamp
     )
 
     /// EXTERNAL - STATE MODIFYING
@@ -120,9 +114,9 @@ interface IAVSDirectory {
 
 ### allocate
 
-Operators call this to allocate to their slashable stake (magnitudes) for a given (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple. For each adjustment param given, it queues magnitude updates to the specified operatorSets which will take effect 21 days from the time of calling. This gives stakers 3.5 days to queue withdrawals if they disagree with the changes to their staking portfolio.
+Operators call this to allocate to their slashable stake (magnitudes) for a given (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple. For each adjustment param given, it queues magnitude updates to the specified operatorSets which will take effect 21 days from the time of calling. This gives the operator's stakers 3.5 days to queue withdrawals if they disagree with the changes to their staking portfolio.
 
-All allocations in the call summed with all pending allocations must be less than the operator's current nonslashable magnitude in the strategy in order for all allocations to be backed stake that will be slashable when the update takes effect.
+All allocations in the call are summed and checked to be less than the nonslashable magnitude that is not pending allocation. This is in order for all allocations to be backed stake that will be slashable when the update takes effect.
 
 The function can be called with an EIP1271 signature from the operator or by the operator itself.
 
@@ -139,8 +133,8 @@ Reverts if
 ### queueDeallocation
 
 Operators call this to deallocate from their slashable stake (magnitudes) for a given (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple.
-A queued deallocation from a (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple is bounded by the latest pending slashable magnitude defined, as one cannot deallocate more than what is going to be allocated.
-These deallocations must be completed in a 2-tx step process by `queueDeallocation` and `comepleteDeallocation`. Queued deallocations are slashable for 21 days after they're queued. They're completable after 21 days.
+A queued deallocation from a (operator, IStrategy, operatorSet(avs, operatorSetId)) tuple is bounded by the latest pending slashable magnitude defined, as one cannot deallocate more than what is going to be allocated. Queued deallocations are no longer slashable after 21 days from the time of queueing.
+These deallocations must be completed in a 2-tx step process by calling `comepleteDeallocation` after 21 days have passed in order to increment the nonslashable magnitude of the operator.
 
 The function can be called with an EIP1271 signature from the operator or by the operator itself.
 
@@ -155,11 +149,11 @@ Reverts if
 
 ### completeDeallocation
 
-Operators call this to complete their queued deallocations after they have been queued for at least 21 days.
+Operators call this to complete their queued deallocations after they have passed the 21 day delay.
 
-Deallocation amounts may increment nonslashable magnitude upon completion less than expected due to slashing events while they were queued. This is done by keeping track of the totalMagnitude at time of queuing and the totalMagnitude at the time of deallocation completion.
+Deallocation amounts may increment nonslashable magnitude upon completion less than expected due to slashing events while they were queued. See [here](https://www.notion.so/eigen-labs/Allocator-Functionality-282a008ab7a14c79a25ec2954f8f5912) for more information.
 
-This function can be called permissionlessly by anyone once it is completable.
+This function can be called permissionlessly by anyone once a deallocation is completable.
 
 Emits
 
