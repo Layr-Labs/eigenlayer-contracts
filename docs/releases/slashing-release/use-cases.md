@@ -20,14 +20,10 @@
 4. As an operator, I can unilaterally “rage quit” an AVS.
    1. During a protocol defined period, my stake remains slashable by the AVS
    2. After this period ends, my stake is no longer slashable by the AVS
-5. As an operator, I can set and modify a different entity that is able to allocate my slashable stake on my behalf
-6. As an operator, I have clear insight into the slashing conditions for any AVS that I’m planning to allocated slashable stake to
-7. As an operator, I want to deallocate in a timely fashion when when an AVS makes changes to conditions which I can be slashed for
 
 ### Stakers
 
 1. As a staker, when withdrawing funds for my shares I must wait for the withdrawal/unstake period, where I am still subject to slashing.
 2. As a staker, I want an enforced window in which to undelegate from my Operator, before they allocate slashable stake to a new operatorSet. This should guarantee that if I act reasonably quickly to undelegate, my funds cannot be slashed by the added operatorSet.
 3. As a staker, I can claim rewards that I earn for the slashable stake I am providing to operatorSets.
-4. As a staker, I want to be able undelegate from my operator when an AVS adds a slashing condition.
-5. As a staker, I expect to earn more if my stake is being used to secure additional operatorSets
+4. As a staker, I expect to earn more if my stake is being used to secure additional operatorSets

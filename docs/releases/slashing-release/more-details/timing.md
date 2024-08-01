@@ -10,7 +10,6 @@ The timing and delays imposed in the slashing protocol are intricate and very im
 
 * Updates to magnitudes take effect after 21 days
 * There can be at most 3 pending allocations/deallocations for a certain strategy, operator, and operatorSet at a time
-* There can be at most 3 pending dilutions/concentrations for a certain strategy and operator at a time
 
 ## Withdrawals
 
