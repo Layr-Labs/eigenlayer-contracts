@@ -67,7 +67,10 @@ Called by an AVS to slash an operator for a given array of strategies, the corre
 
 For accounting reasons, this function also reduces the magnitude of the slashing operatorSet in the future and pending deallocations from the operatorSet in order maintain pending nominal stake guarantees in future forecasts. Overall, the total magnitude for the (operator, strategy) before the request is greater than the total magnitude after. 
 
-Emits a `OperatorSlashed` event.
+Emits an
+1. `OperatorSlashed` event
+2. `MagnitudeAllocation` event for each strategy that has been slashed for the operatorSet, to overwrite previously expected allocations in indexers
+3. `MagnitudeDeallocation` event for each strategy that has been slashed for the operatorSet, to overwrite previously expected deallocations in indexers
 
 Reverts if:
 
