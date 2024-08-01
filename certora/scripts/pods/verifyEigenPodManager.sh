@@ -9,6 +9,8 @@ certoraRun certora/harnesses/EigenPodManagerHarness.sol \
     src/contracts/core/DelegationManager.sol src/contracts/pods/EigenPod.sol src/contracts/strategies/StrategyBase.sol src/contracts/core/StrategyManager.sol \
     src/contracts/core/Slasher.sol src/contracts/permissions/PauserRegistry.sol \
     --verify EigenPodManagerHarness:certora/specs/pods/EigenPodManager.spec \
+    --solc_via_ir \
+    --solc_optimize 1 \
     --optimistic_loop \
     --optimistic_fallback \
     --optimistic_hashing \

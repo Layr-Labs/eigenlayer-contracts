@@ -13,6 +13,8 @@ certoraRun certora/harnesses/EigenPodHarness.sol \
     lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol \
     lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
     --verify EigenPodHarness:certora/specs/pods/EigenPod.spec \
+    --solc_via_ir \
+    --solc_optimize 1 \
     --optimistic_loop \
     --prover_args '-recursionEntryLimit 3' \
     --optimistic_hashing \

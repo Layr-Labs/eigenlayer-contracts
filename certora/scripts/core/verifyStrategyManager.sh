@@ -11,6 +11,8 @@ certoraRun certora/harnesses/StrategyManagerHarness.sol \
     src/contracts/strategies/StrategyBase.sol src/contracts/core/DelegationManager.sol \
     src/contracts/core/Slasher.sol src/contracts/permissions/PauserRegistry.sol \
     --verify StrategyManagerHarness:certora/specs/core/StrategyManager.spec \
+    --solc_via_ir \
+    --solc_optimize 1 \
     --optimistic_loop \
     --optimistic_fallback \
     --optimistic_hashing \
