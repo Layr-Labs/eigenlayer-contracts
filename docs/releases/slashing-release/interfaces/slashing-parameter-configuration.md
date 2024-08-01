@@ -69,7 +69,8 @@ interface IAVSDirectory {
 
     /**
      * @notice Queues a set of magnitude adjustments to decrease the slashable stake of an operator set for the given operator for the given strategy.
-     * The deallocations will take effect 21 days from calling. In order for the operator to have their nonslashable magnitude increased, they must call the contract again to complete the deallocation. Stake deallocations are still subject to slashing 21 days have passed since queuing.
+     * The deallocations will take effect 21 days from calling. In order for the operator to have their nonslashable magnitude increased, 
+     * they must call the contract again to complete the deallocation. Stake deallocations are still subject to slashing until 21 days have passed since queuing.
      *
      * @param operator address to decrease allocations for
      * @param deallocations array of magnitude adjustments for multiple strategies and corresponding operator sets
@@ -84,7 +85,8 @@ interface IAVSDirectory {
 
     /**
      * @notice Complete queued deallocations of slashable stake for an operator.
-     * Increments the nonslashable magnitude of the operator by the sum of all deallocation amounts for each strategy. If the operator was slashed, this will be a smaller amount than during queuing.
+     * Increments the nonslashable magnitude of the operator by the sum of all deallocation amounts for each strategy. 
+     * If the operator was slashed, this will be a smaller amount than during queuing.
      *
      * @param queuedDeallocations deallocations that were queued and are to be completed
      */

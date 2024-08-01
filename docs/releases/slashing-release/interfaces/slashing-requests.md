@@ -12,7 +12,7 @@ interface IAVSDirectory {
         OperatorSet operatorSet,
         uint32 bipsToSlash,
         IStrategy[] strategies,
-        uint64 newTotalMagnitude
+        uint64[] newTotalMagnitudes
     );
 
     /// EXTERNAL - STATE MODIFYING
@@ -29,13 +29,11 @@ interface IAVSDirectory {
      * operator's slashable stake allocation for the operatorSet
      *
      * @dev emits OperatorSlashed
-     * @dev emits MagnitudeDecremented and/or NonSlashableMagnitudeDecremented to convey which
-     * magnitude has been decremented.
      */
     function slashOperator(
         address operator,
         bytes4 operatorSetId,
-        IStrategy[] memory strategies,
+        IStrategy[] calldata strategies,
         uint32 bipsToSlash
     ) external;
 
@@ -70,12 +68,10 @@ Called by an AVS to slash an operator for a given array of strategies, the corre
 For accounting reasons, this function also reduces the magnitude of the slashing operatorSet in the future and pending deallocations from the operatorSet in order maintain pending nominal stake guarantees in future forecasts. Overall, the total magnitude for the (operator, strategy) before the request is greater than the total magnitude after. 
 
 Emits a `OperatorSlashed` event.
-Emits a `MagnitudeUpdated` or/and `NonSlashableMagnitudeUpdated` to convey the decremented magnitudes.
 
 Reverts if:
 
 1. `bipsToSlash == 0 || bipsToSlash > 10000`
-2. `msg.sender` is not the AVS for the given operatorSet
 2. `operator` is not registered or within 17.5 days of deregistering from an operatorSet
 
 ### getMinimumSlashableSharesBefore
