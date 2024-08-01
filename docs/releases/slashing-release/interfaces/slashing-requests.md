@@ -32,7 +32,7 @@ interface IAVSDirectory {
      */
     function slashOperator(
         address operator,
-        bytes4 operatorSetId,
+        uint32 operatorSetId,
         IStrategy[] calldata strategies,
         uint32 bipsToSlash
     ) external;
