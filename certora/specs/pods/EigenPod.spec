@@ -30,7 +30,6 @@ methods {
 	// external calls to StrategyManager
     function _.getDeposits(address) external => DISPATCHER(true);
     function _.slasher() external => DISPATCHER(true);
-    function _.addShares(address,address,uint256) external => DISPATCHER(true);
     function _.removeShares(address,address,uint256) external => DISPATCHER(true);
     function _.withdrawSharesAsTokens(address, address, uint256, address) external => DISPATCHER(true);
 
@@ -51,9 +50,6 @@ methods {
 
     // external calls to ETH2Deposit contract
     function _.deposit(bytes, bytes, bytes, bytes32) external => NONDET;
-
-    // external calls to DelayedWithdrawalRouter (from EigenPod)
-    function _.createDelayedWithdrawal(address, address) external => DISPATCHER(true);
 
     // external calls to PauserRegistry
     function _.isPauser(address) external => DISPATCHER(true);
