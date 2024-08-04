@@ -10,6 +10,7 @@ import "../../contracts/permissions/PauserRegistry.sol";
 
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/ERC20_SetTransferReverting_Mock.sol";
+import "../mocks/MockDecimals.sol";
 
 import "forge-std/Test.sol";
 
@@ -71,6 +72,21 @@ contract StrategyBaseUnitTests is Test {
     function testCannotReinitialize() public {
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         strategy.initialize(underlyingToken, pauserRegistry);
+    }
+
+    function testDeployStrategyWithMoreThan18Decimals() public {
+        MockTokenWith19Decimals badToken = new MockTokenWith19Decimals();
+        
+        cheats.expectRevert("StrategyBase._initializeStrategyBase: Decimals must be less than or equal to 18");
+        strategy = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(strategyImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, badToken, pauserRegistry)
+                )
+            )
+        );
     }
 
     function testCannotReceiveZeroShares() public {

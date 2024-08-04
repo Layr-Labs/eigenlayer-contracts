@@ -6,3 +6,9 @@ contract MockDecimals {
         return 18;
     }
 }
+
+contract MockTokenWith19Decimals {
+    function decimals() public pure returns (uint8) {
+        return 19;
+    }
+}
