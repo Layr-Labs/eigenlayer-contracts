@@ -73,7 +73,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     }
 
     /// @notice Sets the `underlyingToken` and `pauserRegistry` for the strategy.
-    /// @dev Decimals of the `_underlyingToken` must be <= 18. 
+    /// @dev Decimals of the `_underlyingToken` must be <= 18.
     function _initializeStrategyBase(
         IERC20 _underlyingToken,
         IPauserRegistry _pauserRegistry

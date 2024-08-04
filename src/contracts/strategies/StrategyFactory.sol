@@ -40,7 +40,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     /**
      * @notice Deploy a new strategyBeacon contract for the ERC20 token.
      * @dev A strategy contract must not yet exist for the token.
-     * @dev The `decimals` of the token must be <= 18. 
+     * @dev The `decimals` of the token must be <= 18.
      * @dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
      * like those that conform to ERC777.
      */
