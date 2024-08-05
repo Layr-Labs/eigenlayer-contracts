@@ -550,7 +550,7 @@ contract AVSDirectory is
         uint64[] magnitudeDiffs;
     }
 
-    uint256 internal constant BIPS_FACTOR = 10000;
+    uint256 internal constant BIPS_FACTOR = 10_000;
 
     uint32 public constant ALLOCATION_DELAY = 21 days;
 
@@ -675,8 +675,6 @@ contract AVSDirectory is
         IStrategy[] calldata strategies,
         uint16 bipsToSlash
     ) external {
-        // require operator is registered for operatorSet
-        // OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
         require(
             isOperatorSlashable(operator, OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
             "AVSDirectory.slashOperator: operator not slashable for operatorSet"
@@ -696,8 +694,7 @@ contract AVSDirectory is
                 )
             );
 
-            uint64 slashedMagnitude =
-                uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
+            uint64 slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
 
             // 1. decrement slashedMagnitude from current magnitude and totalMagnitude
             _totalMagnitudeUpdate[operator][strategies[i]].push({
@@ -715,8 +712,6 @@ contract AVSDirectory is
                 _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].latestCheckpoint();
             // if there is a pending magitude update in the future, decrement as well
             if (timestamp > block.timestamp) {
-                // uint64 pendingMagnitude = uint64(value);
-
                 // slashed amount is greater than future allocation value, requires decrementing from nonslashableMagnitude as well
                 if (slashedMagnitude > uint64(value)) {
                     _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].push({key: timestamp, value: 0});
