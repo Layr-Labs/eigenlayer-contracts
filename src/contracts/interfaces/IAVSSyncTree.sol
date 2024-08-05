@@ -10,7 +10,6 @@ interface IAVSSyncTree {
 
     function verifySnarkProof(
         bytes calldata _journal,
-        bytes32 imageId,
         bytes calldata _seal
     ) external;
 
