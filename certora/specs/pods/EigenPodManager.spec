@@ -75,10 +75,10 @@ rule addShares_additivity(env e)
     storage init = lastStorage;
     addShares(e, owner, shares1); 
     addShares(e, owner, shares2);
-    mathint sharesAfter12 = get_podOwnerShares(owner);
+    storage after12 = lastStorage;
     addShares(e, owner, sharesSum) at init;
-    mathint sharesAfterSum = get_podOwnerShares(owner);
-    assert sharesAfter12 == sharesAfterSum;
+    storage afterSum = lastStorage;
+    assert after12 == afterSum;
 }
 
 rule removeShares_additivity(env e)
@@ -89,10 +89,24 @@ rule removeShares_additivity(env e)
     storage init = lastStorage;
     removeShares(e, owner, shares1); 
     removeShares(e, owner, shares2);
-    mathint sharesAfter12 = get_podOwnerShares(owner);
+    storage after12 = lastStorage;
     removeShares(e, owner, sharesSum) at init;
-    mathint sharesAfterSum = get_podOwnerShares(owner);
-    assert sharesAfter12 == sharesAfterSum;
+    storage afterSum = lastStorage;
+    assert after12 == afterSum;
+}
+
+rule withdrawShares_additivity(env e)
+{
+    uint256 shares1; uint256 shares2; uint256 sharesSum;
+    require shares1 + shares2 == sharesSum * 1;
+    address owner; address receiver;
+    storage init = lastStorage;
+    withdrawSharesAsTokens(e, owner, receiver, shares1); 
+    withdrawSharesAsTokens(e, owner, receiver, shares2);
+    storage after12 = lastStorage;
+    withdrawSharesAsTokens(e, owner, receiver, sharesSum) at init;
+    storage afterSum = lastStorage;
+    assert after12 == afterSum;
 }
 
 rule add_remove_inverse(env e)
@@ -126,6 +140,19 @@ rule removeShares_integrity(env e)
     assert sharesBefore - shares == sharesAfter;
 }
 
+//TODO
+rule withdrawShares_integrity(env e)
+{
+    uint256 shares;
+    address owner; address receiver;
+    mathint sharesBefore = get_podOwnerShares(owner);
+    mathint sharesRBefore = get_podOwnerShares(receiver);
+    withdrawSharesAsTokens(e, owner, receiver, shares); 
+    mathint sharesAfter = get_podOwnerShares(owner);
+    mathint sharesRAfter = get_podOwnerShares(receiver);
+    satisfy shares > 0;
+}
+
 rule addShares_independence(env e)
 {
     uint256 shares1; uint256 shares2;
@@ -156,16 +183,4 @@ rule add_remove_independence(env e)
     assert storageAfter12 == storageAfter21;
 }
 
-rule withdrawShares_additivity(env e)
-{
-    uint256 shares1; uint256 shares2; uint256 sharesSum;
-    require shares1 + shares2 == sharesSum * 1;
-    address owner; address receiver;
-    storage init = lastStorage;
-    withdrawSharesAsTokens(e, owner, receiver, shares1); 
-    withdrawSharesAsTokens(e, owner, receiver, shares2);
-    storage after12 = lastStorage;
-    withdrawSharesAsTokens(e, owner, receiver, sharesSum) at init;
-    storage afterSum = lastStorage;
-    assert after12 == afterSum;
-}
+
