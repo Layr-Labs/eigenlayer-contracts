@@ -17,7 +17,9 @@ rule verifyValidatorBalance_balanceRootUnique()
     verifyValidatorBalance(balanceContainerRoot1, validatorIndex1, proof1);
     verifyValidatorBalance(balanceContainerRoot2, validatorIndex2, proof2);
 
-    assert (validatorIndex1 == validatorIndex2 && 
+    assert (validatorIndex1 / 4 == validatorIndex2 / 4 && 
         balanceContainerRoot1 == balanceContainerRoot2) =>
         proof1.balanceRoot == proof2.balanceRoot;
 }
+
+// TODO the same for verifyValidatorFields

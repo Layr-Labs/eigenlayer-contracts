@@ -1,7 +1,26 @@
 methods
 {
     function fromLittleEndianUint64(bytes32) external returns uint64 envfree;
+    function toLittleEndianUint64(uint64 num) external returns bytes32 envfree;
     function getByteAt(bytes32, uint) external returns bytes1 envfree;
+}
+
+rule transformationsAreInverse1()
+{
+    bytes32 input_LE;
+    require input_LE << 64 == to_bytes32(0);    //the other parts are ignored
+    uint64 res = fromLittleEndianUint64(input_LE);
+    bytes32 inverse = toLittleEndianUint64(res);
+
+    assert input_LE == inverse;
+}
+
+rule transformationsAreInverse2()
+{
+    uint64 x;
+    bytes32 inverse = toLittleEndianUint64(x);
+    uint64 res = fromLittleEndianUint64(inverse);
+    assert x == res;
 }
 
 //holds
@@ -19,12 +38,15 @@ rule fromLittleEndianUint64_correctness()
     satisfy inputByte == outputByte;
 }
 
+/*
 // currently times out but this is implied by fromLittleEndianUint64_correctness 
+// this doesn't compile unless you set "disable_local_typechecking": true
 rule fromLittleEndianUint64_isSurjective()
 {
     assert forall uint64 res . exists bytes32 input . fromLittleEndianUint64(input) == res;
     //assert forall uint64 res . exists bytes32 input . fromLittleEndianUint64_CVL(input) == res;
 }
+*/
 
 //just a copy of the contract method to CVL
 function fromLittleEndianUint64_CVL(bytes32 lenum) returns uint64 
