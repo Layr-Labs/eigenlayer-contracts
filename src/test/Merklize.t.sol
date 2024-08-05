@@ -38,23 +38,24 @@ import "forge-std/Script.sol";
 
 contract MerklizeScript is Script, Test {
     function run() public {
-        MerklizeTarget target = MerklizeTarget(0xCA8c8688914e0F7096c920146cd0Ad85cD7Ae8b9);
+        MerklizeTarget target = MerklizeTarget(0x5FbDB2315678afecb367f032d93F642f64180aa3);
         
-        OperatorLeafLib.OperatorLeaf[] memory operatorLeaves = _createOperatorLeafArray(0, 200, 10);
+        OperatorLeafLib.OperatorLeaf[] memory operatorLeaves = _createOperatorLeafArray(1, 200);
         vm.startBroadcast();
+        bytes32 root = target.merklizeOperatorSet(operatorLeaves); // 1812699
         // bytes32 root = target.merklizeOperatorSetAndCalcStakes(operatorLeaves); // 1812699
-        bytes32 root = target.merklizeOperatorSetAndCalcStakes(operatorLeaves); // 1812699
         // bytes32 root = target.hashOperatorSet2(operatorLeaves); // 779500
 
         vm.stopBroadcast();
         emit log_named_bytes32("Root: ", root);
     }
 
-    function _createOperatorLeafArray(uint256 seed, uint256 numOperators, uint256 numStrategies) internal pure returns (OperatorLeafLib.OperatorLeaf[] memory) {
+    function _createOperatorLeafArray(uint256 seed, uint256 numOperators) internal pure returns (OperatorLeafLib.OperatorLeaf[] memory) {
         OperatorLeafLib.OperatorLeaf[] memory operatorLeaves = new OperatorLeafLib.OperatorLeaf[](numOperators);
         for (uint256 i = 0; i < numOperators; i++) {
             operatorLeaves[i].operator = address(uint160(uint256(keccak256(abi.encodePacked(seed, i)))));
-            operatorLeaves[i].shares = 700_000 ether; ///uint64(uint256(keccak256(abi.encodePacked(seed, i, j))));
+            operatorLeaves[i].stake1 = uint256(keccak256(abi.encodePacked(seed, i+numOperators)));
+            operatorLeaves[i].stake2 = uint256(keccak256(abi.encodePacked(seed, i+numOperators*2)));
         }
         return operatorLeaves;
     }
@@ -66,7 +67,8 @@ library OperatorLeafLib {
 
     struct OperatorLeaf {
         address operator;
-        uint256 shares;
+        uint256 stake1;
+        uint256 stake2;
     }
 }
 
@@ -85,7 +87,7 @@ contract MerklizeTarget {
     function merklizeOperatorSet(OperatorLeafLib.OperatorLeaf[] calldata leaves) public returns (bytes32) {
         bytes32[] memory operatorLeaves = new bytes32[](leaves.length);
         for (uint256 i = 0; i < leaves.length; i++) {
-            operatorLeaves[i] = keccak256(abi.encodePacked(leaves[i].operator, leaves[i].shares));
+            operatorLeaves[i] = keccak256(abi.encodePacked(leaves[i].operator, leaves[i].stake1, leaves[i].stake2));
         }
         return Merkle.merkleizeKeccak256(operatorLeaves);
     }
@@ -99,7 +101,7 @@ contract MerklizeTarget {
         // bytes32 root = keccak256(abi.encode(leaves));
 
         for (uint256 i = 0; i < leaves.length; i++) {
-            if ((leaves[i].shares + slots[i] + i) % 2 == 0) {
+            if ((leaves[i].stake1 + leaves[i].stake2 + slots[i] + i) % 2 == 0) {
                 slots[i] = i;
             }
         }
