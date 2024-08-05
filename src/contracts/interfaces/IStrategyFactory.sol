@@ -14,11 +14,17 @@ import "./IStrategy.sol";
 interface IStrategyFactory {
     event TokenBlacklisted(IERC20 token);
 
-    // @notice Upgradeable beacon which new Strategies deployed by this contract point to
+    /// @notice Upgradeable beacon which new Strategies deployed by this contract point to
     function strategyBeacon() external view returns (IBeacon);
 
-    // @notice Mapping token => Strategy contract for the token
-    function tokenStrategy(IERC20 token) external view returns (IStrategy);
+    /// @notice Mapping token => Strategy contract for the token
+    /// The strategies in this mapping are deployed by the StrategyFactory.
+    /// The factory can only deploy a single strategy per token address
+    /// These strategies MIGHT not be whitelisted in the StrategyManager,
+    /// though deployNewStrategy does whitelist by default.
+    /// These strategies MIGHT not be the only strategy for the underlying token
+    /// as additional strategies can be whitelisted by the owner of the factory.
+    function deployedStrategies(IERC20 token) external view returns (IStrategy);
 
     /**
      * @notice Deploy a new strategyBeacon contract for the ERC20 token.
@@ -48,9 +54,9 @@ interface IStrategyFactory {
      */
     function removeStrategiesFromWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
 
-    // @notice Emitted when the `strategyBeacon` is changed
+    /// @notice Emitted when the `strategyBeacon` is changed
     event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);
 
-    // @notice Emitted whenever a slot is set in the `tokenStrategy` mapping
+    /// @notice Emitted whenever a slot is set in the `tokenStrategy` mapping
     event StrategySetForToken(IERC20 token, IStrategy strategy);
 }
