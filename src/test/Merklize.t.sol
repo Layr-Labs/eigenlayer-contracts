@@ -42,9 +42,9 @@ contract MerklizeScript is Script, Test {
         
         OperatorLeafLib.OperatorLeaf[] memory operatorLeaves = _createOperatorLeafArray(1, 200);
         vm.startBroadcast();
-        bytes32 root = target.merklizeOperatorSet(operatorLeaves); // 1812699
+        // bytes32 root = target.merklizeOperatorSet(operatorLeaves); // 686976
         // bytes32 root = target.merklizeOperatorSetAndCalcStakes(operatorLeaves); // 1812699
-        // bytes32 root = target.hashOperatorSet2(operatorLeaves); // 779500
+        bytes32 root = target.hashOperatorSet2(operatorLeaves); // 350502
 
         vm.stopBroadcast();
         emit log_named_bytes32("Root: ", root);
@@ -54,8 +54,8 @@ contract MerklizeScript is Script, Test {
         OperatorLeafLib.OperatorLeaf[] memory operatorLeaves = new OperatorLeafLib.OperatorLeaf[](numOperators);
         for (uint256 i = 0; i < numOperators; i++) {
             operatorLeaves[i].operator = address(uint160(uint256(keccak256(abi.encodePacked(seed, i)))));
-            operatorLeaves[i].stake1 = uint256(keccak256(abi.encodePacked(seed, i+numOperators)));
-            operatorLeaves[i].stake2 = uint256(keccak256(abi.encodePacked(seed, i+numOperators*2)));
+            operatorLeaves[i].slashableStake = uint256(keccak256(abi.encodePacked(seed, i+numOperators)));
+            operatorLeaves[i].delegatedStake = uint256(keccak256(abi.encodePacked(seed, i+numOperators*2)));
         }
         return operatorLeaves;
     }
@@ -67,8 +67,8 @@ library OperatorLeafLib {
 
     struct OperatorLeaf {
         address operator;
-        uint256 stake1;
-        uint256 stake2;
+        uint256 slashableStake;
+        uint256 delegatedStake;
     }
 }
 
@@ -87,7 +87,7 @@ contract MerklizeTarget {
     function merklizeOperatorSet(OperatorLeafLib.OperatorLeaf[] calldata leaves) public returns (bytes32) {
         bytes32[] memory operatorLeaves = new bytes32[](leaves.length);
         for (uint256 i = 0; i < leaves.length; i++) {
-            operatorLeaves[i] = keccak256(abi.encodePacked(leaves[i].operator, leaves[i].stake1, leaves[i].stake2));
+            operatorLeaves[i] = keccak256(abi.encodePacked(leaves[i].operator, leaves[i].slashableStake, leaves[i].delegatedStake));
         }
         return Merkle.merkleizeKeccak256(operatorLeaves);
     }
@@ -101,7 +101,7 @@ contract MerklizeTarget {
         // bytes32 root = keccak256(abi.encode(leaves));
 
         for (uint256 i = 0; i < leaves.length; i++) {
-            if ((leaves[i].stake1 + leaves[i].stake2 + slots[i] + i) % 2 == 0) {
+            if ((leaves[i].slashableStake + leaves[i].delegatedStake + slots[i] + i) % 2 == 0) {
                 slots[i] = i;
             }
         }
