@@ -37,7 +37,6 @@ interface IStrategyFactory {
 
     /**
      * @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
-     * @dev Also adds the `strategiesToWhitelist` to the `tokenStrategy` mapping
      */
     function whitelistStrategies(
         IStrategy[] calldata strategiesToWhitelist,
