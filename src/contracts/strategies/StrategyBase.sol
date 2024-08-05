@@ -49,7 +49,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /**
      * @notice The maximum total shares for a given strategy
-     * @dev This is a constant to prevent overflow in offchain services
+     * @dev This constant prevents overflow in offchain services
      */
     uint256 internal constant MAX_TOTAL_SHARES = 1e38 - 1;
 
