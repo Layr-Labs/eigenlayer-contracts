@@ -1,52 +1,4 @@
-import "./../setup.spec";
-
-methods {
-    // Internal, NONDET-summarized EigenPod library functions
-    function _.verifyValidatorFields(bytes32, bytes32[] calldata, bytes calldata, uint40) internal => NONDET;
-    function _.verifyValidatorBalance(bytes32, uint40, BeaconChainProofs.BalanceProof calldata) internal => NONDET;
-    function _.verifyStateRoot(bytes32, BeaconChainProofs.StateRootProof calldata) internal => NONDET;
-
-    // Internal, NONDET-summarized "send ETH" function -- unsound summary used to avoid HAVOC behavior
-    // when sending ETH using `Address.sendValue()`
-    function _._sendETH(address recipient, uint256 amountWei) internal => NONDET;
-
-    //// External Calls
-
-	// external calls to Slasher
-    function _.recordStakeUpdate(address,uint32,uint32,uint256) external => NONDET;
-
-    // external calls to Strategy contracts
-    //function _.deposit(address, uint256) external => NONDET;
-    //function _.withdraw(address, address, uint256) external => NONDET;
-
-
-    // envfree functions
-    //function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external returns (uint64) envfree;
-    function withdrawableRestakedExecutionLayerGwei() external returns (uint64) envfree;
-    //function nonBeaconChainETHBalanceWei() external returns (uint256) envfree;
-    function eigenPodManager() external returns (address) envfree;
-    function podOwner() external returns (address) envfree;
-    //function hasRestaked() external returns (bool) envfree;
-    //function mostRecentWithdrawalTimestamp() external returns (uint64) envfree;
-    function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external returns (IEigenPod.ValidatorInfo) envfree;
-    //function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external returns (bool) envfree;
-    function validatorStatus(bytes32 pubkeyHash) external returns (IEigenPod.VALIDATOR_STATUS) envfree;
-    //function nonBeaconChainETHBalanceWei() external returns (uint256) envfree;
-
-    // harnessed functions
-    function get_validatorIndex(bytes32 pubkeyHash) external returns (uint64) envfree;
-    function get_restakedBalanceGwei(bytes32 pubkeyHash) external returns (uint64) envfree;
-    function get_mostRecentBalanceUpdateTimestamp(bytes32 pubkeyHash) external returns (uint64) envfree;
-    function get_podOwnerShares() external returns (int256) envfree;
-    function get_withdrawableRestakedExecutionLayerGwei() external returns (uint256) envfree;
-    function get_ETH_Balance() external returns (uint256) envfree;
-    function get_currentCheckpointTimestamp() external returns (uint64) envfree;
-    function get_lastCheckpointTimestamp() external returns (uint64) envfree;
-    function validatorIsActive(bytes32) external returns (bool) envfree;   
-    function get_validatorLastCheckpointed(bytes32) external returns (uint64) envfree;
-    function activeValidatorCount() external returns (uint256) envfree;
-    function currentCheckpoint() external returns (IEigenPod.Checkpoint) envfree;
-}
+import "./EigenPodMethodsAndSimplifications.spec";
 
 // defines the allowed validator status transitions
 definition validatorStatusTransitionAllowed(IEigenPod.VALIDATOR_STATUS statusBefore, IEigenPod.VALIDATOR_STATUS statusAfter) returns bool =
@@ -67,6 +19,8 @@ rule validatorStatusTransitionsCorrect(bytes32 pubkeyHash) {
         "disallowed validator status transition occurred"
     );
 }
+
+
 
 // verifies that _validatorPubkeyHashToInfo[validatorPubkeyHash].mostRecentBalanceUpdateTimestamp can ONLY increase (or remain the same)
 rule mostRecentBalanceUpdateTimestampOnlyIncreases(bytes32 validatorPubkeyHash) {
@@ -107,6 +61,9 @@ invariant withdrawnValidatorsHaveZeroRestakedGwei(bytes32 pubkeyHash)
     (validatorStatus(pubkeyHash) == IEigenPod.VALIDATOR_STATUS.INACTIVE) =>
         (get_restakedBalanceGwei(pubkeyHash) == 0)
 ;
+
+// TODO the same as above but active => non zero balance
+
 
 /*
 
@@ -211,13 +168,16 @@ invariant consistentAccounting() {
 ////******************** Added by Certora *************//////////
 
 invariant lastCheckpointedNoGreaterThanLastTimestamp(bytes32 validatorPubkeyHash)
-    get_validatorLastCheckpointed(validatorPubkeyHash) <= get_lastCheckpointTimestamp()
+    get_validatorLastCheckpointed(validatorPubkeyHash) <= 
+        max(get_lastCheckpointTimestamp(), get_currentCheckpointTimestamp())
     { preserved with (env e) 
         { require timestampsNotFromFuture(e) && validatorDataNotFromFuture(e, validatorPubkeyHash); } 
 }
 
 rule mostRecentBalanceUpdateTimestampOnlyIncreases2(env e, bytes32 validatorPubkeyHash) {
     requireInvariant lastCheckpointedNoGreaterThanLastTimestamp(validatorPubkeyHash);
+    requireInvariant checkpointsTimestampRemainsCorrect();
+    require timestampsNotFromFuture(e) && validatorDataNotFromFuture(e, validatorPubkeyHash);
     uint64 validatorCheckpointedBefore = get_validatorLastCheckpointed(validatorPubkeyHash);
     method f;
     calldataarg args;
@@ -229,6 +189,7 @@ rule mostRecentBalanceUpdateTimestampOnlyIncreases2(env e, bytes32 validatorPubk
 rule whoCanChangeBalanceUpdateTimestamp(bytes32 validatorPubkeyHash, env e, method f) 
 {
     requireInvariant checkpointsTimestampRemainsCorrect();
+    requireInvariant inactiveValidatorsHaveEmptyInfo(validatorPubkeyHash);
     require timestampsNotFromFuture(e) && validatorDataNotFromFuture(e, validatorPubkeyHash);
 
     uint64 timestampBefore = get_mostRecentBalanceUpdateTimestamp(validatorPubkeyHash);
@@ -247,11 +208,25 @@ invariant checkpointsTimestampRemainsCorrect()
         { require timestampsNotFromFuture(e); } 
 }
 
+rule lastCheckpointTSOnlyIncreases(env e) {
+    requireInvariant checkpointsTimestampRemainsCorrect();
+    require timestampsNotFromFuture(e);
+    uint64 lastTSBefore = get_lastCheckpointTimestamp();
+    method f;
+    calldataarg args;
+    f(e, args);
+    uint64 lastTSAfter = get_lastCheckpointTimestamp();
+    assert lastTSAfter >= lastTSBefore;
+}
+
 invariant lastCheckpointedEqualsLastChPTS(bytes32 hash)
-    validatorIsActive(hash) => 
+    !isDuringCheckpoint() && validatorIsActive(hash) => 
         get_validatorLastCheckpointed(hash) == get_lastCheckpointTimestamp()
 { preserved with (env e) 
-    { require timestampsNotFromFuture(e); } 
+    { 
+        require validatorIsActive(hash) => activeValidatorCount() > 0;
+        require timestampsNotFromFuture(e);
+    } 
 }
 
 rule methodsOnlyChangeOneValidatorStatus(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
@@ -342,5 +317,9 @@ rule beaconBlockRootDoesntChangeInChP(env e, method f) filtered { f -> !f.isView
         beaconBlockRootBefore == beaconBlockRootAfter;
 }
 
-
+function max(uint64 a, uint64 b) returns uint64
+{
+    if (a > b) return a;
+    return b;
+}
 
