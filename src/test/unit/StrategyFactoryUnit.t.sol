@@ -138,6 +138,24 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         strategyFactory.deployNewStrategy(token);
     }
 
+    function test_blacklistTokens_RemovesFromWhitelist() public {
+        IERC20[] memory tokens = new IERC20[](1);
+        tokens[0] = underlyingToken;
+
+        IStrategy newStrat = strategyFactory.deployNewStrategy(underlyingToken);
+        IStrategy[] memory toRemove = new IStrategy[](1);
+        toRemove[0] = newStrat;
+
+        vm.prank(strategyFactory.owner());
+        cheats.expectEmit(true, false, false, false, address(strategyFactory));
+        emit TokenBlacklisted(underlyingToken);
+        cheats.expectCall(address(strategyManagerMock), abi.encodeWithSelector(
+            strategyManagerMock.removeStrategiesFromDepositWhitelist.selector,
+            toRemove
+        ));
+        strategyFactory.blacklistTokens(tokens);
+    }
+
     function test_whitelistStrategies() public {
         StrategyBase strategy = _deployStrategy();
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](1);

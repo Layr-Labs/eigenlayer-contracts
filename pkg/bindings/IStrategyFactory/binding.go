@@ -31,7 +31,7 @@ var (
 
 // IStrategyFactoryMetaData contains all meta data concerning the IStrategyFactory contract.
 var IStrategyFactoryMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"deployNewStrategy\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"newStrategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeStrategiesFromWhitelist\",\"inputs\":[{\"name\":\"strategiesToRemoveFromWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setThirdPartyTransfersForbidden\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"value\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"tokenStrategy\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"whitelistStrategies\",\"inputs\":[{\"name\":\"strategiesToWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"thirdPartyTransfersForbiddenValues\",\"type\":\"bool[]\",\"internalType\":\"bool[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"StrategyBeaconModified\",\"inputs\":[{\"name\":\"previousBeacon\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIBeacon\"},{\"name\":\"newBeacon\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIBeacon\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategySetForToken\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TokenBlacklisted\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"deployNewStrategy\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"newStrategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deployedStrategies\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeStrategiesFromWhitelist\",\"inputs\":[{\"name\":\"strategiesToRemoveFromWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setThirdPartyTransfersForbidden\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"value\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"whitelistStrategies\",\"inputs\":[{\"name\":\"strategiesToWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"thirdPartyTransfersForbiddenValues\",\"type\":\"bool[]\",\"internalType\":\"bool[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"StrategyBeaconModified\",\"inputs\":[{\"name\":\"previousBeacon\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIBeacon\"},{\"name\":\"newBeacon\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIBeacon\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategySetForToken\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TokenBlacklisted\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"}],\"anonymous\":false}]",
 }
 
 // IStrategyFactoryABI is the input ABI used to generate the binding from.
@@ -180,6 +180,37 @@ func (_IStrategyFactory *IStrategyFactoryTransactorRaw) Transact(opts *bind.Tran
 	return _IStrategyFactory.Contract.contract.Transact(opts, method, params...)
 }
 
+// DeployedStrategies is a free data retrieval call binding the contract method 0x581dfd65.
+//
+// Solidity: function deployedStrategies(address token) view returns(address)
+func (_IStrategyFactory *IStrategyFactoryCaller) DeployedStrategies(opts *bind.CallOpts, token common.Address) (common.Address, error) {
+	var out []interface{}
+	err := _IStrategyFactory.contract.Call(opts, &out, "deployedStrategies", token)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// DeployedStrategies is a free data retrieval call binding the contract method 0x581dfd65.
+//
+// Solidity: function deployedStrategies(address token) view returns(address)
+func (_IStrategyFactory *IStrategyFactorySession) DeployedStrategies(token common.Address) (common.Address, error) {
+	return _IStrategyFactory.Contract.DeployedStrategies(&_IStrategyFactory.CallOpts, token)
+}
+
+// DeployedStrategies is a free data retrieval call binding the contract method 0x581dfd65.
+//
+// Solidity: function deployedStrategies(address token) view returns(address)
+func (_IStrategyFactory *IStrategyFactoryCallerSession) DeployedStrategies(token common.Address) (common.Address, error) {
+	return _IStrategyFactory.Contract.DeployedStrategies(&_IStrategyFactory.CallOpts, token)
+}
+
 // StrategyBeacon is a free data retrieval call binding the contract method 0xf0062d9a.
 //
 // Solidity: function strategyBeacon() view returns(address)
@@ -209,37 +240,6 @@ func (_IStrategyFactory *IStrategyFactorySession) StrategyBeacon() (common.Addre
 // Solidity: function strategyBeacon() view returns(address)
 func (_IStrategyFactory *IStrategyFactoryCallerSession) StrategyBeacon() (common.Address, error) {
 	return _IStrategyFactory.Contract.StrategyBeacon(&_IStrategyFactory.CallOpts)
-}
-
-// TokenStrategy is a free data retrieval call binding the contract method 0xb04db517.
-//
-// Solidity: function tokenStrategy(address token) view returns(address)
-func (_IStrategyFactory *IStrategyFactoryCaller) TokenStrategy(opts *bind.CallOpts, token common.Address) (common.Address, error) {
-	var out []interface{}
-	err := _IStrategyFactory.contract.Call(opts, &out, "tokenStrategy", token)
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// TokenStrategy is a free data retrieval call binding the contract method 0xb04db517.
-//
-// Solidity: function tokenStrategy(address token) view returns(address)
-func (_IStrategyFactory *IStrategyFactorySession) TokenStrategy(token common.Address) (common.Address, error) {
-	return _IStrategyFactory.Contract.TokenStrategy(&_IStrategyFactory.CallOpts, token)
-}
-
-// TokenStrategy is a free data retrieval call binding the contract method 0xb04db517.
-//
-// Solidity: function tokenStrategy(address token) view returns(address)
-func (_IStrategyFactory *IStrategyFactoryCallerSession) TokenStrategy(token common.Address) (common.Address, error) {
-	return _IStrategyFactory.Contract.TokenStrategy(&_IStrategyFactory.CallOpts, token)
 }
 
 // DeployNewStrategy is a paid mutator transaction binding the contract method 0x6b9b6229.
