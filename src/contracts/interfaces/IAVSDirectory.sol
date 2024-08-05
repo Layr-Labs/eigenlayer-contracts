@@ -12,6 +12,11 @@ interface IAVSDirectory is ISignatureUtils {
 
     }
 
+    struct OperatorSetRegistrationStatus {
+        bool registered;
+        uint32 lastDeregisteredTimestamp;
+    }
+
     /// @notice Struct representing an operator set
     struct OperatorSet {
         address avs;

@@ -46,6 +46,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: avs = operator => operatorSetId => whether the operator is a member of the operatorSet
     mapping(address => mapping(address => mapping(uint32 => bool))) public isMember;
 
+    mapping(address => mapping(address => mapping(uint32 => OperatorSetRegistrationStatus))) public operatorSetStatus;
+
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
     }
@@ -55,5 +57,5 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[43] private __gap;
+    uint256[42] private __gap;
 }
