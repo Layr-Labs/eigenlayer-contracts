@@ -75,10 +75,29 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
      * @param tokens An array of token addresses to blacklist.
      */
     function blacklistTokens(IERC20[] calldata tokens) external onlyOwner {
+        IStrategy[] memory strategiesToRemove = new IStrategy[](tokens.length);
+        uint256 removeIdx = 0;
+
         for (uint256 i; i < tokens.length; ++i) {
             require(!isBlacklisted[tokens[i]], "StrategyFactory.blacklistTokens: Cannot blacklist deployed strategy");
             isBlacklisted[tokens[i]] = true;
             emit TokenBlacklisted(tokens[i]);
+
+            // If someone has already deployed a strategy for this token, add it
+            // to the list of strategies to remove from the StrategyManager whitelist
+            IStrategy deployed = deployedStrategies[tokens[i]];
+            if (deployed != IStrategy(address(0))) {
+                strategiesToRemove[removeIdx] = deployed;
+                removeIdx++;
+            }
+        }
+
+        // Manually adjust length to remove unused entries
+        // New length == removeIdx
+        assembly { mstore(strategiesToRemove, removeIdx) }
+
+        if (strategiesToRemove.length > 0) {
+            strategyManager.removeStrategiesFromDepositWhitelist(strategiesToRemove);
         }
     }
 
