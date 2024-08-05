@@ -78,6 +78,9 @@ interface IRewardsCoordinator {
      * @param startTimestamp The timestamp (seconds) at which the submission range is considered for distribution
      * could start in the past or in the future but within a valid range. See the diagram above.
      * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION
+     * @dev The sliding window from `RewardsSubmission` applies to `OperatorSetRewardsSubmission`, with
+     *      using `OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP` instead of `GENESIS_REWARDS_TIMESTAMP` and
+     *      `OPERATOR_SET_MAX_RETROACTIVE_LENGTH` instead of `MAX_RETROACTIVE_LENGTH`
      */
 
     struct OperatorSetRewardsSubmission {

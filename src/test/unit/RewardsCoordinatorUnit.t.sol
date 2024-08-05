@@ -55,6 +55,12 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     /// @notice absolute min timestamp that a rewards can start at
     uint32 GENESIS_REWARDS_TIMESTAMP = 1712188800;
 
+    /// @notice Lower bound start range is ~1 month into the past, multiple of CALCULATION_INTERVAL_SECONDS
+    uint32 OPERATOR_SET_MAX_RETROACTIVE_LENGTH = 28 days;
+    /// @notice absolute min timestamp (seconds) that an operatorSet rewards submission can start at
+    uint32 OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = 1719964800;
+
+
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
     /// @notice The activation delay until an updated operator's commission bips takes effect
@@ -99,7 +105,9 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
             MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP
+            GENESIS_REWARDS_TIMESTAMP,
+            OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+            OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         );
         rewardsCoordinator = RewardsCoordinator(
             address(

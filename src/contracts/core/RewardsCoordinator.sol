@@ -78,7 +78,9 @@ contract RewardsCoordinator is
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
         uint32 _MAX_FUTURE_LENGTH,
-        uint32 __GENESIS_REWARDS_TIMESTAMP
+        uint32 _GENESIS_REWARDS_TIMESTAMP,
+        uint32 _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+        uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
     )
         RewardsCoordinatorStorage(
             _delegationManager,
@@ -88,7 +90,9 @@ contract RewardsCoordinator is
             _MAX_REWARDS_DURATION,
             _MAX_RETROACTIVE_LENGTH,
             _MAX_FUTURE_LENGTH,
-            __GENESIS_REWARDS_TIMESTAMP
+            _GENESIS_REWARDS_TIMESTAMP,
+            _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+            _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         )
     {
         _disableInitializers();
@@ -147,7 +151,9 @@ contract RewardsCoordinator is
                 rewardsSubmission.token,
                 rewardsSubmission.amount,
                 rewardsSubmission.startTimestamp,
-                rewardsSubmission.duration
+                rewardsSubmission.duration,
+                MAX_RETROACTIVE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP
             );
 
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
@@ -184,7 +190,9 @@ contract RewardsCoordinator is
                 rewardsSubmission.token,
                 rewardsSubmission.amount,
                 rewardsSubmission.startTimestamp,
-                rewardsSubmission.duration
+                rewardsSubmission.duration,
+                MAX_RETROACTIVE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP
             );
 
             isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionForAllHash] = true;
@@ -231,7 +239,9 @@ contract RewardsCoordinator is
                 rewardsSubmission.token,
                 rewardsSubmission.amount,
                 rewardsSubmission.startTimestamp,
-                rewardsSubmission.duration
+                rewardsSubmission.duration,
+                OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
+                OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP
             );
 
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
@@ -430,13 +440,18 @@ contract RewardsCoordinator is
     /**
      * @notice Validate a RewardsSubmission. Called from `createAVSRewardsSubmission`, `createRewardsForAllSubmission`,
      *         and `rewardOperatorSetForRange`
+     * 
+     * @dev The callee must specify the `retroactiveLength` and `genesisRewardsTimestamp` as those values
+     *      are different depending on the rewards submission type.
      */
     function _validateRewardsSubmission(
         StrategyAndMultiplier[] calldata strategiesAndMultipliers,
         IERC20 token,
         uint256 amount,
         uint32 startTimestamp,
-        uint32 duration
+        uint32 duration,
+        uint32 maxRetroactiveLength,
+        uint32 genesisRewardsTimestamp
     ) internal view {
         require(strategiesAndMultipliers.length > 0, "RewardsCoordinator._validateRewardsSubmission: no strategies set");
         require(amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
@@ -454,7 +469,7 @@ contract RewardsCoordinator is
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= startTimestamp && GENESIS_REWARDS_TIMESTAMP <= startTimestamp,
+            block.timestamp - maxRetroactiveLength <= startTimestamp && genesisRewardsTimestamp <= startTimestamp,
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
         );
         require(
