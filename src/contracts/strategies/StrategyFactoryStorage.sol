@@ -9,13 +9,19 @@ import "../interfaces/IStrategyFactory.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 abstract contract StrategyFactoryStorage is IStrategyFactory {
-    // @notice Upgradeable beacon which new Strategies deployed by this contract point to
+    /// @notice Upgradeable beacon which new Strategies deployed by this contract point to
     IBeacon public strategyBeacon;
 
-    // @notice Mapping token => Strategy contract for the token
-    mapping(IERC20 => IStrategy) public tokenStrategy;
+    /// @notice Mapping token => Strategy contract for the token
+    /// The strategies in this mapping are deployed by the StrategyFactory.
+    /// The factory can only deploy a single strategy per token address
+    /// These strategies MIGHT not be whitelisted in the StrategyManager,
+    /// though deployNewStrategy does whitelist by default.
+    /// These strategies MIGHT not be the only strategy for the underlying token
+    /// as additional strategies can be whitelisted by the owner of the factory.
+    mapping(IERC20 => IStrategy) public deployedStrategies;
 
-    // @notice Mapping token => Whether or not a strategy can be deployed for the token
+    /// @notice Mapping token => Whether or not a strategy can be deployed for the token
     mapping(IERC20 => bool) public isBlacklisted;
 
     /**

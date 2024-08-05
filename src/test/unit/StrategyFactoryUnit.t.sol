@@ -29,10 +29,10 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
     uint256 initialPausedStatus = 0;
 
-    // @notice Emitted when the `strategyBeacon` is changed
+    /// @notice Emitted when the `strategyBeacon` is changed
     event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);
 
-    // @notice Emitted whenever a slot is set in the `tokenStrategy` mapping
+    /// @notice Emitted whenever a slot is set in the `deployedStrategies` mapping
     event StrategySetForToken(IERC20 token, IStrategy strategy);
 
     event TokenBlacklisted(IERC20 token);
@@ -110,7 +110,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         // StrategySetForToken(underlyingToken, newStrategy);
         StrategyBase newStrategy = StrategyBase(address(strategyFactory.deployNewStrategy(underlyingToken)));
 
-        require(strategyFactory.tokenStrategy(underlyingToken) == newStrategy, "tokenStrategy mapping not set correctly");
+        require(strategyFactory.deployedStrategies(underlyingToken) == newStrategy, "deployedStrategies mapping not set correctly");
         require(newStrategy.strategyManager() == strategyManagerMock, "strategyManager not set correctly");
         require(strategyBeacon.implementation() == address(strategyImplementation), "strategyImplementation not set correctly");
         require(newStrategy.pauserRegistry() == pauserRegistry, "pauserRegistry not set correctly");

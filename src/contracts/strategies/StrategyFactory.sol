@@ -50,7 +50,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     {
         require(!isBlacklisted[token], "StrategyFactory.deployNewStrategy: Token is blacklisted");
         require(
-            tokenStrategy[token] == IStrategy(address(0)),
+            deployedStrategies[token] == IStrategy(address(0)),
             "StrategyFactory.deployNewStrategy: Strategy already exists for token"
         );
         IStrategy strategy = IStrategy(
@@ -108,7 +108,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     }
 
     function _setStrategyForToken(IERC20 token, IStrategy strategy) internal {
-        tokenStrategy[token] = strategy;
+        deployedStrategies[token] = strategy;
         emit StrategySetForToken(token, strategy);
     }
 
