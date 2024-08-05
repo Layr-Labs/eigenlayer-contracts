@@ -49,7 +49,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /**
      * @notice The maximum total shares for a given strategy
-     * @dev This constant prevents overflow in offchain services
+     * @dev This constant prevents overflow in offchain services for rewards
      */
     uint256 internal constant MAX_TOTAL_SHARES = 1e38 - 1;
 
@@ -127,7 +127,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         // update total share amount to account for deposit
         totalShares = (priorTotalShares + newShares);
-        
+
         require(totalShares <= MAX_TOTAL_SHARES, "StrategyBase.deposit: totalShares exceeds `MAX_TOTAL_SHARES`");
 
         // emit exchange rate
