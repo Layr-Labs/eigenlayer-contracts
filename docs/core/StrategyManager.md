@@ -37,6 +37,8 @@ This document organizes methods according to the following themes (click each to
 * `stakerStrategyListLength(address staker) -> (uint)`:
     * Gives `stakerStrategyList[staker].length`
     * Used (especially by the `DelegationManager`) to determine whether a Staker has shares in any strategy in the `StrategyManager` (will be 0 if not)
+* `uint256 constant MAX_TOTAL_SHARES = 1e38 - 1`
+    * The maximum total shares a single strategy can handle. This maximum prevents overflow in offchain services.
 
 ---
 
@@ -246,7 +248,10 @@ The new shares created are returned to the `StrategyManager` to be added to the 
 * The passed-in `token` MUST match the strategy's `underlyingToken`
 * The token amount being deposited MUST NOT exceed the per-deposit cap
 * After deposit, the strategy's current token balance MUST NOT exceed the total-deposit cap
-* When converted to shares via the strategy's exchange rate, the `amount` of `token` deposited MUST represent at least 1 new share for the depositor
+* When converted to shares via the strategy's exchange rate:
+    * The `amount` of `token` deposited MUST represent at least 1 new share for the depositor
+    * The new total shares awarded by the strategy MUST NOT exceed `MAX_TOTAL_SHARES`
+
 
 #### `StrategyBaseTVLLimits.withdraw`
 

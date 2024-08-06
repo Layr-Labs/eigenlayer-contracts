@@ -15,6 +15,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
     function testWethDeposit(uint256 amountToDeposit) public returns (uint256 amountDeposited) {
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
         cheats.assume(amountToDeposit >= 1);
+        cheats.assume(amountToDeposit <= 1e38 - 1);
         return _testDepositWeth(getOperatorAddress(0), amountToDeposit);
     }
 

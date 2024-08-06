@@ -164,6 +164,33 @@ contract StrategyBaseUnitTests is Test {
         cheats.stopPrank();
     }
 
+    function testDepositFailForTooManyShares() public {
+        // Deploy token with 1e39 total supply
+        underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", 1e39, initialOwner);
+
+        strategyImplementation = new StrategyBase(strategyManager);
+
+        strategy = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(strategyImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, pauserRegistry)
+                )
+            )
+        );
+
+        // Transfer underlying token to strategy
+        uint256 amountToDeposit = 1e39;
+        underlyingToken.transfer(address(strategy), amountToDeposit);
+
+
+        // Deposit
+        cheats.prank(address(strategyManager));
+        cheats.expectRevert(bytes("StrategyBase.deposit: totalShares exceeds `MAX_TOTAL_SHARES`"));
+        strategy.deposit(underlyingToken, amountToDeposit);
+    }
+
     function testWithdrawWithPriorTotalSharesAndAmountSharesEqual(uint256 amountToDeposit) public virtual {
         cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);

@@ -47,6 +47,12 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      */
     uint256 internal constant BALANCE_OFFSET = 1e3;
 
+    /**
+     * @notice The maximum total shares for a given strategy
+     * @dev This constant prevents overflow in offchain services for rewards
+     */
+    uint256 internal constant MAX_TOTAL_SHARES = 1e38 - 1;
+
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
 
@@ -121,6 +127,8 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         // update total share amount to account for deposit
         totalShares = (priorTotalShares + newShares);
+
+        require(totalShares <= MAX_TOTAL_SHARES, "StrategyBase.deposit: totalShares exceeds `MAX_TOTAL_SHARES`");
 
         // emit exchange rate
         _emitExchangeRate(virtualTokenBalance, totalShares + SHARES_OFFSET);
