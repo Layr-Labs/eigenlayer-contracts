@@ -94,6 +94,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
 
         // Manually adjust length to remove unused entries
         // New length == removeIdx
+        // forgefmt: disable-next-item
         assembly { mstore(strategiesToRemove, removeIdx) }
 
         if (strategiesToRemove.length > 0) {
