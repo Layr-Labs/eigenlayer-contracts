@@ -536,6 +536,50 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
         assertEq(avsDirectory.operatorSetMemberCount(address(this), operatorSetId), 1);
     }
+
+    function testFuzz_Correctness_MultipleSets(
+        uint256 operatorPk,
+        uint256 operatorSetCount,
+        bytes32 salt,
+        uint256 expiry
+    ) public virtual {
+        avsDirectory.becomeOperatorSetAVS();
+        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+        operatorSetCount = bound(operatorSetCount, 1, 32);
+        expiry = bound(expiry, 1, type(uint256).max);
+
+        cheats.warp(0);
+
+        uint32[] memory oids = new uint32[](operatorSetCount);
+
+        for (uint32 i = 1; i < operatorSetCount + 1; ++i) {
+            _createOperatorSet(i);
+            oids[i - 1] = i;
+        }
+
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
+        );
+
+        _registerOperatorWithBaseDetails(operator);
+
+        for (uint32 operatorSetId = 1; operatorSetId < operatorSetCount + 1; ++operatorSetId) {
+            cheats.expectEmit(true, false, false, false, address(avsDirectory));
+            emit OperatorAddedToOperatorSet(operator, IAVSDirectory.OperatorSet(address(this), operatorSetId));
+        }
+
+        avsDirectory.registerOperatorToOperatorSets(
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
+        );
+
+        for (uint32 operatorSetId = 1; operatorSetId < operatorSetCount + 1; ++operatorSetId) {
+            assertTrue(avsDirectory.isMember(address(this), operator, operatorSetId));
+            assertEq(avsDirectory.operatorSetMemberCount(address(this), operatorSetId), 1);
+        }
+
+        assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
+    }
 }
 
 contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUnitTests {
