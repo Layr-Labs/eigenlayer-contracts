@@ -43,8 +43,8 @@ contract MerklizeScript is Script, Test {
         OperatorLeafLib.OperatorLeaf[] memory operatorLeaves = _createOperatorLeafArray(1, 200);
         vm.startBroadcast();
         // bytes32 root = target.merklizeOperatorSet(operatorLeaves); // 686976
-        // bytes32 root = target.merklizeOperatorSetAndCalcStakes(operatorLeaves); // 1812699
-        bytes32 root = target.hashOperatorSet2(operatorLeaves); // 350502
+        bytes32 root = target.merklizeOperatorSetAndCalcStakes(operatorLeaves); // 1812699
+        // bytes32 root = target.hashOperatorSet2(operatorLeaves); // 350502
 
         vm.stopBroadcast();
         emit log_named_bytes32("Root: ", root);
@@ -54,8 +54,8 @@ contract MerklizeScript is Script, Test {
         OperatorLeafLib.OperatorLeaf[] memory operatorLeaves = new OperatorLeafLib.OperatorLeaf[](numOperators);
         for (uint256 i = 0; i < numOperators; i++) {
             operatorLeaves[i].operator = address(uint160(uint256(keccak256(abi.encodePacked(seed, i)))));
-            operatorLeaves[i].slashableStake = uint256(keccak256(abi.encodePacked(seed, i+numOperators)));
-            operatorLeaves[i].delegatedStake = uint256(keccak256(abi.encodePacked(seed, i+numOperators*2)));
+            operatorLeaves[i].slashableStake = uint256(keccak256(abi.encodePacked(seed, i+numOperators))) % (1 << 255);
+            operatorLeaves[i].delegatedStake = uint256(keccak256(abi.encodePacked(seed, i+numOperators*2))) % (1 << 255);
         }
         return operatorLeaves;
     }
