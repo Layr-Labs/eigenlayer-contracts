@@ -382,12 +382,10 @@ contract AVSDirectory is
                 "AVSDirectory._registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
+            ++operatorSetMemberCount[avs][operatorSetIds[i]];
+
             // Mutate `isMember` to `true`.
             isMember[avs][operator][operatorSetIds[i]] = true;
-
-            unchecked {
-                ++operatorSetMemberCount[avs][operatorSetIds[i]];
-            }
 
             emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
         }
@@ -409,12 +407,10 @@ contract AVSDirectory is
                 "AVSDirectory._deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
+            --operatorSetMemberCount[avs][operatorSetIds[i]];
+
             // Mutate `isMember` to `false`.
             isMember[avs][operator][operatorSetIds[i]] = false;
-
-            unchecked {
-                --operatorSetMemberCount[avs][operatorSetIds[i]];
-            }
 
             emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
         }
