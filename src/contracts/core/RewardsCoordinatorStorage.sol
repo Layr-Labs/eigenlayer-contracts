@@ -97,7 +97,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Mapping: avs => rewardsSubmissionForALlHash => bool to check if rewards submission hash for all has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllHash;
 
-    /// @notice Mapping: address => bool to check if the address is permissi oned to call createRewardsForAllSubmission
+    /// @notice Mapping: address => bool to check if the address is permissioned to call createRewardsForAllSubmission
     mapping(address => bool) public isRewardsForAllSubmitter;
 
     /// @notice Mapping: avs => rewardsSubmissionHash => bool to check if operatorSet rewards submission hash has been submitted

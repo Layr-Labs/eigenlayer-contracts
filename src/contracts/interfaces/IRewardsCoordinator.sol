@@ -320,7 +320,9 @@ interface IRewardsCoordinator {
      */
 
     /**
-     * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
+     * @notice Legacy interface to be DEPRECATED in future releases. See rewardOperatorSetForRange
+     * for a more updated interface.
+     * Creates a new rewards submission on behalf of an AVS, to be split amongst the
      * set of stakers delegated to operators who are registered to the `avs`
      * @param rewardsSubmissions The rewards submissions being created
      * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
