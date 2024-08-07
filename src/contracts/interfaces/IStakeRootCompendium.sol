@@ -1,10 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "../interfaces/IStrategy.sol";
+
 
 interface IStakeRootCompendium {
 
-    function getOperatorSetRoot(address avs, uint32 operatorSetId, address[] operators, address[] strategies) external view returns (bytes32);
+    event SnarkProofVerified(bytes journal, bytes seal);
+
+    event VerifierChanged(address oldVerifier, address newVerifier);
+
+    event ImageIdChanged(bytes32 oldImageId, bytes32 newImageId);
+
+    function getOperatorSetRoot(address avs, uint32 operatorSetId, address[] calldata operators, IStrategy[] calldata strategies) external view returns (bytes32);
 
     function getStakeRoot(address[] calldata avss, bytes32[] calldata operatorSetRoots) external view returns (bytes32);
 
