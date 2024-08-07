@@ -42,6 +42,10 @@
     ],
     "strategyManager": "0xdfB5f6CE42aAA7830E94ECFCcAd411beF4d4D5b6",
     "strategyManagerImplementation": "0x59f766A603C53f3AC8Be43bBe158c1519b193a18",
+    "strategyFactory": "0x9c01252B580efD11a05C00Aa42Dd3ac1Ec52DF6d",
+    "strategyFactoryImplementation": "0x5E699de7bFc4DD2A5E72EB5a2Ca99651EfdD51CB",
+    "strategyFactoryBeacon": "0xd3c6C6BA4E40dB9288c6a2077e5635344F8aFA4F",
+    "strategyFactoryBeaconImplementation": "0xb637caeedfCBf88e0d019E7AE4691b554c994A1e",
     "token": {
       "tokenProxyAdmin": "0x67482666771e82C9a73BB9e9A22B2B597f448BBf",
       "EIGEN": "0x3B78576F7D6837500bA3De27A60c7f594934027E",
