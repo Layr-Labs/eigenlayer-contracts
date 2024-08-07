@@ -14,7 +14,6 @@ import "../mocks/ERC20_SetTransferReverting_Mock.sol";
 import "forge-std/Test.sol";
 
 contract StrategyBaseUnitTests is Test {
-
     Vm cheats = Vm(HEVM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;
@@ -42,6 +41,8 @@ contract StrategyBaseUnitTests is Test {
      * incurring reasonably small losses to depositors
      */
     uint256 internal constant BALANCE_OFFSET = 1e3;
+
+    event ExchangeRateEmitted(uint256 rate);
 
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
@@ -91,12 +92,15 @@ contract StrategyBaseUnitTests is Test {
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.startPrank(address(strategyManager));
+        cheats.expectEmit(true, true, true, true, address(strategy));
+        emit ExchangeRateEmitted(1e18);
         uint256 newShares = strategy.deposit(underlyingToken, amountToDeposit);
         cheats.stopPrank();
 
         require(newShares == amountToDeposit, "newShares != amountToDeposit");
         uint256 totalSharesAfter = strategy.totalShares();
         require(totalSharesAfter - totalSharesBefore == newShares, "totalSharesAfter - totalSharesBefore != newShares");
+        require(strategy.sharesToUnderlying(1e18) == 1e18);
     }
 
     function testDepositWithNonzeroPriorBalanceAndNonzeroPriorShares(uint256 priorTotalShares, uint256 amountToDeposit) public virtual {
@@ -112,6 +116,7 @@ contract StrategyBaseUnitTests is Test {
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.startPrank(address(strategyManager));
+
         uint256 newShares = strategy.deposit(underlyingToken, amountToDeposit);
         cheats.stopPrank();
 
@@ -159,6 +164,33 @@ contract StrategyBaseUnitTests is Test {
         cheats.stopPrank();
     }
 
+    function testDepositFailForTooManyShares() public {
+        // Deploy token with 1e39 total supply
+        underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", 1e39, initialOwner);
+
+        strategyImplementation = new StrategyBase(strategyManager);
+
+        strategy = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(strategyImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, pauserRegistry)
+                )
+            )
+        );
+
+        // Transfer underlying token to strategy
+        uint256 amountToDeposit = 1e39;
+        underlyingToken.transfer(address(strategy), amountToDeposit);
+
+
+        // Deposit
+        cheats.prank(address(strategyManager));
+        cheats.expectRevert(bytes("StrategyBase.deposit: totalShares exceeds `MAX_TOTAL_SHARES`"));
+        strategy.deposit(underlyingToken, amountToDeposit);
+    }
+
     function testWithdrawWithPriorTotalSharesAndAmountSharesEqual(uint256 amountToDeposit) public virtual {
         cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
@@ -168,7 +200,10 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
         cheats.startPrank(address(strategyManager));
+        cheats.expectEmit(true, true, true, true, address(strategy));
+        emit ExchangeRateEmitted(1e18);
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
+
         cheats.stopPrank();
 
         uint256 tokenBalanceAfter = underlyingToken.balanceOf(address(this));
@@ -299,7 +334,7 @@ contract StrategyBaseUnitTests is Test {
     }
 
     // uint240 input to prevent overflow
-    function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint240 amountSharesToQuery) public view {
+    function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint240 amountSharesToQuery) public {
         uint256 underlyingFromShares = strategy.sharesToUnderlying(amountSharesToQuery);
         require(underlyingFromShares == amountSharesToQuery, "underlyingFromShares != amountSharesToQuery");
 

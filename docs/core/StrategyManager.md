@@ -3,11 +3,16 @@
 | File | Type | Proxy |
 | -------- | -------- | -------- |
 | [`StrategyManager.sol`](../../src/contracts/core/StrategyManager.sol) | Singleton | Transparent proxy |
-| [`StrategyBaseTVLLimits.sol`](../../src/contracts/strategies/StrategyBaseTVLLimits.sol) | 3 instances (for cbETH, rETH, stETH) | Transparent proxy |
+| [`StrategyFactory.sol`](../../src/contracts/core/StrategyFactory.sol) | Singleton | Transparent proxy |
+| [`StrategyBaseTVLLimits.sol`](../../src/contracts/strategies/StrategyBaseTVLLimits.sol) | Instanced, one per supported token | - Strategies deployed outside the `StrategyFactory` use transparent proxies <br /> - Anything deployed via the `StrategyFactory` uses a Beacon proxy |
 
-The primary function of the `StrategyManager` is to handle accounting for individual Stakers as they deposit and withdraw LSTs from their corresponding strategies. It is responsible for (i) allowing Stakers to deposit LSTs into the corresponding strategy, (ii) allowing the `DelegationManager` to remove shares when a Staker queues a withdrawal, and (iii) allowing the `DelegationManager` to complete a withdrawal by either adding shares back to the Staker or withdrawing the shares as tokens via the corresponding strategy.
+The primary function of the `StrategyManager` is to handle accounting for individual Stakers as they deposit and withdraw supported tokens from their corresponding strategies. It is responsible for (i) allowing Stakers to deposit tokens into the corresponding strategy, (ii) allowing the `DelegationManager` to remove shares when a Staker queues a withdrawal, and (iii) allowing the `DelegationManager` to complete a withdrawal by either adding shares back to the Staker or withdrawing the shares as tokens via the corresponding strategy.
 
-As of M2, several LSTs are supported and each has its own instance of `StrategyBaseTVLLimits`. Each `StrategyBaseTVLLimits` has two main functions (`deposit` and `withdraw`), both of which can only be called by the `StrategyManager`. These `StrategyBaseTVLLimits` contracts are fairly simple deposit/withdraw contracts that hold tokens deposited by Stakers. Because these strategies are essentially extensions of the `StrategyManager`, their functions are documented in this file (see below).
+Any ERC20-compatible token can be supported by deploying a `StrategyBaseTVLLimits` instance from the `StrategyFactory`. The `StrategyFactory` only allows a strategy to be deployed once per token, and automatically whitelists newly-deployed strategies. This is further documented in [Strategies](#strategies) below.
+
+Each supported token has its own instance of `StrategyBaseTVLLimits`, has two main functions (`deposit` and `withdraw`), both of which can only be called by the `StrategyManager`. These `StrategyBaseTVLLimits` contracts are fairly simple deposit/withdraw contracts that hold tokens deposited by Stakers. Because these strategies are essentially extensions of the `StrategyManager`, their functions are documented in this file (see [Strategies](#strategies) below).
+
+Note that for the EIGEN/bEIGEN token specifically, the `EigenStrategy` contract is used instead of `StrategyBaseTVLLimits`. Additionally, the EIGEN/bEIGEN token and several LSTs whitelisted prior to the existence of the `StrategyFactory` are blacklisted within the `StrategyFactory` to prevent duplicate strategies from being deployed for these tokens.
 
 #### High-level Concepts
 
@@ -32,6 +37,8 @@ This document organizes methods according to the following themes (click each to
 * `stakerStrategyListLength(address staker) -> (uint)`:
     * Gives `stakerStrategyList[staker].length`
     * Used (especially by the `DelegationManager`) to determine whether a Staker has shares in any strategy in the `StrategyManager` (will be 0 if not)
+* `uint256 constant MAX_TOTAL_SHARES = 1e38 - 1`
+    * The maximum total shares a single strategy can handle. This maximum prevents overflow in offchain services.
 
 ---
 
@@ -59,7 +66,7 @@ function depositIntoStrategy(
     returns (uint256 shares)
 ```
 
-Allows a Staker to deposit some `amount` of `token` into the specified `strategy` in exchange for shares of that strategy. The underlying `strategy` must be one of the whitelisted `StrategyBaseTVLLimits` instances, and the `token` being deposited must correspond to that `strategy's` underlying token (cbETH, rETH, or stETH).
+Allows a Staker to deposit some `amount` of `token` into the specified `strategy` in exchange for shares of that strategy. The underlying `strategy` must be one of the whitelisted `StrategyBaseTVLLimits` instances, and the `token` parameter corresponds to the actual token being transferred as part of the deposit.
 
 The number of shares received is calculated by the `strategy` using an internal exchange rate that depends on the previous number of tokens deposited.
 
@@ -204,6 +211,13 @@ The `DelegationManager` calls this method when a queued withdrawal is completed 
 * [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit)
 * [`StrategyBaseTVLLimits.withdraw`](#strategybasetvllimitswithdraw)
 
+Additionally, using the `StrategyFactory`, anyone can deploy a new `StrategyBaseTVLLimits` instance for a particular token. The `StrategyFactory` manages these deployments and other strategy whitelisting features in the following methods:
+* [`StrategyFactory.deployNewStrategy`](#strategyfactorydeploynewstrategy)
+* [`StrategyFactory.blacklistTokens`](#strategyfactoryblacklisttokens)
+* [`StrategyFactory.whitelistStrategies`](#strategyfactorywhiteliststrategies)
+* [`StrategyFactory.setThirdPartyTransfersForbidden`](#strategyfactorysetthirdpartytransfersforbidden)
+* [`StrategyFactory.removeStrategiesFromWhitelist`](#strategyfactoryremovestrategiesfromwhitelist)
+
 #### `StrategyBaseTVLLimits.deposit`
 
 ```solidity
@@ -234,7 +248,10 @@ The new shares created are returned to the `StrategyManager` to be added to the 
 * The passed-in `token` MUST match the strategy's `underlyingToken`
 * The token amount being deposited MUST NOT exceed the per-deposit cap
 * After deposit, the strategy's current token balance MUST NOT exceed the total-deposit cap
-* When converted to shares via the strategy's exchange rate, the `amount` of `token` deposited MUST represent at least 1 new share for the depositor
+* When converted to shares via the strategy's exchange rate:
+    * The `amount` of `token` deposited MUST represent at least 1 new share for the depositor
+    * The new total shares awarded by the strategy MUST NOT exceed `MAX_TOTAL_SHARES`
+
 
 #### `StrategyBaseTVLLimits.withdraw`
 
@@ -268,10 +285,104 @@ This method converts the withdrawal shares back into tokens using the strategy's
 * The `amountShares` being withdrawn MUST NOT exceed the `totalShares` in the strategy
 * The tokens represented by `amountShares` MUST NOT exceed the strategy's token balance
 
+#### `StrategyFactory.deployNewStrategy`
+
+```solidity
+function deployNewStrategy(IERC20 token)
+    external
+    onlyWhenNotPaused(PAUSED_NEW_STRATEGIES)
+    returns (IStrategy newStrategy)
+```
+
+Allows anyone to deploy a new `StrategyBaseTVLLimits` instance that supports deposits/withdrawals using the provided `token`. As part of calling this method, the `StrategyFactory` automatically whitelists the new strategy in the `StrategyManager`.
+
+Note that the `StrategyFactory` only permits ONE strategy deployment per `token`. Once a `token` has an associated strategy deployed via this method, `deployNewStrategy` cannot be used to deploy a strategy for `token` again. Additionally, `deployNewStrategy` will reject any `token` placed onto the `StrategyFactory` blacklist. This feature was added to prevent the deployment of strategies that existed _before_ the `StrategyFactory` was created. For details, see [`StrategyFactory.blacklistTokens`](#strategyfactoryblacklisttokens).
+
+**NOTE: Use caution when deploying strategies for tokens that do not strictly conform to ERC20 standards. Rebasing tokens similar to already-whitelisted LSTs should be supported, but please DYOR if your token falls outside of ERC20 norms.** Specific things to look out for include (but are not limited to): exotic rebasing tokens, tokens that support reentrant behavior (like ERC-777), and other nonstandard ERC20 derivatives.
+
+*Effects*:
+* Deploys a new `BeaconProxy` for the `token`, which references the current `StrategyBaseTVLLimits` implementation
+* Updates the `tokenStrategy` mapping for the `token`, preventing a second strategy deployment for the same token
+* See `StrategyManager.addStrategiesToDepositWhitelist`
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_NEW_STRATEGIES`
+* `token` MUST NOT be blacklisted within `StrategyFactory`
+* `StrategyFactory` MUST NOT have been used to deploy a strategy for `token` already
+* See `StrategyManager.addStrategiesToDepositWhitelist`
+
+#### `StrategyFactory.blacklistTokens`
+
+```solidity
+function blacklistTokens(IERC20[] calldata tokens) external onlyOwner
+```
+
+Allows the owner to prevent certain `tokens` from having strategies deployed via `StrategyFactory.deployNewStrategy`. This method was added to prevent the deployment of strategies for tokens that already have strategies deployed/whitelisted through other means.
+
+Note that once the owner adds tokens to the blacklist, they cannot be removed. This is a known limitation of the `StrategyFactory`, and can be addressed by upgrading the factory if needed.
+
+*Effects*:
+* Adds each token in `tokens` to the `isBlacklisted` mapping
+
+*Requirements*:
+* Caller MUST be the owner
+* Each passed in `token` MUST NOT already be blacklisted
+
+#### `StrategyFactory.whitelistStrategies`
+
+```solidity
+function whitelistStrategies(
+    IStrategy[] calldata strategiesToWhitelist,
+    bool[] calldata thirdPartyTransfersForbiddenValues
+) 
+    external 
+    onlyOwner
+```
+
+Allows the owner to explicitly whitelist strategies in the `StrategyManager`. This method is used as a passthrough for the `StrategyManager.addStrategiesToDepositWhitelist`, in case the owner needs to whitelist strategies not deployed via the `StrategyFactory`.
+
+*Effects*:
+* See `StrategyManager.addStrategiesToDepositWhitelist`
+
+*Requirements*:
+* Caller MUST be the owner
+* See `StrategyManager.addStrategiesToDepositWhitelist`
+
+#### `StrategyFactory.setThirdPartyTransfersForbidden`
+
+```solidity
+function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external onlyOwner
+```
+
+Allows the owner to explicitly enable or disable third party transfers in the `StrategyManager`. This method is used as a passthrough for the `StrategyManager.setThirdPartyTransfersForbidden`, in case the owner needs to modify these values.
+
+*Effects*:
+* See `StrategyManager.setThirdPartyTransfersForbidden`
+
+*Requirements*:
+* Caller MUST be the owner
+* See `StrategyManager.setThirdPartyTransfersForbidden`
+
+#### `StrategyFactory.removeStrategiesFromWhitelist`
+
+```solidity
+function removeStrategiesFromWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external
+```
+
+Allows the owner to remove strategies from the `StrategyManager` strategy whitelist. This method is used as a passthrough for the `StrategyManager.removeStrategiesFromDepositWhitelist`, in case the owner needs to access this method.
+
+*Effects*:
+* See `StrategyManager.removeStrategiesFromDepositWhitelist`
+
+*Requirements*:
+* Caller MUST be the owner
+* See `StrategyManager.removeStrategiesFromDepositWhitelist`
+
 ---
 
 ### System Configuration
 
+The Strategy Whitelister role has the ability to permit/remove strategies from being depositable via the `StrategyManager`. This role is held by the `StrategyFactory` (which is fully documented in [Strategies](#strategies)). The following methods concern the Strategy Whitelister role and its abilities within the `StrategyManager`:
 * [`StrategyManager.setStrategyWhitelister`](#setstrategywhitelister)
 * [`StrategyManager.addStrategiesToDepositWhitelist`](#addstrategiestodepositwhitelist)
 * [`StrategyManager.removeStrategiesFromDepositWhitelist`](#removestrategiesfromdepositwhitelist)
@@ -283,7 +394,7 @@ This method converts the withdrawal shares back into tokens using the strategy's
 function setStrategyWhitelister(address newStrategyWhitelister) external onlyOwner
 ```
 
-Allows the `owner` to update the Strategy Whitelister address.
+Allows the `owner` to update the Strategy Whitelister address. Currently, the Strategy Whitelister role is held by the `StrategyFactory`. See [Strategies](#strategies) for more details.
 
 *Effects*:
 * Updates `StrategyManager.strategyWhitelister`

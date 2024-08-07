@@ -46,6 +46,13 @@ contract ERC20Mock is Context, IERC20 {
     constructor() {
         _mint(msg.sender, initSupply);
     }
+
+    /**
+     * @dev Returns the decimals places of the token.
+     */
+    function decimals() external pure returns (uint8) {
+        return 18;
+    }
     
     /**
      * @dev See {IERC20-totalSupply}.
