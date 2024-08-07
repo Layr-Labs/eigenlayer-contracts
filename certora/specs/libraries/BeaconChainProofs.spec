@@ -4,6 +4,8 @@ methods
     function verifyValidatorBalance(bytes32, uint40, BeaconChainProofs.BalanceProof proof) external envfree;
 }
 
+/// @title For a specific validatorIndex group and a specific balanceContainerRoot, 
+///    there is only one proof.balanceRoot such that verifyValidatorBalance doesn't revert
 //validatorIndex0 == validatorIndex1 && balanceContainerRoot0 == balanceContainerRoot1 
 //  && verifyValidatorBalance(balanceContainerRoot0, validatorIndex0, proof0) didnt revert 
 //  && verifyValidatorBalance(balanceContainerRoot1, validatorIndex1, proof1) didnt revert, 

@@ -1,11 +1,11 @@
 import "./EigenPodMethodsAndSimplifications.spec";
 
-// defines the allowed validator status transitions
+// Defines the allowed validator status transitions
 definition validatorStatusTransitionAllowed(IEigenPod.VALIDATOR_STATUS statusBefore, IEigenPod.VALIDATOR_STATUS statusAfter) returns bool =
     (statusBefore == IEigenPod.VALIDATOR_STATUS.INACTIVE && statusAfter == IEigenPod.VALIDATOR_STATUS.ACTIVE)
     || (statusBefore == IEigenPod.VALIDATOR_STATUS.ACTIVE && statusAfter == IEigenPod.VALIDATOR_STATUS.WITHDRAWN);
 
-// verifies that only the 2 allowed transitions of validator status occur
+/// @title Only the 2 allowed transitions of validator status occur
 rule validatorStatusTransitionsCorrect(bytes32 pubkeyHash) {
     IEigenPod.VALIDATOR_STATUS statusBefore = validatorStatus(pubkeyHash);
     method f;
@@ -20,9 +20,7 @@ rule validatorStatusTransitionsCorrect(bytes32 pubkeyHash) {
     );
 }
 
-
-
-// verifies that _validatorPubkeyHashToInfo[validatorPubkeyHash].mostRecentBalanceUpdateTimestamp can ONLY increase (or remain the same)
+/// @title _validatorPubkeyHashToInfo[validatorPubkeyHash].mostRecentBalanceUpdateTimestamp can ONLY increase (or remain the same)
 rule mostRecentBalanceUpdateTimestampOnlyIncreases(bytes32 validatorPubkeyHash) {
     IEigenPod.ValidatorInfo validatorInfoBefore = validatorPubkeyHashToInfo(validatorPubkeyHash);
     method f;
@@ -34,14 +32,14 @@ rule mostRecentBalanceUpdateTimestampOnlyIncreases(bytes32 validatorPubkeyHash) 
         "mostRecentBalanceUpdateTimestamp decreased");
 }
 
-// verifies that if a validator is marked as 'INACTIVE', then it has no other entries set in its ValidatorInfo
+/// @title if a validator is marked as 'INACTIVE', then it has no other entries set in its ValidatorInfo
 invariant inactiveValidatorsHaveEmptyInfo(bytes32 pubkeyHash)
     (validatorStatus(pubkeyHash) == IEigenPod.VALIDATOR_STATUS.INACTIVE) => (
         get_validatorIndex(pubkeyHash) == 0
         && get_restakedBalanceGwei(pubkeyHash) == 0
         && get_mostRecentBalanceUpdateTimestamp(pubkeyHash) == 0);
 
-// verifies that _validatorPubkeyHashToInfo[validatorPubkeyHash].validatorIndex can be set initially but otherwise can't change
+/// @title _validatorPubkeyHashToInfo[validatorPubkeyHash].validatorIndex can be set initially but otherwise can't change
 // this can be understood as the only allowed transitions of index being of the form: 0 => anything (otherwise the index must stay the same)
 rule validatorIndexSetOnlyOnce(bytes32 pubkeyHash) {
     requireInvariant inactiveValidatorsHaveEmptyInfo(pubkeyHash);
@@ -56,117 +54,21 @@ rule validatorIndexSetOnlyOnce(bytes32 pubkeyHash) {
         "validator index modified from nonzero value");
 }
 
-// verifies that once a validator has its status set to WITHDRAWN, its ‘restakedBalanceGwei’ is *and always remains* zero
+/// @title once a validator has its status set to WITHDRAWN, its ‘restakedBalanceGwei’ is *and always remains* zero
 invariant withdrawnValidatorsHaveZeroRestakedGwei(bytes32 pubkeyHash)
     (validatorStatus(pubkeyHash) == IEigenPod.VALIDATOR_STATUS.INACTIVE) =>
         (get_restakedBalanceGwei(pubkeyHash) == 0)
 ;
 
-// TODO the same as above but active => non zero balance
-
-
-/*
-
-// // TODO: see if this draft rule can be salvaged
-// // draft rule to capture the following behavior (or at least most of it):
-// // The core invariant that ought to be maintained across the EPM and the EPs is that
-// // podOwnerShares[podOwner] + sum(sharesInQueuedWithdrawals) =
-// // sum(_validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei) + withdrawableRestakedExecutionLayerGwei
-
-// // idea: if we ignore shares in queued withdrawals and rearrange, then we have:
-// // sum(_validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei) = 
-// // EigenPodManager.podOwnerShares(podOwner) - withdrawableRestakedExecutionLayerGwei
-// // we can track changes to the '_validatorPubkeyHashToInfo' mapping and check this with ghost variables
-
-// based on Certora's example here https://github.com/Certora/Tutorials/blob/michael/ethcc/EthCC/Ghosts/ghostTest.spec
-ghost mathint sumOfValidatorRestakedbalancesWei {
-    // NOTE: this commented out line is broken, as calling functions in axioms is currently disallowed, but this is what we'd run ideally. 
-    // init_state axiom sumOfValidatorRestakedbalancesWei == to_mathint(get_podOwnerShares()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei() * 1000000000);
-
-    // since both of these variables are zero at construction, just set the ghost to zero in the axiom
-    init_state axiom sumOfValidatorRestakedbalancesWei == 0;
-}
-
-hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restakedBalanceGwei uint64 newValue (uint64 oldValue) {
-    sumOfValidatorRestakedbalancesWei = (
-        sumOfValidatorRestakedbalancesWei + 
-        to_mathint(newValue) * 1000000000 -
-        to_mathint(oldValue) * 1000000000
-    );
-}
-*/
-/*
-rule consistentAccounting() {
-    // fetch info before call
-    int256 podOwnerSharesBefore = get_podOwnerShares();
-    uint256 withdrawableRestakedExecutionLayerGweiBefore = get_withdrawableRestakedExecutionLayerGwei();
-    uint256 eigenPodBalanceBefore = get_ETH_Balance();
-    // filter down to valid pre-states
-    require(sumOfValidatorRestakedbalancesWei ==
-        to_mathint(podOwnerSharesBefore) - to_mathint(withdrawableRestakedExecutionLayerGweiBefore));
-
-    // perform arbitrary function call
-    method f;
-    env e;
-    calldataarg args;
-    f(e,args);
-
-    // fetch info after call
-    int256 podOwnerSharesAfter = get_podOwnerShares();
-    uint256 withdrawableRestakedExecutionLayerGweiAfter = get_withdrawableRestakedExecutionLayerGwei();
-    uint256 eigenPodBalanceAfter = get_ETH_Balance();
-    
-    //  handling for weird, unrealistic edge case where calling `initialize` causes the pod owner to change, so the 
-    //  call to `get_podOwnerShares` queries the shares for a different address.
-    //  calling `initialize` should *not* change user shares, so it is unrealistic to simulate it doing so.
-    
-    if (f.selector == sig:initialize(address).selector) {
-        podOwnerSharesAfter = podOwnerSharesBefore;
-    }
-    // check post-state
-    // TODO: this check is still broken for `withdrawRestakedBeaconChainETH` since it does a low-level call to transfer the ETH, which triggers optimistic fallback dispatching
-    // special handling for one function
-    if (f.selector == sig:withdrawRestakedBeaconChainETH(address,uint256).selector) {
-        // TODO: un-comment this once the dispatching is handled correctly
-        // assert(sumOfValidatorRestakedbalancesWei ==
-        //     to_mathint(podOwnerSharesAfter) - to_mathint(withdrawableRestakedExecutionLayerGweiAfter)
-        //     // adjustment term for the ETH balance of the contract changing
-        //     + to_mathint(eigenPodBalanceBefore) - to_mathint(eigenPodBalanceAfter),
-        //     "invalid post-state");
-        
-        // TODO: delete this once the above is salvaged (was added since CVL forbids empty blocks)
-        assert(true);
-    // outside of special case, we don't need the adjustment term
-    } else {
-        assert(sumOfValidatorRestakedbalancesWei ==
-            to_mathint(podOwnerSharesAfter) - to_mathint(withdrawableRestakedExecutionLayerGweiAfter),
-            "invalid post-state");
-    }
-}
-*/
-
-/*
-rule baseInvariant() {
-    int256 podOwnerSharesBefore = get_podOwnerShares();
-    // perform arbitrary function call
-    method f;
-    env e;
-    calldataarg args;
-    f(e,args);
-    int256 podOwnerSharesAfter = get_podOwnerShares();
-    mathint podOwnerSharesDelta = podOwnerSharesAfter - podOwnerSharesBefore;
-    assert(sumOfValidatorRestakedbalancesWei == podOwnerSharesDelta - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
-        "base invariant violated");
-}
-
-invariant consistentAccounting() {
-    sumOfValidatorRestakedbalancesWei ==
-        to_mathint(get_withdrawableRestakedExecutionLayerGwei()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei());
-}
-*/
-
 ////******************** Added by Certora *************//////////
 
+/// @title Active validators have nonzero balance
+invariant activeValidatorsHaveNonZeroRestakedGwei(bytes32 pubkeyHash)
+    (validatorStatus(pubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE) =>
+        (get_restakedBalanceGwei(pubkeyHash) != 0)
+;
+
+/// @title _validatorPubkeyHashToInfo[validatorPubkeyHash].lastCheckpointed cannot be greater than LastCheckpointTimestamp
 invariant lastCheckpointedNoGreaterThanLastTimestamp(bytes32 validatorPubkeyHash)
     get_validatorLastCheckpointed(validatorPubkeyHash) <= 
         max(get_lastCheckpointTimestamp(), get_currentCheckpointTimestamp())
@@ -174,6 +76,7 @@ invariant lastCheckpointedNoGreaterThanLastTimestamp(bytes32 validatorPubkeyHash
         { require timestampsNotFromFuture(e) && validatorDataNotFromFuture(e, validatorPubkeyHash); } 
 }
 
+/// @title _validatorPubkeyHashToInfo[validatorPubkeyHash].mostRecentBalanceUpdateTimestamp can ONLY increase (or remain the same)
 rule mostRecentBalanceUpdateTimestampOnlyIncreases2(env e, bytes32 validatorPubkeyHash) {
     requireInvariant lastCheckpointedNoGreaterThanLastTimestamp(validatorPubkeyHash);
     requireInvariant checkpointsTimestampRemainsCorrect();
@@ -186,6 +89,7 @@ rule mostRecentBalanceUpdateTimestampOnlyIncreases2(env e, bytes32 validatorPubk
     assert(validatorCheckpointedAfter >= validatorCheckpointedBefore);
 }
 
+/// @title Only specified methods can increase/decrease validator.lastTimestamped
 rule whoCanChangeBalanceUpdateTimestamp(bytes32 validatorPubkeyHash, env e, method f) 
 {
     requireInvariant checkpointsTimestampRemainsCorrect();
@@ -201,13 +105,7 @@ rule whoCanChangeBalanceUpdateTimestamp(bytes32 validatorPubkeyHash, env e, meth
     assert timestampAfter < timestampBefore => canDecreaseBalanceUpdateTimestamp(f);
 }
 
-invariant checkpointsTimestampRemainsCorrect()
-    get_currentCheckpointTimestamp() > 0 => 
-        get_lastCheckpointTimestamp() < get_currentCheckpointTimestamp() 
-{ preserved with (env e) 
-        { require timestampsNotFromFuture(e); } 
-}
-
+/// @title lastCheckpointTimestamp cannot decrease
 rule lastCheckpointTSOnlyIncreases(env e) {
     requireInvariant checkpointsTimestampRemainsCorrect();
     require timestampsNotFromFuture(e);
@@ -219,6 +117,14 @@ rule lastCheckpointTSOnlyIncreases(env e) {
     assert lastTSAfter >= lastTSBefore;
 }
 
+/// @title During a checkpoint the current checkpoint timestamp is always greater than last checkpoint timestamp
+invariant checkpointsTimestampRemainsCorrect()
+    isDuringCheckpoint() => get_lastCheckpointTimestamp() < get_currentCheckpointTimestamp() 
+{ preserved with (env e) 
+        { require timestampsNotFromFuture(e); } 
+}
+
+/// @title If not inside a checkpoint, validator.lastTimestamped must be lastCheckpointTimestamp (for active validator)
 invariant lastCheckpointedEqualsLastChPTS(bytes32 hash)
     !isDuringCheckpoint() && validatorIsActive(hash) => 
         get_validatorLastCheckpointed(hash) == get_lastCheckpointTimestamp()
@@ -226,9 +132,66 @@ invariant lastCheckpointedEqualsLastChPTS(bytes32 hash)
     { 
         require validatorIsActive(hash) => activeValidatorCount() > 0;
         require timestampsNotFromFuture(e);
+        require activeValidatorCount() < 2^23;  //otherwise the cast overflows at EigenPod.sol:608
     } 
 }
 
+/// @title The checkpoint info is empty iff not inside a checkpoint
+invariant checkpointInfoIsEmpty()
+    !isDuringCheckpoint() <=> (
+        currentCheckpoint().beaconBlockRoot == to_bytes32(0) &&
+        currentCheckpoint().proofsRemaining == 0 &&
+        currentCheckpoint().podBalanceGwei == 0 &&
+        currentCheckpoint().balanceDeltasGwei == 0)
+    { preserved with (env e) 
+        { require timestampsNotFromFuture(e); } 
+}
+
+/// @title During a checkpoint the proofsRemaining cannot increase
+rule proofsRemainingCannotIncreaseInChP(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
+{
+    uint24 proofsRemainingBefore = currentCheckpoint().proofsRemaining;
+    require isDuringCheckpoint(); get_currentCheckpointTimestamp() > 0;
+    calldataarg args;
+    f(e, args);
+    uint24 proofsRemainingAfter = currentCheckpoint().proofsRemaining;
+    assert proofsRemainingBefore > 0 => proofsRemainingAfter <= proofsRemainingBefore;
+}
+
+/// @title During a checkpoint the podBalanceGwei doesnt change
+rule podBalanceGweiDoesntChangeInChP(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
+{
+    uint64 podBalanceGweiBefore = currentCheckpoint().podBalanceGwei;
+    calldataarg args;
+    require isDuringCheckpoint();
+    f(e, args);
+    uint64 podBalanceGweiAfter = currentCheckpoint().podBalanceGwei;
+    assert isDuringCheckpoint() => 
+        podBalanceGweiBefore == podBalanceGweiAfter;
+}
+
+/// @title During a checkpoint the beaconBlockRoot doesnt change
+rule beaconBlockRootDoesntChangeInChP(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
+{
+    bytes32 beaconBlockRootBefore = currentCheckpoint().beaconBlockRoot;
+    require isDuringCheckpoint();
+    calldataarg args;
+    f(e, args);
+    bytes32 beaconBlockRootAfter = currentCheckpoint().beaconBlockRoot;
+    assert isDuringCheckpoint() => 
+        beaconBlockRootBefore == beaconBlockRootAfter;
+}
+
+function max(uint64 a, uint64 b) returns uint64
+{
+    if (a > b) return a;
+    return b;
+}
+
+
+///////////////////   IN DEVELOPMENT / OBSOLETE    ////////
+
+// TODO this is not correct property. Violated by verifyWithdrawalCredentials
 rule methodsOnlyChangeOneValidatorStatus(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
 {
     bytes32 validatorHash1; bytes32 validatorHash2;
@@ -244,6 +207,10 @@ rule methodsOnlyChangeOneValidatorStatus(env e, method f) filtered { f -> !f.isV
         status2Before == status2After;
 }
 
+// TODO this is an attempt to proves that activeValidatorsCount corresponds to count(validator v where v.isActive)
+// This direct approach only works for methods that don't update multiple validators' statuses,
+// i.e. for all methods except verifyWithdrawalCredentials.
+// A correct general rule using hook is in EigenPodHooks.spec
 rule activeValidatorsCount_correctness(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
 {
     mathint activeValsBefore = activeValidatorCount();
@@ -269,57 +236,22 @@ rule activeValidatorsCount_correctness(env e, method f) filtered { f -> !f.isVie
     satisfy wasDeactivated || activeValsAfter >= activeValsBefore;
 }
 
-/*    struct Checkpoint {
-        bytes32 beaconBlockRoot;
-        uint24 proofsRemaining;
-        uint64 podBalanceGwei;
-        int128 balanceDeltasGwei;
-    }*/
-invariant checkpointInfoIsEmpty()
-    get_currentCheckpointTimestamp() == 0 <=> (
-        currentCheckpoint().beaconBlockRoot == to_bytes32(0) &&
-        currentCheckpoint().proofsRemaining == 0 &&
-        currentCheckpoint().podBalanceGwei == 0 &&
-        currentCheckpoint().balanceDeltasGwei == 0)
-    { preserved with (env e) 
-        { require timestampsNotFromFuture(e); } 
-}
-
-rule proofsRemainingCannotIncreaseInChP(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
+//TODO check method verifyCHpointProofs with satisfy. it should increase timestamp
+// the method always revert... investigate
+//TODO in development
+rule verifyCHpointProofs_CanIncreaseTimestamp(bytes32 validatorPubkeyHash, env e) 
 {
-    uint24 proofsRemainingBefore = currentCheckpoint().proofsRemaining;
-    require get_currentCheckpointTimestamp() > 0;
-    calldataarg args;
-    f(e, args);
-    uint24 proofsRemainingAfter = currentCheckpoint().proofsRemaining;
-    assert proofsRemainingBefore > 0 => proofsRemainingAfter <= proofsRemainingBefore;
-}
+    //requireInvariant checkpointsTimestampRemainsCorrect();
+    //requireInvariant inactiveValidatorsHaveEmptyInfo(validatorPubkeyHash);
+    //require timestampsNotFromFuture(e) && validatorDataNotFromFuture(e, validatorPubkeyHash);
+    //satisfy true;
 
-rule podBalanceGweiDoesntChangeInChP(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
-{
-    uint64 podBalanceGweiBefore = currentCheckpoint().podBalanceGwei;
-    calldataarg args;
-    require get_currentCheckpointTimestamp() > 0;
-    f(e, args);
-    uint64 podBalanceGweiAfter = currentCheckpoint().podBalanceGwei;
-    assert get_currentCheckpointTimestamp() > 0 => 
-        podBalanceGweiBefore == podBalanceGweiAfter;
-}
+    //uint64 timestampBefore = get_mostRecentBalanceUpdateTimestamp(validatorPubkeyHash);
+    BeaconChainProofs.BalanceContainerProof balanceContainerProof;
+    BeaconChainProofs.BalanceProof[] proofs;
+    verifyCheckpointProofs(e, balanceContainerProof, proofs);
 
-rule beaconBlockRootDoesntChangeInChP(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
-{
-    bytes32 beaconBlockRootBefore = currentCheckpoint().beaconBlockRoot;
-    require get_currentCheckpointTimestamp() > 0;
-    calldataarg args;
-    f(e, args);
-    bytes32 beaconBlockRootAfter = currentCheckpoint().beaconBlockRoot;
-    assert get_currentCheckpointTimestamp() > 0 => 
-        beaconBlockRootBefore == beaconBlockRootAfter;
+    //uint64 timestampAfter = get_mostRecentBalanceUpdateTimestamp(validatorPubkeyHash);
+    //satisfy timestampAfter > timestampBefore;
+    satisfy true;
 }
-
-function max(uint64 a, uint64 b) returns uint64
-{
-    if (a > b) return a;
-    return b;
-}
-

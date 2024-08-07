@@ -5,6 +5,8 @@ methods
     function getByteAt(bytes32, uint) external returns bytes1 envfree;
 }
 
+/// @title toLittleEndianUint64 is an inverse of fromLittleEndianUint64
+// toLittleEndianUint64(fromLittleEndianUint64(x)) == x
 rule transformationsAreInverse1()
 {
     bytes32 input_LE;
@@ -15,6 +17,8 @@ rule transformationsAreInverse1()
     assert input_LE == inverse;
 }
 
+/// @title fromLittleEndianUint64 is an inverse of toLittleEndianUint64
+// fromLittleEndianUint64(toLittleEndianUint64(x)) == x
 rule transformationsAreInverse2()
 {
     uint64 x;
@@ -23,7 +27,7 @@ rule transformationsAreInverse2()
     assert x == res;
 }
 
-//holds
+/// @title fromLittleEndianUint64 returns the expected result
 rule fromLittleEndianUint64_correctness()
 {
     bytes32 input_LE;
@@ -39,7 +43,7 @@ rule fromLittleEndianUint64_correctness()
 }
 
 /*
-// currently times out but this is implied by fromLittleEndianUint64_correctness 
+// this currently times out but this is implied by fromLittleEndianUint64_correctness 
 // this doesn't compile unless you set "disable_local_typechecking": true
 rule fromLittleEndianUint64_isSurjective()
 {

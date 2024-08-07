@@ -8,6 +8,8 @@ methods
     function equals(bytes32[], bytes32[]) external returns (bool) envfree;
 }
 
+
+/// @title The hashing doesn't colide.
 rule merkleizeSha256IsInjective()
 {
 	bytes32[] leaves1; bytes32[] leaves2;
@@ -22,6 +24,7 @@ rule merkleizeSha256IsInjective()
     assert res1 == res2 => equals(leaves1, leaves2);
 }
 
+/// @title The hashing doesn't colide on inputs with the same lengths 
 rule merkleizeSha256IsInjective_onSameLengths()
 {
 	bytes32[] leaves1; bytes32[] leaves2;
@@ -36,8 +39,9 @@ rule merkleizeSha256IsInjective_onSameLengths()
     assert res1 == res2 => equals(leaves1, leaves2);
 }
 
-//Proof1.length == Proof2.length && index1 == index2 && leaf1 != leaf2) => 
-//  processInclusionProofSha256(proof1, leaf1, index1) != processInclusionProofSha256(proof2, leaf2, index2)           
+/// @title If only the leaf changes, the result must also change for processInclusionProofSha256
+// Proof1.length == Proof2.length && index1 == index2 && leaf1 != leaf2) => 
+// processInclusionProofSha256(proof1, leaf1, index1) != processInclusionProofSha256(proof2, leaf2, index2)           
 rule processInclusionProofSha256_correctness()
 {
 	bytes proof1; bytes32 leaf1; uint256 index1;
@@ -45,10 +49,12 @@ rule processInclusionProofSha256_correctness()
     bytes32 res1 = processInclusionProofSha256(proof1, leaf1, index1);
     bytes32 res2 = processInclusionProofSha256(proof2, leaf2, index2);
 
+    satisfy true;
     satisfy res1 != res2;
     assert proof1.length == proof2.length && index1 == index2 && leaf1 != leaf2 => res1 != res2;
 }
 
+/// @title If only the leaf changes, the result must also change for processInclusionProofKeccak
 //Proof1.length == Proof2.length && index1 == index2 && leaf1 != leaf2) => 
 //  processInclusionProofKeccak(proof1, leaf1, index1) != processInclusionProofKeccak(proof2, leaf2, index2)           
 rule processInclusionProofKeccak_correctness()
