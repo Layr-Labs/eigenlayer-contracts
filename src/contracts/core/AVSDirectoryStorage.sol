@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -44,14 +48,38 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: avs => operatorSetId => Whether or not an operator set is valid.
     mapping(address => mapping(uint32 => bool)) public isOperatorSet;
 
-    /// @notice Mapping: avs = operator => operatorSetId => Whether or not an operator is a member of an operator set.
-    mapping(address => mapping(address => mapping(uint32 => bool))) public isMember;
-
     /// @notice Mapping: avs => operatorSetId => Total operators within the given operator set.
     mapping(address => mapping(uint32 => uint256)) public operatorSetMemberCount;
 
+    /// @notice Mapping: operator => List of operator sets that operator is registered to.
+    /// @dev Each item is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
+    mapping(address => EnumerableSet.Bytes32Set) internal _operatorSetsMemberOf;
+
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
+    }
+
+    function memberFor(address operator, uint256 index) public view returns (OperatorSet memory) {
+        return _decodeOperatorSet(_operatorSetsMemberOf[operator].at(index));
+    }
+
+    function memberForCount(address operator) public view returns (uint256) {
+        return _operatorSetsMemberOf[operator].length();
+    }
+
+    function isMember(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
+    }
+
+    function _encodeOperatorSet(OperatorSet memory operatorSet) internal view returns (bytes32) {
+        return bytes32(abi.encodePacked(operatorSet.avs, uint96(operatorSet.operatorSetId)));
+    }
+
+    function _decodeOperatorSet(bytes32 encoded) internal view returns (OperatorSet memory) {
+        return OperatorSet({
+            avs: address(uint160(uint256(encoded) >> 96)),
+            operatorSetId: uint32(uint256(encoded) & type(uint96).max)
+        });
     }
 
     /**

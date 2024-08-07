@@ -15,6 +15,8 @@ contract AVSDirectory is
     AVSDirectoryStorage,
     ReentrancyGuardUpgradeable
 {
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     /// @dev Index for flag that pauses operator register/deregister to avs when set.
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
     /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
@@ -371,23 +373,23 @@ contract AVSDirectory is
     function _registerToOperatorSets(address operator, address avs, uint32[] calldata operatorSetIds) internal {
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
+
             require(
                 isOperatorSet[avs][operatorSetIds[i]],
                 "AVSDirectory._registerOperatorToOperatorSets: invalid operator set"
             );
 
-            // Assert `operator` has not already been registered to `operatorSetIds[i]`.
             require(
-                !isMember[avs][operator][operatorSetIds[i]],
+                !isMember(operator, operatorSet),
                 "AVSDirectory._registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
             ++operatorSetMemberCount[avs][operatorSetIds[i]];
 
-            // Mutate `isMember` to `true`.
-            isMember[avs][operator][operatorSetIds[i]] = true;
+            _operatorSetsMemberOf[operator].add(_encodeOperatorSet(operatorSet));
 
-            emit OperatorAddedToOperatorSet(operator, OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
+            emit OperatorAddedToOperatorSet(operator, operatorSet);
         }
     }
 
@@ -401,18 +403,18 @@ contract AVSDirectory is
     function _deregisterFromOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) internal {
         // Loop over `operatorSetIds` array and deregister `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-            // Assert `operator` is registered for this iterations operator set.
+            OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
+
             require(
-                isMember[avs][operator][operatorSetIds[i]],
+                isMember(operator, operatorSet),
                 "AVSDirectory._deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
             --operatorSetMemberCount[avs][operatorSetIds[i]];
 
-            // Mutate `isMember` to `false`.
-            isMember[avs][operator][operatorSetIds[i]] = false;
+            _operatorSetsMemberOf[operator].remove(_encodeOperatorSet(operatorSet));
 
-            emit OperatorRemovedFromOperatorSet(operator, OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
+            emit OperatorRemovedFromOperatorSet(operator, operatorSet);
         }
     }
 
