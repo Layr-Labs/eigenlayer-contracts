@@ -504,6 +504,8 @@ contract RewardsCoordinator is
                 return root;
             }
         }
+        // Silence compiler warning.
+        return DistributionRoot(bytes32(0), 0, 0, false);
     }
 
     /// @inheritdoc IRewardsCoordinator

@@ -26,7 +26,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized();
+        _verifyContractsInitialized(true);
         _verifyInitializationParams();
 
         logAndOutputContractAddresses("script/output/holesky/M2_deploy_from_scratch.holesky.config.json");
