@@ -23,6 +23,13 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     address public verifier;
     bytes32 public imageId;
 
+    mapping(uint32 => mapping(IStrategy => uint96)) public operatorSetIdToStrategyToMultiplier;
+
+    modifier isOperatorSetAVS(address avs) {
+        require(avsDirectory.isOperatorSetAVS(avs), "StakeRootCompendium: is not operator set AVS");
+        _;
+    }
+
     constructor(
         IDelegationManager _delegation,
         IAVSDirectory _avsDirectory
@@ -43,8 +50,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         return Merkle.merkleizeKeccak256(operatorSetLeaves);
     }
 
-    function getOperatorSetRoot(address avs, uint32 operatorSetId, address[] calldata operators, IStrategy[] calldata strategies) external view returns (bytes32) {
-        require(avsDirectory.isOperatorSetAVS(avs), "AVSSyncTree.getOperatorSetRoot: is not operator set AVS");
+    function getOperatorSetRoot(address avs, uint32 operatorSetId, address[] calldata operators, IStrategy[] calldata strategies) external view isOperatorSetAVS(avs) returns (bytes32) {
         require(operators.length <= MAX_OPERATOR_SET_SIZE, "AVSSyncTree._verifyOperatorStatus: operator set too large");
 
         bytes32[] memory operatorLeaves = new bytes32[](operators.length);
@@ -54,8 +60,8 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
             require(avsDirectory.isMember(avs,operators[i],operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator not in operator set");
 
             // shares associated with this operator and these strategies
-            uint256[] memory shares = _retrieveStrategyShares(operators[i], strategies);
-            bytes32 operatorRoot = _computeOperatorRoot(strategies, shares);
+            uint256 weightedStrategyShareSum = _calculateWeightedStrategyShareSum(operators[i], strategies, getMultipliers(operatorSetId, strategies));
+            bytes32 operatorRoot = keccak256(abi.encodePacked(operators[i], weightedStrategyShareSum));
             operatorLeaves[i] = keccak256(abi.encodePacked(operators[i], operatorRoot));     
         }
         return Merkle.merkleizeKeccak256(operatorLeaves);
@@ -74,6 +80,30 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         emit SnarkProofVerified(_journal, _seal);
     }
 
+    //TODO: getting an error here:
+    // Error: Unimplemented feature (/solidity/libsolidity/codegen/ArrayUtils.cpp:240):
+    // Copying of type struct IStakeRootCompendium.StrategyAndMultiplier calldata[] calldata to storage not yet supported.
+    function setStrategiesAndMultipliers(
+        uint32 operatorSetId,
+        StrategyAndMultiplier[] calldata strategiesAndMultipliers
+    ) external isOperatorSetAVS(msg.sender) {
+        for (uint256 i = 0; i < strategiesAndMultipliers.length; i++) {
+            operatorSetIdToStrategyToMultiplier[operatorSetId][strategiesAndMultipliers[i].strategy] = strategiesAndMultipliers[i].multiplier;
+        }
+    }
+
+
+    function getMultipliers(
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies
+    ) public view returns (uint96[] memory) {
+        uint96[] memory multipliers = new uint96[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            multipliers[i] = operatorSetIdToStrategyToMultiplier[operatorSetId][strategies[i]];
+        }
+        return multipliers;
+    }
+
     function setVerifier(address _verifier) external onlyOwner {
         address oldVerifier = verifier; 
         verifier = _verifier;
@@ -86,14 +116,16 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         emit ImageIdChanged(oldImageId, imageId);
     }
 
-
-    function _computeOperatorRoot(IStrategy[] memory strategies, uint256[] memory shares) internal pure returns (bytes32) {
-        bytes32[] memory leaves = new bytes32[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; i++) {
-            leaves[i] = keccak256(abi.encodePacked(strategies[i], shares[i]));
+    function _calculateWeightedStrategyShareSum(address operator, IStrategy[] memory strategies, uint96[] memory multipliers) internal view returns (uint256) {
+        require(strategies.length == multipliers.length, "AVSSyncTree._calculateWeightedStrategyShareSum: strategies and multipliers length mismatch");
+        uint256[] memory shares = _retrieveStrategyShares(operator, strategies);
+        uint256 weightedSum = 0;
+        for (uint256 i = 0; i < shares.length; i++) {
+            weightedSum += shares[i] * multipliers[i];
         }
-        return Merkle.merkleizeKeccak256(leaves);
+        return weightedSum;
     }
+
 
     function _retrieveStrategyShares(address operator, IStrategy[] memory strategies) internal view returns (uint256[] memory) {
         require(strategies.length <= MAX_NUM_STRATEGIES, "AVSSyncTree._retrieveStrategyShares: too many strategies");
