@@ -71,13 +71,13 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         uint256 supplyBefore = stakeToken.totalSupply();
         uint256 stratBalanceBefore = stakeToken.balanceOf(address(stakeTokenStrat));
         assertTrue(
-            !Address.isContract(stakerContract),
+            stakerContract.code.length == 0,
             "test_mintDepositAndDelegate_CheckBalancesAndDeploys: staker contract shouldn't be deployed"
         );
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationFaucet.mintDepositAndDelegate(operator, signatureWithExpiry, bytes32(0), _depositAmount);
         assertTrue(
-            Address.isContract(stakerContract),
+            stakerContract.code.length > 0,
             "test_mintDepositAndDelegate_CheckBalancesAndDeploys: staker contract not deployed"
         );
         uint256 supplyAfter = stakeToken.totalSupply();

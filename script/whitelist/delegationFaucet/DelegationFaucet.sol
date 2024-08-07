@@ -10,7 +10,6 @@ import "script/whitelist/delegationFaucet/DelegationFaucetStaker.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 
 import "../ERC20PresetMinterPauser.sol";
 
@@ -64,7 +63,7 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
         }
 
         // Deploy staker address if not already deployed, staker constructor will approve the StrategyManager to spend the stakeToken
-        if (!Address.isContract(staker)) {
+        if (staker.code.length == 0) {
             Create2.deploy(
                 0,
                 bytes32(uint256(uint160(_operator))),
