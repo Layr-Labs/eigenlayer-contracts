@@ -25,6 +25,7 @@ methods {
     function _._ external => DISPATCH [
       DummyEigenPodA.initialize(address),
       DummyEigenPodA.stake(bytes, bytes, bytes32),
+      EigenPodManagerHarness.recordBeaconChainETHBalanceUpdate(address, int256),
 
 	  DummyEigenPodB.initialize(address),
       DummyEigenPodB.stake(bytes, bytes, bytes32),
