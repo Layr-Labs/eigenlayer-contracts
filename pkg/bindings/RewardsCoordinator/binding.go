@@ -3017,6 +3017,169 @@ func (_RewardsCoordinator *RewardsCoordinatorFilterer) ParseOperatorCommissionUp
 	return event, nil
 }
 
+// RewardsCoordinatorOperatorSetRewardCreatedIterator is returned from FilterOperatorSetRewardCreated and is used to iterate over the raw logs and unpacked data for OperatorSetRewardCreated events raised by the RewardsCoordinator contract.
+type RewardsCoordinatorOperatorSetRewardCreatedIterator struct {
+	Event *RewardsCoordinatorOperatorSetRewardCreated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *RewardsCoordinatorOperatorSetRewardCreatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(RewardsCoordinatorOperatorSetRewardCreated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(RewardsCoordinatorOperatorSetRewardCreated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *RewardsCoordinatorOperatorSetRewardCreatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *RewardsCoordinatorOperatorSetRewardCreatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// RewardsCoordinatorOperatorSetRewardCreated represents a OperatorSetRewardCreated event raised by the RewardsCoordinator contract.
+type RewardsCoordinatorOperatorSetRewardCreated struct {
+	Avs                   common.Address
+	SubmissionNonce       *big.Int
+	RewardsSubmissionHash [32]byte
+	RewardsSubmission     IRewardsCoordinatorOperatorSetRewardsSubmission
+	Raw                   types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorSetRewardCreated is a free log retrieval operation binding the contract event 0x29a8ee4f31259a5f344a2cca256440ea6638a3278972b1ee9a7aab99b00aa3b2.
+//
+// Solidity: event OperatorSetRewardCreated(address indexed avs, uint256 indexed submissionNonce, bytes32 indexed rewardsSubmissionHash, (uint8,uint32,(address,uint96)[],address,uint256,uint32,uint32) rewardsSubmission)
+func (_RewardsCoordinator *RewardsCoordinatorFilterer) FilterOperatorSetRewardCreated(opts *bind.FilterOpts, avs []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (*RewardsCoordinatorOperatorSetRewardCreatedIterator, error) {
+
+	var avsRule []interface{}
+	for _, avsItem := range avs {
+		avsRule = append(avsRule, avsItem)
+	}
+	var submissionNonceRule []interface{}
+	for _, submissionNonceItem := range submissionNonce {
+		submissionNonceRule = append(submissionNonceRule, submissionNonceItem)
+	}
+	var rewardsSubmissionHashRule []interface{}
+	for _, rewardsSubmissionHashItem := range rewardsSubmissionHash {
+		rewardsSubmissionHashRule = append(rewardsSubmissionHashRule, rewardsSubmissionHashItem)
+	}
+
+	logs, sub, err := _RewardsCoordinator.contract.FilterLogs(opts, "OperatorSetRewardCreated", avsRule, submissionNonceRule, rewardsSubmissionHashRule)
+	if err != nil {
+		return nil, err
+	}
+	return &RewardsCoordinatorOperatorSetRewardCreatedIterator{contract: _RewardsCoordinator.contract, event: "OperatorSetRewardCreated", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorSetRewardCreated is a free log subscription operation binding the contract event 0x29a8ee4f31259a5f344a2cca256440ea6638a3278972b1ee9a7aab99b00aa3b2.
+//
+// Solidity: event OperatorSetRewardCreated(address indexed avs, uint256 indexed submissionNonce, bytes32 indexed rewardsSubmissionHash, (uint8,uint32,(address,uint96)[],address,uint256,uint32,uint32) rewardsSubmission)
+func (_RewardsCoordinator *RewardsCoordinatorFilterer) WatchOperatorSetRewardCreated(opts *bind.WatchOpts, sink chan<- *RewardsCoordinatorOperatorSetRewardCreated, avs []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (event.Subscription, error) {
+
+	var avsRule []interface{}
+	for _, avsItem := range avs {
+		avsRule = append(avsRule, avsItem)
+	}
+	var submissionNonceRule []interface{}
+	for _, submissionNonceItem := range submissionNonce {
+		submissionNonceRule = append(submissionNonceRule, submissionNonceItem)
+	}
+	var rewardsSubmissionHashRule []interface{}
+	for _, rewardsSubmissionHashItem := range rewardsSubmissionHash {
+		rewardsSubmissionHashRule = append(rewardsSubmissionHashRule, rewardsSubmissionHashItem)
+	}
+
+	logs, sub, err := _RewardsCoordinator.contract.WatchLogs(opts, "OperatorSetRewardCreated", avsRule, submissionNonceRule, rewardsSubmissionHashRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(RewardsCoordinatorOperatorSetRewardCreated)
+				if err := _RewardsCoordinator.contract.UnpackLog(event, "OperatorSetRewardCreated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorSetRewardCreated is a log parse operation binding the contract event 0x29a8ee4f31259a5f344a2cca256440ea6638a3278972b1ee9a7aab99b00aa3b2.
+//
+// Solidity: event OperatorSetRewardCreated(address indexed avs, uint256 indexed submissionNonce, bytes32 indexed rewardsSubmissionHash, (uint8,uint32,(address,uint96)[],address,uint256,uint32,uint32) rewardsSubmission)
+func (_RewardsCoordinator *RewardsCoordinatorFilterer) ParseOperatorSetRewardCreated(log types.Log) (*RewardsCoordinatorOperatorSetRewardCreated, error) {
+	event := new(RewardsCoordinatorOperatorSetRewardCreated)
+	if err := _RewardsCoordinator.contract.UnpackLog(event, "OperatorSetRewardCreated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // RewardsCoordinatorOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the RewardsCoordinator contract.
 type RewardsCoordinatorOwnershipTransferredIterator struct {
 	Event *RewardsCoordinatorOwnershipTransferred // Event containing the contract specifics and raw log

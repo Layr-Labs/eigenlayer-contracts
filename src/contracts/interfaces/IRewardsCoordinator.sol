@@ -212,6 +212,7 @@ interface IRewardsCoordinator {
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
 
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+
     /// @notice emitted when an operator commission is set for a specific OperatorSet and RewardType
     event OperatorCommissionUpdated(
         address indexed operator,
@@ -220,6 +221,7 @@ interface IRewardsCoordinator {
         uint16 newCommissionBips,
         uint32 effectTimestamp
     );
+
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
 
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
