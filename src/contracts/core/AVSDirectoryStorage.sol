@@ -32,6 +32,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     bytes32 internal _DOMAIN_SEPARATOR;
 
     /// @notice Mapping: avs => operator => OperatorAVSRegistrationStatus struct
+    /// @dev This storage will be deprecated once M2 based deregistration is deprecated.
     mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 
     /// @notice Mapping: operator => salt => Whether the salt has been used or not.

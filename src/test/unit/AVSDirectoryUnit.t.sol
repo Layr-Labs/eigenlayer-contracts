@@ -42,6 +42,8 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
 
     // Index for flag that pauses registering/deregistering for AVSs
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
+    // Index for flag that pauses operator register/deregister to operator sets when set.
+    uint8 internal constant PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS = 1;
 
     function setUp() public virtual override {
         // Setup
@@ -873,7 +875,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
 
     function test_revert_paused() public {
         cheats.prank(pauser);
-        avsDirectory.pause(2 ** PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS);
+        avsDirectory.pause(2 ** PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS);
 
         operators = new address[](1);
         operatorSetIds = new uint32[][](1);

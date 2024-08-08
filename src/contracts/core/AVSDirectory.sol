@@ -17,6 +17,8 @@ contract AVSDirectory is
 {
     /// @dev Index for flag that pauses operator register/deregister to avs when set.
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
+    /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
+    uint8 internal constant PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS = 1;
 
     /// @dev Returns the chain ID from the time the contract was deployed.
     uint256 internal immutable ORIGINAL_CHAIN_ID;
@@ -100,7 +102,7 @@ contract AVSDirectory is
     function migrateOperatorsToOperatorSets(
         address[] calldata operators,
         uint32[][] calldata operatorSetIds
-    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+    ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
         // Assert that the AVS is an operator set AVS.
         require(
             isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS"
@@ -114,7 +116,7 @@ contract AVSDirectory is
             );
 
             // Migrate operator to operator sets.
-            _registerToOperatorSets(msg.sender, operators[i], operatorSetIds[i]);
+            _registerToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
 
             // Deregister operator from AVS - this prevents the operator from being migrated again since
             // the AVS can no longer use the legacy M2 registration path
@@ -140,7 +142,7 @@ contract AVSDirectory is
         address operator,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+    ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
         // Assert operator's signature has not expired.
         require(
             operatorSignature.expiry >= block.timestamp,
@@ -176,7 +178,7 @@ contract AVSDirectory is
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
 
-        _registerToOperatorSets(msg.sender, operator, operatorSetIds);
+        _registerToOperatorSets(operator, msg.sender, operatorSetIds);
     }
 
     /**
@@ -195,7 +197,7 @@ contract AVSDirectory is
         address avs,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+    ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
         if (operatorSignature.signature.length == 0) {
             require(msg.sender == operator, "AVSDirectory.forceDeregisterFromOperatorSets: caller must be operator");
         } else {
@@ -239,7 +241,7 @@ contract AVSDirectory is
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
-    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+    ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
         _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
@@ -366,7 +368,7 @@ contract AVSDirectory is
      * @param operator The operator to register.
      * @param operatorSetIds The IDs of the operator sets.
      */
-    function _registerToOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) internal {
+    function _registerToOperatorSets(address operator, address avs, uint32[] calldata operatorSetIds) internal {
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             require(
