@@ -124,6 +124,24 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         return (staker, amount);
     }
 
+    /// @dev Opposite of Endian.fromLittleEndianUint64
+    function _toLittleEndianUint64(uint64 num) internal pure returns (bytes32) {
+        uint256 lenum;
+        
+        // Rearrange the bytes from big-endian to little-endian format
+        lenum |= uint256((num & 0xFF) << 56);
+        lenum |= uint256((num & 0xFF00) << 40);
+        lenum |= uint256((num & 0xFF0000) << 24);
+        lenum |= uint256((num & 0xFF000000) << 8);
+        lenum |= uint256((num & 0xFF00000000) >> 8);
+        lenum |= uint256((num & 0xFF0000000000) >> 24);
+        lenum |= uint256((num & 0xFF000000000000) >> 40);
+        lenum |= uint256((num & 0xFF00000000000000) >> 56);
+    
+        // Shift the little-endian bytes to the end of the bytes32 value
+        return bytes32(lenum << 192);
+    }
+
     /*******************************************************************************
                         verifyWithdrawalCredentials Assertions
     *******************************************************************************/
@@ -830,6 +848,28 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
 
         cheats.startPrank(address(staker));
         cheats.expectRevert("BeaconChainProofs.verifyValidatorFields: Validator fields has incorrect length");
+        pod.verifyWithdrawalCredentials({
+            beaconTimestamp: proofs.beaconTimestamp,
+            stateRootProof: proofs.stateRootProof,
+            validatorIndices: validators,
+            validatorFieldsProofs: proofs.validatorFieldsProofs,
+            validatorFields: proofs.validatorFields
+        });
+        cheats.stopPrank();
+    }
+
+    /// @notice modify validator activation epoch to cause a revert
+    function testFuzz_revert_activationEpochNotSet(uint256 rand) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (uint40[] memory validators, ) = staker.startValidators();
+        EigenPod pod = staker.pod();
+        CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
+        
+        proofs.validatorFields[0][BeaconChainProofs.VALIDATOR_ACTIVATION_EPOCH_INDEX] 
+            = _toLittleEndianUint64(BeaconChainProofs.FAR_FUTURE_EPOCH);
+
+        cheats.startPrank(address(staker));
+        cheats.expectRevert("EigenPod._verifyWithdrawalCredentials: validator must be in the process of activating");
         pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
