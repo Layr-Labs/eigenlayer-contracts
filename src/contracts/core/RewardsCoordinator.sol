@@ -444,7 +444,7 @@ contract RewardsCoordinator is
     /**
      * @notice Validate a RewardsSubmission. Called from `createAVSRewardsSubmission`, `createRewardsForAllSubmission`,
      *         and `rewardOperatorSetForRange`
-     * 
+     *
      * @dev The callee must specify the `retroactiveLength` and `genesisRewardsTimestamp` as those values
      *      are different depending on the rewards submission type.
      */

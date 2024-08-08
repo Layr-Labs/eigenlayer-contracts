@@ -18,7 +18,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      *                            CONSTANTS AND IMMUTABLES
      *
      */
-    
+
     // Constants for all reward types
     /// @notice The interval in seconds at which the calculation for rewards distribution is done.
     /// @dev ALL RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 week
