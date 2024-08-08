@@ -82,17 +82,6 @@ interface IRewardsCoordinator {
      *      using `OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP` instead of `GENESIS_REWARDS_TIMESTAMP` and
      *      `OPERATOR_SET_MAX_RETROACTIVE_LENGTH` instead of `MAX_RETROACTIVE_LENGTH`
      */
-
-    struct OperatorSetRewardsSubmission {
-        RewardType rewardType;
-        uint32 operatorSetId;
-        StrategyAndMultiplier[] strategiesAndMultipliers;
-        IERC20 token;
-        uint256 amount;
-        uint32 startTimestamp;
-        uint32 duration;
-    }
-
     struct OperatorSetRewardsSubmission {
         RewardType rewardType;
         uint32 operatorSetId;
@@ -212,6 +201,7 @@ interface IRewardsCoordinator {
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
 
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+
     /// @notice emitted when an operator commission is set for a specific OperatorSet and RewardType
     event OperatorCommissionUpdated(
         address indexed operator,
@@ -220,6 +210,7 @@ interface IRewardsCoordinator {
         uint16 newCommissionBips,
         uint32 effectTimestamp
     );
+
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
 
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
