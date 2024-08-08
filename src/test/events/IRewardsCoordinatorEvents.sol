@@ -55,6 +55,14 @@ interface IRewardsCoordinatorEvents {
         IERC20 token,
         uint256 claimedAmount
     );
+    /// @notice emitted when an AVS creates a valid OperatorSetRewardsSubmission
+    event OperatorSetRewardCreated(
+        address indexed avs,
+        uint256 indexed submissionNonce,
+        bytes32 indexed rewardsSubmissionHash,
+        IRewardsCoordinator.OperatorSetRewardsSubmission rewardsSubmission
+    );
+
 
 
 

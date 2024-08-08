@@ -47,6 +47,8 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
     /// @dev Index for flag that pauses submitRoots and disableRoot
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
+    /// @dev Index for flag that pauses calling rewardOperatorSetForRange
+    uint8 internal constant PAUSED_REWARD_OPERATOR_SET = 4;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -73,20 +75,26 @@ contract RewardsCoordinator is
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
+        IAVSDirectory _avsDirectory,
         uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
         uint32 _MAX_FUTURE_LENGTH,
-        uint32 __GENESIS_REWARDS_TIMESTAMP
+        uint32 _GENESIS_REWARDS_TIMESTAMP,
+        uint32 _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+        uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
     )
         RewardsCoordinatorStorage(
             _delegationManager,
             _strategyManager,
+            _avsDirectory,
             _CALCULATION_INTERVAL_SECONDS,
             _MAX_REWARDS_DURATION,
             _MAX_RETROACTIVE_LENGTH,
             _MAX_FUTURE_LENGTH,
-            __GENESIS_REWARDS_TIMESTAMP
+            _GENESIS_REWARDS_TIMESTAMP,
+            _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+            _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         )
     {
         _disableInitializers();
@@ -120,7 +128,9 @@ contract RewardsCoordinator is
      */
 
     /**
-     * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
+     * @notice Legacy interface to be DEPRECATED in future releases. See rewardOperatorSetForRange
+     * for a more updated interface.
+     * Creates a new rewards submission on behalf of an AVS, to be split amongst the
      * set of stakers delegated to operators who are registered to the `avs`
      * @param rewardsSubmissions The rewards submissions being created
      * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
@@ -140,7 +150,15 @@ contract RewardsCoordinator is
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
 
-            _validateRewardsSubmission(rewardsSubmission);
+            _validateRewardsSubmission(
+                rewardsSubmission.strategiesAndMultipliers,
+                rewardsSubmission.token,
+                rewardsSubmission.amount,
+                rewardsSubmission.startTimestamp,
+                rewardsSubmission.duration,
+                MAX_RETROACTIVE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP
+            );
 
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
             submissionNonce[msg.sender] = nonce + 1;
@@ -171,12 +189,69 @@ contract RewardsCoordinator is
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
 
-            _validateRewardsSubmission(rewardsSubmission);
+            _validateRewardsSubmission(
+                rewardsSubmission.strategiesAndMultipliers,
+                rewardsSubmission.token,
+                rewardsSubmission.amount,
+                rewardsSubmission.startTimestamp,
+                rewardsSubmission.duration,
+                MAX_RETROACTIVE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP
+            );
 
             isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionForAllHash] = true;
             submissionNonce[msg.sender] = nonce + 1;
 
             emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet,
+     * to be split amongst the set of stakers delegated to operators who are
+     * registered to the msg.sender AVS and the given operatorSetId
+     *
+     * @param rewardsSubmissions The operatorSet rewards submission being created for
+     *
+     * @dev msg.sender is the AVS in the operatorSet the rewards submission is being made to
+     * @dev AVSs set their reward type depending on what metric they want rewards
+     * distributed proportional to
+     * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
+     * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
+     */
+    function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions)
+        external
+        onlyWhenNotPaused(PAUSED_REWARD_OPERATOR_SET)
+        nonReentrant
+    {
+        for (uint256 i = 0; i < rewardsSubmissions.length;) {
+            OperatorSetRewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[msg.sender];
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
+
+            require(
+                avsDirectory.isOperatorSet(msg.sender, rewardsSubmission.operatorSetId),
+                "RewardsCoordinator.rewardOperatorSetForRange: invalid operatorSet"
+            );
+            _validateRewardsSubmission(
+                rewardsSubmission.strategiesAndMultipliers,
+                rewardsSubmission.token,
+                rewardsSubmission.amount,
+                rewardsSubmission.startTimestamp,
+                rewardsSubmission.duration,
+                OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
+                OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP
+            );
+
+            isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
+            submissionNonce[msg.sender] = nonce + 1;
+
+            emit OperatorSetRewardCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
 
             unchecked {
@@ -367,44 +442,49 @@ contract RewardsCoordinator is
      */
 
     /**
-     * @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
+     * @notice Validate a RewardsSubmission. Called from `createAVSRewardsSubmission`, `createRewardsForAllSubmission`,
+     *         and `rewardOperatorSetForRange`
+     *
+     * @dev The callee must specify the `retroactiveLength` and `genesisRewardsTimestamp` as those values
+     *      are different depending on the rewards submission type.
      */
-    function _validateRewardsSubmission(RewardsSubmission calldata rewardsSubmission) internal view {
+    function _validateRewardsSubmission(
+        StrategyAndMultiplier[] calldata strategiesAndMultipliers,
+        IERC20 token,
+        uint256 amount,
+        uint32 startTimestamp,
+        uint32 duration,
+        uint32 maxRetroactiveLength,
+        uint32 genesisRewardsTimestamp
+    ) internal view {
+        require(strategiesAndMultipliers.length > 0, "RewardsCoordinator._validateRewardsSubmission: no strategies set");
+        require(amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
+        require(amount <= MAX_REWARDS_AMOUNT, "RewardsCoordinator._validateRewardsSubmission: amount too large");
         require(
-            rewardsSubmission.strategiesAndMultipliers.length > 0,
-            "RewardsCoordinator._validateRewardsSubmission: no strategies set"
-        );
-        require(rewardsSubmission.amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
-        require(
-            rewardsSubmission.amount <= MAX_REWARDS_AMOUNT,
-            "RewardsCoordinator._validateRewardsSubmission: amount too large"
-        );
-        require(
-            rewardsSubmission.duration <= MAX_REWARDS_DURATION,
+            duration <= MAX_REWARDS_DURATION,
             "RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
         );
         require(
-            rewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
+            duration % CALCULATION_INTERVAL_SECONDS == 0,
             "RewardsCoordinator._validateRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            rewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
+            startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp
-                && GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
+            block.timestamp - maxRetroactiveLength <= startTimestamp && genesisRewardsTimestamp <= startTimestamp,
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
         );
         require(
-            rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
+            startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the future"
         );
 
         // Require rewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
         address currAddress = address(0);
-        for (uint256 i = 0; i < rewardsSubmission.strategiesAndMultipliers.length; ++i) {
-            IStrategy strategy = rewardsSubmission.strategiesAndMultipliers[i].strategy;
+        for (uint256 i = 0; i < strategiesAndMultipliers.length; ++i) {
+            IStrategy strategy = strategiesAndMultipliers[i].strategy;
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
                 "RewardsCoordinator._validateRewardsSubmission: invalid strategy considered"
