@@ -5,6 +5,7 @@ import "src/test/mocks/StrategyManagerMock.sol";
 import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/SlasherMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
+import "src/test/mocks/AVSDirectoryMock.sol";
 import "src/test/utils/EigenLayerUnitTestBase.sol";
 
 abstract contract EigenLayerUnitTestSetup is EigenLayerUnitTestBase {
@@ -13,6 +14,7 @@ abstract contract EigenLayerUnitTestSetup is EigenLayerUnitTestBase {
     DelegationManagerMock public delegationManagerMock;
     SlasherMock public slasherMock;
     EigenPodManagerMock public eigenPodManagerMock;
+    AVSDirectoryMock public avsDirectoryMock;
 
     function setUp() public virtual override {
         EigenLayerUnitTestBase.setUp();
@@ -20,6 +22,7 @@ abstract contract EigenLayerUnitTestSetup is EigenLayerUnitTestBase {
         delegationManagerMock = new DelegationManagerMock();
         slasherMock = new SlasherMock();
         eigenPodManagerMock = new EigenPodManagerMock();
+        avsDirectoryMock = new AVSDirectoryMock();
 
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
         addressIsExcludedFromFuzzedInputs[address(strategyManagerMock)] = true;

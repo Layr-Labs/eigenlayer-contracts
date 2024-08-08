@@ -46,11 +46,14 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            avsDirectory,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
             REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
+            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+            REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+            REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         );
         rewardsCoordinator = RewardsCoordinator(
             address(
@@ -79,11 +82,14 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            avsDirectory,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
             REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
+            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+            REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+            REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         );
 
         eigenLayerProxyAdmin.upgrade(

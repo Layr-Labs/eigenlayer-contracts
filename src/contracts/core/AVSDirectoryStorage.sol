@@ -34,17 +34,20 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: avs => operator => OperatorAVSRegistrationStatus struct
     mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 
-    /// @notice Mapping: operator => salt => whether the salt has been used
+    /// @notice Mapping: operator => salt => Whether the salt has been used or not.
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
-    /// @notice Mapping: avs => whether it is a an operator set AVS
+    /// @notice Mapping: avs => Whether it is a an operator set AVS or not.
     mapping(address => bool) public isOperatorSetAVS;
 
-    /// @notice Mapping: avs => operatorSetId => whether the operatorSet exists
+    /// @notice Mapping: avs => operatorSetId => Whether or not an operator set is valid.
     mapping(address => mapping(uint32 => bool)) public isOperatorSet;
 
-    /// @notice Mapping: avs = operator => operatorSetId => whether the operator is a member of the operatorSet
+    /// @notice Mapping: avs = operator => operatorSetId => Whether or not an operator is a member of an operator set.
     mapping(address => mapping(address => mapping(uint32 => bool))) public isMember;
+
+    /// @notice Mapping: avs => operatorSetId => Total operators within the given operator set.
+    mapping(address => mapping(uint32 => uint256)) public operatorSetMemberCount;
 
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
@@ -55,5 +58,5 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[43] private __gap;
+    uint256[40] private __gap;
 }
