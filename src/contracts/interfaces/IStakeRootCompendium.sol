@@ -9,6 +9,17 @@ interface IStakeRootCompendium {
         IStrategy strategy;
         uint96 multiplier;
     }
+
+    struct StakeRootLeaf {
+        address avs;
+        bytes32 operatorSetRoot;
+        uint32 operatorSetId;
+    }
+
+    struct AvsAndOperatorSetId {
+        address avs;
+        uint32 operatorSetId;
+    }
         
     /**
     * @notice called by an AVS to set their strategies and multipliers used to determine stakes for stake roots
@@ -26,11 +37,17 @@ interface IStakeRootCompendium {
 
     event ImageIdChanged(bytes32 oldImageId, bytes32 newImageId);
 
-    function getOperatorSetRoot(address avs, uint32 operatorSetId, address[] calldata operators, IStrategy[] calldata strategies) external view returns (bytes32);
+    function getOperatorSetRoot(
+        AvsAndOperatorSetId calldata avsAndOperatorSetId, 
+        address[] calldata operators, 
+        IStrategy[] calldata strategies
+    ) external view returns (bytes32);
 
-    function getStakeRoot(address[] calldata avss, bytes32[] calldata operatorSetRoots) external view returns (bytes32);
+    function getStakeRoot(StakeRootLeaf[] calldata stakeRootLeaves) external view returns (bytes32);
 
     function getMultipliers(uint32 operatorSetId, IStrategy[] calldata strategies) external view returns (uint96[] memory);
+
+    function isAVS(address avs) external view returns (bool);
 
     function verifySnarkProof(
         bytes calldata _journal,
