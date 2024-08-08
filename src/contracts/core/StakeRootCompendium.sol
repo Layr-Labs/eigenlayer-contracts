@@ -30,6 +30,11 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         _;
     }
 
+    modifier isOperatorSet(address avs, uint32 operatorSetId) {
+        require(avsDirectory.isOperatorSet(avs, operatorSetId), "StakeRootCompendium: operator set does not exist");
+        _;
+    }
+
     constructor(
         IDelegationManager _delegation,
         IAVSDirectory _avsDirectory
@@ -50,19 +55,18 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         return Merkle.merkleizeKeccak256(operatorSetLeaves);
     }
 
-    function getOperatorSetRoot(address avs, uint32 operatorSetId, address[] calldata operators, IStrategy[] calldata strategies) external view isOperatorSetAVS(avs) returns (bytes32) {
+    //Note: assumes that the operator is registered to the AVS and is registered with the delegationManager.
+    function getOperatorSetRoot(address avs, uint32 operatorSetId, address[] calldata operators, IStrategy[] calldata strategies) external view isOperatorSetAVS(avs) isOperatorSet(avs, operatorSetId) returns (bytes32) {
         require(operators.length <= MAX_OPERATOR_SET_SIZE, "AVSSyncTree._verifyOperatorStatus: operator set too large");
 
         bytes32[] memory operatorLeaves = new bytes32[](operators.length);
+
         for (uint256 i = 0; i < operators.length; i++) {
-            require(delegation.isOperator(operators[i]), "AVSSyncTree.getOperatorSetRoot: operator not registered");
-            require(avsDirectory.avsOperatorStatus(avs,operators[i]) == IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED, "AVSSyncTree.getOperatorSetRoot: operator not registered to AVS");
             require(avsDirectory.isMember(avs,operators[i],operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator not in operator set");
 
             // shares associated with this operator and these strategies
             uint256 weightedStrategyShareSum = _calculateWeightedStrategyShareSum(operators[i], strategies, getMultipliers(operatorSetId, strategies));
-            bytes32 operatorRoot = keccak256(abi.encodePacked(operators[i], weightedStrategyShareSum));
-            operatorLeaves[i] = keccak256(abi.encodePacked(operators[i], operatorRoot));     
+            operatorLeaves[i] =  keccak256(abi.encodePacked(operators[i], weightedStrategyShareSum));    
         }
         return Merkle.merkleizeKeccak256(operatorLeaves);
     }
@@ -86,7 +90,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     function setStrategiesAndMultipliers(
         uint32 operatorSetId,
         StrategyAndMultiplier[] calldata strategiesAndMultipliers
-    ) external isOperatorSetAVS(msg.sender) {
+    ) external isOperatorSetAVS(msg.sender) isOperatorSet(msg.sender, operatorSetId) {
         for (uint256 i = 0; i < strategiesAndMultipliers.length; i++) {
             operatorSetIdToStrategyToMultiplier[operatorSetId][strategiesAndMultipliers[i].strategy] = strategiesAndMultipliers[i].multiplier;
         }
@@ -118,17 +122,12 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
 
     function _calculateWeightedStrategyShareSum(address operator, IStrategy[] memory strategies, uint96[] memory multipliers) internal view returns (uint256) {
         require(strategies.length == multipliers.length, "AVSSyncTree._calculateWeightedStrategyShareSum: strategies and multipliers length mismatch");
-        uint256[] memory shares = _retrieveStrategyShares(operator, strategies);
+        require(strategies.length <= MAX_NUM_STRATEGIES, "AVSSyncTree._retrieveStrategyShares: too many strategies");
+        uint256[] memory shares = delegation.getOperatorShares(operator, strategies);
         uint256 weightedSum = 0;
         for (uint256 i = 0; i < shares.length; i++) {
             weightedSum += shares[i] * multipliers[i];
         }
         return weightedSum;
-    }
-
-
-    function _retrieveStrategyShares(address operator, IStrategy[] memory strategies) internal view returns (uint256[] memory) {
-        require(strategies.length <= MAX_NUM_STRATEGIES, "AVSSyncTree._retrieveStrategyShares: too many strategies");
-        return delegation.getOperatorShares(operator, strategies);
     }
 }

@@ -68,7 +68,7 @@ contract AVSDirectory is
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             require(
                 !isOperatorSet[msg.sender][operatorSetIds[i]],
-                "AVSDirectory.createOperatorSet: operator set already exists"
+                "AVSDirectory.createOperatorSets: operator set already exists"
             );
             isOperatorSet[msg.sender][operatorSetIds[i]] = true;
             emit OperatorSetCreated(OperatorSet({avs: msg.sender, operatorSetId: operatorSetIds[i]}));
