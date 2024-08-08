@@ -116,6 +116,8 @@ contract ExistingDeploymentParser is Script, Test {
     uint32 REWARDS_COORDINATOR_ACTIVATION_DELAY;
     uint32 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
     uint32 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
+    uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
+    uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint64 EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP;
@@ -326,6 +328,12 @@ contract ExistingDeploymentParser is Script, Test {
         );
         REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
             stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.global_operator_commission_bips")
+        );
+        REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP")
+        );
+        REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH")
         );
         // AVSDirectory
         AVS_DIRECTORY_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".avsDirectory.init_paused_status");
