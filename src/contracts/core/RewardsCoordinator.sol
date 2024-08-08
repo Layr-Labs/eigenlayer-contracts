@@ -47,6 +47,8 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
     /// @dev Index for flag that pauses submitRoots and disableRoot
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
+    /// @dev Index for flag that pauses calling rewardOperatorSetForRange
+    uint8 internal constant PAUSED_REWARD_OPERATOR_SET = 4;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -224,7 +226,7 @@ contract RewardsCoordinator is
      */
     function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions)
         external
-        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
+        onlyWhenNotPaused(PAUSED_REWARD_OPERATOR_SET)
         nonReentrant
     {
         for (uint256 i = 0; i < rewardsSubmissions.length;) {

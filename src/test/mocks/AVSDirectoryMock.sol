@@ -46,7 +46,9 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function isOperatorSetAVS(address avs) external view returns (bool) {}
 
-    function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {}
+    function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {
+        return true;
+    }
 
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
