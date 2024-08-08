@@ -73,8 +73,6 @@ contract AVSDirectory is
             isOperatorSet[msg.sender][operatorSetIds[i]] = true;
             emit OperatorSetCreated(OperatorSet({avs: msg.sender, operatorSetId: operatorSetIds[i]}));
         }
-        operatorSetCount += operatorSetIds.length;
-        avsOperatorSetCount[msg.sender] += operatorSetIds.length;
     }
 
     /**
