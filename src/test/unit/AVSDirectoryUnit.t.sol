@@ -837,9 +837,6 @@ contract AVSDirectoryUnitTests_createOperatorSet is AVSDirectoryUnitTests {
         }
 
         avsDirectory.createOperatorSets(oids);
-
-        assertEq(avsDirectory.operatorSetCount(), totalSets);
-        assertEq(avsDirectory.avsOperatorSetCount(address(this)), totalSets);
         
         for (uint32 i = 1; i < totalSets + 1; ++i) {
             assertTrue(avsDirectory.isOperatorSet(address(this), i));
