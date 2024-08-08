@@ -5,8 +5,6 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import {CheckpointsUpgradeable} from "@openzeppelin-upgrades-v4.9.0/contracts/utils/CheckpointsUpgradeable.sol";
-
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 import "./AVSDirectoryStorage.sol";
@@ -18,11 +16,19 @@ contract AVSDirectory is
     AVSDirectoryStorage,
     ReentrancyGuardUpgradeable
 {
+    using MagnitudeCheckpoints for MagnitudeCheckpoints.History;
+
     /// @dev Index for flag that pauses operator register/deregister to avs when set.
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
     /// @dev Returns the chain ID from the time the contract was deployed.
     uint256 internal immutable ORIGINAL_CHAIN_ID;
+
+    /// @dev BIPS factor for slashable bips
+    uint256 internal constant BIPS_FACTOR = 10_000;
+
+    /// @dev Delay before allocations take effect and how long until deallocations are completable
+    uint32 public constant ALLOCATION_DELAY = 21 days;
 
     /**
      *
@@ -247,6 +253,151 @@ contract AVSDirectory is
     }
 
     /**
+     * @notice Allocates a set of magnitude adjustments to increase the slashable stake of an operator set for the
+     * given operator for the given strategy.
+     * free magnitude for each strategy will decrement by the sum of all
+     * allocations for that strategy and the allocations will take effect 21 days from calling.
+     *
+     * @param operator address to increase allocations for
+     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
+     * @param operatorSignature signature of the operator if msg.sender is not the operator
+     */
+    function allocate(
+        address operator,
+        MagnitudeAdjustment[] calldata allocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
+    ) external {
+        // TODO signature verification
+
+        uint32 effectTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
+        for (uint256 i = 0; i < allocations.length; ++i) {
+            _allocate(operator, allocations[i], effectTimestamp);
+        }
+    }
+
+    /**
+     * @notice Queues a set of magnitude adjustments to decrease the slashable stake of an operator set for the given operator for the given strategy.
+     * The deallocations will take effect 21 days from calling. In order for the operator to have their nonslashable magnitude increased,
+     * they must call the contract again to complete the deallocation. Stake deallocations are still subject to slashing until 21 days have passed since queuing.
+     *
+     * @param operator address to decrease allocations for
+     * @param deallocations array of magnitude adjustments for multiple strategies and corresponding operator sets
+     * @param operatorSignature signature of the operator if msg.sender is not the operator
+     */
+    function queueDeallocate(
+        address operator,
+        MagnitudeAdjustment[] calldata deallocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
+    ) external {
+        // TODO signature verification
+
+        uint32 completableTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
+        // deallocate for each strategy
+        for (uint256 i = 0; i < deallocations.length; ++i) {
+            _queueDeallocate(operator, deallocations[i], completableTimestamp);
+        }
+    }
+
+    /**
+     * @notice Complete queued deallocations of slashable stake for an operator, permissionlessly called by anyone
+     * Increments the free magnitude of the operator by the sum of all deallocation amounts for each strategy.
+     * If the operator was slashed, this will be a smaller amount than during queuing.
+     *
+     * @param operator address to complete deallocations for
+     * @param strategies a list of strategies to complete deallocations for
+     * @param operatorSets a 2d list of operator sets to complete deallocations for, one list for each strategy
+     *
+     * @dev can be called permissionlessly by anyone
+     */
+    function completeDeallocations(
+        address operator,
+        IStrategy[] calldata strategies,
+        OperatorSet[][] calldata operatorSets
+    ) external {
+        // complete all queued deallocations for strategies
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            uint64 freeMagnitudeToAdd = 0;
+            // complete all queued deallocations for specified operatorSets
+            for (uint256 j = 0; j < operatorSets[i].length; ++j) {
+                freeMagnitudeToAdd += _completeDeallocation(operator, strategies[i], operatorSets[i][j]);
+            }
+            // add to free available magnitude
+            freeMagnitude[operator][strategies[i]] += freeMagnitudeToAdd;
+        }
+    }
+
+    /**
+     * @notice Called by an AVS to slash an operator for given operatorSetId, list of strategies, and bipsToSlash.
+     * For each given (operator, operatorSetId, strategy) tuple, bipsToSlash
+     * bips of the operatorSet's slashable stake allocation will be slashed
+     *
+     * @param operator the address to slash
+     * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
+     * @param strategies the set of strategies to slash
+     * @param bipsToSlash the number of bips to slash, this will be proportional to the
+     * operator's slashable stake allocation for the operatorSet
+     */
+    function slashOperator(
+        address operator,
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies,
+        uint16 bipsToSlash
+    ) external {
+        require(
+            isOperatorSlashable(operator, OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
+            "AVSDirectory.slashOperator: operator not slashable for operatorSet"
+        );
+
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            // 1. calculate slashed magnitude from current allocation
+            // update current and all following queued magnitude updates for (operator, strategy, operatorSetId) tuple
+            uint64 slashedMagnitude;
+            {
+                uint64 currentMagnitude = uint64(
+                    _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].upperLookupRecent(
+                        uint32(block.timestamp)
+                    )
+                );
+                /// TODO: add wrapping library for rounding up for slashing accounting
+                slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
+
+                _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId]
+                    .decrementCurrentAndFutureCheckpoints({
+                    timestamp: uint32(block.timestamp),
+                    decrementValue: slashedMagnitude
+                });
+            }
+
+            // 2. if there are any pending deallocations then need to update and decrement if they fall within slashable window
+            uint64 slashedFromDeallocation = 0;
+            {
+                uint256 queuedDeallocationsLen =
+                    _queuedDeallocations[operator][strategies[i]][msg.sender][operatorSetId].length;
+                for (uint256 j = queuedDeallocationsLen; j > 0; --j) {
+                    QueuedDeallocation storage queuedDeallocation =
+                        _queuedDeallocations[operator][strategies[i]][msg.sender][operatorSetId][j - 1];
+
+                    // if queued deallocation is still within slashable window, then slash and keep track of sum to decrement from totalMagnitude
+                    if (uint32(block.timestamp) + ALLOCATION_DELAY > queuedDeallocation.completableTimestamp) {
+                        uint64 slashedAmount =
+                            uint64(uint256(bipsToSlash) * uint256(queuedDeallocation.magnitudeDiff) / BIPS_FACTOR);
+                        queuedDeallocation.magnitudeDiff -= slashedAmount;
+                        slashedFromDeallocation += slashedAmount;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            // 3. update totalMagnitude, get total magnitude and subtract slashedMagnitude and slashedFromDeallocation
+            _totalMagnitudeUpdate[operator][strategies[i]].push({
+                timestamp: uint32(block.timestamp),
+                value: _totalMagnitudeUpdate[operator][strategies[i]].latest() - slashedMagnitude - slashedFromDeallocation
+            });
+        }
+    }
+
+    /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
      *  @param metadataURI The URI for metadata associated with an AVS.
@@ -265,96 +416,6 @@ contract AVSDirectory is
     function cancelSalt(bytes32 salt) external override {
         // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
         operatorSaltIsSpent[msg.sender][salt] = true;
-    }
-
-    /**
-     *
-     *        LEGACY EXTERNAL FUNCTIONS - SUPPORT DEPRECATED BY SLASHING RELEASE
-     *
-     */
-
-    /**
-     *  @notice Called by the AVS's service manager contract to register an operator with the AVS.
-     *
-     *  @param operator The address of the operator to register.
-     *  @param operatorSignature The signature, salt, and expiry of the operator's signature.
-     *
-     *  @dev msg.sender must be the AVS.
-     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
-     */
-    function registerOperatorToAVS(
-        address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        // Assert `operatorSignature.expiry` has not elapsed.
-        require(
-            operatorSignature.expiry >= block.timestamp,
-            "AVSDirectory.registerOperatorToAVS: operator signature expired"
-        );
-
-        // Assert that the AVS is not an operator set AVS.
-        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.registerOperatorToAVS: AVS is an operator set AVS");
-
-        // Assert that the `operator` is not actively registered to the AVS.
-        require(
-            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.registerOperatorToAVS: operator already registered"
-        );
-
-        // Assert `operator` has not already spent `operatorSignature.salt`.
-        require(
-            !operatorSaltIsSpent[operator][operatorSignature.salt],
-            "AVSDirectory.registerOperatorToAVS: salt already spent"
-        );
-
-        // Assert `operator` is a registered operator.
-        require(
-            delegation.isOperator(operator),
-            "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
-        );
-
-        // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
-        EIP1271SignatureUtils.checkSignature_EIP1271({
-            signer: operator,
-            digestHash: calculateOperatorAVSRegistrationDigestHash({
-                operator: operator,
-                avs: msg.sender,
-                salt: operatorSignature.salt,
-                expiry: operatorSignature.expiry
-            }),
-            signature: operatorSignature.signature
-        });
-
-        // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
-        operatorSaltIsSpent[operator][operatorSignature.salt] = true;
-
-        // Set the operator as registered
-        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
-
-        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
-    }
-
-    /**
-     *  @notice Called by an AVS to deregister an operator from the AVS.
-     *
-     *  @param operator The address of the operator to deregister.
-     *
-     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
-     */
-    function deregisterOperatorFromAVS(address operator)
-        external
-        override
-        onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
-    {
-        require(
-            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
-        );
-
-        // Set the operator as deregistered
-        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
-
-        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
     }
 
     /**
@@ -429,10 +490,160 @@ contract AVSDirectory is
     }
 
     /**
+     * @notice For a single strategy, allocate magnitude to a list of operator sets and then update freeMagnitude
+     * for the strategy after all allocations
+     * @param operator address to allocate magnitude for
+     * @param allocation magnitude adjustment for a single strategy and multiple operator sets
+     * @param effectTimestamp timestamp when the allocation will take effect
+     */
+    function _allocate(address operator, MagnitudeAdjustment calldata allocation, uint32 effectTimestamp) internal {
+        IStrategy strategy = allocation.strategy;
+        OperatorSet[] calldata operatorSets = allocation.operatorSets;
+        uint64 freeAllocatableMagnitude = freeMagnitude[operator][strategy];
+
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            // 1. check freeMagnitude available, that is the allocation of stake is backed and not slashable
+            require(
+                freeAllocatableMagnitude >= allocation.magnitudeDiffs[i],
+                "AVSDirectory.queueAllocations: insufficient available free magnitude to allocate"
+            );
+            // 2. rate limiting of 1 pending allocation at a time
+            (bool exists, uint32 timestamp, uint224 value) = _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i]
+                .operatorSetId].latestCheckpoint();
+            if (exists) {
+                require(
+                    timestamp <= block.timestamp,
+                    "AVSDirectory.queueAllocations: only one pending allocation allowed for op, opSet, strategy"
+                );
+            }
+
+            // 3. allocate magnitude which will take effect in the future 21 days from now
+            _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push({
+                timestamp: effectTimestamp,
+                value: value + uint224(allocation.magnitudeDiffs[i])
+            });
+            // 4. keep track of available freeMagnitude to update later
+            freeAllocatableMagnitude -= allocation.magnitudeDiffs[i];
+        }
+
+        // 5. update freeMagnitude after all allocations
+        freeMagnitude[operator][strategy] = freeAllocatableMagnitude;
+    }
+
+    /**
+     * @notice For a single strategy, queue deallocate magnitude for a list of operator sets
+     * @param operator address to deallocate magnitude for
+     * @param deallocation magnitude adjustment for a single strategy and multiple operator sets
+     * @param completableTimestamp timestamp when the queued deallocation can be completed and freeMagnitude updated
+     */
+    function _queueDeallocate(
+        address operator,
+        MagnitudeAdjustment calldata deallocation,
+        uint32 completableTimestamp
+    ) internal {
+        IStrategy strategy = deallocation.strategy;
+        require(
+            deallocation.operatorSets.length == deallocation.magnitudeDiffs.length,
+            "AVSDirectory.queueDeallocation: operatorSets and magnitudeDiffs length mismatch"
+        );
+        OperatorSet[] calldata operatorSets = deallocation.operatorSets;
+
+        // deallocate from each operator set for this strategy
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            // 1. ensure deallocation doesn't exceed current allocation
+            uint64 currentMagnitude = uint64(
+                _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId]
+                    .upperLookupRecent(uint32(block.timestamp))
+            );
+            require(
+                deallocation.magnitudeDiffs[i] <= currentMagnitude,
+                "AVSDirectory.queueDeallocation: cannot deallocate more than what is allocated"
+            );
+
+            // 2. update and decrement current and future queued amounts in case any pending allocations exist
+            _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId]
+                .decrementCurrentAndFutureCheckpoints({
+                timestamp: uint32(block.timestamp),
+                decrementValue: deallocation.magnitudeDiffs[i]
+            });
+
+            // TODO: ensure only 1 queued deallocation per operator, operatorSet, strategy
+            // _verifySinglePendingDeallocation();
+
+            // 3. queue deallocation for (op, opSet, strategy) for magnitudeDiff amount
+            _queuedDeallocations[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push(
+                QueuedDeallocation({
+                    magnitudeDiff: deallocation.magnitudeDiffs[i],
+                    completableTimestamp: completableTimestamp
+                })
+            );
+        }
+    }
+
+    /**
+     * @notice Completes queued deallocations for a single strategy and multiple operator sets
+     * @param operator address to complete deallocations for
+     * @param strategy the strategy to complete deallocations for
+     * @param operatorSet the operator set to complete deallocations for the given strategy
+     */
+    function _completeDeallocation(
+        address operator,
+        IStrategy strategy,
+        OperatorSet calldata operatorSet
+    ) internal returns (uint64 freeMagnitudeToAdd) {
+        QueuedDeallocation[] memory queuedDeallocation =
+            _queuedDeallocations[operator][strategy][operatorSet.avs][operatorSet.operatorSetId];
+        // read last completed deallocation index in the queuedDeallocations array for the (op, opSet, Strategy) tuple
+        uint256 i = _nextDeallocationIndex[operator][strategy][operatorSet.avs][operatorSet.operatorSetId];
+
+        for (; i < queuedDeallocation.length; ++i) {
+            // queued deallocations ordered by timestamp, if completableTimestamp is greater than completeUntilTimestamp, break
+            if (queuedDeallocation[i].completableTimestamp > uint32(block.timestamp)) {
+                break;
+            }
+
+            freeMagnitudeToAdd += queuedDeallocation[i].magnitudeDiff;
+        }
+        _nextDeallocationIndex[operator][strategy][operatorSet.avs][operatorSet.operatorSetId] = i;
+        return freeMagnitudeToAdd;
+    }
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
      */
+
+    /**
+     * @param operator the operator to get the slashable bips for
+     * @param operatorSet the operatorSet to get the slashable bips for
+     * @param strategy the strategy to get the slashable bips for
+     * @param timestamp the timestamp to get the slashable bips for for
+     *
+     * @return slashableBips the slashable bips of the given strategy owned by
+     * the given OperatorSet for the given operator and timestamp
+     */
+    function getSlashableBips(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy strategy,
+        uint32 timestamp
+    ) public view returns (uint16) {
+        uint64 totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
+        uint64 currentMagnitude = uint64(
+            _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookup(timestamp)
+        );
+
+        return uint16(currentMagnitude * BIPS_FACTOR / totalMagnitude);
+    }
+
+    /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        OperatorSetRegistrationStatus memory registrationStatus =
+            operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
+        return registrationStatus.registered
+            || registrationStatus.lastDeregisteredTimestamp + ALLOCATION_DELAY >= block.timestamp;
+    }
 
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
@@ -507,351 +718,5 @@ contract AVSDirectory is
 
     function _calculateDigestHash(bytes32 structHash) internal view returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
-    }
-
-    /**
-     *
-     *                         ALLOCATOR AND SLASHING FUNCTIONS
-     *
-     */
-    using CheckpointsUpgradeable for CheckpointsUpgradeable.Trace224;
-
-    enum MagnitudeAdjustmentType {
-        ALLOCATE,
-        DEALLOCATE
-    }
-
-    /**
-     * @notice this struct is used in allocate and queueDeallocation in order to specify an operator's slashability for a certain operator set
-     *
-     * @param strategy the strategy to adjust slashable stake for
-     * @param operatorSets the operator sets to adjust slashable stake for
-     * @param magnitudeDiff magnitude difference; the difference in proportional parts of the operator's slashable stake
-     * that is slashable by the operatorSet.
-     * Slashable stake for an operator set is (magnitude / sum of all magnitudes for the strategy/operator + nonSlashableMagnitude) of
-     * an operator's delegated stake.
-     */
-    struct MagnitudeAdjustment {
-        MagnitudeAdjustmentType adjustmentType;
-        IStrategy strategy;
-        OperatorSet[] operatorSets;
-        uint64[] magnitudeDiffs;
-    }
-
-    /**
-     * @notice struct used for queued deallocations. Hash of struct is set in storage to be referenced later when completing deallocations.
-     */
-    struct QueuedDeallocation {
-        uint64 magnitudeDiff;
-        uint32 completableTimestamp;
-        bool completed;
-    }
-
-    uint256 internal constant BIPS_FACTOR = 10_000;
-
-    uint32 public constant ALLOCATION_DELAY = 21 days;
-
-    /// (operator, strategy, timestamp) => checkpointed totalMagnitude
-    /// Note that totalMagnitude is monotonically decreasing and only gets updated upon slashing
-    /// mapping: operator => strategy => checkpointed totalMagnitude
-    mapping(address => mapping(IStrategy => CheckpointsUpgradeable.Trace224)) private _totalMagnitudeUpdate;
-
-    /// (allocator, strategy, OperatorSet) => checkpointed decrementable magnitudes
-    /// mapping: operator => strategy => avs => operatorSetId => checkpointed magnitude
-    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => CheckpointsUpgradeable.Trace224))))
-        private _magnitudeUpdate;
-
-    /// mapping: operator => strategy => free available magnitude that can be allocated to operatorSets
-    /// Decrements whenever allocations take place and increments when deallocations are completed
-    mapping(address => mapping(IStrategy => uint64)) public freeMagnitude;
-
-    /// Queued Deallocations
-    /// mapping: operator => strategy => avs => operatorSetId => queuedDeallocation (each queued deallocation is for set of opSet deallocations)
-    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => QueuedDeallocation[])))) private
-        _queuedDeallocations;
-
-    function allocate(
-        address operator,
-        MagnitudeAdjustment[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external {
-        // TODO signature verification
-
-        for (uint256 i = 0; i < allocations.length; ++i) {
-            _allocate(operator, allocations[i]);
-        }
-    }
-
-    /// @notice Queues deallocations for an operator, must be completed in the future
-    /// to apply the deallocation and resulting increase to nonslashable magnitude
-    function queueDeallocate(
-        address operator,
-        MagnitudeAdjustment[] calldata deallocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external {
-        // TODO signature verification
-
-        uint32 completableTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
-        // deallocate for each strategy
-        for (uint256 i = 0; i < deallocations.length; ++i) {
-            IStrategy strategy = deallocations[i].strategy;
-            // OperatorSet[] calldata operatorSets = deallocations[i].operatorSets;
-            require(
-                deallocations[i].operatorSets.length == deallocations[i].magnitudeDiffs.length,
-                "AVSDirectory.queueDeallocation: operatorSets and magnitudeDiffs length mismatch"
-            );
-
-            // iterate over operatorSets and validate deallocation amount
-            for (uint256 j = 0; j < deallocations[i].operatorSets.length; ++j) {
-                {
-                    uint64 currentMagnitude = _getCurrentMagnitude(operator, strategy, deallocations[i].operatorSets[j]);
-                    require(
-                        deallocations[i].magnitudeDiffs[j] <= currentMagnitude,
-                        "AVSDirectory.queueDeallocation: cannot deallocate more than what is allocated"
-                    );
-
-                    // update current allocated amount
-                    _magnitudeUpdate[operator][strategy][deallocations[i].operatorSets[j].avs][deallocations[i]
-                        .operatorSets[j].operatorSetId].push({
-                        key: uint32(block.timestamp),
-                        value: currentMagnitude - deallocations[i].magnitudeDiffs[j]
-                    });
-                }
-
-                // update latest queued allocated amount as well if there exists
-                (, uint32 timestamp, uint224 value) = _magnitudeUpdate[operator][strategy][deallocations[i].operatorSets[j]
-                    .avs][deallocations[i].operatorSets[j].operatorSetId].latestCheckpoint();
-                if (timestamp > uint32(block.timestamp)) {
-                    _magnitudeUpdate[operator][strategy][deallocations[i].operatorSets[j].avs][deallocations[i]
-                        .operatorSets[j].operatorSetId].push({
-                        key: timestamp,
-                        value: value - uint224(deallocations[i].magnitudeDiffs[j])
-                    });
-                }
-
-                // TODO: ensure only 1 queued deallocation per operator, operatorSet, strategy
-                // queue deallocation for (op, opSet, strategy) for magnitudeDiff amount
-                _queuedDeallocations[operator][strategy][deallocations[i].operatorSets[j].avs][deallocations[i]
-                    .operatorSets[j].operatorSetId].push(
-                    QueuedDeallocation({
-                        magnitudeDiff: deallocations[i].magnitudeDiffs[j],
-                        completableTimestamp: completableTimestamp,
-                        completed: false
-                    })
-                );
-            }
-        }
-    }
-
-    /// @notice Completes deallocations for an operator, permissionlessly called by anyone
-    function completeDeallocations(
-        address operator,
-        IStrategy[] calldata strategies,
-        OperatorSet[][] calldata operatorSets
-    ) external {
-        // complete all queued deallocations for strategies
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            uint64 nonslashableToAdd = 0;
-            // complete all queued deallocations for specified operatorSets
-            for (uint256 j = 0; j < operatorSets[i].length; ++j) {
-                nonslashableToAdd += _completeDeallocation(operator, strategies[i], operatorSets[i][j]);
-            }
-            // add to free available magnitude
-            freeMagnitude[operator][strategies[i]] += nonslashableToAdd;
-        }
-    }
-
-    function _allocate(address operator, MagnitudeAdjustment calldata allocation) internal {
-        IStrategy strategy = allocation.strategy;
-        OperatorSet[] calldata operatorSets = allocation.operatorSets;
-        uint32 effectTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
-        uint64 freeAllocatableMagnitude = freeMagnitude[operator][strategy];
-
-        for (uint256 i = 0; i < operatorSets.length; ++i) {
-            require(
-                freeAllocatableMagnitude >= allocation.magnitudeDiffs[i],
-                "AVSDirectory.queueAllocations: insufficient available free magnitude to allocate"
-            );
-
-            (bool exists, uint32 timestamp, uint224 value) = _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i]
-                .operatorSetId].latestCheckpoint();
-            if (exists) {
-                require(
-                    timestamp <= block.timestamp,
-                    "AVSDirectory.queueAllocations: only one pending allocation allowed for op, opSet, strategy"
-                );
-            }
-
-            // Push queued allocation update
-            _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push(
-                effectTimestamp, value + uint224(allocation.magnitudeDiffs[i])
-            );
-            // decrement freeMagnitude
-            freeAllocatableMagnitude -= allocation.magnitudeDiffs[i];
-        }
-
-        // update freeMagnitude after allocations
-        freeMagnitude[operator][strategy] = freeAllocatableMagnitude;
-    }
-
-    /// @notice complete queued deallocations for a (operator, strategy, operatorSet) tuple
-    /// TODO: keep track of latest completed index, rather than bool flag
-    function _completeDeallocation(
-        address operator,
-        IStrategy strategy,
-        OperatorSet calldata operatorSet
-    ) internal returns (uint64 nonslashableToAdd) {
-        QueuedDeallocation[] storage queuedDeallocation =
-            _queuedDeallocations[operator][strategy][operatorSet.avs][operatorSet.operatorSetId];
-        for (uint256 i = 0; i < queuedDeallocation.length; ++i) {
-            // queued deallocations ordered by timestamp, if completableTimestamp is greater than completeUntilTimestamp, break
-            if (queuedDeallocation[i].completableTimestamp > uint32(block.timestamp)) {
-                break;
-            }
-
-            if (!queuedDeallocation[i].completed) {
-                queuedDeallocation[i].completed = true;
-                nonslashableToAdd += queuedDeallocation[i].magnitudeDiff;
-            }
-        }
-    }
-
-    /**
-     * @notice Called by an AVS to slash an operator for given operatorSetId, list of strategies, and bipsToSlash.
-     * For each given (operator, operatorSetId, strategy) tuple, bipsToSlash
-     * bips of the operatorSet's slashable stake allocation will be slashed
-     *
-     * @param operator the address to slash
-     * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
-     * @param strategies the set of strategies to slash
-     * @param bipsToSlash the number of bips to slash, this will be proportional to the
-     * operator's slashable stake allocation for the operatorSet
-     */
-    function slashOperator(
-        address operator,
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies,
-        uint16 bipsToSlash
-    ) external {
-        require(
-            isOperatorSlashable(operator, OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
-            "AVSDirectory.slashOperator: operator not slashable for operatorSet"
-        );
-
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            uint64 slashedMagnitude;
-            {
-                uint64 currentMagnitude = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].upperLookupRecent(
-                        uint32(block.timestamp)
-                    )
-                );
-                /// TODO: add wrapping library for rounding up for slashing accounting
-                slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
-
-                /// TODO: for both queueDeallocate, slashOperator, use internal function to decrement current value until all pending values are decremented
-                // 1. decrement slashedMagnitude from current magnitude
-                _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].push({
-                    key: uint32(block.timestamp),
-                    value: uint224(currentMagnitude - slashedMagnitude)
-                });
-
-                // 2. if there is a pending allocation update in the future, then update and decrement same amount
-                // from this value as well. No overflow since future magnitudeUpdates are a result of allocations (increased magnitudes)
-                (, uint32 timestamp, uint224 value) =
-                    _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].latestCheckpoint();
-                // if latest value is not current value, this is a queued allocation in future that needs to be decremented too
-                if (timestamp > uint32(block.timestamp)) {
-                    _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].push({
-                        key: timestamp,
-                        value: value - uint224(slashedMagnitude)
-                    });
-                }
-            }
-
-            // 3. if there are any pending deallocations then need to update and decrement if they fall within slashable window
-            uint64 slashedFromDeallocation = 0;
-            {
-                uint256 queuedDeallocationsLen =
-                    _queuedDeallocations[operator][strategies[i]][msg.sender][operatorSetId].length;
-                for (uint256 j = queuedDeallocationsLen; j > 0; --j) {
-                    QueuedDeallocation storage queuedDeallocation =
-                        _queuedDeallocations[operator][strategies[i]][msg.sender][operatorSetId][j - 1];
-
-                    // if queued deallocation is still within slashable window, then slash and keep track of sum to decrement from totalMagnitude
-                    if (uint32(block.timestamp) + ALLOCATION_DELAY > queuedDeallocation.completableTimestamp) {
-                        uint64 slashedAmount =
-                            uint64(uint256(bipsToSlash) * uint256(queuedDeallocation.magnitudeDiff) / BIPS_FACTOR);
-                        queuedDeallocation.magnitudeDiff -= slashedAmount;
-                        slashedFromDeallocation += slashedAmount;
-                    } else {
-                        break;
-                    }
-                }
-            }
-
-            // 4. update totalMagnitude, get total magnitude and subtract slashedMagnitude and slashedFromDeallocation
-            _totalMagnitudeUpdate[operator][strategies[i]].push({
-                key: uint32(block.timestamp),
-                value: _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecent(uint32(block.timestamp))
-                    - slashedMagnitude - slashedFromDeallocation
-            });
-        }
-    }
-
-    /**
-     * @param operator the operator to get the slashable bips for
-     * @param operatorSet the operatorSet to get the slashable bips for
-     * @param strategy the strategy to get the slashable bips for
-     * @param timestamp the timestamp to get the slashable bips for for
-     *
-     * @return slashableBips the slashable bips of the given strategy owned by
-     * the given OperatorSet for the given operator and timestamp
-     */
-    function getSlashableBips(
-        address operator,
-        OperatorSet calldata operatorSet,
-        IStrategy strategy,
-        uint32 timestamp
-    ) public view returns (uint16) {
-        uint64 totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
-        uint64 currentMagnitude = uint64(
-            _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookup(timestamp)
-        );
-
-        return uint16(currentMagnitude * BIPS_FACTOR / totalMagnitude);
-    }
-
-    /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
-    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
-        OperatorSetRegistrationStatus memory registrationStatus =
-            operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
-        return registrationStatus.registered
-            || registrationStatus.lastDeregisteredTimestamp + ALLOCATION_DELAY >= block.timestamp;
-    }
-
-    function hashQueuedDeallocation(QueuedDeallocation memory deallocation) public pure returns (bytes32) {
-        return keccak256(abi.encode(deallocation));
-    }
-
-    function _getCurrentTotalMagnitude(address operator, IStrategy strategy) internal view returns (uint64) {
-        uint224 latestValue = _totalMagnitudeUpdate[operator][strategy].upperLookupRecent(uint32(block.timestamp));
-
-        // TODO handle if latestValue or currValue is 0, i.e no checkpoints exist
-
-        return uint64(latestValue);
-    }
-
-    function _getCurrentMagnitude(
-        address operator,
-        IStrategy strategy,
-        OperatorSet memory operatorSet
-    ) internal view returns (uint64) {
-        uint224 latestValue = _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId]
-            .upperLookupRecent(uint32(block.timestamp));
-
-        // TODO handle if latestValue or currValue is 0, i.e no checkpoints exist
-
-        return uint64(latestValue);
     }
 }

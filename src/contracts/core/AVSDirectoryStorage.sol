@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import {MagnitudeCheckpoints} from "../libraries/MagnitudeCheckpoints.sol";
 import "../interfaces/IAVSDirectory.sol";
-import "../interfaces/IDelegationManager.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice The EIP-712 typehash for the contract's domain
@@ -48,6 +48,26 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     mapping(address => mapping(address => mapping(uint32 => OperatorSetRegistrationStatus))) public operatorSetStatus;
 
+    /// @notice Mapping: operator => strategy => checkpointed totalMagnitude
+    /// Note that totalMagnitude is monotonically decreasing and only gets updated upon slashing
+    mapping(address => mapping(IStrategy => MagnitudeCheckpoints.History)) internal _totalMagnitudeUpdate;
+
+    /// @notice Mapping: operator => strategy => free available magnitude that can be allocated to operatorSets
+    /// Decrements whenever allocations take place and increments when deallocations are completed
+    mapping(address => mapping(IStrategy => uint64)) public freeMagnitude;
+
+    /// @notice Mapping: operator => strategy => avs => operatorSetId => checkpointed magnitude
+    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => MagnitudeCheckpoints.History))))
+        internal _magnitudeUpdate;
+
+    /// @notice Mapping: operator => strategy => avs => operatorSetId => queuedDeallocations
+    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => QueuedDeallocation[])))) internal
+        _queuedDeallocations;
+
+    /// @notice Mapping: operator => strategy => avs => operatorSetId => index pointing to next queuedDeallocation to complete
+    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => uint256)))) internal
+        _nextDeallocationIndex;
+
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
     }
@@ -57,5 +77,5 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[42] private __gap;
+    uint256[37] private __gap;
 }
