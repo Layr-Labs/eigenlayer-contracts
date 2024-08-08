@@ -16,11 +16,6 @@ interface IStakeRootCompendium {
         uint32 operatorSetId;
     }
 
-    struct AvsAndOperatorSetId {
-        address avs;
-        uint32 operatorSetId;
-    }
-        
     /**
     * @notice called by an AVS to set their strategies and multipliers used to determine stakes for stake roots
     * @param operatorSetId the operator set to set the strategies and multipliers for
@@ -38,7 +33,8 @@ interface IStakeRootCompendium {
     event ImageIdChanged(bytes32 oldImageId, bytes32 newImageId);
 
     function getOperatorSetRoot(
-        AvsAndOperatorSetId calldata avsAndOperatorSetId, 
+        address avs,
+        uint32 operatorSetId,
         address[] calldata operators, 
         IStrategy[] calldata strategies
     ) external view returns (bytes32);

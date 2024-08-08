@@ -54,33 +54,33 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
 
     //Note: assumes that the operator is registered to the AVS and is registered with the delegationManager.
     function getOperatorSetRoot(
-        AvsAndOperatorSetId calldata avsAndOperatorSetId, 
+        address avs,
+        uint32 operatorSetId, 
         address[] calldata operators, 
         IStrategy[] calldata strategies
     )
         external view 
-        isOperatorSet(avsAndOperatorSetId.avs, avsAndOperatorSetId.operatorSetId) 
+        isOperatorSet(avs, operatorSetId) 
         returns (bytes32) 
     {
          
         require(operators.length <= MAX_OPERATOR_SET_SIZE, "AVSSyncTree._verifyOperatorStatus: operator set too large");
-        require(operators.length == avsDirectory.operatorSetMemberCount(avsAndOperatorSetId.avs, avsAndOperatorSetId.operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator set size mismatch");
+        require(operators.length == avsDirectory.operatorSetMemberCount(avs, operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator set size mismatch");
 
         bytes32[] memory operatorLeaves = new bytes32[](operators.length);
         uint160 prevOperator = 0;
         for (uint256 i = 0; i < operators.length; i++) {
-            require(avsDirectory.isMember(avsAndOperatorSetId.avs,operators[i], avsAndOperatorSetId.operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator not in operator set");
+            require(avsDirectory.isMember(avs,operators[i], operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator not in operator set");
             require(uint160(operators[i]) > prevOperator, "AVSSyncTree.getOperatorSetRoot: operators not sorted");
             
             uint96[] memory multipliers = new uint96[](strategies.length);
             for (uint256 j = 0; j < strategies.length; j++) {
-                multipliers[j] = operatorSetIdToStrategyToMultiplier[avsAndOperatorSetId.operatorSetId][strategies[i]];
+                multipliers[j] = operatorSetIdToStrategyToMultiplier[operatorSetId][strategies[i]];
             }
             // shares associated with this operator and these strategies
             operatorLeaves[i] =  keccak256(abi.encodePacked(operators[i], _calculateWeightedStrategyShareSum(operators[i], strategies, multipliers)));    
         }
         return Merkle.merkleizeKeccak256(operatorLeaves);
-
     }
 
     function verifySnarkProof(
