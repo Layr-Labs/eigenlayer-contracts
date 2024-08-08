@@ -380,6 +380,8 @@ contract AVSDirectory is
                 "AVSDirectory._registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
+            ++operatorSetMemberCount[avs][operatorSetIds[i]];
+
             // Mutate `isMember` to `true`.
             isMember[avs][operator][operatorSetIds[i]] = true;
 
@@ -402,6 +404,8 @@ contract AVSDirectory is
                 isMember[avs][operator][operatorSetIds[i]],
                 "AVSDirectory._deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
+
+            --operatorSetMemberCount[avs][operatorSetIds[i]];
 
             // Mutate `isMember` to `false`.
             isMember[avs][operator][operatorSetIds[i]] = false;

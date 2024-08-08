@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IRewardsCoordinator.sol";
 
 /**
@@ -18,25 +19,37 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      *
      */
 
+    // Constants for all reward types
     /// @notice The interval in seconds at which the calculation for rewards distribution is done.
-    /// @dev RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 week
+    /// @dev ALL RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 week
     uint32 public immutable CALCULATION_INTERVAL_SECONDS;
-    /// @notice The maximum amount of time (seconds) that a rewards submission can span over
+    /// @notice The maximum amount of time (seconds) that ALL rewards submission can span over
     uint32 public immutable MAX_REWARDS_DURATION;
-    /// @notice max amount of time (seconds) that a rewards submission can start in the past
-    uint32 public immutable MAX_RETROACTIVE_LENGTH;
-    /// @notice max amount of time (seconds) that a rewards submission can start in the future
+    /// @notice max amount of time (seconds) that ALL rewards submission can start in the future
     uint32 public immutable MAX_FUTURE_LENGTH;
-    /// @notice absolute min timestamp (seconds) that a rewards submission can start at
-    uint32 public immutable GENESIS_REWARDS_TIMESTAMP;
     /// @notice The cadence at which a snapshot is taken offchain for calculating rewards distributions
     uint32 internal constant SNAPSHOT_CADENCE = 1 days;
+
+    // V1 Rewards Constants
+    /// @notice absolute min timestamp (seconds) that a V1 rewards submission can start at
+    uint32 public immutable GENESIS_REWARDS_TIMESTAMP;
+    /// @notice max amount of time (seconds) that a V1 rewards submission can start in the past
+    uint32 public immutable MAX_RETROACTIVE_LENGTH;
+
+    // OperatorSet Rewards Constants
+    /// @notice absolute min timestamp (seconds) that an operatorSet rewards submission can start at
+    uint32 public immutable OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
+    /// @notice max of time (seconds) that an operatorSet rewards submission can start in the past
+    uint32 public immutable OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegationManager;
 
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
+
+    /// @notice The AVSDirectory contract for EigenLayer
+    IAVSDirectory public immutable avsDirectory;
 
     /**
      *
@@ -77,12 +90,19 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
 
     /// @notice Used for unique rewardsSubmissionHashes per AVS and for RewardsForAllSubmitters
     mapping(address => uint256) public submissionNonce;
+
     /// @notice Mapping: avs => avsRewardsSubmissionHash => bool to check if rewards submission hash has been submitted
     mapping(address => mapping(bytes32 => bool)) public isAVSRewardsSubmissionHash;
+
     /// @notice Mapping: avs => rewardsSubmissionForALlHash => bool to check if rewards submission hash for all has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllHash;
+
     /// @notice Mapping: address => bool to check if the address is permissioned to call createRewardsForAllSubmission
     mapping(address => bool) public isRewardsForAllSubmitter;
+
+    /// @notice Mapping: avs => rewardsSubmissionHash => bool to check if operatorSet rewards submission hash has been submitted
+    mapping(address => mapping(bytes32 => bool)) isOperatorSetRewardsSubmissionHash;
+
     /// @notice Mapping: operator => avs => operatorSetId => OperatorCommissionUpdate history
     mapping(address => mapping(address => mapping(uint32 => mapping(RewardType => OperatorCommissionUpdate[])))) public
         operatorCommissionUpdates;
@@ -90,11 +110,14 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
+        IAVSDirectory _avsDirectory,
         uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
         uint32 _MAX_FUTURE_LENGTH,
-        uint32 _GENESIS_REWARDS_TIMESTAMP
+        uint32 _GENESIS_REWARDS_TIMESTAMP,
+        uint32 _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+        uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
     ) {
         require(
             _GENESIS_REWARDS_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0,
@@ -104,13 +127,20 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
             _CALCULATION_INTERVAL_SECONDS % SNAPSHOT_CADENCE == 0,
             "RewardsCoordinator: CALCULATION_INTERVAL_SECONDS must be a multiple of SNAPSHOT_CADENCE"
         );
+        require(
+            _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator: OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP must be a multiple of CALCULATION_INTERVAL_SECONDS"
+        );
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
+        avsDirectory = _avsDirectory;
         CALCULATION_INTERVAL_SECONDS = _CALCULATION_INTERVAL_SECONDS;
         MAX_REWARDS_DURATION = _MAX_REWARDS_DURATION;
         MAX_RETROACTIVE_LENGTH = _MAX_RETROACTIVE_LENGTH;
         MAX_FUTURE_LENGTH = _MAX_FUTURE_LENGTH;
         GENESIS_REWARDS_TIMESTAMP = _GENESIS_REWARDS_TIMESTAMP;
+        OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
+        OPERATOR_SET_MAX_RETROACTIVE_LENGTH = _OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
     }
 
     /**
@@ -118,5 +148,5 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[39] private __gap;
+    uint256[38] private __gap;
 }
