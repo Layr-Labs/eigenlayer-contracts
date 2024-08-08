@@ -49,12 +49,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: avs => operatorSetId => Total operators within the given operator set.
     mapping(address => mapping(uint32 => uint256)) public operatorSetMemberCount;
 
-    /// @notice Mapping: avs => Total amount of operator sets created for a given AVS.
-    mapping(address => uint256) public avsOperatorSetCount;
-
-    /// @notice Total amount of operators sets created.
-    uint256 public operatorSetCount;
-
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
     }
