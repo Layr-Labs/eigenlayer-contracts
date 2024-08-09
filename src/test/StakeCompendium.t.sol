@@ -3,6 +3,11 @@ import "../contracts/interfaces/IStrategy.sol";
 import "../contracts/libraries/BytesLib.sol";
 import "../contracts/interfaces/IAVSDirectory.sol";
 import "../contracts/interfaces/IDelegationManager.sol";
+import "../contracts/core/StakeRootCompendium.sol";
+import "../contracts/core/AVSDirectory.sol";
+import "../test/mocks/StrategyManagerMock.sol";
+import "../test/mocks/SlasherMock.sol";
+import "../test/mocks/EigenPodManagerMock.sol";
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
 
@@ -11,13 +16,22 @@ contract MerklizeScript is Script, Test {
     string internal constant TEST_MNEMONIC = "hundred february vast fluid produce radar notice ridge armed glare panther balance";
 
     address avs = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
-    address testAddress = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
+
+    address delegationManagerAddress = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
+    address avsDirectoryAddress = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512;
+    address stakeRootCompendiumAddress = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
+
     IDelegationManager public delegationManager;
     IAVSDirectory public avsDirectory;
+    IStakeRootCompendium public stakeRootCompendium;
     function run() public {
+
         
-        delegationManager = IDelegationManager(testAddress);
-        avsDirectory = IAVSDirectory(testAddress);
+        delegationManager = IDelegationManager(delegationManagerAddress);
+        
+        avsDirectory = new AVSDirectory(delegationManager);
+        stakeRootCompendium =  new StakeRootCompendium(delegationManager, avsDirectory);
+
 
         uint32[] memory operatorSetIds = new uint32[](2048);
         for (uint256 i = 0; i < 2048; ++i) {
@@ -30,12 +44,6 @@ contract MerklizeScript is Script, Test {
         vm.stopBroadcast();
 
         registerOperators(uint256(2048), operatorSetIds, avs);
-
-
-
-
-
-
 
     }
 

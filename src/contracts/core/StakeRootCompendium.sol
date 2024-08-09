@@ -104,6 +104,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         StrategyAndMultiplier[] calldata strategiesAndMultipliers
     ) external isOperatorSet(msg.sender, operatorSetId) {
         if(!isAVS[msg.sender]) {
+            require(numAVSs < MAX_NUM_OPERATOR_SETS, "AVSSyncTree.setStrategiesAndMultipliers: too many AVSs");
             isAVS[msg.sender] = true;
             //if the AVS has never set its strategies and multipliers before, increment the number of AVSs
             numAVSs++;
