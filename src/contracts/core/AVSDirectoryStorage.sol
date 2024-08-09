@@ -50,6 +50,9 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     /// @notice Mapping: avs => operatorSetId => Total operators within the given operator set.
     mapping(address => mapping(uint32 => uint256)) public operatorSetMemberCount;
+    
+    /// @notice Mapping: avs => metadataURI of the AVS
+    mapping(address => string) public avsMetadataURI;
 
     /// @notice Mapping: operator => List of operator sets that operator is registered to.
     /// @dev Each item is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))

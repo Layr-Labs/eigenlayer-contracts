@@ -1211,6 +1211,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
         cheats.prank(defaultAVS);
         emit AVSMetadataURIUpdated(defaultAVS, metadataURI);
         avsDirectory.updateAVSMetadataURI(metadataURI);
+        assertEq(avsDirectory.avsMetadataURI(defaultAVS), metadataURI);
     }
 
     function testFuzz_revert_whenAVSIsOperatorSetAVS(bytes32 salt) public {
