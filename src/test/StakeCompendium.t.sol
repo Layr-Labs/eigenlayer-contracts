@@ -1,38 +1,91 @@
-// import "../contracts/libraries/Merkle.sol";
-// import "../contracts/interfaces/IStrategy.sol";
-// import "../contracts/libraries/BytesLib.sol";
-// import "../contracts/interfaces/IAVSDirectory.sol";
-// import "../contracts/interfaces/IDelegationManager.sol";
-// import "forge-std/Test.sol";
-// import "forge-std/Script.sol";
+import "../contracts/libraries/Merkle.sol";
+import "../contracts/interfaces/IStrategy.sol";
+import "../contracts/libraries/BytesLib.sol";
+import "../contracts/interfaces/IAVSDirectory.sol";
+import "../contracts/interfaces/IDelegationManager.sol";
+import "forge-std/Test.sol";
+import "forge-std/Script.sol";
 
 
-// contract MerklizeScript is Script, Test {
-//     function run() public {
+contract MerklizeScript is Script, Test {
+    string internal constant TEST_MNEMONIC = "hundred february vast fluid produce radar notice ridge armed glare panther balance";
+
+    address avs = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
+    address testAddress = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
+    IDelegationManager public delegationManager;
+    IAVSDirectory public avsDirectory;
+    function run() public {
         
-//         IDelegationManager delegation = IDelegationManager("0x");
-//         IAVSDirectory avsDirectory = IAVSDirectory("0x");
+        delegationManager = IDelegationManager(testAddress);
+        avsDirectory = IAVSDirectory(testAddress);
 
-//         register2048OperatorsEl(delegation);
-//         register2048OperatorsAVS(avsDirectory);
+        uint32[] memory operatorSetIds = new uint32[](2048);
+        for (uint256 i = 0; i < 2048; ++i) {
+            operatorSetIds[i] = uint32(i);
+        }
 
+        vm.startBroadcast(avs);
+        avsDirectory.createOperatorSets(operatorSetIds);
+        avsDirectory.becomeOperatorSetAVS();
+        vm.stopBroadcast();
 
-
-//     }
-
-//     function register2048OperatorsEl(IDelegationManager delegation) public {
-//         // for (uint i = 0; i < 2048; i++) {
-//         //     delegation.setIsOperator(address(i), true);
-//         // }
-//     }
-
-//     function register2048OperatorsAVS(IAVSDirectory avsDirectory) public {
-//         uint32[] memory operatorSetIds = new uint32[](2048);
-//         for (uint32 i = 0; i < 2048; i++) {
-//             operatorSetIds[i] = i;
-//         }
-//         avsDirectory.createOperatorSets(operatorSetIds);
+        registerOperators(uint256(2048), operatorSetIds);
 
 
-//     }
-// }
+
+
+
+
+
+    }
+
+    function registerOperators(uint256 numOperators, uint32[] memory operatorSetIds, address avs) internal {
+        for (uint256 i = 0; i < numOperators; ++i) {
+            (address operator, uint256 privateKey) = deriveRememberKey(TEST_MNEMONIC, uint32(i));
+            // get signature
+            ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
+                privateKey,
+                operator,
+                address(0),
+                bytes32(0), // salt
+                type(uint256).max //expiry
+            );
+
+            // Transfer strategy token to staker
+            vm.startBroadcast(operator);
+            IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+                __deprecated_earningsReceiver: address(operator),
+                delegationApprover: address(0),
+                stakerOptOutWindowBlocks: 0
+            });
+            delegationManager.registerAsOperator(
+                operatorDetails,
+                ""
+            );
+            vm.stopBroadcast();
+
+
+            vm.startBroadcast(avs);
+            avsDirectory.registerOperatorToAVS(operator, operatorSignature);
+            avsDirectory.registerOperatorToOperatorSets(operator, operatorSetIds, operatorSignature);
+            vm.stopBroadcast();
+        }
+    }
+     function _getOperatorSignature(
+        uint256 _operatorPrivateKey,
+        address operator,
+        address avs,
+        bytes32 salt,
+        uint256 expiry
+    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) {
+        operatorSignature.expiry = expiry;
+        operatorSignature.salt = salt;
+        {
+            bytes32 digestHash = avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, avs, salt, expiry);
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(_operatorPrivateKey, digestHash);
+            operatorSignature.signature = abi.encodePacked(r, s, v);
+        }
+        return operatorSignature;
+    }
+
+}
