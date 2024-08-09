@@ -40,7 +40,6 @@ interface IStakeRootCompendium {
 
     function getStakeRoot(StakeRootLeaf[] calldata stakeRootLeaves) external view returns (bytes32);
 
-    function isAVS(address avs) external view returns (bool);
 
     function verifySnarkProof(
         bytes calldata _journal,

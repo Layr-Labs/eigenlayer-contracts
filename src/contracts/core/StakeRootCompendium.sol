@@ -31,7 +31,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     mapping(uint32 => IStrategy[]) public operatorSetIdToStrategies;
 
     // tracks whether a given AVS has set its strategies and multipliers for a given operatorSetId
-    mapping(uint => mapping(uint32 => bool)) public avsHasRegisteredOperatorSetId;
+    mapping(address => mapping(uint32 => bool)) public avsHasRegisteredOperatorSetId;
 
     modifier isOperatorSet(address avs, uint32 operatorSetId) {
         require(avsDirectory.isOperatorSet(avs, operatorSetId), "StakeRootCompendium: operator set does not exist");
@@ -58,10 +58,10 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         for (uint256 i = 0; i < stakeRootLeaves.length; i++) {
 
             //ensure that stakeRootLeaves are sorted, first by AVS and then by operatorSetId
-            if(uint260(stakeRootLeaves[i].avs) > prevAvs) {
+            if(uint160(stakeRootLeaves[i].avs) > prevAvs) {
                 prevAvs = uint160(stakeRootLeaves[i].avs);
                 prevOperatorSetId = 0;
-            } else if(uint260(stakeRootLeaves[i].avs) == prevAvs) {
+            } else if(uint160(stakeRootLeaves[i].avs) == prevAvs) {
                 require(stakeRootLeaves[i].operatorSetId > prevOperatorSetId, "AVSSyncTree.getStakeRoot: operatorSetIds not sorted");
                 prevOperatorSetId = stakeRootLeaves[i].operatorSetId;
             } else {
@@ -127,7 +127,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     ) external isOperatorSet(msg.sender, operatorSetId) {
         if(!avsHasRegisteredOperatorSetId[msg.sender][operatorSetId]) {
             require(numOperatorSetIds < MAX_NUM_OPERATOR_SETS, "AVSSyncTree.setStrategiesAndMultipliers: too many operatorSetIds");
-            isAVS[msg.sender][operatorSetId] = true;
+            avsHasRegisteredOperatorSetId[msg.sender][operatorSetId] = true;
             //if the AVS has never set its strategies and multipliers before for this operatorSetId, increment the number of overall operatorSetIds
             numOperatorSetIds++;
         }
