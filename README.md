@@ -26,6 +26,8 @@ To get a basic understanding of EigenLayer, check out [You Could've Invented Eig
 * [Restaking User Guide](https://docs.eigenlayer.xyz/restaking-guides/restaking-user-guide)
 * [Operator Guide](https://docs.eigenlayer.xyz/operator-guides/operator-introduction)
 
+* Most of this content is intro-level and describes user interactions with the EigenLayer core contracts, but it should give you a good enough starting point.
+
 ### Deep Dive
 
 The most up-to-date and technical documentation can be found in [/docs](/docs). If you're a shadowy super coder, this is a great place to get an overview of the contracts before diving into the code.
