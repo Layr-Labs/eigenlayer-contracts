@@ -48,6 +48,7 @@ contract BeaconChainMock is PrintUtils {
         bytes32 pubkeyHash;
         bytes withdrawalCreds;
         uint64 effectiveBalanceGwei;
+        uint64 activationEpoch;
         uint64 exitEpoch;
     }
 
@@ -458,6 +459,7 @@ contract BeaconChainMock is PrintUtils {
                 pubkeyHash: sha256(abi.encodePacked(_dummyPubkey, bytes16(0))),
                 withdrawalCreds: "",
                 effectiveBalanceGwei: dummyBalanceGwei,
+                activationEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH,
                 exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
             }));
             _setCurrentBalance(validatorIndex, dummyBalanceGwei);
@@ -474,6 +476,7 @@ contract BeaconChainMock is PrintUtils {
             pubkeyHash: sha256(abi.encodePacked(_pubkey, bytes16(0))),
             withdrawalCreds: withdrawalCreds,
             effectiveBalanceGwei: balanceGwei,
+            activationEpoch: currentEpoch(),
             exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
         }));
         _setCurrentBalance(validatorIndex, balanceGwei);
@@ -817,8 +820,9 @@ contract BeaconChainMock is PrintUtils {
         vFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX] = v.pubkeyHash;
         vFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] = bytes32(v.withdrawalCreds);
         vFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX] = _toLittleEndianUint64(v.effectiveBalanceGwei);
-        vFields[BeaconChainProofs.VALIDATOR_EXIT_EPOCH_INDEX] = _toLittleEndianUint64(v.exitEpoch);
         vFields[BeaconChainProofs.VALIDATOR_SLASHED_INDEX] = bytes32(abi.encode(v.isSlashed));
+        vFields[BeaconChainProofs.VALIDATOR_ACTIVATION_EPOCH_INDEX] = _toLittleEndianUint64(v.activationEpoch);
+        vFields[BeaconChainProofs.VALIDATOR_EXIT_EPOCH_INDEX] = _toLittleEndianUint64(v.exitEpoch);
 
         return vFields;
     }

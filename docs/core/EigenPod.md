@@ -107,6 +107,7 @@ A withdrawal credential proof uses a validator's [`ValidatorIndex`][custom-types
 * `pubkey`: A BLS pubkey hash, used to uniquely identify the validator within the `EigenPod`
 * `withdrawal_credentials`: Used to verify that the validator will withdraw its principal to this `EigenPod` if it exits the beacon chain
 * `effective_balance`: The balance of the validator, updated once per epoch and capped at 32 ETH. Used to award shares to the Pod Owner
+* `activation_epoch`: Initially set to `type(uint64).max`, this value is updated when a validator reaches a balance of at least 32 ETH, designating the validator is ready to become active on the beacon chain. **This method requires that a validator is either already active, or in the process of activating on the beacon chain.**
 * `exit_epoch`: Initially set to `type(uint64).max`, this value is updated when a validator initiates exit from the beacon chain. **This method requires that a validator has not initiated an exit from the beacon chain.**
   * If a validator has been exited prior to calling `verifyWithdrawalCredentials`, their ETH can be accounted for, awarded shares, and/or withdrawn via the checkpoint system (see [Checkpointing Validators](#checkpointing-validators)).
 
@@ -132,6 +133,7 @@ _Note that it is not required to verify your validator's withdrawal credentials_
 * `stateRootProof` MUST verify a `beaconStateRoot` against the `beaconBlockRoot` returned from the EIP-4788 oracle
 * For each validator:
     * The validator MUST NOT have been previously-verified (`VALIDATOR_STATUS` should be `INACTIVE`)
+    * The validator's `activation_epoch` MUST NOT equal `type(uint64).max` (aka `FAR_FUTURE_EPOCH`)
     * The validator's `exit_epoch` MUST equal `type(uint64).max` (aka `FAR_FUTURE_EPOCH`)
     * The validator's `withdrawal_credentials` MUST be pointed to the `EigenPod`
     * `validatorFieldsProof` MUST be a valid merkle proof of the corresponding `validatorFields` under the `beaconStateRoot` at the given `validatorIndex`

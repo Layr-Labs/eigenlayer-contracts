@@ -460,6 +460,24 @@ contract EigenPod is
             "EigenPod._verifyWithdrawalCredentials: validator must be inactive to prove withdrawal credentials"
         );
 
+        // Validator should be active on the beacon chain, or in the process of activating.
+        // This implies the validator has reached the minimum effective balance required
+        // to become active on the beacon chain.
+        //
+        // This check is important because the Pectra upgrade will move any validators that
+        // do NOT have an activation epoch to a "pending deposit queue," temporarily resetting
+        // their current and effective balances to 0. This balance can be restored if a deposit
+        // is made to bring the validator's balance above the minimum activation balance.
+        // (See https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/fork.md#upgrading-the-state)
+        // 
+        // In the context of EigenLayer slashing, this temporary reset would allow pod shares 
+        // to temporarily decrease, then be restored later. This would effectively prevent these
+        // shares from being slashable on EigenLayer for a short period of time.
+        require(
+            validatorFields.getActivationEpoch() != BeaconChainProofs.FAR_FUTURE_EPOCH,
+            "EigenPod._verifyWithdrawalCredentials: validator must be in the process of activating"
+        );
+
         // Validator should not already be in the process of exiting. This is an important property
         // this method needs to enforce to ensure a validator cannot be already-exited by the time
         // its withdrawal credentials are verified. 

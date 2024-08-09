@@ -52,6 +52,7 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX = 1;
     uint256 internal constant VALIDATOR_BALANCE_INDEX = 2;
     uint256 internal constant VALIDATOR_SLASHED_INDEX = 3;
+    uint256 internal constant VALIDATOR_ACTIVATION_EPOCH_INDEX = 5;
     uint256 internal constant VALIDATOR_EXIT_EPOCH_INDEX = 6;
 
     /// @notice Slot/Epoch timings
@@ -269,7 +270,7 @@ library BeaconChainProofs {
     /// 1: withdrawal credentials
     /// 2: effective balance
     /// 3: slashed?
-    /// 4: activation elligibility epoch
+    /// 4: activation eligibility epoch
     /// 5: activation epoch
     /// 6: exit epoch
     /// 7: withdrawable epoch
@@ -289,6 +290,12 @@ library BeaconChainProofs {
     /// @dev Retrieves a validator's effective balance (in gwei)
     function getEffectiveBalanceGwei(bytes32[] memory validatorFields) internal pure returns (uint64) {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_BALANCE_INDEX]);
+    }
+
+    /// @dev Retrieves a validator's activation epoch
+    function getActivationEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
+        return 
+            Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_ACTIVATION_EPOCH_INDEX]);
     }
 
     /// @dev Retrieves true IFF a validator is marked slashed
