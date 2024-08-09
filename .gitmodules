@@ -16,3 +16,6 @@
 [submodule "lib/openzeppelin-contracts-upgradeable-v4.9.0"]
 	path = lib/openzeppelin-contracts-upgradeable-v4.9.0
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
+[submodule "lib/risc0-ethereum"]
+	path = lib/risc0-ethereum
+	url = https://github.com/risc0/risc0-ethereum
