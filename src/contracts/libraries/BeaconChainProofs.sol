@@ -10,7 +10,6 @@ import "../libraries/Endian.sol";
 //BeaconBlockHeader Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader
 //BeaconState Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconstate
 library BeaconChainProofs {
-
     /// @notice Heights of various merkle trees in the beacon chain
     /// - beaconBlockRoot
     /// |                                             HEIGHT: BEACON_BLOCK_HEADER_TREE_HEIGHT
@@ -25,7 +24,7 @@ library BeaconChainProofs {
     uint256 internal constant BEACON_STATE_TREE_HEIGHT = 5;
     uint256 internal constant BALANCE_TREE_HEIGHT = 38;
     uint256 internal constant VALIDATOR_TREE_HEIGHT = 40;
-    
+
     /// @notice Index of the beaconStateRoot in the `BeaconBlockHeader` container
     ///
     /// BeaconBlockHeader = [..., state_root, ...]
@@ -90,17 +89,16 @@ library BeaconChainProofs {
         bytes proof;
     }
 
-    /*******************************************************************************
-                 VALIDATOR FIELDS -> BEACON STATE ROOT -> BEACON BLOCK ROOT
-    *******************************************************************************/
+    /**
+     *
+     *              VALIDATOR FIELDS -> BEACON STATE ROOT -> BEACON BLOCK ROOT
+     *
+     */
 
     /// @notice Verify a merkle proof of the beacon state root against a beacon block root
     /// @param beaconBlockRoot merkle root of the beacon block
     /// @param proof the beacon state root and merkle proof of its inclusion under `beaconBlockRoot`
-    function verifyStateRoot(
-        bytes32 beaconBlockRoot,
-        StateRootProof calldata proof
-    ) internal view {
+    function verifyStateRoot(bytes32 beaconBlockRoot, StateRootProof calldata proof) internal view {
         require(
             proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT),
             "BeaconChainProofs.verifyStateRoot: Proof has incorrect length"
@@ -171,9 +169,11 @@ library BeaconChainProofs {
         );
     }
 
-    /*******************************************************************************
-             VALIDATOR BALANCE -> BALANCE CONTAINER ROOT -> BEACON BLOCK ROOT
-    *******************************************************************************/
+    /**
+     *
+     *          VALIDATOR BALANCE -> BALANCE CONTAINER ROOT -> BEACON BLOCK ROOT
+     *
+     */
 
     /// @notice Verify a merkle proof of the beacon state's balances container against the beacon block root
     /// @dev This proof starts at the balance container root, proves through the beacon state root, and
@@ -184,10 +184,7 @@ library BeaconChainProofs {
     /// against the same balance container root.
     /// @param beaconBlockRoot merkle root of the beacon block
     /// @param proof a beacon balance container root and merkle proof of its inclusion under `beaconBlockRoot`
-    function verifyBalanceContainer(
-        bytes32 beaconBlockRoot,
-        BalanceContainerProof calldata proof
-    ) internal view {
+    function verifyBalanceContainer(bytes32 beaconBlockRoot, BalanceContainerProof calldata proof) internal view {
         require(
             proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT + BEACON_STATE_TREE_HEIGHT),
             "BeaconChainProofs.verifyBalanceContainer: Proof has incorrect length"
@@ -200,7 +197,7 @@ library BeaconChainProofs {
         /// |                            HEIGHT: BEACON_STATE_TREE_HEIGHT
         /// ---- balancesContainerRoot
         uint256 index = (STATE_ROOT_INDEX << (BEACON_STATE_TREE_HEIGHT)) | BALANCE_CONTAINER_INDEX;
-        
+
         require(
             Merkle.verifyInclusionSha256({
                 proof: proof.proof,
@@ -235,7 +232,7 @@ library BeaconChainProofs {
         /// |                            HEIGHT: BALANCE_TREE_HEIGHT
         /// -- balanceRoot
         uint256 balanceIndex = uint256(validatorIndex / 4);
- 
+
         require(
             Merkle.verifyInclusionSha256({
                 proof: proof.proof,
@@ -251,9 +248,9 @@ library BeaconChainProofs {
     }
 
     /**
-     * @notice Parses a balanceRoot to get the uint64 balance of a validator.  
-     * @dev During merkleization of the beacon state balance tree, four uint64 values are treated as a single 
-     * leaf in the merkle tree. We use validatorIndex % 4 to determine which of the four uint64 values to 
+     * @notice Parses a balanceRoot to get the uint64 balance of a validator.
+     * @dev During merkleization of the beacon state balance tree, four uint64 values are treated as a single
+     * leaf in the merkle tree. We use validatorIndex % 4 to determine which of the four uint64 values to
      * extract from the balanceRoot.
      * @param balanceRoot is the combination of 4 validator balances being proven for
      * @param validatorIndex is the index of the validator being proven for
@@ -261,8 +258,7 @@ library BeaconChainProofs {
      */
     function getBalanceAtIndex(bytes32 balanceRoot, uint40 validatorIndex) internal pure returns (uint64) {
         uint256 bitShiftAmount = (validatorIndex % 4) * 64;
-        return 
-            Endian.fromLittleEndianUint64(bytes32((uint256(balanceRoot) << bitShiftAmount)));
+        return Endian.fromLittleEndianUint64(bytes32((uint256(balanceRoot) << bitShiftAmount)));
     }
 
     /// @notice Indices for fields in the `Validator` container:
@@ -294,8 +290,7 @@ library BeaconChainProofs {
 
     /// @dev Retrieves a validator's activation epoch
     function getActivationEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
-        return 
-            Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_ACTIVATION_EPOCH_INDEX]);
+        return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_ACTIVATION_EPOCH_INDEX]);
     }
 
     /// @dev Retrieves true IFF a validator is marked slashed
@@ -305,7 +300,6 @@ library BeaconChainProofs {
 
     /// @dev Retrieves a validator's exit epoch
     function getExitEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
-        return 
-            Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
+        return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
     }
 }

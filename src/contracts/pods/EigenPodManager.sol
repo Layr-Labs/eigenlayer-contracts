@@ -209,14 +209,15 @@ contract EigenPodManager is
         // if there is an existing shares deficit, prioritize decreasing the deficit first
         if (currentPodOwnerShares < 0) {
             uint256 currentShareDeficit = uint256(-currentPodOwnerShares);
-            // get rid of the whole deficit if possible, and pass any remaining shares onto destination
+
             if (shares > currentShareDeficit) {
+                // get rid of the whole deficit if possible, and pass any remaining shares onto destination
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
                 emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
                 emit NewTotalShares(podOwner, 0);
-            // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
             } else {
+                // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
                 int256 updatedPodOwnerShares = podOwnerShares[podOwner] + int256(shares);
                 podOwnerShares[podOwner] = updatedPodOwnerShares;
                 emit PodSharesUpdated(podOwner, int256(shares));
