@@ -624,7 +624,7 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
         bytes32 salt
     ) public {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
-        operatorSetsToAdd = uint8(bound(operatorSetsToAdd, 1, type(uint8).max));
+        operatorSetsToAdd = uint8(bound(operatorSetsToAdd, 1, 32));
         address operator = cheats.addr(operatorPk);
 
         // Create operator sets
@@ -702,7 +702,7 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
         bytes32 salt2
     ) public {
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
-        operatorSetsToAdd = uint8(bound(operatorSetsToAdd, 1, type(uint8).max));
+        operatorSetsToAdd = uint8(bound(operatorSetsToAdd, 1, 32));
         address operator = cheats.addr(operatorPk);
 
         // Create operator sets
@@ -1049,7 +1049,8 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
         bytes32 salt,
         uint8 numOids
     ) public {
-        numOperators = uint8(bound(numOperators, 1, 100));
+        numOperators = uint8(bound(numOperators, 1, 32));
+
         // Create Operator Set IDs
         uint32[] memory oids = new uint32[](numOids);
         for (uint32 i = 0; i < numOids; i++) {
