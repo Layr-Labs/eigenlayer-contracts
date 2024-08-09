@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 import "./AVSDirectoryStorage.sol";
@@ -424,6 +425,26 @@ contract AVSDirectory is
      *
      */
 
+    /// @notice Returns operator sets an operator is registered to in the order they were registered.
+    /// @param operator The operator address to query.
+    /// @param index The index of the enumerated list of operator sets.
+    function operatorSetsMemberOf(address operator, uint256 index) public view returns (OperatorSet memory) {
+        return _decodeOperatorSet(_operatorSetsMemberOf[operator].at(index));
+    }
+
+    /// @notice Returns the total number of operator sets an operator is registered to.
+    /// @param operator The operator address to query.
+    function inTotalOperatorSets(address operator) public view returns (uint256) {
+        return _operatorSetsMemberOf[operator].length();
+    }
+
+    /// @notice Returns whether or not an operator is registered to an operator set.
+    /// @param operator The operator address to query.
+    /// @param operatorSet The `OperatorSet` to query.
+    function isMember(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
+    }
+
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
      *
@@ -495,7 +516,24 @@ contract AVSDirectory is
         }
     }
 
+    /// @notice Returns an EIP-712 encoded hash struct.
     function _calculateDigestHash(bytes32 structHash) internal view returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
+    }
+
+    /// @dev Returns an `OperatorSet` encoded into a 32-byte value.
+    /// @param operatorSet The `OperatorSet` to encode.
+    function _encodeOperatorSet(OperatorSet memory operatorSet) internal view returns (bytes32) {
+        return bytes32(abi.encodePacked(operatorSet.avs, uint96(operatorSet.operatorSetId)));
+    }
+
+    /// @dev Returns an `OperatorSet` decoded from an encoded 32-byte value.
+    /// @param encoded The encoded `OperatorSet` to decode.
+    /// @dev Assumes `encoded` is encoded via `_encodeOperatorSet(operatorSet)`.
+    function _decodeOperatorSet(bytes32 encoded) internal view returns (OperatorSet memory) {
+        return OperatorSet({
+            avs: address(uint160(uint256(encoded) >> 96)),
+            operatorSetId: uint32(uint256(encoded) & type(uint96).max)
+        });
     }
 }

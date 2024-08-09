@@ -59,41 +59,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
         delegation = _delegation;
     }
 
-    /// @notice Returns operator sets an operator is registered to in the order they were registered.
-    /// @param operator The operator address to query.
-    /// @param index The index of the enumerated list of operator sets.
-    function operatorSetsMemberOf(address operator, uint256 index) public view returns (OperatorSet memory) {
-        return _decodeOperatorSet(_operatorSetsMemberOf[operator].at(index));
-    }
-
-    /// @notice Returns the total number of operator sets an operator is registered to.
-    /// @param operator The operator address to query.
-    function inTotalOperatorSets(address operator) public view returns (uint256) {
-        return _operatorSetsMemberOf[operator].length();
-    }
-
-    /// @notice Returns whether or not an operator is registered to an operator set.
-    /// @param operator The operator address to query.
-    /// @param operatorSet The `OperatorSet` to query.
-    function isMember(address operator, OperatorSet memory operatorSet) public view returns (bool) {
-        return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
-    }
-
-    /// @dev Returns an `OperatorSet` encoded into a 32-byte value.
-    /// @param operatorSet The `OperatorSet` to encode.
-    function _encodeOperatorSet(OperatorSet memory operatorSet) internal view returns (bytes32) {
-        return bytes32(abi.encodePacked(operatorSet.avs, uint96(operatorSet.operatorSetId)));
-    }
-
-    /// @dev Returns an `OperatorSet` decoded from an encoded 32-byte value.
-    /// @param encoded The encoded `OperatorSet` to decode.
-    function _decodeOperatorSet(bytes32 encoded) internal view returns (OperatorSet memory) {
-        return OperatorSet({
-            avs: address(uint160(uint256(encoded) >> 96)),
-            operatorSetId: uint32(uint256(encoded) & type(uint96).max)
-        });
-    }
-
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
