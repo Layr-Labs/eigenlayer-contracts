@@ -27,7 +27,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     // operatorSetId => strategy => multiplier
     mapping(uint32 => mapping(IStrategy => uint96)) public operatorSetIdToStrategyToMultiplier;
     // operatorSetId => list of strategies
-    mapping(uint32 => IStrategy[]) public avsToStrategies;
+    mapping(uint32 => IStrategy[]) public operatorSetIdToStrategies;
     mapping(address => bool) public isAVS;
 
     modifier isOperatorSet(address avs, uint32 operatorSetId) {
@@ -70,7 +70,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         require(operators.length == avsDirectory.operatorSetMemberCount(avs, operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator set size mismatch");
 
         bytes32[] memory operatorLeaves = new bytes32[](operators.length);
-        IStrategy[] memory strategies = avsToStrategies[operatorSetId];
+        IStrategy[] memory strategies = operatorSetIdToStrategies[operatorSetId];
 
         uint160 prevOperator = 0;
         for (uint256 i = 0; i < operators.length; i++) {
@@ -118,7 +118,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
             operatorSetIdToStrategyToMultiplier[operatorSetId][strategiesAndMultipliers[i].strategy] = strategiesAndMultipliers[i].multiplier;
             strategies[i] = strategiesAndMultipliers[i].strategy;
         }
-        avsToStrategies[operatorSetId] = strategies;
+        operatorSetIdToStrategies[operatorSetId] = strategies;
     }
 
 
