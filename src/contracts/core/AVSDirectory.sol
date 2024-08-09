@@ -362,7 +362,7 @@ contract AVSDirectory is
                 slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
 
                 _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId]
-                    .decrementCurrentAndFutureCheckpoints({
+                    .decrementAtAndFutureCheckpoints({
                     timestamp: uint32(block.timestamp),
                     decrementValue: slashedMagnitude
                 });
@@ -508,11 +508,14 @@ contract AVSDirectory is
                 "AVSDirectory.queueAllocations: insufficient available free magnitude to allocate"
             );
             // 2. rate limiting of 1 pending allocation at a time
-            (bool exists, uint32 timestamp, uint224 value) = _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i]
-                .operatorSetId].latestCheckpoint();
-            if (exists) {
+            // read number of checkpoints after current timestamp
+            (uint224 value, uint256 pos) = _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i]
+                .operatorSetId].upperLookupRecentWithPos(uint32(block.timestamp));
+            // no checkpoint exists if value == 0 && pos == 0, so check the negation before checking if there is a
+            // a pending allocation
+            if (value != 0 || pos != 0) {
                 require(
-                    timestamp <= block.timestamp,
+                    pos == _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].length() - 1,
                     "AVSDirectory.queueAllocations: only one pending allocation allowed for op, opSet, strategy"
                 );
             }
@@ -562,7 +565,7 @@ contract AVSDirectory is
 
             // 2. update and decrement current and future queued amounts in case any pending allocations exist
             _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId]
-                .decrementCurrentAndFutureCheckpoints({
+                .decrementAtAndFutureCheckpoints({
                 timestamp: uint32(block.timestamp),
                 decrementValue: deallocation.magnitudeDiffs[i]
             });

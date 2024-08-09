@@ -205,11 +205,14 @@ library MagnitudeCheckpoints {
     /**
      * @dev Returns the value in the last (most recent) checkpoint with timestamp lower or equal than the search timestamp, or zero if there is none.
      * In addition, returns the position of the checkpoint in the array.
+     *
+     * NOTE: That if value != 0 && pos == 0, then that means the value is the first checkpoint and actually exists
+     * a checkpoint DNE iff value == 0 && pos == 0
      */
     function upperLookupWithPos(History storage self, uint32 timestamp) internal view returns (uint224, uint256) {
         uint256 len = self._magnitudes.length;
         uint256 pos = _upperBinaryLookup(self._magnitudes, timestamp, 0, len);
-        return pos == 0 ? (0, pos) : (_unsafeAccess(self._magnitudes, pos - 1)._value, pos - 1);
+        return pos == 0 ? (0, 0) : (_unsafeAccess(self._magnitudes, pos - 1)._value, pos - 1);
     }
 
     /**
@@ -217,6 +220,8 @@ library MagnitudeCheckpoints {
      * In addition, returns the position of the checkpoint in the array.
      *
      * NOTE: This is a variant of {upperLookup} that is optimised to find "recent" checkpoint (checkpoints with high timestamps).
+     * NOTE: That if value != 0 && pos == 0, then that means the value is the first checkpoint and actually exists
+     * a checkpoint DNE iff value == 0 && pos == 0 => value == 0
      */
     function upperLookupRecentWithPos(History storage self, uint32 timestamp) internal view returns (uint224, uint256) {
         uint256 len = self._magnitudes.length;
@@ -235,13 +240,13 @@ library MagnitudeCheckpoints {
 
         uint256 pos = _upperBinaryLookup(self._magnitudes, timestamp, low, high);
 
-        return pos == 0 ? (0, pos) : (_unsafeAccess(self._magnitudes, pos - 1)._value, pos - 1);
+        return pos == 0 ? (0, 0) : (_unsafeAccess(self._magnitudes, pos - 1)._value, pos - 1);
     }
 
     /// @notice WARNING: this function is only used because of the invariant property
     /// that from the current timestamp, all future checkpointed magnitude values are strictly > current value.
     /// Use function with extreme care for other situations.
-    function decrementCurrentAndFutureCheckpoints(
+    function decrementAtAndFutureCheckpoints(
         History storage self,
         uint32 timestamp,
         uint224 decrementValue
@@ -249,7 +254,9 @@ library MagnitudeCheckpoints {
         (uint224 value, uint256 pos) = upperLookupRecentWithPos(self, timestamp);
 
         // if there is no checkpoint, return
-        pos == 0 ? type(uint256).max : pos;
+        if (value == 0 && pos == 0) {
+            pos = type(uint256).max;
+        }
 
         uint256 len = self._magnitudes.length;
         while (pos < len) {
