@@ -22,13 +22,16 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
 
     address public verifier;
     bytes32 public imageId;
-    uint256 public numAVSs;
+    // overall number of (avs, operatorSet) pairs.
+    uint256 public numOperatorSetIds;
     
     // operatorSetId => strategy => multiplier
     mapping(uint32 => mapping(IStrategy => uint96)) public operatorSetIdToStrategyToMultiplier;
     // operatorSetId => list of strategies
     mapping(uint32 => IStrategy[]) public operatorSetIdToStrategies;
-    mapping(address => bool) public isAVS;
+
+    // tracks whether a given AVS has set its strategies and multipliers for a given operatorSetId
+    mapping(uint => mapping(uint32 => bool)) public avsHasRegisteredOperatorSetId;
 
     modifier isOperatorSet(address avs, uint32 operatorSetId) {
         require(avsDirectory.isOperatorSet(avs, operatorSetId), "StakeRootCompendium: operator set does not exist");
@@ -46,10 +49,25 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
 
      function getStakeRoot(StakeRootLeaf[] calldata stakeRootLeaves) external view returns (bytes32) {
         require(stakeRootLeaves.length <= MAX_NUM_OPERATOR_SETS, "AVSSyncTree.getStakeRoot: operatorSet size limit exceeded");
-        require(stakeRootLeaves.length == numAVSs, "AVSSyncTree.getStakeRoot: more leaves than AVSs that have set their strategies and multipliers");
+        require(stakeRootLeaves.length == numOperatorSetIds, "AVSSyncTree.getStakeRoot: more leaves than AVSs that have set their strategies and multipliers");
     
         bytes32[] memory operatorSetLeaves = new bytes32[](stakeRootLeaves.length);
+
+        uint160 prevAvs = 0;
+        uint32 prevOperatorSetId = 0;
         for (uint256 i = 0; i < stakeRootLeaves.length; i++) {
+
+            //ensure that stakeRootLeaves are sorted, first by AVS and then by operatorSetId
+            if(uint260(stakeRootLeaves[i].avs) > prevAvs) {
+                prevAvs = uint160(stakeRootLeaves[i].avs);
+                prevOperatorSetId = 0;
+            } else if(uint260(stakeRootLeaves[i].avs) == prevAvs) {
+                require(stakeRootLeaves[i].operatorSetId > prevOperatorSetId, "AVSSyncTree.getStakeRoot: operatorSetIds not sorted");
+                prevOperatorSetId = stakeRootLeaves[i].operatorSetId;
+            } else {
+                revert("AVSSyncTree.getStakeRoot: stakeRootLeaves not sorted");
+            }
+
             operatorSetLeaves[i] = keccak256(abi.encodePacked(stakeRootLeaves[i].avs, stakeRootLeaves[i].operatorSetRoot, stakeRootLeaves[i].operatorSetId));
         }
         return Merkle.merkleizeKeccak256(operatorSetLeaves);
@@ -107,11 +125,11 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         uint32 operatorSetId,
         StrategyAndMultiplier[] calldata strategiesAndMultipliers
     ) external isOperatorSet(msg.sender, operatorSetId) {
-        if(!isAVS[msg.sender]) {
-            require(numAVSs < MAX_NUM_OPERATOR_SETS, "AVSSyncTree.setStrategiesAndMultipliers: too many AVSs");
-            isAVS[msg.sender] = true;
-            //if the AVS has never set its strategies and multipliers before, increment the number of AVSs
-            numAVSs++;
+        if(!avsHasRegisteredOperatorSetId[msg.sender][operatorSetId]) {
+            require(numOperatorSetIds < MAX_NUM_OPERATOR_SETS, "AVSSyncTree.setStrategiesAndMultipliers: too many operatorSetIds");
+            isAVS[msg.sender][operatorSetId] = true;
+            //if the AVS has never set its strategies and multipliers before for this operatorSetId, increment the number of overall operatorSetIds
+            numOperatorSetIds++;
         }
         IStrategy[] memory strategies = new IStrategy[](strategiesAndMultipliers.length);
         for (uint256 i = 0; i < strategiesAndMultipliers.length; i++) {
