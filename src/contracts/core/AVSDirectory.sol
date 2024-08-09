@@ -432,6 +432,23 @@ contract AVSDirectory is
         return _decodeOperatorSet(_operatorSetsMemberOf[operator].at(index));
     }
 
+    /// @notice Returns an array of operator sets an operator is registered to.
+    /// @param operator The operator address to query.
+    /// @param start The starting index of the array to query.
+    /// @param length The amount of items of the array to return.
+    function operatorSetsMemberOf(
+        address operator,
+        uint256 start,
+        uint256 length
+    ) public view returns (OperatorSet[] memory operatorSets) {
+        uint256 maxLength = _operatorSetsMemberOf[operator].length() - start;
+        if (length > maxLength) length = maxLength;
+        operatorSets = new OperatorSet[](length);
+        for (uint256 i; i < length; ++i) {
+            operatorSets[i] = _decodeOperatorSet(_operatorSetsMemberOf[operator].at(start + i));
+        }
+    }
+
     /// @notice Returns the total number of operator sets an operator is registered to.
     /// @param operator The operator address to query.
     function inTotalOperatorSets(address operator) public view returns (uint256) {
