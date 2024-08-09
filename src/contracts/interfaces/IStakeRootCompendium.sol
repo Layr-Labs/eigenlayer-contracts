@@ -34,14 +34,11 @@ interface IStakeRootCompendium {
 
     function getOperatorSetRoot(
         address avs,
-        uint32 operatorSetId,
-        address[] calldata operators, 
-        IStrategy[] calldata strategies
+        uint32 operatorSetId, 
+        address[] calldata operators
     ) external view returns (bytes32);
 
     function getStakeRoot(StakeRootLeaf[] calldata stakeRootLeaves) external view returns (bytes32);
-
-    function getMultipliers(uint32 operatorSetId, IStrategy[] calldata strategies) external view returns (uint96[] memory);
 
     function isAVS(address avs) external view returns (bool);
 

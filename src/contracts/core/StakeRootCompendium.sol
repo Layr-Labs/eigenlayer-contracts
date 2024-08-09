@@ -26,8 +26,8 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     
     // operatorSetId => strategy => multiplier
     mapping(uint32 => mapping(IStrategy => uint96)) public operatorSetIdToStrategyToMultiplier;
-    // avs => list of strategies
-    mapping(address => IStrategy[]) public avsToStrategies;
+    // operatorSetId => list of strategies
+    mapping(uint32 => IStrategy[]) public avsToStrategies;
     mapping(address => bool) public isAVS;
 
     modifier isOperatorSet(address avs, uint32 operatorSetId) {
@@ -59,8 +59,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     function getOperatorSetRoot(
         address avs,
         uint32 operatorSetId, 
-        address[] calldata operators, 
-        IStrategy[] calldata strategies
+        address[] calldata operators
     )
         external view 
         isOperatorSet(avs, operatorSetId) 
@@ -71,11 +70,13 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         require(operators.length == avsDirectory.operatorSetMemberCount(avs, operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator set size mismatch");
 
         bytes32[] memory operatorLeaves = new bytes32[](operators.length);
+        IStrategy[] memory strategies = avsToStrategies[operatorSetId];
+
         uint160 prevOperator = 0;
         for (uint256 i = 0; i < operators.length; i++) {
             require(avsDirectory.isMember(avs,operators[i], operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator not in operator set");
             require(uint160(operators[i]) > prevOperator, "AVSSyncTree.getOperatorSetRoot: operators not sorted");
-            
+
             uint96[] memory multipliers = new uint96[](strategies.length);
             for (uint256 j = 0; j < strategies.length; j++) {
                 multipliers[j] = operatorSetIdToStrategyToMultiplier[operatorSetId][strategies[i]];
@@ -112,9 +113,12 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
             //if the AVS has never set its strategies and multipliers before, increment the number of AVSs
             numAVSs++;
         }
+        IStrategy[] memory strategies = new IStrategy[](strategiesAndMultipliers.length);
         for (uint256 i = 0; i < strategiesAndMultipliers.length; i++) {
             operatorSetIdToStrategyToMultiplier[operatorSetId][strategiesAndMultipliers[i].strategy] = strategiesAndMultipliers[i].multiplier;
+            strategies[i] = strategiesAndMultipliers[i].strategy;
         }
+        avsToStrategies[operatorSetId] = strategies;
     }
 
 
