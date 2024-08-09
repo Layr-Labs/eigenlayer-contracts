@@ -31,7 +31,7 @@ var (
 
 // EigenPodManagerStorageMetaData contains all meta data concerning the EigenPodManagerStorage contract.
 var EigenPodManagerStorageMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"addShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"beaconChainETHStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"beaconChainOracle\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeaconChainOracle\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createPod\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"denebForkTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"eigenPodBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ethPOS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIETHPOSDeposit\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getBlockRootAtTimestamp\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hasPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"numPods\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ownerToPod\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"podOwnerShares\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"recordBeaconChainETHBalanceUpdate\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDenebForkTimestamp\",\"inputs\":[{\"name\":\"newDenebForkTimestamp\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slasher\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractISlasher\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stake\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"depositDataRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateBeaconChainOracle\",\"inputs\":[{\"name\":\"newBeaconChainOracle\",\"type\":\"address\",\"internalType\":\"contractIBeaconChainOracle\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawSharesAsTokens\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destination\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"BeaconChainETHDeposited\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BeaconChainETHWithdrawalCompleted\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"},{\"name\":\"delegatedAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BeaconOracleUpdated\",\"inputs\":[{\"name\":\"newOracleAddress\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DenebForkTimestampUpdated\",\"inputs\":[{\"name\":\"newValue\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodDeployed\",\"inputs\":[{\"name\":\"eigenPod\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodSharesUpdated\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"addShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"beaconChainETHStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createPod\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"eigenPodBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ethPOS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIETHPOSDeposit\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hasPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"numPods\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ownerToPod\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"podOwnerShares\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"recordBeaconChainETHBalanceUpdate\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slasher\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractISlasher\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stake\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"depositDataRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawSharesAsTokens\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destination\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"BeaconChainETHDeposited\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BeaconChainETHWithdrawalCompleted\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"},{\"name\":\"delegatedAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewTotalShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newTotalShares\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodDeployed\",\"inputs\":[{\"name\":\"eigenPod\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodSharesUpdated\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
 }
 
 // EigenPodManagerStorageABI is the input ABI used to generate the binding from.
@@ -211,37 +211,6 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) BeaconChainE
 	return _EigenPodManagerStorage.Contract.BeaconChainETHStrategy(&_EigenPodManagerStorage.CallOpts)
 }
 
-// BeaconChainOracle is a free data retrieval call binding the contract method 0xc052bd61.
-//
-// Solidity: function beaconChainOracle() view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) BeaconChainOracle(opts *bind.CallOpts) (common.Address, error) {
-	var out []interface{}
-	err := _EigenPodManagerStorage.contract.Call(opts, &out, "beaconChainOracle")
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// BeaconChainOracle is a free data retrieval call binding the contract method 0xc052bd61.
-//
-// Solidity: function beaconChainOracle() view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) BeaconChainOracle() (common.Address, error) {
-	return _EigenPodManagerStorage.Contract.BeaconChainOracle(&_EigenPodManagerStorage.CallOpts)
-}
-
-// BeaconChainOracle is a free data retrieval call binding the contract method 0xc052bd61.
-//
-// Solidity: function beaconChainOracle() view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) BeaconChainOracle() (common.Address, error) {
-	return _EigenPodManagerStorage.Contract.BeaconChainOracle(&_EigenPodManagerStorage.CallOpts)
-}
-
 // DelegationManager is a free data retrieval call binding the contract method 0xea4d3c9b.
 //
 // Solidity: function delegationManager() view returns(address)
@@ -271,37 +240,6 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageSession) DelegationManager(
 // Solidity: function delegationManager() view returns(address)
 func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) DelegationManager() (common.Address, error) {
 	return _EigenPodManagerStorage.Contract.DelegationManager(&_EigenPodManagerStorage.CallOpts)
-}
-
-// DenebForkTimestamp is a free data retrieval call binding the contract method 0x44e71c80.
-//
-// Solidity: function denebForkTimestamp() view returns(uint64)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) DenebForkTimestamp(opts *bind.CallOpts) (uint64, error) {
-	var out []interface{}
-	err := _EigenPodManagerStorage.contract.Call(opts, &out, "denebForkTimestamp")
-
-	if err != nil {
-		return *new(uint64), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
-
-	return out0, err
-
-}
-
-// DenebForkTimestamp is a free data retrieval call binding the contract method 0x44e71c80.
-//
-// Solidity: function denebForkTimestamp() view returns(uint64)
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) DenebForkTimestamp() (uint64, error) {
-	return _EigenPodManagerStorage.Contract.DenebForkTimestamp(&_EigenPodManagerStorage.CallOpts)
-}
-
-// DenebForkTimestamp is a free data retrieval call binding the contract method 0x44e71c80.
-//
-// Solidity: function denebForkTimestamp() view returns(uint64)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) DenebForkTimestamp() (uint64, error) {
-	return _EigenPodManagerStorage.Contract.DenebForkTimestamp(&_EigenPodManagerStorage.CallOpts)
 }
 
 // EigenPodBeacon is a free data retrieval call binding the contract method 0x292b7b2b.
@@ -364,37 +302,6 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageSession) EthPOS() (common.A
 // Solidity: function ethPOS() view returns(address)
 func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) EthPOS() (common.Address, error) {
 	return _EigenPodManagerStorage.Contract.EthPOS(&_EigenPodManagerStorage.CallOpts)
-}
-
-// GetBlockRootAtTimestamp is a free data retrieval call binding the contract method 0xd1c64cc9.
-//
-// Solidity: function getBlockRootAtTimestamp(uint64 timestamp) view returns(bytes32)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) GetBlockRootAtTimestamp(opts *bind.CallOpts, timestamp uint64) ([32]byte, error) {
-	var out []interface{}
-	err := _EigenPodManagerStorage.contract.Call(opts, &out, "getBlockRootAtTimestamp", timestamp)
-
-	if err != nil {
-		return *new([32]byte), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
-
-	return out0, err
-
-}
-
-// GetBlockRootAtTimestamp is a free data retrieval call binding the contract method 0xd1c64cc9.
-//
-// Solidity: function getBlockRootAtTimestamp(uint64 timestamp) view returns(bytes32)
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) GetBlockRootAtTimestamp(timestamp uint64) ([32]byte, error) {
-	return _EigenPodManagerStorage.Contract.GetBlockRootAtTimestamp(&_EigenPodManagerStorage.CallOpts, timestamp)
-}
-
-// GetBlockRootAtTimestamp is a free data retrieval call binding the contract method 0xd1c64cc9.
-//
-// Solidity: function getBlockRootAtTimestamp(uint64 timestamp) view returns(bytes32)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) GetBlockRootAtTimestamp(timestamp uint64) ([32]byte, error) {
-	return _EigenPodManagerStorage.Contract.GetBlockRootAtTimestamp(&_EigenPodManagerStorage.CallOpts, timestamp)
 }
 
 // GetPod is a free data retrieval call binding the contract method 0xa38406a3.
@@ -833,27 +740,6 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) RemoveSh
 	return _EigenPodManagerStorage.Contract.RemoveShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
 }
 
-// SetDenebForkTimestamp is a paid mutator transaction binding the contract method 0x463db038.
-//
-// Solidity: function setDenebForkTimestamp(uint64 newDenebForkTimestamp) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) SetDenebForkTimestamp(opts *bind.TransactOpts, newDenebForkTimestamp uint64) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.contract.Transact(opts, "setDenebForkTimestamp", newDenebForkTimestamp)
-}
-
-// SetDenebForkTimestamp is a paid mutator transaction binding the contract method 0x463db038.
-//
-// Solidity: function setDenebForkTimestamp(uint64 newDenebForkTimestamp) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) SetDenebForkTimestamp(newDenebForkTimestamp uint64) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.SetDenebForkTimestamp(&_EigenPodManagerStorage.TransactOpts, newDenebForkTimestamp)
-}
-
-// SetDenebForkTimestamp is a paid mutator transaction binding the contract method 0x463db038.
-//
-// Solidity: function setDenebForkTimestamp(uint64 newDenebForkTimestamp) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) SetDenebForkTimestamp(newDenebForkTimestamp uint64) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.SetDenebForkTimestamp(&_EigenPodManagerStorage.TransactOpts, newDenebForkTimestamp)
-}
-
 // SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
 //
 // Solidity: function setPauserRegistry(address newPauserRegistry) returns()
@@ -915,27 +801,6 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageSession) Unpause(newPausedS
 // Solidity: function unpause(uint256 newPausedStatus) returns()
 func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) Unpause(newPausedStatus *big.Int) (*types.Transaction, error) {
 	return _EigenPodManagerStorage.Contract.Unpause(&_EigenPodManagerStorage.TransactOpts, newPausedStatus)
-}
-
-// UpdateBeaconChainOracle is a paid mutator transaction binding the contract method 0xc1de3aef.
-//
-// Solidity: function updateBeaconChainOracle(address newBeaconChainOracle) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) UpdateBeaconChainOracle(opts *bind.TransactOpts, newBeaconChainOracle common.Address) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.contract.Transact(opts, "updateBeaconChainOracle", newBeaconChainOracle)
-}
-
-// UpdateBeaconChainOracle is a paid mutator transaction binding the contract method 0xc1de3aef.
-//
-// Solidity: function updateBeaconChainOracle(address newBeaconChainOracle) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) UpdateBeaconChainOracle(newBeaconChainOracle common.Address) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.UpdateBeaconChainOracle(&_EigenPodManagerStorage.TransactOpts, newBeaconChainOracle)
-}
-
-// UpdateBeaconChainOracle is a paid mutator transaction binding the contract method 0xc1de3aef.
-//
-// Solidity: function updateBeaconChainOracle(address newBeaconChainOracle) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) UpdateBeaconChainOracle(newBeaconChainOracle common.Address) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.UpdateBeaconChainOracle(&_EigenPodManagerStorage.TransactOpts, newBeaconChainOracle)
 }
 
 // WithdrawSharesAsTokens is a paid mutator transaction binding the contract method 0x387b1300.
@@ -1253,9 +1118,9 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) ParseBeaconChainE
 	return event, nil
 }
 
-// EigenPodManagerStorageBeaconOracleUpdatedIterator is returned from FilterBeaconOracleUpdated and is used to iterate over the raw logs and unpacked data for BeaconOracleUpdated events raised by the EigenPodManagerStorage contract.
-type EigenPodManagerStorageBeaconOracleUpdatedIterator struct {
-	Event *EigenPodManagerStorageBeaconOracleUpdated // Event containing the contract specifics and raw log
+// EigenPodManagerStorageNewTotalSharesIterator is returned from FilterNewTotalShares and is used to iterate over the raw logs and unpacked data for NewTotalShares events raised by the EigenPodManagerStorage contract.
+type EigenPodManagerStorageNewTotalSharesIterator struct {
+	Event *EigenPodManagerStorageNewTotalShares // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1269,7 +1134,7 @@ type EigenPodManagerStorageBeaconOracleUpdatedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *EigenPodManagerStorageBeaconOracleUpdatedIterator) Next() bool {
+func (it *EigenPodManagerStorageNewTotalSharesIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1278,7 +1143,7 @@ func (it *EigenPodManagerStorageBeaconOracleUpdatedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(EigenPodManagerStorageBeaconOracleUpdated)
+			it.Event = new(EigenPodManagerStorageNewTotalShares)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1293,7 +1158,7 @@ func (it *EigenPodManagerStorageBeaconOracleUpdatedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(EigenPodManagerStorageBeaconOracleUpdated)
+		it.Event = new(EigenPodManagerStorageNewTotalShares)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1309,51 +1174,52 @@ func (it *EigenPodManagerStorageBeaconOracleUpdatedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *EigenPodManagerStorageBeaconOracleUpdatedIterator) Error() error {
+func (it *EigenPodManagerStorageNewTotalSharesIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *EigenPodManagerStorageBeaconOracleUpdatedIterator) Close() error {
+func (it *EigenPodManagerStorageNewTotalSharesIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// EigenPodManagerStorageBeaconOracleUpdated represents a BeaconOracleUpdated event raised by the EigenPodManagerStorage contract.
-type EigenPodManagerStorageBeaconOracleUpdated struct {
-	NewOracleAddress common.Address
-	Raw              types.Log // Blockchain specific contextual infos
+// EigenPodManagerStorageNewTotalShares represents a NewTotalShares event raised by the EigenPodManagerStorage contract.
+type EigenPodManagerStorageNewTotalShares struct {
+	PodOwner       common.Address
+	NewTotalShares *big.Int
+	Raw            types.Log // Blockchain specific contextual infos
 }
 
-// FilterBeaconOracleUpdated is a free log retrieval operation binding the contract event 0x08f0470754946ccfbb446ff7fd2d6ae6af1bbdae19f85794c0cc5ed5e8ceb4f6.
+// FilterNewTotalShares is a free log retrieval operation binding the contract event 0xd4def76d6d2bed6f14d5cd9af73cc2913d618d00edde42432e81c09bfe077098.
 //
-// Solidity: event BeaconOracleUpdated(address indexed newOracleAddress)
-func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) FilterBeaconOracleUpdated(opts *bind.FilterOpts, newOracleAddress []common.Address) (*EigenPodManagerStorageBeaconOracleUpdatedIterator, error) {
+// Solidity: event NewTotalShares(address indexed podOwner, int256 newTotalShares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) FilterNewTotalShares(opts *bind.FilterOpts, podOwner []common.Address) (*EigenPodManagerStorageNewTotalSharesIterator, error) {
 
-	var newOracleAddressRule []interface{}
-	for _, newOracleAddressItem := range newOracleAddress {
-		newOracleAddressRule = append(newOracleAddressRule, newOracleAddressItem)
+	var podOwnerRule []interface{}
+	for _, podOwnerItem := range podOwner {
+		podOwnerRule = append(podOwnerRule, podOwnerItem)
 	}
 
-	logs, sub, err := _EigenPodManagerStorage.contract.FilterLogs(opts, "BeaconOracleUpdated", newOracleAddressRule)
+	logs, sub, err := _EigenPodManagerStorage.contract.FilterLogs(opts, "NewTotalShares", podOwnerRule)
 	if err != nil {
 		return nil, err
 	}
-	return &EigenPodManagerStorageBeaconOracleUpdatedIterator{contract: _EigenPodManagerStorage.contract, event: "BeaconOracleUpdated", logs: logs, sub: sub}, nil
+	return &EigenPodManagerStorageNewTotalSharesIterator{contract: _EigenPodManagerStorage.contract, event: "NewTotalShares", logs: logs, sub: sub}, nil
 }
 
-// WatchBeaconOracleUpdated is a free log subscription operation binding the contract event 0x08f0470754946ccfbb446ff7fd2d6ae6af1bbdae19f85794c0cc5ed5e8ceb4f6.
+// WatchNewTotalShares is a free log subscription operation binding the contract event 0xd4def76d6d2bed6f14d5cd9af73cc2913d618d00edde42432e81c09bfe077098.
 //
-// Solidity: event BeaconOracleUpdated(address indexed newOracleAddress)
-func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) WatchBeaconOracleUpdated(opts *bind.WatchOpts, sink chan<- *EigenPodManagerStorageBeaconOracleUpdated, newOracleAddress []common.Address) (event.Subscription, error) {
+// Solidity: event NewTotalShares(address indexed podOwner, int256 newTotalShares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) WatchNewTotalShares(opts *bind.WatchOpts, sink chan<- *EigenPodManagerStorageNewTotalShares, podOwner []common.Address) (event.Subscription, error) {
 
-	var newOracleAddressRule []interface{}
-	for _, newOracleAddressItem := range newOracleAddress {
-		newOracleAddressRule = append(newOracleAddressRule, newOracleAddressItem)
+	var podOwnerRule []interface{}
+	for _, podOwnerItem := range podOwner {
+		podOwnerRule = append(podOwnerRule, podOwnerItem)
 	}
 
-	logs, sub, err := _EigenPodManagerStorage.contract.WatchLogs(opts, "BeaconOracleUpdated", newOracleAddressRule)
+	logs, sub, err := _EigenPodManagerStorage.contract.WatchLogs(opts, "NewTotalShares", podOwnerRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1363,8 +1229,8 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) WatchBeaconOracle
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(EigenPodManagerStorageBeaconOracleUpdated)
-				if err := _EigenPodManagerStorage.contract.UnpackLog(event, "BeaconOracleUpdated", log); err != nil {
+				event := new(EigenPodManagerStorageNewTotalShares)
+				if err := _EigenPodManagerStorage.contract.UnpackLog(event, "NewTotalShares", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1385,146 +1251,12 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) WatchBeaconOracle
 	}), nil
 }
 
-// ParseBeaconOracleUpdated is a log parse operation binding the contract event 0x08f0470754946ccfbb446ff7fd2d6ae6af1bbdae19f85794c0cc5ed5e8ceb4f6.
+// ParseNewTotalShares is a log parse operation binding the contract event 0xd4def76d6d2bed6f14d5cd9af73cc2913d618d00edde42432e81c09bfe077098.
 //
-// Solidity: event BeaconOracleUpdated(address indexed newOracleAddress)
-func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) ParseBeaconOracleUpdated(log types.Log) (*EigenPodManagerStorageBeaconOracleUpdated, error) {
-	event := new(EigenPodManagerStorageBeaconOracleUpdated)
-	if err := _EigenPodManagerStorage.contract.UnpackLog(event, "BeaconOracleUpdated", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// EigenPodManagerStorageDenebForkTimestampUpdatedIterator is returned from FilterDenebForkTimestampUpdated and is used to iterate over the raw logs and unpacked data for DenebForkTimestampUpdated events raised by the EigenPodManagerStorage contract.
-type EigenPodManagerStorageDenebForkTimestampUpdatedIterator struct {
-	Event *EigenPodManagerStorageDenebForkTimestampUpdated // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *EigenPodManagerStorageDenebForkTimestampUpdatedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(EigenPodManagerStorageDenebForkTimestampUpdated)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(EigenPodManagerStorageDenebForkTimestampUpdated)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *EigenPodManagerStorageDenebForkTimestampUpdatedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *EigenPodManagerStorageDenebForkTimestampUpdatedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// EigenPodManagerStorageDenebForkTimestampUpdated represents a DenebForkTimestampUpdated event raised by the EigenPodManagerStorage contract.
-type EigenPodManagerStorageDenebForkTimestampUpdated struct {
-	NewValue uint64
-	Raw      types.Log // Blockchain specific contextual infos
-}
-
-// FilterDenebForkTimestampUpdated is a free log retrieval operation binding the contract event 0x19200b6fdad58f91b2f496b0c444fc4be3eff74a7e24b07770e04a7137bfd9db.
-//
-// Solidity: event DenebForkTimestampUpdated(uint64 newValue)
-func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) FilterDenebForkTimestampUpdated(opts *bind.FilterOpts) (*EigenPodManagerStorageDenebForkTimestampUpdatedIterator, error) {
-
-	logs, sub, err := _EigenPodManagerStorage.contract.FilterLogs(opts, "DenebForkTimestampUpdated")
-	if err != nil {
-		return nil, err
-	}
-	return &EigenPodManagerStorageDenebForkTimestampUpdatedIterator{contract: _EigenPodManagerStorage.contract, event: "DenebForkTimestampUpdated", logs: logs, sub: sub}, nil
-}
-
-// WatchDenebForkTimestampUpdated is a free log subscription operation binding the contract event 0x19200b6fdad58f91b2f496b0c444fc4be3eff74a7e24b07770e04a7137bfd9db.
-//
-// Solidity: event DenebForkTimestampUpdated(uint64 newValue)
-func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) WatchDenebForkTimestampUpdated(opts *bind.WatchOpts, sink chan<- *EigenPodManagerStorageDenebForkTimestampUpdated) (event.Subscription, error) {
-
-	logs, sub, err := _EigenPodManagerStorage.contract.WatchLogs(opts, "DenebForkTimestampUpdated")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(EigenPodManagerStorageDenebForkTimestampUpdated)
-				if err := _EigenPodManagerStorage.contract.UnpackLog(event, "DenebForkTimestampUpdated", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseDenebForkTimestampUpdated is a log parse operation binding the contract event 0x19200b6fdad58f91b2f496b0c444fc4be3eff74a7e24b07770e04a7137bfd9db.
-//
-// Solidity: event DenebForkTimestampUpdated(uint64 newValue)
-func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) ParseDenebForkTimestampUpdated(log types.Log) (*EigenPodManagerStorageDenebForkTimestampUpdated, error) {
-	event := new(EigenPodManagerStorageDenebForkTimestampUpdated)
-	if err := _EigenPodManagerStorage.contract.UnpackLog(event, "DenebForkTimestampUpdated", log); err != nil {
+// Solidity: event NewTotalShares(address indexed podOwner, int256 newTotalShares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) ParseNewTotalShares(log types.Log) (*EigenPodManagerStorageNewTotalShares, error) {
+	event := new(EigenPodManagerStorageNewTotalShares)
+	if err := _EigenPodManagerStorage.contract.UnpackLog(event, "NewTotalShares", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

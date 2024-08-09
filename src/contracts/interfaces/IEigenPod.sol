@@ -9,17 +9,15 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice The main functionalities are:
- * - creating new ETH validators with their withdrawal credentials pointed to this contract
- * - proving from beacon chain state roots that withdrawal credentials are pointed to this contract
- * - proving from beacon chain state roots the balances of ETH validators with their withdrawal credentials
- *   pointed to this contract
- * - updating aggregate balances in the EigenPodManager
- * - withdrawing eth when withdrawals are initiated
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
 interface IEigenPod {
+    /**
+     *
+     *                                STRUCTS / ENUMS
+     *
+     */
     enum VALIDATOR_STATUS {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
@@ -33,30 +31,29 @@ interface IEigenPod {
         // amount of beacon chain ETH restaked on EigenLayer in gwei
         uint64 restakedBalanceGwei;
         //timestamp of the validator's most recent balance update
-        uint64 mostRecentBalanceUpdateTimestamp;
+        uint64 lastCheckpointedAt;
         // status of the validator
         VALIDATOR_STATUS status;
     }
 
-    /**
-     * @notice struct used to store amounts related to proven withdrawals in memory. Used to help
-     * manage stack depth and optimize the number of external calls, when batching withdrawal operations.
-     */
-    struct VerifiedWithdrawal {
-        // amount to send to a podOwner from a proven withdrawal
-        uint256 amountToSendGwei;
-        // difference in shares to be recorded in the eigenPodManager, as a result of the withdrawal
-        int256 sharesDeltaGwei;
+    struct Checkpoint {
+        bytes32 beaconBlockRoot;
+        uint24 proofsRemaining;
+        uint64 podBalanceGwei;
+        int128 balanceDeltasGwei;
     }
 
-    enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
-        REDEEMED,
-        PENDING,
-        FAILED
-    }
+    /**
+     *
+     *                                    EVENTS
+     *
+     */
 
     /// @notice Emitted when an ETH validator stakes via this eigenPod
     event EigenPodStaked(bytes pubkey);
+
+    /// @notice Emitted when a pod owner updates the proof submitter address
+    event ProofSubmitterUpdated(address prevProofSubmitter, address newProofSubmitter);
 
     /// @notice Emitted when an ETH validator's withdrawal credentials are successfully verified to be pointed to this eigenPod
     event ValidatorRestaked(uint40 validatorIndex);
@@ -65,36 +62,31 @@ interface IEigenPod {
     //  is the validator's balance that is credited on EigenLayer.
     event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 balanceTimestamp, uint64 newValidatorBalanceGwei);
 
-    /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
-    event FullWithdrawalRedeemed(
-        uint40 validatorIndex, uint64 withdrawalTimestamp, address indexed recipient, uint64 withdrawalAmountGwei
-    );
-
-    /// @notice Emitted when a partial withdrawal claim is successfully redeemed
-    event PartialWithdrawalRedeemed(
-        uint40 validatorIndex, uint64 withdrawalTimestamp, address indexed recipient, uint64 partialWithdrawalAmountGwei
-    );
-
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
-
-    /// @notice Emitted when podOwner enables restaking
-    event RestakingActivated(address indexed podOwner);
 
     /// @notice Emitted when ETH is received via the `receive` fallback
     event NonBeaconChainETHReceived(uint256 amountReceived);
 
-    /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
-    event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
+    /// @notice Emitted when a checkpoint is created
+    event CheckpointCreated(
+        uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot, uint256 validatorCount
+    );
 
-    /// @notice The max amount of eth, in gwei, that can be restaked per validator
-    function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);
+    /// @notice Emitted when a checkpoint is finalized
+    event CheckpointFinalized(uint64 indexed checkpointTimestamp, int256 totalShareDeltaWei);
 
-    /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
-    function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
+    /// @notice Emitted when a validator is proven for a given checkpoint
+    event ValidatorCheckpointed(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
 
-    /// @notice any ETH deposited into the EigenPod contract via the `receive` fallback function
-    function nonBeaconChainETHBalanceWei() external view returns (uint256);
+    /// @notice Emitted when a validaor is proven to have 0 balance at a given checkpoint
+    event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
+
+    /**
+     *
+     *                       EXTERNAL STATE-CHANGING METHODS
+     *
+     */
 
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
     function initialize(address owner) external;
@@ -111,21 +103,125 @@ interface IEigenPod {
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
 
+    /**
+     * @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed
+     * by submitting one checkpoint proof per ACTIVE validator. During the checkpoint process, the total
+     * change in ACTIVE validator balance is tracked, and any validators with 0 balance are marked `WITHDRAWN`.
+     * @dev Once finalized, the pod owner is awarded shares corresponding to:
+     * - the total change in their ACTIVE validator balances
+     * - any ETH in the pod not already awarded shares
+     * @dev A checkpoint cannot be created if the pod already has an outstanding checkpoint. If
+     * this is the case, the pod owner MUST complete the existing checkpoint before starting a new one.
+     * @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
+     * to prevent accidentally starting a checkpoint that will not increase their shares
+     */
+    function startCheckpoint(bool revertIfNoBalance) external;
+
+    /**
+     * @dev Progress the current checkpoint towards completion by submitting one or more validator
+     * checkpoint proofs. Anyone can call this method to submit proofs towards the current checkpoint.
+     * For each validator proven, the current checkpoint's `proofsRemaining` decreases.
+     * @dev If the checkpoint's `proofsRemaining` reaches 0, the checkpoint is finalized.
+     * (see `_updateCheckpoint` for more details)
+     * @dev This method can only be called when there is a currently-active checkpoint.
+     * @param balanceContainerProof proves the beacon's current balance container root against a checkpoint's `beaconBlockRoot`
+     * @param proofs Proofs for one or more validator current balances against the `balanceContainerRoot`
+     */
+    function verifyCheckpointProofs(
+        BeaconChainProofs.BalanceContainerProof calldata balanceContainerProof,
+        BeaconChainProofs.BalanceProof[] calldata proofs
+    ) external;
+
+    /**
+     * @dev Verify one or more validators have their withdrawal credentials pointed at this EigenPod, and award
+     * shares based on their effective balance. Proven validators are marked `ACTIVE` within the EigenPod, and
+     * future checkpoint proofs will need to include them.
+     * @dev Withdrawal credential proofs MUST NOT be older than `currentCheckpointTimestamp`.
+     * @dev Validators proven via this method MUST NOT have an exit epoch set already.
+     * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
+     * to the parent beacon block root against which the proof is verified.
+     * @param stateRootProof proves a beacon state root against a beacon block root
+     * @param validatorIndices a list of validator indices being proven
+     * @param validatorFieldsProofs proofs of each validator's `validatorFields` against the beacon state root
+     * @param validatorFields the fields of the beacon chain "Validator" container. See consensus specs for
+     * details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
+     */
+    function verifyWithdrawalCredentials(
+        uint64 beaconTimestamp,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        uint40[] calldata validatorIndices,
+        bytes[] calldata validatorFieldsProofs,
+        bytes32[][] calldata validatorFields
+    ) external;
+
+    /**
+     * @dev Prove that one of this pod's active validators was slashed on the beacon chain. A successful
+     * staleness proof allows the caller to start a checkpoint.
+     *
+     * @dev Note that in order to start a checkpoint, any existing checkpoint must already be completed!
+     * (See `_startCheckpoint` for details)
+     *
+     * @dev Note that this method allows anyone to start a checkpoint as soon as a slashing occurs on the beacon
+     * chain. This is intended to make it easier to external watchers to keep a pod's balance up to date.
+     *
+     * @dev Note too that beacon chain slashings are not instant. There is a delay between the initial slashing event
+     * and the validator's final exit back to the execution layer. During this time, the validator's balance may or
+     * may not drop further due to a correlation penalty. This method allows proof of a slashed validator
+     * to initiate a checkpoint for as long as the validator remains on the beacon chain. Once the validator
+     * has exited and been checkpointed at 0 balance, they are no longer "checkpoint-able" and cannot be proven
+     * "stale" via this method.
+     * See https://eth2book.info/capella/part3/transition/epoch/#slashings for more info.
+     *
+     * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
+     * to the parent beacon block root against which the proof is verified.
+     * @param stateRootProof proves a beacon state root against a beacon block root
+     * @param proof the fields of the beacon chain "Validator" container, along with a merkle proof against
+     * the beacon state root. See the consensus specs for more details:
+     * https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
+     *
+     * @dev Staleness conditions:
+     * - Validator's last checkpoint is older than `beaconTimestamp`
+     * - Validator MUST be in `ACTIVE` status in the pod
+     * - Validator MUST be slashed on the beacon chain
+     */
+    function verifyStaleBalance(
+        uint64 beaconTimestamp,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.ValidatorProof calldata proof
+    ) external;
+
+    /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
+    function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
+
+    /// @notice Allows the owner of a pod to update the proof submitter, a permissioned
+    /// address that can call `startCheckpoint` and `verifyWithdrawalCredentials`.
+    /// @dev Note that EITHER the podOwner OR proofSubmitter can access these methods,
+    /// so it's fine to set your proofSubmitter to 0 if you want the podOwner to be the
+    /// only address that can call these methods.
+    /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
+    /// pod owner will be able to call `startCheckpoint` and `verifyWithdrawalCredentials`
+    function setProofSubmitter(address newProofSubmitter) external;
+
+    /**
+     *
+     *                                VIEW METHODS
+     *
+     */
+
+    /// @notice An address with permissions to call `startCheckpoint` and `verifyWithdrawalCredentials`, set
+    /// by the podOwner. This role exists to allow a podOwner to designate a hot wallet that can call
+    /// these methods, allowing the podOwner to remain a cold wallet that is only used to manage funds.
+    /// @dev If this address is NOT set, only the podOwner can call `startCheckpoint` and `verifyWithdrawalCredentials`
+    function proofSubmitter() external view returns (address);
+
+    /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
+    function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
+
     /// @notice The single EigenPodManager for EigenLayer
     function eigenPodManager() external view returns (IEigenPodManager);
 
     /// @notice The owner of this EigenPod
     function podOwner() external view returns (address);
-
-    /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
-    function hasRestaked() external view returns (bool);
-
-    /**
-     * @notice The latest timestamp at which the pod owner withdrew the balance of the pod, via calling `withdrawBeforeRestaking`.
-     * @dev This variable is only updated when the `withdrawBeforeRestaking` function is called, which can only occur before `hasRestaked` is set to true for this pod.
-     * Proofs for this pod are only valid against Beacon Chain state roots corresponding to timestamps after the stored `mostRecentWithdrawalTimestamp`.
-     */
-    function mostRecentWithdrawalTimestamp() external view returns (uint64);
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory);
@@ -133,82 +229,57 @@ interface IEigenPod {
     /// @notice Returns the validatorInfo struct for the provided pubkey
     function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory);
 
-    ///@notice mapping that tracks proven withdrawals
-    function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool);
-
     /// @notice This returns the status of a given validator
     function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS);
 
     /// @notice This returns the status of a given validator pubkey
     function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS);
 
-    /**
-     * @notice This function verifies that the withdrawal credentials of validator(s) owned by the podOwner are pointed to
-     * this contract. It also verifies the effective balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
-     * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
-     * @param oracleTimestamp is the Beacon Chain timestamp whose state root the `proof` will be proven against.
-     * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs
-     * @param withdrawalCredentialProofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials
-     * against a beacon chain state root
-     * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
-     * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
-     */
-    function verifyWithdrawalCredentials(
-        uint64 oracleTimestamp,
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
-        uint40[] calldata validatorIndices,
-        bytes[] calldata withdrawalCredentialProofs,
-        bytes32[][] calldata validatorFields
-    ) external;
+    /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
+    function activeValidatorCount() external view returns (uint256);
 
-    /**
-     * @notice This function records an update (either increase or decrease) in the pod's balance in the StrategyManager.
-     *            It also verifies a merkle proof of the validator's current beacon chain balance.
-     * @param oracleTimestamp The oracleTimestamp whose state root the `proof` will be proven against.
-     *        Must be within `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` of the current block.
-     * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs
-     * @param validatorFieldsProofs proofs against the `beaconStateRoot` for each validator in `validatorFields`
-     * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
-     * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
-     */
-    function verifyBalanceUpdates(
-        uint64 oracleTimestamp,
-        uint40[] calldata validatorIndices,
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
-        bytes[] calldata validatorFieldsProofs,
-        bytes32[][] calldata validatorFields
-    ) external;
+    /// @notice The timestamp of the last checkpoint finalized
+    function lastCheckpointTimestamp() external view returns (uint64);
 
-    /**
-     * @notice This function records full and partial withdrawals on behalf of one of the Ethereum validators for this EigenPod
-     * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
-     * @param withdrawalProofs is the information needed to check the veracity of the block numbers and withdrawals being proven
-     * @param validatorFieldsProofs is the proof of the validator's fields' in the validator tree
-     * @param withdrawalFields are the fields of the withdrawals being proven
-     * @param validatorFields are the fields of the validators being proven
-     */
-    function verifyAndProcessWithdrawals(
-        uint64 oracleTimestamp,
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs,
-        bytes[] calldata validatorFieldsProofs,
-        bytes32[][] calldata validatorFields,
-        bytes32[][] calldata withdrawalFields
-    ) external;
+    /// @notice The timestamp of the currently-active checkpoint. Will be 0 if there is not active checkpoint
+    function currentCheckpointTimestamp() external view returns (uint64);
 
-    /**
-     * @notice Called by the pod owner to activate restaking by withdrawing
-     * all existing ETH from the pod and preventing further withdrawals via
-     * "withdrawBeforeRestaking()"
-     */
-    function activateRestaking() external;
+    /// @notice Returns the currently-active checkpoint
+    function currentCheckpoint() external view returns (Checkpoint memory);
 
-    /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
-    function withdrawBeforeRestaking() external;
+    /// @notice For each checkpoint, the total balance attributed to exited validators, in gwei
+    ///
+    /// NOTE that the values added to this mapping are NOT guaranteed to capture the entirety of a validator's
+    /// exit - rather, they capture the total change in a validator's balance when a checkpoint shows their
+    /// balance change from nonzero to zero. While a change from nonzero to zero DOES guarantee that a validator
+    /// has been fully exited, it is possible that the magnitude of this change does not capture what is
+    /// typically thought of as a "full exit."
+    ///
+    /// For example:
+    /// 1. Consider a validator was last checkpointed at 32 ETH before exiting. Once the exit has been processed,
+    /// it is expected that the validator's exited balance is calculated to be `32 ETH`.
+    /// 2. However, before `startCheckpoint` is called, a deposit is made to the validator for 1 ETH. The beacon
+    /// chain will automatically withdraw this ETH, but not until the withdrawal sweep passes over the validator
+    /// again. Until this occurs, the validator's current balance (used for checkpointing) is 1 ETH.
+    /// 3. If `startCheckpoint` is called at this point, the balance delta calculated for this validator will be
+    /// `-31 ETH`, and because the validator has a nonzero balance, it is not marked WITHDRAWN.
+    /// 4. After the exit is processed by the beacon chain, a subsequent `startCheckpoint` and checkpoint proof
+    /// will calculate a balance delta of `-1 ETH` and attribute a 1 ETH exit to the validator.
+    ///
+    /// If this edge case impacts your usecase, it should be possible to mitigate this by monitoring for deposits
+    /// to your exited validators, and waiting to call `startCheckpoint` until those deposits have been automatically
+    /// exited.
+    ///
+    /// Additional edge cases this mapping does not cover:
+    /// - If a validator is slashed, their balance exited will reflect their original balance rather than the slashed amount
+    /// - The final partial withdrawal for an exited validator will be likely be included in this mapping.
+    ///   i.e. if a validator was last checkpointed at 32.1 ETH before exiting, the next checkpoint will calculate their
+    ///   "exited" amount to be 32.1 ETH rather than 32 ETH.
+    function checkpointBalanceExitedGwei(uint64) external view returns (uint64);
 
-    /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
-    function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external;
-
-    /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
-    function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
+    /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
+    /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
+    /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
+    /// will revert.
+    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32);
 }

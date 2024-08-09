@@ -6,8 +6,6 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import "../interfaces/IBeaconChainOracle.sol";
-
 import "../permissions/Pausable.sol";
 import "./EigenPodPausingConstants.sol";
 import "./EigenPodManagerStorage.sol";
@@ -53,12 +51,10 @@ contract EigenPodManager is
     }
 
     function initialize(
-        IBeaconChainOracle _beaconChainOracle,
         address initialOwner,
         IPauserRegistry _pauserRegistry,
         uint256 _initPausedStatus
     ) external initializer {
-        _updateBeaconChainOracle(_beaconChainOracle);
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
     }
@@ -141,6 +137,7 @@ contract EigenPodManager is
             }
         }
         emit PodSharesUpdated(podOwner, sharesDelta);
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
     }
 
     /**
@@ -161,6 +158,8 @@ contract EigenPodManager is
             "EigenPodManager.removeShares: cannot result in pod owner having negative shares"
         );
         podOwnerShares[podOwner] = updatedPodOwnerShares;
+
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
     }
 
     /**
@@ -179,6 +178,7 @@ contract EigenPodManager is
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
         emit PodSharesUpdated(podOwner, int256(shares));
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
 
         return uint256(
             _calculateChangeInDelegatableShares({
@@ -209,46 +209,24 @@ contract EigenPodManager is
         // if there is an existing shares deficit, prioritize decreasing the deficit first
         if (currentPodOwnerShares < 0) {
             uint256 currentShareDeficit = uint256(-currentPodOwnerShares);
-            // get rid of the whole deficit if possible, and pass any remaining shares onto destination
+
             if (shares > currentShareDeficit) {
+                // get rid of the whole deficit if possible, and pass any remaining shares onto destination
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
                 emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
-                // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
+                emit NewTotalShares(podOwner, 0);
             } else {
-                podOwnerShares[podOwner] += int256(shares);
+                // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
+                int256 updatedPodOwnerShares = podOwnerShares[podOwner] + int256(shares);
+                podOwnerShares[podOwner] = updatedPodOwnerShares;
                 emit PodSharesUpdated(podOwner, int256(shares));
+                emit NewTotalShares(podOwner, updatedPodOwnerShares);
                 return;
             }
         }
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
-    }
-
-    /**
-     * @notice Updates the oracle contract that provides the beacon chain state root
-     * @param newBeaconChainOracle is the new oracle contract being pointed to
-     * @dev Callable only by the owner of this contract (i.e. governance)
-     */
-    function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external onlyOwner {
-        _updateBeaconChainOracle(newBeaconChainOracle);
-    }
-
-    /**
-     * @notice Sets the timestamp of the Deneb fork.
-     * @param newDenebForkTimestamp is the new timestamp of the Deneb fork
-     */
-    function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external onlyOwner {
-        require(
-            newDenebForkTimestamp != 0, "EigenPodManager.setDenebForkTimestamp: cannot set newDenebForkTimestamp to 0"
-        );
-        require(
-            _denebForkTimestamp == 0,
-            "EigenPodManager.setDenebForkTimestamp: cannot set denebForkTimestamp more than once"
-        );
-
-        _denebForkTimestamp = newDenebForkTimestamp;
-        emit DenebForkTimestampUpdated(newDenebForkTimestamp);
     }
 
     // INTERNAL FUNCTIONS
@@ -269,12 +247,6 @@ contract EigenPodManager is
         ownerToPod[msg.sender] = pod;
         emit PodDeployed(address(pod), msg.sender);
         return pod;
-    }
-
-    /// @notice Internal setter for `beaconChainOracle` that also emits an event
-    function _updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) internal {
-        beaconChainOracle = newBeaconChainOracle;
-        emit BeaconOracleUpdated(address(newBeaconChainOracle));
     }
 
     /**
@@ -324,28 +296,5 @@ contract EigenPodManager is
     /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
     function hasPod(address podOwner) public view returns (bool) {
         return address(ownerToPod[podOwner]) != address(0);
-    }
-
-    /// @notice Returns the Beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
-    function getBlockRootAtTimestamp(uint64 timestamp) external view returns (bytes32) {
-        bytes32 stateRoot = beaconChainOracle.timestampToBlockRoot(timestamp);
-        require(
-            stateRoot != bytes32(0),
-            "EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized"
-        );
-        return stateRoot;
-    }
-
-    /**
-     * @notice Wrapper around the `_denebForkTimestamp` storage variable that returns type(uint64).max if the storage variable is unset.
-     * @dev This allows restricting the storage variable to be set once and only once.
-     */
-    function denebForkTimestamp() public view returns (uint64) {
-        uint64 timestamp = _denebForkTimestamp;
-        if (timestamp == 0) {
-            return type(uint64).max;
-        } else {
-            return timestamp;
-        }
     }
 }

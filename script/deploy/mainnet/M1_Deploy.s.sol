@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
-import "../../../src/contracts/interfaces/IBeaconChainOracle.sol";
 
 import "../../../src/contracts/core/StrategyManager.sol";
 import "../../../src/contracts/core/Slasher.sol";
@@ -17,7 +16,6 @@ import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
 import "../../../src/contracts/pods/EigenPod.sol";
 import "../../../src/contracts/pods/EigenPodManager.sol";
-import "../../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "../../../src/contracts/permissions/PauserRegistry.sol";
 
@@ -56,8 +54,6 @@ contract Deployer_M1 is Script, Test {
     StrategyManager public strategyManagerImplementation;
     EigenPodManager public eigenPodManager;
     EigenPodManager public eigenPodManagerImplementation;
-    DelayedWithdrawalRouter public delayedWithdrawalRouter;
-    DelayedWithdrawalRouter public delayedWithdrawalRouterImplementation;
     UpgradeableBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
@@ -85,11 +81,9 @@ contract Deployer_M1 is Script, Test {
     uint256 DELEGATION_INIT_PAUSED_STATUS;
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint256 EIGENPOD_MANAGER_MAX_PODS;
-    uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS;
 
     // one week in blocks -- 50400
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
-    uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS;
 
     function run() external {
         // read and log the chainID
@@ -105,15 +99,8 @@ contract Deployer_M1 is Script, Test {
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
         EIGENPOD_MANAGER_MAX_PODS = stdJson.readUint(config_data, ".eigenPodManager.max_pods");
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".eigenPodManager.init_paused_status");
-        DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = stdJson.readUint(
-            config_data,
-            ".delayedWithdrawalRouter.init_paused_status"
-        );
 
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(
-            stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks")
-        );
-        DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(
             stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks")
         );
 
@@ -168,9 +155,6 @@ contract Deployer_M1 is Script, Test {
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        delayedWithdrawalRouter = DelayedWithdrawalRouter(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
 
         // if on mainnet, use the ETH2 deposit contract address
         if (chainId == 1) {
@@ -181,9 +165,7 @@ contract Deployer_M1 is Script, Test {
         }
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
-            uint64(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR),
             GOERLI_GENESIS_TIME
         );
 
@@ -200,7 +182,6 @@ contract Deployer_M1 is Script, Test {
             slasher,
             delegation
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -239,22 +220,9 @@ contract Deployer_M1 is Script, Test {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                EIGENPOD_MANAGER_MAX_PODS,
-                IBeaconChainOracle(address(0)),
                 executorMultisig,
                 eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
-            )
-        );
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation),
-            abi.encodeWithSelector(
-                DelayedWithdrawalRouter.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS,
-                DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS
             )
         );
 
@@ -292,15 +260,13 @@ contract Deployer_M1 is Script, Test {
             delegationImplementation,
             strategyManagerImplementation,
             slasherImplementation,
-            eigenPodManagerImplementation,
-            delayedWithdrawalRouterImplementation
+            eigenPodManagerImplementation
         );
         _verifyContractsPointAtOneAnother(
             delegation,
             strategyManager,
             slasher,
-            eigenPodManager,
-            delayedWithdrawalRouter
+            eigenPodManager
         );
         _verifyImplementationsSetCorrectly();
         _verifyInitialOwners();
@@ -339,12 +305,6 @@ contract Deployer_M1 is Script, Test {
             "eigenPodManagerImplementation",
             address(eigenPodManagerImplementation)
         );
-        vm.serializeAddress(deployed_addresses, "delayedWithdrawalRouter", address(delayedWithdrawalRouter));
-        vm.serializeAddress(
-            deployed_addresses,
-            "delayedWithdrawalRouterImplementation",
-            address(delayedWithdrawalRouterImplementation)
-        );
         vm.serializeAddress(deployed_addresses, "eigenPodBeacon", address(eigenPodBeacon));
         vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
         vm.serializeAddress(deployed_addresses, "baseStrategyImplementation", address(baseStrategyImplementation));
@@ -374,8 +334,7 @@ contract Deployer_M1 is Script, Test {
         DelegationManager delegationContract,
         StrategyManager strategyManagerContract,
         Slasher slasherContract,
-        EigenPodManager eigenPodManagerContract,
-        DelayedWithdrawalRouter delayedWithdrawalRouterContract
+        EigenPodManager eigenPodManagerContract
     ) internal view {
         require(delegationContract.slasher() == slasher, "delegation: slasher address not set correctly");
         require(
@@ -412,11 +371,6 @@ contract Deployer_M1 is Script, Test {
             eigenPodManagerContract.slasher() == slasher,
             "eigenPodManager: slasher contract address not set correctly"
         );
-
-        require(
-            delayedWithdrawalRouterContract.eigenPodManager() == eigenPodManager,
-            "delayedWithdrawalRouterContract: eigenPodManager address not set correctly"
-        );
     }
 
     function _verifyImplementationsSetCorrectly() internal view {
@@ -442,12 +396,6 @@ contract Deployer_M1 is Script, Test {
             ) == address(eigenPodManagerImplementation),
             "eigenPodManager: implementation set incorrectly"
         );
-        require(
-            eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter)))
-            ) == address(delayedWithdrawalRouterImplementation),
-            "delayedWithdrawalRouter: implementation set incorrectly"
-        );
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
             require(
@@ -472,10 +420,6 @@ contract Deployer_M1 is Script, Test {
 
         require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");
         require(eigenPodBeacon.owner() == executorMultisig, "eigenPodBeacon: owner not set correctly");
-        require(
-            delayedWithdrawalRouter.owner() == executorMultisig,
-            "delayedWithdrawalRouter: owner not set correctly"
-        );
     }
 
     function _checkPauserInitializations() internal view {
@@ -488,10 +432,6 @@ contract Deployer_M1 is Script, Test {
         require(
             eigenPodManager.pauserRegistry() == eigenLayerPauserReg,
             "eigenPodManager: pauser registry not set correctly"
-        );
-        require(
-            delayedWithdrawalRouter.pauserRegistry() == eigenLayerPauserReg,
-            "delayedWithdrawalRouter: pauser registry not set correctly"
         );
 
         require(eigenLayerPauserReg.isPauser(operationsMultisig), "pauserRegistry: operationsMultisig is not pauser");
@@ -519,37 +459,22 @@ contract Deployer_M1 is Script, Test {
         // // pause *all of the proof-related functionality* (everything that can be paused other than creation of EigenPods)
         // uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS = (2**1) + (2**2) + (2**3) + (2**4); /* = 30 */
         // // pause *nothing*
-        // uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = 0;
         require(strategyManager.paused() == 0, "strategyManager: init paused status set incorrectly");
         require(slasher.paused() == type(uint256).max, "slasher: init paused status set incorrectly");
         require(delegation.paused() == type(uint256).max, "delegation: init paused status set incorrectly");
         require(eigenPodManager.paused() == 30, "eigenPodManager: init paused status set incorrectly");
-        require(delayedWithdrawalRouter.paused() == 0, "delayedWithdrawalRouter: init paused status set incorrectly");
     }
 
     function _verifyInitializationParams() internal {
         // // one week in blocks -- 50400
         // uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
-        // uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
         // require(strategyManager.withdrawalDelayBlocks() == 7 days / 12 seconds,
         //     "strategyManager: withdrawalDelayBlocks initialized incorrectly");
-        // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
-        //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
         // uint256 REQUIRED_BALANCE_WEI = 32 ether;
 
         require(
             strategyManager.strategyWhitelister() == operationsMultisig,
             "strategyManager: strategyWhitelister address not set correctly"
-        );
-
-        require(
-            eigenPodManager.beaconChainOracle() == IBeaconChainOracle(address(0)),
-            "eigenPodManager: eigenPodBeacon contract address not set correctly"
-        );
-
-        require(
-            delayedWithdrawalRouter.eigenPodManager() == eigenPodManager,
-            "delayedWithdrawalRouter: eigenPodManager set incorrectly"
         );
 
         require(
@@ -564,10 +489,6 @@ contract Deployer_M1 is Script, Test {
         require(
             eigenPodImplementation.eigenPodManager() == eigenPodManager,
             " eigenPodImplementation: eigenPodManager contract address not set correctly"
-        );
-        require(
-            eigenPodImplementation.delayedWithdrawalRouter() == delayedWithdrawalRouter,
-            " eigenPodImplementation: delayedWithdrawalRouter contract address not set correctly"
         );
 
         string memory config_data = vm.readFile(deployConfigPath);

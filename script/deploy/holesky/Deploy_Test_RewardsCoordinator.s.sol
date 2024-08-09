@@ -32,7 +32,7 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized({isInitialDeployment: true});
+        _verifyContractsInitialized();
         _verifyInitializationParams();
 
         logAndOutputContractAddresses("script/output/holesky/Deploy_RewardsCoordinator.holesky.config.json");

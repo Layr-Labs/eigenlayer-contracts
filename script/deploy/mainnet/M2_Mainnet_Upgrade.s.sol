@@ -34,7 +34,7 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized({isInitialDeployment: true});
+        _verifyContractsInitialized();
         _verifyInitializationParams();
 
         logAndOutputContractAddresses("script/output/mainnet/M2_mainnet_upgrade.output.json");
@@ -64,9 +64,7 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         // 2. Deploy Implementations
         eigenPodImplementation = new EigenPod(
             IETHPOSDeposit(ETHPOSDepositAddress),
-            delayedWithdrawalRouter,
             eigenPodManager,
-            EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             EIGENPOD_GENESIS_TIME
         );
         delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
@@ -79,7 +77,6 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
     }
 
     function _simulateUpgrade() internal {
@@ -112,19 +109,12 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
         );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation)
-        );
 
         // Second, configure additional settings and paused statuses
         delegationManager.setMinWithdrawalDelayBlocks(DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
         delegationManager.unpause(0);
         eigenPodManager.unpause(0);
 
-        eigenPodManager.setDenebForkTimestamp(EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP);
-        eigenPodManager.updateBeaconChainOracle(beaconOracle);
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
 
         vm.stopPrank();
@@ -174,15 +164,15 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             )
         );
 
-        txs[3] = Tx(
-            address(eigenLayerProxyAdmin),
-            0,
-            abi.encodeWithSelector(
-                ProxyAdmin.upgrade.selector, 
-                TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))), 
-                delayedWithdrawalRouterImplementation
-            )
-        );
+        // txs[3] = Tx(
+        //     address(eigenLayerProxyAdmin),
+        //     0,
+        //     abi.encodeWithSelector(
+        //         ProxyAdmin.upgrade.selector, 
+        //         TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))), 
+        //         delayedWithdrawalRouterImplementation
+        //     )
+        // );
 
         txs[4] = Tx(
             address(eigenLayerProxyAdmin),
@@ -211,18 +201,18 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         );
 
         // set beacon chain oracle on EigenPodManager
-        txs[7] = Tx(
-            address(eigenPodManager), 
-            0, // value
-            abi.encodeWithSelector(EigenPodManager.updateBeaconChainOracle.selector, beaconOracle)
-        );
+        // txs[7] = Tx(
+        //     address(eigenPodManager), 
+        //     0, // value
+        //     abi.encodeWithSelector(EigenPodManager.updateBeaconChainOracle.selector, beaconOracle)
+        // );
 
         // set Deneb fork timestamp on EigenPodManager
-        txs[8] = Tx(
-            address(eigenPodManager), 
-            0, // value
-            abi.encodeWithSelector(EigenPodManager.setDenebForkTimestamp.selector, EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP)
-        );
+        // txs[8] = Tx(
+        //     address(eigenPodManager), 
+        //     0, // value
+        //     abi.encodeWithSelector(EigenPodManager.setDenebForkTimestamp.selector, EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP)
+        // );
 
         // unpause everything on DelegationManager
         txs[9] = Tx(
@@ -288,7 +278,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         // Check correctness after upgrade
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized({isInitialDeployment: true});
+        _verifyContractsInitialized();
         _verifyInitializationParams();
         _postUpgradeChecks();
     }
@@ -325,7 +315,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         bytes[] memory validatorFieldsProofs;
         bytes32[][] memory validatorFields;
         cheats.startPrank(existingEigenPod.podOwner());
-        existingEigenPod.activateRestaking();
+        existingEigenPod.startCheckpoint(false);
         cheats.expectRevert("EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized");
         existingEigenPod.verifyWithdrawalCredentials(
             uint64(block.timestamp),

@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
-import "../../../src/contracts/interfaces/IBeaconChainOracle.sol";
 
 import "../../../src/contracts/core/StrategyManager.sol";
 import "../../../src/contracts/core/Slasher.sol";
@@ -15,7 +14,6 @@ import "../../../src/contracts/core/DelegationManager.sol";
 
 import "../../../src/contracts/pods/EigenPod.sol";
 import "../../../src/contracts/pods/EigenPodManager.sol";
-import "../../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "../../../src/contracts/permissions/PauserRegistry.sol";
 
@@ -41,16 +39,14 @@ contract M2Deploy is Script, Test {
     StrategyManager public strategyManagerImplementation;
     IEigenPodManager public eigenPodManager;
     EigenPodManager public eigenPodManagerImplementation;
-    IDelayedWithdrawalRouter public delayedWithdrawalRouter;
     IBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
 
     // Eigenlayer Proxy Admin
     ProxyAdmin public eigenLayerProxyAdmin;
 
-    // BeaconChain deposit contract & beacon chain oracle
+    // BeaconChain deposit contract
     IETHPOSDeposit public ethPOS;
-    address public beaconChainOracle;
 
     // RPC url to fork from for pre-upgrade state change tests
     string public rpcUrl;
@@ -95,9 +91,6 @@ contract M2Deploy is Script, Test {
             revert("Chain not supported");
         }
 
-        // Set beacon chain oracle, currently 0 address
-        beaconChainOracle = 0x0000000000000000000000000000000000000000;
-
         // Read json data
         string memory deployment_data = vm.readFile(m1DeploymentOutputPath);
         slasher = Slasher(stdJson.readAddress(deployment_data, ".addresses.slasher"));
@@ -113,7 +106,6 @@ contract M2Deploy is Script, Test {
         strategyWhitelister = strategyManager.strategyWhitelister();
         delegationManagerDomainSeparator = IDelegationManagerV0(address(delegation)).DOMAIN_SEPARATOR();
         numPods = eigenPodManager.numPods();
-        delayedWithdrawalRouter = EigenPod(payable(eigenPodBeacon.implementation())).delayedWithdrawalRouter();
 
         // Set chain-specific values
         IStrategy[] memory strategyArray = new IStrategy[](1);
@@ -159,9 +151,7 @@ contract M2Deploy is Script, Test {
         );
         eigenPodImplementation = new EigenPod({
             _ethPOS: ethPOS,
-            _delayedWithdrawalRouter: delayedWithdrawalRouter,
             _eigenPodManager: eigenPodManager,
-            _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR: 32 gwei,
             _GENESIS_TIME: 1616508000
         });
 
@@ -175,7 +165,6 @@ contract M2Deploy is Script, Test {
         vm.serializeAddress(deployed_addresses, "slasher", address(slasher));
         vm.serializeAddress(deployed_addresses, "delegation", address(delegation));
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
-        vm.serializeAddress(deployed_addresses, "delayedWithdrawalRouter", address(delayedWithdrawalRouter));
         vm.serializeAddress(deployed_addresses, "eigenPodManager", address(eigenPodManager));
         vm.serializeAddress(deployed_addresses, "eigenPodBeacon", address(eigenPodBeacon));
         vm.serializeAddress(deployed_addresses, "ethPOS", address(ethPOS));
@@ -247,7 +236,7 @@ contract M2Deploy is Script, Test {
     // Call contracts to ensure that all simple view functions return the same values (e.g. the return value of `StrategyManager.delegation()` hasn’t changed)
     // StrategyManager: delegation, eigenPodManager, slasher, strategyWhitelister, withdrawalDelayBlocks all unchanged
     // DelegationManager: DOMAIN_SEPARATOR, strategyManager, slasher, eigenPodManager  all unchanged
-    // EigenPodManager: ethPOS, eigenPodBeacon, strategyManager, slasher, beaconChainOracle, numPods  all unchanged
+    // EigenPodManager: ethPOS, eigenPodBeacon, strategyManager, slasher, numPods  all unchanged
     // delegationManager is now correct (added immutable)
     // Call contracts to make sure they are still “initialized” (ensure that trying to call initializer reverts)
     function _verifyStorageSlots() internal view {
@@ -276,10 +265,6 @@ contract M2Deploy is Script, Test {
         require(eigenPodManager.eigenPodBeacon() == eigenPodBeacon, "eigenPodManager.eigenPodBeacon incorrect");
         require(eigenPodManager.strategyManager() == strategyManager, "eigenPodManager.strategyManager incorrect");
         require(eigenPodManager.slasher() == slasher, "eigenPodManager.slasher incorrect");
-        require(
-            address(eigenPodManager.beaconChainOracle()) == beaconChainOracle,
-            "eigenPodManager.beaconChainOracle incorrect"
-        );
         require(eigenPodManager.numPods() == numPods, "eigenPodManager.numPods incorrect");
         require(EigenPodManagerStorage(address(eigenPodManager)).delegationManager() == delegation, "eigenPodManager.delegationManager incorrect");
     }
@@ -308,7 +293,6 @@ contract M2Deploy is Script, Test {
 
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         EigenPodManager(address(eigenPodManager)).initialize(
-            IBeaconChainOracle(address(this)),
             address(this),
             PauserRegistry(address(this)),
             0
@@ -323,69 +307,15 @@ contract M2Deploy is Script, Test {
         );
         require(eigenPodManager.hasPod(eigenPodDepositor) == hasPod, "eigenPodManager.hasPod incorrect");
         require(eigenPod.podOwner() == eigenPodOwner, "eigenPod.podOwner incorrect");
-        require(
-            eigenPod.mostRecentWithdrawalTimestamp() == mostRecentWithdrawalBlock,
-            "eigenPod.mostRecentWithdrawalTimestamp incorrect"
-        ); // Timestmap replace by block number in storage
-        require(!eigenPod.hasRestaked(), "eigenPod.hasRestaked incorrect");
 
         // Unpause eigenpods verify credentials
         uint256 paused = IPausable(address(eigenPodManager)).paused();
         cheats.prank(IPauserRegistry(IPausable(address(eigenPodManager)).pauserRegistry()).unpauser());
         IPausable(address(eigenPodManager)).unpause(paused ^ (1 << 2)); // eigenpods verify credentials on 2nd bit
 
-        // Get values to check post activating restaking
-        uint256 podBalanceBefore = address(eigenPod).balance;
-        uint256 userWithdrawalsLength = delayedWithdrawalRouter.userWithdrawalsLength(eigenPodDepositor);
-
-        // Activate restaking and expect emit
         cheats.prank(eigenPodOwner);
-        cheats.expectEmit(true, true, true, true);
-        emit RestakingActivated(eigenPodOwner);
-        eigenPod.activateRestaking();
-
-        // Check updated storage values
-        require(eigenPod.hasRestaked(), "eigenPod.hasRestaked not set to true");
-        require(address(eigenPod).balance == 0, "eigenPod balance not 0 after activating restaking");
-        require(eigenPod.nonBeaconChainETHBalanceWei() == 0, "non beacon chain eth balance not 0");
-        require(
-            eigenPod.mostRecentWithdrawalTimestamp() == block.timestamp,
-            "eigenPod.mostRecentWithdrawalTimestamp not updated"
-        );
-        require(
-            eigenPod.mostRecentWithdrawalTimestamp() > mostRecentWithdrawalBlock,
-            "eigenPod.mostRecentWithdrawalTimestamp not updated"
-        );
-
-        // Check that delayed withdrawal has been created
-        require(
-            delayedWithdrawalRouter.userWithdrawalsLength(eigenPodDepositor) == userWithdrawalsLength + 1,
-            "delayedWithdrawalRouter.userWithdrawalsLength not incremented"
-        );
-        IDelayedWithdrawalRouter.DelayedWithdrawal memory delayedWithdrawal = delayedWithdrawalRouter
-            .userDelayedWithdrawalByIndex(eigenPodDepositor, userWithdrawalsLength);
-        require(delayedWithdrawal.amount == podBalanceBefore, "delayedWithdrawal.amount incorrect");
-        require(delayedWithdrawal.blockCreated == block.number, "delayedWithdrawal.blockCreated incorrect");
+        eigenPod.startCheckpoint(false);
     }
-
-    // Existing LST depositor – ensure that strategy length and shares are all identical
-    // Existing LST depositor – ensure that an existing queued withdrawal remains queued
-    // Check from stored root, and recalculate root and make sure it matches
-    // Check that completing the withdrawal results in the same behavior (same transfer of ERC20 tokens)
-    // Check that staker nonce & numWithdrawalsQueued remains the same as before the upgrade
-    // Existing LST depositor – queuing a withdrawal before/after the upgrade has the same effects (same decrease in shares, resultant withdrawal root)
-    // Existing EigenPod owner – EigenPodManager.ownerToPod remains the same
-    // Existing EigenPod owner –  EigenPodManager.hasPod remains the same
-    // Existing EigenPod owner –  EigenPod.podOwner remains the same
-    // Existing EigenPod owner –  EigenPod.mostRecentWithdrawalTimestamp (after upgrade) == EigenPod.mostRecentWithdrawalBlock (before upgrade)
-    // Existing EigenPod owner – EigenPod.hasRestaked remains false
-    // Can call EigenPod.activateRestaking and it correctly:
-    // Sends all funds in EigenPod (need to make sure it has nonzero balance beforehand)
-    // Sets `hasRestaked` to ‘true’
-    // Emits a ‘RestakingActivated’ event
-    // EigenPod.mostRecentWithdrawalTimestamp updates correctly
-    // EigenPod: ethPOS, delayedWithdrawalRouter, eigenPodManager
-    event RestakingActivated(address indexed podOwner);
 }
 
 interface IDelegationManagerV0 {

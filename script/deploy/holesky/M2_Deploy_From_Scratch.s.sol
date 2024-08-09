@@ -26,7 +26,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized({isInitialDeployment: true});
+        _verifyContractsInitialized();
         _verifyInitializationParams();
 
         logAndOutputContractAddresses("script/output/holesky/M2_deploy_from_scratch.holesky.config.json");
@@ -67,16 +67,10 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        delayedWithdrawalRouter = DelayedWithdrawalRouter(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             IETHPOSDeposit(ETHPOSDepositAddress),
-            delayedWithdrawalRouter,
             eigenPodManager,
-            EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             EIGENPOD_GENESIS_TIME
         );
 
@@ -92,7 +86,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
@@ -151,22 +144,9 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                beaconOracle,
                 msg.sender, // initialOwner is msg.sender for now to set forktimestamp later
                 eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
-            )
-        );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation),
-            abi.encodeWithSelector(
-                DelayedWithdrawalRouter.initialize.selector,
-                executorMultisig, // initialOwner
-                eigenLayerPauserReg,
-                DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS,
-                DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS
             )
         );
 
@@ -205,9 +185,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         // Add strategies to whitelist and set whitelister to STRATEGY_MANAGER_WHITELISTER
         strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
         strategyManager.setStrategyWhitelister(STRATEGY_MANAGER_WHITELISTER);
-
-        // Fork timestamp config
-        eigenPodManager.setDenebForkTimestamp(EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP);
 
         // Transfer ownership
         strategyManager.transferOwnership(executorMultisig);

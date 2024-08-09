@@ -1739,8 +1739,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
     /// @notice tests with earnerIndex and tokenIndex set to max value and using alternate claim proofs
     function testFuzz_processClaim_WhenMaxEarnerIndexAndTokenIndex(
         bool setClaimerFor,
-        address claimerFor,
-        uint8 numShift
+        address claimerFor
     ) public filterFuzzedAddressInputs(claimerFor) {
         // Hardcode earner address to earner in alternate claim proofs
         earner = 0x25A1B7322f9796B26a4Bec125913b34C292B28D6;
@@ -1808,8 +1807,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
     /// @notice tests with single token leaf for the earner's subtree. tokenTreeProof for the token in the claim should be empty
     function testFuzz_processClaim_WhenSingleTokenLeaf(
         bool setClaimerFor,
-        address claimerFor,
-        uint8 numShift
+        address claimerFor
     ) public filterFuzzedAddressInputs(claimerFor) {
         // if setClaimerFor is true, set the earners claimer to the fuzzed address
         address claimer;
@@ -1871,8 +1869,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
     /// @notice tests with single earner leaf in the merkle tree. earnerTreeProof in claim should be empty
     function testFuzz_processClaim_WhenSingleEarnerLeaf(
         bool setClaimerFor,
-        address claimerFor,
-        uint8 numShift
+        address claimerFor
     ) public filterFuzzedAddressInputs(claimerFor) {
         // Hardcode earner address to earner in alternate claim proofs
         earner = 0x0D6bA28b9919CfCDb6b233469Cc5Ce30b979e08E;

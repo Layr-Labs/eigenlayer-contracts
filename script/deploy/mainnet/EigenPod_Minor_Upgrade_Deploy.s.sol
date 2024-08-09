@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
-import "../../../src/contracts/interfaces/IBeaconChainOracle.sol";
 
 import "../../../src/contracts/core/StrategyManager.sol";
 import "../../../src/contracts/core/Slasher.sol";
@@ -15,7 +14,6 @@ import "../../../src/contracts/core/DelegationManager.sol";
 
 import "../../../src/contracts/pods/EigenPod.sol";
 import "../../../src/contracts/pods/EigenPodManager.sol";
-import "../../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "../../../src/contracts/permissions/PauserRegistry.sol";
 
@@ -41,16 +39,14 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
     StrategyManager public strategyManagerImplementation;
     IEigenPodManager public eigenPodManager;
     EigenPodManager public eigenPodManagerImplementation;
-    IDelayedWithdrawalRouter public delayedWithdrawalRouter;
     IBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
 
     // Eigenlayer Proxy Admin
     ProxyAdmin public eigenLayerProxyAdmin;
 
-    // BeaconChain deposit contract & beacon chain oracle
+    // BeaconChain deposit contract
     IETHPOSDeposit public ethPOS;
-    address public beaconChainOracle;
 
     // RPC url to fork from for pre-upgrade state change tests
     string public rpcUrl;
@@ -84,8 +80,7 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
         eigenLayerProxyAdmin = ProxyAdmin(stdJson.readAddress(deployment_data, ".addresses.eigenLayerProxyAdmin"));
 
         genesisTimeBefore = EigenPod(payable(eigenPodBeacon.implementation())).GENESIS_TIME();
-        maxRestakedBalanceBefore = EigenPod(payable(eigenPodBeacon.implementation())).MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR();
-        delayedWithdrawalRouter = EigenPod(payable(eigenPodBeacon.implementation())).delayedWithdrawalRouter();
+        // maxRestakedBalanceBefore = EigenPod(payable(eigenPodBeacon.implementation())).MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR();
 
         // Begin deployment
         vm.startBroadcast();
@@ -93,9 +88,8 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
         // Deploy new implmementation contracts
         eigenPodImplementation = new EigenPod({
             _ethPOS: ethPOS,
-            _delayedWithdrawalRouter: delayedWithdrawalRouter,
             _eigenPodManager: eigenPodManager,
-            _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR: maxRestakedBalanceBefore,
+            // _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR: maxRestakedBalanceBefore,
             _GENESIS_TIME: genesisTimeBefore
         });
 
@@ -143,25 +137,22 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
         // Check that state is correct
         require(eigenPodBeacon.implementation() == address(eigenPodImplementation),
             "implementation set incorrectly");
-        require(eigenPodImplementation.delayedWithdrawalRouter() == delayedWithdrawalRouter,
-            "delayedWithdrawalRouter set incorrectly");
         require(eigenPodImplementation.ethPOS() == ethPOS,
             "ethPOS set incorrectly");
         require(eigenPodImplementation.eigenPodManager() == eigenPodManager,
             "eigenPodManager set incorrectly");
         // check that values are unchanged
-        require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == maxRestakedBalanceBefore,
-            "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR set incorrectly");
+        // require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == maxRestakedBalanceBefore,
+        //     "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR set incorrectly");
         require(eigenPodImplementation.GENESIS_TIME() == genesisTimeBefore,
             "GENESIS_TIME set incorrectly");
         // redundant checks on correct values
-        require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == 32 gwei,
-            "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR set incorrectly");
+        // require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == 32 gwei,
+        //     "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR set incorrectly");
         require(eigenPodImplementation.GENESIS_TIME() == 1606824023,
             "GENESIS_TIME set incorrectly");
 
 
-        require(address(EigenPod(payable(eigenPodBeacon.implementation())).delayedWithdrawalRouter())  == 0x7Fe7E9CC0F274d2435AD5d56D5fa73E47F6A23D8);
         require(address(EigenPod(payable(eigenPodBeacon.implementation())).eigenPodManager())  == 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338);
         require(address(EigenPod(payable(eigenPodBeacon.implementation())).ethPOS())  == 0x00000000219ab540356cBB839Cbe05303d7705Fa);
     }

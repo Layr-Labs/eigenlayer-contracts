@@ -17,10 +17,20 @@ abstract contract EigenPodPausingConstants {
 
     /// @notice Index for flag that pauses the deposit related functions *of the EigenPods* when set. see EigenPod code for details.
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_CREDENTIALS = 2;
-    /// @notice Index for flag that pauses the `verifyBalanceUpdate` function *of the EigenPods* when set. see EigenPod code for details.
-    uint8 internal constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
-    /// @notice Index for flag that pauses the `verifyBeaconChainFullWithdrawal` function *of the EigenPods* when set. see EigenPod code for details.
-    uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
+
+    // Deprecated
+    // uint8 internal constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
+
+    // Deprecated
+    // uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
+
     /// @notice Pausability for EigenPod's "accidental transfer" withdrawal methods
     uint8 internal constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
+
+    uint8 internal constant PAUSED_START_CHECKPOINT = 6;
+
+    /// @notice Index for flag that pauses the `verifyCheckpointProofs` function *of the EigenPods* when set. see EigenPod code for details.
+    uint8 internal constant PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS = 7;
+
+    uint8 internal constant PAUSED_VERIFY_STALE_BALANCE = 8;
 }

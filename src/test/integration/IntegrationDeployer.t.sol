@@ -17,12 +17,10 @@ import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
-import "src/contracts/pods/DelayedWithdrawalRouter.sol";
 import "src/contracts/permissions/PauserRegistry.sol";
 
 import "src/test/mocks/EmptyContract.sol";
 import "src/test/mocks/ETHDepositMock.sol";
-import "src/test/integration/mocks/BeaconChainOracleMock.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
 import "src/test/integration/users/User.t.sol";
@@ -42,6 +40,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     uint256 holeskyForkId;
     uint64 constant DENEB_FORK_TIMESTAMP = 1705473120;
 
+    // Beacon chain genesis time when running locally
+    // Multiple of 12 for sanity's sake
+    uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
+    uint64 constant GENESIS_TIME_MAINNET = 1606824023;
 
     TimeMachine public timeMachine;
 
@@ -59,7 +61,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Mock Contracts to deploy
     ETHPOSDepositMock ethPOSDeposit;
-    BeaconChainOracleMock public beaconChainOracle;
     BeaconChainMock public beaconChain;
 
     // Admin Addresses
@@ -100,8 +101,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
     uint8 internal constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
-    // DelayedWithdrawalRouter
-    uint8 internal constant PAUSED_DELAYED_WITHDRAWAL_CLAIMS = 0;
 
     // Flags
     uint constant FLAG = 1;
@@ -223,7 +222,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy mocks
         EmptyContract emptyContract = new EmptyContract();
         ethPOSDeposit = new ETHPOSDepositMock();
-        beaconChainOracle = new BeaconChainOracleMock();
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -241,9 +239,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        delayedWithdrawalRouter = DelayedWithdrawalRouter(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
         avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -254,10 +249,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            0
+            GENESIS_TIME_LOCAL
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
@@ -273,7 +266,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
         strategyFactoryImplementation = new StrategyFactory(strategyManager);
 
@@ -324,22 +316,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                address(beaconChainOracle),
                 eigenLayerReputedMultisig, // initialOwner
                 eigenLayerPauserReg,
                 0 // initialPausedStatus
-            )
-        );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation),
-            abi.encodeWithSelector(
-                DelayedWithdrawalRouter.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                eigenLayerPauserReg,
-                0, // initialPausedStatus
-                withdrawalDelayBlocks
             )
         );
         // AVSDirectory
@@ -389,14 +368,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
 
-        // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
+        // Create time machine and beacon chain. Set block time to beacon chain genesis time
+        cheats.warp(GENESIS_TIME_LOCAL);
         timeMachine = new TimeMachine();
-        timeMachine.setProofGenStartTime(2 hours);
-        // Create mock beacon chain / proof gen interface
-        beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
-
-        //set deneb fork timestamp
-        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
+        beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_LOCAL);
     }
 
     /**
@@ -414,10 +389,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            0
+            GENESIS_TIME_MAINNET
         );
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
         // Deploy AVSDirectory, contract has not been deployed on mainnet yet
@@ -436,7 +409,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
@@ -459,11 +431,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
-        );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation)
         );
         // AVSDirectory, upgrade and initalized
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -494,14 +461,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManager.unpause(0);
         strategyManager.unpause(0);
 
-        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
-        timeMachine.setProofGenStartTime(0);
-        beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
-
-        if (eigenPodManager.denebForkTimestamp() == type(uint64).max) {
-            //set deneb fork timestamp if not set
-            eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP);
-        }
         cheats.stopPrank();
 
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
@@ -524,9 +483,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
-            delayedWithdrawalRouter,
             eigenPodManager,
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             0
         );
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
@@ -546,7 +503,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
@@ -569,11 +525,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
-        );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation)
         );
         // AVSDirectory, upgrade and initalized
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -604,14 +555,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManager.unpause(0);
         strategyManager.unpause(0);
 
-        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
-        timeMachine.setProofGenStartTime(0);
-        beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
-
-        if (eigenPodManager.denebForkTimestamp() == type(uint64).max) {
-            //set deneb fork timestamp if not set
-            eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP);
-        }
         cheats.stopPrank();
 
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
@@ -729,50 +672,43 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 allTokens.push(strategy.underlyingToken());
             }
 
-            // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
+            // Create time machine and mock beacon chain
             timeMachine = new TimeMachine();
-            beaconChainOracle = new BeaconChainOracleMock();
-            // Create mock beacon chain / proof gen interface
-            beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
+            beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_MAINNET);
         } else if (forkType == HOLESKY) {
             revert("_deployOrFetchContracts - holesky tests currently broken sorry");
-            // cheats.selectFork(holeskyForkId);
-            string memory deploymentInfoPath = "script/configs/holesky/Holesky_current_deployment.config.json";
-            _parseDeployedContracts(deploymentInfoPath);
+            // // cheats.selectFork(holeskyForkId);
+            // string memory deploymentInfoPath = "script/configs/holesky/Holesky_current_deployment.config.json";
+            // _parseDeployedContracts(deploymentInfoPath);
 
-            // Add deployed strategies to lstStrats and allStrats
-            for (uint i; i < deployedStrategyArray.length; i++) {
-                IStrategy strategy = IStrategy(deployedStrategyArray[i]);
+            // // Add deployed strategies to lstStrats and allStrats
+            // for (uint i; i < deployedStrategyArray.length; i++) {
+            //     IStrategy strategy = IStrategy(deployedStrategyArray[i]);
 
-                if (tokensNotTested[address(strategy.underlyingToken())]) {
-                    continue;
-                }
+            //     if (tokensNotTested[address(strategy.underlyingToken())]) {
+            //         continue;
+            //     }
 
-                // Add to lstStrats and allStrats
-                lstStrats.push(strategy);
-                allStrats.push(strategy);
-                allTokens.push(strategy.underlyingToken());
-            }
+            //     // Add to lstStrats and allStrats
+            //     lstStrats.push(strategy);
+            //     allStrats.push(strategy);
+            //     allTokens.push(strategy.underlyingToken());
+            // }
 
-            // Update deposit contract to be a mock
-            ethPOSDeposit = new ETHPOSDepositMock();
-            eigenPodImplementation = new EigenPod(
-                ethPOSDeposit,
-                eigenPodImplementation.delayedWithdrawalRouter(),
-                eigenPodImplementation.eigenPodManager(),
-                eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(),
-                0
-            );
-            // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
-            timeMachine = new TimeMachine();
-            beaconChainOracle = new BeaconChainOracleMock();
-            // Create mock beacon chain / proof gen interface
-            beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
+            // // Update deposit contract to be a mock
+            // ethPOSDeposit = new ETHPOSDepositMock();
+            // eigenPodImplementation = new EigenPod(
+            //     ethPOSDeposit,
+            //     eigenPodImplementation.eigenPodManager(),
+            //     0
+            // );
+            // // Create time machine and mock beacon chain
+            // timeMachine = new TimeMachine();
+            // beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_MAINNET);
 
-            cheats.startPrank(executorMultisig);
-            eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
-            eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
-            cheats.stopPrank();
+            // cheats.startPrank(executorMultisig);
+            // eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
+            // cheats.stopPrank();
 
         } else {
             revert("_deployOrFetchContracts: unimplemented forkType");
@@ -914,8 +850,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             strategies = new IStrategy[](1);
             tokenBalances = new uint[](1);
 
-            // Award the user with a random multiple of 32 ETH
-            uint amount = 32 ether * _randUint({ min: 1, max: 3 });
+            // Award the user with a random amount of ETH
+            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
+            uint amount = 32 ether * _randUint({ min: 1, max: 5 });
             cheats.deal(address(user), amount);
 
             strategies[0] = BEACONCHAIN_ETH_STRAT;
@@ -936,8 +873,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 strategies[i] = strat;
             }
 
-            // Award the user with a random multiple of 32 ETH
-            uint amount = 32 ether * _randUint({ min: 1, max: 3 });
+            // Award the user with a random amount of ETH
+            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
+            uint amount = 32 ether * _randUint({ min: 1, max: 5 });
             cheats.deal(address(user), amount);
 
             // Add BEACONCHAIN_ETH_STRAT and eth balance
