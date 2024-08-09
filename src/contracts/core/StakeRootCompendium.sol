@@ -23,8 +23,11 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     address public verifier;
     bytes32 public imageId;
     uint256 public numAVSs;
-
+    
+    // operatorSetId => strategy => multiplier
     mapping(uint32 => mapping(IStrategy => uint96)) public operatorSetIdToStrategyToMultiplier;
+    // avs => list of strategies
+    mapping(address => IStrategy[]) public avsToStrategies;
     mapping(address => bool) public isAVS;
 
     modifier isOperatorSet(address avs, uint32 operatorSetId) {
@@ -114,17 +117,6 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         }
     }
 
-
-    function getMultipliers(
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies
-    ) public view returns (uint96[] memory) {
-        uint96[] memory multipliers = new uint96[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; i++) {
-            multipliers[i] = operatorSetIdToStrategyToMultiplier[operatorSetId][strategies[i]];
-        }
-        return multipliers;
-    }
 
     function setVerifier(address _verifier) external onlyOwner {
         address oldVerifier = verifier; 
