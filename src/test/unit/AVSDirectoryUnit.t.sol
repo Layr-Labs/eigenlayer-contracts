@@ -1365,6 +1365,20 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
     }
 
     /// @notice Verifies that an operator cannot cancel the same salt twice
+    function testFuzz_revert_whenSaltCancelledTwice(bytes32 salt) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
+        cheats.startPrank(operator);
+        avsDirectory.cancelSalt(salt);
+
+        cheats.expectRevert("AVSDirectory.cancelSalt: cannot cancel spent salt");
+        avsDirectory.cancelSalt(salt);
+        cheats.stopPrank();
+    }
+
+    /// @notice Verifies that an operator cannot cancel the same salt twice
     function testFuzz_revert_whenCancellingSaltUsedToRegister(bytes32 salt) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");

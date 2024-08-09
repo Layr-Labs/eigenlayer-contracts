@@ -1,6 +1,6 @@
 [middleware-repo]: https://github.com/Layr-Labs/eigenlayer-middleware/
 
-## EigenLayer M2 Docs
+## EigenLayer Docs - v0.4.0 Release
 
 This repo contains the EigenLayer core contracts, which enable restaking of liquid staking tokens (LSTs) and beacon chain ETH to secure new services, called AVSs (actively validated services). For more info on AVSs, check out the EigenLayer middleware contracts [here][middleware-repo].
 
@@ -33,16 +33,14 @@ This document provides an overview of system components, contracts, and user rol
 | -------- | -------- | -------- |
 | [`EigenPodManager.sol`](../src/contracts/pods/EigenPodManager.sol) | Singleton | Transparent proxy |
 | [`EigenPod.sol`](../src/contracts/pods/EigenPod.sol) | Instanced, deployed per-user | Beacon proxy |
-| [`DelayedWithdrawalRouter.sol`](../src/contracts/pods/DelayedWithdrawalRouter.sol) | Singleton | Transparent proxy |
-| [`succinctlabs/EigenLayerBeaconOracle.sol`](https://github.com/succinctlabs/telepathy-contracts/blob/main/external/integrations/eigenlayer/EigenLayerBeaconOracle.sol) | Singleton | UUPS proxy | [`0x40B1...9f2c`](https://goerli.etherscan.io/address/0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c) |
 
 These contracts work together to enable native ETH restaking:
-* Users deploy `EigenPods` via the `EigenPodManager`, which contain beacon chain state proof logic used to verify a validator's withdrawal credentials, balance, and exit. An `EigenPod's` main role is to serve as the withdrawal address for one or more of a user's validators.
+* Users deploy `EigenPods` via the `EigenPodManager`, which contain beacon chain state proof logic used to verify a validator's withdrawal credentials and current balances. An `EigenPod's` main role is to serve as the fee recipient and/or withdrawal credentials for one or more of a user's validators.
 * The `EigenPodManager` handles `EigenPod` creation and accounting+interactions between users with restaked native ETH and the `DelegationManager`.
-* The `DelayedWithdrawalRouter` imposes a 7-day delay on completing partial beacon chain withdrawals from an `EigenPod`. This is primarily to add a stopgap against a hack being able to instantly withdraw funds (note that all withdrawals from EigenLayer -- other than partial withdrawals earned by validators -- are initiated via the `DelegationManager`).
-* The `EigenLayerBeaconOracle` provides beacon chain block roots for use in various proofs. The oracle is supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
 
-See full documentation in [`/core/EigenPodManager.md`](./core/EigenPodManager.md).
+See full documentation in:
+* [`/core/EigenPodManager.md`](./core/EigenPodManager.md)
+* [`/core/EigenPod.md`](./core/EigenPod.md)
 
 #### StrategyManager
 
@@ -123,8 +121,7 @@ Stakers can restake any combination of these: a Staker may hold ALL of these ass
 * Stakers **withdraw** assets via the DelegationManager, *no matter what assets they're withdrawing*
 * Stakers **delegate** to an Operator via the DelegationManager
 
-Unimplemented as of M2:
-* Stakers earn yield by delegating to an Operator as the Operator provides services to an AVS
+*Unimplemented as of v0.4.0:*
 * Stakers are at risk of being slashed if the Operator misbehaves
 
 ##### Operator
@@ -136,8 +133,7 @@ An Operator is a user who helps run the software built on top of EigenLayer (AVS
 * Operators can **deposit** and **withdraw** assets just like Stakers can
 * Operators can opt in to providing services for an AVS using that AVS's middleware contracts. See the [EigenLayer middleware][middleware-repo] repo for more details.
 
-*Unimplemented as of M2:*
-* Operators earn fees as part of the services they provide
+*Unimplemented as of v0.4.0:*
 * Operators may be slashed by the services they register with (if they misbehave)
 
 ---
@@ -170,18 +166,18 @@ This flow is mostly useful if a Staker wants to change which Operator they are d
 
 Completing a queued withdrawal as tokens is roughly the same for both native ETH and LSTs. 
 
-However, note that *before* a withdrawal can be completed, native ETH stakers will need to perform additional steps, detailed in the "Withdrawal Processing" diagrams below. 
+However, note that *before* a withdrawal can be completed, native ETH stakers will need to perform additional steps, detailed in the diagrams below. 
 
 ![.](./images/Staker%20Flow%20Diagrams/Complete%20Withdrawal%20as%20Tokens.png)
 
-##### Withdrawal Processing: Validator Exits
+##### `EigenPods`: Processing Validator Exits
 
 If a Staker wants to fully withdraw from the beacon chain, they need to perform these additional steps before their withdrawal is completable:
 
 ![.](./images/Staker%20Flow%20Diagrams/Validator%20Exits.png)
 
-##### Withdrawal Processing: Partial Beacon Chain Withdrawals
+##### `EigenPods`: Processing Validator Yield
 
-If a Staker wants to withdraw consensus rewards from the beacon chain, they do NOT go through the `DelegationManager`. This is the only withdrawal type that is not initiated in the `DelegationManager`:
+As the Staker's `EigenPod` accumulates consensus layer or execution layer yield, the `EigenPod's` balance will increase. The Staker can Checkpoint their validator to claim this yield as shares, which can either remain staked in EigenLayer or be withdrawn via the `DelegationManager` withdrawal queue:
 
-![.](./images/Staker%20Flow%20Diagrams/Partial%20Withdrawals.png)
+![.](./images/Staker%20Flow%20Diagrams/Validator%20Yield.png)

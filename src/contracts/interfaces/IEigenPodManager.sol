@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "./IETHPOSDeposit.sol";
 import "./IStrategyManager.sol";
 import "./IEigenPod.sol";
-import "./IBeaconChainOracle.sol";
 import "./IPausable.sol";
 import "./ISlasher.sol";
 import "./IStrategy.sol";
@@ -16,9 +15,6 @@ import "./IStrategy.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IEigenPodManager is IPausable {
-    /// @notice Emitted to notify the update of the beaconChainOracle address
-    event BeaconOracleUpdated(address indexed newOracleAddress);
-
     /// @notice Emitted to notify the deployment of an EigenPod
     event PodDeployed(address indexed eigenPod, address indexed podOwner);
 
@@ -27,6 +23,9 @@ interface IEigenPodManager is IPausable {
 
     /// @notice Emitted when the balance of an EigenPod is updated
     event PodSharesUpdated(address indexed podOwner, int256 sharesDelta);
+
+    /// @notice Emitted every time the total shares of a pod are updated
+    event NewTotalShares(address indexed podOwner, int256 newTotalShares);
 
     /// @notice Emitted when a withdrawal of beacon chain ETH is completed
     event BeaconChainETHWithdrawalCompleted(
@@ -37,8 +36,6 @@ interface IEigenPodManager is IPausable {
         address withdrawer,
         bytes32 withdrawalRoot
     );
-
-    event DenebForkTimestampUpdated(uint64 newValue);
 
     /**
      * @notice Creates an EigenPod for the sender.
@@ -66,13 +63,6 @@ interface IEigenPodManager is IPausable {
      */
     function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external;
 
-    /**
-     * @notice Updates the oracle contract that provides the beacon chain state root
-     * @param newBeaconChainOracle is the new oracle contract being pointed to
-     * @dev Callable only by the owner of this contract (i.e. governance)
-     */
-    function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external;
-
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
     function ownerToPod(address podOwner) external view returns (IEigenPod);
 
@@ -84,12 +74,6 @@ interface IEigenPodManager is IPausable {
 
     /// @notice Beacon proxy to which the EigenPods point
     function eigenPodBeacon() external view returns (IBeacon);
-
-    /// @notice Oracle contract that provides updates to the beacon chain's state
-    function beaconChainOracle() external view returns (IBeaconChainOracle);
-
-    /// @notice Returns the beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
-    function getBlockRootAtTimestamp(uint64 timestamp) external view returns (bytes32);
 
     /// @notice EigenLayer's StrategyManager contract
     function strategyManager() external view returns (IStrategyManager);
@@ -141,17 +125,4 @@ interface IEigenPodManager is IPausable {
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
-
-    /**
-     * @notice the deneb hard fork timestamp used to determine which proof path to use for proving a withdrawal
-     */
-    function denebForkTimestamp() external view returns (uint64);
-
-    /**
-     * setting the deneb hard fork timestamp by the eigenPodManager owner
-     * @dev this function is designed to be called twice.  Once, it is set to type(uint64).max
-     * prior to the actual deneb fork timestamp being set, and then the second time it is set
-     * to the actual deneb fork timestamp.
-     */
-    function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external;
 }

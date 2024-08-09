@@ -36,7 +36,7 @@ contract MainnetRewardsCoordinatorDeploy is ExistingDeploymentParser {
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized({isInitialDeployment: true});
+        _verifyContractsInitialized();
         _verifyInitializationParams();
 
         logAndOutputContractAddresses("script/output/mainnet/v0.3.0-mainnet-rewards.output.json");
