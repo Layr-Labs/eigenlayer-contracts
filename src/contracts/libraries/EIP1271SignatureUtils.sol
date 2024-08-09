@@ -19,7 +19,7 @@ library EIP1271SignatureUtils {
      * If the `signer` contains no code -- i.e. it is not (yet, at least) a contract address, then checks using standard ECDSA logic
      * Otherwise, passes on the signature to the signer to verify the signature and checks that it returns the `EIP1271_MAGICVALUE`.
      */
-    function checkSignature_EIP1271(address signer, bytes32 digestHash, bytes memory signature) internal view {
+    function checkSignature_EIP1271(address signer, bytes32 digestHash, bytes memory signature) external view {
         /**
          * check validity of signature:
          * 1) if `signer` is an EOA, then `signature` must be a valid ECDSA signature from `signer`,
