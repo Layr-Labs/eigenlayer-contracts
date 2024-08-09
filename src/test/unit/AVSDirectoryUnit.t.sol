@@ -701,6 +701,8 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
         bytes32 salt1,
         bytes32 salt2
     ) public {
+        cheats.assume(salt1 != salt2);
+
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
         operatorSetsToAdd = uint8(bound(operatorSetsToAdd, 1, 32));
         address operator = cheats.addr(operatorPk);
