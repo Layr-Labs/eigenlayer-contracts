@@ -29,7 +29,7 @@ contract MerklizeScript is Script, Test {
         avsDirectory.becomeOperatorSetAVS();
         vm.stopBroadcast();
 
-        registerOperators(uint256(2048), operatorSetIds);
+        registerOperators(uint256(2048), operatorSetIds, avs);
 
 
 
