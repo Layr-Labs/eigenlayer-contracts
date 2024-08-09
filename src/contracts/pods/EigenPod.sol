@@ -703,6 +703,8 @@ contract EigenPod is
      *                         VIEW FUNCTIONS
      *
      */
+
+    /// @notice Returns the validatorInfo for a given validatorPubkeyHash
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory) {
         return _validatorPubkeyHashToInfo[validatorPubkeyHash];
     }
