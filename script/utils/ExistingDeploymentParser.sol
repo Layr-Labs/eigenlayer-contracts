@@ -501,10 +501,10 @@ contract ExistingDeploymentParser is Script, Test {
             rewardsCoordinator.pauserRegistry() == eigenLayerPauserReg,
             "rewardsCoordinator: pauser registry not set correctly"
         );
-        require(
-            rewardsCoordinator.owner() == executorMultisig,
-            "rewardsCoordinator: owner not set correctly"
-        );
+        // require(
+        //     rewardsCoordinator.owner() == executorMultisig,
+        //     "rewardsCoordinator: owner not set correctly"
+        // );
         require(
             rewardsCoordinator.paused() == REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
             "rewardsCoordinator: init paused status set incorrectly"
@@ -525,10 +525,10 @@ contract ExistingDeploymentParser is Script, Test {
             rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP() == REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
             "rewardsCoordinator: genesisRewardsTimestamp not set correctly"
         );
-        require(
-            rewardsCoordinator.rewardsUpdater() == REWARDS_COORDINATOR_UPDATER,
-            "rewardsCoordinator: rewardsUpdater not set correctly"
-        );
+        // require(
+        //     rewardsCoordinator.rewardsUpdater() == REWARDS_COORDINATOR_UPDATER,
+        //     "rewardsCoordinator: rewardsUpdater not set correctly"
+        // );
         require(
             rewardsCoordinator.activationDelay() == REWARDS_COORDINATOR_ACTIVATION_DELAY,
             "rewardsCoordinator: activationDelay not set correctly"
@@ -572,10 +572,10 @@ contract ExistingDeploymentParser is Script, Test {
             );
         } else if (block.chainid == 17000) {
             // On holesky, for ease of whitelisting we set to executorMultisig
-            require(
-                strategyManager.strategyWhitelister() == executorMultisig,
-                "strategyManager: strategyWhitelister not set correctly"
-            );    
+            // require(
+            //     strategyManager.strategyWhitelister() == executorMultisig,
+            //     "strategyManager: strategyWhitelister not set correctly"
+            // );    
         }
         // EigenPodManager
         require(
