@@ -1046,6 +1046,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
         bytes32 salt,
         uint8 numOids
     ) public {
+        numOperators = uint8(bound(numOperators, 1, 100));
         // Create Operator Set IDs
         uint32[] memory oids = new uint32[](numOids);
         for (uint32 i = 0; i < numOids; i++) {

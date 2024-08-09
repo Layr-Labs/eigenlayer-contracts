@@ -2147,12 +2147,15 @@ contract RewardsCoordinatorUnitTests_disableRoot is RewardsCoordinatorUnitTests 
 }
 
 contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUnitTests {
+    uint8 numberOfRewardTypes = 1;
+
     function testFuzz_operatorCommissionBips_EmptyHistory(
         address operator,
         IAVSDirectory.OperatorSet calldata operatorSet,
         uint8 rewardTypeEnum
     ) public {
-        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
+        rewardTypeEnum = uint8(bound(rewardTypeEnum, 0, numberOfRewardTypes - 1));
+        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(rewardTypeEnum);
         rewardType = IRewardsCoordinator.RewardType(uint8(bound(uint256(rewardType), 0, 1)));
         // Check operator commission
         uint32 operatorCommissionBipsStored = rewardsCoordinator.getOperatorCommissionBips(operator, operatorSet, rewardType);
@@ -2169,7 +2172,8 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         uint8 rewardTypeEnum,
         uint16 newOperatorCommissionBips
     ) public filterFuzzedAddressInputs(operator) {
-        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
+        rewardTypeEnum = uint8(bound(rewardTypeEnum, 0, numberOfRewardTypes - 1));
+        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(rewardTypeEnum);
         cheats.assume(newOperatorCommissionBips > MAX_COMMISSION_BIPS);
         cheats.expectRevert("RewardsCoordinator.setOperatorCommissionBips: commissionBips too high");
         cheats.prank(operator);
@@ -2184,7 +2188,8 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         uint16 newOperatorCommissionBips,
         uint256 randSalt
     ) public filterFuzzedAddressInputs(operator) {
-        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
+        rewardTypeEnum = uint8(bound(rewardTypeEnum, 0, numberOfRewardTypes - 1));
+        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(rewardTypeEnum);
         cheats.assume(newOperatorCommissionBips != globalCommissionBips);
         cheats.assume(newOperatorCommissionBips <= MAX_COMMISSION_BIPS);
         // 1. Set operator commission and check updated value hasn't taken effect yet
@@ -2228,7 +2233,8 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         uint16 newOperatorCommissionBips,
         uint256 randSalt
     ) public filterFuzzedAddressInputs(operator) {
-        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
+        rewardTypeEnum = uint8(bound(rewardTypeEnum, 0, numberOfRewardTypes - 1));
+        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(rewardTypeEnum);
         cheats.assume(newOperatorCommissionBips <= MAX_COMMISSION_BIPS);
 
         // 1. Set operator commission to initial value with existing history
@@ -2298,7 +2304,8 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         uint16 pendingCommissionBips,
         uint16 overwriteCommissionBips
     ) public filterFuzzedAddressInputs(operator) {
-        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(uint8(bound(rewardTypeEnum, 0, 1)));
+        rewardTypeEnum = uint8(bound(rewardTypeEnum, 0, numberOfRewardTypes - 1));
+        IRewardsCoordinator.RewardType rewardType = IRewardsCoordinator.RewardType(rewardTypeEnum);
         cheats.assume(pendingCommissionBips <= MAX_COMMISSION_BIPS);
         cheats.assume(overwriteCommissionBips <= MAX_COMMISSION_BIPS);
         cheats.prank(operator);
