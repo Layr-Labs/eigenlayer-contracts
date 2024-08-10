@@ -26,6 +26,10 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         "DelegationApproval(address delegationApprover,address staker,address operator,bytes32 salt,uint256 expiry)"
     );
 
+    /// @notice The EIP-712 typehash for the deposit struct used by the contract
+    bytes32 public constant QUEUE_WITHDRAWAL_TYPEHASH =
+        keccak256("QueueWithdrawal(address staker,address[] strategies,uint256[] shares,uint256 nonce)");
+
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -68,6 +72,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice Mapping: staker => number of signed messages (used in `delegateToBySignature`) from the staker that this contract has already checked.
     mapping(address => uint256) public stakerNonce;
+
+    /// @notice Mapping: staker => number of signed messages (used in `queueWithdrawalWithSignature`) from the staker that this contract has already checked.
+    mapping(address => uint256) public withdrawerNonce;
 
     /**
      * @notice Mapping: delegationApprover => 32-byte salt => whether or not the salt has already been used by the delegationApprover.

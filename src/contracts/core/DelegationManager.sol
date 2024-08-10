@@ -308,6 +308,61 @@ contract DelegationManager is
     }
 
     /**
+     * Allows a third party to withdraw shares on behalf of a staker with their signature.
+     * Withdrawn shares/strategies are immediately removed from the staker.
+     * If the staker is delegated, withdrawn shares/strategies are also removed from
+     * their operator.
+     *
+     * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
+     */
+    function queueWithdrawalsWithSignature(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams,
+        address staker,
+        bytes memory signature
+    )
+        external
+        onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
+        returns (bytes32[] memory)
+    {
+        bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
+        address operator = delegatedTo[msg.sender];
+
+        for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
+            require(
+                queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length,
+                "DelegationManager.queueWithdrawal: input length mismatch"
+            );
+
+            uint256 nonce = withdrawerNonce[staker];
+
+            bytes32 digestHash = calculateQueueWithdrawalDigestHash(
+                staker,
+                queuedWithdrawalParams[i].strategies,
+                queuedWithdrawalParams[i].shares,
+                nonce
+            );
+
+            unchecked {
+                withdrawerNonce[staker] = nonce + 1;
+            }
+
+            EIP1271SignatureUtils.checkSignature_EIP1271(staker, digestHash, signature);
+
+            // Remove shares from staker's strategies and place strategies/shares in queue.
+            // If the staker is delegated to an operator, the operator's delegated shares are also reduced
+            // NOTE: This will fail if the staker doesn't have the shares implied by the input parameters
+            withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
+                staker: staker,
+                operator: operator,
+                withdrawer: queuedWithdrawalParams[i].withdrawer,
+                strategies: queuedWithdrawalParams[i].strategies,
+                shares: queuedWithdrawalParams[i].shares
+            });
+        }
+        return withdrawalRoots;
+    }
+
+    /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
      * @param withdrawal The Withdrawal to complete.
      * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
@@ -394,9 +449,9 @@ contract DelegationManager is
             // forgefmt: disable-next-item
             // subtract strategy shares from delegate's shares
             _decreaseOperatorShares({
-                operator: operator, 
-                staker: staker, 
-                strategy: strategy, 
+                operator: operator,
+                staker: staker,
+                strategy: strategy,
                 shares: shares
             });
         }
@@ -490,18 +545,18 @@ contract DelegationManager is
             // forgefmt: disable-next-item
             // calculate the digest hash
             bytes32 approverDigestHash = calculateDelegationApprovalDigestHash(
-                staker, 
-                operator, 
-                _delegationApprover, 
-                approverSalt, 
+                staker,
+                operator,
+                _delegationApprover,
+                approverSalt,
                 approverSignatureAndExpiry.expiry
             );
 
             // forgefmt: disable-next-item
             // actually check that the signature is valid
             EIP1271SignatureUtils.checkSignature_EIP1271(
-                _delegationApprover, 
-                approverDigestHash, 
+                _delegationApprover,
+                approverDigestHash,
                 approverSignatureAndExpiry.signature
             );
         }
@@ -515,9 +570,9 @@ contract DelegationManager is
         for (uint256 i = 0; i < strategies.length;) {
             // forgefmt: disable-next-item
             _increaseOperatorShares({
-                operator: operator, 
-                staker: staker, 
-                strategy: strategies[i], 
+                operator: operator,
+                staker: staker,
+                strategy: strategies[i],
                 shares: shares[i]
             });
 
@@ -675,9 +730,9 @@ contract DelegationManager is
             if (operator != address(0)) {
                 // forgefmt: disable-next-item
                 _decreaseOperatorShares({
-                    operator: operator, 
-                    staker: staker, 
-                    strategy: strategies[i], 
+                    operator: operator,
+                    staker: staker,
+                    strategy: strategies[i],
                     shares: shares[i]
                 });
             }
@@ -983,6 +1038,30 @@ contract DelegationManager is
         // calculate the digest hash
         bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
         return approverDigestHash;
+    }
+
+    function calculateQueueWithdrawalDigestHash(
+        address staker,
+        IStrategy[] memory strategies,
+        uint256[] memory shares,
+        uint256 _stakerNonce
+    ) public view returns (bytes32) {
+
+        // calculate the struct hash
+        bytes32 structHash = keccak256(abi.encode(
+            QUEUE_WITHDRAWAL_TYPEHASH,
+            staker,
+            strategies,
+            shares,
+            _stakerNonce
+        ));
+        // calculate the digest hash
+        bytes32 digestHash = keccak256(abi.encodePacked(
+            "\x19\x01",
+            domainSeparator(),
+            structHash
+        ));
+        return digestHash;
     }
 
     /**

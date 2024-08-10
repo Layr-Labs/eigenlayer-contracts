@@ -238,6 +238,20 @@ interface IDelegationManager is ISignatureUtils {
         returns (bytes32[] memory);
 
     /**
+     * Allows a third party to withdraw shares on behalf of a staker with their signature.
+     * Withdrawn shares/strategies are immediately removed from the staker.
+     * If the staker is delegated, withdrawn shares/strategies are also removed from
+     * their operator.
+     *
+     * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
+     */
+    function queueWithdrawalsWithSignature(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams,
+        address staker,
+        bytes memory stakerSignature
+    ) external returns (bytes32[] memory);
+
+    /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
      * @param withdrawal The Withdrawal to complete.
      * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
