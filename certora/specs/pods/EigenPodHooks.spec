@@ -42,6 +42,7 @@ ghost mathint sumOfValidatorRestakedbalancesWei
 }
 
 hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restakedBalanceGwei uint64 newValue (uint64 oldValue) {
+    require validatorStatus(validatorPubkeyHash) != IEigenPod.VALIDATOR_STATUS.ACTIVE => oldValue == 0;
     sumOfValidatorRestakedbalancesWei = (
         sumOfValidatorRestakedbalancesWei + 
         to_mathint(newValue) * 1000000000 -
@@ -107,17 +108,30 @@ rule consistentAccounting() {
 }
 */
 
+function requireValidatorStatusToBalanceCorrectness(bytes32 hash)
+{
+    require validatorStatus(hash) != IEigenPod.VALIDATOR_STATUS.ACTIVE => get_restakedBalanceGwei(hash) == 0;
+}
+
 //get_withdrawableRestakedExecutionLayerGwei == podOwnerShares() - withdrawableRestakedExecutionLayerGwei
-rule baseInvariant(method f, env e) 
+rule baseInvariant(method f, env e) filtered 
+{
+    f -> 
+        f.selector != sig:DummyEigenPodA.initialize(address).selector &&   
+		f.selector != sig:DummyEigenPodA.withdrawRestakedBeaconChainETH(address,uint256).selector
+}
 {
     require sumOfValidatorRestakedbalancesWei == 0;
+    require nativeBalances[currentContract] < 2^40;   // to avoid issues with casting at EigenPod.sol:596
+
     int256 podOwnerSharesBefore = get_podOwnerShares();
-    uint256 restakedBefore = get_withdrawableRestakedExecutionLayerGwei();
+    require podOwnerSharesBefore % 1000000000 == 0;   // see EigenPodManager.spec -> podOwnerSharesAlwaysWholeGweiAmount
+    mathint restakedBefore = get_withdrawableRestakedExecutionLayerGwei() * 1000000000;
     mathint deltaBefore = podOwnerSharesBefore - restakedBefore;
     calldataarg args;
     f(e, args);
     int256 podOwnerSharesAfter = get_podOwnerShares();
-    uint256 restakedAfter = get_withdrawableRestakedExecutionLayerGwei();
+    mathint restakedAfter = get_withdrawableRestakedExecutionLayerGwei() * 1000000000;
     mathint deltaAfter = podOwnerSharesAfter - restakedAfter;
     assert sumOfValidatorRestakedbalancesWei == deltaAfter - deltaBefore;
 }
