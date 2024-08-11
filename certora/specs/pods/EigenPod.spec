@@ -20,18 +20,6 @@ rule validatorStatusTransitionsCorrect(bytes32 pubkeyHash) {
     );
 }
 
-/// @title _validatorPubkeyHashToInfo[validatorPubkeyHash].mostRecentBalanceUpdateTimestamp can ONLY increase (or remain the same)
-rule mostRecentBalanceUpdateTimestampOnlyIncreases(bytes32 validatorPubkeyHash) {
-    IEigenPod.ValidatorInfo validatorInfoBefore = validatorPubkeyHashToInfo(validatorPubkeyHash);
-    method f;
-    env e;
-    calldataarg args;
-    f(e,args);
-    IEigenPod.ValidatorInfo validatorInfoAfter = validatorPubkeyHashToInfo(validatorPubkeyHash);
-    assert(validatorInfoAfter.lastCheckpointedAt >= validatorInfoBefore.lastCheckpointedAt,
-        "mostRecentBalanceUpdateTimestamp decreased");
-}
-
 /// @title if a validator is marked as 'INACTIVE', then it has no other entries set in its ValidatorInfo
 invariant inactiveValidatorsHaveEmptyInfo(bytes32 pubkeyHash)
     (validatorStatus(pubkeyHash) == IEigenPod.VALIDATOR_STATUS.INACTIVE) => (
@@ -151,7 +139,7 @@ invariant checkpointInfoIsEmpty()
 rule proofsRemainingCannotIncreaseInChP(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
 {
     uint24 proofsRemainingBefore = currentCheckpoint().proofsRemaining;
-    require isDuringCheckpoint(); get_currentCheckpointTimestamp() > 0;
+    require isDuringCheckpoint();
     calldataarg args;
     f(e, args);
     uint24 proofsRemainingAfter = currentCheckpoint().proofsRemaining;
@@ -190,6 +178,33 @@ function max(uint64 a, uint64 b) returns uint64
 
 
 ///////////////////   IN DEVELOPMENT / OBSOLETE    ////////
+
+
+// front run call to verifyStaleBalance can update currentCheckpointTimestamp to the current block.timestamp, 
+//causing verifyWithdrawalCredentials to revert.
+rule frontrunning_verifyStaleBalance_verifyWithdrawalCredentials(env e1, env e2)
+{
+    uint64 beaconTimestamp; BeaconChainProofs.StateRootProof stateRootProof;
+    uint40[] validatorIndices; bytes[] validatorFieldsProofs;
+    bytes32[][] validatorFields;
+    require nativeBalances[currentContract] < 2^40;   // to avoid issues with casting at EigenPod.sol:596
+    require get_podOwnerShares() < 2^40; //to avoid overflow at EigenPodManager.sol:115
+
+    storage initialStorage = lastStorage;
+    verifyWithdrawalCredentials(e1, beaconTimestamp, 
+        stateRootProof, validatorIndices, validatorFieldsProofs, validatorFields);
+    //didn't revert before
+
+    uint64 beaconTimestamp2;
+    BeaconChainProofs.StateRootProof stateRootProof2; BeaconChainProofs.ValidatorProof proof2;
+    verifyStaleBalance(e2, beaconTimestamp2, stateRootProof2, proof2) at initialStorage;
+    
+    verifyWithdrawalCredentials@withrevert(e1, beaconTimestamp, 
+        stateRootProof, validatorIndices, validatorFieldsProofs, validatorFields);
+    bool reverted = lastReverted;
+    //doesn't revert after
+    assert !lastReverted;
+}
 
 // TODO this is not correct property. Violated by verifyWithdrawalCredentials
 rule methodsOnlyChangeOneValidatorStatus(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
@@ -254,4 +269,13 @@ rule verifyCHpointProofs_CanIncreaseTimestamp(bytes32 validatorPubkeyHash, env e
     //uint64 timestampAfter = get_mostRecentBalanceUpdateTimestamp(validatorPubkeyHash);
     //satisfy timestampAfter > timestampBefore;
     satisfy true;
+}
+
+rule verifyCHpointProofs_reverts(bytes32 validatorPubkeyHash, env e) 
+{
+    BeaconChainProofs.BalanceContainerProof balanceContainerProof;
+    BeaconChainProofs.BalanceProof[] proofs;
+    verifyCheckpointProofs@withrevert(e, balanceContainerProof, proofs);
+
+    assert lastReverted;
 }

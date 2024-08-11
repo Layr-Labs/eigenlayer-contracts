@@ -67,6 +67,24 @@ rule whoCanChangePodOwnerShares(env e, method f) filtered { f -> !f.isView && !i
 invariant noPodNoShares(address owner)
     get_podByOwner(owner) == 0 => get_podOwnerShares(owner) == 0;
 
+rule addShares_reverts(env e)
+{
+    uint256 shares;
+    address owner;
+    addShares@withrevert(e, owner, shares); 
+    bool reverted = lastReverted;
+    assert shares == 0 => reverted;
+}
+
+rule removeShares_reverts(env e)
+{
+    uint256 shares;
+    address owner;
+    removeShares@withrevert(e, owner, shares); 
+    bool reverted = lastReverted;
+    assert shares == 0 => reverted;
+}
+
 rule addShares_additivity(env e)
 {
     uint256 shares1; uint256 shares2; uint256 sharesSum;
