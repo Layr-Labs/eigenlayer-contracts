@@ -99,6 +99,19 @@ interface IDelegationManager is ISignatureUtils {
         address withdrawer;
     }
 
+    struct QueuedWithdrawalWithSignatureParams {
+        // Array of strategies that the QueuedWithdrawal contains
+        IStrategy[] strategies;
+        // Array containing the amount of shares in each Strategy in the `strategies` array
+        uint256[] shares;
+        // The address of the withdrawer
+        address withdrawer;
+        // The address of the staker
+        address staker;
+        // signature of the staker
+        bytes  signature;
+    }
+
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 

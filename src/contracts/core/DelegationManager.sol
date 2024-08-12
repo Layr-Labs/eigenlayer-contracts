@@ -316,47 +316,49 @@ contract DelegationManager is
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
     function queueWithdrawalsWithSignature(
-        QueuedWithdrawalParams[] calldata queuedWithdrawalParams,
-        address staker,
-        bytes memory signature
+        QueuedWithdrawalWithSignatureParams[] calldata queuedWithdrawalWithSigParams
     )
         external
         onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
         returns (bytes32[] memory)
     {
-        bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
+        bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalWithSigParams.length);
         address operator = delegatedTo[msg.sender];
 
-        for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
+        for (uint256 i = 0; i < queuedWithdrawalWithSigParams.length; i++) {
             require(
-                queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length,
+                queuedWithdrawalWithSigParams[i].strategies.length == queuedWithdrawalWithSigParams[i].shares.length,
                 "DelegationManager.queueWithdrawal: input length mismatch"
             );
 
-            uint256 nonce = withdrawerNonce[staker];
+            uint256 nonce = withdrawerNonce[queuedWithdrawalWithSigParams[i].staker];
 
             bytes32 digestHash = calculateQueueWithdrawalDigestHash(
-                staker,
-                queuedWithdrawalParams[i].strategies,
-                queuedWithdrawalParams[i].shares,
+                queuedWithdrawalWithSigParams[i].staker,
+                queuedWithdrawalWithSigParams[i].strategies,
+                queuedWithdrawalWithSigParams[i].shares,
                 nonce
             );
 
             unchecked {
-                withdrawerNonce[staker] = nonce + 1;
+                withdrawerNonce[queuedWithdrawalWithSigParams[i].staker] = nonce + 1;
             }
 
-            EIP1271SignatureUtils.checkSignature_EIP1271(staker, digestHash, signature);
+            EIP1271SignatureUtils.checkSignature_EIP1271(
+                queuedWithdrawalWithSigParams[i].staker,
+                digestHash,
+                queuedWithdrawalWithSigParams[i].signature
+            );
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
             // If the staker is delegated to an operator, the operator's delegated shares are also reduced
             // NOTE: This will fail if the staker doesn't have the shares implied by the input parameters
             withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
-                staker: staker,
+                staker: queuedWithdrawalWithSigParams[i].staker,
                 operator: operator,
-                withdrawer: queuedWithdrawalParams[i].withdrawer,
-                strategies: queuedWithdrawalParams[i].strategies,
-                shares: queuedWithdrawalParams[i].shares
+                withdrawer: queuedWithdrawalWithSigParams[i].withdrawer,
+                strategies: queuedWithdrawalWithSigParams[i].strategies,
+                shares: queuedWithdrawalWithSigParams[i].shares
             });
         }
         return withdrawalRoots;
