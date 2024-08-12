@@ -49,4 +49,4 @@ surya_report.md
 *_state.json
 **/deployed_strategies.json
 
-**/Populate*
+**/populate_src/*

@@ -32,10 +32,12 @@ First, in order to run a new script you need to add a block to the chain. Simply
 cast send --rpc-url localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --value=0ether 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb9226
 ```
 
-Then run the script, after configuring `PopulateAVSDAndSRC.sol` with the number of opsets and the number of operators per opset,
+Then run the script, after configuring `PopulateSRC.sol` with the number of opsets and the number of operators per opset,
 
 ```
-forge script script/deploy/devnet/operatorSets/PopulateAVSDAndSRC.sol:PopulateAVSDAndSRC --rpc-url localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --skip-simulation --broadcast
+rm script/output/devnet/populate_src/*
+
+forge script script/deploy/devnet/operatorSets/PopulateSRC.sol:PopulateSRC --rpc-url localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --skip-simulation --broadcast
 ```
 
 Then move on to proving
