@@ -50,6 +50,8 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         return true;
     }
 
+    function operatorSetMemberCount(address avs, uint32 operatorSetId) external view returns (uint256) {}
+
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
         address avs,

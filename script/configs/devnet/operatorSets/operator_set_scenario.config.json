@@ -1,0 +1,22 @@
+{
+    "operators": [
+        {
+            "strategy": "0x456456456456",
+            "delegatedShares": 1000000000000000000000000
+        }
+    ],
+    "avss": [
+        {
+            "operatorIndices": [
+                0
+            ],
+            "strategiesAndMultipliers": [
+                {
+                    "strategy": "0x456456456456",
+                    "multiplier": 1
+                }
+            ]
+        }
+    ]
+
+}
