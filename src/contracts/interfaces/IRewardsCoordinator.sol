@@ -19,7 +19,8 @@ interface IRewardsCoordinator {
 
     /// @notice Reward type
     enum RewardType {
-        DELEGATED_STAKE
+        DELEGATED_STAKE,
+        PERFORMANCE
     }
 
     /**
@@ -87,6 +88,18 @@ interface IRewardsCoordinator {
         RewardType rewardType;
         uint32 operatorSetId;
         StrategyAndMultiplier[] strategiesAndMultipliers;
+        IERC20 token;
+        uint256 amount;
+        uint32 startTimestamp;
+        uint32 duration;
+    }
+
+    /// @notice Used for performance based reward submissions.
+    struct PerformanceRewardsSubmission {
+        uint32 operatorSetId;
+        address[] operators;
+        uint32[] scores;
+        IStrategy[] strategies;
         IERC20 token;
         uint256 amount;
         uint32 startTimestamp;
@@ -234,6 +247,13 @@ interface IRewardsCoordinator {
         uint256 claimedAmount
     );
 
+    event PerformanceBasedRewardCreated(
+        address indexed avs,
+        uint256 indexed submissionNonce,
+        bytes32 indexed rewardsSubmissionHash,
+        PerformanceRewardsSubmission rewardsSubmission
+    );
+
     /**
      *
      *                         VIEW FUNCTIONS
@@ -348,6 +368,8 @@ interface IRewardsCoordinator {
      * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
      */
     function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions) external;
+
+    function rewardOperatorsForPerformance(PerformanceRewardsSubmission calldata rewardsSubmission) external;
 
     /**
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
