@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "./IDelegationManager.sol";
 import "./ISignatureUtils.sol";
 
 interface IAVSDirectory is ISignatureUtils {
@@ -12,10 +13,47 @@ interface IAVSDirectory is ISignatureUtils {
 
     }
 
+    /**
+     * @notice Struct representing the registration status of an operator with an operator set.
+     * Keeps track of last deregistered timestamp for slashability concerns.
+     * @param registered whether the operator is registered with the operator set
+     * @param lastDeregisteredTimestamp the timestamp at which the operator was last deregistered
+     */
+    struct OperatorSetRegistrationStatus {
+        bool registered;
+        uint32 lastDeregisteredTimestamp;
+    }
+
     /// @notice Struct representing an operator set
     struct OperatorSet {
         address avs;
         uint32 operatorSetId;
+    }
+
+    /**
+     * @notice this struct is used in allocate and queueDeallocation in order to specify an operator's slashability for a certain operator set
+     *
+     * @param strategy the strategy to adjust slashable stake for
+     * @param operatorSets the operator sets to adjust slashable stake for
+     * @param magnitudeDiff magnitude difference; the difference in proportional parts of the operator's slashable stake
+     * that is slashable by the operatorSet.
+     * Slashable stake for an operator set is (magnitude / totalMagnitude) of an operator's delegated stake.
+     */
+    struct MagnitudeAdjustment {
+        IStrategy strategy;
+        OperatorSet[] operatorSets;
+        uint64[] magnitudeDiffs;
+    }
+
+    /**
+     * @notice struct used for queued deallocations. Stored in (operator, strategy, operatorSet) mapping
+     * to be used in completeDeallocations.
+     * @param magnitudeDiff the amount of magnitude to deallocate
+     * @param completableTimestamp the timestamp at which the deallocation can be completed, 21 days from when queued
+     */
+    struct QueuedDeallocation {
+        uint64 magnitudeDiff;
+        uint32 completableTimestamp;
     }
 
     /// @notice Emitted when an operator set is created by an AVS.
@@ -44,6 +82,41 @@ interface IAVSDirectory is ISignatureUtils {
 
     /// @notice Emitted when an operator is migrated from M2 registration to operator sets.
     event OperatorMigratedToOperatorSets(address indexed operator, address indexed avs, uint32[] operatorSetIds);
+
+    /// @notice Emitted when an operator allocates slashable magnitude to an operator set
+    event MagnitudeAllocated(
+        address operator,
+        IStrategy strategy,
+        OperatorSet operatorSet,
+        uint64 magnitudeToAllocate,
+        uint32 effectTimestamp
+    );
+
+    /// @notice Emitted when an operator queues deallocations of slashable magnitude from an operator set
+    event MagnitudeQueueDeallocated(
+        address operator,
+        IStrategy strategy,
+        OperatorSet operatorSet,
+        uint64 magnitudeToDeallocate,
+        uint32 completableTimestamp
+    );
+
+    /// @notice Emitted when an operator completes deallocations of slashable magnitude from an operator set
+    /// and adds back magnitude to free allocatable magnitude
+    event MagnitudeDeallocationCompleted(
+        address operator,
+        IStrategy strategy,
+        OperatorSet operatorSet,
+        uint64 freeMagnitudeAdded
+    );
+
+    /// @notice Emitted when an operator is slashed by an operator set for a strategy
+    event OperatorSlashed(
+        address operator,
+        uint32 operatorSetId,
+        IStrategy strategy,
+        uint16 bipsToSlash
+    );
 
     /**
      *
@@ -129,27 +202,69 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     *  @notice Called by the AVS's service manager contract to register an operator with the AVS.
+     * @notice Allocates a set of magnitude adjustments to increase the slashable stake of an operator set for the given operator for the given strategy.
+     * Nonslashable magnitude for each strategy will decrement by the sum of all 
+     * allocations for that strategy and the allocations will take effect 21 days from calling.
      *
-     *  @param operator The address of the operator to register.
-     *  @param operatorSignature The signature, salt, and expiry of the operator's signature.
-     *
-     *  @dev msg.sender must be the AVS.
-     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
+     * @param operator address to increase allocations for
+     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
+     * @param operatorSignature signature of the operator if msg.sender is not the operator
      */
-    function registerOperatorToAVS(
+    function allocate(
         address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        MagnitudeAdjustment[] calldata allocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
     ) external;
 
     /**
-     *  @notice Called by an AVS to deregister an operator from the AVS.
+     * @notice Queues a set of magnitude adjustments to decrease the slashable stake of an operator set for the given operator for the given strategy.
+     * The deallocations will take effect 21 days from calling. In order for the operator to have their nonslashable magnitude increased, 
+     * they must call the contract again to complete the deallocation. Stake deallocations are still subject to slashing until 21 days have passed since queuing.
      *
-     *  @param operator The address of the operator to deregister.
-     *
-     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
+     * @param operator address to decrease allocations for
+     * @param deallocations array of magnitude adjustments for multiple strategies and corresponding operator sets
+     * @param operatorSignature signature of the operator if msg.sender is not the operator
      */
-    function deregisterOperatorFromAVS(address operator) external;
+    function queueDeallocate(
+        address operator,
+        MagnitudeAdjustment[] calldata deallocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
+    ) external;
+
+    /**
+     * @notice Complete queued deallocations of slashable stake for an operator, permissionlessly called by anyone
+     * Increments the free magnitude of the operator by the sum of all deallocation amounts for each strategy. 
+     * If the operator was slashed, this will be a smaller amount than during queuing.
+     *
+     * @param operator address to complete deallocations for
+     * @param strategies a list of strategies to complete deallocations for
+     * @param operatorSets a 2d list of operator sets to complete deallocations for, one list for each strategy
+     *
+     * @dev can be called permissionlessly by anyone
+     */
+    function completeDeallocations(
+        address operator,
+        IStrategy[] calldata strategies,
+        OperatorSet[][] calldata operatorSets
+    ) external;
+
+    /**
+     * @notice Called by an AVS to slash an operator for given operatorSetId, list of strategies, and bipsToSlash.
+     * For each given (operator, operatorSetId, strategy) tuple, bipsToSlash
+     * bips of the operatorSet's slashable stake allocation will be slashed
+     *
+     * @param operator the address to slash
+     * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
+     * @param strategies the set of strategies to slash
+     * @param bipsToSlash the number of bips to slash, this will be proportional to the
+     * operator's slashable stake allocation for the operatorSet
+     */
+    function slashOperator(
+        address operator,
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies,
+        uint16 bipsToSlash
+    ) external;
 
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
@@ -172,6 +287,31 @@ interface IAVSDirectory is ISignatureUtils {
      *                         VIEW FUNCTIONS
      *
      */
+
+    /**
+     * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
+     * @param operator the operator to check slashability for
+     * @param operatorSet the operatorSet to check slashability for
+     * @return bool if the operator is slashable by the operatorSet
+     */
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
+
+    /**
+     * @param operator the operator to get the slashable bips for
+     * @param operatorSet the operatorSet to get the slashable bips for
+     * @param strategy the strategy to get the slashable bips for
+     * @param timestamp the timestamp to get the slashable bips for for
+     *
+     * @return slashableBips the slashable bips of the given strategy owned by
+     * the given OperatorSet for the given operator and timestamp
+     */
+    function getSlashableBips(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy strategy,
+        uint32 timestamp
+    ) external view returns (uint16);
+    
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 
     function isMember(address operator, OperatorSet memory operatorSet) external view returns (bool);
