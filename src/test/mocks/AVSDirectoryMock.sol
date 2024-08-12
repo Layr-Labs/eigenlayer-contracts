@@ -36,6 +36,31 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function deregisterOperatorFromAVS(address operator) external {}
 
+    function allocate(
+        address operator,
+        MagnitudeAdjustment[] calldata allocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
+    ) external {}
+
+    function queueDeallocate(
+        address operator,
+        MagnitudeAdjustment[] calldata deallocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
+    ) external {}
+
+    function completeDeallocations(
+        address operator,
+        IStrategy[] calldata strategies,
+        OperatorSet[][] calldata operatorSets
+    ) external {}
+
+    function slashOperator(
+        address operator,
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies,
+        uint16 bipsToSlash
+    ) external {}
+
     function updateAVSMetadataURI(string calldata metadataURI) external {}
 
     function cancelSalt(bytes32 salt) external {}
@@ -49,6 +74,15 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {
         return true;
     }
+
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool) {}
+
+    function getSlashableBips(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy strategy,
+        uint32 timestamp
+    ) external view returns (uint16) {}
 
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
