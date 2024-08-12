@@ -37,6 +37,7 @@ script/output/M1_deployment_data.json
 /docs/docgen/
 
 script/misc
+script/output
 
 test.sh
 

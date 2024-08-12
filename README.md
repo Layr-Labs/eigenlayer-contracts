@@ -102,7 +102,93 @@ surya mdreport surya_report.md ./src/contracts/**/*.sol
 make bindings
 ```
 
-## Deployments
+## Deploy EigenLayer Contracts
+
+### Deploy to Anvil
+
+1\. Start `anvil`
+
+```bash
+$ anvil --host 0.0.0.0 --accounts 1 --balance 100
+```
+
+2\. Make a note of your RPC_URL
+
+```bash
+$ RPC_URL=http://localhost:8545
+```
+
+3\. Make a note of your account and private key
+
+```bash
+$ PUBLIC_KEY=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+$ PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+```
+
+4\. check your connection
+
+```bash
+$ cast balance ${PUBLIC_KEY} --rpc-url ${RPC_URL}
+```
+
+5\. Deploy M2 Contracts
+
+```bash
+$ forge script script/deploy/devnet/M2_Deploy_From_Scratch.s.sol --rpc-url ${RPC_URL} \
+            --private-key ${PRIVATE_KEY} --broadcast \
+            --sig "run(string)" -- M2_deploy_from_scratch.anvil.config.json
+```
+
+6\. Upgrade M2 Contracts
+
+```bash
+$ forge script script/deploy/devnet/M2_Deploy_From_Scratch.s.sol --rpc-url ${RPC_URL} \
+            --private-key ${PRIVATE_KEY} --broadcast \
+            --sig "upgrade(string,string)" -- M2_deploy_from_scratch.anvil.config.json M2_deploy_from_scratch_deployment_data.json
+```
+
+
+Contracts deployment information is saved in `script/output/devnet/M2_from_scratch_deployment_data.json`
+
+### Deploy to DevNet
+
+Devnet can be started locally or contact the protocol team for a public url
+
+1\. Make a note of the devnet `RPC_URL`
+
+```bash
+$ RPC_URL=http://devnet...:8545
+```
+
+2. Make a note of the deployer account and private key
+
+```bash
+$ PUBLIC_KEY=0x4a3Ee341f8ceEdB790F511A18899fBC1fdEb35af
+$ PRIVATE_KEY=...
+```
+
+4\. check your connection
+
+```bash
+$ cast balance ${PUBLIC_KEY} --rpc-url ${RPC_URL}
+```
+
+5\. Deploy M2 Contracts
+
+```bash
+$ forge script script/deploy/devnet/M2_Deploy_From_Scratch.s.sol --rpc-url ${RPC_URL} \
+            --private-key ${PRIVATE_KEY} --broadcast \
+            --sig "run(string)" -- M2_deploy_from_scratch.devnet.config.json
+```
+
+6\. Upgrade Contracts
+```bash
+$ forge script script/deploy/devnet/M2_Deploy_From_Scratch.s.sol --rpc-url ${RPC_URL} \
+            --private-key ${PRIVATE_KEY} --broadcast \
+            --sig "upgrade(string,string)" -- M2_deploy_from_scratch.devnet.config.json M2_deploy_from_scratch.devnet.config.json
+```
+
+Contracts deployment information is saved in `script/output/devnet/M2_from_scratch_deployment_data.json`
 
 ### Current Mainnet Deployment
 
