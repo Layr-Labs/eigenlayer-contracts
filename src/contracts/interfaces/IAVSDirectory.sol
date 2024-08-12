@@ -2,14 +2,13 @@
 pragma solidity >=0.5.0;
 
 import "./ISignatureUtils.sol";
-import "./IStrategy.sol";
 
 interface IAVSDirectory is ISignatureUtils {
     /// @notice Enum representing the registration status of an operator with an AVS.
     /// @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
     enum OperatorAVSRegistrationStatus {
-        UNREGISTERED, // Operator is not registered with the AVS.
-        REGISTERED // Operator is registered with the AVS.
+        UNREGISTERED, // Operator not registered to AVS
+        REGISTERED // Operator registered to AVS
 
     }
 
@@ -176,10 +175,6 @@ interface IAVSDirectory is ISignatureUtils {
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 
     function isMember(address operator, OperatorSet memory operatorSet) external view returns (bool);
-
-    function isOperatorSetAVS(address avs) external view returns (bool);
-
-    function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
 
     function isOperatorSetAVS(address avs) external view returns (bool);
 

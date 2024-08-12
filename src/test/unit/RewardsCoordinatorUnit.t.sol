@@ -89,9 +89,6 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     /// @dev Index for flag that pauses calling rewardOperatorSetForRange
     uint8 internal constant PAUSED_REWARD_OPERATOR_SET = 4;
 
-    /// @dev Index for flag that pauses calling rewardOperatorSetForRange
-    uint8 internal constant PAUSED_REWARD_OPERATOR_SET = 4;
-
     // RewardsCoordinator entities
     address rewardsUpdater = address(1000);
     address defaultAVS = address(1001);
@@ -2346,10 +2343,6 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
         );
     }
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> d6da053f (feat: operator set rewards (#663))
 
 contract RewardsCoordinatorUnitTests_rewardOperatorSetForRange is RewardsCoordinatorUnitTests {
     uint32 defaultOperatorSetId = 0;
@@ -2763,10 +2756,4 @@ contract RewardsCoordinatorUnitTests_rewardOperatorSetForRange is RewardsCoordin
             );
         }
     }
-<<<<<<< HEAD
 }
-=======
->>>>>>> 89405350 (feat: operator commission bips (#627))
-=======
-}
->>>>>>> d6da053f (feat: operator set rewards (#663))

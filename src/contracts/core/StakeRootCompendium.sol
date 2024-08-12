@@ -97,7 +97,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         bytes32[] memory operatorLeaves = new bytes32[](operators.length);
         uint160 prevOperator = 0;
         for (uint256 i = 0; i < operators.length; i++) {
-            require(avsDirectory.isMember(operatorSet.avs, operators[i], operatorSet.operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator not in operator set");
+            require(avsDirectory.isMember(operators[i], operatorSet), "AVSSyncTree.getOperatorSetRoot: operator not in operator set");
             
             // ensure that operators are sorted
             require(uint160(operators[i]) > prevOperator, "AVSSyncTree.getOperatorSetRoot: operators not sorted");
