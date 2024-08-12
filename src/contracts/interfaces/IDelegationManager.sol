@@ -259,9 +259,7 @@ interface IDelegationManager is ISignatureUtils {
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
     function queueWithdrawalsWithSignature(
-        QueuedWithdrawalParams[] calldata queuedWithdrawalParams,
-        address staker,
-        bytes memory stakerSignature
+        QueuedWithdrawalWithSignatureParams[] calldata queuedWithdrawalWithSigParams
     ) external returns (bytes32[] memory);
 
     /**
@@ -446,6 +444,13 @@ interface IDelegationManager is ISignatureUtils {
         address _delegationApprover,
         bytes32 approverSalt,
         uint256 expiry
+    ) external view returns (bytes32);
+
+    function calculateQueueWithdrawalDigestHash(
+        address staker,
+        IStrategy[] memory strategies,
+        uint256[] memory shares,
+        uint256 _stakerNonce
     ) external view returns (bytes32);
 
     /// @notice The EIP-712 typehash for the contract's domain
