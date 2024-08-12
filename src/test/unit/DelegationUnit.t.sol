@@ -195,12 +195,12 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     }
 
     function _getStakerQueueWithdrawalSignature(
-        uint256 stakerPrivateKey,
+        uint256 _stakerPrivateKey,
         IStrategy[] memory strategyArray,
         uint256[] memory withdrawalAmounts
-    ) internal returns (bytes memory) {
+    ) internal view returns (bytes memory) {
 
-        address staker = cheats.addr(stakerPrivateKey);
+        address staker = cheats.addr(_stakerPrivateKey);
         bytes32 digestHash = delegationManager.calculateQueueWithdrawalDigestHash(
             staker,
             strategyArray,
@@ -208,7 +208,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             0
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(stakerPrivateKey, digestHash);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_stakerPrivateKey, digestHash);
         bytes memory stakerSignature = abi.encodePacked(r, s, v);
         return stakerSignature;
     }
@@ -391,11 +391,11 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     }
 
     function _setUpQueueWithdrawalsWithSignatureSingleStrat(
-        uint256 stakerPrivateKey,
+        uint256 _stakerPrivateKey,
         address withdrawer,
         IStrategy strategy,
         uint256 withdrawalAmount
-    ) internal returns (
+    ) internal view returns (
         IDelegationManager.QueuedWithdrawalWithSignatureParams[] memory,
         IDelegationManager.Withdrawal memory,
         bytes32
@@ -406,16 +406,16 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         uint256[] memory withdrawalAmounts = new uint256[](1);
         withdrawalAmounts[0] = withdrawalAmount;
 
-        address staker = cheats.addr(stakerPrivateKey);
+        address staker = cheats.addr(_stakerPrivateKey);
         bytes memory stakerSignature = _getStakerQueueWithdrawalSignature(
-            stakerPrivateKey,
+            _stakerPrivateKey,
             strategyArray,
             withdrawalAmounts
         );
 
-        IDelegationManager.QueuedWithdrawalWithSignatureParams[] memory queuedWithdrawalParams;
-        queuedWithdrawalParams = new IDelegationManager.QueuedWithdrawalWithSignatureParams[](1);
-        queuedWithdrawalParams[0] = IDelegationManager.QueuedWithdrawalWithSignatureParams({
+        IDelegationManager.QueuedWithdrawalWithSignatureParams[] memory queuedWithdrawalWithSigParams;
+        queuedWithdrawalWithSigParams = new IDelegationManager.QueuedWithdrawalWithSignatureParams[](1);
+        queuedWithdrawalWithSigParams[0] = IDelegationManager.QueuedWithdrawalWithSignatureParams({
             strategies: strategyArray,
             shares: withdrawalAmounts,
             withdrawer: withdrawer,
@@ -434,7 +434,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         });
         bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
 
-        return (queuedWithdrawalParams, withdrawal, withdrawalRoot);
+        return (queuedWithdrawalWithSigParams, withdrawal, withdrawalRoot);
     }
 
     function _setUpQueueWithdrawals(
@@ -2994,7 +2994,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             IDelegationManager.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsWithSignatureSingleStrat({
-            stakerPrivateKey: _stakerPrivateKey,
+            _stakerPrivateKey: _stakerPrivateKey,
             withdrawer: staker,
             strategy: strategies[0],
             withdrawalAmount: withdrawalAmount
