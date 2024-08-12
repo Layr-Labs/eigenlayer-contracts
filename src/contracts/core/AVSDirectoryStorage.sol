@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import "../interfaces/IAVSDirectory.sol";
-import "../interfaces/IDelegationManager.sol";
+import {Checkpoints} from "../libraries/Checkpoints.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -25,6 +25,11 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice The EIP-712 typehash for the `OperatorSetMembership` struct used by the contract
     bytes32 public constant OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH =
         keccak256("OperatorSetForceDeregistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
+
+    /// @notice The EIP-712 typehash for the `MagnitudeAdjustments` struct used by the contract
+    bytes32 public constant MAGNITUDE_ADJUSTMENT_TYPEHASH = keccak256(
+        "MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)"
+    );
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
@@ -53,6 +58,33 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @dev Each item is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
     mapping(address => EnumerableSet.Bytes32Set) internal _operatorSetsMemberOf;
 
+    /// @notice Mapping: operator => avs => operatorSetId => operator registration status
+    mapping(address => mapping(address => mapping(uint32 => OperatorSetRegistrationStatus))) public operatorSetStatus;
+
+    /// @notice Mapping: operator => strategy => checkpointed totalMagnitude
+    /// Note that totalMagnitude is monotonically decreasing and only gets updated upon slashing
+    mapping(address => mapping(IStrategy => Checkpoints.History)) internal _totalMagnitudeUpdate;
+
+    /// @notice Mapping: operator => strategy => operatorSet (encoded) => checkpointed magnitude
+    mapping(address => mapping(IStrategy => mapping(bytes32 => Checkpoints.History))) internal _magnitudeUpdate;
+
+    /// @notice Mapping: operator => strategy => free available magnitude that can be allocated to operatorSets
+    /// Decrements whenever allocations take place and increments when deallocations are completed
+    mapping(address => mapping(IStrategy => uint64)) public freeMagnitude;
+
+    /// @notice Mapping: operator => strategy => PendingFreeMagnitude[] to keep track of pending free magnitude from deallocations
+    mapping(address => mapping(IStrategy => PendingFreeMagnitude[])) internal _pendingFreeMagnitude;
+
+    /// @notice Mapping: operator => strategy => index pointing to next pendingFreeMagnitude to complete and add to freeMagnitude
+    mapping(address => mapping(IStrategy => uint256)) internal _nextPendingFreeMagnitudeIndex;
+
+    /// @notice Mapping: operator => strategy => operatorSet (encoded) => list of queuedDeallocation indices
+    mapping(address => mapping(IStrategy => mapping(bytes32 => uint256[]))) internal _queuedDeallocationIndices;
+
+    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
+    /// This determines how long it takes for allocations to take in the future. Can only be set one time for each operator
+    mapping(address => AllocationDelayDetails) public allocationDelay;
+
     /// @notice Mapping: operatorSet => List of operators that are registered to the operatorSet
     /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
     mapping(bytes32 => EnumerableSet.AddressSet) internal _operatorSetMembers;
@@ -66,5 +98,5 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[43] private __gap;
+    uint256[35] private __gap;
 }
