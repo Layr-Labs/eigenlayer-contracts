@@ -17,7 +17,7 @@ contract AVSDirectory is
     ReentrancyGuardUpgradeable
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    using MagnitudeCheckpoints for MagnitudeCheckpoints.History;
+    using Checkpoints for Checkpoints.History;
 
     /// @dev Index for flag that pauses operator register/deregister to avs when set.
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
@@ -364,7 +364,7 @@ contract AVSDirectory is
                 slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
 
                 _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].decrementAtAndFutureCheckpoints({
-                    timestamp: uint32(block.timestamp),
+                    key: uint32(block.timestamp),
                     decrementValue: slashedMagnitude
                 });
             }
@@ -392,7 +392,7 @@ contract AVSDirectory is
 
             // 3. update totalMagnitude, get total magnitude and subtract slashedMagnitude and slashedFromDeallocation
             _totalMagnitudeUpdate[operator][strategies[i]].push({
-                timestamp: uint32(block.timestamp),
+                key: uint32(block.timestamp),
                 value: _totalMagnitudeUpdate[operator][strategies[i]].latest() - slashedMagnitude - slashedFromDeallocation
             });
         }
@@ -522,7 +522,7 @@ contract AVSDirectory is
 
             // 3. allocate magnitude which will take effect in the future 21 days from now
             _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push({
-                timestamp: effectTimestamp,
+                key: effectTimestamp,
                 value: value + uint224(allocation.magnitudeDiffs[i])
             });
             // 4. keep track of available freeMagnitude to update later
@@ -566,7 +566,7 @@ contract AVSDirectory is
             // 2. update and decrement current and future queued amounts in case any pending allocations exist
             _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId]
                 .decrementAtAndFutureCheckpoints({
-                timestamp: uint32(block.timestamp),
+                key: uint32(block.timestamp),
                 decrementValue: deallocation.magnitudeDiffs[i]
             });
 
@@ -684,6 +684,26 @@ contract AVSDirectory is
         return registrationStatus.registered
             || registrationStatus.lastDeregisteredTimestamp + ALLOCATION_DELAY >= block.timestamp;
     }
+
+    // /**
+    //  * @notice fetches the minimum slashable shares for a certain operator and operatorSet for a list of strategies
+    //  * from the current timestamp until the given timestamp
+    //  *
+    //  * @param operator the operator to get the minimum slashable shares for
+    //  * @param operatorSet the operatorSet to get the minimum slashable shares for
+    //  * @param strategies the strategies to get the minimum slashable shares for
+    //  * @param timestamp the timestamp to the minimum slashable shares before
+    //  *
+    //  * @dev used to get the slashable stakes of operators to weigh over a given slashability window
+    //  *
+    //  * @return the list of share amounts for each strategy
+    //  */
+    // function getMinimumSlashableSharesBefore(
+    //     address operator,
+    //     OperatorSet calldata operatorSet,
+    //     IStrategy[] calldata strategies,
+    //     uint32 timestamp
+    // ) external view returns (uint256[] calldata) {}
 
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
