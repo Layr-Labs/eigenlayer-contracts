@@ -31,8 +31,8 @@ import "forge-std/Test.sol";
 // source .env
 
 // # To deploy and verify our contract
-// forge script script/deploy/devnet/M2_Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- M2_deploy_from_scratch.anvil.config.json
-contract Deployer_M2 is Script, Test {
+// forge script script/deploy/devnet/Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- deploy_from_scratch.anvil.config.json
+contract DeployFromScratch is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     // struct used to encode token info in config file
@@ -102,7 +102,7 @@ contract Deployer_M2 is Script, Test {
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
     uint256 DELEGATION_WITHDRAWAL_DELAY_BLOCKS;
 
-    function run(string memory configFileName) external {
+    function run(string memory configFileName) public {
         // read and log the chainID
         uint256 chainId = block.chainid;
         emit log_named_uint("You are deploying on ChainID", chainId);
@@ -311,6 +311,9 @@ contract Deployer_M2 is Script, Test {
         baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
+            if (strategyConfigs[i].tokenAddress == address(0)) {
+                strategyConfigs[i].tokenAddress = address(new ERC20PresetFixedSupply("TestToken", "TEST", uint256(type(uint128).max), executorMultisig));
+            }
             deployedStrategyArray.push(
                 StrategyBaseTVLLimits(
                     address(

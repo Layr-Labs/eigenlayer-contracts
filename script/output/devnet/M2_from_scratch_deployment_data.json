@@ -18,7 +18,9 @@
     "rewardsCoordinatorImplementation": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
     "slasher": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
     "slasherImplementation": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
-    "strategies": "",
+    "strategies": {
+      "WETH": "0xc5a5C42992dECbae36851359345FE25997F5C42d"
+    },
     "strategyManager": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
     "strategyManagerImplementation": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
   },

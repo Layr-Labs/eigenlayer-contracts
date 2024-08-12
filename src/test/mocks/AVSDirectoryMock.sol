@@ -71,7 +71,7 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
     function isOperatorSetAVS(address avs) external view returns (bool) {}
 
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {
-        return true;
+
     }
 
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool) {}
@@ -82,6 +82,7 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         IStrategy strategy,
         uint32 timestamp
     ) external view returns (uint16) {}
+    function operatorSetMemberCount(address avs, uint32 operatorSetId) external view returns (uint256) {}
 
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,

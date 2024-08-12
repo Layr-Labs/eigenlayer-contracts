@@ -2,10 +2,19 @@
      "maintainer": "samlaf@eigenlabs.org",
      "multisig_addresses": {
           "operationsMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          "communityMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
           "pauserMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-          "executorMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+          "executorMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          "timelock": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
      },
-     "strategies": [],
+     "strategies": [
+          {
+               "token_address": "0x0000000000000000000000000000000000000000",
+               "token_symbol": "WETH",
+               "max_per_deposit": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
+               "max_deposits": 115792089237316195423570985008687907853269984665640564039457584007913129639935
+             }
+     ],
      "strategyManager": {
           "init_paused_status": 0,
           "init_withdrawal_delay_blocks": 1

@@ -323,6 +323,8 @@ interface IAVSDirectory is ISignatureUtils {
 
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
 
+    function operatorSetMemberCount(address avs, uint32 operatorSetId) external view returns (uint256);
+
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
      *

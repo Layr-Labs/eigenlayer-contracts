@@ -163,4 +163,45 @@ library Merkle {
         //the first node in the layer is the root
         return layer[0];
     }
+
+    /**
+     * @notice this function returns the merkle root of a tree created from a set of leaves using keccak256 as its hash function
+     *  @param leaves the leaves of the merkle tree
+     *  @return The computed Merkle root of the tree.
+     *  @dev This pads to the next power of 2. very inefficient! just for POC
+     */
+    function merkleizeKeccak256(bytes32[] memory leaves) internal pure returns (bytes32) {
+        uint256 paddedLength = 2;
+        while(paddedLength < leaves.length) {
+            paddedLength <<= 1;
+        }
+
+        bytes32[] memory paddedLeaves = new bytes32[](paddedLength);
+        for (uint256 i = 0; i < leaves.length; i++) {
+            paddedLeaves[i] = leaves[i];
+        }
+        leaves = paddedLeaves;
+
+        //there are half as many nodes in the layer above the leaves
+        uint256 numNodesInLayer = leaves.length / 2;
+        //create a layer to store the internal nodes
+        bytes32[] memory layer = new bytes32[](numNodesInLayer);
+        //fill the layer with the pairwise hashes of the leaves
+        for (uint256 i = 0; i < numNodesInLayer; i++) {
+            layer[i] = keccak256(abi.encodePacked(leaves[2 * i], leaves[2 * i + 1]));
+        }
+        //the next layer above has half as many nodes
+        numNodesInLayer /= 2;
+        //while we haven't computed the root
+        while (numNodesInLayer != 0) {
+            //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
+            for (uint256 i = 0; i < numNodesInLayer; i++) {
+                layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
+            }
+            //the next layer above has half as many nodes
+            numNodesInLayer /= 2;
+        }
+        //the first node in the layer is the root
+        return layer[0];
+    }
 }
