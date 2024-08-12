@@ -28,6 +28,8 @@ contract AVSDirectory is
     uint256 internal constant BIPS_FACTOR = 10_000;
     /// @dev Delay before allocations take effect and how long until deallocations are completable
     uint32 public constant ALLOCATION_DELAY = 21 days;
+    /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
+    uint256 public constant MAX_PENDING_UPDATES = 1;
 
     /// @dev Returns the chain ID from the time the contract was deployed.
     uint256 internal immutable ORIGINAL_CHAIN_ID;
@@ -370,7 +372,6 @@ contract AVSDirectory is
             }
 
             // 2. if there are any pending deallocations then need to update and decrement if they fall within slashable window
-            uint64 slashedFromDeallocation = 0;
             {
                 uint256 queuedDeallocationsLen =
                     _queuedDeallocations[operator][strategies[i]][msg.sender][operatorSetId].length;
@@ -383,17 +384,17 @@ contract AVSDirectory is
                         uint64 slashedAmount =
                             uint64(uint256(bipsToSlash) * uint256(queuedDeallocation.magnitudeDiff) / BIPS_FACTOR);
                         queuedDeallocation.magnitudeDiff -= slashedAmount;
-                        slashedFromDeallocation += slashedAmount;
+                        slashedMagnitude += slashedAmount;
                     } else {
                         break;
                     }
                 }
             }
 
-            // 3. update totalMagnitude, get total magnitude and subtract slashedMagnitude and slashedFromDeallocation
+            // 3. update totalMagnitude, get total magnitude and subtract slashedMagnitude
             _totalMagnitudeUpdate[operator][strategies[i]].push({
                 key: uint32(block.timestamp),
-                value: _totalMagnitudeUpdate[operator][strategies[i]].latest() - slashedMagnitude - slashedFromDeallocation
+                value: _totalMagnitudeUpdate[operator][strategies[i]].latest() - slashedMagnitude
             });
         }
     }
@@ -502,6 +503,10 @@ contract AVSDirectory is
         for (uint256 i = 0; i < operatorSets.length; ++i) {
             // 1. check freeMagnitude available, that is the allocation of stake is backed and not slashable
             require(
+                allocation.magnitudeDiffs[i] > 0,
+                "AVSDirectory.queueAllocations: magnitudeDiff must be greater than 0"
+            );
+            require(
                 freeAllocatableMagnitude >= allocation.magnitudeDiffs[i],
                 "AVSDirectory.queueAllocations: insufficient available free magnitude to allocate"
             );
@@ -513,10 +518,9 @@ contract AVSDirectory is
             // a pending allocation
             if (value != 0 || pos != 0) {
                 require(
-                    pos
-                        == _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].length()
-                            - 1,
-                    "AVSDirectory.queueAllocations: only one pending allocation allowed for op, opSet, strategy"
+                    pos + MAX_PENDING_UPDATES
+                        == _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].length(),
+                    "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
                 );
             }
 
@@ -547,7 +551,7 @@ contract AVSDirectory is
         IStrategy strategy = deallocation.strategy;
         require(
             deallocation.operatorSets.length == deallocation.magnitudeDiffs.length,
-            "AVSDirectory.queueDeallocation: operatorSets and magnitudeDiffs length mismatch"
+            "AVSDirectory._queueDeallocate: operatorSets and magnitudeDiffs length mismatch"
         );
         OperatorSet[] calldata operatorSets = deallocation.operatorSets;
 
@@ -559,8 +563,12 @@ contract AVSDirectory is
                     .upperLookupRecent(uint32(block.timestamp))
             );
             require(
+                deallocation.magnitudeDiffs[i] > 0,
+                "AVSDirectory._queueDeallocate: magnitudeDiff must be greater than 0"
+            );
+            require(
                 deallocation.magnitudeDiffs[i] <= currentMagnitude,
-                "AVSDirectory.queueDeallocation: cannot deallocate more than what is allocated"
+                "AVSDirectory._queueDeallocate: cannot deallocate more than what is allocated"
             );
 
             // 2. update and decrement current and future queued amounts in case any pending allocations exist
@@ -570,10 +578,10 @@ contract AVSDirectory is
                 decrementValue: deallocation.magnitudeDiffs[i]
             });
 
-            // TODO: ensure only 1 queued deallocation per operator, operatorSet, strategy
-            // _verifySinglePendingDeallocation();
+            // 3. ensure only queued deallocation per operator, operatorSet, strategy
+            _checkPendingDeallocations(operator, strategy, operatorSets[i]);
 
-            // 3. queue deallocation for (op, opSet, strategy) for magnitudeDiff amount
+            // 4. queue deallocation for (op, opSet, strategy) for magnitudeDiff amount
             _queuedDeallocations[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push(
                 QueuedDeallocation({
                     magnitudeDiff: deallocation.magnitudeDiffs[i],
@@ -609,6 +617,29 @@ contract AVSDirectory is
         }
         _nextDeallocationIndex[operator][strategy][operatorSet.avs][operatorSet.operatorSetId] = i;
         return freeMagnitudeToAdd;
+    }
+
+    /// @dev Check for max number of pending deallocations, ensuring <= MAX_PENDING_UPDATES
+    function _checkPendingDeallocations(
+        address operator,
+        IStrategy strategy,
+        OperatorSet calldata operatorSet
+    ) internal view returns (uint64 freeMagnitudeToAdd) {
+        QueuedDeallocation[] memory queuedDeallocations =
+            _queuedDeallocations[operator][strategy][operatorSet.avs][operatorSet.operatorSetId];
+        uint256 length = queuedDeallocations.length;
+
+        for (uint256 i = length; i > 0; --i) {
+            // If completableTimestamp is greater than completeUntilTimestamp, break
+            if (queuedDeallocations[i - 1].completableTimestamp < uint32(block.timestamp)) {
+                require(
+                    length - i  + 1 < MAX_PENDING_UPDATES,
+                    "AVSDirectory._checkPendingDeallocations: exceeds max pending deallocations"
+                );
+            } else {
+                break;
+            }
+        }
     }
 
     /**
@@ -681,7 +712,7 @@ contract AVSDirectory is
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         OperatorSetRegistrationStatus memory registrationStatus =
             operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
-        return registrationStatus.registered
+        return isMember(operator, operatorSet)
             || registrationStatus.lastDeregisteredTimestamp + ALLOCATION_DELAY >= block.timestamp;
     }
 
