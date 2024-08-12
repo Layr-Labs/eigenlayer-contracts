@@ -328,7 +328,11 @@ contract DelegationManager is
         for (uint256 i = 0; i < queuedWithdrawalWithSigParams.length; i++) {
             require(
                 queuedWithdrawalWithSigParams[i].strategies.length == queuedWithdrawalWithSigParams[i].shares.length,
-                "DelegationManager.queueWithdrawal: input length mismatch"
+                "DelegationManager.queueWithdrawalsWithSignature: input length mismatch"
+            );
+            require(
+                queuedWithdrawalWithSigParams[i].expiry >= block.timestamp,
+                "DelegationManager.queueWithdrawalsWithSignature: signature expired"
             );
 
             uint256 nonce = withdrawerNonce[queuedWithdrawalWithSigParams[i].staker];
@@ -337,7 +341,8 @@ contract DelegationManager is
                 queuedWithdrawalWithSigParams[i].staker,
                 queuedWithdrawalWithSigParams[i].strategies,
                 queuedWithdrawalWithSigParams[i].shares,
-                nonce
+                nonce,
+                queuedWithdrawalWithSigParams[i].expiry
             );
 
             unchecked {
@@ -1046,7 +1051,8 @@ contract DelegationManager is
         address staker,
         IStrategy[] memory strategies,
         uint256[] memory shares,
-        uint256 _stakerNonce
+        uint256 stakerNonce,
+        uint256 expiry
     ) public view returns (bytes32) {
 
         // calculate the struct hash
@@ -1055,7 +1061,8 @@ contract DelegationManager is
             staker,
             strategies,
             shares,
-            _stakerNonce
+            stakerNonce,
+            expiry
         ));
         // calculate the digest hash
         bytes32 digestHash = keccak256(abi.encodePacked(

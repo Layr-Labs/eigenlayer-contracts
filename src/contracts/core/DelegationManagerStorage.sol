@@ -26,9 +26,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         "DelegationApproval(address delegationApprover,address staker,address operator,bytes32 salt,uint256 expiry)"
     );
 
-    /// @notice The EIP-712 typehash for the deposit struct used by the contract
+    /// @notice The EIP-712 typehash for the `QueueWithdrawal` struct used by the contract
     bytes32 public constant QUEUE_WITHDRAWAL_TYPEHASH =
-        keccak256("QueueWithdrawal(address staker,address[] strategies,uint256[] shares,uint256 nonce)");
+        keccak256("QueueWithdrawal(address staker,address[] strategies,uint256[] shares,uint256 nonce,uint256 expiry)");
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.

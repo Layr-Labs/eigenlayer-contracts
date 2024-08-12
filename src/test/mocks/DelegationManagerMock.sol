@@ -123,7 +123,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
         address /*staker*/,
         IStrategy[] memory /*strategies*/,
         uint256[] memory /*shares*/,
-        uint256 /*_stakerNonce*/
+        uint256 /*stakerNonce*/,
+        uint256 /*expiry*/
     ) external view returns (bytes32) {}
 
     function calculateStakerDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/)

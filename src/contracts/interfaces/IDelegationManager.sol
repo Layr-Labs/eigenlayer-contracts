@@ -109,7 +109,9 @@ interface IDelegationManager is ISignatureUtils {
         // The address of the staker
         address staker;
         // signature of the staker
-        bytes  signature;
+        bytes signature;
+        // expiration timestamp of the signature
+        uint256 expiry;
     }
 
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
@@ -450,7 +452,8 @@ interface IDelegationManager is ISignatureUtils {
         address staker,
         IStrategy[] memory strategies,
         uint256[] memory shares,
-        uint256 _stakerNonce
+        uint256 stakerNonce,
+        uint256 expiry
     ) external view returns (bytes32);
 
     /// @notice The EIP-712 typehash for the contract's domain

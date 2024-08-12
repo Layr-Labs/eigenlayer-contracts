@@ -197,7 +197,9 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     function _getStakerQueueWithdrawalSignature(
         uint256 _stakerPrivateKey,
         IStrategy[] memory strategyArray,
-        uint256[] memory withdrawalAmounts
+        uint256[] memory withdrawalAmounts,
+        uint256 nonce,
+        uint256 expiry
     ) internal view returns (bytes memory) {
 
         address staker = cheats.addr(_stakerPrivateKey);
@@ -205,7 +207,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             staker,
             strategyArray,
             withdrawalAmounts,
-            0
+            nonce,
+            expiry
         );
 
         (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_stakerPrivateKey, digestHash);
@@ -403,14 +406,20 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
         strategyArray[0] = strategy;
+
         uint256[] memory withdrawalAmounts = new uint256[](1);
         withdrawalAmounts[0] = withdrawalAmount;
 
+        uint256 expiry = block.timestamp + 6 hours;
+        uint256 nonce = 0;
         address staker = cheats.addr(_stakerPrivateKey);
+
         bytes memory stakerSignature = _getStakerQueueWithdrawalSignature(
             _stakerPrivateKey,
             strategyArray,
-            withdrawalAmounts
+            withdrawalAmounts,
+            nonce,
+            expiry
         );
 
         IDelegationManager.QueuedWithdrawalWithSignatureParams[] memory queuedWithdrawalWithSigParams;
@@ -420,7 +429,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             shares: withdrawalAmounts,
             withdrawer: withdrawer,
             staker: staker,
-            signature: stakerSignature
+            signature: stakerSignature,
+            expiry: expiry
         });
 
         IDelegationManager.Withdrawal memory withdrawal = IDelegationManager.Withdrawal({
