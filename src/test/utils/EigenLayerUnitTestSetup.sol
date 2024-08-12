@@ -21,7 +21,7 @@ abstract contract EigenLayerUnitTestSetup is EigenLayerUnitTestBase {
         strategyManagerMock = new StrategyManagerMock();
         delegationManagerMock = new DelegationManagerMock();
         slasherMock = new SlasherMock();
-        eigenPodManagerMock = new EigenPodManagerMock();
+        eigenPodManagerMock = new EigenPodManagerMock(pauserRegistry);
         avsDirectoryMock = new AVSDirectoryMock();
 
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
