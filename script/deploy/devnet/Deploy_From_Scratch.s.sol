@@ -375,12 +375,13 @@ contract DeployFromScratch is Script, Test {
             );
 
         string memory deployed_addresses = "addresses";
+        vm.serializeUint(deployed_addresses, "numStrategiesDeployed", 0); // for compatibility with other scripts
         vm.serializeAddress(deployed_addresses, "eigenLayerProxyAdmin", address(eigenLayerProxyAdmin));
         vm.serializeAddress(deployed_addresses, "eigenLayerPauserReg", address(eigenLayerPauserReg));
         vm.serializeAddress(deployed_addresses, "slasher", address(slasher));
         vm.serializeAddress(deployed_addresses, "slasherImplementation", address(slasherImplementation));
-        vm.serializeAddress(deployed_addresses, "delegation", address(delegation));
-        vm.serializeAddress(deployed_addresses, "delegationImplementation", address(delegationImplementation));
+        vm.serializeAddress(deployed_addresses, "delegationManager", address(delegation));
+        vm.serializeAddress(deployed_addresses, "delegationManagerImplementation", address(delegationImplementation));
         vm.serializeAddress(deployed_addresses, "avsDirectory", address(avsDirectory));
         vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
@@ -405,14 +406,24 @@ contract DeployFromScratch is Script, Test {
         vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
         vm.serializeAddress(deployed_addresses, "baseStrategyImplementation", address(baseStrategyImplementation));
         vm.serializeAddress(deployed_addresses, "emptyContract", address(emptyContract));
+
         string memory deployed_addresses_output = vm.serializeString(
             deployed_addresses,
             "strategies",
             deployed_strategies_output
         );
 
+        {
+            // dummy token data
+            string memory token = '{"tokenProxyAdmin": "0x0000000000000000000000000000000000000000", "EIGEN": "0x0000000000000000000000000000000000000000","bEIGEN": "0x0000000000000000000000000000000000000000","EIGENImpl": "0x0000000000000000000000000000000000000000","bEIGENImpl": "0x0000000000000000000000000000000000000000","eigenStrategy": "0x0000000000000000000000000000000000000000","eigenStrategyImpl": "0x0000000000000000000000000000000000000000"}';
+            deployed_addresses_output = vm.serializeString(deployed_addresses, "token", token);
+        }
+
         string memory parameters = "parameters";
         vm.serializeAddress(parameters, "executorMultisig", executorMultisig);
+        vm.serializeAddress(parameters, "communityMultisig", operationsMultisig);
+        vm.serializeAddress(parameters, "pauserMultisig", pauserMultisig);
+        vm.serializeAddress(parameters, "timelock", address(0));
         string memory parameters_output = vm.serializeAddress(parameters, "operationsMultisig", operationsMultisig);
 
         string memory chain_info = "chainInfo";

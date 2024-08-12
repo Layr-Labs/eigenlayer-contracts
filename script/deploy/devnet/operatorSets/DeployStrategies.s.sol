@@ -11,11 +11,7 @@ import "../../../utils/ExistingDeploymentParser.sol";
 contract DeployStrategies is ExistingDeploymentParser {
 
     function run() external {
-        // read and log the chainID
-        uint256 chainId = block.chainid;
-        emit log_named_uint("You are deploying on ChainID", chainId);
-
-        _parseDeployedContracts("script/output/devnet/deployed.json");
+        _parseDeployedContracts("script/output/devnet/M2_from_scratch_deployment_data.json");
 
         vm.startBroadcast();
         StrategyDeployer strategyDeployer = new StrategyDeployer(

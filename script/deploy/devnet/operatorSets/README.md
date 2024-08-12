@@ -10,8 +10,13 @@ In the first terminal
 anvil --dump-state state.json --gas-limit 18446744073709551615
 ```
 
-In the second terminal, after configuring `DeployStrategies.s.sol` with the number of strategies you want to deploy,
+In the second terminal, deploy the core contracts
 
+```
+forge script script/deploy/devnet/Deploy_From_Scratch.s.sol  --rpc-url localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast  --skip-simulation --sig "run(string memory configFile)" -- deploy_from_scratch.anvil.config.json
+```
+
+After configuring `DeployStrategies.s.sol` with the number of strategies you want to deploy,
 ```
 forge script script/deploy/devnet/operatorSets/DeployStrategies.s.sol:DeployStrategies --rpc-url localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast  --skip-simulation
 ```
