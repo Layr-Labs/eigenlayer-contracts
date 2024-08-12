@@ -40,7 +40,7 @@ contract MainnetStrategyFactoryDeploy is ExistingDeploymentParser {
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized({isInitialDeployment: true});
+        _verifyContractsInitialized();
         _verifyInitializationParams();
 
         logAndOutputContractAddresses("script/output/mainnet/v0.3.2-mainnet-strategy-factory.output.json");
