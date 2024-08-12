@@ -21,6 +21,10 @@
     "slasherImplementation": "0xef31c292801f24f16479DD83197F1E6AeBb8d6d8",
     "strategyManager": "0x858646372CC42E1A627fcE94aa7A7033e7CF075A",
     "strategyManagerImplementation": "0x5d25EEf8CfEdaA47d31fE2346726dE1c21e342Fb",
+    "strategyFactory": "0x5e4C39Ad7A3E881585e383dB9827EB4811f6F647",
+    "strategyFactoryImplementation": "0x3e07cc2D34C8E0965f5BA45Ac1E960e535155c74",
+    "strategyFactoryBeacon": "0x0ed6703C298d28aE0878d1b28e88cA87F9662fE9",
+    "strategyFactoryBeaconImplementation": "0xe9FA8F904d97854C7389b68923262ADCC6C27827",
     "numStrategiesDeployed": 12,
     "strategies": {
       "stETH": "0x93c4b944D05dfe6df7645A86cd2206016c51564D",
