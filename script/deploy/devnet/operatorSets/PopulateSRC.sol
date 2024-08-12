@@ -14,8 +14,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
     uint32 constant NUM_OPERATORS_PER_OPSET = 2048;
     
     function run() public {
-
-        _parseDeployedContracts("script/output/devnet/deployed.json");
+        _parseDeployedContracts("script/output/devnet/M2_from_scratch_deployment_data.json");
 
         vm.broadcast();
         IStakeRootCompendium stakeRootCompendium =  new StakeRootCompendium(delegationManager, avsDirectory);
