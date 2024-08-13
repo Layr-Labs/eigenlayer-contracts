@@ -113,6 +113,7 @@ function requireValidatorStatusToBalanceCorrectness(bytes32 hash)
     require validatorStatus(hash) != IEigenPod.VALIDATOR_STATUS.ACTIVE => get_restakedBalanceGwei(hash) == 0;
 }
 
+//TODO currently this ignores the queued withdrawals hence it's violated by some methods
 //get_withdrawableRestakedExecutionLayerGwei == podOwnerShares() - withdrawableRestakedExecutionLayerGwei
 rule baseInvariant(method f, env e) filtered 
 {

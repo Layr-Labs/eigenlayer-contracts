@@ -73,6 +73,7 @@ rule addShares_reverts(env e)
     address owner;
     addShares@withrevert(e, owner, shares); 
     bool reverted = lastReverted;
+    satisfy !reverted;
     assert shares == 0 => reverted;
 }
 
@@ -158,19 +159,6 @@ rule removeShares_integrity(env e)
     assert sharesBefore - shares == sharesAfter;
 }
 
-//TODO
-rule withdrawShares_integrity(env e)
-{
-    uint256 shares;
-    address owner; address receiver;
-    mathint sharesBefore = get_podOwnerShares(owner);
-    mathint sharesRBefore = get_podOwnerShares(receiver);
-    withdrawSharesAsTokens(e, owner, receiver, shares); 
-    mathint sharesAfter = get_podOwnerShares(owner);
-    mathint sharesRAfter = get_podOwnerShares(receiver);
-    satisfy shares > 0;
-}
-
 rule addShares_independence(env e)
 {
     uint256 shares1; uint256 shares2;
@@ -201,4 +189,39 @@ rule add_remove_independence(env e)
     assert storageAfter12 == storageAfter21;
 }
 
+rule addShares_revertsWhenNoPod(env e)
+{
+    uint256 shares; 
+    address owner;
+    bool hasPod = get_podByOwner(owner) != 0;
+    satisfy true;
+    addShares@withrevert(e, owner, shares);
+    bool reverted = lastReverted;
 
+    satisfy !hasPod && reverted;
+    assert !hasPod => reverted;
+}
+
+rule removeShares_revertsWhenNoPod(env e)
+{
+    uint256 shares; 
+    address owner;
+    bool hasPod = get_podByOwner(owner) != 0;
+    removeShares@withrevert(e, owner, shares);
+    bool reverted = lastReverted;
+    assert !hasPod => reverted;
+}
+
+////////////////////  IN DEVELOPMENT / OBSOLETE   //////////////
+
+
+// to check the conditions under which the method works correctly
+// loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
+rule addShares_alwaysReverts(env e)
+{
+    uint256 shares;
+    address owner;
+    addShares@withrevert(e, owner, shares); 
+    bool reverted = lastReverted;
+    assert reverted;
+}

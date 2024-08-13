@@ -31,6 +31,14 @@ methods {
       DummyEigenPodB.stake(bytes, bytes, bytes32),
    ] default NONDET;
 
+    // summarizing calls to BeaconChainProofs
+    // otherwise it gives trouble to the prover as it requires very large arrays length
+    function BeaconChainProofs.verifyStateRoot(bytes32, BeaconChainProofs.StateRootProof calldata) internal => NONDET;
+    function BeaconChainProofs.verifyValidatorFields(bytes32, bytes32[] calldata, bytes calldata, uint40) internal => NONDET;
+    function BeaconChainProofs.verifyBalanceContainer(bytes32, BeaconChainProofs.BalanceContainerProof calldata) internal => NONDET;
+    function BeaconChainProofs.verifyValidatorBalance(bytes32, uint40, BeaconChainProofs.BalanceProof calldata) 
+        internal returns (uint64) => NONDET;
+
     // IERC1271
     function _.isValidSignature(bytes32, bytes) external => DISPATCHER(true); 
 

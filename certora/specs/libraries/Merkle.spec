@@ -1,5 +1,3 @@
-//using Merkle as merkle;
-
 methods
 {
     function merkleizeSha256(bytes32[]) external returns bytes32 envfree;
@@ -39,21 +37,6 @@ rule merkleizeSha256IsInjective_onSameLengths()
     assert res1 == res2 => equals(leaves1, leaves2);
 }
 
-/// @title If only the leaf changes, the result must also change for processInclusionProofSha256
-// Proof1.length == Proof2.length && index1 == index2 && leaf1 != leaf2) => 
-// processInclusionProofSha256(proof1, leaf1, index1) != processInclusionProofSha256(proof2, leaf2, index2)           
-rule processInclusionProofSha256_correctness()
-{
-	bytes proof1; bytes32 leaf1; uint256 index1;
-    bytes proof2; bytes32 leaf2; uint256 index2;
-    bytes32 res1 = processInclusionProofSha256(proof1, leaf1, index1);
-    bytes32 res2 = processInclusionProofSha256(proof2, leaf2, index2);
-
-    satisfy true;
-    satisfy res1 != res2;
-    assert proof1.length == proof2.length && index1 == index2 && leaf1 != leaf2 => res1 != res2;
-}
-
 /// @title If only the leaf changes, the result must also change for processInclusionProofKeccak
 //Proof1.length == Proof2.length && index1 == index2 && leaf1 != leaf2) => 
 //  processInclusionProofKeccak(proof1, leaf1, index1) != processInclusionProofKeccak(proof2, leaf2, index2)           
@@ -74,4 +57,36 @@ function isPowerOfTwo(uint256 x) returns bool
         x == 4 || x == 8 || x == 16 || x == 32 ||
         x == 64 || x == 128 || x == 256 || x == 512 ||
         x == 1024 || x == 2048 || x == 4096 || x == 8192;
+}
+
+
+///////////////////   IN DEVELOPMENT / OBSOLETE    ////////
+
+/// @title If only the leaf changes, the result must also change for processInclusionProofSha256
+// Proof1.length == Proof2.length && index1 == index2 && leaf1 != leaf2) => 
+// processInclusionProofSha256(proof1, leaf1, index1) != processInclusionProofSha256(proof2, leaf2, index2)           
+// TODO
+rule processInclusionProofSha256_correctness()
+{
+	bytes proof1; bytes32 leaf1; uint256 index1;
+    bytes proof2; bytes32 leaf2; uint256 index2;
+    bytes32 res1 = processInclusionProofSha256(proof1, leaf1, index1);
+    bytes32 res2 = processInclusionProofSha256(proof2, leaf2, index2);
+
+    satisfy true;
+    satisfy res1 != res2;
+    assert proof1.length == proof2.length && index1 == index2 && leaf1 != leaf2 => res1 != res2;
+}
+
+// to check the conditions under which the method works correctly
+// loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
+rule processInclusionProofSha256_SingleValue()
+{
+	bytes proof1; bytes32 leaf1; uint256 index1;
+    bytes proof2; bytes32 leaf2; uint256 index2;
+    bytes32 res1 = processInclusionProofSha256(proof1, leaf1, index1);
+    bytes32 res2 = processInclusionProofSha256(proof2, leaf2, index2);
+
+    satisfy true;
+    assert res1 == res2;
 }
