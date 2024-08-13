@@ -28,36 +28,27 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
         address[] memory allStrategies = _parseDeployedStrategies("script/output/devnet/deployed_strategies.json");
 
-        uint32 opsetsPerChunk = 1;
-        uint32 numChunks = NUM_OPSETS/opsetsPerChunk;
-        IStrategy[][][] memory strategies = new IStrategy[][][](numChunks);
+        // list of strategies for each operatorSet
+        IStrategy[][] memory strategies = new IStrategy[][](NUM_OPSETS);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            strategies[i] = new IStrategy[][](opsetsPerChunk);
+            strategies[i] = new IStrategy[](stakeRootCompendium.MAX_NUM_STRATEGIES());
             for (uint256 j = 0; j < strategies[i].length; ++j) {
-                // if we are at the end of the strategies array, break
-                if (i * strategies[i].length + j == NUM_OPSETS) {
-                    break;
-                }
-
                 // fill in the strategies array
-                strategies[i][j] = new IStrategy[](stakeRootCompendium.MAX_NUM_STRATEGIES());
-                for (uint256 k = 0; k < strategies[i][j].length; ++k) {
-                    strategies[i][j][k] = IStrategy(allStrategies[i * strategies[i].length * strategies[i][j].length + j * strategies[i][j].length + k]);
-                }
+                strategies[i][j] = IStrategy(allStrategies[i * strategies[i].length + j]);
             }
         }
 
         vm.startBroadcast();
 
         OperatorFactory operatorFactory = new OperatorFactory(delegationManager, strategyManager);
-        address[][][] memory operators = new address[][][](strategies.length);
+        address[][] memory operators = new address[][](strategies.length);
         for (uint i = 0; i < operators.length; i++) {
             operators[i] = operatorFactory.createManyOperators(strategies[i], NUM_OPERATORS_PER_OPSET);
         }
 
         AVS avs = new AVS(avsDirectory, stakeRootCompendium);
         for (uint i = 0; i < strategies.length; i++) {
-            avs.createOperatorSetsAndRegisterOperators(uint32(i * strategies[i].length), strategies[i], operators[i]);
+            avs.createOperatorSetAndRegisterOperators(uint32(i), strategies[i], operators[i]);
         }
 
         vm.stopBroadcast();
@@ -70,21 +61,18 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         //     vm.removeFile(entries[i].path);
         // }
         for (uint256 i = 0; i < operators.length; ++i) {
-            for (uint256 j = 0; j < operators[i].length; ++j) {
-                address[] memory strategyAddresses = new address[](strategies[i][j].length);
-                for (uint256 k = 0; k < strategies[i][j].length; ++k) {
-                    strategyAddresses[k] = address(strategies[i][j][k]);
-                }
-
-                string memory parent_object = "success";
-                vm.serializeAddress(parent_object, "stakeRootCompendium", address(stakeRootCompendium));
-                vm.serializeAddress(parent_object, "avs", address(avs));
-                vm.serializeAddress(parent_object, "operators", operators[i][j]);
-                vm.serializeAddress(parent_object, "strategies", strategyAddresses);
-                string memory finalJson = vm.serializeString("success", "success", parent_object);
-                uint32 opsetId = uint32(i * strategies[i].length + j);
-                vm.writeJson(finalJson, string.concat("script/output/devnet/populate_src/opset_", string.concat(vm.toString(opsetId), ".json")));
+            address[] memory strategyAddresses = new address[](strategies[i].length);
+            for (uint256 j = 0; j < strategies[i].length; ++j) {
+                strategyAddresses[j] = address(strategies[i][j]);
             }
+
+            string memory parent_object = "success";
+            vm.serializeAddress(parent_object, "stakeRootCompendium", address(stakeRootCompendium));
+            vm.serializeAddress(parent_object, "avs", address(avs));
+            vm.serializeAddress(parent_object, "operators", operators[i]);
+            vm.serializeAddress(parent_object, "strategies", strategyAddresses);
+            string memory finalJson = vm.serializeString("success", "success", parent_object);
+            vm.writeJson(finalJson, string.concat("script/output/devnet/populate_src/opset_", string.concat(vm.toString(i), ".json")));
         }
     }
 }
@@ -100,40 +88,34 @@ contract AVS {
         avsDirectory.becomeOperatorSetAVS();
     }
 
-    function createOperatorSetsAndRegisterOperators(uint32 startOperatorSetId, IStrategy[][] memory strategies, address[][] memory operators) external {
-        uint256 numOperatorSets = strategies.length;
+    function createOperatorSetAndRegisterOperators(uint32 operatorSetId, IStrategy[] memory strategies, address[] memory operators) external {
         // create operator sets and become an AVS
-        uint32[] memory operatorSetIdsToCreate = new uint32[](numOperatorSets);
-        for (uint256 i = 0; i < operatorSetIdsToCreate.length; ++i) {
-            operatorSetIdsToCreate[i] = uint32(startOperatorSetId + i);
-        }
+        uint32[] memory operatorSetIdsToCreate = new uint32[](1);
+        operatorSetIdsToCreate[0] = operatorSetId;
         avsDirectory.createOperatorSets(operatorSetIdsToCreate);
-        for (uint256 i = 0; i < operatorSetIdsToCreate.length; ++i) {
-            uint32[] memory operatorSetIdsToRegisterWith = new uint32[](1);
-            operatorSetIdsToRegisterWith[0] = operatorSetIdsToCreate[i];
-            // register operators to operator sets
-            for (uint256 j = 0; j < operators[i].length; ++j) {
-                avsDirectory.registerOperatorToOperatorSets(
-                    operators[i][j], 
-                    operatorSetIdsToRegisterWith, 
-                    ISignatureUtils.SignatureWithSaltAndExpiry({
-                        signature: hex"",
-                        salt: bytes32(0),
-                        expiry: type(uint256).max
-                    })
-                );
-            }
 
-            // loop through strategies in batches of NUM_STRATS_PER_OPERATOR for each operator set
-            IStakeRootCompendium.StrategyAndMultiplier[] memory strategiesAndMultipliers = new IStakeRootCompendium.StrategyAndMultiplier[](strategies[i].length);
-            for (uint256 j = 0; j < strategiesAndMultipliers.length; ++j) {
-                strategiesAndMultipliers[j] = IStakeRootCompendium.StrategyAndMultiplier({
-                    strategy: strategies[i][j],
-                    multiplier: 1 ether
-                });
-            }
-            stakeRootCompendium.addStrategiesAndMultipliers(operatorSetIdsToCreate[i], strategiesAndMultipliers); 
+        // register operators to operator sets
+        for (uint256 i = 0; i < operators.length; ++i) {
+            avsDirectory.registerOperatorToOperatorSets(
+                operators[i], 
+                operatorSetIdsToCreate, 
+                ISignatureUtils.SignatureWithSaltAndExpiry({
+                    signature: hex"",
+                    salt: bytes32(0),
+                    expiry: type(uint256).max
+                })
+            );
         }
+
+        // loop through strategies in batches of NUM_STRATS_PER_OPERATOR for each operator set
+        IStakeRootCompendium.StrategyAndMultiplier[] memory strategiesAndMultipliers = new IStakeRootCompendium.StrategyAndMultiplier[](strategies.length);
+        for (uint256 i = 0; i < strategiesAndMultipliers.length; ++i) {
+            strategiesAndMultipliers[i] = IStakeRootCompendium.StrategyAndMultiplier({
+                strategy: strategies[i],
+                multiplier: 1 ether
+            });
+        }
+        stakeRootCompendium.addStrategiesAndMultipliers(operatorSetId, strategiesAndMultipliers); 
     }
 }
 
@@ -146,13 +128,10 @@ contract OperatorFactory {
         strategyManager = _strategyManager;
     }
 
-    function createManyOperators(IStrategy[][] memory strategies, uint256 numOperatorsPerOpset) public returns(address[][] memory) {
-        address[][] memory operators = new address[][](strategies.length);
+    function createManyOperators(IStrategy[] memory strategies, uint256 numOperatorsPerOpset) public returns(address[] memory) {
+        address[] memory operators = new address[](numOperatorsPerOpset);
         for (uint256 i = 0; i < operators.length; ++i) {
-            operators[i] = new address[](numOperatorsPerOpset);
-            for (uint256 j = 0; j < operators[i].length; ++j) {
-                operators[i][j] = address(new Operator(delegationManager));
-            }
+            operators[i] = address(new Operator(delegationManager));
         }
         return operators;
     }
