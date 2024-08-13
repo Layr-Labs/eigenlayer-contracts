@@ -63,8 +63,12 @@ interface IRewardsCoordinatorEvents {
         IRewardsCoordinator.OperatorSetRewardsSubmission rewardsSubmission
     );
 
-
-
+    event PerformanceBasedRewardCreated(
+        address indexed avs,
+        uint256 indexed submissionNonce,
+        bytes32 indexed rewardsSubmissionHash,
+        IRewardsCoordinator.PerformanceRewardsSubmission rewardsSubmission
+    );
 
     /// TOKEN EVENTS FOR TESTING ///
     /**

@@ -49,6 +49,8 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
     /// @dev Index for flag that pauses calling rewardOperatorSetForRange
     uint8 internal constant PAUSED_REWARD_OPERATOR_SET = 4;
+    /// @dev Index for flag that pauses calling rewardOperatorsForPerformance
+    uint8 internal constant PAUSED_REWARD_PERFORMANCE = 5;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -83,9 +85,9 @@ contract RewardsCoordinator is
         uint32 _GENESIS_REWARDS_TIMESTAMP,
         uint32 _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
         uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
+    )
         // uint32 _GENESIS_PERFORMANCE_REWARDS_TIMESTAMP,
         // uint32 _PERFORMANCE_MAX_RETROACTIVE_LENGTH
-    )
         RewardsCoordinatorStorage(
             _delegationManager,
             _strategyManager,
@@ -151,7 +153,7 @@ contract RewardsCoordinator is
         onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
         nonReentrant
     {
-        for (uint256 i = 0; i < rewardsSubmissions.length;) {
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
@@ -170,10 +172,6 @@ contract RewardsCoordinator is
 
             emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -189,11 +187,15 @@ contract RewardsCoordinator is
         onlyRewardsForAllSubmitter
         nonReentrant
     {
-        for (uint256 i = 0; i < rewardsSubmissions.length;) {
+        // Cache starting nonce value for later use.
+        uint256 startingNonce = submissionNonce[msg.sender];
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
-            uint256 nonce = submissionNonce[msg.sender];
-            bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
-
+            // Calculate current nonce by adding `i` to starting nonce.
+            uint256 currentNonce = startingNonce + i;
+            // Calculate rewards submission hash.
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, currentNonce, rewardsSubmission));
+            // Validate rewards submission.
             _validateRewardsSubmission(
                 rewardsSubmission.strategiesAndMultipliers,
                 rewardsSubmission.amount,
@@ -202,17 +204,15 @@ contract RewardsCoordinator is
                 MAX_RETROACTIVE_LENGTH,
                 GENESIS_REWARDS_TIMESTAMP
             );
-
-            isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionForAllHash] = true;
-            submissionNonce[msg.sender] = nonce + 1;
-
-            emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
+            // Mark `rewardsSubmissionHash` as valid for avs (msg.sender).
+            isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionHash] = true;
+            // Emit event to track submission for all reward.
+            emit RewardsSubmissionForAllCreated(msg.sender, currentNonce, rewardsSubmissionHash, rewardsSubmission);
+            // Pull `token` of `amount` from avs (msg.sender).
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
-
-            unchecked {
-                ++i;
-            }
         }
+        // Increase avs submission nonce by rewards submissions submitted.
+        submissionNonce[msg.sender] = startingNonce + rewardsSubmissions.length;
     }
 
     /**
@@ -235,7 +235,7 @@ contract RewardsCoordinator is
     {
         // Cache starting nonce value for later use.
         uint256 startingNonce = submissionNonce[msg.sender];
-        for (uint256 i; i < rewardsSubmissions.length; ++i) {
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             OperatorSetRewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             // Calculate current nonce by adding `i` to starting nonce.
             uint256 currentNonce = startingNonce + i;
@@ -246,7 +246,7 @@ contract RewardsCoordinator is
                 avsDirectory.isOperatorSet(msg.sender, rewardsSubmission.operatorSetId),
                 "RewardsCoordinator.rewardOperatorSetForRange: invalid operatorSet"
             );
-            // Validate the rewards submission.
+            // Validate rewards submission.
             _validateRewardsSubmission(
                 rewardsSubmission.strategiesAndMultipliers,
                 rewardsSubmission.amount,
@@ -255,20 +255,20 @@ contract RewardsCoordinator is
                 OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
                 OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP
             );
-            // Mark `rewardsSubmissionHash` as valid.
+            // Mark `rewardsSubmissionHash` as valid for avs (msg.sender).
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
             // Pull reward `token` of `amount` from avs (msg.sender).
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
             // Emit event to track operator set reward.
             emit OperatorSetRewardCreated(msg.sender, currentNonce, rewardsSubmissionHash, rewardsSubmission);
         }
-        // Increase avs submission nonce by rewards submissions submitted. 
+        // Increase avs submission nonce by rewards submissions submitted.
         submissionNonce[msg.sender] = startingNonce + rewardsSubmissions.length;
     }
 
     function rewardOperatorsForPerformance(PerformanceRewardsSubmission calldata rewardsSubmission)
         external
-        onlyWhenNotPaused(PAUSED_REWARD_OPERATOR_SET)
+        onlyWhenNotPaused(PAUSED_REWARD_PERFORMANCE)
         nonReentrant
     {
         // Cache nonce for later use.
@@ -284,7 +284,7 @@ contract RewardsCoordinator is
             GENESIS_PERFORMANCE_REWARDS_TIMESTAMP,
             PERFORMANCE_MAX_RETROACTIVE_LENGTH
         );
-        // Mark `rewardsSubmissionHash` as valid.
+        // Mark `rewardsSubmissionHash` as valid for avs (msg.sender).
         isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
         // Increase avs submission nonce by one.
         ++submissionNonce[msg.sender];
