@@ -11,7 +11,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
     string internal constant TEST_MNEMONIC = "hundred february vast fluid produce radar notice ridge armed glare panther balance";
 
     uint32 constant NUM_OPSETS = 10;
-    uint32 constant NUM_OPERATORS_PER_OPSET = 10;
+    uint32 constant NUM_OPERATORS_PER_OPSET = 2048;
     
     function run() public {
         _parseDeployedContracts("script/output/devnet/M2_from_scratch_deployment_data.json");
@@ -43,6 +43,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         OperatorFactory operatorFactory = new OperatorFactory(delegationManager, strategyManager);
         address[][] memory operators = new address[][](strategies.length);
         for (uint i = 0; i < operators.length; i++) {
+            // todo: send operators[i].length*1 ether of strategy token to operatorfactory
             operators[i] = operatorFactory.createManyOperators(strategies[i], NUM_OPERATORS_PER_OPSET);
         }
 
@@ -132,6 +133,9 @@ contract OperatorFactory {
         address[] memory operators = new address[](numOperatorsPerOpset);
         for (uint256 i = 0; i < operators.length; ++i) {
             operators[i] = address(new Operator(delegationManager));
+            for (uint256 j = 0; j < strategies.length; ++j) {
+                // todo: deposit on behalf of operator for each strategy
+            }
         }
         return operators;
     }
