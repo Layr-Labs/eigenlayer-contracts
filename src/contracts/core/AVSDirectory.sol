@@ -275,6 +275,10 @@ contract AVSDirectory is
 
         uint32 effectTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
         for (uint256 i = 0; i < allocations.length; ++i) {
+            // 1. For the given (operator,strategy) clear all pending deallocations for all operatorSets
+            // and update freeMagnitude
+            _clearAllFreeMagnitude(operator, allocations[i].strategy);
+            // 2. allocate for the strategy after updating freeMagnitude
             _allocate(operator, allocations[i], effectTimestamp);
         }
     }
@@ -288,7 +292,7 @@ contract AVSDirectory is
      * @param deallocations array of magnitude adjustments for multiple strategies and corresponding operator sets
      * @param operatorSignature signature of the operator if msg.sender is not the operator
      */
-    function queueDeallocate(
+    function deallocate(
         address operator,
         MagnitudeAdjustment[] calldata deallocations,
         SignatureWithSaltAndExpiry calldata operatorSignature
@@ -298,9 +302,41 @@ contract AVSDirectory is
         uint32 completableTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
         // deallocate for each strategy
         for (uint256 i = 0; i < deallocations.length; ++i) {
-            _queueDeallocate(operator, deallocations[i], completableTimestamp);
+            // 1. For the given (operator,strategy) clear all pending deallocations for all operatorSets
+            // and update freeMagnitude
+            _clearAllFreeMagnitude(operator, deallocations[i].strategy);
+            // 2. deallocate for the strategy after updating freeMagnitude
+            _deallocate(operator, deallocations[i], completableTimestamp);
         }
     }
+
+    // /**
+    //  * @notice Complete queued deallocations of slashable stake for an operator, permissionlessly called by anyone
+    //  * Increments the free magnitude of the operator by the sum of all deallocation amounts for each strategy.
+    //  * If the operator was slashed, this will be a smaller amount than during queuing.
+    //  *
+    //  * @param operator address to complete deallocations for
+    //  * @param strategies a list of strategies to complete deallocations for
+    //  * @param operatorSets a 2d list of operator sets to complete deallocations for, one list for each strategy
+    //  *
+    //  * @dev can be called permissionlessly by anyone
+    //  */
+    // function freeDeallocatedMagnitude(
+    //     address operator,
+    //     IStrategy[] calldata strategies,
+    //     OperatorSet[][] calldata operatorSets
+    // ) external {
+    //     // complete all queued deallocations for strategies
+    //     for (uint256 i = 0; i < strategies.length; ++i) {
+    //         uint64 freeMagnitudeToAdd = 0;
+    //         // complete all queued deallocations for specified operatorSets
+    //         for (uint256 j = 0; j < operatorSets[i].length; ++j) {
+    //             freeMagnitudeToAdd += _freeDeallocatedMagnitude(operator, strategies[i], operatorSets[i][j]);
+    //         }
+    //         // add to free available magnitude
+    //         freeMagnitude[operator][strategies[i]] += freeMagnitudeToAdd;
+    //     }
+    // }
 
     /**
      * @notice Complete queued deallocations of slashable stake for an operator, permissionlessly called by anyone
@@ -309,24 +345,15 @@ contract AVSDirectory is
      *
      * @param operator address to complete deallocations for
      * @param strategies a list of strategies to complete deallocations for
-     * @param operatorSets a 2d list of operator sets to complete deallocations for, one list for each strategy
      *
      * @dev can be called permissionlessly by anyone
      */
-    function completeDeallocations(
+    function freeDeallocatedMagnitude(
         address operator,
-        IStrategy[] calldata strategies,
-        OperatorSet[][] calldata operatorSets
+        IStrategy[] calldata strategies
     ) external {
-        // complete all queued deallocations for strategies
         for (uint256 i = 0; i < strategies.length; ++i) {
-            uint64 freeMagnitudeToAdd = 0;
-            // complete all queued deallocations for specified operatorSets
-            for (uint256 j = 0; j < operatorSets[i].length; ++j) {
-                freeMagnitudeToAdd += _completeDeallocation(operator, strategies[i], operatorSets[i][j]);
-            }
-            // add to free available magnitude
-            freeMagnitude[operator][strategies[i]] += freeMagnitudeToAdd;
+            _clearAllFreeMagnitude(operator, strategies[i]);
         }
     }
 
@@ -500,6 +527,10 @@ contract AVSDirectory is
         OperatorSet[] calldata operatorSets = allocation.operatorSets;
         uint64 freeAllocatableMagnitude = freeMagnitude[operator][strategy];
 
+        // For the given (operator,strategy) clear all pending deallocations for all operatorSets
+        // and update freeMagnitude
+        _clearAllFreeMagnitude(operator, strategy);
+
         for (uint256 i = 0; i < operatorSets.length; ++i) {
             // 1. check freeMagnitude available, that is the allocation of stake is backed and not slashable
             require(
@@ -543,7 +574,7 @@ contract AVSDirectory is
      * @param deallocation magnitude adjustment for a single strategy and multiple operator sets
      * @param completableTimestamp timestamp when the queued deallocation can be completed and freeMagnitude updated
      */
-    function _queueDeallocate(
+    function _deallocate(
         address operator,
         MagnitudeAdjustment calldata deallocation,
         uint32 completableTimestamp
@@ -551,7 +582,7 @@ contract AVSDirectory is
         IStrategy strategy = deallocation.strategy;
         require(
             deallocation.operatorSets.length == deallocation.magnitudeDiffs.length,
-            "AVSDirectory._queueDeallocate: operatorSets and magnitudeDiffs length mismatch"
+            "AVSDirectory._deallocate: operatorSets and magnitudeDiffs length mismatch"
         );
         OperatorSet[] calldata operatorSets = deallocation.operatorSets;
 
@@ -564,11 +595,11 @@ contract AVSDirectory is
             );
             require(
                 deallocation.magnitudeDiffs[i] > 0,
-                "AVSDirectory._queueDeallocate: magnitudeDiff must be greater than 0"
+                "AVSDirectory._deallocate: magnitudeDiff must be greater than 0"
             );
             require(
                 deallocation.magnitudeDiffs[i] <= currentMagnitude,
-                "AVSDirectory._queueDeallocate: cannot deallocate more than what is allocated"
+                "AVSDirectory._deallocate: cannot deallocate more than what is allocated"
             );
 
             // 2. update and decrement current and future queued amounts in case any pending allocations exist
@@ -597,10 +628,10 @@ contract AVSDirectory is
      * @param strategy the strategy to complete deallocations for
      * @param operatorSet the operator set to complete deallocations for the given strategy
      */
-    function _completeDeallocation(
+    function _freeDeallocatedMagnitude(
         address operator,
         IStrategy strategy,
-        OperatorSet calldata operatorSet
+        OperatorSet memory operatorSet
     ) internal returns (uint64 freeMagnitudeToAdd) {
         QueuedDeallocation[] memory queuedDeallocation =
             _queuedDeallocations[operator][strategy][operatorSet.avs][operatorSet.operatorSetId];
@@ -617,6 +648,26 @@ contract AVSDirectory is
         }
         _nextDeallocationIndex[operator][strategy][operatorSet.avs][operatorSet.operatorSetId] = i;
         return freeMagnitudeToAdd;
+    }
+
+    /// @dev read through all registered operatorSets for the operator and free deallocated magnitude
+    /// NOTE: gassy because we don't have a mapping of operator => strategy => opSets but instead are using
+    /// operator => opSets so we may have a lot of calls to `_freeDeallocatedMagnitude` that are "no-op"
+    function _clearAllFreeMagnitude(
+        address operator,
+        IStrategy strategy
+    ) internal {
+        // 1. keep track of running sum of freeMagnitudeToAdd
+        uint64 freeMagnitudeToAdd = 0;
+        // 2. for each operatorSet an operator is registered for, free deallocated magnitude
+        // for the given strategy
+        uint256 setLength = _operatorSetsMemberOf[operator].length();
+        for (uint256 i = 0; i < setLength; ++i) {
+            OperatorSet memory operatorSet = operatorSetsMemberOf(operator, i);
+            freeMagnitudeToAdd += _freeDeallocatedMagnitude(operator, strategy, operatorSet);
+        }
+        // 3. add to free available magnitude
+        freeMagnitude[operator][strategy] += freeMagnitudeToAdd;
     }
 
     /// @dev Check for max number of pending deallocations, ensuring <= MAX_PENDING_UPDATES

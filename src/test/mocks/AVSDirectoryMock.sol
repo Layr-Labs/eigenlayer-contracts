@@ -42,16 +42,15 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {}
 
-    function queueDeallocate(
+    function deallocate(
         address operator,
         MagnitudeAdjustment[] calldata deallocations,
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {}
 
-    function completeDeallocations(
+    function freeDeallocatedMagnitude(
         address operator,
-        IStrategy[] calldata strategies,
-        OperatorSet[][] calldata operatorSets
+        IStrategy[] calldata strategies
     ) external {}
 
     function slashOperator(

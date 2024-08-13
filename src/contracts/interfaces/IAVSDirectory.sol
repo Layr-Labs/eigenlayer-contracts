@@ -225,7 +225,7 @@ interface IAVSDirectory is ISignatureUtils {
      * @param deallocations array of magnitude adjustments for multiple strategies and corresponding operator sets
      * @param operatorSignature signature of the operator if msg.sender is not the operator
      */
-    function queueDeallocate(
+    function deallocate(
         address operator,
         MagnitudeAdjustment[] calldata deallocations,
         SignatureWithSaltAndExpiry calldata operatorSignature
@@ -238,14 +238,12 @@ interface IAVSDirectory is ISignatureUtils {
      *
      * @param operator address to complete deallocations for
      * @param strategies a list of strategies to complete deallocations for
-     * @param operatorSets a 2d list of operator sets to complete deallocations for, one list for each strategy
      *
      * @dev can be called permissionlessly by anyone
      */
-    function completeDeallocations(
+    function freeDeallocatedMagnitude(
         address operator,
-        IStrategy[] calldata strategies,
-        OperatorSet[][] calldata operatorSets
+        IStrategy[] calldata strategies
     ) external;
 
     /**
