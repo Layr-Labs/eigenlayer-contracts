@@ -326,6 +326,34 @@ contract AVSDirectory is
         }
     }
 
+    // /**
+    //  * @notice Complete queued deallocations of slashable stake for an operator, permissionlessly called by anyone
+    //  * Increments the free magnitude of the operator by the sum of all deallocation amounts for each strategy.
+    //  * If the operator was slashed, this will be a smaller amount than during queuing.
+    //  *
+    //  * @param operator address to complete deallocations for
+    //  * @param strategies a list of strategies to complete deallocations for
+    //  * @param operatorSets a 2d list of operator sets to complete deallocations for, one list for each strategy
+    //  *
+    //  * @dev can be called permissionlessly by anyone
+    //  */
+    // function freeDeallocatedMagnitude(
+    //     address operator,
+    //     IStrategy[] calldata strategies,
+    //     OperatorSet[][] calldata operatorSets
+    // ) external {
+    //     // complete all queued deallocations for strategies
+    //     for (uint256 i = 0; i < strategies.length; ++i) {
+    //         uint64 freeMagnitudeToAdd = 0;
+    //         // complete all queued deallocations for specified operatorSets
+    //         for (uint256 j = 0; j < operatorSets[i].length; ++j) {
+    //             freeMagnitudeToAdd += _freeDeallocatedMagnitude(operator, strategies[i], operatorSets[i][j]);
+    //         }
+    //         // add to free available magnitude
+    //         freeMagnitude[operator][strategies[i]] += freeMagnitudeToAdd;
+    //     }
+    // }
+
     /**
      * @notice For all pending deallocations that have become completable, their pending free magnitude can be
      * added back to the free magnitude of the (operator, strategy) amount. This function takes a list of strategies
@@ -526,6 +554,10 @@ contract AVSDirectory is
         IStrategy strategy = allocation.strategy;
         OperatorSet[] calldata operatorSets = allocation.operatorSets;
         uint64 freeAllocatableMagnitude = freeMagnitude[operator][strategy];
+
+        // For the given (operator,strategy) clear all pending deallocations for all operatorSets
+        // and update freeMagnitude
+        _clearAllFreeMagnitude(operator, strategy);
 
         for (uint256 i = 0; i < operatorSets.length; ++i) {
             // 1. check freeMagnitude available, that is the allocation of stake is backed and not slashable
