@@ -25,13 +25,18 @@ interface IStakeRootCompendium {
     function MAX_NUM_OPERATOR_SETS() external view returns (uint32);
     function MAX_NUM_STRATEGIES() external view returns (uint32);
 
-    function delegation() external view returns (IDelegationManager);
+    function delegationManager() external view returns (IDelegationManager);
     function avsDirectory() external view returns (IAVSDirectory);
     function verifier() external view returns (address);
     function imageId() external view returns (bytes32);
-    function numConfiguredOperatorSets() external view returns (uint256);
 
-    function getStakeRoot(StakeRootLeaf[] calldata stakeRootLeaves) external view returns (bytes32);
+    /**
+     * @notice called offchain with the operator set roots ordered by the operator set index to calculate the stake root
+     * @param timestamp the timestamp of the stake root
+     * @param operatorSetRoots the ordered operator set roots
+     * @dev operatorSetRoots must be ordered by the operator set index
+     */
+    function getStakeRoot(uint32 timestamp, bytes32[] calldata operatorSetRoots) external view returns (bytes32);
 
     function getOperatorSetRoot(
         IAVSDirectory.OperatorSet calldata operatorSet, 

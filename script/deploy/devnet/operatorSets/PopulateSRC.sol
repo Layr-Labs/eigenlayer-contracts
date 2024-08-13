@@ -10,14 +10,19 @@ import "forge-std/Script.sol";
 contract PopulateSRC is Script, Test, ExistingDeploymentParser {
     string internal constant TEST_MNEMONIC = "hundred february vast fluid produce radar notice ridge armed glare panther balance";
 
-    uint32 constant NUM_OPSETS = 50;
-    uint32 constant NUM_OPERATORS_PER_OPSET = 2048;
+    uint32 constant NUM_OPSETS = 10;
+    uint32 constant NUM_OPERATORS_PER_OPSET = 10;
     
     function run() public {
         _parseDeployedContracts("script/output/devnet/M2_from_scratch_deployment_data.json");
 
         vm.broadcast();
-        IStakeRootCompendium stakeRootCompendium =  new StakeRootCompendium(delegationManager, avsDirectory);
+        IStakeRootCompendium stakeRootCompendium =  new StakeRootCompendium({
+            _delegationManager: delegationManager,
+            _avsDirectory: avsDirectory,
+            _maxRootStaleness: 1 days,
+            _challengePeriod: 12 seconds
+        });
 
         emit log_named_address("stakeRootCompendium", address(stakeRootCompendium));
 

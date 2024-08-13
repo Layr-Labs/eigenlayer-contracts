@@ -10,12 +10,11 @@ import "../libraries/Merkle.sol";
 import "@risc0-ethereum/IRiscZeroVerifier.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-
-
+import "../libraries/Checkpoints.sol";
 
 contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
+    using Checkpoints for Checkpoints.Trace208;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
-
 
     /// @notice the maximum number of operators that can be in an operator set in the StakeTree
     uint32 public constant MAX_OPERATOR_SET_SIZE = 2048;
@@ -23,57 +22,131 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     uint32 public constant MAX_NUM_OPERATOR_SETS = 2048;
     /// @notice the maximum number of strategies that each operator set in the StakeTree can use to weight their operator stakes
     uint32 public constant MAX_NUM_STRATEGIES = 20;
+    /// @notice the placeholder index used for operator sets that are removed from the StakeTree
+    uint32 public constant REMOVED_INDEX = type(uint32).max;
 
     /// @notice the delegation manager contract
-    IDelegationManager public delegation;
+    IDelegationManager public immutable delegationManager;
     /// @notice the AVS directory contract
-    IAVSDirectory public avsDirectory;
+    IAVSDirectory public immutable avsDirectory;
+    /// @notice challenge period for stake roots
+    uint32 public immutable challengePeriod;
+    /// @notice the amount of time in the past that a stake root can be posted for
+    uint32 public immutable maxRootStaleness;
+
+    /// @notice length of the operatorSets array over time
+    Checkpoints.Trace208 internal operatorSetsLength;
+    /// @notice map from operator set to a trace of their index over time
+    mapping(address => mapping(uint32 => Checkpoints.Trace208)) internal operatorSetToIndex;
+    /// @notice list of operator sets that have been configured to be in the StakeTree
+    IAVSDirectory.OperatorSet[] public operatorSets;
+    /// @notice the number of operator sets that have been configured to be in the StakeTree
+    mapping(address => mapping(uint32 => EnumerableMap.AddressToUintMap)) internal operatorSetToStrategyAndMultipliers;
+
+    /// @notice the address of the claimer contract that will be used to claim stake roots
+    address public claimer;
+    struct StakeRootClaim {
+        bytes32 stakeRoot;
+        uint32 timestamp; // the timestamp the was generated against
+        uint32 validAfter;
+        bool challenged;
+    }
+    /// @notice map to claimed stake roots
+    StakeRootClaim[] public stakeRootClaims;
 
     /// @notice the verifier contract that will be used to verify snark proofs
     address public verifier;
     /// @notice the id of the program being verified when roots are posted
     bytes32 public imageId;
 
-    /// @notice the number of operator sets that have been configured to be in the StakeTree
-    uint256 public numConfiguredOperatorSets;
-    /// @notice the number of operator sets that have been configured to be in the StakeTree
-    mapping(address => mapping(uint32 => EnumerableMap.AddressToUintMap)) internal operatorSetToStrategyAndMultipliers;
-
-    modifier isOperatorSet(address avs, uint32 operatorSetId) {
-        require(avsDirectory.isOperatorSet(avs, operatorSetId), "StakeRootCompendium: operator set does not exist");
-        _;
-    }
-
     constructor(
-        IDelegationManager _delegation,
-        IAVSDirectory _avsDirectory
+        IDelegationManager _delegationManager,
+        IAVSDirectory _avsDirectory,
+        uint32 _maxRootStaleness,
+        uint32 _challengePeriod
     ) {
-        _disableInitializers();
-        delegation = _delegation;
+        // _disableInitializers();
+        delegationManager = _delegationManager;
         avsDirectory = _avsDirectory;
+        maxRootStaleness = _maxRootStaleness;
+        challengePeriod = _challengePeriod;
     }
 
-    function getStakeRoot(StakeRootLeaf[] calldata stakeRootLeaves) external view returns (bytes32) {
-        require(stakeRootLeaves.length == numConfiguredOperatorSets, "AVSSyncTree.getStakeRoot: more leaves than AVSs that have set their strategies and multipliers");
-    
-        bytes32[] memory operatorSetLeaves = new bytes32[](stakeRootLeaves.length);
+    function initialize(address initialOwner, address _claimer) public initializer {
+        __Ownable_init();
+        _transferOwnership(initialOwner);
+        claimer = _claimer;
+    }
 
-        IAVSDirectory.OperatorSet memory prevOperatorSet;
-        for (uint256 i = 0; i < stakeRootLeaves.length; i++) {
-            // ensure that stakeRootLeaves are sorted, first by AVS and then by operatorSetId
-            require(
-                stakeRootLeaves[i].operatorSet.avs > prevOperatorSet.avs 
-                || (
-                    stakeRootLeaves[i].operatorSet.avs == prevOperatorSet.avs 
-                    && stakeRootLeaves[i].operatorSet.operatorSetId > prevOperatorSet.operatorSetId
-                ), 
-                "AVSSyncTree.getStakeRoot: stakeRootLeaves not sorted"
-            );
-            prevOperatorSet = stakeRootLeaves[i].operatorSet;
+    /// CALLED BY AVS
 
-            operatorSetLeaves[i] = keccak256(abi.encodePacked(stakeRootLeaves[i].operatorSet.avs, stakeRootLeaves[i].operatorSet.operatorSetId, stakeRootLeaves[i].operatorSetRoot));
+    /**
+     * @notice called by an AVS to set their strategies and multipliers used to determine stakes for stake roots
+     * @param operatorSetId the id of the operator set to set the strategies and multipliers for
+     * @param strategiesAndMultipliers the strategies and multipliers to set for the operator set
+     * @dev msg.sender is used as the AVS in determining the operator set
+     */
+    function addStrategiesAndMultipliers(
+        uint32 operatorSetId,
+        StrategyAndMultiplier[] calldata strategiesAndMultipliers
+    ) external {
+        require(avsDirectory.isOperatorSet(msg.sender, operatorSetId), "StakeRootCompendium.setStrategiesAndMultipliers: operator set does not exist");
+        uint256 lengthBefore = operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length();
+        // if the operator set has been configured to have a positive number of strategies, increment the number of configured operator sets
+        if (lengthBefore == 0) {
+            require(operatorSets.length < MAX_NUM_OPERATOR_SETS, "StakeRootCompendium.setStrategiesAndMultipliers: too many operator sets");
+            operatorSets.push(IAVSDirectory.OperatorSet(msg.sender, operatorSetId));
+            operatorSetToIndex[msg.sender][operatorSetId].push(uint32(block.timestamp), uint208(operatorSets.length - 1));
+            operatorSetsLength.push(uint32(block.timestamp), uint208(operatorSets.length));
         }
-        return Merkle.merkleizeKeccak256(operatorSetLeaves);
+        
+        // set the strategies and multipliers for the operator set
+        for (uint256 i = 0; i < strategiesAndMultipliers.length; i++) {
+            operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].set(address(strategiesAndMultipliers[i].strategy), uint256(strategiesAndMultipliers[i].multiplier));
+        }
+        require(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length() <= MAX_NUM_STRATEGIES, "StakeRootCompendium.setStrategiesAndMultipliers: too many strategies");
+    }
+
+    /**
+     * @notice called by an AVS to remove their strategies and multipliers used to determine stakes for stake roots
+     * @param operatorSetId the id of the operator set to remove the strategies and multipliers for
+     * @param strategies the strategies to remove for the operator set
+     * @dev msg.sender is used as the AVS in determining the operator set
+     */
+    function removeStrategiesAndMultipliers(
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies
+    ) external {        
+        // remove the strategies and multipliers for the operator set
+        for (uint256 i = 0; i < strategies.length; i++) {
+            require(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].remove(address(strategies[i])), "StakeRootCompendium.removeStrategiesAndMultipliers: strategy not found");
+        }
+
+        // if the operator set has been configured to have no strategies, decrement the number of configured operator sets
+        if(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length() == 0) {
+            IAVSDirectory.OperatorSet memory operatorSet = operatorSets[operatorSets.length - 1];
+            uint208 operatorSetIndex = operatorSetToIndex[msg.sender][operatorSetId].latest();
+            operatorSets[operatorSetIndex] = operatorSet;
+            operatorSets.pop();
+            
+            // update the index of the operator set
+            operatorSetToIndex[msg.sender][operatorSetId].push(uint32(block.timestamp), REMOVED_INDEX);
+            operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].push(uint32(block.timestamp), operatorSetIndex);
+            operatorSetsLength.push(uint32(block.timestamp), uint208(operatorSets.length));
+        }
+    }
+
+    // STAKE ROOT CALCULATION
+
+    /**
+     * @notice called offchain with the operator set roots ordered by the operator set index to calculate the stake root
+     * @param timestamp the timestamp of the stake root
+     * @param operatorSetRoots the ordered operator set roots
+     * @dev operatorSetRoots must be ordered by the operator set index
+     */
+    function getStakeRoot(uint32 timestamp, bytes32[] calldata operatorSetRoots) public view returns (bytes32) {
+        require(operatorSetRoots.length == operatorSetsLength.upperLookupRecent(timestamp), "AVSSyncTree.getStakeRoot: more leaves than AVSs that have set their strategies and multipliers");
+        return Merkle.merkleizeKeccak256(operatorSetRoots);
     }
 
     /**
@@ -112,7 +185,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
                 multipliers[j] = multiplier;
             }
 
-            uint256[] memory shares = delegation.getOperatorShares(operators[i], strategies);
+            uint256[] memory shares = delegationManager.getOperatorShares(operators[i], strategies);
             uint256 stake = 0;
             for (uint256 j = 0; j < strategies.length; j++) {
                 stake += shares[j] * multipliers[j];
@@ -123,51 +196,24 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         return Merkle.merkleizeKeccak256(operatorLeaves);
     }
 
-    /**
-     * @notice called by an AVS to set their strategies and multipliers used to determine stakes for stake roots
-     * @param operatorSetId the id of the operator set to set the strategies and multipliers for
-     * @param strategiesAndMultipliers the strategies and multipliers to set for the operator set
-     * @dev msg.sender is used as the AVS in determining the operator set
-     */
-    function addStrategiesAndMultipliers(
-        uint32 operatorSetId,
-        StrategyAndMultiplier[] calldata strategiesAndMultipliers
-    ) external {
-        require(avsDirectory.isOperatorSet(msg.sender, operatorSetId), "StakeRootCompendium.setStrategiesAndMultipliers: operator set does not exist");
-        uint256 lengthBefore = operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length();
-        
-        // set the strategies and multipliers for the operator set
-        for (uint256 i = 0; i < strategiesAndMultipliers.length; i++) {
-            operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].set(address(strategiesAndMultipliers[i].strategy), uint256(strategiesAndMultipliers[i].multiplier));
-        }
-
-        require(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length() <= MAX_NUM_STRATEGIES, "StakeRootCompendium.setStrategiesAndMultipliers: too many strategies");
-
-        // if the operator set has been configured to have a positive number of strategies, increment the number of configured operator sets
-        if (lengthBefore == 0) {
-            numConfiguredOperatorSets++;
-        }
-    }
+    /// CALLED BY CLAIMER
 
     /**
-     * @notice called by an AVS to remove their strategies and multipliers used to determine stakes for stake roots
-     * @param operatorSetId the id of the operator set to remove the strategies and multipliers for
-     * @param strategies the strategies to remove for the operator set
-     * @dev msg.sender is used as the AVS in determining the operator set
+     * @notice called by the claimer to claim a stake root
+     * @param timestamp the timestamp of the stake root
+     * @param operatorSetRoots the operator set roots ordered by the operator set index
+     * @dev only callable by the claimer
      */
-    function removeStrategiesAndMultipliers(
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies
-    ) external {        
-        // remove the strategies and multipliers for the operator set
-        for (uint256 i = 0; i < strategies.length; i++) {
-            require(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].remove(address(strategies[i])), "StakeRootCompendium.removeStrategiesAndMultipliers: strategy not found");
-        }
-
-        // if the operator set has been configured to have no strategies, decrement the number of configured operator sets
-        if(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length() == 0) {
-            numConfiguredOperatorSets--;
-        }
+    function claimStakeRoot(uint32 timestamp, bytes32[] calldata operatorSetRoots) external {
+        require(msg.sender == claimer, "StakeRootCompendium.claimStakeRoot: only claimer can claim stake roots");
+        require(timestamp >= block.timestamp - maxRootStaleness, "StakeRootCompendium.claimStakeRoot: stake root too stale");
+        bytes32 stakeRoot = getStakeRoot(timestamp, operatorSetRoots);
+        stakeRootClaims.push(StakeRootClaim({
+            stakeRoot: stakeRoot,
+            timestamp: timestamp,
+            validAfter: uint32(block.timestamp) + challengePeriod,
+            challenged: false
+        }));
     }
 
     /// SNARK RELATED FUNCTIONS
@@ -194,34 +240,41 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         emit ImageIdChanged(oldImageId, imageId);
     }
 
-    // /**
-    //  * @notice 
-    //  * @param _journal 
-    //  * @param _seal 
-    //  */
-    // function verifySnarkProof(
-    //     bytes calldata _journal,
-    //     bytes calldata _seal
-    // ) external {
-    //     IRiscZeroVerifier(verifier).verify(
-    //             _seal,
-    //             imageId,
-    //             sha256(_journal)
-    //         );
-        
-    //     emit SnarkProofVerified(_journal, _seal);
-    // }
+    /**
+     * @notice Verifies a snark proof
+     * @param journal the commited result of the program
+     * @param seal the snark proof to verify
+     */
+    function verifySnarkProof(
+        uint32 claimIndex,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        bytes32 operatorSetRoot,
+        bytes calldata merkleProof,
+        bytes calldata journal,
+        bytes calldata seal
+    ) external {
+        // verify that the claim is valid
+        StakeRootClaim memory claim = stakeRootClaims[claimIndex];
+        require(claim.validAfter <= block.timestamp, "StakeRootCompendium.verifySnarkProof: claim not yet valid");
+        require(!claim.challenged, "StakeRootCompendium.verifySnarkProof: claim already challenged");
 
-    /// INTERNAL FUNCTIONS
+        // verify that the operator set root is correct
+        uint256 operatorSetIndex = operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].upperLookupRecent(claim.timestamp);
+        require(Merkle.verifyInclusionKeccak(
+            merkleProof,
+            claim.stakeRoot,
+            operatorSetRoot,
+            operatorSetIndex
+        ), "StakeRootCompendium.verifySnarkProof: invalid operator set root");
 
-    function _calculateWeightedStrategyShareSum(address operator, IStrategy[] memory strategies, uint96[] memory multipliers) internal view returns (uint256) {
-        require(strategies.length == multipliers.length, "AVSSyncTree._calculateWeightedStrategyShareSum: strategies and multipliers length mismatch");
-        require(strategies.length <= MAX_NUM_STRATEGIES, "AVSSyncTree._retrieveStrategyShares: too many strategies");
-        uint256[] memory shares = delegation.getOperatorShares(operator, strategies);
-        uint256 weightedSum = 0;
-        for (uint256 i = 0; i < shares.length; i++) {
-            weightedSum += shares[i] * multipliers[i];
-        }
-        return weightedSum;
+        IRiscZeroVerifier(verifier).verify(
+                seal,
+                imageId,
+                sha256(journal)
+            );
+
+        // TODO
+        require(sha256(journal) != operatorSetRoot, "StakeRootCompendium.verifySnarkProof: claimed operator set root is correct");
+        stakeRootClaims[claimIndex].challenged = true;
     }
 }
