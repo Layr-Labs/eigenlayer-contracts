@@ -111,10 +111,9 @@ contract AVSDirectory is
      * @notice Called by an avs to deregister an operator with the avs.
      * @param operator The address of the operator to deregister.
      */
-    function deregisterOperatorFromAVS(address operator)
-        external
-        onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
-    {
+    function deregisterOperatorFromAVS(
+        address operator
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         require(
             avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
             "AVSDirectory.deregisterOperatorFromAVS: operator not registered"

@@ -126,11 +126,9 @@ contract RewardsCoordinator is
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
-        nonReentrant
-    {
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -152,12 +150,9 @@ contract RewardsCoordinator is
      * a permissioned call based on isRewardsForAllSubmitter mapping.
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];

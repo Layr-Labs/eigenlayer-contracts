@@ -233,9 +233,9 @@ interface IDelegationManager is ISignatureUtils {
      *
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
-    function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams)
-        external
-        returns (bytes32[] memory);
+    function queueWithdrawals(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+    ) external returns (bytes32[] memory);
 
     /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`

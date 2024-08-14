@@ -240,10 +240,9 @@ contract StrategyManager is
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
      */
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist)
-        external
-        onlyStrategyWhitelister
-    {
+    function removeStrategiesFromDepositWhitelist(
+        IStrategy[] calldata strategiesToRemoveFromWhitelist
+    ) external onlyStrategyWhitelister {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
         for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength;) {
             // change storage and emit event only if strategy is already in whitelist

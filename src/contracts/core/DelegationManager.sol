@@ -216,11 +216,9 @@ contract DelegationManager is
      * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
      * both the staker and operator, and places the shares and strategies in the withdrawal queue
      */
-    function undelegate(address staker)
-        external
-        onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
-        returns (bytes32[] memory withdrawalRoots)
-    {
+    function undelegate(
+        address staker
+    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
@@ -275,11 +273,9 @@ contract DelegationManager is
      *
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
-    function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams)
-        external
-        onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
-        returns (bytes32[] memory)
-    {
+    function queueWithdrawals(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
         address operator = delegatedTo[msg.sender];
 

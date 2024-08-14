@@ -134,11 +134,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      * @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
      * to prevent accidentally starting a checkpoint that will not increase their shares
      */
-    function startCheckpoint(bool revertIfNoBalance)
-        external
-        onlyOwnerOrProofSubmitter
-        onlyWhenNotPaused(PAUSED_START_CHECKPOINT)
-    {
+    function startCheckpoint(
+        bool revertIfNoBalance
+    ) external onlyOwnerOrProofSubmitter onlyWhenNotPaused(PAUSED_START_CHECKPOINT) {
         _startCheckpoint(revertIfNoBalance);
     }
 
