@@ -1,5 +1,7 @@
 General info:
 
+We dont get timeouts
+
 There's a bug in the prover that has to do with linking! https://certora.atlassian.net/browse/CERT-6875
 
 If you use "EigenPodManagerHarness:pauserRegistry=PauserRegistry", inside "link", it may cause some rules to become vacuous, methods to revert unexpectely, etc.
@@ -7,25 +9,31 @@ Also comparing storage seems to produce false violations in this case.
 
 Files we worked on:
 
-specs:
+rules:
 certora/specs/libraries/BeaconChainProofs.spec
 certora/specs/libraries/Endian.spec
 certora/specs/libraries/Merkle.spec
 certora/specs/pods/EigenPod.spec // bellow the line "Added by Certora"
 certora/specs/pods/EigenPodHooks.spec
 certora/specs/pods/EigenPodManager.spec // bellow the line "Added by Certora"
+ + setup files
+   setup.spec
+   methodsAndAliases.spec
+   EigenPodMethodsAndSimplifications.spec - most NONDET summaries, simplifications
 
 confs:
-certora/confs/beaconChainProofs.conf
-certora/confs/endian.conf
-certora/confs/merkle.conf
 for the three libraries
-and certora/confs/full.conf
+   certora/confs/beaconChainProofs.conf
+   certora/confs/endian.conf
+   certora/confs/merkle.conf
 for EigenPod and EigenPodManager
+   and certora/confs/full.conf
 
 TODO list
 
-Finish rules marked as IN DEVELOPMENT
+Unfinished rules marked as IN DEVELOPMENT (baseInvariant)
+
+we can add more from Monday list (https://certora.monday.com/boards/1552827859/views/16645531)
 
 BeaconChainProofs.spec, Merkle.spec, Endian.spec
  - Add non-revert rules

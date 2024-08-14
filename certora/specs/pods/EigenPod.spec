@@ -262,6 +262,7 @@ rule activeValidatorsCount_correctness(env e, method f) filtered { f -> !f.isVie
 
 //TODO check method verifyCHpointProofs with satisfy. it should increase timestamp
 //TODO in development
+// we can remove this rule 
 rule verifyCHpointProofs_CanIncreaseTimestamp(bytes32 validatorPubkeyHash, env e) 
 {
     //requireInvariant checkpointsTimestampRemainsCorrect();
@@ -280,6 +281,8 @@ rule verifyCHpointProofs_CanIncreaseTimestamp(bytes32 validatorPubkeyHash, env e
 
 // to check the conditions under which the method works correctly
 // loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
+// we can remove this rule
+// just to analyze the known bug
 rule verifyWithdrawalCredentials_alwaysReverts(env e1)
 {
     uint64 beaconTimestamp; BeaconChainProofs.StateRootProof stateRootProof;

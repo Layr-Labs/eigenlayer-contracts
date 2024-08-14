@@ -217,6 +217,8 @@ rule removeShares_revertsWhenNoPod(env e)
 
 // to check the conditions under which the method works correctly
 // loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
+// just to analyze the known bug
+// we can remove once the bug is fixed
 rule addShares_alwaysReverts(env e)
 {
     uint256 shares;
@@ -228,6 +230,8 @@ rule addShares_alwaysReverts(env e)
 
 // to check the conditions under which the method works correctly
 // loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
+// just to analyze the known bug
+// we can remove once the bug is fixed
 rule methodsAlwaysRevert(env e, method f) filtered 
     {
         f -> 
@@ -246,6 +250,8 @@ rule methodsAlwaysRevert(env e, method f) filtered
 
 // to check the conditions under which the method works correctly
 // loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
+// just to analyze the known bug
+// we can remove once the bug is fixed
 rule methodsDontAlwaysRevert(env e, method f) 
 {
     calldataarg args;
