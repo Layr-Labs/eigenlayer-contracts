@@ -111,7 +111,9 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
             MAX_FUTURE_LENGTH,
             GENESIS_REWARDS_TIMESTAMP,
             OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
-            OPERATOR_SET_MAX_RETROACTIVE_LENGTH
+            OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
+            PERFORMANCE_GENESIS_REWARDS_TIMESTAMP,
+            PERFORMANCE_MAX_RETROACTIVE_LENGTH
         );
         rewardsCoordinator = RewardsCoordinator(
             address(

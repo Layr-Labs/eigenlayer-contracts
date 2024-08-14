@@ -84,10 +84,10 @@ contract RewardsCoordinator is
         uint32 _MAX_FUTURE_LENGTH,
         uint32 _GENESIS_REWARDS_TIMESTAMP,
         uint32 _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
-        uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
+        uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
+        uint32 _GENESIS_PERFORMANCE_REWARDS_TIMESTAMP,
+        uint32 _PERFORMANCE_MAX_RETROACTIVE_LENGTH
     )
-        // uint32 _GENESIS_PERFORMANCE_REWARDS_TIMESTAMP,
-        // uint32 _PERFORMANCE_MAX_RETROACTIVE_LENGTH
         RewardsCoordinatorStorage(
             _delegationManager,
             _strategyManager,
@@ -99,10 +99,8 @@ contract RewardsCoordinator is
             _GENESIS_REWARDS_TIMESTAMP,
             _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
             _OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
-            // _GENESIS_PERFORMANCE_REWARDS_TIMESTAMP,
-            // _PERFORMANCE_MAX_RETROACTIVE_LENGTH
-            0, // FIXME
-            0
+            _GENESIS_PERFORMANCE_REWARDS_TIMESTAMP,
+            _PERFORMANCE_MAX_RETROACTIVE_LENGTH
         )
     {
         _disableInitializers();
