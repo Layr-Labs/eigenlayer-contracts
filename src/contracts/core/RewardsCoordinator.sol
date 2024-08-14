@@ -151,11 +151,16 @@ contract RewardsCoordinator is
         onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
         nonReentrant
     {
+        // Cache starting nonce value for later use.
+        uint256 startingNonce = submissionNonce[msg.sender];
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+            // Wrap array item for readability.
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
-            uint256 nonce = submissionNonce[msg.sender];
-            bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
-
+            // Calculate current nonce by adding `i` to starting nonce.
+            uint256 currentNonce = startingNonce + i;
+            // Calculate rewards submission hash.
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, currentNonce, rewardsSubmission));
+            // Validate rewards submission.
             _validateRewardsSubmission(
                 rewardsSubmission.strategiesAndMultipliers,
                 rewardsSubmission.amount,
@@ -164,13 +169,15 @@ contract RewardsCoordinator is
                 MAX_RETROACTIVE_LENGTH,
                 GENESIS_REWARDS_TIMESTAMP
             );
-
+            // Mark `rewardsSubmissionHash` as valid for avs (msg.sender).
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
-            submissionNonce[msg.sender] = nonce + 1;
-
-            emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
+            // Emit event to track reward submission.
+            emit AVSRewardsSubmissionCreated(msg.sender, currentNonce, rewardsSubmissionHash, rewardsSubmission);
+            // Pull `rewardsSubmission.token` of `rewardsSubmission.amount` from avs (msg.sender).
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
+        // Increase avs submission nonce by rewards submissions submitted.
+        submissionNonce[msg.sender] = startingNonce + rewardsSubmissions.length;
     }
 
     /**
@@ -204,7 +211,7 @@ contract RewardsCoordinator is
             );
             // Mark `rewardsSubmissionHash` as valid for avs (msg.sender).
             isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionHash] = true;
-            // Emit event to track submission for all reward.
+            // Emit event to track reward submission.
             emit RewardsSubmissionForAllCreated(msg.sender, currentNonce, rewardsSubmissionHash, rewardsSubmission);
             // Pull `token` of `amount` from avs (msg.sender).
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
@@ -257,7 +264,7 @@ contract RewardsCoordinator is
             isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
             // Pull reward `token` of `amount` from avs (msg.sender).
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
-            // Emit event to track operator set reward.
+            // Emit event to track reward submission.
             emit OperatorSetRewardCreated(msg.sender, currentNonce, rewardsSubmissionHash, rewardsSubmission);
         }
         // Increase avs submission nonce by rewards submissions submitted.
