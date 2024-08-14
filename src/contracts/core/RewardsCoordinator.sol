@@ -287,6 +287,11 @@ contract RewardsCoordinator is
         onlyWhenNotPaused(PAUSED_REWARD_PERFORMANCE)
         nonReentrant
     {
+        // Assert operators and scores lengths match.
+        require(
+            rewardsSubmission.operators.length == rewardsSubmission.scores.length,
+            "RewardsCoordinator.rewardOperatorsForPerformance: operators and scores length mismatch"
+        );
         // Cache nonce for later use.
         uint256 nonce = submissionNonce[msg.sender];
         // Compute rewards submission hash.
