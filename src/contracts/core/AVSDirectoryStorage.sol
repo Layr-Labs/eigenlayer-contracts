@@ -67,8 +67,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     mapping(address => mapping(IStrategy => uint64)) public freeMagnitude;
 
     /// @notice Mapping: operator => strategy => avs => operatorSetId => checkpointed magnitude
-    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => Checkpoints.History))))
-        internal _magnitudeUpdate;
+    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => Checkpoints.History)))) internal
+        _magnitudeUpdate;
 
     /// @notice Mapping: operator => strategy => PendingFreeMagnitude[] to keep track of pending free magnitude from deallocations
     mapping(address => mapping(IStrategy => PendingFreeMagnitude[])) internal _pendingFreeMagnitude;

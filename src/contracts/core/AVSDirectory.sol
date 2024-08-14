@@ -318,10 +318,7 @@ contract AVSDirectory is
      *
      * @dev can be called permissionlessly by anyone
      */
-    function updateFreeMagnitude(
-        address operator,
-        IStrategy[] calldata strategies
-    ) external {
+    function updateFreeMagnitude(address operator, IStrategy[] calldata strategies) external {
         for (uint256 i = 0; i < strategies.length; ++i) {
             _updateFreeMagnitude(operator, strategies[i]);
         }
@@ -379,8 +376,10 @@ contract AVSDirectory is
                     _queuedDeallocationIndices[operator][strategies[i]][msg.sender][operatorSetId].length;
                 for (uint256 j = queuedDeallocationIndicesLen; j > 0; --j) {
                     // index of pendingFreeMagnitude/deallocation to check for slashing
-                    uint256 index = _queuedDeallocationIndices[operator][strategies[i]][msg.sender][operatorSetId][j - 1];
-                    PendingFreeMagnitude storage pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategies[i]][index];
+                    uint256 index =
+                        _queuedDeallocationIndices[operator][strategies[i]][msg.sender][operatorSetId][j - 1];
+                    PendingFreeMagnitude storage pendingFreeMagnitude =
+                        _pendingFreeMagnitude[operator][strategies[i]][index];
 
                     // Reached pendingFreeMagnitude/deallocation that is completable and not within slashability window,
                     // therefore older deallocations will also be completable. Since this is ordered by completableTimestamps break loop now
@@ -390,9 +389,9 @@ contract AVSDirectory is
 
                     // pending deallocation is still within slashable window, slash magnitudeDiff and add to slashedMagnitude
                     uint64 slashedAmount =
-                            uint64(uint256(bipsToSlash) * uint256(pendingFreeMagnitude.magnitudeDiff) / BIPS_FACTOR);
+                        uint64(uint256(bipsToSlash) * uint256(pendingFreeMagnitude.magnitudeDiff) / BIPS_FACTOR);
                     pendingFreeMagnitude.magnitudeDiff -= slashedAmount;
-                        slashedMagnitude += slashedAmount;
+                    slashedMagnitude += slashedAmount;
                 }
             }
 
@@ -508,8 +507,7 @@ contract AVSDirectory is
         for (uint256 i = 0; i < operatorSets.length; ++i) {
             // 1. check freeMagnitude available, that is the allocation of stake is backed and not slashable
             require(
-                allocation.magnitudeDiffs[i] > 0,
-                "AVSDirectory.queueAllocations: magnitudeDiff must be greater than 0"
+                allocation.magnitudeDiffs[i] > 0, "AVSDirectory.queueAllocations: magnitudeDiff must be greater than 0"
             );
             require(
                 freeAllocatableMagnitude >= allocation.magnitudeDiffs[i],
@@ -568,8 +566,7 @@ contract AVSDirectory is
                     .upperLookupRecent(uint32(block.timestamp))
             );
             require(
-                deallocation.magnitudeDiffs[i] > 0,
-                "AVSDirectory._deallocate: magnitudeDiff must be greater than 0"
+                deallocation.magnitudeDiffs[i] > 0, "AVSDirectory._deallocate: magnitudeDiff must be greater than 0"
             );
             require(
                 deallocation.magnitudeDiffs[i] <= currentMagnitude,
@@ -583,8 +580,8 @@ contract AVSDirectory is
                 decrementValue: deallocation.magnitudeDiffs[i]
             });
 
-            // 3. ensure only queued deallocation per operator, operatorSet, strategy
-            _checkPendingDeallocations(operator, strategy, operatorSets[i]);
+            // 3. ensure only pending queued deallocation per operator, operatorSet, strategy
+            _checkQueuedDeallocations(operator, strategy, operatorSets[i]);
 
             // 4. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
             uint256 index = _pendingFreeMagnitude[operator][strategy].length;
@@ -594,16 +591,15 @@ contract AVSDirectory is
                     completableTimestamp: completableTimestamp
                 })
             );
-            _queuedDeallocationIndices[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push(index);
+            _queuedDeallocationIndices[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push(
+                index
+            );
         }
     }
 
     /// @dev read through pending free magnitudes and add to freeMagnitude if completableTimestamp is >= block timestamp
     /// In additiona to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
-    function _updateFreeMagnitude(
-        address operator,
-        IStrategy strategy
-    ) internal {
+    function _updateFreeMagnitude(address operator, IStrategy strategy) internal {
         uint256 nextIndex = _nextPendingFreeMagnitudeIndex[operator][strategy];
         uint256 pendingFreeMagnitudeLength = _pendingFreeMagnitude[operator][strategy].length;
         while (nextIndex < pendingFreeMagnitudeLength) {
@@ -622,24 +618,26 @@ contract AVSDirectory is
         _nextPendingFreeMagnitudeIndex[operator][strategy] = nextIndex;
     }
 
-    /// @dev Check for max number of pending deallocations, ensuring <= MAX_PENDING_UPDATES
-    function _checkPendingDeallocations(
+    /// @dev Check for max number of pending queued deallocations, ensuring <= MAX_PENDING_UPDATES
+    function _checkQueuedDeallocations(
         address operator,
         IStrategy strategy,
         OperatorSet calldata operatorSet
-    ) internal view returns (uint64 freeMagnitudeToAdd) {
-        uint256 length = _queuedDeallocationIndices[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].length;
-                
+    ) internal view {
+        uint256 length =
+            _queuedDeallocationIndices[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].length;
+
         for (uint256 i = length; i > 0; --i) {
             // index of pendingFreeMagnitude/deallocation to check for slashing
-            uint256 index = _queuedDeallocationIndices[operator][strategy][operatorSet.avs][operatorSet.operatorSetId][i - 1];
+            uint256 index =
+                _queuedDeallocationIndices[operator][strategy][operatorSet.avs][operatorSet.operatorSetId][i - 1];
             PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][index];
 
             // If completableTimestamp is greater than completeUntilTimestamp, break
             if (pendingFreeMagnitude.completableTimestamp < uint32(block.timestamp)) {
                 require(
-                    length - i  + 1 < MAX_PENDING_UPDATES,
-                    "AVSDirectory._checkPendingDeallocations: exceeds max pending deallocations"
+                    length - i + 1 < MAX_PENDING_UPDATES,
+                    "AVSDirectory._checkQueuedDeallocations: exceeds max pending deallocations"
                 );
             } else {
                 break;
