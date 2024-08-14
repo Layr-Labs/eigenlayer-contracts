@@ -275,9 +275,8 @@ contract AVSDirectory is
 
         uint32 effectTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
         for (uint256 i = 0; i < allocations.length; ++i) {
-            // 1. For the given (operator,strategy) clear all pending deallocations for all operatorSets
-            // and update freeMagnitude
-            _clearAllFreeMagnitude(operator, allocations[i].strategy);
+            // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
+            _updateFreeMagnitude(operator, allocations[i].strategy);
             // 2. allocate for the strategy after updating freeMagnitude
             _allocate(operator, allocations[i], effectTimestamp);
         }
@@ -302,58 +301,29 @@ contract AVSDirectory is
         uint32 completableTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
         // deallocate for each strategy
         for (uint256 i = 0; i < deallocations.length; ++i) {
-            // 1. For the given (operator,strategy) clear all pending deallocations for all operatorSets
-            // and update freeMagnitude
-            _clearAllFreeMagnitude(operator, deallocations[i].strategy);
+            // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
+            _updateFreeMagnitude(operator, deallocations[i].strategy);
             // 2. deallocate for the strategy after updating freeMagnitude
             _deallocate(operator, deallocations[i], completableTimestamp);
         }
     }
 
-    // /**
-    //  * @notice Complete queued deallocations of slashable stake for an operator, permissionlessly called by anyone
-    //  * Increments the free magnitude of the operator by the sum of all deallocation amounts for each strategy.
-    //  * If the operator was slashed, this will be a smaller amount than during queuing.
-    //  *
-    //  * @param operator address to complete deallocations for
-    //  * @param strategies a list of strategies to complete deallocations for
-    //  * @param operatorSets a 2d list of operator sets to complete deallocations for, one list for each strategy
-    //  *
-    //  * @dev can be called permissionlessly by anyone
-    //  */
-    // function freeDeallocatedMagnitude(
-    //     address operator,
-    //     IStrategy[] calldata strategies,
-    //     OperatorSet[][] calldata operatorSets
-    // ) external {
-    //     // complete all queued deallocations for strategies
-    //     for (uint256 i = 0; i < strategies.length; ++i) {
-    //         uint64 freeMagnitudeToAdd = 0;
-    //         // complete all queued deallocations for specified operatorSets
-    //         for (uint256 j = 0; j < operatorSets[i].length; ++j) {
-    //             freeMagnitudeToAdd += _freeDeallocatedMagnitude(operator, strategies[i], operatorSets[i][j]);
-    //         }
-    //         // add to free available magnitude
-    //         freeMagnitude[operator][strategies[i]] += freeMagnitudeToAdd;
-    //     }
-    // }
-
     /**
-     * @notice Complete queued deallocations of slashable stake for an operator, permissionlessly called by anyone
-     * Increments the free magnitude of the operator by the sum of all deallocation amounts for each strategy.
-     * If the operator was slashed, this will be a smaller amount than during queuing.
+     * @notice For all pending deallocations that have become completable, their pending free magnitude can be
+     * added back to the free magnitude of the (operator, strategy) amount. This function takes a list of strategies
+     * and adds all completable deallocations for each strategy, updating the freeMagnitudes of the operator
      *
      * @param operator address to complete deallocations for
      * @param strategies a list of strategies to complete deallocations for
      *
      * @dev can be called permissionlessly by anyone
      */
-    function freeDeallocatedMagnitude(
+    function updateFreeMagnitude(
         address operator,
         IStrategy[] calldata strategies
     ) external {
         for (uint256 i = 0; i < strategies.length; ++i) {
-            _clearAllFreeMagnitude(operator, strategies[i]);
+            _updateFreeMagnitude(operator, strategies[i]);
         }
     }
 
@@ -399,22 +369,30 @@ contract AVSDirectory is
             }
 
             // 2. if there are any pending deallocations then need to update and decrement if they fall within slashable window
+            // loop backwards through _queuedDeallocationIndices, each element contains an array index to
+            // corresponding deallocation to access in pendingFreeMagnitude
+            // if completable, then break
+            //      (since ordered by completableTimestamps, older deallocations will also be completable and outside slashable window)
+            // if NOT completable, then slash
             {
-                uint256 queuedDeallocationsLen =
-                    _queuedDeallocations[operator][strategies[i]][msg.sender][operatorSetId].length;
-                for (uint256 j = queuedDeallocationsLen; j > 0; --j) {
-                    QueuedDeallocation storage queuedDeallocation =
-                        _queuedDeallocations[operator][strategies[i]][msg.sender][operatorSetId][j - 1];
+                uint256 queuedDeallocationIndicesLen =
+                    _queuedDeallocationIndices[operator][strategies[i]][msg.sender][operatorSetId].length;
+                for (uint256 j = queuedDeallocationIndicesLen; j > 0; --j) {
+                    // index of pendingFreeMagnitude/deallocation to check for slashing
+                    uint256 index = _queuedDeallocationIndices[operator][strategies[i]][msg.sender][operatorSetId][j - 1];
+                    PendingFreeMagnitude storage pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategies[i]][index];
 
-                    // if queued deallocation is still within slashable window, then slash and keep track of sum to decrement from totalMagnitude
-                    if (uint32(block.timestamp) + ALLOCATION_DELAY > queuedDeallocation.completableTimestamp) {
-                        uint64 slashedAmount =
-                            uint64(uint256(bipsToSlash) * uint256(queuedDeallocation.magnitudeDiff) / BIPS_FACTOR);
-                        queuedDeallocation.magnitudeDiff -= slashedAmount;
-                        slashedMagnitude += slashedAmount;
-                    } else {
+                    // Reached pendingFreeMagnitude/deallocation that is completable and not within slashability window,
+                    // therefore older deallocations will also be completable. Since this is ordered by completableTimestamps break loop now
+                    if (pendingFreeMagnitude.completableTimestamp >= uint32(block.timestamp)) {
                         break;
                     }
+
+                    // pending deallocation is still within slashable window, slash magnitudeDiff and add to slashedMagnitude
+                    uint64 slashedAmount =
+                            uint64(uint256(bipsToSlash) * uint256(pendingFreeMagnitude.magnitudeDiff) / BIPS_FACTOR);
+                    pendingFreeMagnitude.magnitudeDiff -= slashedAmount;
+                        slashedMagnitude += slashedAmount;
                 }
             }
 
@@ -527,10 +505,6 @@ contract AVSDirectory is
         OperatorSet[] calldata operatorSets = allocation.operatorSets;
         uint64 freeAllocatableMagnitude = freeMagnitude[operator][strategy];
 
-        // For the given (operator,strategy) clear all pending deallocations for all operatorSets
-        // and update freeMagnitude
-        _clearAllFreeMagnitude(operator, strategy);
-
         for (uint256 i = 0; i < operatorSets.length; ++i) {
             // 1. check freeMagnitude available, that is the allocation of stake is backed and not slashable
             require(
@@ -612,62 +586,40 @@ contract AVSDirectory is
             // 3. ensure only queued deallocation per operator, operatorSet, strategy
             _checkPendingDeallocations(operator, strategy, operatorSets[i]);
 
-            // 4. queue deallocation for (op, opSet, strategy) for magnitudeDiff amount
-            _queuedDeallocations[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push(
-                QueuedDeallocation({
+            // 4. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
+            uint256 index = _pendingFreeMagnitude[operator][strategy].length;
+            _pendingFreeMagnitude[operator][strategy].push(
+                PendingFreeMagnitude({
                     magnitudeDiff: deallocation.magnitudeDiffs[i],
                     completableTimestamp: completableTimestamp
                 })
             );
+            _queuedDeallocationIndices[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push(index);
         }
     }
 
-    /**
-     * @notice Completes queued deallocations for a single strategy and multiple operator sets
-     * @param operator address to complete deallocations for
-     * @param strategy the strategy to complete deallocations for
-     * @param operatorSet the operator set to complete deallocations for the given strategy
-     */
-    function _freeDeallocatedMagnitude(
-        address operator,
-        IStrategy strategy,
-        OperatorSet memory operatorSet
-    ) internal returns (uint64 freeMagnitudeToAdd) {
-        QueuedDeallocation[] memory queuedDeallocation =
-            _queuedDeallocations[operator][strategy][operatorSet.avs][operatorSet.operatorSetId];
-        // read last completed deallocation index in the queuedDeallocations array for the (op, opSet, Strategy) tuple
-        uint256 i = _nextDeallocationIndex[operator][strategy][operatorSet.avs][operatorSet.operatorSetId];
-
-        for (; i < queuedDeallocation.length; ++i) {
-            // queued deallocations ordered by timestamp, if completableTimestamp is greater than completeUntilTimestamp, break
-            if (queuedDeallocation[i].completableTimestamp > uint32(block.timestamp)) {
-                break;
-            }
-
-            freeMagnitudeToAdd += queuedDeallocation[i].magnitudeDiff;
-        }
-        _nextDeallocationIndex[operator][strategy][operatorSet.avs][operatorSet.operatorSetId] = i;
-        return freeMagnitudeToAdd;
-    }
-
-    /// @dev read through all registered operatorSets for the operator and free deallocated magnitude
-    /// NOTE: gassy because we don't have a mapping of operator => strategy => opSets but instead are using
-    /// operator => opSets so we may have a lot of calls to `_freeDeallocatedMagnitude` that are "no-op"
-    function _clearAllFreeMagnitude(
+    /// @dev read through pending free magnitudes and add to freeMagnitude if completableTimestamp is >= block timestamp
+    /// In additiona to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
+    function _updateFreeMagnitude(
         address operator,
         IStrategy strategy
     ) internal {
-        // 1. keep track of running sum of freeMagnitudeToAdd
-        uint64 freeMagnitudeToAdd = 0;
-        // 2. for each operatorSet an operator is registered for, free deallocated magnitude
-        // for the given strategy
-        uint256 setLength = _operatorSetsMemberOf[operator].length();
-        for (uint256 i = 0; i < setLength; ++i) {
-            OperatorSet memory operatorSet = operatorSetsMemberOf(operator, i);
-            freeMagnitudeToAdd += _freeDeallocatedMagnitude(operator, strategy, operatorSet);
+        uint256 nextIndex = _nextPendingFreeMagnitudeIndex[operator][strategy];
+        uint256 pendingFreeMagnitudeLength = _pendingFreeMagnitude[operator][strategy].length;
+        while (nextIndex < pendingFreeMagnitudeLength) {
+            PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][nextIndex];
+            // pendingFreeMagnitude is ordered by completableTimestamp. If we reach one that is not completable yet, then break
+            // loop until completableTimestamp is < block.timestamp
+            if (pendingFreeMagnitude.completableTimestamp < uint32(block.timestamp)) {
+                break;
+            }
+
+            // pending free magnitude can be added to freeMagnitude
+            freeMagnitude[operator][strategy] += pendingFreeMagnitude.magnitudeDiff;
+            ++nextIndex;
         }
-        // 3. add to free available magnitude
-        freeMagnitude[operator][strategy] += freeMagnitudeToAdd;
+        // update next pending free magnitude index to start from after adding all completable magnitudes
+        _nextPendingFreeMagnitudeIndex[operator][strategy] = nextIndex;
     }
 
     /// @dev Check for max number of pending deallocations, ensuring <= MAX_PENDING_UPDATES
@@ -676,13 +628,15 @@ contract AVSDirectory is
         IStrategy strategy,
         OperatorSet calldata operatorSet
     ) internal view returns (uint64 freeMagnitudeToAdd) {
-        QueuedDeallocation[] memory queuedDeallocations =
-            _queuedDeallocations[operator][strategy][operatorSet.avs][operatorSet.operatorSetId];
-        uint256 length = queuedDeallocations.length;
-
+        uint256 length = _queuedDeallocationIndices[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].length;
+                
         for (uint256 i = length; i > 0; --i) {
+            // index of pendingFreeMagnitude/deallocation to check for slashing
+            uint256 index = _queuedDeallocationIndices[operator][strategy][operatorSet.avs][operatorSet.operatorSetId][i - 1];
+            PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][index];
+
             // If completableTimestamp is greater than completeUntilTimestamp, break
-            if (queuedDeallocations[i - 1].completableTimestamp < uint32(block.timestamp)) {
+            if (pendingFreeMagnitude.completableTimestamp < uint32(block.timestamp)) {
                 require(
                     length - i  + 1 < MAX_PENDING_UPDATES,
                     "AVSDirectory._checkPendingDeallocations: exceeds max pending deallocations"

@@ -46,12 +46,12 @@ interface IAVSDirectory is ISignatureUtils {
     }
 
     /**
-     * @notice struct used for queued deallocations. Stored in (operator, strategy, operatorSet) mapping
+     * @notice struct used for pending free magnitude. Stored in (operator, strategy, operatorSet) mapping
      * to be used in completeDeallocations.
      * @param magnitudeDiff the amount of magnitude to deallocate
      * @param completableTimestamp the timestamp at which the deallocation can be completed, 21 days from when queued
      */
-    struct QueuedDeallocation {
+    struct PendingFreeMagnitude {
         uint64 magnitudeDiff;
         uint32 completableTimestamp;
     }
@@ -232,16 +232,16 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Complete queued deallocations of slashable stake for an operator, permissionlessly called by anyone
-     * Increments the free magnitude of the operator by the sum of all deallocation amounts for each strategy. 
-     * If the operator was slashed, this will be a smaller amount than during queuing.
+     * @notice For all pending deallocations that have become completable, their pending free magnitude can be
+     * added back to the free magnitude of the (operator, strategy) amount. This function takes a list of strategies
+     * and adds all completable deallocations for each strategy, updating the freeMagnitudes of the operator
      *
      * @param operator address to complete deallocations for
      * @param strategies a list of strategies to complete deallocations for
      *
      * @dev can be called permissionlessly by anyone
      */
-    function freeDeallocatedMagnitude(
+    function updateFreeMagnitude(
         address operator,
         IStrategy[] calldata strategies
     ) external;

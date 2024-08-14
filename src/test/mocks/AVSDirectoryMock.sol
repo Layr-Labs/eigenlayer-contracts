@@ -48,7 +48,7 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {}
 
-    function freeDeallocatedMagnitude(
+    function updateFreeMagnitude(
         address operator,
         IStrategy[] calldata strategies
     ) external {}
