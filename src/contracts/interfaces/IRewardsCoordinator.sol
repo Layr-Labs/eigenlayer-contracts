@@ -369,6 +369,19 @@ interface IRewardsCoordinator {
      */
     function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions) external;
 
+    /**
+     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet,
+     * to be split amongst the set of stakers delegated to operators who are registered
+     * to the msg.sender AVS and the given operatorSetId based on perfomance.
+     *
+     * @param rewardsSubmission The operatorSet rewards submission being created for
+     *
+     * @dev msg.sender is the AVS in the operatorSet the rewards submission is being made to
+     * @dev AVSs set their reward type depending on what metric they want rewards
+     * distributed proportional to
+     * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
+     * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
+     */
     function rewardOperatorsForPerformance(PerformanceRewardsSubmission calldata rewardsSubmission) external;
 
     /**

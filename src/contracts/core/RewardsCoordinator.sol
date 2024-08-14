@@ -271,8 +271,8 @@ contract RewardsCoordinator is
 
     /**
      * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet,
-     * to be split amongst the set of stakers delegated to operators who are
-     * registered to the msg.sender AVS and the given operatorSetId
+     * to be split amongst the set of stakers delegated to operators who are registered
+     * to the msg.sender AVS and the given operatorSetId based on perfomance.
      *
      * @param rewardsSubmission The operatorSet rewards submission being created for
      *
