@@ -42,12 +42,6 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice max of time (seconds) that an operatorSet rewards submission can start in the past
     uint32 public immutable OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
 
-    // Performance Rewards Constants
-    /// @notice absolute min timestamp (seconds) that an performance rewards submission can start at
-    uint32 public immutable GENESIS_PERFORMANCE_REWARDS_TIMESTAMP;
-    /// @notice max of time (seconds) that an performance rewards submission can start in the past
-    uint32 public immutable PERFORMANCE_MAX_RETROACTIVE_LENGTH;
-
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegationManager;
 
@@ -123,9 +117,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         uint32 _MAX_FUTURE_LENGTH,
         uint32 _GENESIS_REWARDS_TIMESTAMP,
         uint32 _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
-        uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
-        uint32 _GENESIS_PERFORMANCE_REWARDS_TIMESTAMP,
-        uint32 _PERFORMANCE_MAX_RETROACTIVE_LENGTH
+        uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
     ) {
         require(
             _GENESIS_REWARDS_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0,
@@ -149,8 +141,6 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         GENESIS_REWARDS_TIMESTAMP = _GENESIS_REWARDS_TIMESTAMP;
         OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
         OPERATOR_SET_MAX_RETROACTIVE_LENGTH = _OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
-        GENESIS_PERFORMANCE_REWARDS_TIMESTAMP = _GENESIS_PERFORMANCE_REWARDS_TIMESTAMP;
-        PERFORMANCE_MAX_RETROACTIVE_LENGTH = _PERFORMANCE_MAX_RETROACTIVE_LENGTH;
     }
 
     /**

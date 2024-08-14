@@ -84,9 +84,7 @@ contract RewardsCoordinator is
         uint32 _MAX_FUTURE_LENGTH,
         uint32 _GENESIS_REWARDS_TIMESTAMP,
         uint32 _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
-        uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
-        uint32 _GENESIS_PERFORMANCE_REWARDS_TIMESTAMP,
-        uint32 _PERFORMANCE_MAX_RETROACTIVE_LENGTH
+        uint32 _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
     )
         RewardsCoordinatorStorage(
             _delegationManager,
@@ -98,9 +96,7 @@ contract RewardsCoordinator is
             _MAX_FUTURE_LENGTH,
             _GENESIS_REWARDS_TIMESTAMP,
             _OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
-            _OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
-            _GENESIS_PERFORMANCE_REWARDS_TIMESTAMP,
-            _PERFORMANCE_MAX_RETROACTIVE_LENGTH
+            _OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         )
     {
         _disableInitializers();
@@ -195,6 +191,7 @@ contract RewardsCoordinator is
         // Cache starting nonce value for later use.
         uint256 startingNonce = submissionNonce[msg.sender];
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+            // Wrap array item for readability.
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             // Calculate current nonce by adding `i` to starting nonce.
             uint256 currentNonce = startingNonce + i;
@@ -241,6 +238,7 @@ contract RewardsCoordinator is
         // Cache starting nonce value for later use.
         uint256 startingNonce = submissionNonce[msg.sender];
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+            // Wrap array item for readability.
             OperatorSetRewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             // Calculate current nonce by adding `i` to starting nonce.
             uint256 currentNonce = startingNonce + i;
@@ -271,6 +269,19 @@ contract RewardsCoordinator is
         submissionNonce[msg.sender] = startingNonce + rewardsSubmissions.length;
     }
 
+    /**
+     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet,
+     * to be split amongst the set of stakers delegated to operators who are
+     * registered to the msg.sender AVS and the given operatorSetId
+     *
+     * @param rewardsSubmission The operatorSet rewards submission being created for
+     *
+     * @dev msg.sender is the AVS in the operatorSet the rewards submission is being made to
+     * @dev AVSs set their reward type depending on what metric they want rewards
+     * distributed proportional to
+     * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
+     * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
+     */
     function rewardOperatorsForPerformance(PerformanceRewardsSubmission calldata rewardsSubmission)
         external
         onlyWhenNotPaused(PAUSED_REWARD_PERFORMANCE)
@@ -286,8 +297,8 @@ contract RewardsCoordinator is
             rewardsSubmission.amount,
             rewardsSubmission.startTimestamp,
             rewardsSubmission.duration,
-            GENESIS_PERFORMANCE_REWARDS_TIMESTAMP,
-            PERFORMANCE_MAX_RETROACTIVE_LENGTH
+            OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
+            OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP
         );
         // Mark `rewardsSubmissionHash` as valid for avs (msg.sender).
         isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
@@ -422,7 +433,6 @@ contract RewardsCoordinator is
         OperatorCommissionUpdate[] storage commissionHistory =
             operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.operatorSetId][rewardType];
         uint256 updateLength = commissionHistory.length;
-
         // If no updates or latest update is not for current effective timestamp, push a new commission update
         // otherwise modify current storage
         if (updateLength == 0 || commissionHistory[updateLength - 1].effectTimestamp != effectTimestamp) {

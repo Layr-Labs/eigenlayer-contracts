@@ -60,11 +60,6 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     /// @notice absolute min timestamp (seconds) that an operatorSet rewards submission can start at
     uint32 OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = 1_720_656_000;
 
-    /// @notice Lower bound start range is ~1 month into the past, multiple of CALCULATION_INTERVAL_SECONDS
-    uint32 PERFORMANCE_MAX_RETROACTIVE_LENGTH = 28 days;
-    /// @notice absolute min timestamp (seconds) that an operatorSet **performance** rewards submission can start at
-    uint32 PERFORMANCE_GENESIS_REWARDS_TIMESTAMP = 1_720_656_000;
-
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
     /// @notice The activation delay until an updated operator's commission bips takes effect
@@ -111,9 +106,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
             MAX_FUTURE_LENGTH,
             GENESIS_REWARDS_TIMESTAMP,
             OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
-            OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
-            PERFORMANCE_GENESIS_REWARDS_TIMESTAMP,
-            PERFORMANCE_MAX_RETROACTIVE_LENGTH
+            OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         );
         rewardsCoordinator = RewardsCoordinator(
             address(
@@ -2794,7 +2787,7 @@ contract RewardsCoordinatorUnitTests_rewardOperatorSetForRange is RewardsCoordin
 contract RewardsCoordinatorUnitTests_rewardOperatorsForPerformance is RewardsCoordinatorUnitTests {
     uint32 defaultOperatorSetId = 0;
     uint32 validDuration = 2 weeks;
-    uint32 validStartTimestamp = PERFORMANCE_GENESIS_REWARDS_TIMESTAMP;
+    uint32 validStartTimestamp = OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
 
     function _strategies() internal view returns (IStrategy[] memory r) {
         r = new IStrategy[](3);
@@ -2972,9 +2965,9 @@ contract RewardsCoordinatorUnitTests_rewardOperatorsForPerformance is RewardsCoo
 
     function test_Revert_StartTimestampPriorToGenesis() public {
         // Set the timestamp to some time after the genesis rewards timestamp
-        cheats.warp(PERFORMANCE_GENESIS_REWARDS_TIMESTAMP + 5 days);
+        cheats.warp(OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP + 5 days);
 
-        uint256 startTimestamp = PERFORMANCE_GENESIS_REWARDS_TIMESTAMP - CALCULATION_INTERVAL_SECONDS;
+        uint256 startTimestamp = OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP - CALCULATION_INTERVAL_SECONDS;
 
         IRewardsCoordinator.PerformanceRewardsSubmission memory rewardsSubmission = IRewardsCoordinator
             .PerformanceRewardsSubmission({
@@ -2997,9 +2990,9 @@ contract RewardsCoordinatorUnitTests_rewardOperatorsForPerformance is RewardsCoo
     function test_Revert_StartTimestampGoesFarBack() public {
         /// Warp to a timestamp past max retroactive length
         cheats.warp(
-            PERFORMANCE_GENESIS_REWARDS_TIMESTAMP + PERFORMANCE_MAX_RETROACTIVE_LENGTH + CALCULATION_INTERVAL_SECONDS
+            OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP + OPERATOR_SET_MAX_RETROACTIVE_LENGTH + CALCULATION_INTERVAL_SECONDS
         );
-        uint256 startTimestamp = PERFORMANCE_GENESIS_REWARDS_TIMESTAMP;
+        uint256 startTimestamp = OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
 
         IRewardsCoordinator.PerformanceRewardsSubmission memory rewardsSubmission = IRewardsCoordinator
             .PerformanceRewardsSubmission({
@@ -3094,7 +3087,7 @@ contract RewardsCoordinatorUnitTests_rewardOperatorsForPerformance is RewardsCoo
         uint256 duration,
         uint256 amount
     ) public {
-        cheats.warp(PERFORMANCE_GENESIS_REWARDS_TIMESTAMP);
+        cheats.warp(OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP);
 
         _deployMockRewardTokens(defaultAVS, 1);
 
@@ -3104,7 +3097,7 @@ contract RewardsCoordinatorUnitTests_rewardOperatorsForPerformance is RewardsCoo
             startTimestamp,
             uint256(
                 _maxTimestamp(
-                    PERFORMANCE_GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - PERFORMANCE_MAX_RETROACTIVE_LENGTH
+                    OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - OPERATOR_SET_MAX_RETROACTIVE_LENGTH
                 )
             ) + CALCULATION_INTERVAL_SECONDS - 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
