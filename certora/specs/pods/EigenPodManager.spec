@@ -225,3 +225,31 @@ rule addShares_alwaysReverts(env e)
     bool reverted = lastReverted;
     assert reverted;
 }
+
+// to check the conditions under which the method works correctly
+// loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
+rule methodsAlwaysRevert(env e, method f) filtered 
+    {
+        f -> 
+            f.selector == sig:EigenPodManagerHarness.initialize(address, address, uint256).selector ||
+            f.selector == sig:EigenPodManagerHarness.addShares(address,uint256).selector ||
+            f.selector == sig:EigenPodManagerHarness.recordBeaconChainETHBalanceUpdate(address,int256).selector ||
+            f.selector == sig:DummyEigenPodA.verifyWithdrawalCredentials(uint64, BeaconChainProofs.StateRootProof, uint40[], bytes[], bytes32[][]).selector
+    }
+{
+    calldataarg args;
+    f@withrevert(e, args);
+    bool reverted = lastReverted;
+    //satisfy !reverted;
+    assert reverted;
+}
+
+// to check the conditions under which the method works correctly
+// loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
+rule methodsDontAlwaysRevert(env e, method f) 
+{
+    calldataarg args;
+    f@withrevert(e, args);
+    bool reverted = lastReverted;
+    satisfy !reverted;
+}

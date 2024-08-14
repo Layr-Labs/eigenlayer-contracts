@@ -1,0 +1,52 @@
+General info:
+
+There's a bug in the prover that has to do with linking! https://certora.atlassian.net/browse/CERT-6875
+
+If you use "EigenPodManagerHarness:pauserRegistry=PauserRegistry", inside "link", it may cause some rules to become vacuous, methods to revert unexpectely, etc.
+Also comparing storage seems to produce false violations in this case.
+
+Files we worked on:
+
+specs:
+certora/specs/libraries/BeaconChainProofs.spec
+certora/specs/libraries/Endian.spec
+certora/specs/libraries/Merkle.spec
+certora/specs/pods/EigenPod.spec // bellow the line "Added by Certora"
+certora/specs/pods/EigenPodHooks.spec
+certora/specs/pods/EigenPodManager.spec // bellow the line "Added by Certora"
+
+confs:
+certora/confs/beaconChainProofs.conf
+certora/confs/endian.conf
+certora/confs/merkle.conf
+for the three libraries
+and certora/confs/full.conf
+for EigenPod and EigenPodManager
+
+TODO list
+
+Finish rules marked as IN DEVELOPMENT
+
+BeaconChainProofs.spec, Merkle.spec, Endian.spec
+ - Add non-revert rules
+
+methodsAndAliases.spec
+ - make sure we really need all the methods in the catch-all dispatcher
+    function _._ external => DISPATCH [ .. ]
+ - _._sendETH(address recipient, uint256 amountWei) internal => NONDET
+    can this be avoided using 'optimistic_fallback' ?
+
+EigenPodMethodsAndSimplifications.spec
+ - function timestampsNotFromFuture(env e) returns bool
+ - function validatorDataNotFromFuture(env e, bytes32 validatorHash) returns bool
+    these two should be changed to invariants, prooved and then used via require_invariant
+
+EigenPodMethodsAndSimplifications.spec
+ - function _.recordStakeUpdate(address,uint32,uint32,uint256) external => NONDET;
+    Since the contract is unfinished, the effect of the real function is unknown. We should replace this with HAVOC_ECF
+    or at least try and see if it affects and rules
+    
+EigenPodHooks.spec
+ - rule activeValidatorsCount_correctness(env e, method f)
+    might be better formulated as an invariant
+
