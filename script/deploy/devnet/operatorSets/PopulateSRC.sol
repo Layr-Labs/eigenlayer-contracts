@@ -20,7 +20,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         IStakeRootCompendium stakeRootCompendium =  new StakeRootCompendium({
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
-            _maxRootStaleness: 1 days,
+            _minTimeSinceLastClaim: 1 days,
             _challengePeriod: 12 seconds
         });
 

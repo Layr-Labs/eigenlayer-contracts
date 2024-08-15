@@ -31,8 +31,8 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     IAVSDirectory public immutable avsDirectory;
     /// @notice challenge period for stake roots
     uint32 public immutable challengePeriod;
-    /// @notice the amount of time in the past that a stake root can be posted for
-    uint32 public immutable maxRootStaleness;
+    /// @notice The minimum amount of time between calculationTimestamps of consecutive claims
+    uint32 public immutable minTimeSinceLastClaim;
 
     /// @notice length of the operatorSets array over time
     Checkpoints.Trace208 internal operatorSetsLength;
@@ -43,13 +43,14 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     /// @notice the number of operator sets that have been configured to be in the StakeTree
     mapping(address => mapping(uint32 => EnumerableMap.AddressToUintMap)) internal operatorSetToStrategyAndMultipliers;
 
-    /// @notice the address of the claimer contract that will be used to claim stake roots
-    address public claimer;
+    /// @notice whether an address is allowed to make stake root claims
+    mapping(address => bool) public isClaimer;
     struct StakeRootClaim {
-        bytes32 stakeRoot;
-        uint32 timestamp; // the timestamp the was generated against
-        uint32 validAfter;
-        bool challenged;
+      bytes32 stakeRoot;
+      address claimer;
+      uint32 calculationTimestamp; // the timestamp the was generated against
+      uint32 claimedTimestamp; // the timestamp the claim was made
+      bool provenFraudlent; // whether the claim has been proven fraudulent
     }
     /// @notice map to claimed stake roots
     StakeRootClaim[] public stakeRootClaims;
@@ -59,23 +60,27 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     /// @notice the id of the program being verified when roots are posted
     bytes32 public imageId;
 
+    event ClaimerChanged(address claimer, bool allowed);
+
     constructor(
         IDelegationManager _delegationManager,
         IAVSDirectory _avsDirectory,
-        uint32 _maxRootStaleness,
-        uint32 _challengePeriod
+        uint32 _challengePeriod,
+        uint32 _minTimeSinceLastClaim
     ) {
         // _disableInitializers();
         delegationManager = _delegationManager;
         avsDirectory = _avsDirectory;
-        maxRootStaleness = _maxRootStaleness;
         challengePeriod = _challengePeriod;
+        minTimeSinceLastClaim = _minTimeSinceLastClaim;
     }
 
-    function initialize(address initialOwner, address _claimer) public initializer {
+    function initialize(address initialOwner, address[] calldata claimers) public initializer {
         __Ownable_init();
         _transferOwnership(initialOwner);
-        claimer = _claimer;
+        for (uint256 i = 0; i < claimers.length; i++) {
+            _setClaimerStatus(claimers[i], true);
+        }
     }
 
     /// CALLED BY AVS
@@ -139,10 +144,10 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     // STAKE ROOT CALCULATION
 
     /**
-     * @notice called offchain with the operator set roots ordered by the operator set index to calculate the stake root
+     * @notice called offchain with the operator set roots ordered by the operator set index at the timestamp to calculate the stake root
      * @param timestamp the timestamp of the stake root
-     * @param operatorSetRoots the ordered operator set roots
-     * @dev operatorSetRoots must be ordered by the operator set index
+     * @param operatorSetRoots the ordered operator set roots (not verified)
+     * @dev operatorSetRoots must be ordered by the operator set index at the timestamp
      */
     function getStakeRoot(uint32 timestamp, bytes32[] calldata operatorSetRoots) public view returns (bytes32) {
         require(operatorSetRoots.length == operatorSetsLength.upperLookupRecent(timestamp), "AVSSyncTree.getStakeRoot: more leaves than AVSs that have set their strategies and multipliers");
@@ -150,12 +155,13 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     }
 
     /**
-     * @notice calculates the root of the operator set at the time of calling
-     * @param operatorSet the operator set to get the root for
-     * @param operators the operators in the operator set at the time of calling
-     * @return the root of the operator set
-     * @dev the operators must be sorted
-     */
+	 * @notice Returns the operatorSet root for the given operatorSet with the given witnesses
+	 * @param operatorSet the operatorSet to calculate the operator set root for
+	 * @param operators the operators in the operatorSet
+	 * @return the operatorSet root
+	 * @dev the operators are verified to be distinct and the length must be the total 
+	 * number of operators in the operatorSet at the time of calling
+	 */
     function getOperatorSetRoot(
         IAVSDirectory.OperatorSet calldata operatorSet, 
         address[] calldata operators
@@ -200,23 +206,79 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
 
     /**
      * @notice called by the claimer to claim a stake root
-     * @param timestamp the timestamp of the stake root
+     * @param calculationTimestamp the timestamp of the state the stakeRoot was calculated against
      * @param operatorSetRoots the operator set roots ordered by the operator set index
      * @dev only callable by the claimer
      */
-    function claimStakeRoot(uint32 timestamp, bytes32[] calldata operatorSetRoots) external {
-        require(msg.sender == claimer, "StakeRootCompendium.claimStakeRoot: only claimer can claim stake roots");
-        require(timestamp >= block.timestamp - maxRootStaleness, "StakeRootCompendium.claimStakeRoot: stake root too stale");
-        bytes32 stakeRoot = getStakeRoot(timestamp, operatorSetRoots);
+    function claimStakeRoot(uint32 calculationTimestamp, bytes32[] calldata operatorSetRoots) external {
+        require(isClaimer[msg.sender], "StakeRootCompendium.claimStakeRoot: only claimers can claim stake roots");
+        require(
+            stakeRootClaims.length == 0 ||
+            calculationTimestamp > stakeRootClaims[stakeRootClaims.length - 1].calculationTimestamp + minTimeSinceLastClaim, 
+            "StakeRootCompendium.claimStakeRoot: stake root already claimed"
+        );
+        bytes32 stakeRoot = getStakeRoot(calculationTimestamp, operatorSetRoots);
         stakeRootClaims.push(StakeRootClaim({
             stakeRoot: stakeRoot,
-            timestamp: timestamp,
-            validAfter: uint32(block.timestamp) + challengePeriod,
-            challenged: false
+            claimer: msg.sender,
+            calculationTimestamp: calculationTimestamp,
+            claimedTimestamp: uint32(block.timestamp),
+            provenFraudlent: false
         }));
     }
 
-    /// SNARK RELATED FUNCTIONS
+    /**
+     * @notice called by the claimer to challenge a stake root claim
+     * @param claimIndex the index of the claim to challenge
+     * @param operatorSet an operatorSet which an invalid operatorSetRoot was claimed
+     * @param operatorSetRoot an incorrect operatorSetRoot that was claimed
+     * @param merkleProof the merkle proof of the operatorSetRoot against the stakeRoot
+     * @param journal the output of the program being verified (verifiedTimestamp, verifiedOperatorSet, verifiedOperatorSetRoot)
+     * @param seal the snark proof of the program being verified
+     */
+    function challengeStakeRootClaim(
+        uint32 claimIndex,
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        bytes32 operatorSetRoot,
+        bytes calldata merkleProof,
+        bytes calldata journal,
+        bytes calldata seal
+    ) external {
+        // verify that the claim is valid
+        StakeRootClaim memory claim = stakeRootClaims[claimIndex];
+        require(!claim.provenFraudlent, "StakeRootCompendium.verifySnarkProof: claim already proven fraudulent");
+
+        // verify that the operator set root is correct
+        uint256 operatorSetIndex = operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].upperLookupRecent(claim.calculationTimestamp);
+        require(Merkle.verifyInclusionKeccak(
+            merkleProof,
+            claim.stakeRoot,
+            operatorSetRoot,
+            operatorSetIndex
+        ), "StakeRootCompendium.verifySnarkProof: invalid operator set root");
+
+        IRiscZeroVerifier(verifier).verify(
+                seal,
+                imageId,
+                sha256(journal)
+            );
+
+        // TODO
+        require(sha256(journal) != operatorSetRoot, "StakeRootCompendium.verifySnarkProof: claimed operator set root is correct");
+        stakeRootClaims[claimIndex].provenFraudlent = true;
+    }
+
+    /// PERMISSIONED SETTERS
+
+    /**
+     * @notice changes the status of whether an address is allowed to make stake root claims
+     * @param claimer the address to change the status of
+     * @param allowed whether the address is allowed to make stake root claims
+     * @dev only callable by the owner
+     */
+    function setClaimerStatus(address claimer, bool allowed) external onlyOwner {
+        _setClaimerStatus(claimer, allowed);
+    }
 
     /**
      * @notice sets the verifier contract that will be used to verify snark proofs
@@ -240,41 +302,10 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         emit ImageIdChanged(oldImageId, imageId);
     }
 
-    /**
-     * @notice Verifies a snark proof
-     * @param journal the commited result of the program
-     * @param seal the snark proof to verify
-     */
-    function verifySnarkProof(
-        uint32 claimIndex,
-        IAVSDirectory.OperatorSet calldata operatorSet,
-        bytes32 operatorSetRoot,
-        bytes calldata merkleProof,
-        bytes calldata journal,
-        bytes calldata seal
-    ) external {
-        // verify that the claim is valid
-        StakeRootClaim memory claim = stakeRootClaims[claimIndex];
-        require(claim.validAfter <= block.timestamp, "StakeRootCompendium.verifySnarkProof: claim not yet valid");
-        require(!claim.challenged, "StakeRootCompendium.verifySnarkProof: claim already challenged");
+    /// INTERNAL FUNCTIONS
 
-        // verify that the operator set root is correct
-        uint256 operatorSetIndex = operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].upperLookupRecent(claim.timestamp);
-        require(Merkle.verifyInclusionKeccak(
-            merkleProof,
-            claim.stakeRoot,
-            operatorSetRoot,
-            operatorSetIndex
-        ), "StakeRootCompendium.verifySnarkProof: invalid operator set root");
-
-        IRiscZeroVerifier(verifier).verify(
-                seal,
-                imageId,
-                sha256(journal)
-            );
-
-        // TODO
-        require(sha256(journal) != operatorSetRoot, "StakeRootCompendium.verifySnarkProof: claimed operator set root is correct");
-        stakeRootClaims[claimIndex].challenged = true;
+    function _setClaimerStatus(address claimer, bool allowed) internal {
+        isClaimer[claimer] = allowed;
+        emit ClaimerChanged(claimer, allowed);
     }
 }
