@@ -1178,6 +1178,28 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
         avsDirectory.deregisterOperatorFromAVS(address(0));
     }
 
+    function test_revert_deregisterOperatorFromAVS_notM2AVS() public {
+        // Register operator
+        bytes32 salt = bytes32(0);
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
+        uint256 expiry = type(uint256).max;
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
+            _getOperatorAVSRegistrationSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
+
+        cheats.startPrank(defaultAVS);
+        avsDirectory.registerOperatorToAVS(operator, operatorSignature);
+
+        // Become operator set AVS
+        avsDirectory.becomeOperatorSetAVS();
+
+        // Deregister operator
+        cheats.expectRevert("AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS");
+        avsDirectory.deregisterOperatorFromAVS(operator);
+    }
+
     function testFuzz_deregisterOperatorFromAVS(bytes32 salt) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
