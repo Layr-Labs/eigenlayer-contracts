@@ -12,6 +12,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
     uint32 constant NUM_OPSETS = 10;
     uint32 constant NUM_OPERATORS_PER_OPSET = 2048;
+    uint256 constant AMOUNT_TOKEN = 1000;
     
     function run() public {
         _parseDeployedContracts("script/output/devnet/M2_from_scratch_deployment_data.json");
@@ -20,8 +21,8 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         IStakeRootCompendium stakeRootCompendium =  new StakeRootCompendium({
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
-            _minTimeSinceLastClaim: 1 days,
-            _challengePeriod: 12 seconds
+            _challengePeriod: 12 seconds,
+            _minTimeSinceLastClaim: 1 days
         });
 
         emit log_named_address("stakeRootCompendium", address(stakeRootCompendium));
@@ -38,21 +39,32 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             }
         }
 
-        vm.startBroadcast();
-
+        vm.broadcast();
         OperatorFactory operatorFactory = new OperatorFactory(delegationManager, strategyManager);
         address[][] memory operators = new address[][](strategies.length);
         for (uint i = 0; i < operators.length; i++) {
             // todo: send operators[i].length*1 ether of strategy token to operatorfactory
+            // //transfer enough tokens for every operator in the operator set for all the strategies in the operator set
+           
+            for (uint j = 0; j < strategies[i].length; j++) {
+                 vm.startBroadcast();
+                IERC20 token = strategies[i][j].underlyingToken();
+                token.approve(msg.sender, type(uint256).max);
+                token.transferFrom(msg.sender, address(operatorFactory), NUM_OPERATORS_PER_OPSET*AMOUNT_TOKEN);
+                vm.stopBroadcast();
+            }
+
+
             operators[i] = operatorFactory.createManyOperators(strategies[i], NUM_OPERATORS_PER_OPSET);
         }
 
+        vm.broadcast();
         AVS avs = new AVS(avsDirectory, stakeRootCompendium);
         for (uint i = 0; i < strategies.length; i++) {
+            vm.startBroadcast();
             avs.createOperatorSetAndRegisterOperators(uint32(i), strategies[i], operators[i]);
+            vm.stopBroadcast();
         }
-
-        vm.stopBroadcast();
 
         /// WRITE TO JSON
 
@@ -121,7 +133,7 @@ contract AVS {
 }
 
 
-contract OperatorFactory {
+contract OperatorFactory is Test {
     IDelegationManager delegationManager;
     IStrategyManager strategyManager;
     constructor(IDelegationManager _delegationManager, IStrategyManager _strategyManager) {
@@ -129,12 +141,23 @@ contract OperatorFactory {
         strategyManager = _strategyManager;
     }
 
+    uint256 constant AMOUNT_TOKEN = 1000;
+
     function createManyOperators(IStrategy[] memory strategies, uint256 numOperatorsPerOpset) public returns(address[] memory) {
         address[] memory operators = new address[](numOperatorsPerOpset);
         for (uint256 i = 0; i < operators.length; ++i) {
             operators[i] = address(new Operator(delegationManager));
             for (uint256 j = 0; j < strategies.length; ++j) {
+                vm.startBroadcast();
                 // todo: deposit on behalf of operator for each strategy
+                IERC20 token = strategies[j].underlyingToken();
+                token.approve(address(this), type(uint256).max);
+                token.approve(address(strategyManager), type(uint256).max);
+                vm.stopBroadcast();
+
+                vm.startBroadcast();
+                strategyManager.depositIntoStrategyWithSignature(strategies[j], token, AMOUNT_TOKEN , operators[i], type(uint256).max, hex"");
+                vm.stopBroadcast();
             }
         }
         return operators;
