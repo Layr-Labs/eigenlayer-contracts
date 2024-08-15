@@ -67,6 +67,7 @@ interface IRewardsCoordinator {
         uint32 startTimestamp;
         uint32 duration;
     }
+
     /**
      * @notice OperatorSetRewardsSubmission struct submitted by AVSs when making rewards to operatorSets
      * @notice The retroactive range applies from RewardsSubmission
@@ -83,7 +84,6 @@ interface IRewardsCoordinator {
      *      using `OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP` instead of `GENESIS_REWARDS_TIMESTAMP` and
      *      `OPERATOR_SET_MAX_RETROACTIVE_LENGTH` instead of `MAX_RETROACTIVE_LENGTH`
      */
-
     struct OperatorSetRewardsSubmission {
         RewardType rewardType;
         uint32 operatorSetId;
@@ -94,6 +94,25 @@ interface IRewardsCoordinator {
         uint32 duration;
     }
 
+    /**
+     * @notice PerformanceRewardsSubmission struct submitted by AVSs when making performance based rewards to operatorSets
+     * @notice This reward can only be made retroactively as future performance bannot be forecasted
+     * @param operatorSetId The operatorSetId to distribute rewards to
+     * @param operators The list of operators to reward for performance
+     * @param scores The scores of the operators to reward
+     * @param strategiesAndMultipliers The strategies and their relative weights
+     * cannot have duplicate strategies and need to be sorted in ascending address order. We need the strategies and multipliers
+     * so that the performance based reward can be distributed to stakers proportional to their delegated stake.  
+     * @param token The rewards token to be distributed
+     * @param amount The total amount of tokens to be distributed
+     * @param startTimestamp The timestamp (seconds) at which the submission range is considered for distribution
+     * could start in the past or in the future but within a valid range. See the diagram above.
+     * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION
+     * @dev The sliding window from `RewardsSubmission` applies to `PerformanceRewardsSubmission`, with
+     *      using `OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP` instead of `GENESIS_REWARDS_TIMESTAMP` and
+     *      `OPERATOR_SET_MAX_RETROACTIVE_LENGTH` instead of `MAX_RETROACTIVE_LENGTH`. Note that the 
+     *      entire event must be retroactive as future performance cannot be forecasted.
+     */
     /// @notice Used for performance based reward submissions.
     struct PerformanceRewardsSubmission {
         uint32 operatorSetId;
