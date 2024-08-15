@@ -225,9 +225,6 @@ interface IRewardsCoordinator {
     /// @notice The timestamp until which RewardsSubmissions have been calculated
     function currRewardsCalculationEndTimestamp() external view returns (uint32);
 
-    /// @notice loop through distribution roots from reverse and return hash
-    function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32);
-
     /// @notice returns the number of distribution roots posted
     function getDistributionRootsLength() external view returns (uint256);
 
@@ -236,6 +233,13 @@ interface IRewardsCoordinator {
 
     /// @notice returns the current distributionRoot
     function getCurrentDistributionRoot() external view returns (DistributionRoot memory);
+
+    /// @notice loop through the distribution roots from reverse and get latest root that is not disabled and activated
+    /// i.e. a root that can be claimed against
+    function getCurrentClaimableDistributionRoot() external view returns (DistributionRoot memory);
+
+    /// @notice loop through distribution roots from reverse and return index from hash
+    function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32);
 
     /**
      *
