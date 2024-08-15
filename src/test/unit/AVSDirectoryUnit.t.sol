@@ -1178,7 +1178,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
         avsDirectory.deregisterOperatorFromAVS(address(0));
     }
 
-    function test_revert_deregisterOperatorFromAVS_notM2AVS() public {
+    function test_revert_deregisterOperatorFromAVS_whenAVSISOperatorSetAVS() public {
         // Register operator
         bytes32 salt = bytes32(0);
         address operator = cheats.addr(delegationSignerPrivateKey);
