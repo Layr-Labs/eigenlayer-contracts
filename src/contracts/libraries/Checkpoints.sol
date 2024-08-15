@@ -20,14 +20,15 @@ import "@openzeppelin-upgrades-v4.9.0/contracts/utils/math/SafeCastUpgradeable.s
  * _Available since v4.5._
  */
 library Checkpoints {
-    struct History {
-        Checkpoint[] _checkpoints;
-    }
+struct History {
+    Checkpoint[] _checkpoints;
+    uint256[] queuedDeallocationIndices;
+}
 
-    struct Checkpoint {
-        uint32 _key;
-        uint224 _value;
-    }
+struct Checkpoint {
+    uint32 _key;
+    uint224 _value;
+}
 
     /**
      * @dev Pushes a (`key`, `value`) pair into a History so that it is stored as the checkpoint.
