@@ -275,43 +275,49 @@ contract RewardsCoordinator is
      * proportional to their delegated stake. The operators are
      * registered to the msg.sender AVS and the given operatorSetId
      *
-     * @param rewardsSubmission The operatorSet rewards submission being created for
+     * @param rewardsSubmissions The operatorSet rewards submissions being created for
      *
      * @dev msg.sender is the AVS in the operatorSet the performance rewards submission is being made to
      * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
      * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
      */
-    function rewardOperatorsForPerformance(PerformanceRewardsSubmission calldata rewardsSubmission)
+    function rewardOperatorsForPerformance(PerformanceRewardsSubmission[] calldata rewardsSubmissions)
         external
         onlyWhenNotPaused(PAUSED_REWARD_PERFORMANCE)
         nonReentrant
     {
-        // Assert operators and scores lengths match.
-        require(
-            rewardsSubmission.operators.length == rewardsSubmission.scores.length,
-            "RewardsCoordinator.rewardOperatorsForPerformance: operators and scores length mismatch"
-        );
-        // Cache nonce for later use.
-        uint256 nonce = submissionNonce[msg.sender];
-        // Compute rewards submission hash.
-        bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
-        // Validate rewards submission.
-        _validateRewardsSubmission(
-            rewardsSubmission.strategies,
-            rewardsSubmission.amount,
-            rewardsSubmission.startTimestamp,
-            rewardsSubmission.duration,
-            OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
-            OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP
-        );
-        // Mark `rewardsSubmissionHash` as valid for avs (msg.sender).
-        isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
+        // Cache starting nonce value for later use.
+        uint256 startingNonce = submissionNonce[msg.sender];
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+            // Wrap array item for readability.
+            PerformanceRewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            // Assert operators and scores lengths match.
+            require(
+                rewardsSubmission.operators.length == rewardsSubmission.scores.length,
+                "RewardsCoordinator.rewardOperatorsForPerformance: operators and scores length mismatch"
+            );
+            // Calculate current nonce by adding `i` to starting nonce.
+            uint256 currentNonce = startingNonce + i;
+            // Compute rewards submission hash.
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, currentNonce, rewardsSubmission));
+            // Validate rewards submission.
+            _validateRewardsSubmission(
+                rewardsSubmission.strategies,
+                rewardsSubmission.amount,
+                rewardsSubmission.startTimestamp,
+                rewardsSubmission.duration,
+                OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
+                OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP
+            );
+            // Mark `rewardsSubmissionHash` as valid for avs (msg.sender).
+            isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
+            // Pull reward `token` of `amount` from avs (msg.sender).
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+            // Emit event to track performance based reward.
+            emit PerformanceBasedRewardCreated(msg.sender, currentNonce, rewardsSubmissionHash, rewardsSubmission);
+        }
         // Increase avs submission nonce by one.
-        ++submissionNonce[msg.sender];
-        // Pull reward `token` of `amount` from avs (msg.sender).
-        rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
-        // Emit event to track performance based reward.
-        emit PerformanceBasedRewardCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
+        submissionNonce[msg.sender] = startingNonce + rewardsSubmissions.length;
     }
 
     /**

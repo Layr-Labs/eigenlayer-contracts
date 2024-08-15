@@ -102,7 +102,7 @@ interface IRewardsCoordinator {
      * @param scores The scores of the operators to reward
      * @param strategiesAndMultipliers The strategies and their relative weights
      * cannot have duplicate strategies and need to be sorted in ascending address order. We need the strategies and multipliers
-     * so that the performance based reward can be distributed to stakers proportional to their delegated stake.  
+     * so that the performance based reward can be distributed to stakers proportional to their delegated stake.
      * @param token The rewards token to be distributed
      * @param amount The total amount of tokens to be distributed
      * @param startTimestamp The timestamp (seconds) at which the submission range is considered for distribution
@@ -110,7 +110,7 @@ interface IRewardsCoordinator {
      * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION
      * @dev The sliding window from `RewardsSubmission` applies to `PerformanceRewardsSubmission`, with
      *      using `OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP` instead of `GENESIS_REWARDS_TIMESTAMP` and
-     *      `OPERATOR_SET_MAX_RETROACTIVE_LENGTH` instead of `MAX_RETROACTIVE_LENGTH`. Note that the 
+     *      `OPERATOR_SET_MAX_RETROACTIVE_LENGTH` instead of `MAX_RETROACTIVE_LENGTH`. Note that the
      *      entire event must be retroactive as future performance cannot be forecasted.
      */
     /// @notice Used for performance based reward submissions.
@@ -401,7 +401,7 @@ interface IRewardsCoordinator {
      * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
      * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
      */
-    function rewardOperatorsForPerformance(PerformanceRewardsSubmission calldata rewardsSubmission) external;
+    function rewardOperatorsForPerformance(PerformanceRewardsSubmission[] calldata rewardsSubmission) external;
 
     /**
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
