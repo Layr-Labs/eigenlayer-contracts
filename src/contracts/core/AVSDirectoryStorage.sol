@@ -26,6 +26,10 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     bytes32 public constant OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH =
         keccak256("OperatorSetForceDeregistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
 
+    /// @notice The EIP-712 typehash for the `MagnitudeAdjustments` struct used by the contract
+    bytes32 public constant MAGNITUDE_ADJUSTMENT_TYPEHASH =
+        keccak256("MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)");
+
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
@@ -77,6 +81,10 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: operator => strategy => avs => operatorSetId => list of queuedDeallocation indices
     mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => uint256[])))) internal
         _queuedDeallocationIndices;
+    
+    /// @notice Mapping: allocator => 32-byte salt => whether or not the salt has already been used by the operator.
+    /// @dev Salt is used in the `allocate`, `deallocate` functions.
+    mapping(address => mapping(bytes32 => bool)) public allocatorSaltIsSpent;
 
     /// @notice Mapping: operatorSet => List of operators that are registered to the operatorSet
     /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
@@ -91,5 +99,5 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[36] private __gap;
+    uint256[35] private __gap;
 }

@@ -17,8 +17,12 @@ import "./ISignatureUtils.sol";
 interface IDelegationManager is ISignatureUtils {
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
-        /// @notice DEPRECATED -- this field is no longer used, payments are handled in PaymentCoordinator.sol
-        address __deprecated_earningsReceiver;
+        /**
+         * @notice Address who is responsible for configuring slashable magnitudes for the operator.
+         * If left as address(0) then the operator address themselves will by default be their own allocator.
+         * NOTE: This field was deprecated and previously used as the earningsReceiver field which ended up being unused.
+         */
+        address allocator;
         /**
          * @notice Address to verify signatures when a staker wishes to delegate to the operator, as well as controlling "forced undelegations".
          * @dev Signature verification follows these rules:
@@ -307,6 +311,12 @@ interface IDelegationManager is ISignatureUtils {
      * @notice Returns the OperatorDetails struct associated with an `operator`.
      */
     function operatorDetails(address operator) external view returns (OperatorDetails memory);
+
+    /**
+     * @notice Returns the allocator account for an operator. Default allocator is the operator itself
+     * if this field is empty and set to address(0)
+     */
+    function allocator(address operator) external view returns (address);
 
     /**
      * @notice Returns the delegationApprover account for an operator

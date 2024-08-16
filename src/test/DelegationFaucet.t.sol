@@ -469,7 +469,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
 
     function _registerOperator(address _operator) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            __deprecated_earningsReceiver: _operator,
+            allocator: _operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
