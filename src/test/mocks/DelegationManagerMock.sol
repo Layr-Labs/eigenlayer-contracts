@@ -63,6 +63,10 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return returnValue;
     }
 
+    function allocator(address operator) external view returns (address) {
+        return operator;
+    }
+
     function delegationApprover(address operator) external pure returns (address) {
         return operator;
     }

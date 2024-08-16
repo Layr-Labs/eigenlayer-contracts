@@ -271,11 +271,15 @@ contract AVSDirectory is
         MagnitudeAdjustment[] calldata allocations,
         SignatureWithSaltAndExpiry calldata allocatorSignature
     ) external {
-        // TODO signature verification
         // perform allocator signature verification if not allocator
-        address allocator = getAllocatorFor(operator);
+        address allocator = delegation.allocator(operator);
         if (msg.sender != allocator) {
-            _verifyAllocatorSignature(allocator, operator, allocations, allocatorSignature);
+            _verifyAllocatorSignature({
+                allocator: allocator,
+                operator: operator,
+                magnitudeAdjustments: allocations,
+                allocatorSignature: allocatorSignature
+            });
         }
 
         uint32 effectTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
@@ -311,9 +315,14 @@ contract AVSDirectory is
         SignatureWithSaltAndExpiry calldata allocatorSignature
     ) external {
         // perform allocator signature verification if not allocator
-        address allocator = getAllocatorFor(operator);
+        address allocator = delegation.allocator(operator);
         if (msg.sender != allocator) {
-            _verifyAllocatorSignature(allocator, operator, deallocations, allocatorSignature);
+            _verifyAllocatorSignature({
+                allocator: allocator,
+                operator: operator,
+                magnitudeAdjustments: deallocations,
+                allocatorSignature: allocatorSignature
+            });
         }
 
         uint32 completableTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
@@ -352,7 +361,11 @@ contract AVSDirectory is
         uint8[] calldata numToComplete
     ) external {
         for (uint256 i = 0; i < strategies.length; ++i) {
-            _updateFreeMagnitude(operator, strategies[i], numToComplete[i]);
+            _updateFreeMagnitude({
+                operator: operator,
+                strategy: strategies[i],
+                numToComplete: numToComplete[i]
+            });
         }
     }
 
@@ -759,11 +772,6 @@ contract AVSDirectory is
         return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
     }
 
-    /// @notice Read from operator details in DelegationManager to get operator's allocator
-    function getAllocatorFor(address operator) public view returns (address) {
-        return delegation.operatorDetails(operator).allocator;
-    }
-
     /**
      * @param operator the operator to get the slashable bips for
      * @param operatorSet the operatorSet to get the slashable bips for
@@ -871,6 +879,13 @@ contract AVSDirectory is
         );
     }
 
+    /**
+     * @notice Calculates the digest hash to be signed by an allocator to allocate or deallocate magnitude for an operator
+     * @param operator The operator to allocate or deallocate magnitude for.
+     * @param adjustments The magnitude allocations/deallocations to be made.
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid.
+     */
     function calculateMagnitudeAdjustmentDigestHash(
         address operator,
         MagnitudeAdjustment[] calldata adjustments,

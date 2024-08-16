@@ -313,6 +313,12 @@ interface IDelegationManager is ISignatureUtils {
     function operatorDetails(address operator) external view returns (OperatorDetails memory);
 
     /**
+     * @notice Returns the allocator account for an operator. Default allocator is the operator itself
+     * if this field is empty and set to address(0)
+     */
+    function allocator(address operator) external view returns (address);
+
+    /**
      * @notice Returns the delegationApprover account for an operator
      */
     function delegationApprover(address operator) external view returns (address);
