@@ -12,7 +12,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
     uint32 constant NUM_OPSETS = 10;
     uint32 constant NUM_OPERATORS_PER_OPSET = 2048;
-    uint256 constant AMOUNT_TOKEN = 1000;
+    uint256 constant TOKEN_AMOUNT_PER_OPERATOR = 1 ether;
     
     function run() public {
         _parseDeployedContracts("script/output/devnet/M2_from_scratch_deployment_data.json");
@@ -47,24 +47,27 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             // //transfer enough tokens for every operator in the operator set for all the strategies in the operator set
            
             for (uint j = 0; j < strategies[i].length; j++) {
-                 vm.startBroadcast();
                 IERC20 token = strategies[i][j].underlyingToken();
+                vm.startBroadcast();
                 token.approve(msg.sender, type(uint256).max);
-                token.transferFrom(msg.sender, address(operatorFactory), NUM_OPERATORS_PER_OPSET*AMOUNT_TOKEN);
+                token.transfer(address(operatorFactory), NUM_OPERATORS_PER_OPSET*TOKEN_AMOUNT_PER_OPERATOR);
                 vm.stopBroadcast();
             }
-
-
-            operators[i] = operatorFactory.createManyOperators(strategies[i], NUM_OPERATORS_PER_OPSET);
-        }
-
-        vm.broadcast();
-        AVS avs = new AVS(avsDirectory, stakeRootCompendium);
-        for (uint i = 0; i < strategies.length; i++) {
+            
             vm.startBroadcast();
-            avs.createOperatorSetAndRegisterOperators(uint32(i), strategies[i], operators[i]);
+            operators[i] = operatorFactory.createManyOperators(strategies[i], NUM_OPERATORS_PER_OPSET, TOKEN_AMOUNT_PER_OPERATOR);
+            for (uint j = 0; j < strategies[i].length; j++) {
+                operatorFactory.depositForOperators(strategies[i][j], operators[i], TOKEN_AMOUNT_PER_OPERATOR);
+            }
             vm.stopBroadcast();
         }
+
+        vm.startBroadcast();
+        AVS avs = new AVS(avsDirectory, stakeRootCompendium);
+        for (uint i = 0; i < strategies.length; i++) {
+            avs.createOperatorSetAndRegisterOperators(uint32(i), strategies[i], operators[i]);
+        }
+        vm.stopBroadcast();
 
         /// WRITE TO JSON
 
@@ -143,24 +146,28 @@ contract OperatorFactory is Test {
 
     uint256 constant AMOUNT_TOKEN = 1000;
 
-    function createManyOperators(IStrategy[] memory strategies, uint256 numOperatorsPerOpset) public returns(address[] memory) {
+    function createManyOperators(IStrategy[] memory strategies, uint256 numOperatorsPerOpset, uint256 tokenAmountPerOperator) public returns(address[] memory) {
+        IERC20[] memory tokens = new IERC20[](strategies.length);
+        // approve all transfers
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            tokens[i] = strategies[i].underlyingToken();
+            tokens[i].approve(address(strategyManager), type(uint256).max);
+        }
+
         address[] memory operators = new address[](numOperatorsPerOpset);
         for (uint256 i = 0; i < operators.length; ++i) {
             operators[i] = address(new Operator(delegationManager));
-            for (uint256 j = 0; j < strategies.length; ++j) {
-                vm.startBroadcast();
-                // todo: deposit on behalf of operator for each strategy
-                IERC20 token = strategies[j].underlyingToken();
-                token.approve(address(this), type(uint256).max);
-                token.approve(address(strategyManager), type(uint256).max);
-                vm.stopBroadcast();
-
-                vm.startBroadcast();
-                strategyManager.depositIntoStrategyWithSignature(strategies[j], token, AMOUNT_TOKEN , operators[i], type(uint256).max, hex"");
-                vm.stopBroadcast();
-            }
         }
         return operators;
+    }
+
+    function depositForOperators(IStrategy strategy, address[] memory operators, uint256 tokenAmountPerOperator) public {
+        IERC20 token = strategy.underlyingToken();
+        token.approve(address(strategyManager), type(uint256).max);
+        
+        for (uint256 i = 0; i < operators.length; ++i) {
+            strategyManager.depositIntoStrategyWithSignature(strategy, token, tokenAmountPerOperator, operators[i], type(uint256).max, hex"");
+        }
     }
 }
 
