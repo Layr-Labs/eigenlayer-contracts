@@ -223,7 +223,7 @@ library Checkpoints {
      * NOTE: That if value != 0 && pos == 0, then that means the value is the first checkpoint and actually exists
      * a checkpoint DNE iff value == 0 && pos == 0 => value == 0
      */
-    function upperLookupRecentWithPos(History storage self, uint32 key) internal view returns (uint224, uint256) {
+    function upperLookupRecentWithPos(History storage self, uint32 key) internal view returns (uint224, uint256, uint256) {
         uint256 len = self._checkpoints.length;
 
         uint256 low = 0;
@@ -240,7 +240,7 @@ library Checkpoints {
 
         uint256 pos = _upperBinaryLookup(self._checkpoints, key, low, high);
 
-        return pos == 0 ? (0, 0) : (_unsafeAccess(self._checkpoints, pos - 1)._value, pos - 1);
+        return pos == 0 ? (0, 0, len) : (_unsafeAccess(self._checkpoints, pos - 1)._value, pos - 1, len);
     }
 
     /// @notice WARNING: this function is only used because of the invariant property
@@ -251,14 +251,13 @@ library Checkpoints {
         uint32 key,
         uint224 decrementValue
     ) internal {
-        (uint224 value, uint256 pos) = upperLookupRecentWithPos(self, key);
+        (uint224 value, uint256 pos, uint256 len) = upperLookupRecentWithPos(self, key);
 
         // if there is no checkpoint, return
         if (value == 0 && pos == 0) {
             pos = type(uint256).max;
         }
 
-        uint256 len = self._checkpoints.length;
         while (pos < len) {
             Checkpoint storage current = _unsafeAccess(self._checkpoints, pos);
 

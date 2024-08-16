@@ -27,7 +27,12 @@ contract AVSDirectory is
     /// @dev BIPS factor for slashable bips
     uint256 internal constant BIPS_FACTOR = 10_000;
     /// @dev Delay before allocations take effect and how long until deallocations are completable
-    uint32 public constant ALLOCATION_DELAY = 21 days;
+    uint32 public constant DEFAULT_ALLOCATION_DELAY = 17.5 days;
+
+    /// @dev Delay before allocations take effect and how long until deallocations are completable
+    uint32 public constant DEALLOCATION_DELAY = 17.5 days;
+
+
     /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
     uint256 public constant MAX_PENDING_UPDATES = 1;
 
@@ -282,7 +287,7 @@ contract AVSDirectory is
             });
         }
 
-        uint32 effectTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
+        uint32 effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
         for (uint256 i = 0; i < allocations.length; ++i) {
             // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
             // numToComplete = 0 defaults to completing all pending deallocations up to uint8 max (256)
@@ -325,7 +330,7 @@ contract AVSDirectory is
             });
         }
 
-        uint32 completableTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
+        uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
         // deallocate for each strategy
         for (uint256 i = 0; i < deallocations.length; ++i) {
             // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
@@ -342,6 +347,128 @@ contract AVSDirectory is
                 completableTimestamp: completableTimestamp
             });
         }
+    }
+
+    struct MagnitudeAllocation {
+        IStrategy strategy;
+        uint64 expectedTotalMagnitude;
+        OperatorSet[] operatorSets;
+        uint64[] magnitude;
+    }
+
+    function setAllocations(
+        address operator,
+        MagnitudeAllocation[] calldata allocations,
+        SignatureWithSaltAndExpiry calldata allocatorSignature
+    ) external {
+        // completable timestamp for deallocations
+        uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
+        // effect timestamp for allocations to take effect. This is configurable by operators
+        uint32 effectTimestamp = uint32(block.timestamp) + getAllocationDelay(operator);
+        for (uint256 i = 0; i < allocations.length; ++i) {
+            // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
+            // numToComplete = 0 defaults to completing all pending deallocations up to uint8 max (256)
+            _updateFreeMagnitude({
+                operator: operator, 
+                strategy: allocations[i].strategy,
+                numToComplete: 0
+            });
+
+            // 2. check current totalMagnitude matches expected value
+            uint64 currentTotalMagnitude = uint64(_totalMagnitudeUpdate[operator][allocations[i].strategy].latest());
+            require(
+                currentTotalMagnitude == allocations[i].expectedTotalMagnitude,
+                "AVSDirectory.setAllocations: current total magnitude does not match expected"
+            );
+
+            // 3. set allocations for the strategy after updating freeMagnitude
+            _setAllocations({
+                operator: operator, 
+                allocation: allocations[i],
+                allocationEffectTimestamp: effectTimestamp,
+                deallocationCompletableTimestamp: completableTimestamp
+            }); 
+        }
+    }
+
+    function _setAllocations(
+        address operator,
+        MagnitudeAllocation calldata allocation,
+        uint32 allocationEffectTimestamp,
+        uint32 deallocationCompletableTimestamp
+    ) internal {
+        uint64 currentFreeMagnitude = freeMagnitude[operator][allocation.strategy];
+        OperatorSet[] calldata opSets = allocation.operatorSets;
+
+        for (uint256 i = 0; i < opSets.length; ++i) {
+            /// TODO??? ensure ordered in ascending bytes32 hash of opSets, can we have duplicate opSets, duplicate strategies?
+
+            // Read current magnitude allocation including its respective array index and length.
+            // We'll use these values later to check the number of pending allocations/deallocations.
+            (
+                uint224 currentMagnitude,
+                uint256 pos,
+                uint256 length
+            ) = _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
+                .upperLookupRecentWithPos(uint32(block.timestamp));
+
+            if (allocation.magnitude[i] < uint64(currentMagnitude)) {
+                // Newly configured magnitude is less than current value. 
+                // Therefore we handle this as a deallocation
+
+                // 1. ensure only pending queued deallocation per operator, operatorSet, strategy
+                _checkQueuedDeallocations(operator, allocation.strategy, opSets[i]);
+ 
+                // 2. update and decrement current and future queued amounts in case any pending allocations exist
+                _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
+                    .decrementAtAndFutureCheckpoints({
+                        key: uint32(block.timestamp),
+                        decrementValue: uint64(currentMagnitude) - allocation.magnitude[i]
+                    });
+                
+                // 3. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
+                uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
+                _pendingFreeMagnitude[operator][allocation.strategy].push(
+                    PendingFreeMagnitude({
+                        magnitudeDiff: uint64(currentMagnitude) - allocation.magnitude[i],
+                        completableTimestamp: deallocationCompletableTimestamp
+                    })
+                );
+                _queuedDeallocationIndices[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push(
+                    index
+                );                
+            } else if (allocation.magnitude[i] > uint64(currentMagnitude)) {
+                // Newly configured magnitude is greater than current value. 
+                // Therefore we handle this as an allocation
+
+                // 1. ensure only 1 pending allocation at a time
+                // read number of checkpoints after current timestamp
+                // no checkpoint exists if value == 0 && pos == 0, so check the negation before checking if there is a
+                // a pending allocation
+                if (currentMagnitude != 0 || pos != 0) {
+                    require(
+                        pos + MAX_PENDING_UPDATES == length,
+                        "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
+                    );
+                }
+                // 2. allocate magnitude which will take effect in the future 21 days from now
+                _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push({
+                    key: allocationEffectTimestamp,
+                    value: allocation.magnitude[i]
+                });
+                // 3. decrement free magnitude by incremented amount
+                // TODO??? could let this underflow instead of explicit check
+                require(
+                    currentFreeMagnitude >= allocation.magnitude[i] - uint64(currentMagnitude),
+                    "AVSDirectory._setAllocations: insufficient available free magnitude to allocate"
+                );
+                currentFreeMagnitude -= allocation.magnitude[i] - uint64(currentMagnitude);
+            }
+        }
+
+        // update freeMagnitude after all allocations.
+        // if provided allocations only resulted in deallocating, then this value would be unchanged
+        freeMagnitude[operator][allocation.strategy] = currentFreeMagnitude;
     }
 
     /**
@@ -446,6 +573,28 @@ contract AVSDirectory is
                 value: _totalMagnitudeUpdate[operator][strategies[i]].latest() - slashedMagnitude
             });
         }
+    }
+
+    function initializeAllocationDelay(
+        address operator,
+        uint32 delay
+    ) external {
+        require(
+            delegation.isOperator(operator),
+            "AVSDirectory.initializeAllocationDelay: operator not registered to EigenLayer yet"
+        );
+        require(
+            delegation.allocator(operator) == msg.sender,
+            "AVSDirectory.initializeAllocationDelay: caller must be operator's allocator"
+        );
+        require(
+            !allocationDelay[operator].isSet,
+            "AVSDirectory.initializeAllocationDelay: allocation delay already set"
+        );
+        allocationDelay[operator] = AllocationDelayDetails({
+            isSet: true,
+            allocationDelay: delay
+        });
     }
 
     /**
@@ -560,14 +709,13 @@ contract AVSDirectory is
             );
             // 2. rate limiting of 1 pending allocation at a time
             // read number of checkpoints after current timestamp
-            (uint224 value, uint256 pos) = _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i]
+            (uint224 value, uint256 pos, uint256 length) = _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i]
                 .operatorSetId].upperLookupRecentWithPos(uint32(block.timestamp));
             // no checkpoint exists if value == 0 && pos == 0, so check the negation before checking if there is a
             // a pending allocation
             if (value != 0 || pos != 0) {
                 require(
-                    pos + MAX_PENDING_UPDATES
-                        == _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].length(),
+                    pos + MAX_PENDING_UPDATES == length,
                     "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
                 );
             }
@@ -795,12 +943,17 @@ contract AVSDirectory is
         return uint16(currentMagnitude * BIPS_FACTOR / totalMagnitude);
     }
 
+    function getAllocationDelay(address operator) public view returns (uint32) {
+        AllocationDelayDetails memory details = allocationDelay[operator];
+        return details.isSet ? details.allocationDelay : DEFAULT_ALLOCATION_DELAY;
+    }
+
     /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         OperatorSetRegistrationStatus memory registrationStatus =
             operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
         return isMember(operator, operatorSet)
-            || registrationStatus.lastDeregisteredTimestamp + ALLOCATION_DELAY >= block.timestamp;
+            || registrationStatus.lastDeregisteredTimestamp + DEALLOCATION_DELAY >= block.timestamp;
     }
 
     // /**

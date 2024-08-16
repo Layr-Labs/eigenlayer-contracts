@@ -88,6 +88,10 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @dev Salt is used in the `allocate`, `deallocate` functions.
     mapping(address => mapping(bytes32 => bool)) public allocatorSaltIsSpent;
 
+    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
+    /// This determines how long it takes for allocations to take in the future. Can only be set one time for each operator
+    mapping(address => AllocationDelayDetails) public allocationDelay;
+
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
     }

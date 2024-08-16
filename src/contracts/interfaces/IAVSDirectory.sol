@@ -56,6 +56,16 @@ interface IAVSDirectory is ISignatureUtils {
         uint32 completableTimestamp;
     }
 
+    /**
+     * @notice struct used to store the allocation delay for an operator
+     * @param isSet whether the allocation delay is set. Can only be configured one time for each operator
+     * @param allocationDelay the delay in seconds for the operator's allocations
+     */
+    struct AllocationDelayDetails {
+        bool isSet;
+        uint32 allocationDelay;
+    }
+
     /// @notice Emitted when an operator set is created by an AVS.
     event OperatorSetCreated(OperatorSet operatorSet);
 
