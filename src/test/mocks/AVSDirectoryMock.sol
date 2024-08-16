@@ -50,7 +50,8 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function updateFreeMagnitude(
         address operator,
-        IStrategy[] calldata strategies
+        IStrategy[] calldata strategies,
+        uint8[] calldata freeMagnitudes
     ) external {}
 
     function slashOperator(

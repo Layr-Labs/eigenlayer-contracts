@@ -276,9 +276,18 @@ contract AVSDirectory is
         uint32 effectTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
         for (uint256 i = 0; i < allocations.length; ++i) {
             // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
-            _updateFreeMagnitude(operator, allocations[i].strategy);
+            // numToComplete = 0 defaults to completing all pending deallocations up to uint8 max (256)
+            _updateFreeMagnitude({
+                operator: operator, 
+                strategy: allocations[i].strategy,
+                numToComplete: 0
+            });
             // 2. allocate for the strategy after updating freeMagnitude
-            _allocate(operator, allocations[i], effectTimestamp);
+            _allocate({
+                operator: operator, 
+                allocation: allocations[i],
+                effectTimestamp: effectTimestamp
+            });
         }
     }
 
@@ -302,9 +311,18 @@ contract AVSDirectory is
         // deallocate for each strategy
         for (uint256 i = 0; i < deallocations.length; ++i) {
             // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
-            _updateFreeMagnitude(operator, deallocations[i].strategy);
+            // numToComplete = 0 defaults to completing all pending deallocations up to uint8 max (256)
+            _updateFreeMagnitude({
+                operator: operator, 
+                strategy: deallocations[i].strategy,
+                numToComplete: 0
+            });
             // 2. deallocate for the strategy after updating freeMagnitude
-            _deallocate(operator, deallocations[i], completableTimestamp);
+            _deallocate({
+                operator: operator, 
+                deallocation: deallocations[i],
+                completableTimestamp: completableTimestamp
+            });
         }
     }
 
@@ -315,12 +333,17 @@ contract AVSDirectory is
      *
      * @param operator address to complete deallocations for
      * @param strategies a list of strategies to complete deallocations for
+     * @param numToComplete a list of number of pending free magnitude deallocations to complete for each strategy
      *
      * @dev can be called permissionlessly by anyone
      */
-    function updateFreeMagnitude(address operator, IStrategy[] calldata strategies) external {
+    function updateFreeMagnitude(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint8[] calldata numToComplete
+    ) external {
         for (uint256 i = 0; i < strategies.length; ++i) {
-            _updateFreeMagnitude(operator, strategies[i]);
+            _updateFreeMagnitude(operator, strategies[i], numToComplete[i]);
         }
     }
 
@@ -599,10 +622,20 @@ contract AVSDirectory is
 
     /// @dev read through pending free magnitudes and add to freeMagnitude if completableTimestamp is >= block timestamp
     /// In additiona to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
-    function _updateFreeMagnitude(address operator, IStrategy strategy) internal {
+
+    /**
+     * @notice For a single strategy, update freeMagnitude by adding completable pending free magnitudes
+     * @param operator address to update freeMagnitude for
+     * @param strategy the strategy to update freeMagnitude for
+     * @param numToComplete the number of pending free magnitudes deallocations to complete, 0 to complete all (uint8 max 256)
+     * @dev read through pending free magnitudes and add to freeMagnitude if completableTimestamp is >= block timestamp
+     * In addition to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
+     */
+    function _updateFreeMagnitude(address operator, IStrategy strategy, uint8 numToComplete) internal {
         uint256 nextIndex = _nextPendingFreeMagnitudeIndex[operator][strategy];
         uint256 pendingFreeMagnitudeLength = _pendingFreeMagnitude[operator][strategy].length;
-        while (nextIndex < pendingFreeMagnitudeLength) {
+        uint8 completed = numToComplete == 0 ? type(uint8).max : 0;
+        while (nextIndex < pendingFreeMagnitudeLength && completed < numToComplete) {
             PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][nextIndex];
             // pendingFreeMagnitude is ordered by completableTimestamp. If we reach one that is not completable yet, then break
             // loop until completableTimestamp is < block.timestamp
@@ -613,6 +646,7 @@ contract AVSDirectory is
             // pending free magnitude can be added to freeMagnitude
             freeMagnitude[operator][strategy] += pendingFreeMagnitude.magnitudeDiff;
             ++nextIndex;
+            ++completed;
         }
         // update next pending free magnitude index to start from after adding all completable magnitudes
         _nextPendingFreeMagnitudeIndex[operator][strategy] = nextIndex;

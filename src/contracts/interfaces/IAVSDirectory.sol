@@ -243,7 +243,8 @@ interface IAVSDirectory is ISignatureUtils {
      */
     function updateFreeMagnitude(
         address operator,
-        IStrategy[] calldata strategies
+        IStrategy[] calldata strategies,
+        uint8[] calldata numToComplete
     ) external;
 
     /**
