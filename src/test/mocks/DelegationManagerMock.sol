@@ -56,11 +56,15 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
-            __deprecated_earningsReceiver: operator,
+            allocator: operator,
             delegationApprover: operator,
             stakerOptOutWindowBlocks: 0
         });
         return returnValue;
+    }
+
+    function allocator(address operator) external view returns (address) {
+        return operator;
     }
 
     function delegationApprover(address operator) external pure returns (address) {

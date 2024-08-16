@@ -264,14 +264,23 @@ contract AVSDirectory is
      *
      * @param operator address to increase allocations for
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param operatorSignature signature of the operator if msg.sender is not the operator
+     * @param allocatorSignature signature of the operator's designated allocator if msg.sender is not the allocator
      */
     function allocate(
         address operator,
         MagnitudeAdjustment[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
+        SignatureWithSaltAndExpiry calldata allocatorSignature
     ) external {
-        // TODO signature verification
+        // perform allocator signature verification if not allocator
+        address allocator = delegation.allocator(operator);
+        if (msg.sender != allocator) {
+            _verifyAllocatorSignature({
+                allocator: allocator,
+                operator: operator,
+                magnitudeAdjustments: allocations,
+                allocatorSignature: allocatorSignature
+            });
+        }
 
         uint32 effectTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
         for (uint256 i = 0; i < allocations.length; ++i) {
@@ -298,14 +307,23 @@ contract AVSDirectory is
      *
      * @param operator address to decrease allocations for
      * @param deallocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param operatorSignature signature of the operator if msg.sender is not the operator
+     * @param allocatorSignature signature of the operator's designated allocator if msg.sender is not the allocator
      */
     function deallocate(
         address operator,
         MagnitudeAdjustment[] calldata deallocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
+        SignatureWithSaltAndExpiry calldata allocatorSignature
     ) external {
-        // TODO signature verification
+        // perform allocator signature verification if not allocator
+        address allocator = delegation.allocator(operator);
+        if (msg.sender != allocator) {
+            _verifyAllocatorSignature({
+                allocator: allocator,
+                operator: operator,
+                magnitudeAdjustments: deallocations,
+                allocatorSignature: allocatorSignature
+            });
+        }
 
         uint32 completableTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
         // deallocate for each strategy
@@ -343,7 +361,11 @@ contract AVSDirectory is
         uint8[] calldata numToComplete
     ) external {
         for (uint256 i = 0; i < strategies.length; ++i) {
-            _updateFreeMagnitude(operator, strategies[i], numToComplete[i]);
+            _updateFreeMagnitude({
+                operator: operator,
+                strategy: strategies[i],
+                numToComplete: numToComplete[i]
+            });
         }
     }
 
@@ -679,6 +701,34 @@ contract AVSDirectory is
         }
     }
 
+    /// @dev Verify allocator's signature and spend salt
+    function _verifyAllocatorSignature(
+        address allocator,
+        address operator,
+        MagnitudeAdjustment[] calldata magnitudeAdjustments,
+        SignatureWithSaltAndExpiry calldata allocatorSignature
+    ) internal {
+        // check the signature expiry
+        require(
+            allocatorSignature.expiry >= block.timestamp,
+            "AVSDirectory._verifyAllocatorSignature: allocator signature expired"
+        );
+        // Assert allocator's signature cannot be replayed.
+        require(
+            !allocatorSaltIsSpent[allocator][allocatorSignature.salt],
+            "AVSDirectory._verifyAllocatorSignature: salt spent"
+        );
+
+        bytes32 digestHash = calculateMagnitudeAdjustmentDigestHash(
+            operator, magnitudeAdjustments, allocatorSignature.salt, allocatorSignature.expiry
+        );
+
+        // Assert allocator's signature is valid.
+        EIP1271SignatureUtils.checkSignature_EIP1271(allocator, digestHash, allocatorSignature.signature);
+        // Spend salt.
+        allocatorSaltIsSpent[allocator][allocatorSignature.salt] = true;
+    }
+
     /**
      *
      *                         VIEW FUNCTIONS
@@ -826,6 +876,24 @@ contract AVSDirectory is
     ) public view returns (bytes32) {
         return _calculateDigestHash(
             keccak256(abi.encode(OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry))
+        );
+    }
+
+    /**
+     * @notice Calculates the digest hash to be signed by an allocator to allocate or deallocate magnitude for an operator
+     * @param operator The operator to allocate or deallocate magnitude for.
+     * @param adjustments The magnitude allocations/deallocations to be made.
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid.
+     */
+    function calculateMagnitudeAdjustmentDigestHash(
+        address operator,
+        MagnitudeAdjustment[] calldata adjustments,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        return _calculateDigestHash(
+            keccak256(abi.encode(MAGNITUDE_ADJUSTMENT_TYPEHASH, operator, adjustments, salt, expiry))
         );
     }
 
