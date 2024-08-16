@@ -60,21 +60,23 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// Note that totalMagnitude is monotonically decreasing and only gets updated upon slashing
     mapping(address => mapping(IStrategy => Checkpoints.History)) internal _totalMagnitudeUpdate;
 
+    /// @notice Mapping: operator => strategy => avs => operatorSetId => checkpointed magnitude
+    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => Checkpoints.History)))) internal
+        _magnitudeUpdate;
+
     /// @notice Mapping: operator => strategy => free available magnitude that can be allocated to operatorSets
     /// Decrements whenever allocations take place and increments when deallocations are completed
     mapping(address => mapping(IStrategy => uint64)) public freeMagnitude;
 
-    /// @notice Mapping: operator => strategy => avs => operatorSetId => checkpointed magnitude
-    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => Checkpoints.History))))
-        internal _magnitudeUpdate;
+    /// @notice Mapping: operator => strategy => PendingFreeMagnitude[] to keep track of pending free magnitude from deallocations
+    mapping(address => mapping(IStrategy => PendingFreeMagnitude[])) internal _pendingFreeMagnitude;
 
-    /// @notice Mapping: operator => strategy => avs => operatorSetId => queuedDeallocations
-    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => QueuedDeallocation[])))) internal
-        _queuedDeallocations;
+    /// @notice Mapping: operator => strategy => index pointing to next pendingFreeMagnitude to complete and add to freeMagnitude
+    mapping(address => mapping(IStrategy => uint256)) internal _nextPendingFreeMagnitudeIndex;
 
-    /// @notice Mapping: operator => strategy => avs => operatorSetId => index pointing to next queuedDeallocation to complete
-    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => uint256)))) internal
-        _nextDeallocationIndex;
+    /// @notice Mapping: operator => strategy => avs => operatorSetId => list of queuedDeallocation indices
+    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => uint256[])))) internal
+        _queuedDeallocationIndices;
 
     /// @notice Mapping: operatorSet => List of operators that are registered to the operatorSet
     /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
