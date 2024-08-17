@@ -321,7 +321,7 @@ contract AVSDirectory is
     function setAllocations(
         address operator,
         MagnitudeAllocation[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata allocatorSignature
+        SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {
         // completable timestamp for deallocations
         uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
@@ -344,7 +344,7 @@ contract AVSDirectory is
             );
 
             // 3. set allocations for the strategy after updating freeMagnitude
-            _setAllocations({
+            _modifyAllocations({
                 operator: operator, 
                 allocation: allocations[i],
                 allocationEffectTimestamp: effectTimestamp,
@@ -353,7 +353,7 @@ contract AVSDirectory is
         }
     }
 
-    function _setAllocations(
+    function _modifyAllocations(
         address operator,
         MagnitudeAllocation calldata allocation,
         uint32 allocationEffectTimestamp,
@@ -374,7 +374,7 @@ contract AVSDirectory is
             ) = _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
                 .upperLookupRecentWithPos(uint32(block.timestamp));
 
-            if (allocation.magnitude[i] < uint64(currentMagnitude)) {
+            if (allocation.magnitudes[i] < uint64(currentMagnitude)) {
                 // Newly configured magnitude is less than current value. 
                 // Therefore we handle this as a deallocation
 
@@ -385,21 +385,21 @@ contract AVSDirectory is
                 _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
                     .decrementAtAndFutureCheckpoints({
                         key: uint32(block.timestamp),
-                        decrementValue: uint64(currentMagnitude) - allocation.magnitude[i]
+                        decrementValue: uint64(currentMagnitude) - allocation.magnitudes[i]
                     });
                 
                 // 3. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
                 uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
                 _pendingFreeMagnitude[operator][allocation.strategy].push(
                     PendingFreeMagnitude({
-                        magnitudeDiff: uint64(currentMagnitude) - allocation.magnitude[i],
+                        magnitudeDiff: uint64(currentMagnitude) - allocation.magnitudes[i],
                         completableTimestamp: deallocationCompletableTimestamp
                     })
                 );
                 _queuedDeallocationIndices[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push(
                     index
                 );                
-            } else if (allocation.magnitude[i] > uint64(currentMagnitude)) {
+            } else if (allocation.magnitudes[i] > uint64(currentMagnitude)) {
                 // Newly configured magnitude is greater than current value. 
                 // Therefore we handle this as an allocation
 
@@ -416,15 +416,15 @@ contract AVSDirectory is
                 // 2. allocate magnitude which will take effect in the future 21 days from now
                 _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push({
                     key: allocationEffectTimestamp,
-                    value: allocation.magnitude[i]
+                    value: allocation.magnitudes[i]
                 });
                 // 3. decrement free magnitude by incremented amount
                 // TODO??? could let this underflow instead of explicit check
                 require(
-                    currentFreeMagnitude >= allocation.magnitude[i] - uint64(currentMagnitude),
+                    currentFreeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
                     "AVSDirectory._setAllocations: insufficient available free magnitude to allocate"
                 );
-                currentFreeMagnitude -= allocation.magnitude[i] - uint64(currentMagnitude);
+                currentFreeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
             }
         }
 
