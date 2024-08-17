@@ -741,6 +741,7 @@ contract AVSDirectory is
      * @param operatorSet the operatorSet to get the slashable bips for
      * @param strategy the strategy to get the slashable bips for
      * @param timestamp the timestamp to get the slashable bips for for
+     * @param linear whether the search should be linear (from the most recent) or binary
      *
      * @return slashableBips the slashable bips of the given strategy owned by
      * the given OperatorSet for the given operator and timestamp
@@ -749,12 +750,32 @@ contract AVSDirectory is
         address operator,
         OperatorSet calldata operatorSet,
         IStrategy strategy,
-        uint32 timestamp
+        uint32 timestamp,
+        bool linear
     ) public view returns (uint16) {
-        uint64 totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
-        uint64 currentMagnitude = uint64(
-            _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookup(timestamp)
-        );
+        uint64 totalMagnitude;
+        if (linear) {
+            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookupLinear(timestamp));
+        } else {
+            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
+        }
+        // return early if totalMagnitude is 0
+        if (totalMagnitude == 0) {
+            return 0;
+        }
+
+        uint64 currentMagnitude;
+        if (linear) {
+            currentMagnitude = uint64(
+                _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookupLinear(
+                    timestamp
+                )
+            );
+        } else {
+            currentMagnitude = uint64(
+                _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookup(timestamp)
+            );
+        }
 
         return uint16(currentMagnitude * BIPS_FACTOR / totalMagnitude);
     }
