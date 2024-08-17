@@ -100,7 +100,7 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         );
         require(
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION == 6048000,
-            "REWARDS_COORDINATOR_MAX_REWARDS_DURATION must be 31536000"
+            "REWARDS_COORDINATOR_MAX_REWARDS_DURATION must be 6048000"
         );
         require(
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH == 7776000,

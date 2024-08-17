@@ -387,12 +387,12 @@ contract ExistingDeploymentParser is Script, Test {
                 address(avsDirectoryImplementation),
             "avsDirectory: implementation set incorrectly"
         );
-        // require(
-        //     eigenLayerProxyAdmin.getProxyImplementation(
-        //         TransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
-        //     ) == address(rewardsCoordinatorImplementation),
-        //     "rewardsCoordinator: implementation set incorrectly"
-        // );
+        require(
+            eigenLayerProxyAdmin.getProxyImplementation(
+                TransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
+            ) == address(rewardsCoordinatorImplementation),
+            "rewardsCoordinator: implementation set incorrectly"
+        );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
                 TransparentUpgradeableProxy(payable(address(delegationManager)))
