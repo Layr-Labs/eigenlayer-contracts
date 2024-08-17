@@ -321,48 +321,6 @@ contract AVSDirectory is
         }
     }
 
-    struct MagnitudeAllocation {
-        IStrategy strategy;
-        uint64 expectedTotalMagnitude;
-        OperatorSet[] operatorSets;
-        uint64[] magnitude;
-    }
-
-    function setAllocations(
-        address operator,
-        MagnitudeAllocation[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external {
-        // completable timestamp for deallocations
-        uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
-        // effect timestamp for allocations to take effect. This is configurable by operators
-        uint32 effectTimestamp = uint32(block.timestamp) + getAllocationDelay(operator);
-        for (uint256 i = 0; i < allocations.length; ++i) {
-            // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
-            // numToComplete = 0 defaults to completing all pending deallocations up to uint8 max (256)
-            _updateFreeMagnitude({
-                operator: operator, 
-                strategy: allocations[i].strategy,
-                numToComplete: 0
-            });
-
-            // 2. check current totalMagnitude matches expected value
-            uint64 currentTotalMagnitude = uint64(_totalMagnitudeUpdate[operator][allocations[i].strategy].latest());
-            require(
-                currentTotalMagnitude == allocations[i].expectedTotalMagnitude,
-                "AVSDirectory.setAllocations: current total magnitude does not match expected"
-            );
-
-            // 3. set allocations for the strategy after updating freeMagnitude
-            _modifyAllocations({
-                operator: operator, 
-                allocation: allocations[i],
-                allocationEffectTimestamp: effectTimestamp,
-                deallocationCompletableTimestamp: completableTimestamp
-            }); 
-        }
-    }
-
     function _modifyAllocations(
         address operator,
         MagnitudeAllocation calldata allocation,
