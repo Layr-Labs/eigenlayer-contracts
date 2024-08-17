@@ -27,7 +27,7 @@ contract AVSDirectory is
     /// @dev BIPS factor for slashable bips
     uint256 internal constant BIPS_FACTOR = 10_000;
     /// @dev Delay before allocations take effect and how long until deallocations are completable
-    uint32 public constant DEFAULT_ALLOCATION_DELAY = 17.5 days;
+    uint32 public constant DEFAULT_ALLOCATION_DELAY = 21 days;
 
     /// @dev Delay before allocations take effect and how long until deallocations are completable
     uint32 public constant DEALLOCATION_DELAY = 17.5 days;
@@ -310,7 +310,7 @@ contract AVSDirectory is
         uint32 allocationEffectTimestamp,
         uint32 deallocationCompletableTimestamp
     ) internal {
-        uint64 currentFreeMagnitude = freeMagnitude[operator][allocation.strategy];
+        uint64 newFreeMagnitude = freeMagnitude[operator][allocation.strategy];
         OperatorSet[] calldata opSets = allocation.operatorSets;
 
         for (uint256 i = 0; i < opSets.length; ++i) {
@@ -360,7 +360,7 @@ contract AVSDirectory is
                 // a pending allocation
                 if (currentMagnitude != 0 || pos != 0) {
                     require(
-                        pos + MAX_PENDING_UPDATES == length,
+                        pos + MAX_PENDING_UPDATES <= length,
                         "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
                     );
                 }
@@ -370,18 +370,17 @@ contract AVSDirectory is
                     value: allocation.magnitudes[i]
                 });
                 // 3. decrement free magnitude by incremented amount
-                // TODO??? could let this underflow instead of explicit check
                 require(
-                    currentFreeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
+                    newFreeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
                     "AVSDirectory._setAllocations: insufficient available free magnitude to allocate"
                 );
-                currentFreeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
+                newFreeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
             }
         }
 
         // update freeMagnitude after all allocations.
         // if provided allocations only resulted in deallocating, then this value would be unchanged
-        freeMagnitude[operator][allocation.strategy] = currentFreeMagnitude;
+        freeMagnitude[operator][allocation.strategy] = newFreeMagnitude;
     }
 
     /**
@@ -488,17 +487,23 @@ contract AVSDirectory is
         }
     }
 
+    /**
+     * @notice Called by operators to set their allocation delay one time
+     * @param operator address to set allocation delay for
+     * @param delay the allocation delay in seconds
+     * @dev this is expected to be updatable in a future release
+     */
     function initializeAllocationDelay(
         address operator,
         uint32 delay
     ) external {
         require(
-            delegation.isOperator(operator),
-            "AVSDirectory.initializeAllocationDelay: operator not registered to EigenLayer yet"
+            msg.sender == operator,
+            "AVSDirectory.initializeAllocationDelay: only operator can set allocation delay"
         );
         require(
-            delegation.allocator(operator) == msg.sender,
-            "AVSDirectory.initializeAllocationDelay: caller must be operator's allocator"
+            delegation.isOperator(operator),
+            "AVSDirectory.initializeAllocationDelay: operator not registered to EigenLayer yet"
         );
         require(
             !allocationDelay[operator].isSet,

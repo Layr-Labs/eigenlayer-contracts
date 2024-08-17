@@ -48,6 +48,11 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         uint8[] calldata freeMagnitudes
     ) external {}
 
+    function initializeAllocationDelay(
+        address operator,
+        uint32 delay
+    ) external {}
+
     function slashOperator(
         address operator,
         uint32 operatorSetId,

@@ -259,6 +259,17 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
+     * @notice Called by operators to set their allocation delay one time
+     * @param operator address to set allocation delay for
+     * @param delay the allocation delay in seconds
+     * @dev this is expected to be updatable in a future release
+     */
+    function initializeAllocationDelay(
+        address operator,
+        uint32 delay
+    ) external;
+
+    /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
      *  @param metadataURI The URI for metadata associated with an AVS.
