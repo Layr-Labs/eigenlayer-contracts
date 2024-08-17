@@ -31,18 +31,17 @@ interface IAVSDirectory is ISignatureUtils {
     }
 
     /**
-     * @notice this struct is used in allocate and queueDeallocation in order to specify an operator's slashability for a certain operator set
-     *
-     * @param strategy the strategy to adjust slashable stake for
-     * @param operatorSets the operator sets to adjust slashable stake for
-     * @param magnitudeDiff magnitude difference; the difference in proportional parts of the operator's slashable stake
-     * that is slashable by the operatorSet.
-     * Slashable stake for an operator set is (magnitude / totalMagnitude) of an operator's delegated stake.
+     * @notice struct used to modify the allocation of slashable magnitude to list of operatorSets
+     * @param strategy the strategy to allocate magnitude for
+     * @param expectedTotalMagnitude the expected total magnitude of the operator used to combat against race conditions with slashing
+     * @param operatorSets the operatorSets to allocate magnitude for
+     * @param magnitudes the magnitudes to allocate for each operatorSet
      */
-    struct MagnitudeAdjustment {
+    struct MagnitudeAllocation {
         IStrategy strategy;
+        uint64 expectedTotalMagnitude;
         OperatorSet[] operatorSets;
-        uint64[] magnitudeDiffs;
+        uint64[] magnitudes;
     }
 
     /**
@@ -212,36 +211,6 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Allocates a set of magnitude adjustments to increase the slashable stake of an operator set for the given operator for the given strategy.
-     * Nonslashable magnitude for each strategy will decrement by the sum of all 
-     * allocations for that strategy and the allocations will take effect 21 days from calling.
-     *
-     * @param operator address to increase allocations for
-     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param operatorSignature signature of the operator if msg.sender is not the operator
-     */
-    function allocate(
-        address operator,
-        MagnitudeAdjustment[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external;
-
-    /**
-     * @notice Queues a set of magnitude adjustments to decrease the slashable stake of an operator set for the given operator for the given strategy.
-     * The deallocations will take effect 21 days from calling. In order for the operator to have their nonslashable magnitude increased, 
-     * they must call the contract again to complete the deallocation. Stake deallocations are still subject to slashing until 21 days have passed since queuing.
-     *
-     * @param operator address to decrease allocations for
-     * @param deallocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param operatorSignature signature of the operator if msg.sender is not the operator
-     */
-    function deallocate(
-        address operator,
-        MagnitudeAdjustment[] calldata deallocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external;
-
-    /**
      * @notice For all pending deallocations that have become completable, their pending free magnitude can be
      * added back to the free magnitude of the (operator, strategy) amount. This function takes a list of strategies
      * and adds all completable deallocations for each strategy, updating the freeMagnitudes of the operator
@@ -255,6 +224,20 @@ interface IAVSDirectory is ISignatureUtils {
         address operator,
         IStrategy[] calldata strategies,
         uint8[] calldata numToComplete
+    ) external;
+
+    /**
+     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
+     * @param operator address to modify allocations for
+     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
+     * @param operatorSignature signature of the operator if msg.sender is not the operator
+     * @dev updates freeMagnitude for the updated strategies
+     * @dev must be called by the operator
+     */
+    function modifyAllocations(
+        address operator,
+        MagnitudeAllocation[] calldata allocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
     ) external;
 
     /**

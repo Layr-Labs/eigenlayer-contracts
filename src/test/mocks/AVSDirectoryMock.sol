@@ -36,15 +36,9 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function deregisterOperatorFromAVS(address operator) external {}
 
-    function allocate(
+    function modifyAllocations(
         address operator,
-        MagnitudeAdjustment[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external {}
-
-    function deallocate(
-        address operator,
-        MagnitudeAdjustment[] calldata deallocations,
+        MagnitudeAllocation[] calldata allocations,
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {}
 
