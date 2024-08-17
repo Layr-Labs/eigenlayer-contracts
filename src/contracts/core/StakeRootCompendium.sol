@@ -202,7 +202,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         return Merkle.merkleizeKeccak256(operatorLeaves);
     }
 
-    /// CALLED BY CLAIMER
+    /// CLAIM AND CHALLENGE
 
     /**
      * @notice called by the claimer to claim a stake root
