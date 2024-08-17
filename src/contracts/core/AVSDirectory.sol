@@ -274,6 +274,8 @@ contract AVSDirectory is
         MagnitudeAllocation[] calldata allocations,
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {
+        // TODO: allow signature on behalf of operator
+        require(msg.sender == operator, "AVSDirectory.modifyAllocations: only operator can modify allocations");
         // completable timestamp for deallocations
         uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
         // effect timestamp for allocations to take effect. This is configurable by operators
