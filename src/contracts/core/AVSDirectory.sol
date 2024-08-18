@@ -308,7 +308,7 @@ contract AVSDirectory is
             uint64 currentTotalMagnitude = _getLatestTotalMagnitude(operator, allocations[i].strategy);
             require(
                 currentTotalMagnitude == allocations[i].expectedTotalMagnitude,
-                "AVSDirectory.setAllocations: current total magnitude does not match expected"
+                "AVSDirectory.modifyAllocations: current total magnitude does not match expected"
             );
 
             // 3. set allocations for the strategy after updating freeMagnitude
@@ -378,7 +378,7 @@ contract AVSDirectory is
                 if (currentMagnitude != 0 || pos != 0) {
                     require(
                         pos + MAX_PENDING_UPDATES <= length,
-                        "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
+                        "AVSDirectory._modifyAllocations: exceed max pending allocations allowed for op, opSet, strategy"
                     );
                 }
                 // 2. allocate magnitude which will take effect in the future 21 days from now
@@ -389,7 +389,7 @@ contract AVSDirectory is
                 // 3. decrement free magnitude by incremented amount
                 require(
                     newFreeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
-                    "AVSDirectory._setAllocations: insufficient available free magnitude to allocate"
+                    "AVSDirectory._modifyAllocations: insufficient available free magnitude to allocate"
                 );
                 newFreeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
             }
