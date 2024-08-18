@@ -123,16 +123,16 @@ contract EigenPodManager is
         // skip making a call to the DelegationManager if there is no change in delegateable shares
         if (changeInDelegatableShares != 0) {
             if (changeInDelegatableShares < 0) {
-                delegationManager.decreaseDelegatedShares({
+                delegationManager.decreaseDelegatedScaledShares({
                     staker: podOwner,
                     strategy: beaconChainETHStrategy,
-                    shares: uint256(-changeInDelegatableShares)
+                    scaledShares: uint256(-changeInDelegatableShares)
                 });
             } else {
-                delegationManager.increaseDelegatedShares({
+                delegationManager.increaseDelegatedScaledShares({
                     staker: podOwner,
                     strategy: beaconChainETHStrategy,
-                    shares: uint256(changeInDelegatableShares)
+                    scaledShares: uint256(changeInDelegatableShares)
                 });
             }
         }

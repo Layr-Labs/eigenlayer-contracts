@@ -64,8 +64,6 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function cancelSalt(bytes32 salt) external {}
 
-    function INITIAL_TOTAL_MAGNITUDE() external view returns (uint64) {}
-
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool) {}
 
     function isMember(address avs, address operator, uint32 operatorSetId) external view returns (bool) {}
@@ -87,6 +85,8 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
     ) public view returns (uint24[] memory) {}
 
     function getAllocationDelay(address operator) external view returns (uint32) {}
+
+    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory) {}
 
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,

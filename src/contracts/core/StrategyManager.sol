@@ -316,7 +316,7 @@ contract StrategyManager is
         _addShares(staker, token, strategy, shares);
 
         // Increase shares delegated to operator, if needed
-        delegation.increaseDelegatedShares(staker, strategy, shares);
+        delegation.increaseDelegatedScaledShares(staker, strategy, shares);
 
         return shares;
     }

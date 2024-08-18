@@ -46,13 +46,13 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return withdrawalRoot;
     }
 
-    function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
-
-    function decreaseDelegatedShares(
-        address /*staker*/,
-        IStrategy /*strategy*/,
-        uint256 /*shares*/
-    ) external pure {}
+function increaseDelegatedScaledShares(
+        address staker,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) external {}
+    
+    function decreaseDelegatedScaledShares(address staker, IStrategy strategy, uint256 shares) external {}
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
@@ -85,6 +85,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external pure returns (uint256) {
         return 0;
     }
+
+    function getOperatorScaledShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory) {}
     
     function getOperatorShares(
         address operator,
@@ -94,6 +99,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) public pure returns (uint256) {
         return 0;
     }
+
+    function operatorScaledShares(address operator, IStrategy strategy) external view returns (uint256) {}
 
     function isDelegated(address staker) external view returns (bool) {
         return (delegatedTo[staker] != address(0));
