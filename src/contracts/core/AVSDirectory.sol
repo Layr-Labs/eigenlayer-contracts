@@ -7,6 +7,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
+import "../libraries/ShareScalingLib.sol";
 import "./AVSDirectoryStorage.sol";
 
 contract AVSDirectory is
@@ -30,10 +31,7 @@ contract AVSDirectory is
     /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
     uint32 public constant DEALLOCATION_DELAY = 17.5 days;
 
-    /// @dev The initial total magnitude for an operator
-    uint64 public constant INITIAL_TOTAL_MAGNITUDE = 1 ether;
-
-    /// @dev Maximum number of pending allocations AND deallocations for a single operator, operatorSet, strategy
+    /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
     uint256 public constant MAX_PENDING_UPDATES = 1;
 
     /// @dev Returns the chain ID from the time the contract was deployed.
@@ -319,85 +317,6 @@ contract AVSDirectory is
                 deallocationCompletableTimestamp: completableTimestamp
             });
         }
-    }
-
-    function _modifyAllocations(
-        address operator,
-        MagnitudeAllocation calldata allocation,
-        uint32 allocationEffectTimestamp,
-        uint32 deallocationCompletableTimestamp
-    ) internal {
-        uint64 newFreeMagnitude = freeMagnitude[operator][allocation.strategy];
-        OperatorSet[] calldata opSets = allocation.operatorSets;
-
-        for (uint256 i = 0; i < opSets.length; ++i) {
-            /// TODO??? ensure ordered in ascending bytes32 hash of opSets, can we have duplicate opSets, duplicate strategies?
-
-            // Read current magnitude allocation including its respective array index and length.
-            // We'll use these values later to check the number of pending allocations/deallocations.
-            (
-                uint224 currentMagnitude,
-                uint256 pos,
-                uint256 length
-            ) = _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
-                .upperLookupRecentWithPos(uint32(block.timestamp));
-
-            if (allocation.magnitudes[i] < uint64(currentMagnitude)) {
-                // Newly configured magnitude is less than current value. 
-                // Therefore we handle this as a deallocation
-
-                // 1. ensure only pending queued deallocation per operator, operatorSet, strategy
-                _checkQueuedDeallocations(operator, allocation.strategy, opSets[i]);
- 
-                // 2. update and decrement current and future queued amounts in case any pending allocations exist
-                _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
-                    .decrementAtAndFutureCheckpoints({
-                        key: uint32(block.timestamp),
-                        decrementValue: uint64(currentMagnitude) - allocation.magnitudes[i]
-                    });
-                
-                // 3. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
-                uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
-                _pendingFreeMagnitude[operator][allocation.strategy].push(
-                    PendingFreeMagnitude({
-                        magnitudeDiff: uint64(currentMagnitude) - allocation.magnitudes[i],
-                        completableTimestamp: deallocationCompletableTimestamp
-                    })
-                );
-                _queuedDeallocationIndices[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push(
-                    index
-                );                
-            } else if (allocation.magnitudes[i] > uint64(currentMagnitude)) {
-                // Newly configured magnitude is greater than current value. 
-                // Therefore we handle this as an allocation
-
-                // 1. ensure only 1 pending allocation at a time
-                // read number of checkpoints after current timestamp
-                // no checkpoint exists if value == 0 && pos == 0, so check the negation before checking if there is a
-                // a pending allocation
-                if (currentMagnitude != 0 || pos != 0) {
-                    require(
-                        pos + MAX_PENDING_UPDATES <= length,
-                        "AVSDirectory._modifyAllocations: exceed max pending allocations allowed for op, opSet, strategy"
-                    );
-                }
-                // 2. allocate magnitude which will take effect in the future 21 days from now
-                _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push({
-                    key: allocationEffectTimestamp,
-                    value: allocation.magnitudes[i]
-                });
-                // 3. decrement free magnitude by incremented amount
-                require(
-                    newFreeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
-                    "AVSDirectory._modifyAllocations: insufficient available free magnitude to allocate"
-                );
-                newFreeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
-            }
-        }
-
-        // update freeMagnitude after all allocations.
-        // if provided allocations only resulted in deallocating, then this value would be unchanged
-        freeMagnitude[operator][allocation.strategy] = newFreeMagnitude;
     }
 
     /**
@@ -885,9 +804,12 @@ contract AVSDirectory is
     function _getLatestTotalMagnitude(address operator, IStrategy strategy) internal returns (uint64) {
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
         if (!exists) {
-            totalMagnitude = INITIAL_TOTAL_MAGNITUDE;
-            _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
-            freeMagnitude[operator][strategy] = INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+            _totalMagnitudeUpdate[operator][strategy].push({
+                key: uint32(block.timestamp),
+                value: totalMagnitude
+            });
+            freeMagnitude[operator][strategy] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
         }
 
         return uint64(totalMagnitude);
@@ -990,6 +912,15 @@ contract AVSDirectory is
     }
 
     /**
+     * @notice Returns the allocation delay for an operator
+     * @param operator the operator to get the allocation delay for
+     */
+    function getAllocationDelay(address operator) public view returns (uint32) {
+        AllocationDelayDetails memory details = allocationDelay[operator];
+        return details.isSet ? details.allocationDelay : DEFAULT_ALLOCATION_DELAY;
+    }
+
+    /**
      * @param operator the operator to get the slashable ppm for
      * @param operatorSet the operatorSet to get the slashable ppm for
      * @param strategies the strategies to get the slashable ppm for
@@ -1081,6 +1012,20 @@ contract AVSDirectory is
             operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
         return isMember(operator, operatorSet)
             || registrationStatus.lastDeregisteredTimestamp + DEALLOCATION_DELAY >= block.timestamp;
+    }
+
+    /// @notice Returns the total magnitude of an operator for a given set of strategies
+    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) public view returns (uint64[] memory) {
+        uint64[] memory totalMagnitudes = new uint64[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            uint256 totalMagnitudeLength = _totalMagnitudeUpdate[operator][strategies[i]]._checkpoints.length;
+            if (totalMagnitudeLength == 0) {
+                totalMagnitudes[i] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+            } else {
+                totalMagnitudes[i] = uint64(_totalMagnitudeUpdate[operator][strategies[i]]._checkpoints[totalMagnitudeLength - 1]._value);
+            }
+        }
+        return totalMagnitudes;
     }
 
     // /**

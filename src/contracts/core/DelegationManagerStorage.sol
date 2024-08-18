@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
+import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IEigenPodManager.sol";
 
 /**
@@ -33,6 +34,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     bytes32 internal _DOMAIN_SEPARATOR;
 
+    /// TODO @dev actually make this immutable and add to constructor
+    IAVSDirectory public constant avsDirectory = IAVSDirectory(address(0));
+
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
 
@@ -46,13 +50,15 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216_000;
 
     /**
-     * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
-     * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
+     * @notice returns the total number of scaled shares (i.e. shares scaled down by a factor of the `operator`'s
+     * totalMagnitude) in `strategy` that are delegated to `operator`.
+     * @notice Mapping: operator => strategy => total number of scaled shares in the strategy delegated to the operator.
      * @dev By design, the following invariant should hold for each Strategy:
-     * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
-     * = sum (delegateable shares of all stakers delegated to the operator)
+     * (operator's scaled shares in delegation manager) = sum (scaled shares above zero of all stakers delegated to operator)
+     * = sum (delegateable scaled shares of all stakers delegated to the operator)
+     * @dev FKA `operatorShares`
      */
-    mapping(address => mapping(IStrategy => uint256)) public operatorShares;
+    mapping(address => mapping(IStrategy => uint256)) public operatorScaledShares;
 
     /**
      * @notice Mapping: operator => OperatorDetails struct

@@ -319,9 +319,6 @@ interface IAVSDirectory is ISignatureUtils {
      *
      */
 
-    /// @dev The initial total magnitude for an operator
-    function INITIAL_TOTAL_MAGNITUDE() external view returns (uint64);
-
     /**
      * @notice Get the allocatable magnitude for an operator and strategy based on number of pending deallocations
      * that could be completed at the same time. This is the sum of freeMagnitude and the sum of all pending completable deallocations.
@@ -369,6 +366,9 @@ interface IAVSDirectory is ISignatureUtils {
         uint32 timestamp,
         bool linear
     ) external view returns (uint24[] memory);
+
+    /// @notice Returns the total magnitude of an operator for a given set of strategies
+    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory);
 
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 
