@@ -629,7 +629,7 @@ contract AVSDirectory is
                 // a pending allocation
                 if (currentMagnitude != 0 || pos != 0) {
                     require(
-                        pos + MAX_PENDING_UPDATES <= length,
+                        pos + MAX_PENDING_UPDATES >= length,
                         "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
                     );
                 }
