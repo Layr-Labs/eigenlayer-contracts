@@ -86,6 +86,8 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         bool linear
     ) public view returns (uint24[] memory) {}
 
+    function getAllocationDelay(address operator) external view returns (uint32) {}
+
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
         address avs,
@@ -103,6 +105,13 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
     function calculateOperatorSetForceDeregistrationTypehash(
         address avs,
         uint32[] calldata operatorSetIds,
+        bytes32 salt,
+        uint256 expiry
+    ) external view returns (bytes32) {}
+
+    function calculateMagnitudeAllocationDigestHash(
+        address operator,
+        MagnitudeAllocation[] calldata allocations,
         bytes32 salt,
         uint256 expiry
     ) external view returns (bytes32) {}

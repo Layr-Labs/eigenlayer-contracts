@@ -211,6 +211,20 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
+     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
+     * @param operator address to modify allocations for
+     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
+     * @param operatorSignature signature of the operator if msg.sender is not the operator
+     * @dev updates freeMagnitude for the updated strategies
+     * @dev must be called by the operator
+     */
+    function modifyAllocations(
+        address operator,
+        MagnitudeAllocation[] calldata allocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
+    ) external;
+
+    /**
      * @notice For all pending deallocations that have become completable, their pending free magnitude can be
      * added back to the free magnitude of the (operator, strategy) amount. This function takes a list of strategies
      * and adds all completable deallocations for each strategy, updating the freeMagnitudes of the operator
@@ -224,20 +238,6 @@ interface IAVSDirectory is ISignatureUtils {
         address operator,
         IStrategy[] calldata strategies,
         uint8[] calldata numToComplete
-    ) external;
-
-    /**
-     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
-     * @param operator address to modify allocations for
-     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param operatorSignature signature of the operator if msg.sender is not the operator
-     * @dev updates freeMagnitude for the updated strategies
-     * @dev must be called by the operator
-     */
-    function modifyAllocations(
-        address operator,
-        MagnitudeAllocation[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
     ) external;
 
     /**
@@ -259,7 +259,7 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Called by operators to set their allocation delay one time
+     * @notice Called by operators to set their allocation delay. Can only be set one time.
      * @param operator address to set allocation delay for
      * @param delay the allocation delay in seconds
      * @dev this is expected to be updatable in a future release
@@ -293,6 +293,13 @@ interface IAVSDirectory is ISignatureUtils {
 
     /// @dev The initial total magnitude for an operator
     function INITIAL_TOTAL_MAGNITUDE() external view returns (uint64);
+
+    /**
+     * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
+     * from calling initializeAllocationDelay.
+     * @param operator the operator to get the allocation delay for
+     */
+    function getAllocationDelay(address operator) external view returns (uint32);
 
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
@@ -371,6 +378,20 @@ interface IAVSDirectory is ISignatureUtils {
     function calculateOperatorSetForceDeregistrationTypehash(
         address avs,
         uint32[] calldata operatorSetIds,
+        bytes32 salt,
+        uint256 expiry
+    ) external view returns (bytes32);
+
+    /**
+     * @notice Calculates the digest hash to be signed by an operator to modify magnitude allocations
+     * @param operator The operator to allocate or deallocate magnitude for.
+     * @param allocations The magnitude allocations/deallocations to be made.
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid.
+     */
+    function calculateMagnitudeAllocationDigestHash(
+        address operator,
+        MagnitudeAllocation[] calldata allocations,
         bytes32 salt,
         uint256 expiry
     ) external view returns (bytes32);

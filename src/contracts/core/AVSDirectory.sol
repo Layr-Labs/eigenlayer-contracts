@@ -277,8 +277,10 @@ contract AVSDirectory is
         MagnitudeAllocation[] calldata allocations,
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {
-        // TODO: allow signature on behalf of operator
-        // require(msg.sender == operator, "AVSDirectory.modifyAllocations: only operator can modify allocations");
+        if (msg.sender != operator) {
+            _verifyOperatorSignature(operator, allocations, operatorSignature);
+        }
+
         // completable timestamp for deallocations
         uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
         // effect timestamp for allocations to take effect. This is configurable by operators
@@ -307,85 +309,6 @@ contract AVSDirectory is
                 deallocationCompletableTimestamp: completableTimestamp
             }); 
         }
-    }
-
-    function _modifyAllocations(
-        address operator,
-        MagnitudeAllocation calldata allocation,
-        uint32 allocationEffectTimestamp,
-        uint32 deallocationCompletableTimestamp
-    ) internal {
-        uint64 newFreeMagnitude = freeMagnitude[operator][allocation.strategy];
-        OperatorSet[] calldata opSets = allocation.operatorSets;
-
-        for (uint256 i = 0; i < opSets.length; ++i) {
-            /// TODO??? ensure ordered in ascending bytes32 hash of opSets, can we have duplicate opSets, duplicate strategies?
-
-            // Read current magnitude allocation including its respective array index and length.
-            // We'll use these values later to check the number of pending allocations/deallocations.
-            (
-                uint224 currentMagnitude,
-                uint256 pos,
-                uint256 length
-            ) = _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
-                .upperLookupRecentWithPos(uint32(block.timestamp));
-
-            if (allocation.magnitudes[i] < uint64(currentMagnitude)) {
-                // Newly configured magnitude is less than current value. 
-                // Therefore we handle this as a deallocation
-
-                // 1. ensure only pending queued deallocation per operator, operatorSet, strategy
-                _checkQueuedDeallocations(operator, allocation.strategy, opSets[i]);
- 
-                // 2. update and decrement current and future queued amounts in case any pending allocations exist
-                _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
-                    .decrementAtAndFutureCheckpoints({
-                        key: uint32(block.timestamp),
-                        decrementValue: uint64(currentMagnitude) - allocation.magnitudes[i]
-                    });
-                
-                // 3. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
-                uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
-                _pendingFreeMagnitude[operator][allocation.strategy].push(
-                    PendingFreeMagnitude({
-                        magnitudeDiff: uint64(currentMagnitude) - allocation.magnitudes[i],
-                        completableTimestamp: deallocationCompletableTimestamp
-                    })
-                );
-                _queuedDeallocationIndices[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push(
-                    index
-                );                
-            } else if (allocation.magnitudes[i] > uint64(currentMagnitude)) {
-                // Newly configured magnitude is greater than current value. 
-                // Therefore we handle this as an allocation
-
-                // 1. ensure only 1 pending allocation at a time
-                // read number of checkpoints after current timestamp
-                // no checkpoint exists if value == 0 && pos == 0, so check the negation before checking if there is a
-                // a pending allocation
-                if (currentMagnitude != 0 || pos != 0) {
-                    require(
-                        pos + MAX_PENDING_UPDATES <= length,
-                        "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
-                    );
-                }
-                // 2. allocate magnitude which will take effect in the future 21 days from now
-                _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push({
-                    key: allocationEffectTimestamp,
-                    value: allocation.magnitudes[i]
-                });
-                // 3. decrement free magnitude by incremented amount
-                require(
-                    newFreeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
-                    "AVSDirectory._setAllocations: insufficient available free magnitude to allocate"
-                );
-                newFreeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
-            }
-        }
-
-        // update freeMagnitude after all allocations.
-        // if provided allocations only resulted in deallocating, then this value would be unchanged
-        freeMagnitude[operator][allocation.strategy] = newFreeMagnitude;
     }
 
     /**
@@ -614,9 +537,6 @@ contract AVSDirectory is
         }
     }
 
-    /// @dev read through pending free magnitudes and add to freeMagnitude if completableTimestamp is >= block timestamp
-    /// In additiona to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
-
     /**
      * @notice For a single strategy, update freeMagnitude by adding completable pending free magnitudes
      * @param operator address to update freeMagnitude for
@@ -644,6 +564,92 @@ contract AVSDirectory is
         }
         // update next pending free magnitude index to start from after adding all completable magnitudes
         _nextPendingFreeMagnitudeIndex[operator][strategy] = nextIndex;
+    }
+
+    /**
+     * @notice For a single strategy, modify magnitude allocations for each of the specified operatorSets
+     * @param operator address to modify allocations for
+     * @param allocation the magnitude allocations to modify for a single strategy
+     * @param allocationEffectTimestamp the timestamp when the allocations will take effect
+     * @param deallocationCompletableTimestamp the timestamp when the deallocations will be completable
+     */
+    function _modifyAllocations(
+        address operator,
+        MagnitudeAllocation calldata allocation,
+        uint32 allocationEffectTimestamp,
+        uint32 deallocationCompletableTimestamp
+    ) internal {
+        uint64 newFreeMagnitude = freeMagnitude[operator][allocation.strategy];
+        OperatorSet[] calldata opSets = allocation.operatorSets;
+
+        for (uint256 i = 0; i < opSets.length; ++i) {
+            /// TODO??? ensure ordered in ascending bytes32 hash of opSets, can we have duplicate opSets, duplicate strategies?
+
+            // Read current magnitude allocation including its respective array index and length.
+            // We'll use these values later to check the number of pending allocations/deallocations.
+            (
+                uint224 currentMagnitude,
+                uint256 pos,
+                uint256 length
+            ) = _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
+                .upperLookupRecentWithPos(uint32(block.timestamp));
+
+            if (allocation.magnitudes[i] < uint64(currentMagnitude)) {
+                // Newly configured magnitude is less than current value. 
+                // Therefore we handle this as a deallocation
+
+                // 1. ensure only pending queued deallocation per operator, operatorSet, strategy
+                _checkQueuedDeallocations(operator, allocation.strategy, opSets[i]);
+ 
+                // 2. update and decrement current and future queued amounts in case any pending allocations exist
+                _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
+                    .decrementAtAndFutureCheckpoints({
+                        key: uint32(block.timestamp),
+                        decrementValue: uint64(currentMagnitude) - allocation.magnitudes[i]
+                    });
+                
+                // 3. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
+                uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
+                _pendingFreeMagnitude[operator][allocation.strategy].push(
+                    PendingFreeMagnitude({
+                        magnitudeDiff: uint64(currentMagnitude) - allocation.magnitudes[i],
+                        completableTimestamp: deallocationCompletableTimestamp
+                    })
+                );
+                _queuedDeallocationIndices[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push(
+                    index
+                );                
+            } else if (allocation.magnitudes[i] > uint64(currentMagnitude)) {
+                // Newly configured magnitude is greater than current value. 
+                // Therefore we handle this as an allocation
+
+                // 1. ensure only 1 pending allocation at a time
+                // read number of checkpoints after current timestamp
+                // no checkpoint exists if value == 0 && pos == 0, so check the negation before checking if there is a
+                // a pending allocation
+                if (currentMagnitude != 0 || pos != 0) {
+                    require(
+                        pos + MAX_PENDING_UPDATES <= length,
+                        "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
+                    );
+                }
+                // 2. allocate magnitude which will take effect in the future 21 days from now
+                _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push({
+                    key: allocationEffectTimestamp,
+                    value: allocation.magnitudes[i]
+                });
+                // 3. decrement free magnitude by incremented amount
+                require(
+                    newFreeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
+                    "AVSDirectory._setAllocations: insufficient available free magnitude to allocate"
+                );
+                newFreeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
+            }
+        }
+
+        // update freeMagnitude after all allocations.
+        // if provided allocations only resulted in deallocating, then this value would be unchanged
+        freeMagnitude[operator][allocation.strategy] = newFreeMagnitude;
     }
 
     /// @dev Check for max number of pending queued deallocations, ensuring <= MAX_PENDING_UPDATES
@@ -688,33 +694,32 @@ contract AVSDirectory is
         return uint64(totalMagnitude);
     }
 
-    // /// @dev Verify allocator's signature and spend salt
-    // function _verifyAllocatorSignature(
-    //     address allocator,
-    //     address operator,
-    //     MagnitudeAdjustment[] calldata magnitudeAdjustments,
-    //     SignatureWithSaltAndExpiry calldata allocatorSignature
-    // ) internal {
-    //     // check the signature expiry
-    //     require(
-    //         allocatorSignature.expiry >= block.timestamp,
-    //         "AVSDirectory._verifyAllocatorSignature: allocator signature expired"
-    //     );
-    //     // Assert allocator's signature cannot be replayed.
-    //     require(
-    //         !allocatorSaltIsSpent[allocator][allocatorSignature.salt],
-    //         "AVSDirectory._verifyAllocatorSignature: salt spent"
-    //     );
+    /// @dev Verify operator's signature and spend salt
+    function _verifyOperatorSignature(
+        address operator,
+        MagnitudeAllocation[] calldata allocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
+    ) internal {
+        // check the signature expiry
+        require(
+            operatorSignature.expiry >= block.timestamp,
+            "AVSDirectory._verifyOperatorSignature: operator signature expired"
+        );
+        // Assert operator's signature cannot be replayed.
+        require(
+            !operatorSaltIsSpent[operator][operatorSignature.salt],
+            "AVSDirectory._verifyOperatorSignature: salt spent"
+        );
 
-    //     bytes32 digestHash = calculateMagnitudeAdjustmentDigestHash(
-    //         operator, magnitudeAdjustments, allocatorSignature.salt, allocatorSignature.expiry
-    //     );
+        bytes32 digestHash = calculateMagnitudeAllocationDigestHash(
+            operator, allocations, operatorSignature.salt, operatorSignature.expiry
+        );
 
-    //     // Assert allocator's signature is valid.
-    //     EIP1271SignatureUtils.checkSignature_EIP1271(allocator, digestHash, allocatorSignature.signature);
-    //     // Spend salt.
-    //     allocatorSaltIsSpent[allocator][allocatorSignature.salt] = true;
-    // }
+        // Assert operator's signature is valid.
+        EIP1271SignatureUtils.checkSignature_EIP1271(operator, digestHash, operatorSignature.signature);
+        // Spend salt.
+        operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+    }
 
     /**
      *
@@ -817,6 +822,11 @@ contract AVSDirectory is
         return uint16(currentMagnitude * 1e6 / totalMagnitude);
     }
 
+    /**
+     * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
+     * from calling initializeAllocationDelay.
+     * @param operator the operator to get the allocation delay for
+     */
     function getAllocationDelay(address operator) public view returns (uint32) {
         AllocationDelayDetails memory details = allocationDelay[operator];
         return details.isSet ? details.allocationDelay : DEFAULT_ALLOCATION_DELAY;
@@ -906,23 +916,23 @@ contract AVSDirectory is
         );
     }
 
-    // /**
-    //  * @notice Calculates the digest hash to be signed by an allocator to allocate or deallocate magnitude for an operator
-    //  * @param operator The operator to allocate or deallocate magnitude for.
-    //  * @param adjustments The magnitude allocations/deallocations to be made.
-    //  * @param salt A unique and single use value associated with the approver signature.
-    //  * @param expiry Time after which the approver's signature becomes invalid.
-    //  */
-    // function calculateMagnitudeAdjustmentDigestHash(
-    //     address operator,
-    //     MagnitudeAdjustment[] calldata adjustments,
-    //     bytes32 salt,
-    //     uint256 expiry
-    // ) public view returns (bytes32) {
-    //     return _calculateDigestHash(
-    //         keccak256(abi.encode(MAGNITUDE_ADJUSTMENT_TYPEHASH, operator, adjustments, salt, expiry))
-    //     );
-    // }
+    /**
+     * @notice Calculates the digest hash to be signed by an operator to modify magnitude allocations
+     * @param operator The operator to allocate or deallocate magnitude for.
+     * @param allocations The magnitude allocations/deallocations to be made.
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid.
+     */
+    function calculateMagnitudeAllocationDigestHash(
+        address operator,
+        MagnitudeAllocation[] calldata allocations,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        return _calculateDigestHash(
+            keccak256(abi.encode(MAGNITUDE_ADJUSTMENT_TYPEHASH, operator, allocations, salt, expiry))
+        );
+    }
 
     /// @notice Getter function for the current EIP-712 domain separator for this contract.
     /// @dev The domain separator will change in the event of a fork that changes the ChainID.

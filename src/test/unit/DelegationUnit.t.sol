@@ -263,7 +263,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
     function _registerOperatorWithBaseDetails(address operator) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: operator,
+            __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
@@ -272,7 +272,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
     function _registerOperatorWithDelegationApprover(address operator) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: operator,
+            __deprecated_earningsReceiver: operator,
             delegationApprover: defaultApprover,
             stakerOptOutWindowBlocks: 0
         });
@@ -288,7 +288,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         ERC1271WalletMock wallet = new ERC1271WalletMock(delegationSigner);
 
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: operator,
+            __deprecated_earningsReceiver: operator,
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
@@ -618,7 +618,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         cheats.expectRevert("Pausable: index is paused");
         delegationManager.registerAsOperator(
             IDelegationManager.OperatorDetails({
-                allocator: defaultOperator,
+                __deprecated_earningsReceiver: defaultOperator,
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             }),
@@ -813,7 +813,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         cheats.prank(defaultOperator);
         delegationManager.registerAsOperator(
             IDelegationManager.OperatorDetails({
-                allocator: defaultOperator,
+                __deprecated_earningsReceiver: defaultOperator,
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             }),
@@ -1680,7 +1680,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         cheats.assume(staker != address(wallet));
 
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: defaultOperator,
+            __deprecated_earningsReceiver: defaultOperator,
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
@@ -1723,7 +1723,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         cheats.assume(staker != address(wallet));
 
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: defaultOperator,
+            __deprecated_earningsReceiver: defaultOperator,
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
@@ -1827,7 +1827,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         cheats.prank(defaultOperator);
         delegationManager.registerAsOperator(
             IDelegationManager.OperatorDetails({
-                allocator: defaultOperator,
+                __deprecated_earningsReceiver: defaultOperator,
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             }),
