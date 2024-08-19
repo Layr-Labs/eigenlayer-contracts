@@ -83,10 +83,10 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: operator => strategy => avs => operatorSetId => list of queuedDeallocation indices
     mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => uint256[])))) internal
         _queuedDeallocationIndices;
-    
-    /// @notice Mapping: allocator => 32-byte salt => whether or not the salt has already been used by the operator.
-    /// @dev Salt is used in the `allocate`, `deallocate` functions.
-    mapping(address => mapping(bytes32 => bool)) public allocatorSaltIsSpent;
+
+    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
+    /// This determines how long it takes for allocations to take in the future. Can only be set one time for each operator
+    mapping(address => AllocationDelayDetails) public allocationDelay;
 
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;

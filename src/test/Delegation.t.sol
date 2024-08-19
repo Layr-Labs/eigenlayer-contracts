@@ -36,7 +36,7 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.assume(sender != address(0));
         cheats.assume(sender != address(eigenLayerProxyAdmin));
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: sender,
+            __deprecated_earningsReceiver: sender,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
@@ -85,7 +85,7 @@ contract DelegationTests is EigenLayerTestHelper {
         operator = _operator;
 
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: operator,
+            __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
@@ -340,7 +340,7 @@ contract DelegationTests is EigenLayerTestHelper {
     /// @param operator is the operator being delegated to.
     function testRegisterAsOperatorMultipleTimes(address operator) public fuzzedAddress(operator) {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: operator,
+            __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
@@ -388,7 +388,7 @@ contract DelegationTests is EigenLayerTestHelper {
         vm.assume(_dt != address(0));
         vm.startPrank(_operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: msg.sender,
+            __deprecated_earningsReceiver: msg.sender,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
@@ -424,7 +424,7 @@ contract DelegationTests is EigenLayerTestHelper {
         // setup delegation
         vm.prank(_operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: _dt,
+            __deprecated_earningsReceiver: _dt,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
@@ -461,7 +461,7 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDepositWeth(sender, wethToDeposit);
         _testDepositEigen(sender, eigenToDeposit);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            allocator: sender,
+            __deprecated_earningsReceiver: sender,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
@@ -486,7 +486,7 @@ contract DelegationTests is EigenLayerTestHelper {
 
         if (!delegation.isOperator(operator)) {
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-                allocator: operator,
+                __deprecated_earningsReceiver: operator,
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             });
