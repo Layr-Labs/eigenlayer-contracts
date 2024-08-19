@@ -28,7 +28,14 @@ contract AVSDirectory is
     /// @dev BIPS factor for slashable bips
     uint256 internal constant BIPS_FACTOR = 10_000;
     /// @dev Delay before allocations take effect and how long until deallocations are completable
-    uint32 public constant ALLOCATION_DELAY = 21 days;
+    uint32 public constant DEFAULT_ALLOCATION_DELAY = 21 days;
+
+    /// @dev Delay before allocations take effect and how long until deallocations are completable
+    uint32 public constant DEALLOCATION_DELAY = 17.5 days;
+
+    /// @dev The initial total magnitude for an operator
+    uint64 public constant INITIAL_TOTAL_MAGNITUDE = 1 ether;
+
     /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
     uint256 public constant MAX_PENDING_UPDATES = 1;
 
@@ -210,36 +217,37 @@ contract AVSDirectory is
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
-        if (operatorSignature.signature.length == 0) {
-            require(msg.sender == operator, "AVSDirectory.forceDeregisterFromOperatorSets: caller must be operator");
-        } else {
-            // Assert operator's signature has not expired.
-            require(
-                operatorSignature.expiry >= block.timestamp,
-                "AVSDirectory.forceDeregisterFromOperatorSets: operator signature expired"
-            );
-            // Assert operator's signature `salt` has not already been spent.
-            require(
-                !operatorSaltIsSpent[operator][operatorSignature.salt],
-                "AVSDirectory.forceDeregisterFromOperatorSets: salt already spent"
-            );
+        // COMMENTED FOR CODESIZE
+        // if (operatorSignature.signature.length == 0) {
+        //     require(msg.sender == operator, "AVSDirectory.forceDeregisterFromOperatorSets: caller must be operator");
+        // } else {
+        //     // Assert operator's signature has not expired.
+        //     require(
+        //         operatorSignature.expiry >= block.timestamp,
+        //         "AVSDirectory.forceDeregisterFromOperatorSets: operator signature expired"
+        //     );
+        //     // Assert operator's signature `salt` has not already been spent.
+        //     require(
+        //         !operatorSaltIsSpent[operator][operatorSignature.salt],
+        //         "AVSDirectory.forceDeregisterFromOperatorSets: salt already spent"
+        //     );
 
-            // Assert that `operatorSignature.signature` is a valid signature for operator set deregistrations.
-            EIP1271SignatureUtils.checkSignature_EIP1271(
-                operator,
-                calculateOperatorSetForceDeregistrationTypehash({
-                    avs: avs,
-                    operatorSetIds: operatorSetIds,
-                    salt: operatorSignature.salt,
-                    expiry: operatorSignature.expiry
-                }),
-                operatorSignature.signature
-            );
+        //     // Assert that `operatorSignature.signature` is a valid signature for operator set deregistrations.
+        //     EIP1271SignatureUtils.checkSignature_EIP1271(
+        //         operator,
+        //         calculateOperatorSetForceDeregistrationTypehash({
+        //             avs: avs,
+        //             operatorSetIds: operatorSetIds,
+        //             salt: operatorSignature.salt,
+        //             expiry: operatorSignature.expiry
+        //         }),
+        //         operatorSignature.signature
+        //     );
 
-            // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
-            operatorSaltIsSpent[operator][operatorSignature.salt] = true;
-        }
-        _deregisterFromOperatorSets(avs, operator, operatorSetIds);
+        //     // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
+        //     operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+        // }
+        // _deregisterFromOperatorSets(avs, operator, operatorSetIds);
     }
 
     /**
@@ -258,32 +266,26 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Allocates a set of magnitude adjustments to increase the slashable stake of an operator set for the
-     * given operator for the given strategy.
-     * free magnitude for each strategy will decrement by the sum of all
-     * allocations for that strategy and the allocations will take effect 21 days from calling.
-     *
-     * @param operator address to increase allocations for
+     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
+     * @param operator address to modify allocations for
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param allocatorSignature signature of the operator's designated allocator if msg.sender is not the allocator
+     * @param operatorSignature signature of the operator if msg.sender is not the operator
+     * @dev updates freeMagnitude for the updated strategies
+     * @dev must be called by the operator
      */
-    function allocate(
+    function modifyAllocations(
         address operator,
-        MagnitudeAdjustment[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata allocatorSignature
+        MagnitudeAllocation[] calldata allocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {
-        // perform allocator signature verification if not allocator
-        address allocator = delegation.allocator(operator);
-        if (msg.sender != allocator) {
-            _verifyAllocatorSignature({
-                allocator: allocator,
-                operator: operator,
-                magnitudeAdjustments: allocations,
-                allocatorSignature: allocatorSignature
-            });
+        if (msg.sender != operator) {
+            _verifyOperatorSignature(operator, allocations, operatorSignature);
         }
 
-        uint32 effectTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
+        // completable timestamp for deallocations
+        uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
+        // effect timestamp for allocations to take effect. This is configurable by operators
+        uint32 effectTimestamp = uint32(block.timestamp) + getAllocationDelay(operator);
         for (uint256 i = 0; i < allocations.length; ++i) {
             // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
             // numToComplete = 0 defaults to completing all pending deallocations up to uint8 max (256)
@@ -292,56 +294,21 @@ contract AVSDirectory is
                 strategy: allocations[i].strategy,
                 numToComplete: 0
             });
-            // 2. allocate for the strategy after updating freeMagnitude
-            _allocate({
+
+            // 2. check current totalMagnitude matches expected value
+            uint64 currentTotalMagnitude = _getLatestTotalMagnitude(operator, allocations[i].strategy);
+            require(
+                currentTotalMagnitude == allocations[i].expectedTotalMagnitude,
+                "AVSDirectory.setAllocations: current total magnitude does not match expected"
+            );
+
+            // 3. set allocations for the strategy after updating freeMagnitude
+            _modifyAllocations({
                 operator: operator, 
                 allocation: allocations[i],
-                effectTimestamp: effectTimestamp
-            });
-        }
-    }
-
-    /**
-     * @notice Queues a set of magnitude adjustments to decrease the slashable stake of an operator set for the given operator for the given strategy.
-     * The deallocations will take effect 21 days from calling. In order for the operator to have their nonslashable magnitude increased,
-     * they must call the contract again to complete the deallocation. Stake deallocations are still subject to slashing until 21 days have passed since queuing.
-     *
-     * @param operator address to decrease allocations for
-     * @param deallocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param allocatorSignature signature of the operator's designated allocator if msg.sender is not the allocator
-     */
-    function deallocate(
-        address operator,
-        MagnitudeAdjustment[] calldata deallocations,
-        SignatureWithSaltAndExpiry calldata allocatorSignature
-    ) external {
-        // perform allocator signature verification if not allocator
-        address allocator = delegation.allocator(operator);
-        if (msg.sender != allocator) {
-            _verifyAllocatorSignature({
-                allocator: allocator,
-                operator: operator,
-                magnitudeAdjustments: deallocations,
-                allocatorSignature: allocatorSignature
-            });
-        }
-
-        uint32 completableTimestamp = uint32(block.timestamp) + ALLOCATION_DELAY;
-        // deallocate for each strategy
-        for (uint256 i = 0; i < deallocations.length; ++i) {
-            // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
-            // numToComplete = 0 defaults to completing all pending deallocations up to uint8 max (256)
-            _updateFreeMagnitude({
-                operator: operator, 
-                strategy: deallocations[i].strategy,
-                numToComplete: 0
-            });
-            // 2. deallocate for the strategy after updating freeMagnitude
-            _deallocate({
-                operator: operator, 
-                deallocation: deallocations[i],
-                completableTimestamp: completableTimestamp
-            });
+                allocationEffectTimestamp: effectTimestamp,
+                deallocationCompletableTimestamp: completableTimestamp
+            }); 
         }
     }
 
@@ -402,6 +369,11 @@ contract AVSDirectory is
                         uint32(block.timestamp)
                     )
                 );
+                // TODO: if we don't continue here we get into weird "total/free magnitude" not initialized cases. Is this ok?
+                if (currentMagnitude == 0) {
+                    continue;
+                }
+
                 /// TODO: add wrapping library for rounding up for slashing accounting
                 slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
 
@@ -444,9 +416,37 @@ contract AVSDirectory is
             // 3. update totalMagnitude, get total magnitude and subtract slashedMagnitude
             _totalMagnitudeUpdate[operator][strategies[i]].push({
                 key: uint32(block.timestamp),
-                value: _totalMagnitudeUpdate[operator][strategies[i]].latest() - slashedMagnitude
+                value: _getLatestTotalMagnitude(operator, strategies[i]) - slashedMagnitude
             });
         }
+    }
+
+    /**
+     * @notice Called by operators to set their allocation delay one time
+     * @param operator address to set allocation delay for
+     * @param delay the allocation delay in seconds
+     * @dev this is expected to be updatable in a future release
+     */
+    function initializeAllocationDelay(
+        address operator,
+        uint32 delay
+    ) external {
+        require(
+            msg.sender == operator,
+            "AVSDirectory.initializeAllocationDelay: only operator can set allocation delay"
+        );
+        require(
+            delegation.isOperator(operator),
+            "AVSDirectory.initializeAllocationDelay: operator not registered to EigenLayer yet"
+        );
+        require(
+            !allocationDelay[operator].isSet,
+            "AVSDirectory.initializeAllocationDelay: allocation delay already set"
+        );
+        allocationDelay[operator] = AllocationDelayDetails({
+            isSet: true,
+            allocationDelay: delay
+        });
     }
 
     /**
@@ -632,114 +632,6 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice For a single strategy, allocate magnitude to a list of operator sets and then update freeMagnitude
-     * for the strategy after all allocations
-     * @param operator address to allocate magnitude for
-     * @param allocation magnitude adjustment for a single strategy and multiple operator sets
-     * @param effectTimestamp timestamp when the allocation will take effect
-     */
-    function _allocate(address operator, MagnitudeAdjustment calldata allocation, uint32 effectTimestamp) internal {
-        IStrategy strategy = allocation.strategy;
-        OperatorSet[] calldata operatorSets = allocation.operatorSets;
-        uint64 freeAllocatableMagnitude = freeMagnitude[operator][strategy];
-
-        for (uint256 i = 0; i < operatorSets.length; ++i) {
-            // 1. check freeMagnitude available, that is the allocation of stake is backed and not slashable
-            require(
-                allocation.magnitudeDiffs[i] > 0, "AVSDirectory.queueAllocations: magnitudeDiff must be greater than 0"
-            );
-            require(
-                freeAllocatableMagnitude >= allocation.magnitudeDiffs[i],
-                "AVSDirectory.queueAllocations: insufficient available free magnitude to allocate"
-            );
-            // 2. rate limiting of 1 pending allocation at a time
-            // read number of checkpoints after current timestamp
-            (uint224 value, uint256 pos) = _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i]
-                .operatorSetId].upperLookupRecentWithPos(uint32(block.timestamp));
-            // no checkpoint exists if value == 0 && pos == 0, so check the negation before checking if there is a
-            // a pending allocation
-            if (value != 0 || pos != 0) {
-                require(
-                    pos + MAX_PENDING_UPDATES
-                        == _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].length(),
-                    "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
-                );
-            }
-
-            // 3. allocate magnitude which will take effect in the future 21 days from now
-            _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push({
-                key: effectTimestamp,
-                value: value + uint224(allocation.magnitudeDiffs[i])
-            });
-            // 4. keep track of available freeMagnitude to update later
-            freeAllocatableMagnitude -= allocation.magnitudeDiffs[i];
-        }
-
-        // 5. update freeMagnitude after all allocations
-        freeMagnitude[operator][strategy] = freeAllocatableMagnitude;
-    }
-
-    /**
-     * @notice For a single strategy, queue deallocate magnitude for a list of operator sets
-     * @param operator address to deallocate magnitude for
-     * @param deallocation magnitude adjustment for a single strategy and multiple operator sets
-     * @param completableTimestamp timestamp when the queued deallocation can be completed and freeMagnitude updated
-     */
-    function _deallocate(
-        address operator,
-        MagnitudeAdjustment calldata deallocation,
-        uint32 completableTimestamp
-    ) internal {
-        IStrategy strategy = deallocation.strategy;
-        require(
-            deallocation.operatorSets.length == deallocation.magnitudeDiffs.length,
-            "AVSDirectory._deallocate: operatorSets and magnitudeDiffs length mismatch"
-        );
-        OperatorSet[] calldata operatorSets = deallocation.operatorSets;
-
-        // deallocate from each operator set for this strategy
-        for (uint256 i = 0; i < operatorSets.length; ++i) {
-            // 1. ensure deallocation doesn't exceed current allocation
-            uint64 currentMagnitude = uint64(
-                _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId]
-                    .upperLookupRecent(uint32(block.timestamp))
-            );
-            require(
-                deallocation.magnitudeDiffs[i] > 0, "AVSDirectory._deallocate: magnitudeDiff must be greater than 0"
-            );
-            require(
-                deallocation.magnitudeDiffs[i] <= currentMagnitude,
-                "AVSDirectory._deallocate: cannot deallocate more than what is allocated"
-            );
-
-            // 2. update and decrement current and future queued amounts in case any pending allocations exist
-            _magnitudeUpdate[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId]
-                .decrementAtAndFutureCheckpoints({
-                key: uint32(block.timestamp),
-                decrementValue: deallocation.magnitudeDiffs[i]
-            });
-
-            // 3. ensure only pending queued deallocation per operator, operatorSet, strategy
-            _checkQueuedDeallocations(operator, strategy, operatorSets[i]);
-
-            // 4. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
-            uint256 index = _pendingFreeMagnitude[operator][strategy].length;
-            _pendingFreeMagnitude[operator][strategy].push(
-                PendingFreeMagnitude({
-                    magnitudeDiff: deallocation.magnitudeDiffs[i],
-                    completableTimestamp: completableTimestamp
-                })
-            );
-            _queuedDeallocationIndices[operator][strategy][operatorSets[i].avs][operatorSets[i].operatorSetId].push(
-                index
-            );
-        }
-    }
-
-    /// @dev read through pending free magnitudes and add to freeMagnitude if completableTimestamp is >= block timestamp
-    /// In additiona to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
-
-    /**
      * @notice For a single strategy, update freeMagnitude by adding completable pending free magnitudes
      * @param operator address to update freeMagnitude for
      * @param strategy the strategy to update freeMagnitude for
@@ -766,6 +658,92 @@ contract AVSDirectory is
         }
         // update next pending free magnitude index to start from after adding all completable magnitudes
         _nextPendingFreeMagnitudeIndex[operator][strategy] = nextIndex;
+    }
+
+    /**
+     * @notice For a single strategy, modify magnitude allocations for each of the specified operatorSets
+     * @param operator address to modify allocations for
+     * @param allocation the magnitude allocations to modify for a single strategy
+     * @param allocationEffectTimestamp the timestamp when the allocations will take effect
+     * @param deallocationCompletableTimestamp the timestamp when the deallocations will be completable
+     */
+    function _modifyAllocations(
+        address operator,
+        MagnitudeAllocation calldata allocation,
+        uint32 allocationEffectTimestamp,
+        uint32 deallocationCompletableTimestamp
+    ) internal {
+        uint64 newFreeMagnitude = freeMagnitude[operator][allocation.strategy];
+        OperatorSet[] calldata opSets = allocation.operatorSets;
+
+        for (uint256 i = 0; i < opSets.length; ++i) {
+            /// TODO??? ensure ordered in ascending bytes32 hash of opSets, can we have duplicate opSets, duplicate strategies?
+
+            // Read current magnitude allocation including its respective array index and length.
+            // We'll use these values later to check the number of pending allocations/deallocations.
+            (
+                uint224 currentMagnitude,
+                uint256 pos,
+                uint256 length
+            ) = _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
+                .upperLookupRecentWithPos(uint32(block.timestamp));
+
+            if (allocation.magnitudes[i] < uint64(currentMagnitude)) {
+                // Newly configured magnitude is less than current value. 
+                // Therefore we handle this as a deallocation
+
+                // 1. ensure only pending queued deallocation per operator, operatorSet, strategy
+                _checkQueuedDeallocations(operator, allocation.strategy, opSets[i]);
+ 
+                // 2. update and decrement current and future queued amounts in case any pending allocations exist
+                _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
+                    .decrementAtAndFutureCheckpoints({
+                        key: uint32(block.timestamp),
+                        decrementValue: uint64(currentMagnitude) - allocation.magnitudes[i]
+                    });
+                
+                // 3. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
+                uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
+                _pendingFreeMagnitude[operator][allocation.strategy].push(
+                    PendingFreeMagnitude({
+                        magnitudeDiff: uint64(currentMagnitude) - allocation.magnitudes[i],
+                        completableTimestamp: deallocationCompletableTimestamp
+                    })
+                );
+                _queuedDeallocationIndices[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push(
+                    index
+                );                
+            } else if (allocation.magnitudes[i] > uint64(currentMagnitude)) {
+                // Newly configured magnitude is greater than current value. 
+                // Therefore we handle this as an allocation
+
+                // 1. ensure only 1 pending allocation at a time
+                // read number of checkpoints after current timestamp
+                // no checkpoint exists if value == 0 && pos == 0, so check the negation before checking if there is a
+                // a pending allocation
+                if (currentMagnitude != 0 || pos != 0) {
+                    require(
+                        pos + MAX_PENDING_UPDATES >= length,
+                        "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
+                    );
+                }
+                // 2. allocate magnitude which will take effect in the future 21 days from now
+                _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push({
+                    key: allocationEffectTimestamp,
+                    value: allocation.magnitudes[i]
+                });
+                // 3. decrement free magnitude by incremented amount
+                require(
+                    newFreeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
+                    "AVSDirectory._setAllocations: insufficient available free magnitude to allocate"
+                );
+                newFreeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
+            }
+        }
+
+        // update freeMagnitude after all allocations.
+        // if provided allocations only resulted in deallocating, then this value would be unchanged
+        freeMagnitude[operator][allocation.strategy] = newFreeMagnitude;
     }
 
     /// @dev Check for max number of pending queued deallocations, ensuring <= MAX_PENDING_UPDATES
@@ -795,32 +773,46 @@ contract AVSDirectory is
         }
     }
 
-    /// @dev Verify allocator's signature and spend salt
-    function _verifyAllocatorSignature(
-        address allocator,
+    /// @dev gets the latest total magnitude or overwrites it if it is not set
+    function _getLatestTotalMagnitude(address operator, IStrategy strategy) internal returns (uint64) {
+        (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
+        if (!exists) {
+            totalMagnitude = INITIAL_TOTAL_MAGNITUDE;
+            _totalMagnitudeUpdate[operator][strategy].push({
+                key: uint32(block.timestamp),
+                value: totalMagnitude
+            });
+            freeMagnitude[operator][strategy] = INITIAL_TOTAL_MAGNITUDE;
+        }
+
+        return uint64(totalMagnitude);
+    }
+
+    /// @dev Verify operator's signature and spend salt
+    function _verifyOperatorSignature(
         address operator,
-        MagnitudeAdjustment[] calldata magnitudeAdjustments,
-        SignatureWithSaltAndExpiry calldata allocatorSignature
+        MagnitudeAllocation[] calldata allocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
     ) internal {
         // check the signature expiry
         require(
-            allocatorSignature.expiry >= block.timestamp,
-            "AVSDirectory._verifyAllocatorSignature: allocator signature expired"
+            operatorSignature.expiry >= block.timestamp,
+            "AVSDirectory._verifyOperatorSignature: operator signature expired"
         );
-        // Assert allocator's signature cannot be replayed.
+        // Assert operator's signature cannot be replayed.
         require(
-            !allocatorSaltIsSpent[allocator][allocatorSignature.salt],
-            "AVSDirectory._verifyAllocatorSignature: salt spent"
+            !operatorSaltIsSpent[operator][operatorSignature.salt],
+            "AVSDirectory._verifyOperatorSignature: salt spent"
         );
 
-        bytes32 digestHash = calculateMagnitudeAdjustmentDigestHash(
-            operator, magnitudeAdjustments, allocatorSignature.salt, allocatorSignature.expiry
+        bytes32 digestHash = calculateMagnitudeAllocationDigestHash(
+            operator, allocations, operatorSignature.salt, operatorSignature.expiry
         );
 
-        // Assert allocator's signature is valid.
-        EIP1271SignatureUtils.checkSignature_EIP1271(allocator, digestHash, allocatorSignature.signature);
+        // Assert operator's signature is valid.
+        EIP1271SignatureUtils.checkSignature_EIP1271(operator, digestHash, operatorSignature.signature);
         // Spend salt.
-        allocatorSaltIsSpent[allocator][allocatorSignature.salt] = true;
+        operatorSaltIsSpent[operator][operatorSignature.salt] = true;
     }
 
     /**
@@ -912,26 +904,71 @@ contract AVSDirectory is
     }
 
     /**
-     * @param operator the operator to get the slashable bips for
-     * @param operatorSet the operatorSet to get the slashable bips for
-     * @param strategy the strategy to get the slashable bips for
-     * @param timestamp the timestamp to get the slashable bips for for
+     * @param operator the operator to get the slashable ppm for
+     * @param operatorSet the operatorSet to get the slashable ppm for
+     * @param strategies the strategies to get the slashable ppm for
+     * @param timestamp the timestamp to get the slashable ppm for for
+     * @param linear whether the search should be linear (from the most recent) or binary
      *
-     * @return slashableBips the slashable bips of the given strategy owned by
+     * @return slashablePPM the slashable ppm of the given list of strategies allocated to
      * the given OperatorSet for the given operator and timestamp
      */
-    function getSlashableBips(
+    function getSlashablePPM(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies,
+        uint32 timestamp,
+        bool linear
+    ) public view returns (uint24[] memory) {
+        uint24[] memory slashablePPM = new uint24[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            slashablePPM[i] = _getSlashablePPM(operator, operatorSet, strategies[i], timestamp, linear);
+        }
+        return slashablePPM;
+    }
+
+    function _getSlashablePPM(
         address operator,
         OperatorSet calldata operatorSet,
         IStrategy strategy,
-        uint32 timestamp
-    ) public view returns (uint16) {
-        uint64 totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
-        uint64 currentMagnitude = uint64(
-            _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookup(timestamp)
-        );
+        uint32 timestamp,
+        bool linear
+    ) public view returns (uint24) {
+        uint64 totalMagnitude;
+        if (linear) {
+            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookupLinear(timestamp));
+        } else {
+            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
+        }
+        // return early if totalMagnitude is 0
+        if (totalMagnitude == 0) {
+            return 0;
+        }
 
-        return uint16(currentMagnitude * BIPS_FACTOR / totalMagnitude);
+        uint64 currentMagnitude;
+        if (linear) {
+            currentMagnitude = uint64(
+                _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookupLinear(
+                    timestamp
+                )
+            );
+        } else {
+            currentMagnitude = uint64(
+                _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookup(timestamp)
+            );
+        }
+
+        return uint16(currentMagnitude * 1e6 / totalMagnitude);
+    }
+
+    /**
+     * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
+     * from calling initializeAllocationDelay.
+     * @param operator the operator to get the allocation delay for
+     */
+    function getAllocationDelay(address operator) public view returns (uint32) {
+        AllocationDelayDetails memory details = allocationDelay[operator];
+        return details.isSet ? details.allocationDelay : DEFAULT_ALLOCATION_DELAY;
     }
 
     /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
@@ -939,7 +976,7 @@ contract AVSDirectory is
         OperatorSetRegistrationStatus memory registrationStatus =
             operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
         return isMember(operator, operatorSet)
-            || registrationStatus.lastDeregisteredTimestamp + ALLOCATION_DELAY >= block.timestamp;
+            || registrationStatus.lastDeregisteredTimestamp + DEALLOCATION_DELAY >= block.timestamp;
     }
 
     // /**
@@ -1019,20 +1056,20 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Calculates the digest hash to be signed by an allocator to allocate or deallocate magnitude for an operator
+     * @notice Calculates the digest hash to be signed by an operator to modify magnitude allocations
      * @param operator The operator to allocate or deallocate magnitude for.
-     * @param adjustments The magnitude allocations/deallocations to be made.
+     * @param allocations The magnitude allocations/deallocations to be made.
      * @param salt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid.
      */
-    function calculateMagnitudeAdjustmentDigestHash(
+    function calculateMagnitudeAllocationDigestHash(
         address operator,
-        MagnitudeAdjustment[] calldata adjustments,
+        MagnitudeAllocation[] calldata allocations,
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
         return _calculateDigestHash(
-            keccak256(abi.encode(MAGNITUDE_ADJUSTMENT_TYPEHASH, operator, adjustments, salt, expiry))
+            keccak256(abi.encode(MAGNITUDE_ADJUSTMENT_TYPEHASH, operator, allocations, salt, expiry))
         );
     }
 

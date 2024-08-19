@@ -36,15 +36,9 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function deregisterOperatorFromAVS(address operator) external {}
 
-    function allocate(
+    function modifyAllocations(
         address operator,
-        MagnitudeAdjustment[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external {}
-
-    function deallocate(
-        address operator,
-        MagnitudeAdjustment[] calldata deallocations,
+        MagnitudeAllocation[] calldata allocations,
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external {}
 
@@ -52,6 +46,11 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         address operator,
         IStrategy[] calldata strategies,
         uint8[] calldata freeMagnitudes
+    ) external {}
+
+    function initializeAllocationDelay(
+        address operator,
+        uint32 delay
     ) external {}
 
     function slashOperator(
@@ -65,24 +64,29 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function cancelSalt(bytes32 salt) external {}
 
+    function INITIAL_TOTAL_MAGNITUDE() external view returns (uint64) {}
+
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool) {}
 
     function isMember(address avs, address operator, uint32 operatorSetId) external view returns (bool) {}
 
     function isOperatorSetAVS(address avs) external view returns (bool) {}
 
-    function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {
-        return true;
-    }
+    function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {}
 
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool) {}
 
-    function getSlashableBips(
+    function operatorSetMemberCount(address avs, uint32 operatorSetId) external view returns (uint256) {}
+
+    function getSlashablePPM(
         address operator,
         OperatorSet calldata operatorSet,
-        IStrategy strategy,
-        uint32 timestamp
-    ) external view returns (uint16) {}
+        IStrategy[] calldata strategies,
+        uint32 timestamp,
+        bool linear
+    ) public view returns (uint24[] memory) {}
+
+    function getAllocationDelay(address operator) external view returns (uint32) {}
 
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
@@ -101,6 +105,13 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
     function calculateOperatorSetForceDeregistrationTypehash(
         address avs,
         uint32[] calldata operatorSetIds,
+        bytes32 salt,
+        uint256 expiry
+    ) external view returns (bytes32) {}
+
+    function calculateMagnitudeAllocationDigestHash(
+        address operator,
+        MagnitudeAllocation[] calldata allocations,
         bytes32 salt,
         uint256 expiry
     ) external view returns (bytes32) {}

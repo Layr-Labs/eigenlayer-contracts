@@ -31,18 +31,17 @@ interface IAVSDirectory is ISignatureUtils {
     }
 
     /**
-     * @notice this struct is used in allocate and queueDeallocation in order to specify an operator's slashability for a certain operator set
-     *
-     * @param strategy the strategy to adjust slashable stake for
-     * @param operatorSets the operator sets to adjust slashable stake for
-     * @param magnitudeDiff magnitude difference; the difference in proportional parts of the operator's slashable stake
-     * that is slashable by the operatorSet.
-     * Slashable stake for an operator set is (magnitude / totalMagnitude) of an operator's delegated stake.
+     * @notice struct used to modify the allocation of slashable magnitude to list of operatorSets
+     * @param strategy the strategy to allocate magnitude for
+     * @param expectedTotalMagnitude the expected total magnitude of the operator used to combat against race conditions with slashing
+     * @param operatorSets the operatorSets to allocate magnitude for
+     * @param magnitudes the magnitudes to allocate for each operatorSet
      */
-    struct MagnitudeAdjustment {
+    struct MagnitudeAllocation {
         IStrategy strategy;
+        uint64 expectedTotalMagnitude;
         OperatorSet[] operatorSets;
-        uint64[] magnitudeDiffs;
+        uint64[] magnitudes;
     }
 
     /**
@@ -54,6 +53,16 @@ interface IAVSDirectory is ISignatureUtils {
     struct PendingFreeMagnitude {
         uint64 magnitudeDiff;
         uint32 completableTimestamp;
+    }
+
+    /**
+     * @notice struct used to store the allocation delay for an operator
+     * @param isSet whether the allocation delay is set. Can only be configured one time for each operator
+     * @param allocationDelay the delay in seconds for the operator's allocations
+     */
+    struct AllocationDelayDetails {
+        bool isSet;
+        uint32 allocationDelay;
     }
 
     /// @notice Emitted when an operator set is created by an AVS.
@@ -202,32 +211,16 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Allocates a set of magnitude adjustments to increase the slashable stake of an operator set for the given operator for the given strategy.
-     * Nonslashable magnitude for each strategy will decrement by the sum of all 
-     * allocations for that strategy and the allocations will take effect 21 days from calling.
-     *
-     * @param operator address to increase allocations for
+     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
+     * @param operator address to modify allocations for
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
      * @param operatorSignature signature of the operator if msg.sender is not the operator
+     * @dev updates freeMagnitude for the updated strategies
+     * @dev must be called by the operator
      */
-    function allocate(
+    function modifyAllocations(
         address operator,
-        MagnitudeAdjustment[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external;
-
-    /**
-     * @notice Queues a set of magnitude adjustments to decrease the slashable stake of an operator set for the given operator for the given strategy.
-     * The deallocations will take effect 21 days from calling. In order for the operator to have their nonslashable magnitude increased, 
-     * they must call the contract again to complete the deallocation. Stake deallocations are still subject to slashing until 21 days have passed since queuing.
-     *
-     * @param operator address to decrease allocations for
-     * @param deallocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param operatorSignature signature of the operator if msg.sender is not the operator
-     */
-    function deallocate(
-        address operator,
-        MagnitudeAdjustment[] calldata deallocations,
+        MagnitudeAllocation[] calldata allocations,
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) external;
 
@@ -266,6 +259,17 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
+     * @notice Called by operators to set their allocation delay. Can only be set one time.
+     * @param operator address to set allocation delay for
+     * @param delay the allocation delay in seconds
+     * @dev this is expected to be updatable in a future release
+     */
+    function initializeAllocationDelay(
+        address operator,
+        uint32 delay
+    ) external;
+
+    /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
      *  @param metadataURI The URI for metadata associated with an AVS.
@@ -287,6 +291,16 @@ interface IAVSDirectory is ISignatureUtils {
      *
      */
 
+    /// @dev The initial total magnitude for an operator
+    function INITIAL_TOTAL_MAGNITUDE() external view returns (uint64);
+
+    /**
+     * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
+     * from calling initializeAllocationDelay.
+     * @param operator the operator to get the allocation delay for
+     */
+    function getAllocationDelay(address operator) external view returns (uint32);
+
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
      * @param operator the operator to check slashability for
@@ -296,20 +310,22 @@ interface IAVSDirectory is ISignatureUtils {
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
     /**
-     * @param operator the operator to get the slashable bips for
-     * @param operatorSet the operatorSet to get the slashable bips for
-     * @param strategy the strategy to get the slashable bips for
-     * @param timestamp the timestamp to get the slashable bips for for
+     * @param operator the operator to get the slashable ppm for
+     * @param operatorSet the operatorSet to get the slashable ppm for
+     * @param strategies the strategies to get the slashable ppm for
+     * @param timestamp the timestamp to get the slashable ppm for for
+     * @param linear whether the search should be linear (from the most recent) or binary
      *
-     * @return slashableBips the slashable bips of the given strategy owned by
+     * @return slashablePPM the slashable ppm of the given list of strategies allocated to
      * the given OperatorSet for the given operator and timestamp
      */
-    function getSlashableBips(
+    function getSlashablePPM(
         address operator,
         OperatorSet calldata operatorSet,
-        IStrategy strategy,
-        uint32 timestamp
-    ) external view returns (uint16);
+        IStrategy[] calldata strategies,
+        uint32 timestamp,
+        bool linear
+    ) external view returns (uint24[] memory);
     
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 
@@ -318,6 +334,8 @@ interface IAVSDirectory is ISignatureUtils {
     function isOperatorSetAVS(address avs) external view returns (bool);
 
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
+
+    function operatorSetMemberCount(address avs, uint32 operatorSetId) external view returns (uint256);
 
     /**
      * @notice Returns operator set an operator is registered to in the order they were registered.
@@ -410,6 +428,20 @@ interface IAVSDirectory is ISignatureUtils {
     function calculateOperatorSetForceDeregistrationTypehash(
         address avs,
         uint32[] calldata operatorSetIds,
+        bytes32 salt,
+        uint256 expiry
+    ) external view returns (bytes32);
+
+    /**
+     * @notice Calculates the digest hash to be signed by an operator to modify magnitude allocations
+     * @param operator The operator to allocate or deallocate magnitude for.
+     * @param allocations The magnitude allocations/deallocations to be made.
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid.
+     */
+    function calculateMagnitudeAllocationDigestHash(
+        address operator,
+        MagnitudeAllocation[] calldata allocations,
         bytes32 salt,
         uint256 expiry
     ) external view returns (bytes32);
