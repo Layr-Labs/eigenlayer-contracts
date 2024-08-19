@@ -80,7 +80,7 @@ contract User is PrintUtils {
         _logM("registerAsOperator");
 
         IDelegationManager.OperatorDetails memory details = IDelegationManager.OperatorDetails({
-            allocator: address(this),
+            __deprecated_earningsReceiver: address(this),
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
