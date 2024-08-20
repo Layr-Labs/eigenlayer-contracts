@@ -67,7 +67,7 @@ contract StrategyManagerMock is
         returns (uint256 shares) {}
 
     /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
+    function stakerStrategyScaledShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
 
     /**
      * @notice mocks the return value of getDeposits
@@ -111,11 +111,11 @@ contract StrategyManagerMock is
         strategyIsWhitelistedForDeposit[strategy] = value;
     }
 
-    function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
+    function removeScaledShares(address staker, IStrategy strategy, uint256 shares) external {}
 
-    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external {}
+    function addScaledShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external {}
     
-    function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external {}
+    function withdrawScaledSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external {}
 
     /// @notice returns the enshrined beaconChainETH Strategy
     function beaconChainETHStrategy() external view returns (IStrategy) {}

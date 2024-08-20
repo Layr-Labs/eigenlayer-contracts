@@ -353,7 +353,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams = new IDelegationManager.QueuedWithdrawalParams[](1);
         queuedWithdrawalParams[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategyArray,
-            shares: withdrawalAmounts,
+            scaledShares: withdrawalAmounts,
             withdrawer: withdrawer
         });
 
@@ -364,7 +364,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
             startBlock: uint32(block.number),
             strategies: strategyArray,
-            shares: withdrawalAmounts
+            scaledShares: withdrawalAmounts
         });
         bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
         
@@ -384,7 +384,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams = new IDelegationManager.QueuedWithdrawalParams[](1);
         queuedWithdrawalParams[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategies,
-            shares: withdrawalAmounts,
+            scaledShares: withdrawalAmounts,
             withdrawer: withdrawer
         });
         
@@ -395,7 +395,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
             startBlock: uint32(block.number),
             strategies: strategies,
-            shares: withdrawalAmounts
+            scaledShares: withdrawalAmounts
         });
         bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
         
@@ -2454,8 +2454,8 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
 }
 
 contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTests {
-    // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
-    function testFuzz_increaseDelegatedShares_revert_invalidCaller(
+    // @notice Verifies that `DelegationManager.increaseDelegatedScaledShares` reverts if not called by the StrategyManager nor EigenPodManager
+    function testFuzz_increaseDelegatedScaledShares_revert_invalidCaller(
         address invalidCaller,
         uint256 shares
     ) public filterFuzzedAddressInputs(invalidCaller) {
@@ -2464,26 +2464,26 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         cheats.assume(invalidCaller != address(eigenLayerProxyAdmin));
 
         cheats.expectRevert("DelegationManager: onlyStrategyManagerOrEigenPodManager");
-        delegationManager.increaseDelegatedShares(invalidCaller, strategyMock, shares);
+        delegationManager.increaseDelegatedScaledShares(invalidCaller, strategyMock, shares);
     }
 
     // @notice Verifies that there is no change in shares if the staker is not delegated
-    function testFuzz_increaseDelegatedShares_noop(address staker) public {
+    function testFuzz_increaseDelegatedScaledShares_noop(address staker) public {
         cheats.assume(staker != defaultOperator);
         _registerOperatorWithBaseDetails(defaultOperator);
         assertFalse(delegationManager.isDelegated(staker), "bad test setup");
 
         cheats.prank(address(strategyManagerMock));
-        delegationManager.increaseDelegatedShares(staker, strategyMock, 1);
+        delegationManager.increaseDelegatedScaledShares(staker, strategyMock, 1);
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
     }
 
     /**
-     * @notice Verifies that `DelegationManager.increaseDelegatedShares` properly increases the delegated `shares` that the operator
+     * @notice Verifies that `DelegationManager.increaseDelegatedScaledShares` properly increases the delegated `shares` that the operator
      * who the `staker` is delegated to has in the strategy
      * @dev Checks that there is no change if the staker is not delegated
      */
-    function testFuzz_increaseDelegatedShares(
+    function testFuzz_increaseDelegatedScaledShares(
         address staker,
         uint256 shares,
         bool delegateFromStakerToOperator
@@ -2510,7 +2510,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         }
 
         cheats.prank(address(strategyManagerMock));
-        delegationManager.increaseDelegatedShares(staker, strategyMock, shares);
+        delegationManager.increaseDelegatedScaledShares(staker, strategyMock, shares);
 
         uint256 delegatedSharesAfter = delegationManager.operatorShares(
             delegationManager.delegatedTo(staker),
@@ -2529,8 +2529,8 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         }
     }
 
-    // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
-    function testFuzz_decreaseDelegatedShares_revert_invalidCaller(
+    // @notice Verifies that `DelegationManager.decreaseDelegatedScaledShares` reverts if not called by the StrategyManager nor EigenPodManager
+    function testFuzz_decreaseDelegatedScaledShares_revert_invalidCaller(
         address invalidCaller,
         uint256 shares
     ) public filterFuzzedAddressInputs(invalidCaller) {
@@ -2539,26 +2539,26 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
 
         cheats.startPrank(invalidCaller);
         cheats.expectRevert("DelegationManager: onlyStrategyManagerOrEigenPodManager");
-        delegationManager.decreaseDelegatedShares(invalidCaller, strategyMock, shares);
+        delegationManager.decreaseDelegatedScaledShares(invalidCaller, strategyMock, shares);
     }
 
     // @notice Verifies that there is no change in shares if the staker is not delegated
-    function testFuzz_decreaseDelegatedShares_noop(address staker) public {
+    function testFuzz_decreaseDelegatedScaledShares_noop(address staker) public {
         cheats.assume(staker != defaultOperator);
         _registerOperatorWithBaseDetails(defaultOperator);
         assertFalse(delegationManager.isDelegated(staker), "bad test setup");
 
         cheats.prank(address(strategyManagerMock));
-        delegationManager.decreaseDelegatedShares(staker, strategyMock, 1);
+        delegationManager.decreaseDelegatedScaledShares(staker, strategyMock, 1);
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
     }
 
     /**
-     * @notice Verifies that `DelegationManager.decreaseDelegatedShares` properly decreases the delegated `shares` that the operator
+     * @notice Verifies that `DelegationManager.decreaseDelegatedScaledShares` properly decreases the delegated `shares` that the operator
      * who the `staker` is delegated to has in the strategies
      * @dev Checks that there is no change if the staker is not delegated
      */
-    function testFuzz_decreaseDelegatedShares(
+    function testFuzz_decreaseDelegatedScaledShares(
         address staker,
         IStrategy[] memory strategies,
         uint128 shares,
@@ -2584,7 +2584,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         // noop if the staker is not delegated
         cheats.startPrank(address(strategyManagerMock));
         for (uint256 i = 0; i < strategies.length; ++i) {
-            delegationManager.increaseDelegatedShares(staker, strategies[i], shares);
+            delegationManager.increaseDelegatedScaledShares(staker, strategies[i], shares);
             // store delegated shares in a mapping
             delegatedSharesBefore[strategies[i]] = delegationManager.operatorShares(delegatedTo, strategies[i]);
             // also construct an array which we'll use in another loop
@@ -2608,13 +2608,13 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
                         strategies[i],
                         sharesInputArray[i]
                     );
-                    delegationManager.decreaseDelegatedShares(staker, strategies[i], sharesInputArray[i]);
+                    delegationManager.decreaseDelegatedScaledShares(staker, strategies[i], sharesInputArray[i]);
                 }
             }
             cheats.stopPrank();
         }
 
-        // check shares after call to `decreaseDelegatedShares`
+        // check shares after call to `decreaseDelegatedScaledShares`
         for (uint256 i = 0; i < strategies.length; ++i) {
             uint256 delegatedSharesAfter = delegationManager.operatorShares(delegatedTo, strategies[i]);
 
@@ -2813,7 +2813,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams = new IDelegationManager.QueuedWithdrawalParams[](1);
         queuedWithdrawalParams[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategyArray,
-            shares: shareAmounts,
+            scaledShares: shareAmounts,
             withdrawer: defaultStaker
         });
 
@@ -2843,7 +2843,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams = new IDelegationManager.QueuedWithdrawalParams[](1);
         queuedWithdrawalParams[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategyArray,
-            shares: shareAmounts,
+            scaledShares: shareAmounts,
             withdrawer: withdrawer
         });
 

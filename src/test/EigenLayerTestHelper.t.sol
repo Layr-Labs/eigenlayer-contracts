@@ -133,7 +133,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             cheats.stopPrank();
         }
 
-        uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(sender, stratToDepositTo);
+        uint256 operatorSharesBefore = strategyManager.stakerStrategyScaledShares(sender, stratToDepositTo);
         // assumes this contract already has the underlying token!
         uint256 contractBalance = underlyingToken.balanceOf(address(this));
         // check the expected output
@@ -163,7 +163,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
             // check that the shares out match the expected amount out
             assertEq(
-                strategyManager.stakerStrategyShares(sender, stratToDepositTo) - operatorSharesBefore,
+                strategyManager.stakerStrategyScaledShares(sender, stratToDepositTo) - operatorSharesBefore,
                 expectedSharesOut,
                 "_testDepositToStrategy: actual shares out should match expected shares out"
             );
@@ -286,7 +286,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
-            shares: shareAmounts,
+            scaledShares: shareAmounts,
             staker: staker,
             withdrawer: withdrawer,
             nonce: delegation.cumulativeWithdrawalsQueued(staker),
@@ -299,7 +299,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             uint256 amountDeposited = _testDepositWeth(staker, amountToDeposit);
             // We can't withdraw more than we deposit
             if (shareAmounts[0] > amountDeposited) {
-                cheats.expectRevert("StrategyManager._removeShares: shareAmount too high");
+                cheats.expectRevert("StrategyManager._removeScaledShares: shareAmount too high");
             }
         }
 
@@ -393,7 +393,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         cheats.startPrank(withdrawer);
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
-            sharesBefore.push(strategyManager.stakerStrategyShares(withdrawer, strategyArray[i]));
+            sharesBefore.push(strategyManager.stakerStrategyScaledShares(withdrawer, strategyArray[i]));
         }
         // emit log_named_uint("strategies", strategyArray.length);
         // emit log_named_uint("tokens", tokensArray.length);
@@ -405,7 +405,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
-            shares: shareAmounts,
+            scaledShares: shareAmounts,
             staker: depositor,
             withdrawer: withdrawer,
             nonce: nonce,
@@ -418,7 +418,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
             require(
-                strategyManager.stakerStrategyShares(withdrawer, strategyArray[i]) == sharesBefore[i] + shareAmounts[i],
+                strategyManager.stakerStrategyScaledShares(withdrawer, strategyArray[i]) == sharesBefore[i] + shareAmounts[i],
                 "_testCompleteQueuedWithdrawalShares: withdrawer shares not incremented"
             );
         }
@@ -456,7 +456,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
-            shares: shareAmounts,
+            scaledShares: shareAmounts,
             staker: depositor,
             withdrawer: withdrawer,
             nonce: nonce,
@@ -493,7 +493,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategyArray,
-            shares: shareAmounts,
+            scaledShares: shareAmounts,
             withdrawer: withdrawer
         });
 
