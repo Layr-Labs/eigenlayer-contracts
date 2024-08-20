@@ -186,10 +186,7 @@ library Checkpoints {
     /**
      * @dev Access an element of the array without performing bounds check. The position is assumed to be within bounds.
      */
-    function _unsafeAccess(
-        Checkpoint[] storage self,
-        uint256 pos
-    ) private pure returns (Checkpoint storage result) {
+    function _unsafeAccess(Checkpoint[] storage self, uint256 pos) private pure returns (Checkpoint storage result) {
         assembly {
             mstore(0, self.slot)
             result.slot := add(keccak256(0, 0x20), pos)
@@ -238,7 +235,10 @@ library Checkpoints {
      * NOTE: That if value != 0 && pos == 0, then that means the value is the first checkpoint and actually exists
      * a checkpoint DNE iff value == 0 && pos == 0 => value == 0
      */
-    function upperLookupRecentWithPos(History storage self, uint32 key) internal view returns (uint224, uint256, uint256) {
+    function upperLookupRecentWithPos(
+        History storage self,
+        uint32 key
+    ) internal view returns (uint224, uint256, uint256) {
         uint256 len = self._checkpoints.length;
 
         uint256 low = 0;
@@ -261,11 +261,7 @@ library Checkpoints {
     /// @notice WARNING: this function is only used because of the invariant property
     /// that from the current key, all future checkpointed magnitude values are strictly > current value.
     /// Use function with extreme care for other situations.
-    function decrementAtAndFutureCheckpoints(
-        History storage self,
-        uint32 key,
-        uint224 decrementValue
-    ) internal {
+    function decrementAtAndFutureCheckpoints(History storage self, uint32 key, uint224 decrementValue) internal {
         (uint224 value, uint256 pos, uint256 len) = upperLookupRecentWithPos(self, key);
 
         // if there is no checkpoint, return
