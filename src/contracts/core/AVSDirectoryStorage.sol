@@ -88,10 +88,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// This determines how long it takes for allocations to take in the future. Can only be set one time for each operator
     mapping(address => AllocationDelayDetails) public allocationDelay;
 
-    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
-    /// This determines how long it takes for allocations to take in the future. Can only be set one time for each operator
-    mapping(address => AllocationDelayDetails) public allocationDelay;
-
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
     }

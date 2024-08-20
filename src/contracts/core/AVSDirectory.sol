@@ -447,34 +447,6 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Called by operators to set their allocation delay one time
-     * @param operator address to set allocation delay for
-     * @param delay the allocation delay in seconds
-     * @dev this is expected to be updatable in a future release
-     */
-    function initializeAllocationDelay(
-        address operator,
-        uint32 delay
-    ) external {
-        require(
-            msg.sender == operator,
-            "AVSDirectory.initializeAllocationDelay: only operator can set allocation delay"
-        );
-        require(
-            delegation.isOperator(operator),
-            "AVSDirectory.initializeAllocationDelay: operator not registered to EigenLayer yet"
-        );
-        require(
-            !allocationDelay[operator].isSet,
-            "AVSDirectory.initializeAllocationDelay: allocation delay already set"
-        );
-        allocationDelay[operator] = AllocationDelayDetails({
-            isSet: true,
-            allocationDelay: delay
-        });
-    }
-
-    /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
      *  @param metadataURI The URI for metadata associated with an AVS.
@@ -791,15 +763,6 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Returns the allocation delay for an operator
-     * @param operator the operator to get the allocation delay for
-     */
-    function getAllocationDelay(address operator) public view returns (uint32) {
-        AllocationDelayDetails memory details = allocationDelay[operator];
-        return details.isSet ? details.allocationDelay : DEFAULT_ALLOCATION_DELAY;
-    }
-
-    /**
      * @param operator the operator to get the slashable ppm for
      * @param operatorSet the operatorSet to get the slashable ppm for
      * @param strategies the strategies to get the slashable ppm for
@@ -862,11 +825,6 @@ contract AVSDirectory is
      * from calling initializeAllocationDelay.
      * @param operator the operator to get the allocation delay for
      */
-    function getAllocationDelay(address operator) public view returns (uint32) {
-        AllocationDelayDetails memory details = allocationDelay[operator];
-        return details.isSet ? details.allocationDelay : DEFAULT_ALLOCATION_DELAY;
-    }
-
     function getAllocationDelay(address operator) public view returns (uint32) {
         AllocationDelayDetails memory details = allocationDelay[operator];
         return details.isSet ? details.allocationDelay : DEFAULT_ALLOCATION_DELAY;

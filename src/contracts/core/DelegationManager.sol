@@ -620,7 +620,7 @@ contract DelegationManager is
                         });
                     }
                 } else {
-                    strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], withdrawal.scaledShares[i]);
+                    strategyManager.addScaledShares(msg.sender, tokens[i], withdrawal.strategies[i], withdrawal.scaledShares[i]);
                     // Similar to `isDelegated` logic
                     if (currentOperator != address(0)) {
                         _increaseOperatorScaledShares({
@@ -701,8 +701,8 @@ contract DelegationManager is
                     staker == withdrawer || !strategyManager.thirdPartyTransfersForbidden(strategies[i]),
                     "DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if thirdPartyTransfersForbidden are set"
                 );
-                // this call will revert if `shares[i]` exceeds the Staker's current shares in `strategies[i]`
-                strategyManager.removeShares(staker, strategies[i], scaledShares[i]);
+                // this call will revert if `scaledShares[i]` exceeds the Staker's current shares in `strategies[i]`
+                strategyManager.removeScaledShares(staker, strategies[i], scaledShares[i]);
             }
 
             unchecked {
@@ -748,7 +748,7 @@ contract DelegationManager is
         if (strategy == beaconChainETHStrategy) {
             eigenPodManager.withdrawSharesAsTokens({podOwner: staker, destination: withdrawer, shares: scaledShares});
         } else {
-            strategyManager.withdrawSharesAsTokens(withdrawer, strategy, scaledShares, token);
+            strategyManager.withdrawScaledSharesAsTokens(withdrawer, strategy, scaledShares, token);
         }
     }
 

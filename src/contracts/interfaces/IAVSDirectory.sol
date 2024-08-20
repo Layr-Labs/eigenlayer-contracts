@@ -241,20 +241,6 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
-     * @param operator address to modify allocations for
-     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param operatorSignature signature of the operator if msg.sender is not the operator
-     * @dev updates freeMagnitude for the updated strategies
-     * @dev must be called by the operator
-     */
-    function modifyAllocations(
-        address operator,
-        MagnitudeAllocation[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external;
-
-    /**
      * @notice Called by an AVS to slash an operator for given operatorSetId, list of strategies, and bipsToSlash.
      * For each given (operator, operatorSetId, strategy) tuple, bipsToSlash
      * bips of the operatorSet's slashable stake allocation will be slashed
