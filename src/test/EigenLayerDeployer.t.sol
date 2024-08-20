@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../contracts/interfaces/IDelegationManager.sol";
 import "../contracts/core/DelegationManager.sol";
+import "../contracts/core/AVSDirectory.sol";
 
 import "../contracts/interfaces/IETHPOSDeposit.sol";
 
@@ -36,6 +37,7 @@ contract EigenLayerDeployer is Operators {
     ProxyAdmin public eigenLayerProxyAdmin;
     PauserRegistry public eigenLayerPauserReg;
 
+    AVSDirectory public avsDirectory;
     Slasher public slasher;
     DelegationManager public delegation;
     StrategyManager public strategyManager;
@@ -130,6 +132,7 @@ contract EigenLayerDeployer is Operators {
         fuzzedAddressMapping[address(eigenPodManager)] = true;
         fuzzedAddressMapping[address(delegation)] = true;
         fuzzedAddressMapping[address(slasher)] = true;
+        fuzzedAddressMapping[address(avsDirectory)] = true;
     }
 
     function _deployEigenLayerContractsLocal() internal {
@@ -148,6 +151,9 @@ contract EigenLayerDeployer is Operators {
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
         emptyContract = new EmptyContract();
+        avsDirectory = AVSDirectory(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
         delegation = DelegationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -170,8 +176,9 @@ contract EigenLayerDeployer is Operators {
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegation);
         DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher, avsDirectory);
         Slasher slasherImplementation = new Slasher(strategyManager, delegation);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,

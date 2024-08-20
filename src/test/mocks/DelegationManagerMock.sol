@@ -174,32 +174,32 @@ function increaseDelegatedScaledShares(
     ) external {}
     
     // onlyDelegationManager functions in StrategyManager
-    function addShares(
+    function addScaledShares(
         IStrategyManager strategyManager,
         address staker,
         IERC20 token,
         IStrategy strategy,
         uint256 shares
     ) external {
-        strategyManager.addShares(staker, token, strategy, shares);
+        strategyManager.addScaledShares(staker, token, strategy, shares);
     }
 
-    function removeShares(
+    function removeScaledShares(
         IStrategyManager strategyManager,
         address staker,
         IStrategy strategy,
         uint256 shares
     ) external {
-        strategyManager.removeShares(staker, strategy, shares);
+        strategyManager.removeScaledShares(staker, strategy, shares);
     }
 
-    function withdrawSharesAsTokens(
+    function withdrawScaledSharesAsTokens(
         IStrategyManager strategyManager,
         address recipient,
         IStrategy strategy,
         uint256 shares,
         IERC20 token
     ) external {
-        strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);
+        strategyManager.withdrawScaledSharesAsTokens(recipient, strategy, shares, token);
     }
 }
