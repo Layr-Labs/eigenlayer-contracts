@@ -86,6 +86,12 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         bool linear
     ) public view returns (uint24[] memory) {}
 
+    function getAllocatableMagnitude(
+        address operator,
+        IStrategy strategy,
+        uint8 numToComplete
+    ) external view returns (uint64) {}
+
     function getAllocationDelay(address operator) external view returns (uint32) {}
 
     function calculateOperatorAVSRegistrationDigestHash(
