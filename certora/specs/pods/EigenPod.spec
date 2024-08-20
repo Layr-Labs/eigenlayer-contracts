@@ -182,7 +182,7 @@ function max(uint64 a, uint64 b) returns uint64
 
 // front run call to verifyStaleBalance can update currentCheckpointTimestamp to the current block.timestamp, 
 // causing verifyWithdrawalCredentials to revert.
-// TODO this is supposed to be violated. Currently holds probably due to vacuity
+// TODO this is supposed to be violated. Currently holds probably due to a vacuity
 rule frontrunning_verifyStaleBalance_verifyWithdrawalCredentials(env e1, env e2)
 {
     // activeValidator count > 0 if there are active validators
@@ -202,7 +202,7 @@ rule frontrunning_verifyStaleBalance_verifyWithdrawalCredentials(env e1, env e2)
     BeaconChainProofs.StateRootProof stateRootProof2; BeaconChainProofs.ValidatorProof proof2;
     verifyStaleBalance(e2, beaconTimestamp2, stateRootProof2, proof2) at initialStorage;
     satisfy true;
-    require isDuringCheckpoint();
+    require isDuringCheckpoint();   //not sure about this require. It's violated without it
 
     verifyWithdrawalCredentials@withrevert(e1, beaconTimestamp, 
         stateRootProof, validatorIndices, validatorFieldsProofs, validatorFields);
@@ -211,87 +211,4 @@ rule frontrunning_verifyStaleBalance_verifyWithdrawalCredentials(env e1, env e2)
     
     //doesn't revert after
     assert !lastReverted;
-}
-
-// TODO this is not a correct property. Violated by verifyWithdrawalCredentials
-// we can remove this rule
-rule methodsOnlyChangeOneValidatorStatus(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
-{
-    bytes32 validatorHash1; bytes32 validatorHash2;
-    IEigenPod.VALIDATOR_STATUS status1Before = validatorStatus(validatorHash1);
-    IEigenPod.VALIDATOR_STATUS status2Before = validatorStatus(validatorHash2);
-    
-    calldataarg args;
-    f(e, args);
-    IEigenPod.VALIDATOR_STATUS status1After = validatorStatus(validatorHash1);
-    IEigenPod.VALIDATOR_STATUS status2After = validatorStatus(validatorHash2);
-    
-    assert status1Before == status1After ||
-        status2Before == status2After;
-}
-
-// TODO this is an attempt to proves that activeValidatorsCount corresponds to count(validator v where v.isActive)
-// This direct approach only works for methods that don't update multiple validators' statuses,
-// i.e. for all methods except verifyWithdrawalCredentials.
-// A correct general rule using hook is in EigenPodHooks.spec
-// we can remove this rule
-rule activeValidatorsCount_correctness(env e, method f) filtered { f -> !f.isView && !isIgnoredMethod(f) }
-{
-    mathint activeValsBefore = activeValidatorCount();
-    bytes32 validatorHash;
-    IEigenPod.VALIDATOR_STATUS statusBefore = validatorStatus(validatorHash);
-    calldataarg args;
-    f(e, args);
-    IEigenPod.VALIDATOR_STATUS statusAfter = validatorStatus(validatorHash);
-    mathint activeValsAfter = activeValidatorCount();
-
-    bool wasActivated = (
-        statusBefore != IEigenPod.VALIDATOR_STATUS.ACTIVE &&
-        statusAfter == IEigenPod.VALIDATOR_STATUS.ACTIVE);
-
-    bool wasDeactivated = (
-        statusBefore == IEigenPod.VALIDATOR_STATUS.ACTIVE &&
-        statusAfter != IEigenPod.VALIDATOR_STATUS.ACTIVE);
-    assert wasActivated => activeValsAfter == activeValsBefore + 1;
-    assert wasDeactivated => activeValsAfter == activeValsBefore - 1;
-
-    //to prove the other side of the implication
-    satisfy wasActivated || activeValsAfter <= activeValsBefore;
-    satisfy wasDeactivated || activeValsAfter >= activeValsBefore;
-}
-
-//TODO check method verifyCHpointProofs with satisfy. it should increase timestamp
-//TODO in development
-// we can remove this rule 
-rule verifyCHpointProofs_CanIncreaseTimestamp(bytes32 validatorPubkeyHash, env e) 
-{
-    //requireInvariant checkpointsTimestampRemainsCorrect();
-    //requireInvariant inactiveValidatorsHaveEmptyInfo(validatorPubkeyHash);
-    //require timestampsNotFromFuture(e) && validatorDataNotFromFuture(e, validatorPubkeyHash);
-    
-    uint64 timestampBefore = get_mostRecentBalanceUpdateTimestamp(validatorPubkeyHash);
-    BeaconChainProofs.BalanceContainerProof balanceContainerProof;
-    BeaconChainProofs.BalanceProof[] proofs;
-    verifyCheckpointProofs(e, balanceContainerProof, proofs);
-
-    uint64 timestampAfter = get_mostRecentBalanceUpdateTimestamp(validatorPubkeyHash);
-    satisfy timestampAfter > timestampBefore;
-
-}
-
-// to check the conditions under which the method works correctly
-// loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
-// we can remove this rule
-// just to analyze the known bug
-rule verifyWithdrawalCredentials_alwaysReverts(env e1)
-{
-    uint64 beaconTimestamp; BeaconChainProofs.StateRootProof stateRootProof;
-    uint40[] validatorIndices; bytes[] validatorFieldsProofs;
-    bytes32[][] validatorFields;
-    //require nativeBalances[currentContract] < 2^40;   // to avoid issues with casting at EigenPod.sol:596
-    //require get_podOwnerShares() < 2^40; //to avoid overflow at EigenPodManager.sol:115
-
-    verifyWithdrawalCredentials@withrevert(e1, beaconTimestamp, 
-        stateRootProof, validatorIndices, validatorFieldsProofs, validatorFields);
-    assert lastReverted;
 }

@@ -215,43 +215,7 @@ rule removeShares_revertsWhenNoPod(env e)
 ////////////////////  IN DEVELOPMENT / OBSOLETE   //////////////
 
 
-// to check the conditions under which the method works correctly
-// loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
-// just to analyze the known bug
-// we can remove once the bug is fixed
-rule addShares_alwaysReverts(env e)
-{
-    uint256 shares;
-    address owner;
-    addShares@withrevert(e, owner, shares); 
-    bool reverted = lastReverted;
-    assert reverted;
-}
-
-// to check the conditions under which the method works correctly
-// loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
-// just to analyze the known bug
-// we can remove once the bug is fixed
-rule methodsAlwaysRevert(env e, method f) filtered 
-    {
-        f -> 
-            f.selector == sig:EigenPodManagerHarness.initialize(address, address, uint256).selector ||
-            f.selector == sig:EigenPodManagerHarness.addShares(address,uint256).selector ||
-            f.selector == sig:EigenPodManagerHarness.recordBeaconChainETHBalanceUpdate(address,int256).selector ||
-            f.selector == sig:DummyEigenPodA.verifyWithdrawalCredentials(uint64, BeaconChainProofs.StateRootProof, uint40[], bytes[], bytes32[][]).selector
-    }
-{
-    calldataarg args;
-    f@withrevert(e, args);
-    bool reverted = lastReverted;
-    //satisfy !reverted;
-    assert reverted;
-}
-
-// to check the conditions under which the method works correctly
-// loop_iter, hashing_length_bound, optimistic_loop, optimistic_hashing
-// just to analyze the known bug
-// we can remove once the bug is fixed
+// to check that methods work correctly
 rule methodsDontAlwaysRevert(env e, method f) 
 {
     calldataarg args;
