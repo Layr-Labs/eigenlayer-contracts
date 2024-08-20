@@ -912,15 +912,6 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Returns the allocation delay for an operator
-     * @param operator the operator to get the allocation delay for
-     */
-    function getAllocationDelay(address operator) public view returns (uint32) {
-        AllocationDelayDetails memory details = allocationDelay[operator];
-        return details.isSet ? details.allocationDelay : DEFAULT_ALLOCATION_DELAY;
-    }
-
-    /**
      * @param operator the operator to get the slashable ppm for
      * @param operatorSet the operatorSet to get the slashable ppm for
      * @param strategies the strategies to get the slashable ppm for
@@ -999,11 +990,6 @@ contract AVSDirectory is
     function getAllocationDelay(address operator) public view returns (bool, uint32) {
         AllocationDelayDetails memory details = allocationDelay[operator];
         return (details.isSet, details.allocationDelay);
-    }
-
-    function getAllocationDelay(address operator) public view returns (uint32) {
-        AllocationDelayDetails memory details = allocationDelay[operator];
-        return details.isSet ? details.allocationDelay : DEFAULT_ALLOCATION_DELAY;
     }
 
     /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
