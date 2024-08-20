@@ -651,7 +651,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             isUpgraded = true;
         } else if (forkType == MAINNET) {
             // cheats.selectFork(mainnetForkId);
-            string memory deploymentInfoPath = "script/configs/mainnet/Mainnet_current_deployment.config.json";
+            string memory deploymentInfoPath = "script/configs/mainnet/mainnet-addresses.config.json";
             _parseDeployedContracts(deploymentInfoPath);
 
             // Unpause to enable deposits and withdrawals for initializing random user state
