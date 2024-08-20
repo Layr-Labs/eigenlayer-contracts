@@ -1,1 +1,0 @@
-certoraRun.py certora/confs/full.conf
