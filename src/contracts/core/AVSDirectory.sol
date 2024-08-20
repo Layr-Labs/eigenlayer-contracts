@@ -288,11 +288,7 @@ contract AVSDirectory is
         for (uint256 i = 0; i < allocations.length; ++i) {
             // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
             // numToComplete = 0 defaults to completing all pending deallocations up to uint8 max (256)
-            _updateFreeMagnitude({
-                operator: operator, 
-                strategy: allocations[i].strategy,
-                numToComplete: 0
-            });
+            _updateFreeMagnitude({operator: operator, strategy: allocations[i].strategy, numToComplete: 0});
 
             // 2. check current totalMagnitude matches expected value
             uint64 currentTotalMagnitude = _getLatestTotalMagnitude(operator, allocations[i].strategy);
@@ -303,11 +299,11 @@ contract AVSDirectory is
 
             // 3. set allocations for the strategy after updating freeMagnitude
             _modifyAllocations({
-                operator: operator, 
+                operator: operator,
                 allocation: allocations[i],
                 allocationEffectTimestamp: effectTimestamp,
                 deallocationCompletableTimestamp: completableTimestamp
-            }); 
+            });
         }
     }
 
@@ -328,11 +324,7 @@ contract AVSDirectory is
         uint8[] calldata numToComplete
     ) external {
         for (uint256 i = 0; i < strategies.length; ++i) {
-            _updateFreeMagnitude({
-                operator: operator,
-                strategy: strategies[i],
-                numToComplete: numToComplete[i]
-            });
+            _updateFreeMagnitude({operator: operator, strategy: strategies[i], numToComplete: numToComplete[i]});
         }
     }
 
@@ -426,26 +418,18 @@ contract AVSDirectory is
      * @param delay the allocation delay in seconds
      * @dev this is expected to be updatable in a future release
      */
-    function initializeAllocationDelay(
-        address operator,
-        uint32 delay
-    ) external {
+    function initializeAllocationDelay(address operator, uint32 delay) external {
         require(
-            msg.sender == operator,
-            "AVSDirectory.initializeAllocationDelay: only operator can set allocation delay"
+            msg.sender == operator, "AVSDirectory.initializeAllocationDelay: only operator can set allocation delay"
         );
         require(
             delegation.isOperator(operator),
             "AVSDirectory.initializeAllocationDelay: operator not registered to EigenLayer yet"
         );
         require(
-            !allocationDelay[operator].isSet,
-            "AVSDirectory.initializeAllocationDelay: allocation delay already set"
+            !allocationDelay[operator].isSet, "AVSDirectory.initializeAllocationDelay: allocation delay already set"
         );
-        allocationDelay[operator] = AllocationDelayDetails({
-            isSet: true,
-            allocationDelay: delay
-        });
+        allocationDelay[operator] = AllocationDelayDetails({isSet: true, allocationDelay: delay});
     }
 
     /**
@@ -546,23 +530,8 @@ contract AVSDirectory is
      * In addition to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
      */
     function _updateFreeMagnitude(address operator, IStrategy strategy, uint8 numToComplete) internal {
-        uint256 nextIndex = _nextPendingFreeMagnitudeIndex[operator][strategy];
-        uint256 pendingFreeMagnitudeLength = _pendingFreeMagnitude[operator][strategy].length;
-        uint8 completed = numToComplete == 0 ? type(uint8).max : 0;
-        while (nextIndex < pendingFreeMagnitudeLength && completed < numToComplete) {
-            PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][nextIndex];
-            // pendingFreeMagnitude is ordered by completableTimestamp. If we reach one that is not completable yet, then break
-            // loop until completableTimestamp is < block.timestamp
-            if (pendingFreeMagnitude.completableTimestamp < uint32(block.timestamp)) {
-                break;
-            }
-
-            // pending free magnitude can be added to freeMagnitude
-            freeMagnitude[operator][strategy] += pendingFreeMagnitude.magnitudeDiff;
-            ++nextIndex;
-            ++completed;
-        }
-        // update next pending free magnitude index to start from after adding all completable magnitudes
+        (uint64 freeMagnitudeToAdd, uint256 nextIndex) = _getPendingFreeMagnitude(operator, strategy, numToComplete);
+        freeMagnitude[operator][strategy] += freeMagnitudeToAdd;
         _nextPendingFreeMagnitudeIndex[operator][strategy] = nextIndex;
     }
 
@@ -587,27 +556,23 @@ contract AVSDirectory is
 
             // Read current magnitude allocation including its respective array index and length.
             // We'll use these values later to check the number of pending allocations/deallocations.
-            (
-                uint224 currentMagnitude,
-                uint256 pos,
-                uint256 length
-            ) = _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
-                .upperLookupRecentWithPos(uint32(block.timestamp));
+            (uint224 currentMagnitude, uint256 pos, uint256 length) = _magnitudeUpdate[operator][allocation.strategy][opSets[i]
+                .avs][opSets[i].operatorSetId].upperLookupRecentWithPos(uint32(block.timestamp));
 
             if (allocation.magnitudes[i] < uint64(currentMagnitude)) {
-                // Newly configured magnitude is less than current value. 
+                // Newly configured magnitude is less than current value.
                 // Therefore we handle this as a deallocation
 
                 // 1. ensure only pending queued deallocation per operator, operatorSet, strategy
                 _checkQueuedDeallocations(operator, allocation.strategy, opSets[i]);
- 
+
                 // 2. update and decrement current and future queued amounts in case any pending allocations exist
                 _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
                     .decrementAtAndFutureCheckpoints({
-                        key: uint32(block.timestamp),
-                        decrementValue: uint64(currentMagnitude) - allocation.magnitudes[i]
-                    });
-                
+                    key: uint32(block.timestamp),
+                    decrementValue: uint64(currentMagnitude) - allocation.magnitudes[i]
+                });
+
                 // 3. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
                 uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
                 _pendingFreeMagnitude[operator][allocation.strategy].push(
@@ -618,9 +583,9 @@ contract AVSDirectory is
                 );
                 _queuedDeallocationIndices[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push(
                     index
-                );                
+                );
             } else if (allocation.magnitudes[i] > uint64(currentMagnitude)) {
-                // Newly configured magnitude is greater than current value. 
+                // Newly configured magnitude is greater than current value.
                 // Therefore we handle this as an allocation
 
                 // 1. ensure only 1 pending allocation at a time
@@ -684,14 +649,40 @@ contract AVSDirectory is
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
         if (!exists) {
             totalMagnitude = INITIAL_TOTAL_MAGNITUDE;
-            _totalMagnitudeUpdate[operator][strategy].push({
-                key: uint32(block.timestamp),
-                value: totalMagnitude
-            });
+            _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
             freeMagnitude[operator][strategy] = INITIAL_TOTAL_MAGNITUDE;
         }
 
         return uint64(totalMagnitude);
+    }
+
+    /// @dev gets the pending free magnitude available to add by completing numToComplete pending deallocations
+    /// and returns the next index to start from if completed. By passing in 0 as numToComplete, assumes completing
+    /// all pending deallocations (up to uint8 max 256)
+    function _getPendingFreeMagnitude(
+        address operator,
+        IStrategy strategy,
+        uint8 numToComplete
+    ) internal view returns (uint64 freeMagnitudeToAdd, uint256 nextIndex) {
+        uint256 nextIndex = _nextPendingFreeMagnitudeIndex[operator][strategy];
+        uint256 pendingFreeMagnitudeLength = _pendingFreeMagnitude[operator][strategy].length;
+        uint8 completed = 0;
+        uint8 numToComplete = numToComplete == 0 ? type(uint8).max : numToComplete;
+        uint64 freeMagnitudeToAdd = 0;
+        while (nextIndex < pendingFreeMagnitudeLength && completed < numToComplete) {
+            PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][nextIndex];
+            // pendingFreeMagnitude is ordered by completableTimestamp. If we reach one that is not completable yet, then break
+            // loop until completableTimestamp is < block.timestamp
+            if (pendingFreeMagnitude.completableTimestamp < uint32(block.timestamp)) {
+                break;
+            }
+
+            // pending free magnitude can be added to freeMagnitude
+            freeMagnitudeToAdd += pendingFreeMagnitude.magnitudeDiff;
+            ++nextIndex;
+            ++completed;
+        }
+        return (freeMagnitudeToAdd, nextIndex);
     }
 
     /// @dev Verify operator's signature and spend salt
@@ -707,8 +698,7 @@ contract AVSDirectory is
         );
         // Assert operator's signature cannot be replayed.
         require(
-            !operatorSaltIsSpent[operator][operatorSignature.salt],
-            "AVSDirectory._verifyOperatorSignature: salt spent"
+            !operatorSaltIsSpent[operator][operatorSignature.salt], "AVSDirectory._verifyOperatorSignature: salt spent"
         );
 
         bytes32 digestHash = calculateMagnitudeAllocationDigestHash(
@@ -820,6 +810,22 @@ contract AVSDirectory is
         }
 
         return uint16(currentMagnitude * 1e6 / totalMagnitude);
+    }
+
+    /**
+     * @notice Get the allocatable magnitude for an operator and strategy based on number of pending deallocations
+     * that could be completed at the same time. This is the sum of freeMagnitude and the sum of all pending completable deallocations.
+     * @param operator the operator to get the allocatable magnitude for
+     * @param strategy the strategy to get the allocatable magnitude for
+     * @param numToComplete the number of pending free magnitudes deallocations to complete, 0 to complete all (uint8 max 256)
+     */
+    function getAllocatableMagnitude(
+        address operator,
+        IStrategy strategy,
+        uint8 numToComplete
+    ) public view returns (uint64) {
+        (uint64 freeMagnitudeToAdd,) = _getPendingFreeMagnitude(operator, strategy, numToComplete);
+        return freeMagnitude[operator][strategy] + freeMagnitudeToAdd;
     }
 
     /**

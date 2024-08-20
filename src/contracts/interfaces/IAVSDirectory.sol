@@ -113,19 +113,11 @@ interface IAVSDirectory is ISignatureUtils {
     /// @notice Emitted when an operator completes deallocations of slashable magnitude from an operator set
     /// and adds back magnitude to free allocatable magnitude
     event MagnitudeDeallocationCompleted(
-        address operator,
-        IStrategy strategy,
-        OperatorSet operatorSet,
-        uint64 freeMagnitudeAdded
+        address operator, IStrategy strategy, OperatorSet operatorSet, uint64 freeMagnitudeAdded
     );
 
     /// @notice Emitted when an operator is slashed by an operator set for a strategy
-    event OperatorSlashed(
-        address operator,
-        uint32 operatorSetId,
-        IStrategy strategy,
-        uint16 bipsToSlash
-    );
+    event OperatorSlashed(address operator, uint32 operatorSetId, IStrategy strategy, uint16 bipsToSlash);
 
     /**
      *
@@ -264,10 +256,7 @@ interface IAVSDirectory is ISignatureUtils {
      * @param delay the allocation delay in seconds
      * @dev this is expected to be updatable in a future release
      */
-    function initializeAllocationDelay(
-        address operator,
-        uint32 delay
-    ) external;
+    function initializeAllocationDelay(address operator, uint32 delay) external;
 
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
@@ -293,6 +282,19 @@ interface IAVSDirectory is ISignatureUtils {
 
     /// @dev The initial total magnitude for an operator
     function INITIAL_TOTAL_MAGNITUDE() external view returns (uint64);
+
+    /**
+     * @notice Get the allocatable magnitude for an operator and strategy based on number of pending deallocations
+     * that could be completed at the same time. This is the sum of freeMagnitude and the sum of all pending completable deallocations.
+     * @param operator the operator to get the allocatable magnitude for
+     * @param strategy the strategy to get the allocatable magnitude for
+     * @param numToComplete the number of pending free magnitudes deallocations to complete, 0 to complete all (uint8 max 256)
+     */
+    function getAllocatableMagnitude(
+        address operator,
+        IStrategy strategy,
+        uint8 numToComplete
+    ) external view returns (uint64);
 
     /**
      * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
@@ -326,7 +328,7 @@ interface IAVSDirectory is ISignatureUtils {
         uint32 timestamp,
         bool linear
     ) external view returns (uint24[] memory);
-    
+
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 
     function isMember(address operator, OperatorSet memory operatorSet) external view returns (bool);
