@@ -74,6 +74,7 @@ interface IEigenPodManager is IPausable {
 
     /// @notice Beacon proxy to which the EigenPods point
     function eigenPodBeacon() external view returns (IBeacon);
+
     /// @notice EigenLayer's StrategyManager contract
     function strategyManager() external view returns (IStrategyManager);
 
