@@ -34,6 +34,8 @@ contract MainnetPEPEDeploy is ExistingDeploymentParser {
 
         _upgradePEPE();
 
+        _testDeploy();
+
         // Post-upgrade sanity checks
         _verifyContractPointers();
         _verifyImplementations();
@@ -74,5 +76,9 @@ contract MainnetPEPEDeploy is ExistingDeploymentParser {
         );
 
         vm.stopPrank();
+    }
+
+    function _testDeploy() internal {
+        require(eigenPodImplementation.activeValidatorCount() == 0, "unable to fetch activeValidatorCount");
     }
 }
