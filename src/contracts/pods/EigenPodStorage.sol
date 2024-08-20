@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import "../interfaces/IEigenPod.sol";
 
 abstract contract EigenPodStorage is IEigenPod {
-
     /// @notice The owner of this EigenPod
     address public podOwner;
 
@@ -43,11 +42,11 @@ abstract contract EigenPodStorage is IEigenPod {
     /// NOTE that the values added to this mapping are NOT guaranteed to capture the entirety of a validator's
     /// exit - rather, they capture the total change in a validator's balance when a checkpoint shows their
     /// balance change from nonzero to zero. While a change from nonzero to zero DOES guarantee that a validator
-    /// has been fully exited, it is possible that the magnitude of this change does not capture what is 
+    /// has been fully exited, it is possible that the magnitude of this change does not capture what is
     /// typically thought of as a "full exit."
-    /// 
+    ///
     /// For example:
-    /// 1. Consider a validator was last checkpointed at 32 ETH before exiting. Once the exit has been processed, 
+    /// 1. Consider a validator was last checkpointed at 32 ETH before exiting. Once the exit has been processed,
     /// it is expected that the validator's exited balance is calculated to be `32 ETH`.
     /// 2. However, before `startCheckpoint` is called, a deposit is made to the validator for 1 ETH. The beacon
     /// chain will automatically withdraw this ETH, but not until the withdrawal sweep passes over the validator
@@ -56,11 +55,11 @@ abstract contract EigenPodStorage is IEigenPod {
     /// `-31 ETH`, and because the validator has a nonzero balance, it is not marked WITHDRAWN.
     /// 4. After the exit is processed by the beacon chain, a subsequent `startCheckpoint` and checkpoint proof
     /// will calculate a balance delta of `-1 ETH` and attribute a 1 ETH exit to the validator.
-    /// 
+    ///
     /// If this edge case impacts your usecase, it should be possible to mitigate this by monitoring for deposits
     /// to your exited validators, and waiting to call `startCheckpoint` until those deposits have been automatically
     /// exited.
-    /// 
+    ///
     /// Additional edge cases this mapping does not cover:
     /// - If a validator is slashed, their balance exited will reflect their original balance rather than the slashed amount
     /// - The final partial withdrawal for an exited validator will be likely be included in this mapping.
@@ -71,10 +70,16 @@ abstract contract EigenPodStorage is IEigenPod {
     /// @notice The current checkpoint, if there is one active
     Checkpoint internal _currentCheckpoint;
 
+    /// @notice An address with permissions to call `startCheckpoint` and `verifyWithdrawalCredentials`, set
+    /// by the podOwner. This role exists to allow a podOwner to designate a hot wallet that can call
+    /// these methods, allowing the podOwner to remain a cold wallet that is only used to manage funds.
+    /// @dev If this address is NOT set, only the podOwner can call `startCheckpoint` and `verifyWithdrawalCredentials`
+    address public proofSubmitter;
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[37] private __gap;
+    uint256[36] private __gap;
 }

@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import "../interfaces/ISlasher.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IStrategyManager.sol";
-import "../libraries/StructuredLinkedList.sol";
 import "../permissions/Pausable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";

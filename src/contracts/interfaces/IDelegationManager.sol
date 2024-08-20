@@ -3,7 +3,6 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
-import "./IStrategyManager.sol";
 
 /**
  * @title DelegationManager

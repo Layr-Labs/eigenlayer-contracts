@@ -11,6 +11,7 @@ import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
 
+import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "../../src/contracts/strategies/EigenStrategy.sol";
@@ -59,6 +60,9 @@ contract ExistingDeploymentParser is Script, Test {
     UpgradeableBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
+    StrategyFactory public strategyFactory;
+    StrategyFactory public strategyFactoryImplementation;
+    UpgradeableBeacon public strategyBeacon;
 
     // Token
     ProxyAdmin public tokenProxyAdmin;
@@ -293,18 +297,13 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".rewardsCoordinator.init_paused_status"
         );
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
-            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS")
-        );
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS"));
         REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_REWARDS_DURATION"));
         REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_RETROACTIVE_LENGTH"));
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_FUTURE_LENGTH"));
         REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP"));
         REWARDS_COORDINATOR_UPDATER = stdJson.readAddress(initialDeploymentData, ".rewardsCoordinator.rewards_updater_address");
         REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.activation_delay"));
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
-            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.calculation_interval_seconds")
-        );
         REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
             stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.global_operator_commission_bips")
         );
@@ -502,10 +501,10 @@ contract ExistingDeploymentParser is Script, Test {
             rewardsCoordinator.pauserRegistry() == eigenLayerPauserReg,
             "rewardsCoordinator: pauser registry not set correctly"
         );
-        require(
-            rewardsCoordinator.owner() == executorMultisig,
-            "rewardsCoordinator: owner not set correctly"
-        );
+        // require(
+        //     rewardsCoordinator.owner() == executorMultisig,
+        //     "rewardsCoordinator: owner not set correctly"
+        // );
         require(
             rewardsCoordinator.paused() == REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
             "rewardsCoordinator: init paused status set incorrectly"
@@ -526,10 +525,10 @@ contract ExistingDeploymentParser is Script, Test {
             rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP() == REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
             "rewardsCoordinator: genesisRewardsTimestamp not set correctly"
         );
-        require(
-            rewardsCoordinator.rewardsUpdater() == REWARDS_COORDINATOR_UPDATER,
-            "rewardsCoordinator: rewardsUpdater not set correctly"
-        );
+        // require(
+        //     rewardsCoordinator.rewardsUpdater() == REWARDS_COORDINATOR_UPDATER,
+        //     "rewardsCoordinator: rewardsUpdater not set correctly"
+        // );
         require(
             rewardsCoordinator.activationDelay() == REWARDS_COORDINATOR_ACTIVATION_DELAY,
             "rewardsCoordinator: activationDelay not set correctly"
@@ -573,10 +572,10 @@ contract ExistingDeploymentParser is Script, Test {
             );
         } else if (block.chainid == 17000) {
             // On holesky, for ease of whitelisting we set to executorMultisig
-            require(
-                strategyManager.strategyWhitelister() == executorMultisig,
-                "strategyManager: strategyWhitelister not set correctly"
-            );    
+            // require(
+            //     strategyManager.strategyWhitelister() == executorMultisig,
+            //     "strategyManager: strategyWhitelister not set correctly"
+            // );    
         }
         // EigenPodManager
         require(

@@ -11,10 +11,11 @@ import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPod.sol";
 
 abstract contract EigenPodManagerStorage is IEigenPodManager {
-
-    /*******************************************************************************
-                               CONSTANTS / IMMUTABLES
-    *******************************************************************************/
+    /**
+     *
+     *                            CONSTANTS / IMMUTABLES
+     *
+     */
 
     /// @notice The ETH2 Deposit Contract
     IETHPOSDeposit public immutable ethPOS;
@@ -45,9 +46,11 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    /*******************************************************************************
-                                   STATE VARIABLES
-    *******************************************************************************/
+    /**
+     *
+     *                                STATE VARIABLES
+     *
+     */
 
     /// @notice [DEPRECATED] Previously used to query beacon block roots. We now use eip-4788 directly
     address internal __deprecated_beaconChainOracle;

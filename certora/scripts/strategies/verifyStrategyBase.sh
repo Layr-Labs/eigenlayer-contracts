@@ -11,6 +11,8 @@ certoraRun src/contracts/strategies/StrategyBase.sol \
     src/contracts/permissions/PauserRegistry.sol \
     src/contracts/core/Slasher.sol \
     --verify StrategyBase:certora/specs/strategies/StrategyBase.spec \
+    --solc_via_ir \
+    --solc_optimize 1 \
     --optimistic_loop \
     --optimistic_fallback \
     --prover_args '-recursionErrorAsAssert false -recursionEntryLimit 3' \

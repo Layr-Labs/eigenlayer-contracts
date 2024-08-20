@@ -1,0 +1,81 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "install",
+            "type": "shell",
+            "command": "npm install --include=dev",
+            "options": {
+                "cwd": "${workspaceFolder}",
+            },
+            "group": {
+                "kind": "build"
+            }
+        },
+        {
+            "label": "fmt",
+            "type": "shell",
+            "command": "forge fmt --check src/contracts",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "install",
+            "group": {
+                "kind": "build"
+            }
+        },
+        {
+            "label": "hint",
+            "type": "shell",
+            "command": "npm run hint",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "fmt",
+            "group": {
+                "kind": "build"
+            }
+        },
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "forge build --sizes",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "hint",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "forge clean && forge cache clean",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "test",
+            "type": "shell",
+            "command": "forge test -vvv",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "hint",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+    ]
+}

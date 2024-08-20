@@ -137,6 +137,7 @@ contract EigenPodManager is
             }
         }
         emit PodSharesUpdated(podOwner, sharesDelta);
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
     }
 
     /**
@@ -157,6 +158,8 @@ contract EigenPodManager is
             "EigenPodManager.removeShares: cannot result in pod owner having negative shares"
         );
         podOwnerShares[podOwner] = updatedPodOwnerShares;
+
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
     }
 
     /**
@@ -175,6 +178,7 @@ contract EigenPodManager is
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
         emit PodSharesUpdated(podOwner, int256(shares));
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
 
         return uint256(
             _calculateChangeInDelegatableShares({
@@ -205,15 +209,19 @@ contract EigenPodManager is
         // if there is an existing shares deficit, prioritize decreasing the deficit first
         if (currentPodOwnerShares < 0) {
             uint256 currentShareDeficit = uint256(-currentPodOwnerShares);
-            // get rid of the whole deficit if possible, and pass any remaining shares onto destination
+
             if (shares > currentShareDeficit) {
+                // get rid of the whole deficit if possible, and pass any remaining shares onto destination
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
                 emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
-                // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
+                emit NewTotalShares(podOwner, 0);
             } else {
-                podOwnerShares[podOwner] += int256(shares);
+                // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
+                int256 updatedPodOwnerShares = podOwnerShares[podOwner] + int256(shares);
+                podOwnerShares[podOwner] = updatedPodOwnerShares;
                 emit PodSharesUpdated(podOwner, int256(shares));
+                emit NewTotalShares(podOwner, updatedPodOwnerShares);
                 return;
             }
         }

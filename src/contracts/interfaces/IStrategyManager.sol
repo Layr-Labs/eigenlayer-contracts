@@ -115,6 +115,15 @@ interface IStrategyManager {
      */
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
 
+    /**
+     * If true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
+     * and also when performing DelegationManager.queueWithdrawals, a staker can only withdraw to themselves.
+     * Defaulted to false for all existing strategies.
+     * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
+     * @param value bool value to set `thirdPartyTransfersForbidden` to
+     */
+    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external;
+
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
 

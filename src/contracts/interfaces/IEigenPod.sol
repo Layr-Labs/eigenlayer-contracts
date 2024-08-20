@@ -13,11 +13,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
 interface IEigenPod {
-
-    /*******************************************************************************
-                                   STRUCTS / ENUMS
-    *******************************************************************************/
-
+    /**
+     *
+     *                                STRUCTS / ENUMS
+     *
+     */
     enum VALIDATOR_STATUS {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
@@ -43,12 +43,17 @@ interface IEigenPod {
         int128 balanceDeltasGwei;
     }
 
-    /*******************************************************************************
-                                       EVENTS
-    *******************************************************************************/
+    /**
+     *
+     *                                    EVENTS
+     *
+     */
 
     /// @notice Emitted when an ETH validator stakes via this eigenPod
     event EigenPodStaked(bytes pubkey);
+
+    /// @notice Emitted when a pod owner updates the proof submitter address
+    event ProofSubmitterUpdated(address prevProofSubmitter, address newProofSubmitter);
 
     /// @notice Emitted when an ETH validator's withdrawal credentials are successfully verified to be pointed to this eigenPod
     event ValidatorRestaked(uint40 validatorIndex);
@@ -64,7 +69,9 @@ interface IEigenPod {
     event NonBeaconChainETHReceived(uint256 amountReceived);
 
     /// @notice Emitted when a checkpoint is created
-    event CheckpointCreated(uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot);
+    event CheckpointCreated(
+        uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot, uint256 validatorCount
+    );
 
     /// @notice Emitted when a checkpoint is finalized
     event CheckpointFinalized(uint64 indexed checkpointTimestamp, int256 totalShareDeltaWei);
@@ -75,9 +82,11 @@ interface IEigenPod {
     /// @notice Emitted when a validaor is proven to have 0 balance at a given checkpoint
     event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
 
-    /*******************************************************************************
-                          EXTERNAL STATE-CHANGING METHODS
-    *******************************************************************************/
+    /**
+     *
+     *                       EXTERNAL STATE-CHANGING METHODS
+     *
+     */
 
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
     function initialize(address owner) external;
@@ -95,8 +104,8 @@ interface IEigenPod {
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
 
     /**
-     * @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed 
-     * by submitting one checkpoint proof per ACTIVE validator. During the checkpoint process, the total 
+     * @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed
+     * by submitting one checkpoint proof per ACTIVE validator. During the checkpoint process, the total
      * change in ACTIVE validator balance is tracked, and any validators with 0 balance are marked `WITHDRAWN`.
      * @dev Once finalized, the pod owner is awarded shares corresponding to:
      * - the total change in their ACTIVE validator balances
@@ -121,9 +130,8 @@ interface IEigenPod {
     function verifyCheckpointProofs(
         BeaconChainProofs.BalanceContainerProof calldata balanceContainerProof,
         BeaconChainProofs.BalanceProof[] calldata proofs
-    ) 
-        external;
- 
+    ) external;
+
     /**
      * @dev Verify one or more validators have their withdrawal credentials pointed at this EigenPod, and award
      * shares based on their effective balance. Proven validators are marked `ACTIVE` within the EigenPod, and
@@ -144,19 +152,18 @@ interface IEigenPod {
         uint40[] calldata validatorIndices,
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields
-    )
-        external;
- 
+    ) external;
+
     /**
      * @dev Prove that one of this pod's active validators was slashed on the beacon chain. A successful
      * staleness proof allows the caller to start a checkpoint.
-     * 
+     *
      * @dev Note that in order to start a checkpoint, any existing checkpoint must already be completed!
      * (See `_startCheckpoint` for details)
-     * 
+     *
      * @dev Note that this method allows anyone to start a checkpoint as soon as a slashing occurs on the beacon
      * chain. This is intended to make it easier to external watchers to keep a pod's balance up to date.
-     * 
+     *
      * @dev Note too that beacon chain slashings are not instant. There is a delay between the initial slashing event
      * and the validator's final exit back to the execution layer. During this time, the validator's balance may or
      * may not drop further due to a correlation penalty. This method allows proof of a slashed validator
@@ -164,7 +171,7 @@ interface IEigenPod {
      * has exited and been checkpointed at 0 balance, they are no longer "checkpoint-able" and cannot be proven
      * "stale" via this method.
      * See https://eth2book.info/capella/part3/transition/epoch/#slashings for more info.
-     * 
+     *
      * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
      * to the parent beacon block root against which the proof is verified.
      * @param stateRootProof proves a beacon state root against a beacon block root
@@ -181,15 +188,31 @@ interface IEigenPod {
         uint64 beaconTimestamp,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
         BeaconChainProofs.ValidatorProof calldata proof
-    )
-        external;
- 
+    ) external;
+
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
-    /*******************************************************************************
-                                   VIEW METHODS
-    *******************************************************************************/
+    /// @notice Allows the owner of a pod to update the proof submitter, a permissioned
+    /// address that can call `startCheckpoint` and `verifyWithdrawalCredentials`.
+    /// @dev Note that EITHER the podOwner OR proofSubmitter can access these methods,
+    /// so it's fine to set your proofSubmitter to 0 if you want the podOwner to be the
+    /// only address that can call these methods.
+    /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
+    /// pod owner will be able to call `startCheckpoint` and `verifyWithdrawalCredentials`
+    function setProofSubmitter(address newProofSubmitter) external;
+
+    /**
+     *
+     *                                VIEW METHODS
+     *
+     */
+
+    /// @notice An address with permissions to call `startCheckpoint` and `verifyWithdrawalCredentials`, set
+    /// by the podOwner. This role exists to allow a podOwner to designate a hot wallet that can call
+    /// these methods, allowing the podOwner to remain a cold wallet that is only used to manage funds.
+    /// @dev If this address is NOT set, only the podOwner can call `startCheckpoint` and `verifyWithdrawalCredentials`
+    function proofSubmitter() external view returns (address);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
@@ -229,11 +252,11 @@ interface IEigenPod {
     /// NOTE that the values added to this mapping are NOT guaranteed to capture the entirety of a validator's
     /// exit - rather, they capture the total change in a validator's balance when a checkpoint shows their
     /// balance change from nonzero to zero. While a change from nonzero to zero DOES guarantee that a validator
-    /// has been fully exited, it is possible that the magnitude of this change does not capture what is 
+    /// has been fully exited, it is possible that the magnitude of this change does not capture what is
     /// typically thought of as a "full exit."
-    /// 
+    ///
     /// For example:
-    /// 1. Consider a validator was last checkpointed at 32 ETH before exiting. Once the exit has been processed, 
+    /// 1. Consider a validator was last checkpointed at 32 ETH before exiting. Once the exit has been processed,
     /// it is expected that the validator's exited balance is calculated to be `32 ETH`.
     /// 2. However, before `startCheckpoint` is called, a deposit is made to the validator for 1 ETH. The beacon
     /// chain will automatically withdraw this ETH, but not until the withdrawal sweep passes over the validator
@@ -242,11 +265,11 @@ interface IEigenPod {
     /// `-31 ETH`, and because the validator has a nonzero balance, it is not marked WITHDRAWN.
     /// 4. After the exit is processed by the beacon chain, a subsequent `startCheckpoint` and checkpoint proof
     /// will calculate a balance delta of `-1 ETH` and attribute a 1 ETH exit to the validator.
-    /// 
+    ///
     /// If this edge case impacts your usecase, it should be possible to mitigate this by monitoring for deposits
     /// to your exited validators, and waiting to call `startCheckpoint` until those deposits have been automatically
     /// exited.
-    /// 
+    ///
     /// Additional edge cases this mapping does not cover:
     /// - If a validator is slashed, their balance exited will reflect their original balance rather than the slashed amount
     /// - The final partial withdrawal for an exited validator will be likely be included in this mapping.

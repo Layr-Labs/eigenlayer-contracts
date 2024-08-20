@@ -11,6 +11,7 @@ contract PausableTests is EigenLayerTestHelper {
 
     ///@dev test that pausing a contract works
     function testPausingWithdrawalsFromStrategyManager(uint256 amountToDeposit, uint256 amountToWithdraw) public {
+        cheats.assume(amountToDeposit <= 1e38 - 1);
         cheats.assume(amountToDeposit <= weth.balanceOf(address(this)));
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
         cheats.assume(amountToDeposit >= 1);

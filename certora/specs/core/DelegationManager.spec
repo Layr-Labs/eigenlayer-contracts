@@ -16,7 +16,6 @@ methods {
 	// external calls to StrategyManager
     function _.getDeposits(address) external => DISPATCHER(true);
     function _.slasher() external => DISPATCHER(true);
-    function _.addShares(address,address,uint256) external => DISPATCHER(true);
     function _.removeShares(address,address,uint256) external => DISPATCHER(true);
     function _.withdrawSharesAsTokens(address, address, uint256, address) external => DISPATCHER(true);
 
@@ -177,12 +176,13 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
 rule canOnlyDelegateWithSpecificFunctions(address staker) {
     requireInvariant operatorsAlwaysDelegatedToSelf(staker);
     // assume the staker begins as undelegated
-    require(!isDelegated(staker));
+    require(!isDelegated(staker) && staker != 0);
     // perform arbitrary function call
     method f;
     env e;
     if (f.selector == sig:delegateTo(address, ISignatureUtils.SignatureWithExpiry, bytes32).selector) {
         address operator;
+        require(operator != 0);
         ISignatureUtils.SignatureWithExpiry approverSignatureAndExpiry;
         bytes32 salt;
         delegateTo(e, operator, approverSignatureAndExpiry, salt);
@@ -195,6 +195,7 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
     } else if (f.selector == sig:delegateToBySignature(address, address, ISignatureUtils.SignatureWithExpiry, ISignatureUtils.SignatureWithExpiry, bytes32).selector) {
         address toDelegateFrom;
         address operator;
+        require(operator != 0);
         ISignatureUtils.SignatureWithExpiry stakerSignatureAndExpiry;
         ISignatureUtils.SignatureWithExpiry approverSignatureAndExpiry;
         bytes32 salt;
@@ -280,7 +281,7 @@ rule withdrawalDelayIsEnforced() {
     uint256 middlewareTimesIndex;
     bool receiveAsTokens;
     env e;
-    completeQueuedWithdrawal(e, queuedWithdrawal, tokens, middlewareTimesIndex, receiveAsTokens);
+    completeQueuedWithdrawal@withrevert(e, queuedWithdrawal, tokens, middlewareTimesIndex, receiveAsTokens);
     bool callReverted = lastReverted;
     assert(
         callReverted

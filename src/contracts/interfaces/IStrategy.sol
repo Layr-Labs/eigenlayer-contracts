@@ -11,6 +11,21 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 interface IStrategy {
     /**
+     * @notice Used to emit an event for the exchange rate between 1 share and underlying token in a strategy contract
+     * @param rate is the exchange rate in wad 18 decimals
+     * @dev Tokens that do not have 18 decimals must have offchain services scale the exchange rate by the proper magnitude
+     */
+    event ExchangeRateEmitted(uint256 rate);
+
+    /**
+     * Used to emit the underlying token and its decimals on strategy creation
+     * @notice token
+     * @param token is the ERC20 token of the strategy
+     * @param decimals are the decimals of the ERC20 token in the strategy
+     */
+    event StrategyTokenSet(IERC20 token, uint8 decimals);
+
+    /**
      * @notice Used to deposit tokens into this Strategy
      * @param token is the ERC20 token being deposited
      * @param amount is the amount of token being deposited

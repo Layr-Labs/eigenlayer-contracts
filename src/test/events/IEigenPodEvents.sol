@@ -5,6 +5,9 @@ interface IEigenPodEvents {
     // @notice Emitted when an ETH validator stakes via this eigenPod
     event EigenPodStaked(bytes pubkey);
 
+    /// @notice Emitted when a pod owner updates the proof submitter address
+    event ProofSubmitterUpdated(address prevProofSubmitter, address newProofSubmitter);
+
     /// @notice Emitted when an ETH validator's withdrawal credentials are successfully verified to be pointed to this eigenPod
     event ValidatorRestaked(uint40 validatorIndex);
 
@@ -22,7 +25,7 @@ interface IEigenPodEvents {
     event NonBeaconChainETHReceived(uint256 amountReceived);
 
     /// @notice Emitted when a checkpoint is created
-    event CheckpointCreated(uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot);
+    event CheckpointCreated(uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot, uint256 validatorCount);
 
     /// @notice Emitted when a checkpoint is finalized
     event CheckpointFinalized(uint64 indexed checkpointTimestamp, int256 totalShareDeltaWei);
