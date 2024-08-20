@@ -438,35 +438,35 @@ func (_IEigenPod *IEigenPodCallerSession) LastCheckpointTimestamp() (uint64, err
 	return _IEigenPod.Contract.LastCheckpointTimestamp(&_IEigenPod.CallOpts)
 }
 
-// GetParentBlockRoot is a free data retrieval call binding the contract method 0x6c0d2d5a.
+// PodOwner is a free data retrieval call binding the contract method 0x0b18ff66.
 //
-// Solidity: function getParentBlockRoot(uint64 timestamp) view returns(bytes32)
-func (_IEigenPod *IEigenPodCaller) GetParentBlockRoot(opts *bind.CallOpts, timestamp uint64) ([32]byte, error) {
+// Solidity: function podOwner() view returns(address)
+func (_IEigenPod *IEigenPodCaller) PodOwner(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
-	err := _IEigenPod.contract.Call(opts, &out, "getParentBlockRoot", timestamp)
+	err := _IEigenPod.contract.Call(opts, &out, "podOwner")
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(common.Address), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
 
 }
 
-// GetParentBlockRoot is a free data retrieval call binding the contract method 0x6c0d2d5a.
+// PodOwner is a free data retrieval call binding the contract method 0x0b18ff66.
 //
-// Solidity: function getParentBlockRoot(uint64 timestamp) view returns(bytes32)
-func (_IEigenPod *IEigenPodSession) GetParentBlockRoot(timestamp uint64) ([32]byte, error) {
-	return _IEigenPod.Contract.GetParentBlockRoot(&_IEigenPod.CallOpts, timestamp)
+// Solidity: function podOwner() view returns(address)
+func (_IEigenPod *IEigenPodSession) PodOwner() (common.Address, error) {
+	return _IEigenPod.Contract.PodOwner(&_IEigenPod.CallOpts)
 }
 
-// GetParentBlockRoot is a free data retrieval call binding the contract method 0x6c0d2d5a.
+// PodOwner is a free data retrieval call binding the contract method 0x0b18ff66.
 //
-// Solidity: function getParentBlockRoot(uint64 timestamp) view returns(bytes32)
-func (_IEigenPod *IEigenPodCallerSession) GetParentBlockRoot(timestamp uint64) ([32]byte, error) {
-	return _IEigenPod.Contract.GetParentBlockRoot(&_IEigenPod.CallOpts, timestamp)
+// Solidity: function podOwner() view returns(address)
+func (_IEigenPod *IEigenPodCallerSession) PodOwner() (common.Address, error) {
+	return _IEigenPod.Contract.PodOwner(&_IEigenPod.CallOpts)
 }
 
 // ProofSubmitter is a free data retrieval call binding the contract method 0x58753357.
@@ -1546,9 +1546,9 @@ func (_IEigenPod *IEigenPodFilterer) ParseProofSubmitterUpdated(log types.Log) (
 	return event, nil
 }
 
-// IEigenPodValidatorBalanceUpdatedIterator is returned from FilterValidatorBalanceUpdated and is used to iterate over the raw logs and unpacked data for ValidatorBalanceUpdated events raised by the IEigenPod contract.
-type IEigenPodValidatorBalanceUpdatedIterator struct {
-	Event *IEigenPodValidatorBalanceUpdated // Event containing the contract specifics and raw log
+// IEigenPodRestakedBeaconChainETHWithdrawnIterator is returned from FilterRestakedBeaconChainETHWithdrawn and is used to iterate over the raw logs and unpacked data for RestakedBeaconChainETHWithdrawn events raised by the IEigenPod contract.
+type IEigenPodRestakedBeaconChainETHWithdrawnIterator struct {
+	Event *IEigenPodRestakedBeaconChainETHWithdrawn // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1562,7 +1562,7 @@ type IEigenPodValidatorBalanceUpdatedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IEigenPodValidatorBalanceUpdatedIterator) Next() bool {
+func (it *IEigenPodRestakedBeaconChainETHWithdrawnIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1571,7 +1571,7 @@ func (it *IEigenPodValidatorBalanceUpdatedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IEigenPodValidatorBalanceUpdated)
+			it.Event = new(IEigenPodRestakedBeaconChainETHWithdrawn)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1586,7 +1586,7 @@ func (it *IEigenPodValidatorBalanceUpdatedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IEigenPodValidatorBalanceUpdated)
+		it.Event = new(IEigenPodRestakedBeaconChainETHWithdrawn)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1602,43 +1602,52 @@ func (it *IEigenPodValidatorBalanceUpdatedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IEigenPodValidatorBalanceUpdatedIterator) Error() error {
+func (it *IEigenPodRestakedBeaconChainETHWithdrawnIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IEigenPodValidatorBalanceUpdatedIterator) Close() error {
+func (it *IEigenPodRestakedBeaconChainETHWithdrawnIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IEigenPodValidatorBalanceUpdated represents a ValidatorBalanceUpdated event raised by the IEigenPod contract.
-type IEigenPodValidatorBalanceUpdated struct {
-	ValidatorIndex          *big.Int
-	BalanceTimestamp        uint64
-	NewValidatorBalanceGwei uint64
-	Raw                     types.Log // Blockchain specific contextual infos
+// IEigenPodRestakedBeaconChainETHWithdrawn represents a RestakedBeaconChainETHWithdrawn event raised by the IEigenPod contract.
+type IEigenPodRestakedBeaconChainETHWithdrawn struct {
+	Recipient common.Address
+	Amount    *big.Int
+	Raw       types.Log // Blockchain specific contextual infos
 }
 
-// FilterValidatorBalanceUpdated is a free log retrieval operation binding the contract event 0x0e5fac175b83177cc047381e030d8fb3b42b37bd1c025e22c280facad62c32df.
+// FilterRestakedBeaconChainETHWithdrawn is a free log retrieval operation binding the contract event 0x8947fd2ce07ef9cc302c4e8f0461015615d91ce851564839e91cc804c2f49d8e.
 //
-// Solidity: event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 balanceTimestamp, uint64 newValidatorBalanceGwei)
-func (_IEigenPod *IEigenPodFilterer) FilterValidatorBalanceUpdated(opts *bind.FilterOpts) (*IEigenPodValidatorBalanceUpdatedIterator, error) {
+// Solidity: event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount)
+func (_IEigenPod *IEigenPodFilterer) FilterRestakedBeaconChainETHWithdrawn(opts *bind.FilterOpts, recipient []common.Address) (*IEigenPodRestakedBeaconChainETHWithdrawnIterator, error) {
 
-	logs, sub, err := _IEigenPod.contract.FilterLogs(opts, "ValidatorBalanceUpdated")
+	var recipientRule []interface{}
+	for _, recipientItem := range recipient {
+		recipientRule = append(recipientRule, recipientItem)
+	}
+
+	logs, sub, err := _IEigenPod.contract.FilterLogs(opts, "RestakedBeaconChainETHWithdrawn", recipientRule)
 	if err != nil {
 		return nil, err
 	}
-	return &IEigenPodValidatorBalanceUpdatedIterator{contract: _IEigenPod.contract, event: "ValidatorBalanceUpdated", logs: logs, sub: sub}, nil
+	return &IEigenPodRestakedBeaconChainETHWithdrawnIterator{contract: _IEigenPod.contract, event: "RestakedBeaconChainETHWithdrawn", logs: logs, sub: sub}, nil
 }
 
-// WatchValidatorBalanceUpdated is a free log subscription operation binding the contract event 0x0e5fac175b83177cc047381e030d8fb3b42b37bd1c025e22c280facad62c32df.
+// WatchRestakedBeaconChainETHWithdrawn is a free log subscription operation binding the contract event 0x8947fd2ce07ef9cc302c4e8f0461015615d91ce851564839e91cc804c2f49d8e.
 //
-// Solidity: event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 balanceTimestamp, uint64 newValidatorBalanceGwei)
-func (_IEigenPod *IEigenPodFilterer) WatchValidatorBalanceUpdated(opts *bind.WatchOpts, sink chan<- *IEigenPodValidatorBalanceUpdated) (event.Subscription, error) {
+// Solidity: event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount)
+func (_IEigenPod *IEigenPodFilterer) WatchRestakedBeaconChainETHWithdrawn(opts *bind.WatchOpts, sink chan<- *IEigenPodRestakedBeaconChainETHWithdrawn, recipient []common.Address) (event.Subscription, error) {
 
-	logs, sub, err := _IEigenPod.contract.WatchLogs(opts, "ValidatorBalanceUpdated")
+	var recipientRule []interface{}
+	for _, recipientItem := range recipient {
+		recipientRule = append(recipientRule, recipientItem)
+	}
+
+	logs, sub, err := _IEigenPod.contract.WatchLogs(opts, "RestakedBeaconChainETHWithdrawn", recipientRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1648,8 +1657,8 @@ func (_IEigenPod *IEigenPodFilterer) WatchValidatorBalanceUpdated(opts *bind.Wat
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IEigenPodValidatorBalanceUpdated)
-				if err := _IEigenPod.contract.UnpackLog(event, "ValidatorBalanceUpdated", log); err != nil {
+				event := new(IEigenPodRestakedBeaconChainETHWithdrawn)
+				if err := _IEigenPod.contract.UnpackLog(event, "RestakedBeaconChainETHWithdrawn", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1670,12 +1679,12 @@ func (_IEigenPod *IEigenPodFilterer) WatchValidatorBalanceUpdated(opts *bind.Wat
 	}), nil
 }
 
-// ParseValidatorBalanceUpdated is a log parse operation binding the contract event 0x0e5fac175b83177cc047381e030d8fb3b42b37bd1c025e22c280facad62c32df.
+// ParseRestakedBeaconChainETHWithdrawn is a log parse operation binding the contract event 0x8947fd2ce07ef9cc302c4e8f0461015615d91ce851564839e91cc804c2f49d8e.
 //
-// Solidity: event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 balanceTimestamp, uint64 newValidatorBalanceGwei)
-func (_IEigenPod *IEigenPodFilterer) ParseValidatorBalanceUpdated(log types.Log) (*IEigenPodValidatorBalanceUpdated, error) {
-	event := new(IEigenPodValidatorBalanceUpdated)
-	if err := _IEigenPod.contract.UnpackLog(event, "ValidatorBalanceUpdated", log); err != nil {
+// Solidity: event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount)
+func (_IEigenPod *IEigenPodFilterer) ParseRestakedBeaconChainETHWithdrawn(log types.Log) (*IEigenPodRestakedBeaconChainETHWithdrawn, error) {
+	event := new(IEigenPodRestakedBeaconChainETHWithdrawn)
+	if err := _IEigenPod.contract.UnpackLog(event, "RestakedBeaconChainETHWithdrawn", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -1971,9 +1980,9 @@ func (_IEigenPod *IEigenPodFilterer) ParseValidatorCheckpointed(log types.Log) (
 	return event, nil
 }
 
-// IEigenPodValidatorWithdrawnIterator is returned from FilterValidatorWithdrawn and is used to iterate over the raw logs and unpacked data for ValidatorWithdrawn events raised by the IEigenPod contract.
-type IEigenPodValidatorWithdrawnIterator struct {
-	Event *IEigenPodValidatorWithdrawn // Event containing the contract specifics and raw log
+// IEigenPodValidatorRestakedIterator is returned from FilterValidatorRestaked and is used to iterate over the raw logs and unpacked data for ValidatorRestaked events raised by the IEigenPod contract.
+type IEigenPodValidatorRestakedIterator struct {
+	Event *IEigenPodValidatorRestaked // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1987,7 +1996,7 @@ type IEigenPodValidatorWithdrawnIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IEigenPodValidatorWithdrawnIterator) Next() bool {
+func (it *IEigenPodValidatorRestakedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1996,7 +2005,7 @@ func (it *IEigenPodValidatorWithdrawnIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IEigenPodValidatorWithdrawn)
+			it.Event = new(IEigenPodValidatorRestaked)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2011,7 +2020,7 @@ func (it *IEigenPodValidatorWithdrawnIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IEigenPodValidatorWithdrawn)
+		it.Event = new(IEigenPodValidatorRestaked)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2027,60 +2036,41 @@ func (it *IEigenPodValidatorWithdrawnIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IEigenPodValidatorWithdrawnIterator) Error() error {
+func (it *IEigenPodValidatorRestakedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IEigenPodValidatorWithdrawnIterator) Close() error {
+func (it *IEigenPodValidatorRestakedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IEigenPodValidatorWithdrawn represents a ValidatorWithdrawn event raised by the IEigenPod contract.
-type IEigenPodValidatorWithdrawn struct {
-	CheckpointTimestamp uint64
-	ValidatorIndex      *big.Int
-	Raw                 types.Log // Blockchain specific contextual infos
+// IEigenPodValidatorRestaked represents a ValidatorRestaked event raised by the IEigenPod contract.
+type IEigenPodValidatorRestaked struct {
+	ValidatorIndex *big.Int
+	Raw            types.Log // Blockchain specific contextual infos
 }
 
-// FilterValidatorWithdrawn is a free log retrieval operation binding the contract event 0x2a02361ffa66cf2c2da4682c2355a6adcaa9f6c227b6e6563e68480f9587626a.
+// FilterValidatorRestaked is a free log retrieval operation binding the contract event 0x2d0800bbc377ea54a08c5db6a87aafff5e3e9c8fead0eda110e40e0c10441449.
 //
-// Solidity: event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex)
-func (_IEigenPod *IEigenPodFilterer) FilterValidatorWithdrawn(opts *bind.FilterOpts, checkpointTimestamp []uint64, validatorIndex []*big.Int) (*IEigenPodValidatorWithdrawnIterator, error) {
+// Solidity: event ValidatorRestaked(uint40 validatorIndex)
+func (_IEigenPod *IEigenPodFilterer) FilterValidatorRestaked(opts *bind.FilterOpts) (*IEigenPodValidatorRestakedIterator, error) {
 
-	var checkpointTimestampRule []interface{}
-	for _, checkpointTimestampItem := range checkpointTimestamp {
-		checkpointTimestampRule = append(checkpointTimestampRule, checkpointTimestampItem)
-	}
-	var validatorIndexRule []interface{}
-	for _, validatorIndexItem := range validatorIndex {
-		validatorIndexRule = append(validatorIndexRule, validatorIndexItem)
-	}
-
-	logs, sub, err := _IEigenPod.contract.FilterLogs(opts, "ValidatorWithdrawn", checkpointTimestampRule, validatorIndexRule)
+	logs, sub, err := _IEigenPod.contract.FilterLogs(opts, "ValidatorRestaked")
 	if err != nil {
 		return nil, err
 	}
-	return &IEigenPodValidatorWithdrawnIterator{contract: _IEigenPod.contract, event: "ValidatorWithdrawn", logs: logs, sub: sub}, nil
+	return &IEigenPodValidatorRestakedIterator{contract: _IEigenPod.contract, event: "ValidatorRestaked", logs: logs, sub: sub}, nil
 }
 
-// WatchValidatorWithdrawn is a free log subscription operation binding the contract event 0x2a02361ffa66cf2c2da4682c2355a6adcaa9f6c227b6e6563e68480f9587626a.
+// WatchValidatorRestaked is a free log subscription operation binding the contract event 0x2d0800bbc377ea54a08c5db6a87aafff5e3e9c8fead0eda110e40e0c10441449.
 //
-// Solidity: event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex)
-func (_IEigenPod *IEigenPodFilterer) WatchValidatorWithdrawn(opts *bind.WatchOpts, sink chan<- *IEigenPodValidatorWithdrawn, checkpointTimestamp []uint64, validatorIndex []*big.Int) (event.Subscription, error) {
+// Solidity: event ValidatorRestaked(uint40 validatorIndex)
+func (_IEigenPod *IEigenPodFilterer) WatchValidatorRestaked(opts *bind.WatchOpts, sink chan<- *IEigenPodValidatorRestaked) (event.Subscription, error) {
 
-	var checkpointTimestampRule []interface{}
-	for _, checkpointTimestampItem := range checkpointTimestamp {
-		checkpointTimestampRule = append(checkpointTimestampRule, checkpointTimestampItem)
-	}
-	var validatorIndexRule []interface{}
-	for _, validatorIndexItem := range validatorIndex {
-		validatorIndexRule = append(validatorIndexRule, validatorIndexItem)
-	}
-
-	logs, sub, err := _IEigenPod.contract.WatchLogs(opts, "ValidatorWithdrawn", checkpointTimestampRule, validatorIndexRule)
+	logs, sub, err := _IEigenPod.contract.WatchLogs(opts, "ValidatorRestaked")
 	if err != nil {
 		return nil, err
 	}
@@ -2090,8 +2080,8 @@ func (_IEigenPod *IEigenPodFilterer) WatchValidatorWithdrawn(opts *bind.WatchOpt
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IEigenPodValidatorWithdrawn)
-				if err := _IEigenPod.contract.UnpackLog(event, "ValidatorWithdrawn", log); err != nil {
+				event := new(IEigenPodValidatorRestaked)
+				if err := _IEigenPod.contract.UnpackLog(event, "ValidatorRestaked", log); err != nil {
 					return err
 				}
 				event.Raw = log
