@@ -211,20 +211,6 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
-     * @param operator address to modify allocations for
-     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param operatorSignature signature of the operator if msg.sender is not the operator
-     * @dev updates freeMagnitude for the updated strategies
-     * @dev must be called by the operator
-     */
-    function modifyAllocations(
-        address operator,
-        MagnitudeAllocation[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
-    ) external;
-
-    /**
      * @notice For all pending deallocations that have become completable, their pending free magnitude can be
      * added back to the free magnitude of the (operator, strategy) amount. This function takes a list of strategies
      * and adds all completable deallocations for each strategy, updating the freeMagnitudes of the operator
@@ -238,6 +224,20 @@ interface IAVSDirectory is ISignatureUtils {
         address operator,
         IStrategy[] calldata strategies,
         uint8[] calldata numToComplete
+    ) external;
+
+    /**
+     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
+     * @param operator address to modify allocations for
+     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
+     * @param operatorSignature signature of the operator if msg.sender is not the operator
+     * @dev updates freeMagnitude for the updated strategies
+     * @dev must be called by the operator
+     */
+    function modifyAllocations(
+        address operator,
+        MagnitudeAllocation[] calldata allocations,
+        SignatureWithSaltAndExpiry calldata operatorSignature
     ) external;
 
     /**

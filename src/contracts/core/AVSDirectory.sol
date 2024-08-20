@@ -358,66 +358,66 @@ contract AVSDirectory is
             "AVSDirectory.slashOperator: operator not slashable for operatorSet"
         );
 
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            // 1. calculate slashed magnitude from current allocation
-            // update current and all following queued magnitude updates for (operator, strategy, operatorSetId) tuple
-            uint64 slashedMagnitude;
-            {
-                uint64 currentMagnitude = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].upperLookupRecent(
-                        uint32(block.timestamp)
-                    )
-                );
-                // TODO: if we don't continue here we get into weird "total/free magnitude" not initialized cases. Is this ok?
-                if (currentMagnitude == 0) {
-                    continue;
-                }
+        // for (uint256 i = 0; i < strategies.length; ++i) {
+        //     // 1. calculate slashed magnitude from current allocation
+        //     // update current and all following queued magnitude updates for (operator, strategy, operatorSetId) tuple
+        //     uint64 slashedMagnitude;
+        //     {
+        //         uint64 currentMagnitude = uint64(
+        //             _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].upperLookupRecent(
+        //                 uint32(block.timestamp)
+        //             )
+        //         );
+        //         // TODO: if we don't continue here we get into weird "total/free magnitude" not initialized cases. Is this ok?
+        //         if (currentMagnitude == 0) {
+        //             continue;
+        //         }
 
-                /// TODO: add wrapping library for rounding up for slashing accounting
-                slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
+        //         /// TODO: add wrapping library for rounding up for slashing accounting
+        //         slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
 
-                _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].decrementAtAndFutureCheckpoints({
-                    key: uint32(block.timestamp),
-                    decrementValue: slashedMagnitude
-                });
-            }
+        //         _magnitudeUpdate[operator][strategies[i]][msg.sender][operatorSetId].decrementAtAndFutureCheckpoints({
+        //             key: uint32(block.timestamp),
+        //             decrementValue: slashedMagnitude
+        //         });
+        //     }
 
-            // 2. if there are any pending deallocations then need to update and decrement if they fall within slashable window
-            // loop backwards through _queuedDeallocationIndices, each element contains an array index to
-            // corresponding deallocation to access in pendingFreeMagnitude
-            // if completable, then break
-            //      (since ordered by completableTimestamps, older deallocations will also be completable and outside slashable window)
-            // if NOT completable, then slash
-            {
-                uint256 queuedDeallocationIndicesLen =
-                    _queuedDeallocationIndices[operator][strategies[i]][msg.sender][operatorSetId].length;
-                for (uint256 j = queuedDeallocationIndicesLen; j > 0; --j) {
-                    // index of pendingFreeMagnitude/deallocation to check for slashing
-                    uint256 index =
-                        _queuedDeallocationIndices[operator][strategies[i]][msg.sender][operatorSetId][j - 1];
-                    PendingFreeMagnitude storage pendingFreeMagnitude =
-                        _pendingFreeMagnitude[operator][strategies[i]][index];
+        //     // 2. if there are any pending deallocations then need to update and decrement if they fall within slashable window
+        //     // loop backwards through _queuedDeallocationIndices, each element contains an array index to
+        //     // corresponding deallocation to access in pendingFreeMagnitude
+        //     // if completable, then break
+        //     //      (since ordered by completableTimestamps, older deallocations will also be completable and outside slashable window)
+        //     // if NOT completable, then slash
+        //     {
+        //         uint256 queuedDeallocationIndicesLen =
+        //             _queuedDeallocationIndices[operator][strategies[i]][msg.sender][operatorSetId].length;
+        //         for (uint256 j = queuedDeallocationIndicesLen; j > 0; --j) {
+        //             // index of pendingFreeMagnitude/deallocation to check for slashing
+        //             uint256 index =
+        //                 _queuedDeallocationIndices[operator][strategies[i]][msg.sender][operatorSetId][j - 1];
+        //             PendingFreeMagnitude storage pendingFreeMagnitude =
+        //                 _pendingFreeMagnitude[operator][strategies[i]][index];
 
-                    // Reached pendingFreeMagnitude/deallocation that is completable and not within slashability window,
-                    // therefore older deallocations will also be completable. Since this is ordered by completableTimestamps break loop now
-                    if (pendingFreeMagnitude.completableTimestamp >= uint32(block.timestamp)) {
-                        break;
-                    }
+        //             // Reached pendingFreeMagnitude/deallocation that is completable and not within slashability window,
+        //             // therefore older deallocations will also be completable. Since this is ordered by completableTimestamps break loop now
+        //             if (pendingFreeMagnitude.completableTimestamp >= uint32(block.timestamp)) {
+        //                 break;
+        //             }
 
-                    // pending deallocation is still within slashable window, slash magnitudeDiff and add to slashedMagnitude
-                    uint64 slashedAmount =
-                        uint64(uint256(bipsToSlash) * uint256(pendingFreeMagnitude.magnitudeDiff) / BIPS_FACTOR);
-                    pendingFreeMagnitude.magnitudeDiff -= slashedAmount;
-                    slashedMagnitude += slashedAmount;
-                }
-            }
+        //             // pending deallocation is still within slashable window, slash magnitudeDiff and add to slashedMagnitude
+        //             uint64 slashedAmount =
+        //                 uint64(uint256(bipsToSlash) * uint256(pendingFreeMagnitude.magnitudeDiff) / BIPS_FACTOR);
+        //             pendingFreeMagnitude.magnitudeDiff -= slashedAmount;
+        //             slashedMagnitude += slashedAmount;
+        //         }
+        //     }
 
-            // 3. update totalMagnitude, get total magnitude and subtract slashedMagnitude
-            _totalMagnitudeUpdate[operator][strategies[i]].push({
-                key: uint32(block.timestamp),
-                value: _getLatestTotalMagnitude(operator, strategies[i]) - slashedMagnitude
-            });
-        }
+        //     // 3. update totalMagnitude, get total magnitude and subtract slashedMagnitude
+        //     _totalMagnitudeUpdate[operator][strategies[i]].push({
+        //         key: uint32(block.timestamp),
+        //         value: _getLatestTotalMagnitude(operator, strategies[i]) - slashedMagnitude
+        //     });
+        // }
     }
 
     /**
@@ -536,6 +536,9 @@ contract AVSDirectory is
             emit OperatorRemovedFromOperatorSet(operator, operatorSet);
         }
     }
+
+    /// @dev read through pending free magnitudes and add to freeMagnitude if completableTimestamp is >= block timestamp
+    /// In additiona to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
 
     /**
      * @notice For a single strategy, update freeMagnitude by adding completable pending free magnitudes

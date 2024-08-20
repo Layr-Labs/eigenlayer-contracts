@@ -1,0 +1,46 @@
+{
+    "addresses": {
+      "avsDirectory": "0x39997D5F3bc045ec29d59f38d32d51259D19f97d",
+      "avsDirectoryImplementation": "0x27bCB75a34f6C7de0317d97adBFa649EE1b415aF",
+      "baseStrategyImplementation": "0x555fd0e28e41C1B4cfD2fE53150219b7DF796889",
+      "delegationManager": "0x84EaC660D8f2451Dbb2E5ADf3f15e4f2cD234939",
+      "delegationManagerImplementation": "0x27F91ef7F08a213b687D7E73ba9442c7b21C357B",
+      "eigenLayerPauserReg": "0x515A77A36c450eE694EACC71564c97Daa122aB10",
+      "eigenLayerProxyAdmin": "0x629fE801862792cB3ACB3956A389bEc2eD413EFc",
+      "eigenPodBeacon": "0x3773518a93400b85E8501cD9Ddc24C52F7901E10",
+      "eigenPodImplementation": "0x058B716fb5b79dE3afade0B86EEC7cE550e7ebd1",
+      "eigenPodManager": "0x0c66200c2b58f10cd566B1D54Dc47Ba97b926AC8",
+      "eigenPodManagerImplementation": "0x1710d2a60568C96779ea4FE050F3C332a3c76980",
+      "emptyContract": "0x2b18Dc11539239437a2fA3361457fF16AB8377C0",
+      "numStrategiesDeployed": 0,
+      "rewardsCoordinator": "0xbeAE41B660066B05eD7Ff376AAb660c1a3993f84",
+      "rewardsCoordinatorImplementation": "0xf490825bb13E6057b27045382e38F9b68c1cdcF5",
+      "slasher": "0xfe8A2d0b9D4d33551e19a9DDa8Fd70C464333382",
+      "slasherImplementation": "0x16953e5803953126468dB374fc290d79bF18Df4B",
+      "strategies": {
+        "WETH": "0x7c1B066F32d844a6F4e280b8aD40ce13263a1E07"
+      },
+      "strategyManager": "0x618119Bb18Ac3a149BC6F2C2f39087CF13EEB03D",
+      "strategyManagerImplementation": "0xc5E129A5C9B74044dED295B2f0960aeFB85e036c",
+      "token": {
+        "tokenProxyAdmin": "0x0000000000000000000000000000000000000000",
+        "EIGEN": "0x0000000000000000000000000000000000000000",
+        "bEIGEN": "0x0000000000000000000000000000000000000000",
+        "EIGENImpl": "0x0000000000000000000000000000000000000000",
+        "bEIGENImpl": "0x0000000000000000000000000000000000000000",
+        "eigenStrategy": "0x0000000000000000000000000000000000000000",
+        "eigenStrategyImpl": "0x0000000000000000000000000000000000000000"
+      }
+    },
+    "chainInfo": {
+      "chainId": 17000,
+      "deploymentBlock": 2168429
+    },
+    "parameters": {
+      "communityMultisig": "0x27977e6E4426A525d055A587d2a0537b4cb376eA",
+      "executorMultisig": "0x27977e6E4426A525d055A587d2a0537b4cb376eA",
+      "operationsMultisig": "0x27977e6E4426A525d055A587d2a0537b4cb376eA",
+      "pauserMultisig": "0x27977e6E4426A525d055A587d2a0537b4cb376eA",
+      "timelock": "0x0000000000000000000000000000000000000000"
+    }
+  }
