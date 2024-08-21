@@ -12,7 +12,9 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
     uint32 constant NUM_OPSETS = 1;
     uint32 constant NUM_OPERATORS_PER_OPSET = 2048;
+    uint32 constant NUM_STRATS_PER_OPSET = 20;
     uint256 constant TOKEN_AMOUNT_PER_OPERATOR = 1 ether;
+
     
     function run() public {
         _parseDeployedContracts("script/output/devnet/M2_from_scratch_deployment_data.json");
@@ -32,7 +34,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         // list of strategies for each operatorSet
         IStrategy[][] memory strategies = new IStrategy[][](NUM_OPSETS);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            strategies[i] = new IStrategy[](stakeRootCompendium.MAX_NUM_STRATEGIES());
+            strategies[i] = new IStrategy[](NUM_STRATS_PER_OPSET);
             for (uint256 j = 0; j < strategies[i].length; ++j) {
                 // fill in the strategies array
                 strategies[i][j] = IStrategy(allStrategies[i * strategies[i].length + j]);
