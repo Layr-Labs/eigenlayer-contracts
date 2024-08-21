@@ -10,7 +10,6 @@ interface IAVSDirectory is ISignatureUtils {
     enum OperatorAVSRegistrationStatus {
         UNREGISTERED, // Operator not registered to AVS
         REGISTERED // Operator registered to AVS
-
     }
 
     /**
@@ -326,6 +325,11 @@ interface IAVSDirectory is ISignatureUtils {
      * @return allocationDelay the allocation delay in seconds
      */
     function getAllocationDelay(address operator) external view returns (bool, uint32);
+
+    /**
+     * @notice Get the default allocation delay constant for operators
+     */
+    function DEFAULT_ALLOCATION_DELAY() external view returns (uint32);
 
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
