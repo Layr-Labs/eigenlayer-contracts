@@ -345,10 +345,10 @@ interface IAVSDirectory is ISignatureUtils {
 
     function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64);
 
-    function getCurrentSlashableMagnitude(
+    function getSlashableMagnitudes(
         address operator,
-        IStrategy[] calldata strategy
-    ) external view returns (OperatorSet[] memory, IStrategy[] memory, uint64[] memory);
+        IStrategy[] calldata strategies
+    ) external view returns (OperatorSet[] memory, uint64[][] memory);
 
     function isOperatorSetAVS(address avs) external view returns (bool);
 
