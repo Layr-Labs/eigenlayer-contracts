@@ -17,14 +17,14 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
 
     function run() external virtual {
         _parseInitialDeploymentParams("script/configs/holesky/Deploy_RewardsCoordinator.holesky.config.json");
-        _parseDeployedContracts("script/output/holesky/M2_deploy_from_scratch.output.json");
+        _parseDeployedContracts("script/configs/holesky/eigenlayer_addresses.config.json");
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
 
         emit log_named_address("Deployer Address", msg.sender);
 
-        _deployRewardsCoordinator();
+        _deployImplementation();
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
@@ -89,6 +89,41 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
             address(rewardsCoordinatorImplementation)
+        );
+    }
+
+    function _deployImplementation() internal {
+        // Existing values for current RewardsCoordinator implementationt on holesky
+        require(
+            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS == 604800,
+            "REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS must be 604800"
+        );
+        require(
+            REWARDS_COORDINATOR_MAX_REWARDS_DURATION == 6048000,
+            "REWARDS_COORDINATOR_MAX_REWARDS_DURATION must be 6048000"
+        );
+        require(
+            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH == 7776000,
+            "REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH must be 7776000"
+        );
+        require(
+            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH == 2592000,
+            "REWARDS_COORDINATOR_MAX_FUTURE_LENGTH must be 2592000"
+        );
+        require(
+            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP == 1710979200,
+            "REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP must be 1710979200"
+        );
+
+        // Deploy RewardsCoordinator implementation
+        rewardsCoordinatorImplementation = new RewardsCoordinator(
+            delegationManager,
+            strategyManager,
+            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+            REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
         );
     }
 }
