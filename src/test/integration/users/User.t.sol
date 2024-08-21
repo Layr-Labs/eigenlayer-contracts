@@ -339,7 +339,7 @@ contract User is PrintUtils {
             }
         }
 
-        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0, receiveAsTokens);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
 
         return tokens;
     }
