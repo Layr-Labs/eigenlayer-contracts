@@ -70,6 +70,10 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function isMember(address avs, address operator, uint32 operatorSetId) external view returns (bool) {}
 
+    function getLatestTotalMagnitude(address operator, IStrategy strategy) external view returns (uint64) {}
+
+    function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {}
+
     function isOperatorSetAVS(address avs) external view returns (bool) {}
 
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {}
