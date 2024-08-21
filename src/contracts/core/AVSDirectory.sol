@@ -767,6 +767,16 @@ contract AVSDirectory is
         return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
     }
 
+    /// @dev gets the latest total magnitude or overwrites it if it is not set
+    function getLatestTotalMagnitude(address operator, IStrategy strategy) public view returns (uint64) {
+        (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
+        if (!exists) {
+            totalMagnitude = INITIAL_TOTAL_MAGNITUDE;
+        }
+
+        return uint64(totalMagnitude);
+    }
+
     /**
      * @param operator the operator to get the slashable ppm for
      * @param operatorSet the operatorSet to get the slashable ppm for
