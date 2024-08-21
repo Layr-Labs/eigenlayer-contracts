@@ -41,6 +41,12 @@ contract DelegationManager is
     // @dev Maximum Value for `stakerOptOutWindowBlocks`. Approximately equivalent to 6 months in blocks.
     uint256 public constant MAX_STAKER_OPT_OUT_WINDOW_BLOCKS = (180 days) / 12;
 
+    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216_000;
+
+    // The max configurable withdrawal delay per strategy. Set to 30 days in seconds
+    uint256 public constant MAX_WITHDRAWAL_DELAY = 2_592_000;
+
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
@@ -286,12 +292,21 @@ contract DelegationManager is
 
         for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
             require(
-                queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].scaledShares.length,
+                queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length,
                 "DelegationManager.queueWithdrawal: input length mismatch"
             );
             require(
                 queuedWithdrawalParams[i].withdrawer == msg.sender,
                 "DelegationManager.queueWithdrawal: withdrawer must be staker"
+            );
+
+            // Withdrawer inputs the number of real Strategy shares they expect to withdraw,
+            // convert accordingly to scaledShares in storage
+            uint256[] memory scaledShares = ShareScalingLib.scaleShares(
+                avsDirectory,
+                operator,
+                queuedWithdrawalParams[i].strategies,
+                queuedWithdrawalParams[i].shares
             );
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
@@ -302,7 +317,7 @@ contract DelegationManager is
                 operator: operator,
                 withdrawer: queuedWithdrawalParams[i].withdrawer,
                 strategies: queuedWithdrawalParams[i].strategies,
-                scaledShares: queuedWithdrawalParams[i].scaledShares
+                scaledShares: scaledShares
             });
         }
         return withdrawalRoots;
@@ -426,6 +441,20 @@ contract DelegationManager is
     }
 
     /**
+     * @notice Called by owner to set the minimum withdrawal delay for each passed in strategy
+     * Note that the min number of blocks to complete a withdrawal of a strategy is
+     * MAX(minWithdrawalDelay, strategyWithdrawalDelay[strategy])
+     * @param strategies The strategies to set the minimum withdrawal delay for
+     * @param withdrawalDelays The minimum withdrawal delay (in seconds) to set for each strategy
+     */
+    function setStrategyWithdrawalDelay(
+        IStrategy[] calldata strategies,
+        uint256[] calldata withdrawalDelays
+    ) external onlyOwner {
+        _setStrategyWithdrawalDelay(strategies, withdrawalDelays);
+    }
+
+    /**
      *
      *                         INTERNAL FUNCTIONS
      *
@@ -545,8 +574,8 @@ contract DelegationManager is
         );
 
         require(
-            withdrawal.startBlock + minWithdrawalDelayBlocks <= block.number,
-            "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelayBlocks period has not yet passed"
+            withdrawal.startTimestamp + minWithdrawalDelay <= block.number,
+            "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelay period has not yet passed"
         );
 
         require(
@@ -564,35 +593,63 @@ contract DelegationManager is
         // Remove `withdrawalRoot` from pending roots
         delete pendingWithdrawals[withdrawalRoot];
 
+        // read delegated operator for scaling/descaling and adding shares back if needed
+        address currentOperator = delegatedTo[msg.sender];
+
         if (receiveAsTokens) {
+            // descale shares to get the "real" share values
+            uint256[] memory descaledShares = ShareScalingLib.descaleSharesAtTimestamp(
+                avsDirectory,
+                currentOperator,
+                withdrawal.strategies,
+                withdrawal.scaledShares,
+                uint32(block.timestamp)
+            );
+
             // Finalize action by converting scaled shares to tokens for each strategy, or
             // by re-awarding shares in each strategy.
             for (uint256 i = 0; i < withdrawal.strategies.length;) {
                 require(
-                    withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
-                    "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
+                    withdrawal.startTimestamp + strategyWithdrawalDelays[withdrawal.strategies[i]] <= block.timestamp,
+                    "DelegationManager._completeQueuedWithdrawal: withdrawalDelay period has not yet passed for this strategy"
                 );
 
                 _withdrawSharesAsTokens({
                     staker: withdrawal.staker,
                     withdrawer: msg.sender,
                     strategy: withdrawal.strategies[i],
-                    scaledShares: withdrawal.scaledShares[i],
+                    shares: descaledShares[i],
                     token: tokens[i]
                 });
                 unchecked {
                     ++i;
                 }
             }
-            // Award shares back in StrategyManager/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
         } else {
             // Award shares back in StrategyManager/EigenPodManager.
-            // If withdrawer is delegated, increase the shares delegated to the operator.
-            address currentOperator = delegatedTo[msg.sender];
+
+            // we first must descale the shares to real share values but based on the totalMagnitude
+            // at withdrawal.startTimestamp + deallocationDelay. Then we scale shares again to the new totalMagnitude
+            // of the currentOperator. This is to ensure no slashing that occurred between the completable timestamp
+            // has affected the staker's shares.
+            uint256[] memory descaledShares = ShareScalingLib.descaleSharesAtTimestamp(
+                avsDirectory,
+                currentOperator,
+                withdrawal.strategies,
+                withdrawal.scaledShares,
+                uint32(block.timestamp)
+            );
+            uint256[] memory scaledShares = ShareScalingLib.scaleShares(
+                avsDirectory,
+                currentOperator,
+                withdrawal.strategies,
+                descaledShares
+            );
+
             for (uint256 i = 0; i < withdrawal.strategies.length;) {
                 require(
-                    withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
-                    "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
+                    withdrawal.startTimestamp + strategyWithdrawalDelays[withdrawal.strategies[i]] <= block.number,
+                    "DelegationManager._completeQueuedWithdrawal: withdrawalDelay period has not yet passed for this strategy"
                 );
 
                 // TODO: scale and simplify this block
@@ -607,7 +664,7 @@ contract DelegationManager is
                      * The return value will be lower than the input value in the case where the staker has an existing share deficit
                      */
                     uint256 increaseInDelegateableScaledShares =
-                        eigenPodManager.addShares({podOwner: staker, shares: withdrawal.scaledShares[i]});
+                        eigenPodManager.addShares({podOwner: staker, shares: scaledShares[i]});
                     address podOwnerOperator = delegatedTo[staker];
                     // Similar to `isDelegated` logic
                     if (podOwnerOperator != address(0)) {
@@ -620,7 +677,7 @@ contract DelegationManager is
                         });
                     }
                 } else {
-                    strategyManager.addScaledShares(msg.sender, tokens[i], withdrawal.strategies[i], withdrawal.scaledShares[i]);
+                    strategyManager.addScaledShares(msg.sender, tokens[i], withdrawal.strategies[i], scaledShares[i]);
                     // Similar to `isDelegated` logic
                     if (currentOperator != address(0)) {
                         _increaseOperatorScaledShares({
@@ -628,7 +685,7 @@ contract DelegationManager is
                             // the 'staker' here is the address receiving new shares
                             staker: msg.sender,
                             strategy: withdrawal.strategies[i],
-                            scaledShares: withdrawal.scaledShares[i]
+                            scaledShares: scaledShares[i]
                         });
                     }
                 }
@@ -719,7 +776,7 @@ contract DelegationManager is
             delegatedTo: operator,
             withdrawer: withdrawer,
             nonce: nonce,
-            startBlock: uint32(block.number),
+            startTimestamp: uint32(block.timestamp),
             strategies: strategies,
             scaledShares: scaledShares
         });
@@ -741,14 +798,14 @@ contract DelegationManager is
         address staker,
         address withdrawer,
         IStrategy strategy,
-        uint256 scaledShares,
+        uint256 shares,
         IERC20 token
     ) internal {
         // TODO: rename params
         if (strategy == beaconChainETHStrategy) {
-            eigenPodManager.withdrawSharesAsTokens({podOwner: staker, destination: withdrawer, shares: scaledShares});
+            eigenPodManager.withdrawSharesAsTokens({podOwner: staker, destination: withdrawer, shares: shares});
         } else {
-            strategyManager.withdrawScaledSharesAsTokens(withdrawer, strategy, scaledShares, token);
+            strategyManager.withdrawSharesAsTokens(withdrawer, strategy, shares, token);
         }
     }
 
@@ -787,6 +844,36 @@ contract DelegationManager is
             strategyWithdrawalDelayBlocks[strategy] = newStrategyWithdrawalDelayBlocks;
             emit StrategyWithdrawalDelayBlocksSet(
                 strategy, prevStrategyWithdrawalDelayBlocks, newStrategyWithdrawalDelayBlocks
+            );
+        }
+    }
+
+    /**
+     * @notice Sets the withdrawal delay (in seconds) for each strategy in `_strategies` to `_withdrawalDelay`.
+     * gets called when initializing contract or by calling `setStrategyWithdrawalDelay`
+     */
+    function _setStrategyWithdrawalDelay(
+        IStrategy[] calldata _strategies,
+        uint256[] calldata _withdrawalDelays
+    ) internal {
+        require(
+            _strategies.length == _withdrawalDelays.length,
+            "DelegationManager._setStrategyWithdrawalDelay: input length mismatch"
+        );
+        uint256 numStrats = _strategies.length;
+        for (uint256 i = 0; i < numStrats; ++i) {
+            IStrategy strategy = _strategies[i];
+            uint256 prevStrategyWithdrawalDelay = strategyWithdrawalDelays[strategy];
+            uint256 newStrategyWithdrawalDelay = _withdrawalDelays[i];
+            require(
+                newStrategyWithdrawalDelay <= MAX_WITHDRAWAL_DELAY,
+                "DelegationManager._setStrategyWithdrawalDelay: _withdrawalDelay cannot be > MAX_WITHDRAWAL_DELAY"
+            );
+
+            // set the new withdrawal delay (in seconds)
+            strategyWithdrawalDelays[strategy] = newStrategyWithdrawalDelay;
+            emit StrategyWithdrawalDelaySet(
+                strategy, prevStrategyWithdrawalDelay, newStrategyWithdrawalDelay
             );
         }
     }
@@ -887,7 +974,6 @@ contract DelegationManager is
      * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
      */
     function getDelegatableScaledShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
-        // TODO: make these scaled
         // Get currently active shares and strategies for `staker`
         int256 podShares = eigenPodManager.podOwnerShares(staker);
         (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) =
@@ -928,7 +1014,7 @@ contract DelegationManager is
             strategies[strategies.length - 1] = beaconChainETHStrategy;
             scaledShares[strategies.length - 1] = uint256(podShares);
         }
-
+        
         return (strategies, scaledShares);
     }
 

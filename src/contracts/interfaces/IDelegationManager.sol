@@ -82,8 +82,11 @@ interface IDelegationManager is ISignatureUtils {
         address withdrawer;
         // Nonce used to guarantee that otherwise identical withdrawals have unique hashes
         uint256 nonce;
-        // Block number when the Withdrawal was created
-        uint32 startBlock;
+        // Timestamp when the Withdrawal was created.
+        // NOTE this used to be `startBlock` but changedto timestamps in the Slashing release. This has no effect
+        // on the hash of this struct but we do need to know when to handle blocknumbers vs timestamps depending on
+        // if the withdrawal was created before or after the Slashing release.
+        uint32 startTimestamp;
         // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
         // Array containing the amount of scaled shares for withdrawal in each Strategy in the `strategies` array
@@ -93,8 +96,8 @@ interface IDelegationManager is ISignatureUtils {
     struct QueuedWithdrawalParams {
         // Array of strategies that the QueuedWithdrawal contains
         IStrategy[] strategies;
-        // Array containing the amount of scaled shares for withdrawal in each Strategy in the `strategies` array
-        uint256[] scaledShares;
+        // Array containing the amount of shares for withdrawal in each Strategy in the `strategies` array
+        uint256[] shares;
         // The address of the withdrawer
         address withdrawer;
     }
@@ -141,6 +144,9 @@ interface IDelegationManager is ISignatureUtils {
 
     /// @notice Emitted when the `strategyWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event StrategyWithdrawalDelayBlocksSet(IStrategy strategy, uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when the `strategyWithdrawalDelay` variable is modified from `previousValue` to `newValue`.
+    event StrategyWithdrawalDelaySet(IStrategy strategy, uint256 previousValue, uint256 newValue);
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.

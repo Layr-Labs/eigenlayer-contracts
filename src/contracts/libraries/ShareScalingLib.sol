@@ -50,6 +50,28 @@ library ShareScalingLib {
     }
 
     /**
+     * @notice Returns the shares of for an operator for a particular set of strategies and scaled shares delegated to an operator
+     * @param avsDirectory The AVS directory
+     * @param operator The operator to scale shares for
+     * @param strategies The strategies of which scaled shares are
+     * @param scaledShares The scaled shares to descale
+     */
+    function descaleSharesAtTimestamp(
+        IAVSDirectory avsDirectory,
+        address operator,
+        IStrategy[] memory strategies,
+        uint256[] memory scaledShares,
+        uint32 timestamp
+    ) internal view returns (uint256[] memory) {
+        uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudesAtTimestamp(operator, strategies, timestamp);
+        uint256[] memory descaledShares = new uint256[](scaledShares.length);
+        for (uint256 i = 0; i < scaledShares.length; i++) {
+            descaledShares[i] = scaledShares[i] * totalMagnitudes[i] / INITIAL_TOTAL_MAGNITUDE;
+        }
+        return descaledShares;
+    }
+
+    /**
      * @notice Returns the scaled shares of for an operator for a particular strategy and shares delegated to an operator
      * @param avsDirectory The AVS directory
      * @param operator The operator to scale shares for

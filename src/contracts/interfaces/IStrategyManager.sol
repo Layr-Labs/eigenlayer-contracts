@@ -84,8 +84,8 @@ interface IStrategyManager {
     /// @notice Used by the DelegationManager to award a Staker some scaled shares that have passed through the withdrawal queue
     function addScaledShares(address staker, IERC20 token, IStrategy strategy, uint256 scaledShares) external;
 
-    /// @notice Used by the DelegationManager to convert withdrawn scaled shares to tokens and send them to a recipient
-    function withdrawScaledSharesAsTokens(address recipient, IStrategy strategy, uint256 scaledShares, IERC20 token) external;
+    /// @notice Used by the DelegationManager to convert withdrawn descaled shares to tokens and send them to a recipient
+    function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external;
 
     /// @notice Returns the current scaled shares of `user` in `strategy`
     function stakerStrategyScaledShares(address user, IStrategy strategy) external view returns (uint256 shares);

@@ -325,7 +325,16 @@ interface IAVSDirectory is ISignatureUtils {
     ) external view returns (uint24[] memory);
 
     /// @notice Returns the total magnitude of an operator for a given set of strategies
+    /// TODO: finish natspec
     function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory);
+
+    /// @notice Returns the total magnitude of an operator for a given set of strategies at a given timestamp
+    /// TODO: finish natspec
+    function getTotalMagnitudesAtTimestamp(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 timestamp
+    ) external view returns (uint64[] memory);
 
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 

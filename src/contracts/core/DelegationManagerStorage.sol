@@ -46,9 +46,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216_000;
-
     /**
      * @notice returns the total number of scaled shares (i.e. shares scaled down by a factor of the `operator`'s
      * totalMagnitude) in `strategy` that are delegated to `operator`.
@@ -107,6 +104,22 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
     mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks;
+
+    /**
+     * @notice Global minimum withdrawal delay for all strategy withdrawals.
+     * NOTE: This is used equivalently to minWithdrawalDelayBlocks and strategyWithdrawalDelayBlocks but
+     * using timestamps instead in the Slashing release.
+     * In addition, we now also configure withdrawal delays on a per-strategy basis.
+     * To withdraw from a strategy, max(minWithdrawalDelay, strategyWithdrawalDelay[strategy]) number of seconds must have passed.
+     * See mapping strategyWithdrawalDelay below for per-strategy withdrawal delays.
+     */
+    uint256 public minWithdrawalDelay;
+
+    /**
+     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in seconds, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY`. Minimum value is 0 (i.e. no delay enforced).
+     */
+    mapping(IStrategy => uint256) public strategyWithdrawalDelays;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;

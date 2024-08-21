@@ -841,12 +841,44 @@ contract AVSDirectory is
     /// @notice Returns the total magnitude of an operator for a given set of strategies
     function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) public view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            uint256 totalMagnitudeLength = _totalMagnitudeUpdate[operator][strategies[i]]._checkpoints.length;
-            if (totalMagnitudeLength == 0) {
+        for (uint256 i = 0; i < strategies.length;) {
+            (bool exists, uint32 key, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestCheckpoint();
+            if (!exists) {
                 totalMagnitudes[i] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
             } else {
-                totalMagnitudes[i] = uint64(_totalMagnitudeUpdate[operator][strategies[i]]._checkpoints[totalMagnitudeLength - 1]._value);
+                totalMagnitudes[i] = uint64(value);
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+        return totalMagnitudes;
+    }
+
+    /// @notice Returns the total magnitude of an operator for a given set of strategies at a given timestamp
+    function getTotalMagnitudesAtTimestamp(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 timestamp
+    ) public view returns (uint64[] memory) {
+        uint64[] memory totalMagnitudes = new uint64[](strategies.length);
+        for (uint256 i = 0; i < strategies.length;) {
+            (
+                uint224 value,
+                uint256 pos,
+                uint256 length
+            ) = _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
+
+            // if there is no existing total magnitude checkpoint
+            if (value != 0 || pos != 0) {
+                totalMagnitudes[i] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+            } else {
+                totalMagnitudes[i] = uint64(value);
+            }
+
+            unchecked {
+                ++i;
             }
         }
         return totalMagnitudes;
