@@ -86,7 +86,8 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function getSlashableMagnitudes(
         address operator,
-        IStrategy[] calldata strategies
+        IStrategy[] calldata strategies,
+        uint32 timestamp
     ) external view returns (OperatorSet[] memory, uint64[][] memory) {}
 
     function isOperatorSetAVS(address avs) external view returns (bool) {}
