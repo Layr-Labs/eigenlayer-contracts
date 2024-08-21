@@ -182,14 +182,16 @@ contract StrategyManager is
         _addScaledShares(staker, token, strategy, scaledShares);
     }
 
-    /// @notice Used by the DelegationManager to convert withdrawn scaled shares to tokens and send them to a recipient
-    function withdrawScaledSharesAsTokens(
+    /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
+    /// Assumes that shares being passed in have already been descaled accordingly to account for any slashing
+    /// and are the `real` shares in the strategy to withdraw
+    function withdrawSharesAsTokens(
         address recipient,
         IStrategy strategy,
-        uint256 scaledShares,
+        uint256 strategyShares,
         IERC20 token
     ) external onlyDelegationManager {
-        strategy.withdraw(recipient, token, scaledShares);
+        strategy.withdraw(recipient, token, strategyShares);
     }
 
     /**
@@ -315,7 +317,7 @@ contract StrategyManager is
         uint256 shares = strategy.deposit(token, amount);
 
         // scale strategy shares before storing
-        scaledShares = _getScaledShares(staker, strategy, shares);
+        scaledShares = _scaleShares(staker, strategy, shares);
 
         // add the returned scaled shares to the staker's existing scaled shares for this strategy
         _addScaledShares(staker, token, strategy, scaledShares);
@@ -393,7 +395,7 @@ contract StrategyManager is
      * @param strategy The strategy to scale shares for
      * @param shares The shares to scale
      */
-    function _getScaledShares(address staker, IStrategy strategy, uint256 shares) internal view returns (uint256 scaledShares) {
+    function _scaleShares(address staker, IStrategy strategy, uint256 shares) internal view returns (uint256 scaledShares) {
         address operator = delegation.delegatedTo(staker);
         if (operator == address(0)) {
             // if the staker is not delegated to an operator, return the shares as is
