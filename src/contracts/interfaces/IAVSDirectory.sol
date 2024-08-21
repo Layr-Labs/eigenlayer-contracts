@@ -294,6 +294,16 @@ interface IAVSDirectory is ISignatureUtils {
     /// @dev The initial total magnitude for an operator
     function INITIAL_TOTAL_MAGNITUDE() external view returns (uint64);
 
+    function operatorSetsMemberOf(address operator, uint256 index) external view returns (OperatorSet memory);
+
+    function operatorSetsMemberOf(
+        address operator,
+        uint256 start,
+        uint256 length
+    ) external view returns (OperatorSet[] memory operatorSets);
+
+    function inTotalOperatorSets(address operator) external view returns (uint256);
+    
     /**
      * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
      * from calling initializeAllocationDelay.
@@ -334,6 +344,11 @@ interface IAVSDirectory is ISignatureUtils {
     function getLatestTotalMagnitude(address operator, IStrategy strategy) external view returns (uint64);
 
     function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64);
+
+    function getCurrentSlashableMagnitude(
+        address operator,
+        IStrategy[] calldata strategy
+    ) external view returns (OperatorSet[] memory, IStrategy[] memory, uint64[] memory);
 
     function isOperatorSetAVS(address avs) external view returns (bool);
 

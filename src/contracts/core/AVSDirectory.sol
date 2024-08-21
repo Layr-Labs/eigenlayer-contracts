@@ -827,6 +827,42 @@ contract AVSDirectory is
         return allocatableMagnitude;
     }
 
+    /*
+    * @param operator the operator to get the slashable magnitude for
+    * @param strategy the strategy to get the slashable magnitude for
+    * @param operatorSet the operatorSet to get the slashable magnitude for
+    * 
+    * @return the current slashable magnitude of the given operator, strategy, and operatorSet
+    */
+    function getCurrentSlashableMagnitude(
+        address operator,
+        IStrategy[] calldata strategy
+    ) public view returns (OperatorSet[] memory, IStrategy[] memory, uint64[] memory) {
+        OperatorSet[] memory operatorSets = operatorSetsMemberOf(operator, 0, inTotalOperatorSets(operator));
+        uint256 maxValues = operatorSets.length * strategy.length;
+        OperatorSet[] memory returnOperatorSets = new OperatorSet[](maxValues);
+        IStrategy[] memory returnStrategies = new IStrategy[](maxValues);
+        uint64[] memory slashableMagnitude = new uint64[](maxValues);
+        
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            for (uint256 j = 0; j < strategy.length; ++j) {
+                uint256 index = i * strategy.length + j;
+                returnOperatorSets[index]= operatorSets[i];
+                returnStrategies[index] = strategy[j];
+                slashableMagnitude[index] = _getCurrentMagnitude(operator, strategy[j], operatorSets[i]);
+            }
+        }
+        return (returnOperatorSets, returnStrategies, slashableMagnitude);
+    }
+
+    function _getCurrentMagnitude(address operator, IStrategy strategy, OperatorSet memory operatorSet) internal view returns (uint64) {
+        uint64 currentMagnitude = uint64(
+            // We always do upperLookupLinear here because we want to get the most recent value
+            _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookupLinear(uint32(block.timestamp))
+        );
+        return currentMagnitude;
+    }
+
     /**
      * @param operator the operator to get the slashable ppm for
      * @param operatorSet the operatorSet to get the slashable ppm for

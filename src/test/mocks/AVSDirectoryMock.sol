@@ -66,6 +66,16 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function INITIAL_TOTAL_MAGNITUDE() external view returns (uint64) {}
 
+    function operatorSetsMemberOf(address operator, uint256 index) external view returns (OperatorSet memory){}
+
+    function operatorSetsMemberOf(
+        address operator,
+        uint256 start,
+        uint256 length
+    ) external view returns (OperatorSet[] memory operatorSets){}
+
+    function inTotalOperatorSets(address operator) external view returns (uint256){}
+
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool) {}
 
     function isMember(address avs, address operator, uint32 operatorSetId) external view returns (bool) {}
@@ -73,6 +83,11 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
     function getLatestTotalMagnitude(address operator, IStrategy strategy) external view returns (uint64) {}
 
     function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {}
+
+    function getCurrentSlashableMagnitude(
+        address operator,
+        IStrategy[] calldata strategy
+    ) external view returns (OperatorSet[] memory, IStrategy[] memory, uint64[] memory) {}
 
     function isOperatorSetAVS(address avs) external view returns (bool) {}
 
