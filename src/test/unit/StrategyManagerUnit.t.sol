@@ -1112,7 +1112,7 @@ contract StrategyManagerUnitTests_addScaledShares is StrategyManagerUnitTests {
     }
 }
 
-contract StrategyManagerUnitTests_withdrawScaledSharesAsTokens is StrategyManagerUnitTests {
+contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitTests {
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.expectRevert("StrategyManager.onlyDelegationManager: not the DelegationManager");
@@ -1120,7 +1120,7 @@ contract StrategyManagerUnitTests_withdrawScaledSharesAsTokens is StrategyManage
     }
 
     /**
-     * @notice deposits a single strategy and withdrawScaledSharesAsTokens() function reverts when sharesAmount is
+     * @notice deposits a single strategy and withdrawSharesAsTokens() function reverts when sharesAmount is
      * higher than depositAmount
      */
     function testFuzz_Revert_ShareAmountTooHigh(
@@ -1134,7 +1134,7 @@ contract StrategyManagerUnitTests_withdrawScaledSharesAsTokens is StrategyManage
         IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
         cheats.expectRevert("StrategyBase.withdraw: amountShares must be less than or equal to totalShares");
-        delegationManagerMock.withdrawScaledSharesAsTokens(strategyManager, staker, strategy, sharesAmount, token);
+        delegationManagerMock.withdrawSharesAsTokens(strategyManager, staker, strategy, sharesAmount, token);
     }
 
     function testFuzz_SingleStrategyDeposited(
@@ -1148,7 +1148,7 @@ contract StrategyManagerUnitTests_withdrawScaledSharesAsTokens is StrategyManage
         IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
         uint256 balanceBefore = token.balanceOf(staker);
-        delegationManagerMock.withdrawScaledSharesAsTokens(strategyManager, staker, strategy, sharesAmount, token);
+        delegationManagerMock.withdrawSharesAsTokens(strategyManager, staker, strategy, sharesAmount, token);
         uint256 balanceAfter = token.balanceOf(staker);
         assertEq(balanceAfter, balanceBefore + sharesAmount, "balanceAfter != balanceBefore + sharesAmount");
     }
