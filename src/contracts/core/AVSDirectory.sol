@@ -682,6 +682,40 @@ contract AVSDirectory is
         }
     }
 
+    function _getSlashablePPM(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy strategy,
+        uint32 timestamp,
+        bool linear
+    ) internal view returns (uint24) {
+        uint64 totalMagnitude;
+        if (linear) {
+            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookupLinear(timestamp));
+        } else {
+            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
+        }
+        // return early if totalMagnitude is 0
+        if (totalMagnitude == 0) {
+            return 0;
+        }
+
+        uint64 currentMagnitude;
+        if (linear) {
+            currentMagnitude = uint64(
+                _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookupLinear(
+                    timestamp
+                )
+            );
+        } else {
+            currentMagnitude = uint64(
+                _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookup(timestamp)
+            );
+        }
+
+        return uint16(currentMagnitude * 1e6 / totalMagnitude);
+    }
+
     /// @dev gets the latest total magnitude or overwrites it if it is not set
     function _getLatestTotalMagnitude(address operator, IStrategy strategy) internal returns (uint64) {
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
@@ -776,6 +810,22 @@ contract AVSDirectory is
 
         return uint64(totalMagnitude);
     }
+    
+    /// @notice returns the allocatable magnitude for an operator and strategy (including completable free magnitude)
+    function getAllocatableMagnitude(address operator, IStrategy strategy) public view returns (uint64) {
+        uint64 allocatableMagnitude = freeMagnitude[operator][strategy];
+        uint256 nextIndex = _nextPendingFreeMagnitudeIndex[operator][strategy];
+        uint256 pendingFreeMagnitudeLength = _pendingFreeMagnitude[operator][strategy].length;
+        for (uint256 i = nextIndex; i < pendingFreeMagnitudeLength; ++i) {
+            PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][i];
+            if (pendingFreeMagnitude.completableTimestamp < uint32(block.timestamp)) {
+                allocatableMagnitude += pendingFreeMagnitude.magnitudeDiff;
+            } else {
+                break;
+            }
+        }
+        return allocatableMagnitude;
+    }
 
     /**
      * @param operator the operator to get the slashable ppm for
@@ -799,40 +849,6 @@ contract AVSDirectory is
             slashablePPM[i] = _getSlashablePPM(operator, operatorSet, strategies[i], timestamp, linear);
         }
         return slashablePPM;
-    }
-
-    function _getSlashablePPM(
-        address operator,
-        OperatorSet calldata operatorSet,
-        IStrategy strategy,
-        uint32 timestamp,
-        bool linear
-    ) public view returns (uint24) {
-        uint64 totalMagnitude;
-        if (linear) {
-            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookupLinear(timestamp));
-        } else {
-            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
-        }
-        // return early if totalMagnitude is 0
-        if (totalMagnitude == 0) {
-            return 0;
-        }
-
-        uint64 currentMagnitude;
-        if (linear) {
-            currentMagnitude = uint64(
-                _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookupLinear(
-                    timestamp
-                )
-            );
-        } else {
-            currentMagnitude = uint64(
-                _magnitudeUpdate[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].upperLookup(timestamp)
-            );
-        }
-
-        return uint16(currentMagnitude * 1e6 / totalMagnitude);
     }
 
     /**
