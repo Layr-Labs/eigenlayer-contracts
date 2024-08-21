@@ -193,13 +193,13 @@ function increaseDelegatedScaledShares(
         strategyManager.removeScaledShares(staker, strategy, shares);
     }
 
-    function withdrawScaledSharesAsTokens(
+    function withdrawSharesAsTokens(
         IStrategyManager strategyManager,
         address recipient,
         IStrategy strategy,
         uint256 shares,
         IERC20 token
     ) external {
-        strategyManager.withdrawScaledSharesAsTokens(recipient, strategy, shares, token);
+        strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);
     }
 }

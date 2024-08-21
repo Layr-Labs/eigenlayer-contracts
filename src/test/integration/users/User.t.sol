@@ -137,7 +137,7 @@ contract User is PrintUtils {
         IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategies,
-            scaledShares: scaledShares,
+            shares: scaledShares,
             withdrawer: withdrawer
         });
 
@@ -148,7 +148,7 @@ contract User is PrintUtils {
             delegatedTo: operator,
             withdrawer: withdrawer,
             nonce: nonce,
-            startBlock: uint32(block.number),
+            startTimestamp: uint32(block.number), //TODO
             strategies: strategies,
             scaledShares: scaledShares
         });
@@ -484,7 +484,7 @@ contract User is PrintUtils {
                 delegatedTo: delegatedTo,
                 withdrawer: staker,
                 nonce: (nonce + i),
-                startBlock: uint32(block.number),
+                startTimestamp: uint32(block.number), //TODO fix
                 strategies: singleStrategy,
                 scaledShares: singleShares
             });
