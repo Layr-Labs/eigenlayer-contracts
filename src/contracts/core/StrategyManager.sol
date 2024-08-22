@@ -9,7 +9,6 @@ import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
-import "../libraries/ShareScalingLib.sol";
 
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
@@ -317,7 +316,7 @@ contract StrategyManager is
         uint256 shares = strategy.deposit(token, amount);
 
         // scale strategy shares before storing
-        scaledShares = _scaleShares(staker, strategy, shares);
+        scaledShares = delegation.getStakerScaledShares(staker, strategy, shares);
 
         // add the returned scaled shares to the staker's existing scaled shares for this strategy
         _addScaledShares(staker, token, strategy, scaledShares);
@@ -389,25 +388,6 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Scale shares based on the staker's delegated operator (if they have one)
-     * All shares should be scaled before added to storage on deposits.
-     * @param staker The address of the staker
-     * @param strategy The strategy to scale shares for
-     * @param shares The shares to scale
-     */
-    function _scaleShares(address staker, IStrategy strategy, uint256 shares) internal view returns (uint256 scaledShares) {
-        address operator = delegation.delegatedTo(staker);
-        if (operator == address(0)) {
-            // if the staker is not delegated to an operator, return the shares as is
-            // as no slashing and scaling applied
-            scaledShares = shares;
-        } else {
-            // if the staker is delegated to an operator, scale the shares accordingly
-            scaledShares = ShareScalingLib.scaleShares(avsDirectory, operator, strategy, shares);
-        }
-    }
-
-    /**
      * @notice Internal function for modifying `thirdPartyTransfersForbidden`.
      * Used inside of the `setThirdPartyTransfersForbidden` and `addStrategiesToDepositWhitelist` functions.
      * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
@@ -444,6 +424,15 @@ contract StrategyManager is
             }
         }
         return (stakerStrategyList[staker], scaledShares);
+    }
+
+    /// @notice Returns the current shares of `user` in `strategy`
+    function stakerStrategyShares(
+        address user,
+        IStrategy strategy
+    ) public view returns (uint256 shares) {
+        uint256 scaledShares = stakerStrategyScaledShares[user][strategy];
+        return delegation.getStakerShares(user, strategy, scaledShares);
     }
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.

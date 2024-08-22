@@ -98,6 +98,13 @@ contract StrategyManagerMock is
     function stakerStrats(address staker) external view returns (IStrategy[] memory) {}
 
     uint256 public stakerStrategyListLengthReturnValue;
+
+    /// @notice Returns the current shares of `user` in `strategy`
+    function stakerStrategyShares(
+        address user,
+        IStrategy strategy
+    ) external view returns (uint256 shares) {}
+
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
     function stakerStrategyListLength(address /*staker*/) external view returns (uint256) {
         return stakerStrategyListLengthReturnValue;

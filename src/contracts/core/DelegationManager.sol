@@ -42,10 +42,10 @@ contract DelegationManager is
     uint256 public constant MAX_STAKER_OPT_OUT_WINDOW_BLOCKS = (180 days) / 12;
 
     // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216_000;
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 30 days / 12;
 
     // The max configurable withdrawal delay per strategy. Set to 30 days in seconds
-    uint256 public constant MAX_WITHDRAWAL_DELAY = 2_592_000;
+    uint256 public constant MAX_WITHDRAWAL_DELAY = 30 days;
 
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
@@ -534,7 +534,15 @@ contract DelegationManager is
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
 
-        (IStrategy[] memory strategies, uint256[] memory scaledShares) = getDelegatableScaledShares(staker);
+        (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableScaledShares(staker);
+
+        // NOTE: technically the function returns scaled shares, so it needs to be descaled before scaling to the
+        // the new operator according to their totalMagnitude. However, since the staker is not delegated,
+        // scaledShares = shares so we can skip descaling and read these as descaled shares.
+        uint256[] memory scaledShares = ShareScalingLib.scaleShares(avsDirectory, operator, strategies, shares);
+
+        // TODO: Whatever difference returned from (scaledShares - shares) needs to be reflected to the staker
+        // and their scaledShares in the StrategyManager. Requires a call of StrategyManager.removeScaledShares with this difference
 
         for (uint256 i = 0; i < strategies.length;) {
             // forgefmt: disable-next-item
@@ -972,6 +980,58 @@ contract DelegationManager is
             strategies: strategies,
             scaledShares: getOperatorScaledShares(operator, strategies)
         });
+    }
+
+    /**
+     * @notice Given a staker and shares amounts of deposits, return the scaled shares calculated if
+     * the staker were to deposit. Depends on which operator the staker is delegated to.
+     */
+    function getStakerScaledShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) public view returns (uint256 scaledShares) {
+        address operator = delegatedTo[staker];
+        if (operator == address(0)) {
+            // if the staker is not delegated to an operator, return the shares as is
+            // as no slashing and scaling applied
+            scaledShares = shares;
+        } else {
+            // if the staker is delegated to an operator, scale the shares accordingly
+            scaledShares = ShareScalingLib.scaleShares({
+                avsDirectory: avsDirectory,
+                operator: operator,
+                strategy: strategy,
+                shares: shares
+            });
+        }
+    }
+
+    /**
+     * @notice Given a staker and scaled shares amounts of deposits, return the shares calculated if
+     * the staker were to withdraw. This value depends on which operator the staker is delegated to.
+     * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
+     * to each strategy's underlying shares to token ratio).
+     */
+    function getStakerShares(
+        address staker,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) public view returns (uint256 shares) {
+        address operator = delegatedTo[staker];
+        if (operator == address(0)) {
+            // if the staker is not delegated to an operator, return the shares as is
+            // as no slashing and scaling applied
+            shares = scaledShares;
+        } else {
+            // if the staker is delegated to an operator, descale the shares accordingly
+            shares = ShareScalingLib.descaleShares({
+                avsDirectory: avsDirectory,
+                operator: operator,
+                strategy: strategy,
+                scaledShares: scaledShares
+            });
+        }
     }
 
     /**
