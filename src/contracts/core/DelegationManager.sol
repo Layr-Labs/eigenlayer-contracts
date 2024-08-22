@@ -541,9 +541,6 @@ contract DelegationManager is
         // scaledShares = shares so we can skip descaling and read these as descaled shares.
         uint256[] memory scaledShares = ShareScalingLib.scaleShares(avsDirectory, operator, strategies, shares);
 
-        // TODO: Whatever difference returned from (scaledShares - shares) needs to be reflected to the staker
-        // and their scaledShares in the StrategyManager. Requires a call of StrategyManager.removeScaledShares with this difference
-
         for (uint256 i = 0; i < strategies.length;) {
             // forgefmt: disable-next-item
             _increaseOperatorScaledShares({
@@ -552,6 +549,14 @@ contract DelegationManager is
                 strategy: strategies[i], 
                 scaledShares: scaledShares[i]
             });
+
+            // stakerStrategyScaledShares(staker, strategies[i]) needs to be updated to be equal to newly scaled shares.
+            // we take the difference between the shares and the scaledShares to update the staker's scaledShares. The key property
+            // here is that scaledShares should be <= shares and can never be greater than shares due to totalMagnitude being
+            // a monotonically decreasing value.
+            if (shares[i] > scaledShares[i]) {
+                strategyManager.removeScaledShares(staker, strategies[i], shares[i] - scaledShares[i]);
+            }
 
             unchecked {
                 ++i;
