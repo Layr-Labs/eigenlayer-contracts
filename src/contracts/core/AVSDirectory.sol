@@ -353,6 +353,12 @@ contract AVSDirectory is
             "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
         );
 
+        // Assert that the AVS is not an operator set AVS.
+        require(
+            !isOperatorSetAVS[msg.sender], 
+            "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS"
+        );
+
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
 
