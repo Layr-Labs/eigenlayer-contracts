@@ -176,6 +176,23 @@ interface IRewardsCoordinator {
         uint256 claimedAmount
     );
 
+    /// @notice Emitted when a direct reward payment is initiated through the UniPRInt V1.1 system.
+    /// @dev Supports programmatic rewards for AVS performance, EIGEN incentives, and more.
+    /// @param sender The address that initiated the reward payment (msg.sender).
+    /// @param avs The address of the AVS managing this reward.
+    /// @param token The address of the ERC20 token used for payment.
+    /// @param amount The total amount of tokens transferred to the RewardsCoordinator.
+    /// @param contentHash The keccak256 hash of the JSON manifest file listing the earners and amounts.
+    /// @param contentURI The publicly addressable URI pointing to the JSON manifest file.
+    event DirectRewardPayment(
+        address indexed sender,
+        address indexed avs,
+        IERC20 token,
+        uint256 amount,
+        bytes32 contentHash,
+        string contentURI
+    );
+
     /**
      *
      *                         VIEW FUNCTIONS
@@ -282,6 +299,23 @@ interface IRewardsCoordinator {
      * @param rewardsSubmissions The rewards submissions being created
      */
     function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions) external;
+    
+   /**
+    * @notice Facilitates the distribution of rewards to participants through the UniPRInt V1.1 system.
+    * @dev The function leverages AVS-defined logic and external data for reward calculations.
+    * @param avs The address of the AVS responsible for managing the reward distribution.
+    * @param token The address of the ERC20 token used for rewards.
+    * @param totalAmount The total amount of tokens to be transferred to the RewardsCoordinator.
+    * @param contentHash The keccak256 hash of the JSON manifest file that lists the earners and their rewards.
+    * @param contentURI The URI where the JSON manifest file is publicly accessible.
+    */
+    function rewardParticipants(
+        address avs,
+        IERC20 token,
+        uint256 totalAmount,
+        bytes32 contentHash,
+        string calldata contentURI
+    ) external;
 
     /**
      * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
