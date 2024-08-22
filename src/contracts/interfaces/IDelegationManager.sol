@@ -339,6 +339,28 @@ interface IDelegationManager is ISignatureUtils {
     ) external view returns (uint256[] memory);
 
     /**
+     * @notice Given a staker and shares amounts of deposits, return the scaled shares calculated if
+     * the staker were to deposit. Depends on who the operator the staker is delegated to.
+     */
+    function getStakerScaledShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external view returns (uint256 scaledShares);
+
+    /**
+     * @notice Given a staker and scaled shares amounts of deposits, return the shares calculated if
+     * the staker were to withdraw. This value depends on which operator the staker is delegated to.
+     * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
+     * to each strategy's underlying shares to token ratio).
+     */
+    function getStakerShares(
+        address staker,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) external view returns (uint256 shares);
+
+    /**
      * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
      * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
      * @param strategies The strategies to check withdrawal delays for

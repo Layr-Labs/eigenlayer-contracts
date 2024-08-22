@@ -96,6 +96,18 @@ function increaseDelegatedScaledShares(
         IStrategy[] memory strategies
     ) external view returns (uint256[] memory) {}
 
+    function getStakerScaledShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external view returns (uint256 scaledShares) {}
+
+    function getStakerShares(
+        address staker,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) public view returns (uint256 shares) {}
+
     function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) public pure returns (uint256) {
         return 0;
     }
