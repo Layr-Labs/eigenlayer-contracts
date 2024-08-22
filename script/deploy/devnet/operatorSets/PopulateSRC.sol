@@ -20,12 +20,16 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         _parseDeployedContracts("script/output/devnet/M2_from_scratch_deployment_data.json");
 
         vm.broadcast();
-        IStakeRootCompendium stakeRootCompendium =  new StakeRootCompendium({
+        IStakeRootCompendium stakeRootCompendiumImplementation =  new StakeRootCompendium({
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
-            _challengePeriod: 12 seconds,
-            _minTimeSinceLastClaim: 1 days
+            _blacklistWindow: 12 seconds
         });
+        StakeRootCompendium stakeRootCompendium = StakeRootCompendium(address(new TransparentUpgradeableProxy(
+            address(stakeRootCompendiumImplementation),
+            address(0),
+            ""
+        )));
 
         emit log_named_address("stakeRootCompendium", address(stakeRootCompendium));
 
