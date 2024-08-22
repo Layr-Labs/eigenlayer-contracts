@@ -29,13 +29,9 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     IDelegationManager public immutable delegationManager;
     /// @notice the AVS directory contract
     IAVSDirectory public immutable avsDirectory;
-    /// @notice challenge period for stake roots
-    uint32 public immutable challengePeriod;
-    /// @notice The minimum amount of time between calculationTimestamps of consecutive claims
-    uint32 public immutable minTimeSinceLastClaim;
+    /// @notice the period of time within which a root can be marked as blacklisted
+    uint32 public immutable blacklistWindow;
 
-    /// @notice length of the operatorSets array over time
-    Checkpoints.History internal operatorSetsLength;
     /// @notice map from operator set to a trace of their index over time
     mapping(address => mapping(uint32 => Checkpoints.History)) internal operatorSetToIndex;
     /// @notice list of operator sets that have been configured to be in the StakeTree
@@ -43,24 +39,25 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     /// @notice the number of operator sets that have been configured to be in the StakeTree
     mapping(address => mapping(uint32 => EnumerableMap.AddressToUintMap)) internal operatorSetToStrategyAndMultipliers;
 
+    /// @notice the extraData for each operator in each operator set
+    mapping(address => mapping(uint32 => mapping(address => bytes32))) internal extraDatas;
+
     /// @notice the verifier contract that will be used to verify snark proofs
     address public verifier;
     /// @notice the id of the program being verified when roots are posted
     bytes32 public imageId;
 
-    event ClaimerChanged(address claimer, bool allowed);
+    StakeRootSubmission[] public stakeRootSubmissions;
 
     constructor(
         IDelegationManager _delegationManager,
         IAVSDirectory _avsDirectory,
-        uint32 _challengePeriod,
-        uint32 _minTimeSinceLastClaim
+        uint32 _blacklistWindow
     ) {
         // _disableInitializers();
         delegationManager = _delegationManager;
         avsDirectory = _avsDirectory;
-        challengePeriod = _challengePeriod;
-        minTimeSinceLastClaim = _minTimeSinceLastClaim;
+        blacklistWindow = _blacklistWindow;
     }
 
     function initialize(address initialOwner) public initializer {
@@ -70,16 +67,12 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
 
     /// CALLED BY AVS
 
-    /**
-     * @notice called by an AVS to set their strategies and multipliers used to determine stakes for stake roots
-     * @param operatorSetId the id of the operator set to set the strategies and multipliers for
-     * @param strategiesAndMultipliers the strategies and multipliers to set for the operator set
-     * @dev msg.sender is used as the AVS in determining the operator set
-     */
+    /// @inheritdoc IStakeRootCompendium
     function addStrategiesAndMultipliers(
         uint32 operatorSetId,
         StrategyAndMultiplier[] calldata strategiesAndMultipliers
     ) external {
+        require(strategiesAndMultipliers.length > 0, "StakeRootCompendium.setStrategiesAndMultipliers: no strategies and multipliers provided");
         require(avsDirectory.isOperatorSet(msg.sender, operatorSetId), "StakeRootCompendium.setStrategiesAndMultipliers: operator set does not exist");
         uint256 lengthBefore = operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length();
         // if the operator set has been configured to have a positive number of strategies, increment the number of configured operator sets
@@ -87,7 +80,6 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
             require(operatorSets.length < MAX_NUM_OPERATOR_SETS, "StakeRootCompendium.setStrategiesAndMultipliers: too many operator sets");
             operatorSets.push(IAVSDirectory.OperatorSet(msg.sender, operatorSetId));
             operatorSetToIndex[msg.sender][operatorSetId].push(uint32(block.timestamp), uint208(operatorSets.length - 1));
-            operatorSetsLength.push(uint32(block.timestamp), uint208(operatorSets.length));
         }
         
         // set the strategies and multipliers for the operator set
@@ -97,12 +89,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         require(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length() <= MAX_NUM_STRATEGIES, "StakeRootCompendium.setStrategiesAndMultipliers: too many strategies");
     }
 
-    /**
-     * @notice called by an AVS to remove their strategies and multipliers used to determine stakes for stake roots
-     * @param operatorSetId the id of the operator set to remove the strategies and multipliers for
-     * @param strategies the strategies to remove for the operator set
-     * @dev msg.sender is used as the AVS in determining the operator set
-     */
+    /// @inheritdoc IStakeRootCompendium
     function removeStrategiesAndMultipliers(
         uint32 operatorSetId,
         IStrategy[] calldata strategies
@@ -122,31 +109,35 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
             // update the index of the operator set
             operatorSetToIndex[msg.sender][operatorSetId].push(uint32(block.timestamp), REMOVED_INDEX);
             operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].push(uint32(block.timestamp), operatorSetIndex);
-            operatorSetsLength.push(uint32(block.timestamp), uint208(operatorSets.length));
         }
+    }
+
+    /// @inheritdoc IStakeRootCompendium
+    function setExtraData(
+	   uint32 operatorSetId,
+	   address operator,
+	   uint32 timestamp,
+	   bytes32 extraData
+	) external {
+        (bool exists,,uint224 index) = operatorSetToIndex[msg.sender][operatorSetId].latestCheckpoint();
+        require(exists && index != REMOVED_INDEX, "StakeRootCompendium.setExtraData: operatorSet is not in stakeTree");
+        extraDatas[msg.sender][operatorSetId][operator] = extraData;
     }
 
     // STAKE ROOT CALCULATION
 
-    /**
-     * @notice called offchain with the operator set roots ordered by the operator set index at the timestamp to calculate the stake root
-     * @param timestamp the timestamp of the stake root
-     * @param operatorSetRoots the ordered operator set roots (not verified)
-     * @dev operatorSetRoots must be ordered by the operator set index at the timestamp
-     */
-    function getStakeRoot(uint32 timestamp, bytes32[] calldata operatorSetRoots) public view returns (bytes32) {
-        require(operatorSetRoots.length == operatorSetsLength.upperLookupRecent(timestamp), "AVSSyncTree.getStakeRoot: more leaves than AVSs that have set their strategies and multipliers");
+    /// @inheritdoc IStakeRootCompendium
+    function getStakeRoot(IAVSDirectory.OperatorSet[] calldata operatorSetsInStakeTree, bytes32[] calldata operatorSetRoots) external view returns (bytes32) {
+        require(operatorSets.length == operatorSetsInStakeTree.length, "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree length mismatch");
+        require(operatorSetsInStakeTree.length == operatorSetRoots.length, "StakeRootCompendium.getStakeRoot: operatorSetsInStakeTree vs. operatorSetRoots mismatch");
+        for (uint256 i = 0; i < operatorSetsInStakeTree.length; i++) {
+            require(operatorSets[i].avs == operatorSetsInStakeTree[i].avs, "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree avs mismatch");
+            require(operatorSets[i].operatorSetId == operatorSetsInStakeTree[i].operatorSetId, "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree operatorSetId mismatch");
+        }
         return Merkle.merkleizeKeccak256(operatorSetRoots);
     }
 
-    /**
-	 * @notice Returns the operatorSet root for the given operatorSet with the given witnesses
-	 * @param operatorSet the operatorSet to calculate the operator set root for
-	 * @param operators the operators in the operatorSet
-	 * @return the operatorSet root
-	 * @dev the operators are verified to be distinct and the length must be the total 
-	 * number of operators in the operatorSet at the time of calling
-	 */
+    /// @inheritdoc IStakeRootCompendium
     function getOperatorSetRoot(
         IAVSDirectory.OperatorSet calldata operatorSet, 
         address[] calldata operators
@@ -176,22 +167,45 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
                 multipliers[j] = multiplier;
             }
 
-            uint256[] memory delegatedShares = delegationManager.getOperatorShares(operators[i], strategies);
-            uint24[] memory operatorSlashablePPM = avsDirectory.getSlashablePPM(operators[i], operatorSet, strategies, uint32(block.timestamp), true);
             uint256 delegatedStake = 0;
             uint256 slashableStake = 0;
-            for (uint256 j = 0; j < strategies.length; j++) {
-                delegatedStake += delegatedShares[j] * multipliers[j];
-                slashableStake += delegatedShares[j] * multipliers[j] * operatorSlashablePPM[j] / 1e6;
+            {
+                uint256[] memory delegatedShares = delegationManager.getOperatorShares(operators[i], strategies);
+                uint24[] memory operatorSlashablePPM = avsDirectory.getSlashablePPM(operators[i], operatorSet, strategies, uint32(block.timestamp), true);
+                for (uint256 j = 0; j < strategies.length; j++) {
+                    delegatedStake += delegatedShares[j] * multipliers[j];
+                    slashableStake += delegatedShares[j] * multipliers[j] * operatorSlashablePPM[j] / 1e6;
+                }
             }
 
-            operatorLeaves[i] =  keccak256(abi.encodePacked(operators[i], delegatedStake, slashableStake));    
+            operatorLeaves[i] =  keccak256(abi.encodePacked(operators[i], delegatedStake, slashableStake, extraDatas[operatorSet.avs][operatorSet.operatorSetId][operators[i]]));    
         }
         return Merkle.merkleizeKeccak256(operatorLeaves);
     }
 
-    /// CLAIM AND CHALLENGE
+    /// POSTING ROOTS AND BLACKLISTING
 
+    /// @inheritdoc IStakeRootCompendium
+    function verifyStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot, Proof calldata proof) external {
+        // TODO: verify proof
+
+        _postStakeRoot(calculationTimestamp, stakeRoot, false);
+    }
+    
+    
+    /// @inheritdoc IStakeRootCompendium
+    function blacklistStakeRoot(uint32 submissionIndex) external onlyOwner {
+        // TODO: this should not be onlyOwner
+        require(!stakeRootSubmissions[submissionIndex].blacklisted, "StakeRootCompendium.blacklistStakeRoot: stakeRoot already blacklisted");
+        require(stakeRootSubmissions[submissionIndex].submissionTimestamp + blacklistWindow >= block.timestamp, "StakeRootCompendium.blacklistStakeRoot: stakeRoot cannot be blacklisted");
+        require(!stakeRootSubmissions[submissionIndex].forcePosted, "StakeRootCompendium.blacklistStakeRoot: stakeRoot was force posted");
+        stakeRootSubmissions[submissionIndex].blacklisted = true;
+    }
+    
+    /// @inheritdoc IStakeRootCompendium
+    function forcePostStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot) external onlyOwner {
+        _postStakeRoot(calculationTimestamp, stakeRoot, true);
+    }
 
     /// PERMISSIONED SETTERS
 
@@ -218,4 +232,21 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     }
 
     /// INTERNAL FUNCTIONS
+
+    function _postStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot, bool forcePosted) internal {
+        uint256 stakeRootSubmissionsLength = stakeRootSubmissions.length;
+        if (stakeRootSubmissionsLength != 0) {
+            require(stakeRootSubmissions[stakeRootSubmissionsLength - 1].calculationTimestamp < calculationTimestamp, "StakeRootCompendium._postStakeRoot: calculationTimestamp must be greater than the last posted calculationTimestamp");
+        }
+
+        stakeRootSubmissions.push(StakeRootSubmission({
+            stakeRoot: stakeRoot,
+            calculationTimestamp: calculationTimestamp,
+            submissionTimestamp: uint32(block.timestamp),
+            blacklisted: false,
+            forcePosted: forcePosted
+        }));
+
+        // todo: emit events
+    }
 }
