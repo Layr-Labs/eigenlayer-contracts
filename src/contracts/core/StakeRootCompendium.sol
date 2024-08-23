@@ -238,7 +238,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     function blacklistStakeRoot(uint32 submissionIndex) external onlyOwner {
         // TODO: this should not be onlyOwner
         require(!stakeRootSubmissions[submissionIndex].blacklisted, "StakeRootCompendium.blacklistStakeRoot: stakeRoot already blacklisted");
-        require(stakeRootSubmissions[submissionIndex].submissionTimestamp + blacklistWindow >= block.timestamp, "StakeRootCompendium.blacklistStakeRoot: stakeRoot cannot be blacklisted");
+        require(block.timestamp < stakeRootSubmissions[submissionIndex].blacklistableBefore, "StakeRootCompendium.blacklistStakeRoot: stakeRoot cannot be blacklisted");
         require(!stakeRootSubmissions[submissionIndex].forcePosted, "StakeRootCompendium.blacklistStakeRoot: stakeRoot was force posted");
         stakeRootSubmissions[submissionIndex].blacklisted = true;
     }
@@ -275,7 +275,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
             StakeRootSubmission memory stakeRootSubmission = stakeRootSubmissions[i];
             // if the stakeRootSubmission is blacklisted or force posted, skip it
             if (
-                block.timestamp < stakeRootSubmission.submissionTimestamp + blacklistWindow ||
+                block.timestamp < stakeRootSubmission.blacklistableBefore ||
                 stakeRootSubmission.blacklisted || 
                 stakeRootSubmission.forcePosted
             ) {
@@ -312,9 +312,14 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
 
     /// VIEW FUNCTIONS
 
-    /// @notice the stake root submissions that have been posted
+    /// @inheritdoc IStakeRootCompendium
     function getStakeRootSubmission(uint32 index) external view returns (StakeRootSubmission memory) {
         return stakeRootSubmissions[index];
+    }
+
+    /// @inheritdoc IStakeRootCompendium
+    function getOperatorSetIndexAtTimestamp(IAVSDirectory.OperatorSet calldata operatorSet, uint32 timestamp) external view returns (uint32) {
+        return uint32(operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].upperLookupRecent(timestamp));
     }
 
     /// @inheritdoc IStakeRootCompendium
@@ -387,7 +392,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
             stakeRoot: stakeRoot,
             chargeRecipient: msg.sender,
             calculationTimestamp: calculationTimestamp,
-            submissionTimestamp: uint32(block.timestamp),
+            blacklistableBefore: uint32(block.timestamp) + blacklistWindow,
             blacklisted: false,
             forcePosted: forcePosted
         }));

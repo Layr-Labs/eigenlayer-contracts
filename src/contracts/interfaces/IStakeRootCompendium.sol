@@ -26,7 +26,7 @@ interface IStakeRootCompendium {
         bytes32 stakeRoot;
         address chargeRecipient; // the address to send the charge to
         uint32 calculationTimestamp; // the timestamp the was generated against
-        uint32 submissionTimestamp; // the timestamp the proof submission was submitted to the contract
+        uint32 blacklistableBefore; // the timestamp the proof submission was submitted to the contract
         bool blacklisted; // whether the submission has been blacklisted by governance
         bool forcePosted; // whether the submission was posted without proof by governance
     }
@@ -55,6 +55,9 @@ interface IStakeRootCompendium {
 
     /// @notice the stake root submissions that have been posted
     function getStakeRootSubmission(uint32 index) external view returns (StakeRootSubmission memory);
+
+    /// @notice return the index of an operatorSet at a certain timestamp
+    function getOperatorSetIndexAtTimestamp(IAVSDirectory.OperatorSet calldata operatorSet, uint32 timestamp) external view returns (uint32);
 
     /**
      * @notice called offchain with the operatorSet roots ordered by the operatorSet index at the timestamp to calculate the stake root
