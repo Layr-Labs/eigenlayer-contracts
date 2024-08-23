@@ -89,10 +89,13 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
 
     /// @inheritdoc IStakeRootCompendium
     function depositForOperatorSet(IAVSDirectory.OperatorSet calldata operatorSet) external payable {
-        require(avsDirectory.isOperatorSet(operatorSet.avs, operatorSet.operatorSetId), "StakeRootCompendium.depositForOperatorSet: operator set does not exist");
+        require(
+            avsDirectory.isOperatorSet(operatorSet.avs, operatorSet.operatorSetId),
+            "StakeRootCompendium.depositForOperatorSet: operator set does not exist"
+        );
         depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].balance += msg.value;
         require(
-            depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].balance >= 2 * MIN_DEPOSIT_BALANCE, 
+            depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].balance >= 2 * MIN_DEPOSIT_BALANCE,
             "StakeRootCompendium.depositForOperatorSet: depositer must have at least 2x the minimum balance on deposit"
         );
 
@@ -105,61 +108,71 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         uint32 operatorSetId,
         StrategyAndMultiplier[] calldata strategiesAndMultipliers
     ) external {
-        require(strategiesAndMultipliers.length > 0, "StakeRootCompendium.setStrategiesAndMultipliers: no strategies and multipliers provided");
-        require(avsDirectory.isOperatorSet(msg.sender, operatorSetId), "StakeRootCompendium.setStrategiesAndMultipliers: operator set does not exist");
+        require(
+            strategiesAndMultipliers.length > 0,
+            "StakeRootCompendium.setStrategiesAndMultipliers: no strategies and multipliers provided"
+        );
+        require(
+            avsDirectory.isOperatorSet(msg.sender, operatorSetId),
+            "StakeRootCompendium.setStrategiesAndMultipliers: operator set does not exist"
+        );
 
-        IAVSDirectory.OperatorSet memory operatorSet = IAVSDirectory.OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
+        IAVSDirectory.OperatorSet memory operatorSet =
+            IAVSDirectory.OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
         uint224 lengthBefore = uint224(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length());
         // if the operator set has been configured to have a positive number of strategies, increment the number of configured operator sets
         if (lengthBefore == 0) {
-            require(operatorSets.length < MAX_NUM_OPERATOR_SETS, "StakeRootCompendium.setStrategiesAndMultipliers: too many operator sets");
+            require(
+                operatorSets.length < MAX_NUM_OPERATOR_SETS,
+                "StakeRootCompendium.setStrategiesAndMultipliers: too many operator sets"
+            );
             operatorSetToIndex[msg.sender][operatorSetId].push(uint32(block.timestamp), uint208(operatorSets.length));
             operatorSets.push(operatorSet);
         }
-        
+
         // update the deposit balance for the operator set whenever number of strategies is changed
         _updateDepositBalanceInfo(operatorSet, true);
-        
+
         // set the strategies and multipliers for the operator set
         for (uint256 i = 0; i < strategiesAndMultipliers.length; i++) {
-            operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].set(address(strategiesAndMultipliers[i].strategy), uint256(strategiesAndMultipliers[i].multiplier));
+            operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].set(
+                address(strategiesAndMultipliers[i].strategy), uint256(strategiesAndMultipliers[i].multiplier)
+            );
         }
         uint224 lengthAfter = uint224(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length());
-        require(lengthAfter <= MAX_NUM_STRATEGIES, "StakeRootCompendium.setStrategiesAndMultipliers: too many strategies");
+        require(
+            lengthAfter <= MAX_NUM_STRATEGIES, "StakeRootCompendium.setStrategiesAndMultipliers: too many strategies"
+        );
         totalStrategies.push(uint32(block.timestamp), totalStrategies.latest() + lengthAfter - lengthBefore);
     }
 
     /// @inheritdoc IStakeRootCompendium
-    function removeStrategiesAndMultipliers(
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies
-    ) external {   
-        IAVSDirectory.OperatorSet memory operatorSet = IAVSDirectory.OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
+    function removeStrategiesAndMultipliers(uint32 operatorSetId, IStrategy[] calldata strategies) external {
+        IAVSDirectory.OperatorSet memory operatorSet =
+            IAVSDirectory.OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
         // update the deposit balance for the operator set whenever number of strategies is changed
         _updateDepositBalanceInfo(operatorSet, true);
 
         uint224 lengthBefore = uint224(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length());
         // remove the strategies and multipliers for the operator set
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].remove(address(strategies[i])), "StakeRootCompendium.removeStrategiesAndMultipliers: strategy not found");
+            require(
+                operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].remove(address(strategies[i])),
+                "StakeRootCompendium.removeStrategiesAndMultipliers: strategy not found"
+            );
         }
 
         uint224 lengthAfter = uint224(operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length());
         // if the operator set has been configured to have no strategies, decrement the number of configured operator sets
-        if(lengthAfter == 0) {
+        if (lengthAfter == 0) {
             _removeOperatorSet(operatorSet);
         }
         totalStrategies.push(uint32(block.timestamp), totalStrategies.latest() - lengthBefore + lengthAfter);
     }
 
     /// @inheritdoc IStakeRootCompendium
-    function setExtraData(
-	   uint32 operatorSetId,
-	   address operator,
-	   uint32 timestamp,
-	   bytes32 extraData
-	) external {
-        (bool exists,,uint224 index) = operatorSetToIndex[msg.sender][operatorSetId].latestCheckpoint();
+    function setExtraData(uint32 operatorSetId, address operator, uint32 timestamp, bytes32 extraData) external {
+        (bool exists,, uint224 index) = operatorSetToIndex[msg.sender][operatorSetId].latestCheckpoint();
         require(exists && index != REMOVED_INDEX, "StakeRootCompendium.setExtraData: operatorSet is not in stakeTree");
         _updateDepositBalanceInfo(IAVSDirectory.OperatorSet({avs: msg.sender, operatorSetId: operatorSetId}), true);
         extraDatas[msg.sender][operatorSetId][operator] = extraData;
@@ -168,42 +181,66 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     // STAKE ROOT CALCULATION
 
     /// @inheritdoc IStakeRootCompendium
-    function getStakeRoot(IAVSDirectory.OperatorSet[] calldata operatorSetsInStakeTree, bytes32[] calldata operatorSetRoots) external view returns (bytes32) {
-        require(operatorSets.length == operatorSetsInStakeTree.length, "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree length mismatch");
-        require(operatorSetsInStakeTree.length == operatorSetRoots.length, "StakeRootCompendium.getStakeRoot: operatorSetsInStakeTree vs. operatorSetRoots mismatch");
+    function getStakeRoot(
+        IAVSDirectory.OperatorSet[] calldata operatorSetsInStakeTree,
+        bytes32[] calldata operatorSetRoots
+    ) external view returns (bytes32) {
+        require(
+            operatorSets.length == operatorSetsInStakeTree.length,
+            "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree length mismatch"
+        );
+        require(
+            operatorSetsInStakeTree.length == operatorSetRoots.length,
+            "StakeRootCompendium.getStakeRoot: operatorSetsInStakeTree vs. operatorSetRoots mismatch"
+        );
         for (uint256 i = 0; i < operatorSetsInStakeTree.length; i++) {
-            require(operatorSets[i].avs == operatorSetsInStakeTree[i].avs, "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree avs mismatch");
-            require(operatorSets[i].operatorSetId == operatorSetsInStakeTree[i].operatorSetId, "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree operatorSetId mismatch");
+            require(
+                operatorSets[i].avs == operatorSetsInStakeTree[i].avs,
+                "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree avs mismatch"
+            );
+            require(
+                operatorSets[i].operatorSetId == operatorSetsInStakeTree[i].operatorSetId,
+                "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree operatorSetId mismatch"
+            );
         }
         return Merkle.merkleizeKeccak256(operatorSetRoots);
     }
 
     /// @inheritdoc IStakeRootCompendium
     function getOperatorSetRoot(
-        IAVSDirectory.OperatorSet calldata operatorSet, 
+        IAVSDirectory.OperatorSet calldata operatorSet,
         address[] calldata operators
-    )
-        external view 
-        returns (bytes32) 
-    {
-        require(avsDirectory.isOperatorSet(operatorSet.avs, operatorSet.operatorSetId), "StakeRootCompendium.getOperatorSetRoot: operator set does not exist");
+    ) external view returns (bytes32) {
+        require(
+            avsDirectory.isOperatorSet(operatorSet.avs, operatorSet.operatorSetId),
+            "StakeRootCompendium.getOperatorSetRoot: operator set does not exist"
+        );
         require(operators.length <= MAX_OPERATOR_SET_SIZE, "AVSSyncTree._verifyOperatorStatus: operator set too large");
-        require(operators.length == avsDirectory.operatorSetMemberCount(operatorSet.avs, operatorSet.operatorSetId), "AVSSyncTree.getOperatorSetRoot: operator set size mismatch");
+        require(
+            operators.length == avsDirectory.operatorSetMemberCount(operatorSet.avs, operatorSet.operatorSetId),
+            "AVSSyncTree.getOperatorSetRoot: operator set size mismatch"
+        );
 
         bytes32[] memory operatorLeaves = new bytes32[](operators.length);
         address prevOperator;
         for (uint256 i = 0; i < operators.length; i++) {
-            require(avsDirectory.isMember(operators[i], operatorSet), "AVSSyncTree.getOperatorSetRoot: operator not in operator set");
-            
+            require(
+                avsDirectory.isMember(operators[i], operatorSet),
+                "AVSSyncTree.getOperatorSetRoot: operator not in operator set"
+            );
+
             // ensure that operators are sorted
             require(operators[i] > prevOperator, "AVSSyncTree.getOperatorSetRoot: operators not sorted");
             prevOperator = operators[i];
 
             // calculate the weighted sum of the operator's shares for the strategies given the multipliers
-            IStrategy[] memory strategies = new IStrategy[](operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length());
+            IStrategy[] memory strategies = new IStrategy[](
+                operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length()
+            );
             uint256[] memory multipliers = new uint256[](strategies.length);
             for (uint256 j = 0; j < strategies.length; j++) {
-                (address strategy, uint256 multiplier) = operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].at(j);
+                (address strategy, uint256 multiplier) =
+                    operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].at(j);
                 strategies[j] = IStrategy(strategy);
                 multipliers[j] = multiplier;
             }
@@ -212,14 +249,22 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
             uint256 slashableStake = 0;
             {
                 uint256[] memory delegatedShares = delegationManager.getOperatorShares(operators[i], strategies);
-                uint24[] memory operatorSlashablePPM = avsDirectory.getSlashablePPM(operators[i], operatorSet, strategies, uint32(block.timestamp), true);
+                uint24[] memory operatorSlashablePPM =
+                    avsDirectory.getSlashablePPM(operators[i], operatorSet, strategies, uint32(block.timestamp), true);
                 for (uint256 j = 0; j < strategies.length; j++) {
                     delegatedStake += delegatedShares[j] * multipliers[j];
                     slashableStake += delegatedShares[j] * multipliers[j] * operatorSlashablePPM[j] / 1e6;
                 }
             }
 
-            operatorLeaves[i] =  keccak256(abi.encodePacked(operators[i], delegatedStake, slashableStake, extraDatas[operatorSet.avs][operatorSet.operatorSetId][operators[i]]));    
+            operatorLeaves[i] = keccak256(
+                abi.encodePacked(
+                    operators[i],
+                    delegatedStake,
+                    slashableStake,
+                    extraDatas[operatorSet.avs][operatorSet.operatorSetId][operators[i]]
+                )
+            );
         }
         return Merkle.merkleizeKeccak256(operatorLeaves);
     }
@@ -227,22 +272,35 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     /// POSTING ROOTS AND BLACKLISTING
 
     /// @inheritdoc IStakeRootCompendium
-    function verifyStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot, address chargeRecipient, Proof calldata proof) external {
+    function verifyStakeRoot(
+        uint32 calculationTimestamp,
+        bytes32 stakeRoot,
+        address chargeRecipient,
+        Proof calldata proof
+    ) external {
         // TODO: verify proof
 
         _postStakeRoot(calculationTimestamp, stakeRoot, chargeRecipient, false);
     }
-    
-    
+
     /// @inheritdoc IStakeRootCompendium
     function blacklistStakeRoot(uint32 submissionIndex) external onlyOwner {
         // TODO: this should not be onlyOwner
-        require(!stakeRootSubmissions[submissionIndex].blacklisted, "StakeRootCompendium.blacklistStakeRoot: stakeRoot already blacklisted");
-        require(block.timestamp < stakeRootSubmissions[submissionIndex].blacklistableBefore, "StakeRootCompendium.blacklistStakeRoot: stakeRoot cannot be blacklisted");
-        require(!stakeRootSubmissions[submissionIndex].forcePosted, "StakeRootCompendium.blacklistStakeRoot: stakeRoot was force posted");
+        require(
+            !stakeRootSubmissions[submissionIndex].blacklisted,
+            "StakeRootCompendium.blacklistStakeRoot: stakeRoot already blacklisted"
+        );
+        require(
+            block.timestamp < stakeRootSubmissions[submissionIndex].blacklistableBefore,
+            "StakeRootCompendium.blacklistStakeRoot: stakeRoot cannot be blacklisted"
+        );
+        require(
+            !stakeRootSubmissions[submissionIndex].forcePosted,
+            "StakeRootCompendium.blacklistStakeRoot: stakeRoot was force posted"
+        );
         stakeRootSubmissions[submissionIndex].blacklisted = true;
     }
-    
+
     /// @inheritdoc IStakeRootCompendium
     function forcePostStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot) external onlyOwner {
         _postStakeRoot(calculationTimestamp, stakeRoot, address(0), true);
@@ -253,7 +311,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     /// @inheritdoc IStakeRootCompendium
     function updateDepositBalanceInfos(IAVSDirectory.OperatorSet[] calldata operatorSetsToUpdate) external {
         uint256 penalty = 0;
-        for(uint256 i = 0; i < operatorSetsToUpdate.length; i++) {
+        for (uint256 i = 0; i < operatorSetsToUpdate.length; i++) {
             penalty += _updateDepositBalanceInfo(operatorSetsToUpdate[i], false);
         }
         if (penalty > 0) {
@@ -275,14 +333,13 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
             StakeRootSubmission memory stakeRootSubmission = stakeRootSubmissions[i];
             // if the stakeRootSubmission is blacklisted or force posted, skip it
             if (
-                block.timestamp < stakeRootSubmission.blacklistableBefore ||
-                stakeRootSubmission.blacklisted || 
-                stakeRootSubmission.forcePosted
+                block.timestamp < stakeRootSubmission.blacklistableBefore || stakeRootSubmission.blacklisted
+                    || stakeRootSubmission.forcePosted
             ) {
                 continue;
             }
             // if the charge recipient has changed, transfer the total charge to the previous recipient
-            if(stakeRootSubmission.chargeRecipient != prevRecipient) {
+            if (stakeRootSubmission.chargeRecipient != prevRecipient) {
                 if (totalCharge > 0) {
                     payable(prevRecipient).transfer(totalCharge);
                 }
@@ -298,7 +355,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
 
     /// @inheritdoc IStakeRootCompendium
     function setVerifier(address _verifier) external onlyOwner {
-        address oldVerifier = verifier; 
+        address oldVerifier = verifier;
         verifier = _verifier;
         emit VerifierChanged(oldVerifier, verifier);
     }
@@ -318,17 +375,24 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     }
 
     /// @inheritdoc IStakeRootCompendium
-    function getOperatorSetIndexAtTimestamp(IAVSDirectory.OperatorSet calldata operatorSet, uint32 timestamp) external view returns (uint32) {
+    function getOperatorSetIndexAtTimestamp(
+        IAVSDirectory.OperatorSet calldata operatorSet,
+        uint32 timestamp
+    ) external view returns (uint32) {
         return uint32(operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].upperLookupRecent(timestamp));
     }
 
     /// @inheritdoc IStakeRootCompendium
-    function getDepositBalance(IAVSDirectory.OperatorSet memory operatorSet) public view returns (uint256 balance, uint256 penalty) {
+    function getDepositBalance(IAVSDirectory.OperatorSet memory operatorSet)
+        public
+        view
+        returns (uint256 balance, uint256 penalty)
+    {
         // the total charge for the operator set is the charge per strategy per proof
-        uint256 totalCharge = 
-            charge * 
-            operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length() * 
-            (block.timestamp - depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].lastUpdatedAt) / proofInterval;
+        uint256 totalCharge = charge
+            * operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length()
+            * (block.timestamp - depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].lastUpdatedAt)
+            / proofInterval;
         uint256 storedBalance = depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].balance;
 
         // if the charge would take the balance below the minimum deposit balance, return 0
@@ -349,7 +413,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         uint224 operatorSetIndex = operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].latest();
         operatorSets[operatorSetIndex] = substituteOperatorSet;
         operatorSets.pop();
-        
+
         // update the index of the operator sets
         operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].push(uint32(block.timestamp), REMOVED_INDEX);
         operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].push(uint32(block.timestamp), operatorSetIndex);
@@ -361,7 +425,10 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     }
 
     // updates the deposit balance for the operator set and returns the penalty if the operator set has fallen below the minimum deposit balance
-    function _updateDepositBalanceInfo(IAVSDirectory.OperatorSet memory operatorSet, bool sendPenalty) internal returns(uint256) {
+    function _updateDepositBalanceInfo(
+        IAVSDirectory.OperatorSet memory operatorSet,
+        bool sendPenalty
+    ) internal returns (uint256) {
         (uint256 depositBalance, uint256 penalty) = getDepositBalance(operatorSet);
         depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].balance = depositBalance;
         depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].lastUpdatedAt = uint32(block.timestamp);
@@ -377,25 +444,35 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         return penalty;
     }
 
-    function _postStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot, address chargeRecipient, bool forcePosted) internal {
-        require(calculationTimestamp % proofInterval == 0, "StakeRootCompendium._postStakeRoot: calculationTimestamp must be a multiple of proofInterval");
+    function _postStakeRoot(
+        uint32 calculationTimestamp,
+        bytes32 stakeRoot,
+        address chargeRecipient,
+        bool forcePosted
+    ) internal {
+        require(
+            calculationTimestamp % proofInterval == 0,
+            "StakeRootCompendium._postStakeRoot: calculationTimestamp must be a multiple of proofInterval"
+        );
 
         uint256 stakeRootSubmissionsLength = stakeRootSubmissions.length;
         if (stakeRootSubmissionsLength != 0) {
             require(
-                stakeRootSubmissions[stakeRootSubmissionsLength - 1].calculationTimestamp < calculationTimestamp, 
+                stakeRootSubmissions[stakeRootSubmissionsLength - 1].calculationTimestamp < calculationTimestamp,
                 "StakeRootCompendium._postStakeRoot: calculationTimestamp must be greater than the last posted calculationTimestamp"
             );
         }
 
-        stakeRootSubmissions.push(StakeRootSubmission({
-            stakeRoot: stakeRoot,
-            chargeRecipient: msg.sender,
-            calculationTimestamp: calculationTimestamp,
-            blacklistableBefore: uint32(block.timestamp) + blacklistWindow,
-            blacklisted: false,
-            forcePosted: forcePosted
-        }));
+        stakeRootSubmissions.push(
+            StakeRootSubmission({
+                stakeRoot: stakeRoot,
+                chargeRecipient: msg.sender,
+                calculationTimestamp: calculationTimestamp,
+                blacklistableBefore: uint32(block.timestamp) + blacklistWindow,
+                blacklisted: false,
+                forcePosted: forcePosted
+            })
+        );
 
         // todo: emit events
     }
