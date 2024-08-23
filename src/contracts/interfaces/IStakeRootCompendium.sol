@@ -39,10 +39,19 @@ interface IStakeRootCompendium {
     function MAX_NUM_OPERATOR_SETS() external view returns (uint32);
     function MAX_NUM_STRATEGIES() external view returns (uint32);
 
+    /// @notice the minimum balance that must be maintained for an operatorSet
+    function MIN_DEPOSIT_BALANCE() external view returns (uint256);
+
     function delegationManager() external view returns (IDelegationManager);
     function avsDirectory() external view returns (IAVSDirectory);
     function verifier() external view returns (address);
     function imageId() external view returns (bytes32);
+    
+    /// @notice charge per strategy per proof
+    function charge() external view returns (uint256);
+
+    /// @notice the interval at which proofs can be posted, to not overcharge the operatorSets
+    function proofInterval() external view returns (uint32);
 
     /**
      * @notice called offchain with the operatorSet roots ordered by the operatorSet index at the timestamp to calculate the stake root
