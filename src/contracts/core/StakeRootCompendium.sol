@@ -314,7 +314,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         uint256 totalCharge = 
             charge * 
             operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length() * 
-            (stakeRootSubmissions.length - depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].cumulativeProofsCheckpointed);
+            (block.timestamp - depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].lastUpdatedAt) / proofInterval;
         uint256 storedBalance = depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].balance;
 
         // if the charge would take the balance below the minimum deposit balance, return 0
@@ -350,7 +350,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     function _updateDepositBalanceInfo(IAVSDirectory.OperatorSet memory operatorSet, bool sendPenalty) internal returns(uint256) {
         (uint256 depositBalance, uint256 penalty) = getDepositBalance(operatorSet);
         depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].balance = depositBalance;
-        depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].cumulativeProofsCheckpointed = uint32(stakeRootSubmissions.length);
+        depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].lastUpdatedAt = uint32(block.timestamp);
 
         // if the operatorSet has fallen below the minimum deposit balance, remove it from the stakeTree
         if (penalty > 0) {

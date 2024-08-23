@@ -18,7 +18,7 @@ interface IStakeRootCompendium {
     }
 
     struct DepositBalanceInfo {
-        uint32 cumulativeProofsCheckpointed;
+        uint32 lastUpdatedAt;
         uint256 balance;
     }
 
