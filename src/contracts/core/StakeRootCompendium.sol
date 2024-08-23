@@ -274,7 +274,11 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         for (uint256 i = latestChargedSubmissionIndexMemory; i < endIndex; i++) {
             StakeRootSubmission memory stakeRootSubmission = stakeRootSubmissions[i];
             // if the stakeRootSubmission is blacklisted or force posted, skip it
-            if (stakeRootSubmission.blacklisted || stakeRootSubmission.forcePosted) {
+            if (
+                block.timestamp < stakeRootSubmission.submissionTimestamp + blacklistWindow ||
+                stakeRootSubmission.blacklisted || 
+                stakeRootSubmission.forcePosted
+            ) {
                 continue;
             }
             // if the charge recipient has changed, transfer the total charge to the previous recipient
