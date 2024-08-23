@@ -92,8 +92,8 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         require(avsDirectory.isOperatorSet(operatorSet.avs, operatorSet.operatorSetId), "StakeRootCompendium.depositForOperatorSet: operator set does not exist");
         depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].balance += msg.value;
         require(
-            depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].balance > 2 * MIN_DEPOSIT_BALANCE, 
-            "StakeRootCompendium.depositForOperatorSet: depositer must have 2x the minimum balance on deposit"
+            depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].balance >= 2 * MIN_DEPOSIT_BALANCE, 
+            "StakeRootCompendium.depositForOperatorSet: depositer must have at least 2x the minimum balance on deposit"
         );
 
         // update the deposit balance for the operator set whenever a deposit is made
@@ -311,6 +311,11 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     }
 
     /// VIEW FUNCTIONS
+
+    /// @notice the stake root submissions that have been posted
+    function stakeRootSubmissionsAt(uint32 index) external view returns (StakeRootSubmission memory) {
+        return stakeRootSubmissions[index];
+    }
 
     /// @inheritdoc IStakeRootCompendium
     function getDepositBalance(IAVSDirectory.OperatorSet memory operatorSet) public view returns (uint256 balance, uint256 penalty) {

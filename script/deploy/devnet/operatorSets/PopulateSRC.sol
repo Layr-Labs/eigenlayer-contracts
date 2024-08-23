@@ -11,13 +11,15 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
     string internal constant TEST_MNEMONIC = "hundred february vast fluid produce radar notice ridge armed glare panther balance";
 
     uint32 constant NUM_OPSETS = 1;
-    uint32 constant NUM_OPERATORS_PER_OPSET = 2048;
+    uint32 constant NUM_OPERATORS_PER_OPSET = 10;
     uint32 constant NUM_STRATS_PER_OPSET = 20;
     uint256 constant TOKEN_AMOUNT_PER_OPERATOR = 1 ether;
 
     
     function run() public {
         _parseDeployedContracts("script/output/devnet/M2_from_scratch_deployment_data.json");
+        // other cast default. private key: 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+        address proxyAdmin = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
 
         vm.startBroadcast();
         IStakeRootCompendium stakeRootCompendiumImplementation =  new StakeRootCompendium({
@@ -28,8 +30,8 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         });
         StakeRootCompendium stakeRootCompendium = StakeRootCompendium(payable(new TransparentUpgradeableProxy(
             address(stakeRootCompendiumImplementation),
-            address(msg.sender),
-            ""
+            proxyAdmin,
+            "" // TODO: initialize
         )));
         vm.stopBroadcast();
 
@@ -73,6 +75,8 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         uint64 magnitudeForOperators = 0.1 ether;
         vm.startBroadcast();
         AVS avs = new AVS(avsDirectory, stakeRootCompendium);
+        payable(address(avs)).transfer(2 * stakeRootCompendium.MIN_DEPOSIT_BALANCE() * strategies.length);
+
         for (uint i = 0; i < strategies.length; i++) {
             avs.createOperatorSetAndRegisterOperators(uint32(i), strategies[i], operators[i]);
             IAVSDirectory.OperatorSet memory operatorSet = IAVSDirectory.OperatorSet({
@@ -126,6 +130,11 @@ contract AVS {
         operatorSetIdsToCreate[0] = operatorSetId;
         avsDirectory.createOperatorSets(operatorSetIdsToCreate);
 
+        stakeRootCompendium.depositForOperatorSet{value: 2 * stakeRootCompendium.MIN_DEPOSIT_BALANCE()}(IAVSDirectory.OperatorSet({
+            avs: address(this),
+            operatorSetId: operatorSetId
+        }));
+
         // register operators to operator sets
         for (uint256 i = 0; i < operators.length; ++i) {
             avsDirectory.registerOperatorToOperatorSets(
@@ -149,6 +158,8 @@ contract AVS {
         }
         stakeRootCompendium.addStrategiesAndMultipliers(operatorSetId, strategiesAndMultipliers); 
     }
+
+    receive() external payable {}
 }
 
 

@@ -53,6 +53,9 @@ interface IStakeRootCompendium {
     /// @notice the interval at which proofs can be posted, to not overcharge the operatorSets
     function proofInterval() external view returns (uint32);
 
+    /// @notice the stake root submissions that have been posted
+    function stakeRootSubmissionsAt(uint32 index) external view returns (StakeRootSubmission memory);
+
     /**
      * @notice called offchain with the operatorSet roots ordered by the operatorSet index at the timestamp to calculate the stake root
      * @param operatorSetsInStakeTree the operatorSets that each of the operatorSetRoots correspond to. must be the same as operatorSets storage var at the time of call
