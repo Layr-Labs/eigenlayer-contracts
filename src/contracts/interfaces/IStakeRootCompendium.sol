@@ -121,7 +121,7 @@ interface IStakeRootCompendium {
 
     /**
      * @notice Process charges for the next numToCharge stakeRootSubmissions that have not been redeemed
-     * @param numToCharge the number of charges to redeem
+     * @param numToCharge the number of charges to process
      */
     function processCharges(uint256 numToCharge) external;
 
@@ -165,4 +165,12 @@ interface IStakeRootCompendium {
      * @dev only callable by the owner
      */
     function setImageId(bytes32 _imageId) external;
+
+    /**
+     * @notice get the deposit balance for the operator set
+     * @param operatorSet the operator set to get the deposit balance for
+     * @return balance the deposit balance for the operator set
+     * @return penalty the penalty to be received by calling updateDepositBalanceInfos if the operator set has fallen below the minimum deposit balance
+     */
+    function getDepositBalance(IAVSDirectory.OperatorSet memory operatorSet) external view returns (uint256 balance, uint256 penalty);
 }

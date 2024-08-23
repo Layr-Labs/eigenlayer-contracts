@@ -261,10 +261,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
         }
     }
 
-    /**
-     * @notice Process charges for the next numToCharge stakeRootSubmissions that have not been redeemed
-     * @param numToCharge the number of charges to redeem
-     */
+    /// @inheritdoc IStakeRootCompendium
     function processCharges(uint256 numToCharge) external {
         uint256 latestChargedSubmissionIndexMemory = latestChargedSubmissionIndex;
         uint256 endIndex = latestChargedSubmissionIndexMemory + numToCharge;
@@ -310,7 +307,8 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     }
 
     /// VIEW FUNCTIONS
-    
+
+    /// @inheritdoc IStakeRootCompendium
     function getDepositBalance(IAVSDirectory.OperatorSet memory operatorSet) public view returns (uint256 balance, uint256 penalty) {
         // the total charge for the operator set is the charge per strategy per proof
         uint256 totalCharge = 
