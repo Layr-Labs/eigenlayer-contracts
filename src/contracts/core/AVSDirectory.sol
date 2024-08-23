@@ -35,7 +35,7 @@ contract AVSDirectory is
     /// @dev The initial total magnitude for an operator
     uint64 public constant INITIAL_TOTAL_MAGNITUDE = 1 ether;
 
-    /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
+    /// @dev Maximum number of pending allocations AND deallocations for a single operator, operatorSet, strategy
     uint256 public constant MAX_PENDING_UPDATES = 1;
 
     /// @dev Returns the chain ID from the time the contract was deployed.
@@ -559,21 +559,29 @@ contract AVSDirectory is
             (uint224 currentMagnitude, uint256 pos, uint256 length) = _magnitudeUpdate[operator][allocation.strategy][opSets[i]
                 .avs][opSets[i].operatorSetId].upperLookupRecentWithPos(uint32(block.timestamp));
 
+            // Check that there is at MOST `MAX_PENDING_UPDATES` combined allocations & deallocations for the operator, operatorSet, strategy
+            {
+                uint256 numPendingAllocations = length - pos;
+                uint256 numPendingDeallocations = _getNumQueuedDeallocations(operator, allocation.strategy, opSets[i]);
+
+                require(
+                    numPendingAllocations + numPendingDeallocations < MAX_PENDING_UPDATES,
+                    "AVSDirectory._setAllocations: Cannot set magnitude with a pending allocation or deallocation"
+                );
+            }
+
             if (allocation.magnitudes[i] < uint64(currentMagnitude)) {
                 // Newly configured magnitude is less than current value.
                 // Therefore we handle this as a deallocation
 
-                // 1. ensure only pending queued deallocation per operator, operatorSet, strategy
-                _checkQueuedDeallocations(operator, allocation.strategy, opSets[i]);
-
-                // 2. update and decrement current and future queued amounts in case any pending allocations exist
+                // 1. update and decrement current and future queued amounts in case any pending allocations exist
                 _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId]
                     .decrementAtAndFutureCheckpoints({
                     key: uint32(block.timestamp),
                     decrementValue: uint64(currentMagnitude) - allocation.magnitudes[i]
                 });
 
-                // 3. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
+                // 2. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
                 uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
                 _pendingFreeMagnitude[operator][allocation.strategy].push(
                     PendingFreeMagnitude({
@@ -588,22 +596,13 @@ contract AVSDirectory is
                 // Newly configured magnitude is greater than current value.
                 // Therefore we handle this as an allocation
 
-                // 1. ensure only 1 pending allocation at a time
-                // read number of checkpoints after current timestamp
-                // no checkpoint exists if value == 0 && pos == 0, so check the negation before checking if there is a
-                // a pending allocation
-                if (currentMagnitude != 0 || pos != 0) {
-                    require(
-                        pos + MAX_PENDING_UPDATES >= length,
-                        "AVSDirectory.queueAllocations: exceed max pending allocations allowed for op, opSet, strategy"
-                    );
-                }
-                // 2. allocate magnitude which will take effect in the future 21 days from now
+                // 1. allocate magnitude which will take effect in the future 21 days from now
                 _magnitudeUpdate[operator][allocation.strategy][opSets[i].avs][opSets[i].operatorSetId].push({
                     key: allocationEffectTimestamp,
                     value: allocation.magnitudes[i]
                 });
-                // 3. decrement free magnitude by incremented amount
+
+                // 2. decrement free magnitude by incremented amount
                 require(
                     newFreeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
                     "AVSDirectory._setAllocations: insufficient available free magnitude to allocate"
@@ -617,12 +616,13 @@ contract AVSDirectory is
         freeMagnitude[operator][allocation.strategy] = newFreeMagnitude;
     }
 
-    /// @dev Check for max number of pending queued deallocations, ensuring <= MAX_PENDING_UPDATES
-    function _checkQueuedDeallocations(
+    function _getNumQueuedDeallocations(
         address operator,
         IStrategy strategy,
         OperatorSet calldata operatorSet
-    ) internal view {
+    ) internal view returns (uint256) {
+        uint256 numQueuedDeallocations;
+
         uint256 length =
             _queuedDeallocationIndices[operator][strategy][operatorSet.avs][operatorSet.operatorSetId].length;
 
@@ -634,14 +634,13 @@ contract AVSDirectory is
 
             // If completableTimestamp is greater than completeUntilTimestamp, break
             if (pendingFreeMagnitude.completableTimestamp < uint32(block.timestamp)) {
-                require(
-                    length - i + 1 < MAX_PENDING_UPDATES,
-                    "AVSDirectory._checkQueuedDeallocations: exceeds max pending deallocations"
-                );
+                ++numQueuedDeallocations;
             } else {
                 break;
             }
-        }
+        }    
+
+        return numQueuedDeallocations;
     }
 
     /// @dev gets the latest total magnitude or overwrites it if it is not set
