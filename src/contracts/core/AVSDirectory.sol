@@ -560,13 +560,15 @@ contract AVSDirectory is
                 .avs][opSets[i].operatorSetId].upperLookupRecentWithPos(uint32(block.timestamp));
 
             // Check that there is at MOST `MAX_PENDING_UPDATES` combined allocations & deallocations for the operator, operatorSet, strategy
-            uint256 numPendingAllocations = length - pos;
-            uint256 numPendingDeallocations = _getNumQueuedDeallocations(operator, allocation.strategy, opSets[i]);
+            {
+                uint256 numPendingAllocations = length - pos;
+                uint256 numPendingDeallocations = _getNumQueuedDeallocations(operator, allocation.strategy, opSets[i]);
 
-            require(
-                numPendingAllocations + numPendingDeallocations < MAX_PENDING_UPDATES,
-                "AVSDirectory._setAllocations: Cannot set magnitude with a pending allocation or deallocation"
-            );
+                require(
+                    numPendingAllocations + numPendingDeallocations < MAX_PENDING_UPDATES,
+                    "AVSDirectory._setAllocations: Cannot set magnitude with a pending allocation or deallocation"
+                );
+            }
 
             if (allocation.magnitudes[i] < uint64(currentMagnitude)) {
                 // Newly configured magnitude is less than current value.
@@ -632,7 +634,7 @@ contract AVSDirectory is
 
             // If completableTimestamp is greater than completeUntilTimestamp, break
             if (pendingFreeMagnitude.completableTimestamp < uint32(block.timestamp)) {
-                ++numDeallocations;
+                ++numQueuedDeallocations;
             } else {
                 break;
             }
