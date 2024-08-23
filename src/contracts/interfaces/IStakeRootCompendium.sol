@@ -17,8 +17,14 @@ interface IStakeRootCompendium {
         uint32 x;
     }
 
+    struct DepositBalanceInfo {
+        uint32 cumulativeProofsCheckpointed;
+        uint256 balance;
+    }
+
     struct StakeRootSubmission {
         bytes32 stakeRoot;
+        address chargeRecipient; // the address to send the charge to
         uint32 calculationTimestamp; // the timestamp the was generated against
         uint32 submissionTimestamp; // the timestamp the proof submission was submitted to the contract
         bool blacklisted; // whether the submission has been blacklisted by governance
@@ -61,6 +67,15 @@ interface IStakeRootCompendium {
 	) external view returns (bytes32);
 
     /**
+     * @notice deposits funds for an operator set
+     * @param operatorSet the operator set to deposit for
+     * @dev must be called before adding strategies and multipliers to the operator set
+     * @dev the operator set must have a minimum balance of 2 * MIN_DEPOSIT_BALANCE to disallow joining with minimal cost after removal
+     * @dev permissionless to deposit
+     */
+    function depositForOperatorSet(IAVSDirectory.OperatorSet calldata operatorSet) external payable;
+
+    /**
      * @notice called by an AVS to set their strategies and multipliers used to determine stakes for stake roots
      * @param operatorSetId the id of the operatorSet to set the strategies and multipliers for
      * @param strategiesAndMultipliers the strategies and multipliers to set for the operatorSet
@@ -97,14 +112,28 @@ interface IStakeRootCompendium {
 	) external;
 
     /**
+     * @notice called by watchers to update the deposit balance infos for operatorSets, usually those that have
+     * fallen below the minimum balance, in order to remove them from the stakeTree
+     * @param operatorSetsToUpdate the operatorSets to update the deposit balance infos for
+     * @dev sends the caller the leftover after charging if the balance is below the minimum
+     */
+    function updateDepositBalanceInfos(IAVSDirectory.OperatorSet[] calldata operatorSetsToUpdate) external;
+
+    /**
+     * @notice Process charges for the next numToCharge stakeRootSubmissions that have not been redeemed
+     * @param numToCharge the number of charges to redeem
+     */
+    function processCharges(uint256 numToCharge) external;
+
+    /**
      * @notice called by the claimer to claim a stake root
      * @param calculationTimestamp the timestamp of the state the stakeRoot was calculated against
      * @param stakeRoot the stakeRoot at calculationTimestamp
+     * @param chargeRecipient the address to send the charge to when processed
      * @param proof todo
      * @dev permissionless to call
      */
-    function verifyStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot, Proof calldata proof) external;
-    
+    function verifyStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot, address chargeRecipient, Proof calldata proof) external;
     
     /**
      * @notice called by governance to blacklist a stakeRoot in case it's incorrect

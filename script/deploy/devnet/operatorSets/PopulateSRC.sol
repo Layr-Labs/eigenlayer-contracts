@@ -23,9 +23,10 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         IStakeRootCompendium stakeRootCompendiumImplementation =  new StakeRootCompendium({
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
+            _proofInterval: 1 hours,
             _blacklistWindow: 12 seconds
         });
-        StakeRootCompendium stakeRootCompendium = StakeRootCompendium(address(new TransparentUpgradeableProxy(
+        StakeRootCompendium stakeRootCompendium = StakeRootCompendium(payable(new TransparentUpgradeableProxy(
             address(stakeRootCompendiumImplementation),
             address(msg.sender),
             ""
