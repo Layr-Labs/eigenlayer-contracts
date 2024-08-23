@@ -17,8 +17,14 @@ interface IStakeRootCompendium {
         uint32 x;
     }
 
+    struct DepositBalanceInfo {
+        uint32 lastUpdatedAt;
+        uint256 balance;
+    }
+
     struct StakeRootSubmission {
         bytes32 stakeRoot;
+        address chargeRecipient; // the address to send the charge to
         uint32 calculationTimestamp; // the timestamp the was generated against
         uint32 submissionTimestamp; // the timestamp the proof submission was submitted to the contract
         bool blacklisted; // whether the submission has been blacklisted by governance
@@ -33,10 +39,19 @@ interface IStakeRootCompendium {
     function MAX_NUM_OPERATOR_SETS() external view returns (uint32);
     function MAX_NUM_STRATEGIES() external view returns (uint32);
 
+    /// @notice the minimum balance that must be maintained for an operatorSet
+    function MIN_DEPOSIT_BALANCE() external view returns (uint256);
+
     function delegationManager() external view returns (IDelegationManager);
     function avsDirectory() external view returns (IAVSDirectory);
     function verifier() external view returns (address);
     function imageId() external view returns (bytes32);
+    
+    /// @notice charge per strategy per proof
+    function charge() external view returns (uint256);
+
+    /// @notice the interval at which proofs can be posted, to not overcharge the operatorSets
+    function proofInterval() external view returns (uint32);
 
     /**
      * @notice called offchain with the operatorSet roots ordered by the operatorSet index at the timestamp to calculate the stake root
@@ -59,6 +74,15 @@ interface IStakeRootCompendium {
 		IAVSDirectory.OperatorSet calldata operatorSet, 
 		address[] calldata operators 
 	) external view returns (bytes32);
+
+    /**
+     * @notice deposits funds for an operator set
+     * @param operatorSet the operator set to deposit for
+     * @dev must be called before adding strategies and multipliers to the operator set
+     * @dev the operator set must have a minimum balance of 2 * MIN_DEPOSIT_BALANCE to disallow joining with minimal cost after removal
+     * @dev permissionless to deposit
+     */
+    function depositForOperatorSet(IAVSDirectory.OperatorSet calldata operatorSet) external payable;
 
     /**
      * @notice called by an AVS to set their strategies and multipliers used to determine stakes for stake roots
@@ -97,14 +121,28 @@ interface IStakeRootCompendium {
 	) external;
 
     /**
+     * @notice called by watchers to update the deposit balance infos for operatorSets, usually those that have
+     * fallen below the minimum balance, in order to remove them from the stakeTree
+     * @param operatorSetsToUpdate the operatorSets to update the deposit balance infos for
+     * @dev sends the caller the leftover after charging if the balance is below the minimum
+     */
+    function updateDepositBalanceInfos(IAVSDirectory.OperatorSet[] calldata operatorSetsToUpdate) external;
+
+    /**
+     * @notice Process charges for the next numToCharge stakeRootSubmissions that have not been redeemed
+     * @param numToCharge the number of charges to process
+     */
+    function processCharges(uint256 numToCharge) external;
+
+    /**
      * @notice called by the claimer to claim a stake root
      * @param calculationTimestamp the timestamp of the state the stakeRoot was calculated against
      * @param stakeRoot the stakeRoot at calculationTimestamp
+     * @param chargeRecipient the address to send the charge to when processed
      * @param proof todo
      * @dev permissionless to call
      */
-    function verifyStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot, Proof calldata proof) external;
-    
+    function verifyStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot, address chargeRecipient, Proof calldata proof) external;
     
     /**
      * @notice called by governance to blacklist a stakeRoot in case it's incorrect
@@ -136,4 +174,12 @@ interface IStakeRootCompendium {
      * @dev only callable by the owner
      */
     function setImageId(bytes32 _imageId) external;
+
+    /**
+     * @notice get the deposit balance for the operator set
+     * @param operatorSet the operator set to get the deposit balance for
+     * @return balance the deposit balance for the operator set
+     * @return penalty the penalty to be received by calling updateDepositBalanceInfos if the operator set has fallen below the minimum deposit balance
+     */
+    function getDepositBalance(IAVSDirectory.OperatorSet memory operatorSet) external view returns (uint256 balance, uint256 penalty);
 }
