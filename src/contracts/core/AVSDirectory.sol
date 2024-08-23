@@ -560,11 +560,11 @@ contract AVSDirectory is
                 .avs][opSets[i].operatorSetId].upperLookupRecentWithPos(uint32(block.timestamp));
 
             // Check that there is at MOST `MAX_PENDING_UPDATES` combined allocations & deallocations for the operator, operatorSet, strategy
-            uint256 numAllocations = length - pos;
-            uint256 numDeallocations = _getNumQueuedDeallocations(operator, allocation.strategy, opSets[i]);
+            uint256 numPendingAllocations = length - pos;
+            uint256 numPendingDeallocations = _getNumQueuedDeallocations(operator, allocation.strategy, opSets[i]);
 
             require(
-                numAllocations + numDeallocations < MAX_PENDING_UPDATES,
+                numPendingAllocations + numPendingDeallocations < MAX_PENDING_UPDATES,
                 "AVSDirectory._setAllocations: Cannot set magnitude with a pending allocation or deallocation"
             );
 
