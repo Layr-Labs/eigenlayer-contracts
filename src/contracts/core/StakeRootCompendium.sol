@@ -313,7 +313,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     /// VIEW FUNCTIONS
 
     /// @notice the stake root submissions that have been posted
-    function stakeRootSubmissionsAt(uint32 index) external view returns (StakeRootSubmission memory) {
+    function getStakeRootSubmissionAt(uint32 index) external view returns (StakeRootSubmission memory) {
         return stakeRootSubmissions[index];
     }
 

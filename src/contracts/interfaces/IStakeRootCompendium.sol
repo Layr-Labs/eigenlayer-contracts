@@ -54,7 +54,7 @@ interface IStakeRootCompendium {
     function proofInterval() external view returns (uint32);
 
     /// @notice the stake root submissions that have been posted
-    function stakeRootSubmissionsAt(uint32 index) external view returns (StakeRootSubmission memory);
+    function getStakeRootSubmissionAt(uint32 index) external view returns (StakeRootSubmission memory);
 
     /**
      * @notice called offchain with the operatorSet roots ordered by the operatorSet index at the timestamp to calculate the stake root
