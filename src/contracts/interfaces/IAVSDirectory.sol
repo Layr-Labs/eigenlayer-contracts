@@ -229,7 +229,7 @@ interface IAVSDirectory is ISignatureUtils {
     function updateFreeMagnitude(
         address operator,
         IStrategy[] calldata strategies,
-        uint8[] calldata numToComplete
+        uint16[] calldata numToComplete
     ) external;
 
     /**
@@ -252,11 +252,9 @@ interface IAVSDirectory is ISignatureUtils {
 
     /**
      * @notice Called by operators to set their allocation delay. Can only be set one time.
-     * @param operator address to set allocation delay for
      * @param delay the allocation delay in seconds
-     * @dev this is expected to be updatable in a future release
      */
-    function initializeAllocationDelay(address operator, uint32 delay) external;
+    function initializeAllocationDelay(uint32 delay) external;
 
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
@@ -293,7 +291,7 @@ interface IAVSDirectory is ISignatureUtils {
     function getAllocatableMagnitude(
         address operator,
         IStrategy strategy,
-        uint8 numToComplete
+        uint16 numToComplete
     ) external view returns (uint64);
 
     /**
