@@ -171,7 +171,7 @@ contract StakeRootCompendium is IStakeRootCompendium, OwnableUpgradeable {
     }
 
     /// @inheritdoc IStakeRootCompendium
-    function setExtraData(uint32 operatorSetId, address operator, uint32 timestamp, bytes32 extraData) external {
+    function setExtraData(uint32 operatorSetId, address operator, bytes32 extraData) external {
         (bool exists,, uint224 index) = operatorSetToIndex[msg.sender][operatorSetId].latestCheckpoint();
         require(exists && index != REMOVED_INDEX, "StakeRootCompendium.setExtraData: operatorSet is not in stakeTree");
         _updateDepositBalanceInfo(IAVSDirectory.OperatorSet({avs: msg.sender, operatorSetId: operatorSetId}), true);

@@ -118,10 +118,9 @@ interface IStakeRootCompendium {
      * @notice called by an AVS to add extraData to an operator for an operatorSet to be added to leaves of the tree
      * @param operatorSetId the id of the operatorSet to set the extraData for
      * @param operator the operator to set the extraData for
-     * @param timestamp the time at which the extraData takes effect, in case delayed updates to extradata are required
      * @param extraData the extraData
      */
-    function setExtraData(uint32 operatorSetId, address operator, uint32 timestamp, bytes32 extraData) external;
+    function setExtraData(uint32 operatorSetId, address operator, bytes32 extraData) external;
 
     /**
      * @notice called by watchers to update the deposit balance infos for operatorSets, usually those that have
