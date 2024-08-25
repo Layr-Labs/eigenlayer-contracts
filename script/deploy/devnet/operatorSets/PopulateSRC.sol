@@ -10,7 +10,7 @@ import "forge-std/Script.sol";
 contract PopulateSRC is Script, Test, ExistingDeploymentParser {
     string internal constant TEST_MNEMONIC = "hundred february vast fluid produce radar notice ridge armed glare panther balance";
 
-    uint32 constant NUM_OPSETS = 1;
+    uint32 constant NUM_OPSETS = 10;
     uint32 constant NUM_OPERATORS_PER_OPSET = 10;
     uint32 constant NUM_STRATS_PER_OPSET = 20;
     uint256 constant TOKEN_AMOUNT_PER_OPERATOR = 1 ether;
@@ -142,7 +142,7 @@ contract AVS {
                 operatorSetIdsToCreate, 
                 ISignatureUtils.SignatureWithSaltAndExpiry({
                     signature: hex"",
-                    salt: bytes32(0),
+                    salt: keccak256(abi.encodePacked(address(this), operatorSetIdsToCreate)),
                     expiry: type(uint256).max
                 })
             );
@@ -218,7 +218,7 @@ contract OperatorFactory is Test {
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature = ISignatureUtils.SignatureWithSaltAndExpiry({
             signature: hex"",
-            salt: bytes32(0),
+            salt: keccak256(abi.encode(allocations)),
             expiry: type(uint256).max
         });
 
