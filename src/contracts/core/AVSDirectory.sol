@@ -270,8 +270,11 @@ contract AVSDirectory is
      * @param operator address to modify allocations for
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
      * @param operatorSignature signature of the operator if msg.sender is not the operator
-     * @dev updates freeMagnitude for the updated strategies
-     * @dev must be called by the operator
+     * @dev Updates freeMagnitude for the updated strategies
+     * @dev Must be called by the operator or with a valid operator signature
+     * @dev For each allocation, allocation.operatorSets MUST be ordered in ascending order according to the
+     * encoding of the operatorSet. This is to prevent duplicate operatorSets being passed in. The easiest way to ensure
+     * ordering is to sort allocated operatorSets by address first, and then sort for each avs by ascending operatorSetIds.
      */
     function modifyAllocations(
         address operator,
@@ -549,6 +552,9 @@ contract AVSDirectory is
      * @param allocation the magnitude allocations to modify for a single strategy
      * @param allocationEffectTimestamp the timestamp when the allocations will take effect
      * @param deallocationCompletableTimestamp the timestamp when the deallocations will be completable
+     * @dev For each allocation, allocation.operatorSets MUST be ordered in ascending order according to the
+     * encoding of the operatorSet. This is to prevent duplicate operatorSets being passed in. The easiest way to ensure
+     * ordering is to sort allocated operatorSets by address first, and then sort for each avs by ascending operatorSetIds.
      */
     function _modifyAllocations(
         address operator,
@@ -649,6 +655,12 @@ contract AVSDirectory is
         freeMagnitude[operator][allocation.strategy] = newFreeMagnitude;
     }
 
+    /**
+     * @notice Get the number of queued dealloations for the given (operator, strategy, operatorSetKey) tuple
+     * @param operator address to get queued deallocations for
+     * @param strategy the strategy to get queued deallocations for
+     * @param operatorSetKey the encoded operatorSet to get queued deallocations for
+     */
     function _getNumQueuedDeallocations(
         address operator,
         IStrategy strategy,
