@@ -121,29 +121,29 @@ contract AVSDirectory is
         address[] calldata operators,
         uint32[][] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
-        // Assert that the AVS is an operator set AVS.
-        require(
-            isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS"
-        );
+        // // Assert that the AVS is an operator set AVS.
+        // require(
+        //     isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS"
+        // );
 
-        for (uint256 i = 0; i < operators.length; i++) {
-            // Assert that the operator is registered & has not been migrated.
-            require(
-                avsOperatorStatus[msg.sender][operators[i]] == OperatorAVSRegistrationStatus.REGISTERED,
-                "AVSDirectory.migrateOperatorsToOperatorSets: operator already migrated or not a legacy registered operator"
-            );
+        // for (uint256 i = 0; i < operators.length; i++) {
+        //     // Assert that the operator is registered & has not been migrated.
+        //     require(
+        //         avsOperatorStatus[msg.sender][operators[i]] == OperatorAVSRegistrationStatus.REGISTERED,
+        //         "AVSDirectory.migrateOperatorsToOperatorSets: operator already migrated or not a legacy registered operator"
+        //     );
 
-            // Migrate operator to operator sets.
-            _registerToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
+        //     // Migrate operator to operator sets.
+        //     _registerToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
 
-            // Deregister operator from AVS - this prevents the operator from being migrated again since
-            // the AVS can no longer use the legacy M2 registration path
-            avsOperatorStatus[msg.sender][operators[i]] = OperatorAVSRegistrationStatus.UNREGISTERED;
-            emit OperatorAVSRegistrationStatusUpdated(
-                operators[i], msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED
-            );
-            emit OperatorMigratedToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
-        }
+        //     // Deregister operator from AVS - this prevents the operator from being migrated again since
+        //     // the AVS can no longer use the legacy M2 registration path
+        //     avsOperatorStatus[msg.sender][operators[i]] = OperatorAVSRegistrationStatus.UNREGISTERED;
+        //     emit OperatorAVSRegistrationStatusUpdated(
+        //         operators[i], msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED
+        //     );
+        //     emit OperatorMigratedToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
+        // }
     }
 
     /**
@@ -353,10 +353,10 @@ contract AVSDirectory is
         IStrategy[] calldata strategies,
         uint16 bipsToSlash
     ) external {
-        require(
-            isOperatorSlashable(operator, OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
-            "AVSDirectory.slashOperator: operator not slashable for operatorSet"
-        );
+        // require(
+        //     isOperatorSlashable(operator, OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
+        //     "AVSDirectory.slashOperator: operator not slashable for operatorSet"
+        // );
 
         // for (uint256 i = 0; i < strategies.length; ++i) {
         //     // 1. calculate slashed magnitude from current allocation
