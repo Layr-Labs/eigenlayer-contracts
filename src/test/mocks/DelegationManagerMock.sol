@@ -21,7 +21,13 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     mapping (address => address) public delegatedTo;
 
-    function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external pure {}
+    function registerAsOperator(
+        OperatorDetails calldata /*registeringOperatorDetails*/,
+        uint32 /*allocationDelay*/,
+        string calldata /*metadataURI*/
+    ) external pure {}
+
+    function initializeAllocationDelay(uint32 /*delay*/) external {}
     
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
@@ -46,7 +52,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return withdrawalRoot;
     }
 
-function increaseDelegatedScaledShares(
+    function increaseDelegatedScaledShares(
         address staker,
         IStrategy strategy,
         uint256 scaledShares
@@ -62,6 +68,8 @@ function increaseDelegatedScaledShares(
         });
         return returnValue;
     }
+
+    function operatorAllocationDelay(address operator) external view returns (AllocationDelayDetails memory) {}
 
     function delegationApprover(address operator) external pure returns (address) {
         return operator;

@@ -282,7 +282,7 @@ contract AVSDirectory is
         require(
             delegation.isOperator(operator), "AVSDirectory.modifyAllocations: operator not registered to EigenLayer yet"
         );
-        AllocationDelayDetails memory details = allocationDelay[operator];
+        IDelegationManager.AllocationDelayDetails memory details = delegation.operatorAllocationDelay(operator);
         require(
             details.isSet,
             "AVSDirectory.modifyAllocations: operator must initialize allocation delay before modifying allocations"
@@ -426,49 +426,6 @@ contract AVSDirectory is
                 value: _getLatestTotalMagnitude(operator, strategies[i]) - slashedMagnitude
             });
         }
-    }
-
-    /**
-     * @notice Called by operators to set their allocation delay one time
-     * @param operator address to set allocation delay for
-     * @param delay the allocation delay in seconds
-     * @dev this is expected to be updatable in a future release
-     */
-    function initializeAllocationDelay(
-        address operator,
-        uint32 delay
-    ) external {
-        require(
-            msg.sender == operator,
-            "AVSDirectory.initializeAllocationDelay: only operator can set allocation delay"
-        );
-        require(
-            delegation.isOperator(operator),
-            "AVSDirectory.initializeAllocationDelay: operator not registered to EigenLayer yet"
-        );
-        require(
-            !allocationDelay[operator].isSet,
-            "AVSDirectory.initializeAllocationDelay: allocation delay already set"
-        );
-        allocationDelay[operator] = AllocationDelayDetails({
-            isSet: true,
-            allocationDelay: delay
-        });
-    }
-
-    /**
-     * @notice Called by operators to set their allocation delay one time
-     * @param delay the allocation delay in seconds
-     */
-    function initializeAllocationDelay(uint32 delay) external {
-        require(
-            delegation.isOperator(msg.sender),
-            "AVSDirectory.initializeAllocationDelay: operator not registered to EigenLayer yet"
-        );
-        require(
-            !allocationDelay[msg.sender].isSet, "AVSDirectory.initializeAllocationDelay: allocation delay already set"
-        );
-        allocationDelay[msg.sender] = AllocationDelayDetails({isSet: true, allocationDelay: delay});
     }
 
     /**
@@ -978,18 +935,6 @@ contract AVSDirectory is
     ) public view returns (uint64) {
         (uint64 freeMagnitudeToAdd,) = _getPendingFreeMagnitude(operator, strategy, numToComplete);
         return freeMagnitude[operator][strategy] + freeMagnitudeToAdd;
-    }
-
-    /**
-     * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
-     * from calling initializeAllocationDelay.
-     * @param operator the operator to get the allocation delay for
-     * @return isSet whether the allocation delay is set and the operator can call `modifyAllocations`
-     * @return allocationDelay the allocation delay in seconds
-     */
-    function getAllocationDelay(address operator) public view returns (bool, uint32) {
-        AllocationDelayDetails memory details = allocationDelay[operator];
-        return (details.isSet, details.allocationDelay);
     }
 
     /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days

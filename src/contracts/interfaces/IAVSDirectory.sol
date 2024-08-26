@@ -54,16 +54,6 @@ interface IAVSDirectory is ISignatureUtils {
         uint32 completableTimestamp;
     }
 
-    /**
-     * @notice struct used to store the allocation delay for an operator
-     * @param isSet whether the allocation delay is set. Can only be configured one time for each operator
-     * @param allocationDelay the delay in seconds for the operator's allocations
-     */
-    struct AllocationDelayDetails {
-        bool isSet;
-        uint32 allocationDelay;
-    }
-
     /// @notice Emitted when an operator set is created by an AVS.
     event OperatorSetCreated(OperatorSet operatorSet);
 
@@ -277,12 +267,6 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Called by operators to set their allocation delay. Can only be set one time.
-     * @param delay the allocation delay in seconds
-     */
-    function initializeAllocationDelay(uint32 delay) external;
-
-    /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
      *  @param metadataURI The URI for metadata associated with an AVS.
@@ -317,19 +301,8 @@ interface IAVSDirectory is ISignatureUtils {
         uint16 numToComplete
     ) external view returns (uint64);
 
-    /**
-     * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
-     * from calling initializeAllocationDelay.
-     * @param operator the operator to get the allocation delay for
-     * @return isSet whether the allocation delay is set and the operator can call `modifyAllocations`
-     * @return allocationDelay the allocation delay in seconds
-     */
-    function getAllocationDelay(address operator) external view returns (bool, uint32);
-
-    /**
-     * @notice Get the default allocation delay constant for operators
-     */
-    function DEFAULT_ALLOCATION_DELAY() external view returns (uint32);
+    /// @dev Delay before deallocations take effect and are added back into freeMagnitude
+    function DEALLOCATION_DELAY() external view returns (uint32);
 
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days

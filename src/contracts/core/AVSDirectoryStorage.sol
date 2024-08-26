@@ -83,10 +83,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: operator => strategy => operatorSet (encoded) => list of queuedDeallocation indices
     mapping(address => mapping(IStrategy => mapping(bytes32 => uint256[]))) internal _queuedDeallocationIndices;
 
-    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
-    /// This determines how long it takes for allocations to take in the future. Can only be set one time for each operator
-    mapping(address => AllocationDelayDetails) public allocationDelay;
-
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
     }
