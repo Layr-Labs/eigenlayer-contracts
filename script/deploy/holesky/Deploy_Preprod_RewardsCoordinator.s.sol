@@ -11,14 +11,14 @@ import "./Deploy_Test_RewardsCoordinator.s.sol";
  * forge script script/deploy/holesky/Deploy_Preprod_RewardsCoordinator.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" upgrade
  *
  * Holesky testnet: Deploy/Upgrade RewardsCoordinator
- * forge script script/deploy/holesky/Deploy_Preprod_RewardsCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" deploy
- * forge script script/deploy/holesky/Deploy_Preprod_RewardsCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" upgrade
+ * forge script script/deploy/holesky/Deploy_Preprod_RewardsCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --verify --sig "run(string memory deployArg)" deploy
+ * forge script script/deploy/holesky/Deploy_Preprod_RewardsCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --verify --sig "run(string memory deployArg)" upgrade
  *
  */
 contract Deploy_Preprod_RewardsCoordinator is Deploy_Test_RewardsCoordinator {
     function run(string memory deployArg) external virtual {
-        _parseInitialDeploymentParams("script/configs/holesky/Deploy_RewardsCoordinator.holesky.config.json");
-        _parseDeployedContracts("script/output/holesky/M2_deploy_preprod.output.json");
+        _parseInitialDeploymentParams("script/configs/holesky/eigenlayer_preprod.config.json");
+        _parseDeployedContracts("script/configs/holesky/eigenlayer_addresses_preprod.config.json");
 
         // Overwrite testAddress and multisigs to be EOAowner
         testAddress = msg.sender;
