@@ -462,6 +462,106 @@ contract AVSDirectory is
 
     /**
      *
+     *        LEGACY EXTERNAL FUNCTIONS - SUPPORT DEPRECATED IN FUTURE RELEASE AFTER SLASHING RELEASE
+     *
+     */
+
+    /**
+     *  @notice Legacy function called by the AVS's service manager contract
+     * to register an operator with the AVS. NOTE: this function will be deprecated in a future release
+     * after the slashing release. New AVSs should use `registerOperatorToOperatorSets` instead.
+     *
+     *  @param operator The address of the operator to register.
+     *  @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     *
+     *  @dev msg.sender must be the AVS.
+     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
+     */
+    function registerOperatorToAVS(
+        address operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+        // Assert `operatorSignature.expiry` has not elapsed.
+        require(
+            operatorSignature.expiry >= block.timestamp,
+            "AVSDirectory.registerOperatorToAVS: operator signature expired"
+        );
+
+        // Assert that the AVS is not an operator set AVS.
+        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.registerOperatorToAVS: AVS is an operator set AVS");
+
+        // Assert that the `operator` is not actively registered to the AVS.
+        require(
+            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
+            "AVSDirectory.registerOperatorToAVS: operator already registered"
+        );
+
+        // Assert `operator` has not already spent `operatorSignature.salt`.
+        require(
+            !operatorSaltIsSpent[operator][operatorSignature.salt],
+            "AVSDirectory.registerOperatorToAVS: salt already spent"
+        );
+
+        // Assert `operator` is a registered operator.
+        require(
+            delegation.isOperator(operator),
+            "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
+        );
+
+        // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
+        EIP1271SignatureUtils.checkSignature_EIP1271({
+            signer: operator,
+            digestHash: calculateOperatorAVSRegistrationDigestHash({
+                operator: operator,
+                avs: msg.sender,
+                salt: operatorSignature.salt,
+                expiry: operatorSignature.expiry
+            }),
+            signature: operatorSignature.signature
+        });
+
+        // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
+        operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+
+        // Set the operator as registered
+        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
+
+        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
+    }
+
+    /**
+     *  @notice Legacy function called by an AVS to deregister an operator from the AVS.
+     * NOTE: this function will be deprecated in a future release after the slashing release.
+     * New AVSs integrating should use `deregisterOperatorFromOperatorSets` instead.
+     *
+     *  @param operator The address of the operator to deregister.
+     *
+     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
+     */
+    function deregisterOperatorFromAVS(address operator)
+        external
+        override
+        onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
+    {
+        require(
+            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
+            "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
+        );
+
+        // Assert that the AVS is not an operator set AVS.
+        require(
+            !isOperatorSetAVS[msg.sender], 
+            "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS"
+        );
+
+        // Set the operator as deregistered
+        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
+
+        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
+    }
+
+    /**
+     *
      *                         INTERNAL FUNCTIONS
      *
      */

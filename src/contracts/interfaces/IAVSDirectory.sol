@@ -203,6 +203,33 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
+     *  @notice Legacy function called by the AVS's service manager contract
+     * to register an operator with the AVS. NOTE: this function will be deprecated in a future release
+     * after the slashing release. New AVSs should use `registerOperatorToOperatorSets` instead.
+     *
+     *  @param operator The address of the operator to register.
+     *  @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     *
+     *  @dev msg.sender must be the AVS.
+     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
+     */
+    function registerOperatorToAVS(
+        address operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external;
+
+    /**
+     *  @notice Legacy function called by an AVS to deregister an operator from the AVS.
+     * NOTE: this function will be deprecated in a future release after the slashing release.
+     * New AVSs integrating should use `deregisterOperatorFromOperatorSets` instead.
+     *
+     *  @param operator The address of the operator to deregister.
+     *
+     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
+     */
+    function deregisterOperatorFromAVS(address operator) external;
+
+    /**
      * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
      * @param operator address to modify allocations for
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
