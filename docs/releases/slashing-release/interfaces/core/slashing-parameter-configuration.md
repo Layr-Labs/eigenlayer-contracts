@@ -7,6 +7,17 @@ interface IAVSDirectory {
     /// STRUCTS
 
     /**
+     * @notice Struct representing the registration status of an operator with an operator set.
+     * Keeps track of last deregistered timestamp for slashability concerns.
+     * @param registered whether the operator is registered with the operator set
+     * @param lastDeregisteredTimestamp the timestamp at which the operator was last deregistered
+     */
+    struct OperatorSetRegistrationStatus {
+        bool registered;
+        uint32 lastDeregisteredTimestamp;
+    }
+
+    /**
      * @notice struct used to modify the allocation of slashable magnitude to list of operatorSets
      * @param strategy the strategy to allocate magnitude for
      * @param expectedTotalMagnitude the expected total magnitude of the operator used to combat against race conditions with slashing

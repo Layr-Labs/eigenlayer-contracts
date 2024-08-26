@@ -70,35 +70,23 @@ interface IServiceManager {
     ) external;
 
     /**
-     * @notice Called by this AVS's RegistryCoordinator to register an operator for its registering operatorSets
-     *
-     * @param operator the address of the operator to be added to the operator set
-     * @param quorumNumbers quorums/operatorSetIds to add the operator to
-     * @param signature the signature of the operator on their intent to register
-     * @dev msg.sender should be the RegistryCoordinator
-     * @dev calls operatorSetManager.registerOperatorToOperatorSets()
+     * @notice Forwards a call to EigenLayer's AVSDirectory contract to register an operator to operator sets
+     * @param operator The address of the operator to register.
+     * @param operatorSetIds The IDs of the operator sets.
+     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
     function registerOperatorToOperatorSets(
         address operator,
-        bytes calldata quorumNumbers,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signature
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
     /**
-     * @notice Called by this AVS's RegistryCoordinator to deregister an operator for its operatorSets
-     *
-     * @param operator the address of the operator to be removed from the
-     * operator set
-     * @param quorumNumbers the quorumNumbers/operatorSetIds to deregister the operator for
-     *
-     * @dev msg.sender should be the RegistryCoordinator
-     * @dev operator must be registered for the given operator sets
-     * @dev calls operatorSetManager.deregisterOperatorFromOperatorSets()
+     * @notice Forwards a call to EigenLayer's AVSDirectory contract to deregister an operator from operator sets
+     * @param operator The address of the operator to deregister.
+     * @param operatorSetIds The IDs of the operator sets.
      */
-    function deregisterOperatorFromOperatorSets(
-        address operator,
-        bytes calldata quorumNumbers
-    ) external;
+    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
 
     /// VIEW
 
@@ -130,19 +118,37 @@ For each existing Operator, to migrate their registration to the OperatorSetMana
 
 Reverts If:
 
-* The operator has already migrated
-* The call to the OperatorSetManager to register the operator reverts (TODO: link)
+1. The operator has already migrated
+2. The call to the OperatorSetManager to register the operator reverts (TODO: link)
 
-#### ejectNonMigratedOperators
+#### **ejectNonMigratedOperators**
 
 Only callable by ServiceManager contract owner, ejectNonmigratedOperators will eject all currently registered operators that haven't migrated their registration with OperatorSets. This requires the RegistryCoordinator of the AVS to set their ejector to temporarily be the ServiceManager contract to allow for this call to succeed.
 
 Reverts If:
 
-* ServiceManager is not the RegistryCoordinator ejector address
-* Input param `OperatorSetId >= RegistryCoordinator.quorumCount()`
-* The provided operatorSetId is not a valid quorum
-* If any of the operators in the input array is registered for the OperatorSet
+1. ServiceManager is not the RegistryCoordinator ejector address
+2. Input param `OperatorSetId >= RegistryCoordinator.quorumCount()`
+3. The provided operatorSetId is not a valid quorum
+4. If any of the operators in the input array is registered for the OperatorSet
+
+#### **registerOperatorToOperatorSets**
+
+Forwards a call from the RegistryCoordinator to the AVSDirectory contract to register an operator for the given operatorSetIds.
+
+Reverts if forwarded call reverts:
+
+1. Any of the operatorSets don't exist
+2. `operator` is not registered with the DelegationManager
+3. `operator` is already registered for any of the operatorSets
+4. `operatorSignature` is not from the `operator`
 
 
+#### **deregisterOperatorFromOperatorSets**
+
+Forwards a call from the RegistryCoordinator to the AVSDirectory contract to deregister an operator for the given operatorSetIds.
+
+Reverts if forwarded call reverts:
+
+1. `operator` is not registered for at least one of the operatorSets
 

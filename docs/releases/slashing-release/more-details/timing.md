@@ -5,11 +5,13 @@ The timing and delays imposed in the slashing protocol are intricate and very im
 ## Slashing Requests
 
 * Slashing requests are executed synchronously
+* Other operatorSets(AVSs) the operator is registered for do not have their slashable stake affected when their operator is slashed. Each operatorSet has their own designated proportion of stake allocated to them by the discretion of the operator.
 
 ## Magnitude Updates
 
-* Updates to magnitudes take effect after 21 days
-* There can be at most 3 pending allocations/deallocations for a certain strategy, operator, and operatorSet at a time
+* Magnitude allocations have a default allocation delay of 21 days. An operator can perform a one-time initialization of this allocation delay to their desired value.
+* Magnitude deallocations have a fixed delay of 17.5 days. This is to ensure a minimum slashability window for the AVSs and operatorSets the slashable stake is securing.
+* There can be at most 1 pending allocation OR deallocation for a certain strategy, operator, and operatorSet at a time
 
 ## Withdrawals
 

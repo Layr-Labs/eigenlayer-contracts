@@ -4,12 +4,6 @@
 interface IAVSDirectory {
 
 	/// STRUCTS & ENUMS
-	
-	/// @notice Enum representing the status of an operator's registration with an AVS
-	enum OperatorAVSRegistrationStatus {
- 		UNREGISTERED,       // Operator not registered to AVS
- 		REGISTERED          // Operator registered to AVS
- 	}
 
 	/// @notice Enum representing the registration status of an operator with an AVS.
     /// @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
