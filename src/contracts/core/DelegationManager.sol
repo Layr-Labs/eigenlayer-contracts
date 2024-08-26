@@ -553,9 +553,15 @@ contract DelegationManager is
             // stakerStrategyScaledShares(staker, strategies[i]) needs to be updated to be equal to newly scaled shares.
             // we take the difference between the shares and the scaledShares to update the staker's scaledShares. The key property
             // here is that scaledShares should be <= shares and can never be greater than shares due to totalMagnitude being
-            // a monotonically decreasing value.
+            // a monotonically decreasing value. The exact same property applies to the EigenPodManager and podOwnerScaledShares
+            // where real ETH shares are scaled based on the delegated operator (if any) prior to being stored as scaledShares in
+            // the EigenPodManager.
             if (shares[i] > scaledShares[i]) {
-                strategyManager.removeScaledShares(staker, strategies[i], shares[i] - scaledShares[i]);
+                if (strategies[i] == beaconChainETHStrategy) {
+                    eigenPodManager.removeScaledShares(staker, shares[i] - scaledShares[i]);
+                } else {
+                    strategyManager.removeScaledShares(staker, strategies[i], shares[i] - scaledShares[i]);
+                }
             }
 
             unchecked {
@@ -685,7 +691,7 @@ contract DelegationManager is
                  * The return value will be lower than the input value in the case where the staker has an existing share deficit
                  */
                 uint256 increaseInDelegateableScaledShares =
-                    eigenPodManager.addShares({podOwner: staker, shares: scaledShares[i]});
+                    eigenPodManager.addScaledShares({podOwner: staker, scaledShares: scaledShares[i]});
                 address podOwnerOperator = delegatedTo[staker];
                 // Similar to `isDelegated` logic
                 if (podOwnerOperator != address(0)) {
@@ -770,7 +776,7 @@ contract DelegationManager is
                  * shares from the operator to whom the staker is delegated.
                  * It will also revert if the share amount being withdrawn is not a whole Gwei amount.
                  */
-                eigenPodManager.removeShares(staker, scaledShares[i]);
+                eigenPodManager.removeScaledShares(staker, scaledShares[i]);
             } else {
                 require(
                     staker == withdrawer || !strategyManager.thirdPartyTransfersForbidden(strategies[i]),
@@ -1044,13 +1050,13 @@ contract DelegationManager is
      * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
      */
     function getDelegatableScaledShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
-        // Get currently active shares and strategies for `staker`
-        int256 podShares = eigenPodManager.podOwnerShares(staker);
+        // Get currently active scaled shares and strategies for `staker`
+        int256 scaledPodShares = eigenPodManager.podOwnerScaledShares(staker);
         (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) =
             strategyManager.getDeposits(staker);
 
         // Has no shares in EigenPodManager, but potentially some in StrategyManager
-        if (podShares <= 0) {
+        if (scaledPodShares <= 0) {
             return (strategyManagerStrats, strategyManagerShares);
         }
 
@@ -1062,7 +1068,7 @@ contract DelegationManager is
             strategies = new IStrategy[](1);
             scaledShares = new uint256[](1);
             strategies[0] = beaconChainETHStrategy;
-            scaledShares[0] = uint256(podShares);
+            scaledShares[0] = uint256(scaledPodShares);
         } else {
             // Has shares in both
 
@@ -1082,7 +1088,7 @@ contract DelegationManager is
 
             // 3. Place EigenPodManager strat/shares in return arrays
             strategies[strategies.length - 1] = beaconChainETHStrategy;
-            scaledShares[strategies.length - 1] = uint256(podShares);
+            scaledShares[strategies.length - 1] = uint256(scaledPodShares);
         }
         
         return (strategies, scaledShares);
