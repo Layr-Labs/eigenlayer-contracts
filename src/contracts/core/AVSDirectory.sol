@@ -27,9 +27,6 @@ contract AVSDirectory is
     /// @dev BIPS factor for slashable bips
     uint256 internal constant BIPS_FACTOR = 10_000;
 
-    /// @dev Delay before allocations take effect
-    uint32 public constant DEFAULT_ALLOCATION_DELAY = 21 days;
-
     /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
     uint32 public constant DEALLOCATION_DELAY = 17.5 days;
 
@@ -287,11 +284,16 @@ contract AVSDirectory is
         require(
             delegation.isOperator(operator), "AVSDirectory.modifyAllocations: operator not registered to EigenLayer yet"
         );
-
+        AllocationDelayDetails memory details = allocationDelay[operator];
+        require(
+            details.isSet,
+            "AVSDirectory.modifyAllocations: operator must initialize allocation delay before modifying allocations"
+        );
+        // effect timestamp for allocations to take effect. This is configurable by operators
+        uint32 effectTimestamp = uint32(block.timestamp) + details.allocationDelay;
         // completable timestamp for deallocations
         uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
-        // effect timestamp for allocations to take effect. This is configurable by operators
-        uint32 effectTimestamp = uint32(block.timestamp) + getAllocationDelay(operator);
+
         for (uint256 i = 0; i < allocations.length; ++i) {
             // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
             _updateFreeMagnitude({
@@ -621,20 +623,6 @@ contract AVSDirectory is
                 // Newly configured magnitude is greater than current value.
                 // Therefore we handle this as an allocation
 
-                {
-                    (bool exists, uint32 latestCheckpointTimestamp,) =
-                        _magnitudeUpdate[operator][allocation.strategy][operatorSetKey].latestCheckpoint();
-                    if (exists) {
-                        // Check that the allocation effect timestamp is greater than the latest checkpoint timestamp
-                        // this edge case could be reached if an operator configures their allocation delay to be less than the default
-                        // but they have a pending allocation in the future and then try to make another allocation shortly after
-                        require(
-                            allocationEffectTimestamp >= latestCheckpointTimestamp,
-                            "AVSDirectory._modifyAllocations: allocation checkpoints must be ordered by timestamps"
-                        );
-                    }
-                }
-
                 // 1. allocate magnitude which will take effect in the future 21 days from now
                 _magnitudeUpdate[operator][allocation.strategy][operatorSetKey].push({
                     key: allocationEffectTimestamp,
@@ -867,10 +855,12 @@ contract AVSDirectory is
      * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
      * from calling initializeAllocationDelay.
      * @param operator the operator to get the allocation delay for
+     * @return isSet whether the allocation delay is set and the operator can call `modifyAllocations`
+     * @return allocationDelay the allocation delay in seconds
      */
-    function getAllocationDelay(address operator) public view returns (uint32) {
+    function getAllocationDelay(address operator) public view returns (bool, uint32) {
         AllocationDelayDetails memory details = allocationDelay[operator];
-        return details.isSet ? details.allocationDelay : DEFAULT_ALLOCATION_DELAY;
+        return (details.isSet, details.allocationDelay);
     }
 
     /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
