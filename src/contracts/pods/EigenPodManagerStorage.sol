@@ -68,7 +68,10 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
 
     // BEGIN STORAGE VARIABLES ADDED AFTER MAINNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /**
-     * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
+     * @notice Mapping from Pod owner owner to the number of scaled shares they have in the virtual beacon chain ETH strategy.
+     * NOTE: This mapping was previously named `podOwnerShares` but will now store scaled shares based on the currently delegated operator
+     * for the podOwner to account for Slashing in EigenLayer. There is a backwards compatible view function `podOwnerShares` that will convert
+     * scaled shares to its actual ETH shares.
      * @dev The share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
      * decrease between the pod owner queuing and completing a withdrawal.
      * When the pod owner's shares would otherwise increase, this "deficit" is decreased first _instead_.
