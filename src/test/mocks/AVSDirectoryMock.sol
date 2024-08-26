@@ -91,7 +91,7 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         uint16 numToComplete
     ) external view returns (uint64) {}
 
-    function getAllocationDelay(address operator) external view returns (uint32) {}
+    function getAllocationDelay(address operator) external view returns (bool, uint32) {}
 
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
