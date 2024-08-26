@@ -97,6 +97,9 @@ interface IEigenPodManager is IPausable {
      */
     function podOwnerShares(address podOwner) external view returns (int256);
 
+    /// TODO: natspec
+    function podOwnerScaledShares(address podOwner) external view returns (int256);
+
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
 
@@ -108,7 +111,7 @@ interface IEigenPodManager is IPausable {
      * shares from the operator to whom the staker is delegated.
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
-    function removeShares(address podOwner, uint256 shares) external;
+    function removeScaledShares(address podOwner, uint256 scaledShares) external;
 
     /**
      * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
@@ -117,7 +120,7 @@ interface IEigenPodManager is IPausable {
      * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero)
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
-    function addShares(address podOwner, uint256 shares) external returns (uint256);
+    function addScaledShares(address podOwner, uint256 scaledShares) external returns (uint256);
 
     /**
      * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
