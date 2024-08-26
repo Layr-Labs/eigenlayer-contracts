@@ -463,12 +463,14 @@ contract AVSDirectory is
 
     /**
      *
-     *        LEGACY EXTERNAL FUNCTIONS - SUPPORT DEPRECATED BY SLASHING RELEASE
+     *        LEGACY EXTERNAL FUNCTIONS - SUPPORT DEPRECATED IN FUTURE RELEASE AFTER SLASHING RELEASE
      *
      */
 
     /**
-     *  @notice Called by the AVS's service manager contract to register an operator with the AVS.
+     *  @notice Legacy function called by the AVS's service manager contract
+     * to register an operator with the AVS. NOTE: this function will be deprecated in a future release
+     * after the slashing release. New AVSs should use `registerOperatorToOperatorSets` instead.
      *
      *  @param operator The address of the operator to register.
      *  @param operatorSignature The signature, salt, and expiry of the operator's signature.
@@ -529,7 +531,9 @@ contract AVSDirectory is
     }
 
     /**
-     *  @notice Called by an AVS to deregister an operator from the AVS.
+     *  @notice Legacy function called by an AVS to deregister an operator from the AVS.
+     * NOTE: this function will be deprecated in a future release after the slashing release.
+     * New AVSs integrating should use `deregisterOperatorFromOperatorSets` instead.
      *
      *  @param operator The address of the operator to deregister.
      *
@@ -546,7 +550,10 @@ contract AVSDirectory is
         );
 
         // Assert that the AVS is not an operator set AVS.
-        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS");
+        require(
+            !isOperatorSetAVS[msg.sender], 
+            "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS"
+        );
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
