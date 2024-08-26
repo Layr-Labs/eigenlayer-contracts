@@ -112,15 +112,14 @@ contract EigenPodManager is
             "EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount"
         );
         int256 currentPodOwnerScaledShares = podOwnerScaledShares[podOwner];
-
         int256 updatedPodOwnerScaledShares;
         // scale the sharesDelta and add to the podOwnerShares
         if (sharesDelta < 0) {
-            updatedPodOwnerScaledShares = currentPodOwnerScaledShares -
-                int256(delegationManager.getStakerScaledShares(podOwner, beaconChainETHStrategy, uint256(-sharesDelta)));
+            updatedPodOwnerScaledShares = currentPodOwnerScaledShares
+                - int256(delegationManager.getStakerScaledShares(podOwner, beaconChainETHStrategy, uint256(-sharesDelta)));
         } else {
-            updatedPodOwnerScaledShares = currentPodOwnerScaledShares +
-                int256(delegationManager.getStakerScaledShares(podOwner, beaconChainETHStrategy, uint256(sharesDelta)));
+            updatedPodOwnerScaledShares = currentPodOwnerScaledShares
+                + int256(delegationManager.getStakerScaledShares(podOwner, beaconChainETHStrategy, uint256(sharesDelta)));
         }
         podOwnerScaledShares[podOwner] = updatedPodOwnerScaledShares;
 
@@ -292,9 +291,17 @@ contract EigenPodManager is
     function podOwnerShares(address podOwner) public view returns (int256) {
         int256 podOwnerShares;
         if (podOwnerScaledShares[podOwner] < 0) {
-            podOwnerShares = -int256(delegationManager.getStakerShares(podOwner, beaconChainETHStrategy, uint256(-podOwnerScaledShares[podOwner])));
+            podOwnerShares = -int256(
+                delegationManager.getStakerShares(
+                    podOwner, beaconChainETHStrategy, uint256(-podOwnerScaledShares[podOwner])
+                )
+            );
         } else {
-            podOwnerShares = int256(delegationManager.getStakerShares(podOwner, beaconChainETHStrategy, uint256(podOwnerScaledShares[podOwner])));
+            podOwnerShares = int256(
+                delegationManager.getStakerShares(
+                    podOwner, beaconChainETHStrategy, uint256(podOwnerScaledShares[podOwner])
+                )
+            );
         }
         return podOwnerShares;
     }
