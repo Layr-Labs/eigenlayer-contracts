@@ -1071,7 +1071,7 @@ contract DelegationManager is
             scaledShares[0] = uint256(scaledPodShares);
         } else {
             // Has shares in both
-
+// TODO: make more efficient by resizing array
             // 1. Allocate return arrays
             strategies = new IStrategy[](strategyManagerStrats.length + 1);
             scaledShares = new uint256[](strategies.length);
