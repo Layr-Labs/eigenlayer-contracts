@@ -26,8 +26,9 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
         keccak256("OperatorSetForceDeregistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
 
     /// @notice The EIP-712 typehash for the `MagnitudeAdjustments` struct used by the contract
-    bytes32 public constant MAGNITUDE_ADJUSTMENT_TYPEHASH =
-        keccak256("MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)");
+    bytes32 public constant MAGNITUDE_ADJUSTMENT_TYPEHASH = keccak256(
+        "MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)"
+    );
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
@@ -66,9 +67,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// Note that totalMagnitude is monotonically decreasing and only gets updated upon slashing
     mapping(address => mapping(IStrategy => Checkpoints.History)) internal _totalMagnitudeUpdate;
 
-    /// @notice Mapping: operator => strategy => avs => operatorSetId => checkpointed magnitude
-    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => Checkpoints.History)))) internal
-        _magnitudeUpdate;
+    /// @notice Mapping: operator => strategy => operatorSet (encoded) => checkpointed magnitude
+    mapping(address => mapping(IStrategy => mapping(bytes32 => Checkpoints.History))) internal _magnitudeUpdate;
 
     /// @notice Mapping: operator => strategy => free available magnitude that can be allocated to operatorSets
     /// Decrements whenever allocations take place and increments when deallocations are completed
@@ -80,9 +80,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: operator => strategy => index pointing to next pendingFreeMagnitude to complete and add to freeMagnitude
     mapping(address => mapping(IStrategy => uint256)) internal _nextPendingFreeMagnitudeIndex;
 
-    /// @notice Mapping: operator => strategy => avs => operatorSetId => list of queuedDeallocation indices
-    mapping(address => mapping(IStrategy => mapping(address => mapping(uint32 => uint256[])))) internal
-        _queuedDeallocationIndices;
+    /// @notice Mapping: operator => strategy => operatorSet (encoded) => list of queuedDeallocation indices
+    mapping(address => mapping(IStrategy => mapping(bytes32 => uint256[]))) internal _queuedDeallocationIndices;
 
     /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
     /// This determines how long it takes for allocations to take in the future. Can only be set one time for each operator

@@ -325,8 +325,10 @@ interface IAVSDirectory is ISignatureUtils {
      * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
      * from calling initializeAllocationDelay.
      * @param operator the operator to get the allocation delay for
+     * @return isSet whether the allocation delay is set and the operator can call `modifyAllocations`
+     * @return allocationDelay the allocation delay in seconds
      */
-    function getAllocationDelay(address operator) external view returns (uint32);
+    function getAllocationDelay(address operator) external view returns (bool, uint32);
 
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
