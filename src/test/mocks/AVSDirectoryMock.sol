@@ -48,10 +48,6 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         uint16[] calldata freeMagnitudes
     ) external {}
 
-    function initializeAllocationDelay(
-        uint32 delay
-    ) external {}
-
     function slashOperator(
         address operator,
         uint32 operatorSetId,
@@ -62,8 +58,6 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
     function updateAVSMetadataURI(string calldata metadataURI) external {}
 
     function cancelSalt(bytes32 salt) external {}
-
-    function INITIAL_TOTAL_MAGNITUDE() external view returns (uint64) {}
 
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool) {}
 
@@ -91,7 +85,11 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         uint16 numToComplete
     ) external view returns (uint64) {}
 
-    function getAllocationDelay(address operator) external view returns (bool, uint32) {}
+    function DEALLOCATION_DELAY() external view returns (uint32) {}
+
+    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory) {}
+
+    function getTotalMagnitudesAtTimestamp(address operator, IStrategy[] calldata strategies, uint32 timestamp) external view returns (uint64[] memory) {}
 
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,

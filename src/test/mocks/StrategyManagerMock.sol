@@ -67,7 +67,7 @@ contract StrategyManagerMock is
         returns (uint256 shares) {}
 
     /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
+    function stakerStrategyScaledShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
 
     /**
      * @notice mocks the return value of getDeposits
@@ -98,6 +98,13 @@ contract StrategyManagerMock is
     function stakerStrats(address staker) external view returns (IStrategy[] memory) {}
 
     uint256 public stakerStrategyListLengthReturnValue;
+
+    /// @notice Returns the current shares of `user` in `strategy`
+    function stakerStrategyShares(
+        address user,
+        IStrategy strategy
+    ) external view returns (uint256 shares) {}
+
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
     function stakerStrategyListLength(address /*staker*/) external view returns (uint256) {
         return stakerStrategyListLengthReturnValue;
@@ -111,9 +118,9 @@ contract StrategyManagerMock is
         strategyIsWhitelistedForDeposit[strategy] = value;
     }
 
-    function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
+    function removeScaledShares(address staker, IStrategy strategy, uint256 shares) external {}
 
-    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external {}
+    function addScaledShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external {}
     
     function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external {}
 

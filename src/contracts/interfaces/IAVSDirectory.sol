@@ -10,7 +10,6 @@ interface IAVSDirectory is ISignatureUtils {
     enum OperatorAVSRegistrationStatus {
         UNREGISTERED, // Operator not registered to AVS
         REGISTERED // Operator registered to AVS
-
     }
 
     /**
@@ -53,16 +52,6 @@ interface IAVSDirectory is ISignatureUtils {
     struct PendingFreeMagnitude {
         uint64 magnitudeDiff;
         uint32 completableTimestamp;
-    }
-
-    /**
-     * @notice struct used to store the allocation delay for an operator
-     * @param isSet whether the allocation delay is set. Can only be configured one time for each operator
-     * @param allocationDelay the delay in seconds for the operator's allocations
-     */
-    struct AllocationDelayDetails {
-        bool isSet;
-        uint32 allocationDelay;
     }
 
     /// @notice Emitted when an operator set is created by an AVS.
@@ -278,12 +267,6 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Called by operators to set their allocation delay. Can only be set one time.
-     * @param delay the allocation delay in seconds
-     */
-    function initializeAllocationDelay(uint32 delay) external;
-
-    /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
      *  @param metadataURI The URI for metadata associated with an AVS.
@@ -305,9 +288,6 @@ interface IAVSDirectory is ISignatureUtils {
      *
      */
 
-    /// @dev The initial total magnitude for an operator
-    function INITIAL_TOTAL_MAGNITUDE() external view returns (uint64);
-
     /**
      * @notice Get the allocatable magnitude for an operator and strategy based on number of pending deallocations
      * that could be completed at the same time. This is the sum of freeMagnitude and the sum of all pending completable deallocations.
@@ -321,14 +301,8 @@ interface IAVSDirectory is ISignatureUtils {
         uint16 numToComplete
     ) external view returns (uint64);
 
-    /**
-     * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
-     * from calling initializeAllocationDelay.
-     * @param operator the operator to get the allocation delay for
-     * @return isSet whether the allocation delay is set and the operator can call `modifyAllocations`
-     * @return allocationDelay the allocation delay in seconds
-     */
-    function getAllocationDelay(address operator) external view returns (bool, uint32);
+    /// @dev Delay before deallocations take effect and are added back into freeMagnitude
+    function DEALLOCATION_DELAY() external view returns (uint32);
 
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
@@ -355,6 +329,18 @@ interface IAVSDirectory is ISignatureUtils {
         uint32 timestamp,
         bool linear
     ) external view returns (uint24[] memory);
+
+    /// @notice Returns the total magnitude of an operator for a given set of strategies
+    /// TODO: finish natspec
+    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory);
+
+    /// @notice Returns the total magnitude of an operator for a given set of strategies at a given timestamp
+    /// TODO: finish natspec
+    function getTotalMagnitudesAtTimestamp(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 timestamp
+    ) external view returns (uint64[] memory);
 
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 

@@ -7,6 +7,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
+import "../libraries/ShareScalingLib.sol";
 import "./AVSDirectoryStorage.sol";
 
 contract AVSDirectory is
@@ -31,10 +32,7 @@ contract AVSDirectory is
     /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
     uint32 public constant DEALLOCATION_DELAY = 17.5 days;
 
-    /// @dev The initial total magnitude for an operator
-    uint64 public constant INITIAL_TOTAL_MAGNITUDE = 1 ether;
-
-    /// @dev Maximum number of pending allocations AND deallocations for a single operator, operatorSet, strategy
+    /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
     uint256 public constant MAX_PENDING_UPDATES = 1;
 
     /// @dev Returns the chain ID from the time the contract was deployed.
@@ -285,7 +283,7 @@ contract AVSDirectory is
         require(
             delegation.isOperator(operator), "AVSDirectory.modifyAllocations: operator not registered to EigenLayer yet"
         );
-        AllocationDelayDetails memory details = allocationDelay[operator];
+        IDelegationManager.AllocationDelayDetails memory details = delegation.operatorAllocationDelay(operator);
         require(
             details.isSet,
             "AVSDirectory.modifyAllocations: operator must initialize allocation delay before modifying allocations"
@@ -309,7 +307,7 @@ contract AVSDirectory is
             uint64 currentTotalMagnitude = _getLatestTotalMagnitude(operator, allocations[i].strategy);
             require(
                 currentTotalMagnitude == allocations[i].expectedTotalMagnitude,
-                "AVSDirectory.setAllocations: current total magnitude does not match expected"
+                "AVSDirectory.modifyAllocations: current total magnitude does not match expected"
             );
 
             // 3. set allocations for the strategy after updating freeMagnitude
@@ -429,21 +427,6 @@ contract AVSDirectory is
                 value: _getLatestTotalMagnitude(operator, strategies[i]) - slashedMagnitude
             });
         }
-    }
-
-    /**
-     * @notice Called by operators to set their allocation delay one time
-     * @param delay the allocation delay in seconds
-     */
-    function initializeAllocationDelay(uint32 delay) external {
-        require(
-            delegation.isOperator(msg.sender),
-            "AVSDirectory.initializeAllocationDelay: operator not registered to EigenLayer yet"
-        );
-        require(
-            !allocationDelay[msg.sender].isSet, "AVSDirectory.initializeAllocationDelay: allocation delay already set"
-        );
-        allocationDelay[msg.sender] = AllocationDelayDetails({isSet: true, allocationDelay: delay});
     }
 
     /**
@@ -779,9 +762,12 @@ contract AVSDirectory is
     function _getLatestTotalMagnitude(address operator, IStrategy strategy) internal returns (uint64) {
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
         if (!exists) {
-            totalMagnitude = INITIAL_TOTAL_MAGNITUDE;
-            _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
-            freeMagnitude[operator][strategy] = INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+            _totalMagnitudeUpdate[operator][strategy].push({
+                key: uint32(block.timestamp),
+                value: totalMagnitude
+            });
+            freeMagnitude[operator][strategy] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
         }
 
         return uint64(totalMagnitude);
@@ -992,21 +978,9 @@ contract AVSDirectory is
         address operator,
         IStrategy strategy,
         uint16 numToComplete
-    ) public view returns (uint64) {
+    ) external view returns (uint64) {
         (uint64 freeMagnitudeToAdd,) = _getPendingFreeMagnitude(operator, strategy, numToComplete);
         return freeMagnitude[operator][strategy] + freeMagnitudeToAdd;
-    }
-
-    /**
-     * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
-     * from calling initializeAllocationDelay.
-     * @param operator the operator to get the allocation delay for
-     * @return isSet whether the allocation delay is set and the operator can call `modifyAllocations`
-     * @return allocationDelay the allocation delay in seconds
-     */
-    function getAllocationDelay(address operator) public view returns (bool, uint32) {
-        AllocationDelayDetails memory details = allocationDelay[operator];
-        return (details.isSet, details.allocationDelay);
     }
 
     /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
@@ -1015,6 +989,52 @@ contract AVSDirectory is
             operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
         return isMember(operator, operatorSet)
             || registrationStatus.lastDeregisteredTimestamp + DEALLOCATION_DELAY >= block.timestamp;
+    }
+
+    /// @notice Returns the total magnitude of an operator for a given set of strategies
+    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory) {
+        uint64[] memory totalMagnitudes = new uint64[](strategies.length);
+        for (uint256 i = 0; i < strategies.length;) {
+            (bool exists, uint32 key, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestCheckpoint();
+            if (!exists) {
+                totalMagnitudes[i] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+            } else {
+                totalMagnitudes[i] = uint64(value);
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+        return totalMagnitudes;
+    }
+
+    /// @notice Returns the total magnitude of an operator for a given set of strategies at a given timestamp
+    function getTotalMagnitudesAtTimestamp(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 timestamp
+    ) external view returns (uint64[] memory) {
+        uint64[] memory totalMagnitudes = new uint64[](strategies.length);
+        for (uint256 i = 0; i < strategies.length;) {
+            (
+                uint224 value,
+                uint256 pos,
+                uint256 length
+            ) = _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
+
+            // if there is no existing total magnitude checkpoint
+            if (value != 0 || pos != 0) {
+                totalMagnitudes[i] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+            } else {
+                totalMagnitudes[i] = uint64(value);
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+        return totalMagnitudes;
     }
 
     // /**
