@@ -1022,9 +1022,9 @@ contract AVSDirectory is
     function getAllocatableMagnitude(
         address operator,
         IStrategy strategy,
-        uint8 numToComplete
+        uint16 numToComplete
     ) public view returns (uint64) {
-        if (_totalMagnitudeUpdate[operator][strategy].length() == 0) return INITIAL_TOTAL_MAGNITUDE;
+        if (_totalMagnitudeUpdate[operator][strategy].length() == 0) return ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
         (uint64 freeMagnitudeToAdd,) = _getPendingFreeMagnitude(operator, strategy, numToComplete);
         return freeMagnitude[operator][strategy] + freeMagnitudeToAdd;
     }
