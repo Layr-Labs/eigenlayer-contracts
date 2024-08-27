@@ -6,6 +6,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
+import "../interfaces/IAVSDirectory.sol";
 
 /**
  * @title Storage variables for the `StrategyManager` contract.
@@ -27,6 +28,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     IDelegationManager public immutable delegation;
     IEigenPodManager public immutable eigenPodManager;
     ISlasher public immutable slasher;
+    IAVSDirectory public immutable avsDirectory;
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -43,9 +45,9 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * This variable was migrated to the DelegationManager instead.
      */
     uint256 private __deprecated_withdrawalDelayBlocks;
-    /// @notice Mapping: staker => Strategy => number of shares which they currently hold
-    mapping(address => mapping(IStrategy => uint256)) public stakerStrategyShares;
-    /// @notice Mapping: staker => array of strategies in which they have nonzero shares
+    /// @notice Mapping: staker => Strategy => number of scaled shares which they currently hold
+    mapping(address => mapping(IStrategy => uint256)) public stakerStrategyScaledShares;
+    /// @notice Mapping: staker => array of strategies in which they have nonzero scaled shares
     mapping(address => IStrategy[]) public stakerStrategyList;
     /// @notice *Deprecated* mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     /// @dev This mapping is preserved to allow the migration of withdrawals to the DelegationManager contract.
@@ -66,16 +68,22 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(address => uint256) internal beaconChainETHSharesToDecrementOnWithdrawal;
 
     /**
-     * @notice Mapping: strategy => whether or not stakers are allowed to transfer strategy shares to another address
+     * @notice Mapping: strategy => whether or not stakers are allowed to transfer strategy scaled shares to another address
      * if true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
      * and also when performing queueWithdrawals, a staker can only withdraw to themselves
      */
     mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
 
-    constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) {
+    constructor(
+        IDelegationManager _delegation,
+        IEigenPodManager _eigenPodManager,
+        ISlasher _slasher,
+        IAVSDirectory _avsDirectory
+    ) {
         delegation = _delegation;
         eigenPodManager = _eigenPodManager;
         slasher = _slasher;
+        avsDirectory = _avsDirectory;
     }
 
     /**

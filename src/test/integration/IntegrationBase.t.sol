@@ -185,7 +185,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_HasNoDelegatableShares(User user, string memory err) internal {
         (IStrategy[] memory strategies, uint[] memory shares) = 
-            delegationManager.getDelegatableShares(address(user));
+            delegationManager.getDelegatableScaledShares(address(user));
         
         assertEq(strategies.length, 0, err);
         assertEq(strategies.length, shares.length, "assert_HasNoDelegatableShares: return length mismatch");
@@ -238,7 +238,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
                 actualShares = uint(shares);
             } else {
-                actualShares = strategyManager.stakerStrategyShares(address(user), strat);
+                actualShares = strategyManager.stakerStrategyScaledShares(address(user), strat);
             }
 
             assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
@@ -1051,7 +1051,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
                 curShares[i] = uint(shares);
             } else {
-                curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat);
+                curShares[i] = strategyManager.stakerStrategyScaledShares(address(staker), strat);
             }
         }
 
@@ -1076,7 +1076,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 curShares[i] = eigenPodManager.podOwnerShares(address(staker));
             } else {
-                curShares[i] = int(strategyManager.stakerStrategyShares(address(staker), strat));
+                curShares[i] = int(strategyManager.stakerStrategyScaledShares(address(staker), strat));
             }
         }
 
