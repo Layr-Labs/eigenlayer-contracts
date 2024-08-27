@@ -124,9 +124,9 @@ contract EigenPodManager is
         podOwnerScaledShares[podOwner] = updatedPodOwnerScaledShares;
 
         // inform the DelegationManager of the change in delegateable shares
-        int256 changeInDelegatableScaledShares = _calculateChangeInDelegatableShares({
-            sharesBefore: currentPodOwnerScaledShares,
-            sharesAfter: updatedPodOwnerScaledShares
+        int256 changeInDelegatableScaledShares = _calculateChangeInDelegatableScaledShares({
+            scaledSharesBefore: currentPodOwnerScaledShares,
+            scaledSharesAfter: updatedPodOwnerScaledShares
         });
         // skip making a call to the DelegationManager if there is no change in delegateable shares
         if (changeInDelegatableScaledShares != 0) {
@@ -189,9 +189,9 @@ contract EigenPodManager is
         emit NewTotalShares(podOwner, updatedPodOwnerScaledShares);
 
         return uint256(
-            _calculateChangeInDelegatableShares({
-                sharesBefore: currentPodOwnerScaledShares,
-                sharesAfter: updatedPodOwnerScaledShares
+            _calculateChangeInDelegatableScaledShares({
+                scaledSharesBefore: currentPodOwnerScaledShares,
+                scaledSharesAfter: updatedPodOwnerScaledShares
             })
         );
     }
@@ -259,29 +259,29 @@ contract EigenPodManager is
 
     /**
      * @notice Calculates the change in a pod owner's delegateable shares as a result of their beacon chain ETH shares changing
-     * from `sharesBefore` to `sharesAfter`. The key concept here is that negative/"deficit" shares are not delegateable.
+     * from `scaledSharesBefore` to `scaledSharesAfter`. The key concept here is that negative/"deficit" scaledShares are not delegateable.
      */
-    function _calculateChangeInDelegatableShares(
-        int256 sharesBefore,
-        int256 sharesAfter
+    function _calculateChangeInDelegatableScaledShares(
+        int256 scaledSharesBefore,
+        int256 scaledSharesAfter
     ) internal pure returns (int256) {
-        if (sharesBefore <= 0) {
-            if (sharesAfter <= 0) {
+        if (scaledSharesBefore <= 0) {
+            if (scaledSharesAfter <= 0) {
                 // if the shares started negative and stayed negative, then there cannot have been an increase in delegateable shares
                 return 0;
                 // if the shares started negative and became positive, then the increase in delegateable shares is the ending share amount
             } else {
                 // if the shares started negative and became positive, then the increase in delegateable shares is the ending share amount
-                return sharesAfter;
+                return scaledSharesAfter;
             }
         } else {
-            if (sharesAfter <= 0) {
+            if (scaledSharesAfter <= 0) {
                 // if the shares started positive and became negative, then the decrease in delegateable shares is the starting share amount
-                return (-sharesBefore);
+                return (-scaledSharesBefore);
             } else {
                 // if the shares started positive and stayed positive, then the change in delegateable shares
                 // is the difference between starting and ending amounts
-                return (sharesAfter - sharesBefore);
+                return (scaledSharesAfter - scaledSharesBefore);
             }
         }
     }
