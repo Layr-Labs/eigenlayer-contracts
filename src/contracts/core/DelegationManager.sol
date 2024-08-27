@@ -271,16 +271,16 @@ contract DelegationManager is
             withdrawalRoots = new bytes32[](strategies.length);
             for (uint256 i = 0; i < strategies.length; i++) {
                 IStrategy[] memory singleStrategy = new IStrategy[](1);
-                uint256[] memory singleShare = new uint256[](1);
+                uint256[] memory singleScaledShare = new uint256[](1);
                 singleStrategy[0] = strategies[i];
-                singleShare[0] = scaledShares[i];
+                singleScaledShare[0] = scaledShares[i];
 
                 withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
                     staker: staker,
                     operator: operator,
                     withdrawer: staker,
                     strategies: singleStrategy,
-                    scaledShares: singleShare
+                    scaledShares: singleScaledShare
                 });
             }
         }
