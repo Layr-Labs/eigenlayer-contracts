@@ -14,8 +14,8 @@ contract EigenPodManagerWrapper is EigenPodManager {
         IDelegationManager _delegationManager
     ) EigenPodManager(_ethPOS, _eigenPodBeacon, _strategyManager, _slasher, _delegationManager) {}
 
-    function calculateChangeInDelegatableShares(int256 sharesBefore, int256 sharesAfter) external pure returns (int256) {
-        return _calculateChangeInDelegatableShares(sharesBefore, sharesAfter);
+    function calculateChangeInDelegatableScaledShares(int256 sharesBefore, int256 sharesAfter) external pure returns (int256) {
+        return _calculateChangeInDelegatableScaledShares(sharesBefore, sharesAfter);
     }
 
     function setPodAddress(address owner, IEigenPod pod) external {
