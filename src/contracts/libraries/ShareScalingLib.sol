@@ -5,7 +5,7 @@ import "../interfaces/IAVSDirectory.sol";
 
 library ShareScalingLib {
     /// @dev The initial total magnitude for an operator
-    uint64 public constant INITIAL_TOTAL_MAGNITUDE = 1 ether;
+    uint64 public constant INITIAL_TOTAL_MAGNITUDE = 1e18;
 
     /**
      * @notice Returns the scaled shares of for an operator for a particular set of strategies and shares delegated to an operator
@@ -23,7 +23,7 @@ library ShareScalingLib {
         uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudes(operator, strategies);
         uint256[] memory scaledShares = new uint256[](shares.length);
         for (uint256 i = 0; i < shares.length; i++) {
-            scaledShares[i] = shares[i] * INITIAL_TOTAL_MAGNITUDE / totalMagnitudes[i];
+            scaledShares[i] = _scaleShares(shares[i], totalMagnitudes[i]);
         }
         return scaledShares;
     }
@@ -44,7 +44,7 @@ library ShareScalingLib {
         uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudes(operator, strategies);
         uint256[] memory descaledShares = new uint256[](scaledShares.length);
         for (uint256 i = 0; i < scaledShares.length; i++) {
-            descaledShares[i] = scaledShares[i] * totalMagnitudes[i] / INITIAL_TOTAL_MAGNITUDE;
+            descaledShares[i] = _descaleShares(scaledShares[i], totalMagnitudes[i]);
         }
         return descaledShares;
     }
@@ -66,7 +66,7 @@ library ShareScalingLib {
         uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudesAtTimestamp(operator, strategies, timestamp);
         uint256[] memory descaledShares = new uint256[](scaledShares.length);
         for (uint256 i = 0; i < scaledShares.length; i++) {
-            descaledShares[i] = scaledShares[i] * totalMagnitudes[i] / INITIAL_TOTAL_MAGNITUDE;
+            descaledShares[i] = _descaleShares(scaledShares[i], totalMagnitudes[i]);
         }
         return descaledShares;
     }
@@ -87,7 +87,7 @@ library ShareScalingLib {
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = strategy;
         uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudes(operator, strategies);
-        return shares * INITIAL_TOTAL_MAGNITUDE / totalMagnitudes[0];
+        return _scaleShares(shares, totalMagnitudes[0]);
     }
 
     /**
@@ -106,6 +106,16 @@ library ShareScalingLib {
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = strategy;
         uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudes(operator, strategies);
-        return scaledShares * totalMagnitudes[0] / INITIAL_TOTAL_MAGNITUDE;
+        return _descaleShares(scaledShares, totalMagnitudes[0]);
+    }
+
+    /// @notice helper pure to return scaledShares given shares and totalMagnitude
+    function _scaleShares(uint256 shares, uint64 totalMagnitude) internal pure returns (uint256) {
+        return shares * INITIAL_TOTAL_MAGNITUDE / totalMagnitude;
+    }
+
+    /// @notice helper pure to return shares(descaledShares) given scaledShares and totalMagnitude
+    function _descaleShares(uint256 scaledShares, uint64 totalMagnitude) internal pure returns (uint256) {
+        return scaledShares * totalMagnitude / INITIAL_TOTAL_MAGNITUDE;
     }
 }
