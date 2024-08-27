@@ -41,11 +41,11 @@ contract DelegationManager is
     // @dev Maximum Value for `stakerOptOutWindowBlocks`. Approximately equivalent to 6 months in blocks.
     uint256 public constant MAX_STAKER_OPT_OUT_WINDOW_BLOCKS = (180 days) / 12;
 
-    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 30 days / 12;
-
     // The max configurable withdrawal delay per strategy. Set to 30 days in seconds
     uint256 public constant MAX_WITHDRAWAL_DELAY = 30 days;
+
+    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = MAX_WITHDRAWAL_DELAY / 12;
 
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
@@ -569,7 +569,7 @@ contract DelegationManager is
 
         (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableScaledShares(staker);
 
-        // NOTE: technically the function returns scaled shares, so it needs to be descaled before scaling to the
+        // NOTE: technically the function above returns scaled shares, so it needs to be descaled before scaling to the
         // the new operator according to their totalMagnitude. However, since the staker is not delegated,
         // scaledShares = shares so we can skip descaling and read these as descaled shares.
         uint256[] memory scaledShares = ShareScalingLib.scaleShares(avsDirectory, operator, strategies, shares);
@@ -585,15 +585,20 @@ contract DelegationManager is
 
             // stakerStrategyScaledShares(staker, strategies[i]) needs to be updated to be equal to newly scaled shares.
             // we take the difference between the shares and the scaledShares to update the staker's scaledShares. The key property
-            // here is that scaledShares should be <= shares and can never be greater than shares due to totalMagnitude being
-            // a monotonically decreasing value. The exact same property applies to the EigenPodManager and podOwnerScaledShares
-            // where real ETH shares are scaled based on the delegated operator (if any) prior to being stored as scaledShares in
-            // the EigenPodManager.
-            if (shares[i] > scaledShares[i]) {
+            // here is that scaledShares should be >= shares and can never be less than shares due to totalMagnitude being
+            // a monotonically decreasing value (see ShareScalingLib.scaleShares for more info).
+            // The exact same property applies to the EigenPodManager and podOwnerScaledShares where real ETH shares are scaled based on
+            // the delegated operator (if any) prior to being stored as scaledShares in the EigenPodManager.
+            if (shares[i] < scaledShares[i]) {
                 if (strategies[i] == beaconChainETHStrategy) {
-                    eigenPodManager.removeScaledShares(staker, shares[i] - scaledShares[i]);
+                    eigenPodManager.addScaledShares(staker, scaledShares[i] - shares[i]);
                 } else {
-                    strategyManager.removeScaledShares(staker, strategies[i], shares[i] - scaledShares[i]);
+                    strategyManager.addScaledShares(
+                        staker,
+                        strategies[i].underlyingToken(), //TODO possibly remove this from the interface
+                        strategies[i],
+                        scaledShares[i] - shares[i]
+                    );
                 }
             }
 
