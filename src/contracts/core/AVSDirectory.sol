@@ -932,7 +932,7 @@ contract AVSDirectory is
         address operator,
         IStrategy strategy,
         uint16 numToComplete
-    ) public view returns (uint64) {
+    ) external view returns (uint64) {
         (uint64 freeMagnitudeToAdd,) = _getPendingFreeMagnitude(operator, strategy, numToComplete);
         return freeMagnitude[operator][strategy] + freeMagnitudeToAdd;
     }
@@ -946,7 +946,7 @@ contract AVSDirectory is
     }
 
     /// @notice Returns the total magnitude of an operator for a given set of strategies
-    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) public view returns (uint64[] memory) {
+    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length;) {
             (bool exists, uint32 key, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestCheckpoint();
@@ -968,7 +968,7 @@ contract AVSDirectory is
         address operator,
         IStrategy[] calldata strategies,
         uint32 timestamp
-    ) public view returns (uint64[] memory) {
+    ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length;) {
             (
