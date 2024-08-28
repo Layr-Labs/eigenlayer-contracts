@@ -192,7 +192,7 @@ added back to the free magnitude of the (operator, IStrategy) amount. This is by
 
 ### initializeAllocationDelay
 
-Operators can call this to initialize a one-time configurable allocation delay. 
+Operators can call this to initialize a one-time configurable allocation delay. It is not modifiable afterwards.
 
 Reverts if
 
