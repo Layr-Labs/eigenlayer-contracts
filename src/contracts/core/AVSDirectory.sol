@@ -782,10 +782,10 @@ contract AVSDirectory is
         IStrategy strategy,
         uint16 numToComplete
     ) internal view returns (uint64 freeMagnitudeToAdd, uint256 nextIndex) {
-        uint256 nextIndex = _nextPendingFreeMagnitudeIndex[operator][strategy];
+        nextIndex = _nextPendingFreeMagnitudeIndex[operator][strategy];
         uint256 pendingFreeMagnitudeLength = _pendingFreeMagnitude[operator][strategy].length;
-        uint8 completed = 0;
-        uint64 freeMagnitudeToAdd = 0;
+        uint16 completed = 0;
+        freeMagnitudeToAdd = 0;
         while (nextIndex < pendingFreeMagnitudeLength && completed < numToComplete) {
             PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][nextIndex];
             // pendingFreeMagnitude is ordered by completableTimestamp. If we reach one that is not completable yet, then break
