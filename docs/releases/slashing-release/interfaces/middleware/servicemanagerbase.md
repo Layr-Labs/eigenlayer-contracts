@@ -9,65 +9,7 @@ description: >-
 ```solidity
 interface IServiceManager {
 
-    /// EVENTS
-    event OperatorSetStrategiesMigrated(uint32 operatorSetId, IStrategy[] strategies);
-    event OperatorMigratedToOperatorSets(address operator, uint32[] indexed operatorSetIds);
-
     /// EXTERNAL - STATE MODIFYING
-    
-    /**
-     * @notice called by the AVS StakeRegistry whenever a new IStrategy
-     * is added to a quorum/operatorSet
-     * @dev calls operatorSetManager.addStrategiesToOperatorSet()
-     */
-    function addStrategiesToOperatorSet(
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies
-    ) external;
-
-    /**
-     * @notice called by the AVS StakeRegistry whenever a new IStrategy
-     * is removed from a quorum/operatorSet
-     * @dev calls operatorSetManager.removeStrategiesFromOperatorSet()
-     */
-    function removeStrategiesFromOperatorSet(
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies
-    ) external;
-
-    /**
-     * @notice One-time call that migrates all existing strategies for each quorum to their respective operator sets
-     * Note: a separate migration per operator must be performed to migrate an existing operator to the operator set
-     * See migrateOperatorToOperatorSets() below
-     * @dev calls operatorSetManager.addStrategiesToOperatorSet()
-     */
-    function migrateStrategiesToOperatorSets() external;
-
-    /**
-     * @notice One-time call to migrate an existing operator to the respective operator sets.
-     * The operator needs to provide a signature over the operatorSetIds they are currently registered
-     * for. This can be retrieved externally by calling getOperatorSetIds.
-     * @param operator the address of the operator to be migrated
-     * @param signature the signature of the operator on their intent to migrate
-     * @dev calls operatorSetManager.registerOperatorToOperatorSets()
-     */
-    function migrateOperatorToOperatorSets(
-        address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signature
-    ) external;
-
-    /**
-     * @notice Once strategies have been migrated and operators have been migrated to operator sets.
-     * The ServiceManager owner can eject any operators that have yet to completely migrate fully to operator sets.
-     * This final step of the migration process will ensure the full migration of all operators to operator sets.
-     * @param operators The list of operators to eject for the given OperatorSet
-     * @param operatorSetId This AVS's operatorSetId to eject operators from
-     * @dev The RegistryCoordinator MUST set this ServiceManager contract to be the ejector address for this call to succeed
-     */
-    function ejectNonMigratedOperators(
-        address[] calldata operators,
-        uint32 operatorSetId
-    ) external;
 
     /**
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to register an operator to operator sets
@@ -88,7 +30,47 @@ interface IServiceManager {
      */
     function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
 
+    /// MIGRATION FUNCTIONS FOR EXISTING OPERATORS PRIOR TO UPGRADE
+
+    /**
+     * @notice Migrates the AVS to use operator sets and creates new operator set IDs.
+     * @param operatorSetsToCreate An array of operator set IDs to create.
+     * @dev This function can only be called by the contract owner.
+     */
+    function migrateAndCreateOperatorSetIds(uint32[] memory operatorSetsToCreate) external;
+
+    /**
+     * @notice Migrates operators to their respective operator sets.
+     * @param operatorSetIds A 2D array where each sub-array contains the operator set IDs for a specific operator.
+     * @param operators An array of operator addresses to migrate.
+     * @dev This function can only be called by the contract owner.
+     * @dev Reverts if the migration has already been finalized.
+     */
+    function migrateToOperatorSets(uint32[][] memory operatorSetIds, address[] memory operators) external;
+
+    /**
+     * @notice Finalizes the migration process, preventing further migrations.
+     * @dev This function can only be called by the contract owner.
+     * @dev Reverts if the migration has already been finalized.
+     */
+    function finalizeMigration() external;
+
     /// VIEW
+
+    /**
+     * @notice Retrieves the operators to migrate along with their respective operator set IDs.
+     * @return operatorSetIdsToCreate An array of operator set IDs to create.
+     * @return operatorSetIds A 2D array where each sub-array contains the operator set IDs for a specific operator.
+     * @return allOperators An array of all unique operator addresses.
+     */
+    function getOperatorsToMigrate()
+        external
+        view
+        returns (
+            uint32[] memory operatorSetIdsToCreate,
+            uint32[][] memory operatorSetIds,
+            address[] memory allOperators
+        );
 
     /// @notice Returns the operator set IDs for the given operator address by querying the RegistryCoordinator
     function getOperatorSetIds(address operator) external view returns (uint32[] memory);
@@ -98,39 +80,54 @@ interface IServiceManager {
 
 ### AVS Migration Process
 
-1. Perform upgrade of AVS middleware contracts and perform a one-time call of `migrateStrategiesToOperatorSets` to add existing quorum strategies
-2. Existing operators are provide a signature which is then passed to `ServiceManager.migrateOperatorToOperatorSets()`  which registers the operator with the OperatorSetManager contract. This can be permissionlessly called by anyone so either the operator can submit the tx themselves or they can provide a signature and EigenLabs or the AVS can migrate the Operator. This is only callable once per nonmigrated Operator that was registered before the upgrade.
-3. After a long enough period for Operators to migrate, the ServiceManagerOwner can eject non-migrated operators calling `ejectNonmigratedOperators` . NOTE: the ServiceManager will have to temporarily be set as the `ejector` address for the RegistryCoordinator to perform this step. `ejectNonmigratedOperators` is meant to be called for each Quorum/OperatorSet of the AVS.
+1. Perform upgrade of AVS middleware contracts
+
+2. `getOperatorsToMigrate()`: Call the view function `getOperatorsToMigrate` to get (operatorSetIdsToCreate, operatorSetIds, allOperators) which will be used as inputs for the state modifying functions below.
+
+3. `migrateAndCreateOperatorSetIds()`: Call `migrateAndCreateOperatorSetIds` with operatorSetIdsToCreate from above. This will create new operatorSetIds based on the existing quorums in the middleware contracts. This will also disable calling registrations/deregistrations from the old M2 legacy functions `registerOperatorFromAVS`, `deregisterOperatorFromAVS`
+
+4. `migrateToOperatorSets()`: Call `migrateToOperatorSets` and for each operatorSetId migrate the respective operators to them.  Note that this could be called multiple times as needed to account for gas limitations.
+
+5. `finalizeMigration()`: Call to prevent further migrations
 
 ## Interfaces
 
-#### **addStrategiesToOperatorSet / removeStrategiesFromOperatorSet**
+#### **getOperatorsToMigrate**
 
-These two functions are called anytime strategies are added/removed from a quorum in the StakeRegistry. This ensures a callback to the OperatorSetManager to update the strategies in the OperatorSet.
+This function retrieves the operators to migrate along with their respective operatorSetIds which should be created. The operatorSetIds to create will return the existing quorums that exist in the middleware contracts.
+The values returned are meant to be used in `migrateOperatorToOperatorSets`.
 
-#### **migrateStrategiesToOperatorSets**
+#### **migrateAndCreateOperatorSetIds**
 
-This function adds all existing strategies for all existing quorums/operatorSets and pushes it to the OperatorSetManager contract. It can only be called one-time for existing AVS ServiceManagers that existed prior to the OperatorSet upgrade.
-
-#### **migrateOperatorToOperatorSets**
-
-For each existing Operator, to migrate their registration to the OperatorSetManager, they will call this one time with a passed in signature of the operatorSets they are re-registering for.
+Only callable by ServiceManager contract owner, this will first call `AVSDirectory.becomeOperatorSetAVS` to mark the AVS as an OperatorSet AVS. This will disable calling the old M2 legacy functions `registerOperatorFromAVS`, `deregisterOperatorFromAVS`.
+It will also call `AVSDirectory.createOperatorSets` to create the inputted `operatorSetIdsToCreate` in the EigenLayer protocol enabling for slashable allocations to be configured for the respective operatorSets.
 
 Reverts If:
 
-1. The operator has already migrated
-2. The call to the OperatorSetManager to register the operator reverts (TODO: link)
+1. msg.sender is not owner
+2. ServiceManagerBase is already an operatorSetAVS in the AVSDirectory
+3. Any of `operatorSetIdsToCreate` already exist in AVSDirectory
 
-#### **ejectNonMigratedOperators**
+#### **migrateToOperatorSets**
 
-Only callable by ServiceManager contract owner, ejectNonmigratedOperators will eject all currently registered operators that haven't migrated their registration with OperatorSets. This requires the RegistryCoordinator of the AVS to set their ejector to temporarily be the ServiceManager contract to allow for this call to succeed.
+Only callable by ServiceManager contract owner, `migrateToOperatorSets` will migrate old legacy registered operators to their corresponding newly created operatorSetIds (`migrateAndCreateOperatorSetIds` should have already been called). This function will check that the operators are registered in the middleware quorum numbers before calling `AVSDirectory.migrateOperatorsToOperatorSets`. This function can be called as many times as needed to migrate all operators across multiple transactions to account for gas limitations.
 
 Reverts If:
 
-1. ServiceManager is not the RegistryCoordinator ejector address
-2. Input param `OperatorSetId >= RegistryCoordinator.quorumCount()`
-3. The provided operatorSetId is not a valid quorum
-4. If any of the operators in the input array is registered for the OperatorSet
+1. msg.sender is not owner
+2. `migrationFinalized` is True
+3. `operatorSetIds.length != operators.length`
+4. For each operatorSetId to register an operator for, the operator is not registered in the corresponding quorum number
+5. `AVSDirectory.migrateOperatorsToOperatorSets` reverts \
+    1. ServiceManagerBase is not a OperatorSetAVS
+    2. operator is not a legacy registered operator
+
+#### **finalizeMigration**
+
+Only callable by ServiceManager contract owner, this will mark the AVS ServiceManager contract as fully migrated and prevents any future calls to `migrateToOperatorSets`.
+
+1. msg.sender is not owner
+2. migrationFinalized is True
 
 #### **registerOperatorToOperatorSets**
 
