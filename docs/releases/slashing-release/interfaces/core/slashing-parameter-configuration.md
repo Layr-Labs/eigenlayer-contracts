@@ -165,7 +165,7 @@ Operators call this to set the proportions of slashable stake allocated to a lis
 
 Note that allocation delays are more of a concern to stakers as it is increasing the risk to an operator's delegated stakers. Thus they may need enough time to undelegate and withdraw their stake from an operator if they do not agree with a pending allocation. However, some operators are also their own staker (ex. LRTs) and may not care about this allocation delay so they could configure it to be 0.
 
-Deallocation delays are important for AVSs and their operatorSets to ensure they can have a minimum future forecast of slashable stake so that all of their economic security cannot leave their system instantly.
+Deallocation delays are important for AVSs and their operatorSets to ensure they can have a minimum future forecast of slashable stake so that all of their economic security cannot leave their system instantly. 17.5 days gives AVSs enough time to read updates made to slashable stakes and for the existing tasks they have created to have their slashing windows expire.
 
 Operators call this to allocate to their slashable stake (magnitudes) for a list of (operator, IStrategy, operatorSet(avs, operatorSetId)) tuples. For each MagnitudeAllocation param given, it has a given IStrategy and it queues magnitude updates to the specified operatorSets which will take effect 21 days from the time of calling. This gives the operator's stakers 3.5 days to queue withdrawals if they disagree with the changes to their staking portfolio.
 
