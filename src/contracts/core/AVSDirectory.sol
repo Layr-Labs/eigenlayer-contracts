@@ -690,6 +690,8 @@ contract AVSDirectory is
                 // Newly configured magnitude is less than current value.
                 // Therefore we handle this as a deallocation
 
+                // Note: MAX_PENDING_UPDATES == 1, so we do not have to decrement any allocations
+
                 // 1. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
                 uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
                 _pendingFreeMagnitude[operator][allocation.strategy].push(
@@ -699,6 +701,7 @@ contract AVSDirectory is
                     })
                 );
                 _queuedDeallocationIndices[operator][allocation.strategy][operatorSetKey].push(index);
+
             } else if (allocation.magnitudes[i] > uint64(currentMagnitude)) {
                 // Newly configured magnitude is greater than current value.
                 // Therefore we handle this as an allocation
