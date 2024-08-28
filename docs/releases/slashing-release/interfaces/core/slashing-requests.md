@@ -10,7 +10,7 @@ interface IAVSDirectory {
     event OperatorSlashed(
         address operator,
         OperatorSet operatorSet,
-        uint32 bipsToSlash,
+        uint64 slashedProportion,
         IStrategy[] strategies,
         uint64[] newTotalMagnitudes
     );
@@ -18,21 +18,22 @@ interface IAVSDirectory {
     /// EXTERNAL - STATE MODIFYING
 
     /**
-     * @notice Called by an AVS to slash an operator for given operatorSetId, list of strategies, and bipsToSlash.
-     * For each given (operator, operatorSetId, strategy) tuple, bipsToSlash
-     * bips of the operatorSet's slashable stake allocation will be slashed
+     * @notice Called by an AVS to slash an operator for given operatorSetId, list of strategies, and slashedProportion.
+     * For each given (operator, operatorSetId, strategy) tuple, slashedProportion is a parts per 1e18 proportion of the 
+     * operator's allocated stake that will be slashed.
      *
      * @param operator the address to slash
      * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
      * @param strategies the set of strategies to slash
-     * @param bipsToSlash the number of bips to slash, this will be proportional to the
-     * operator's slashable stake allocation for the operatorSet
+
+     * @param slashedProportion the proportion of stake to slash which can be in the range [0, 1e18]
+     * 1e18 is considered to be "100%".
      */
     function slashOperator(
         address operator,
         uint32 operatorSetId,
         IStrategy[] calldata strategies,
-        uint32 bipsToSlash
+        uint64 slashedProportion
     ) external;
 
     /// VIEW
@@ -61,7 +62,7 @@ interface IAVSDirectory {
 
 ### slashOperator
 
-Called by an AVS to slash an operator for a given array of strategies, the corresponding operatorSet to slash from, and the `bipsToSlash`. The bips are with respect to the slashable stake allocation that has been set for the operatorSet, operator, and strategy e.g. `bipsToIncrease = 5000`  leads to half of the slashable stake that has been allocated the operatorSet on behalf of the operator being slashed.
+Called by an AVS to slash an operator for a given array of strategies, the corresponding operatorSet to slash from, and the `slashedProportion`. The slashedProportion are with respect to the slashable stake allocation that has been set for the operatorSet, operator, and strategy e.g. `slashedProportion = 1e18/2`  leads to half of the slashable stake that has been allocated the operatorSet on behalf of the operator being slashed.
 
 For accounting reasons, this function also reduces the magnitude of the slashing operatorSet in the future and pending deallocations from the operatorSet in order maintain pending nominal stake guarantees in future forecasts. Overall, the total magnitude for the (operator, strategy) before the request is greater than the total magnitude after. 
 
@@ -72,7 +73,7 @@ Emits an
 
 Reverts if:
 
-1. `bipsToSlash == 0 || bipsToSlash > 10000`
+1. `slashedProportion == 0 || slashedProportion > 1e18`
 2. `operator` is not registered or within 17.5 days of deregistering from an operatorSet
 
 ### getMinimumSlashableSharesBefore

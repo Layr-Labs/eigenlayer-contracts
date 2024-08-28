@@ -17,6 +17,17 @@ interface IAVSDirectory {
 		address avs;
 		uint32 operatorSetId;
 	}
+
+    /**
+     * @notice Struct representing the registration status of an operator with an operator set.
+     * Keeps track of last deregistered timestamp for slashability concerns.
+     * @param registered whether the operator is registered with the operator set
+     * @param lastDeregisteredTimestamp the timestamp at which the operator was last deregistered
+     */
+    struct OperatorSetRegistrationStatus {
+        bool registered;
+        uint32 lastDeregisteredTimestamp;
+    }
 	
 	/// EVENTS
 

@@ -7,17 +7,6 @@ interface IAVSDirectory {
     /// STRUCTS
 
     /**
-     * @notice Struct representing the registration status of an operator with an operator set.
-     * Keeps track of last deregistered timestamp for slashability concerns.
-     * @param registered whether the operator is registered with the operator set
-     * @param lastDeregisteredTimestamp the timestamp at which the operator was last deregistered
-     */
-    struct OperatorSetRegistrationStatus {
-        bool registered;
-        uint32 lastDeregisteredTimestamp;
-    }
-
-    /**
      * @notice struct used to modify the allocation of slashable magnitude to list of operatorSets
      * @param strategy the strategy to allocate magnitude for
      * @param expectedTotalMagnitude the expected total magnitude of the operator used to combat against race conditions with slashing
@@ -35,7 +24,7 @@ interface IAVSDirectory {
      * @notice struct used for pending free magnitude. Stored in (operator, strategy, operatorSet) mapping
      * to be used in completeDeallocations.
      * @param magnitudeDiff the amount of magnitude to deallocate
-     * @param completableTimestamp the timestamp at which the deallocation can be completed, 21 days from when queued
+     * @param completableTimestamp the timestamp at which the deallocation can be completed, 17.5 days from when queued
      */
     struct PendingFreeMagnitude {
         uint64 magnitudeDiff;
@@ -108,20 +97,20 @@ interface IAVSDirectory {
     /// VIEW
 
     /**
-     * @param operator the operator to get the slashable bips for
-     * @param operatorSet the operatorSet to get the slashable bips for
-     * @param strategy the strategy to get the slashable bips for
-     * @param timestamp the timestamp to get the slashable bips for for
+     * @param operator the operator to get the slashableProportion for
+     * @param operatorSet the operatorSet to get the slashableProportion for
+     * @param strategy the strategy to get the slashableProportion for
+     * @param timestamp the timestamp to get the slashableProportion for for
      *
-     * @return slashableBips the slashable bips of the given strategy owned by
+     * @return slashableProportion the slashable proportion in parts per 1e18 of the given strategy owned by
      * the given OperatorSet for the given operator and timestamp
      */
-    function getSlashableBips(
+    function getSlashableProportion(
         address operator,
         OperatorSet calldata operatorSet,
         IStrategy strategy,
         uint32 timestamp
-    ) external returns (uint16 slashableBips);
+    ) external returns (uint64 slashableProportion);
 
     /**
      * @notice Get the allocatable magnitude for an operator and strategy based on number of pending deallocations
@@ -145,7 +134,7 @@ interface IAVSDirectory {
     function getAllocationDelay(address operator, uint32 timestamp) external view returns (uint32);
 
     /**
-     * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
+     * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 17.5 days
      * @param operator the operator to check slashability for
      * @param operatorSet the operatorSet to check slashability for
      * @return bool if the operator is slashable by the operatorSet
@@ -178,10 +167,15 @@ Emits
 
 Reverts if
 
-1. The `operatorSignature` is invalid or `msg.sender` is not the `operator`
-2. The operator's allocation delay has not been configured
-3. The sum of all magnitude allocations for a IStrategy is greater than the free magnitude that is available to allocate.
-4. if the operator has never set their allocationDelay before
+1. The operator is not a registered operator in the DelegationManager
+2. The `operatorSignature` is invalid AND `msg.sender` is not the `operator`
+3. The operator has never set their allocationDelay before
+4. For each IStrategy, The operator's totalMagnitude doesn't match `expectedTotalMagnitude`
+5. For each `MagnitudeAllocation`: \
+    1. allocation.operatorSets.length != allocation.magnitudes.length
+    2. One of the provided operatorSets does not exist
+    3. There exists a pending allocation or deallocation. Can only have 1 pending change
+6. If the sum of all magnitude allocations for a IStrategy is greater than the free magnitude that is available to allocate.
 
 ### updateFreeMagnitude
 
@@ -198,12 +192,12 @@ Reverts if
 1. msg.sender is not a operator
 2. msg.sender already has a pending update to their delay
 
-### getSlashableBips
+### getSlashableProportion
 
 For a given timestamp,
 
-$slashableBips_{op,opset,str} = 
-\left\lfloor\frac{magnitude_{op,opset,str}}{ nonslashableMagnitude_{op,str} + \sum_{opset_i \in opsets} magnitude_{op,opset_i,str}}*10000\right\rfloor
+$slashableProportion_{op,opset,str} = 
+\left\lfloor\frac{magnitude_{op,opset,str}}{ nonslashableMagnitude_{op,str} + \sum_{opset_i \in opsets} magnitude_{op,opset_i,str}}*1e18\right\rfloor
 $
 
 This explained [here](https://www.notion.so/eigen-labs/Allocator-Functionality-282a008ab7a14c79a25ec2954f8f5912).
@@ -218,4 +212,4 @@ Returns the current allocation delay for a operator at a given timestamp
 
 ### isOperatorSlashable
 
-Checks that a operator is slashable for an operatorSet which is defined as the following being true: operator is currently registered OR operator deregistered within last 21 days
+Checks that a operator is slashable for an operatorSet which is defined as the following being true: operator is currently registered OR operator deregistered within last 17.5 days
