@@ -690,13 +690,7 @@ contract AVSDirectory is
                 // Newly configured magnitude is less than current value.
                 // Therefore we handle this as a deallocation
 
-                // 1. update and decrement current and future queued amounts in case any pending allocations exist
-                _magnitudeUpdate[operator][allocation.strategy][operatorSetKey].decrementAtAndFutureCheckpoints({
-                    key: uint32(block.timestamp),
-                    decrementValue: uint64(currentMagnitude) - allocation.magnitudes[i]
-                });
-
-                // 2. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
+                // 1. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
                 uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
                 _pendingFreeMagnitude[operator][allocation.strategy].push(
                     PendingFreeMagnitude({
