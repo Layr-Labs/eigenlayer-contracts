@@ -42,16 +42,6 @@ interface IAVSDirectory {
         uint32 completableTimestamp;
     }
 
-    /**
-     * @notice struct used to store the allocation delay for an operator
-     * @param isSet whether the allocation delay is set. Can only be configured one time for each operator
-     * @param allocationDelay the delay in seconds for the operator's allocations
-     */
-    struct AllocationDelayDetails {
-        bool isSet;
-        uint32 allocationDelay;
-    }
-
     /// EVENTS
 
     event MagnitudeAllocated(
@@ -74,12 +64,16 @@ interface IAVSDirectory {
     /// EXTERNAL - STATE MODIFYING
     
     /**
-     * @notice Modifies the proportions of slashable stake allocated to a list of operatorSets for a set of strategies
+     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
+     * This will revert if the operator has never set their allocationDelay before.
      * @param operator address to modify allocations for
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
      * @param operatorSignature signature of the operator if msg.sender is not the operator
-     * @dev updates freeMagnitude for the updated strategies
-     * @dev must be called by the operator
+     * @dev Updates freeMagnitude for the updated strategies
+     * @dev Must be called by the operator or with a valid operator signature
+     * @dev For each allocation, allocation.operatorSets MUST be ordered in ascending order according to the
+     * encoding of the operatorSet. This is to prevent duplicate operatorSets being passed in. The easiest way to ensure
+     * ordering is to sort allocated operatorSets by address first, and then sort for each avs by ascending operatorSetIds.
      */
     function modifyAllocations(
         address operator,
@@ -104,11 +98,12 @@ interface IAVSDirectory {
     ) external;
 
     /**
-     * @notice Called by operators to set their allocation delay. Can only be set one time.
+     * @notice Called by operators to set their allocation delay. Can only have 1 pending update
+     * to their allocationDelay. If operator's have never set their allocationDelay before then they cannot
+     * call modifyAllocations.
      * @param delay the allocation delay in seconds
-     * @dev this is expected to be updatable in a future release
      */
-    function initializeAllocationDelay(uint32 delay) external;
+    function setAllocationDelay(uint32 delay) external;
 
     /// VIEW
 
@@ -133,20 +128,21 @@ interface IAVSDirectory {
      * that could be completed at the same time. This is the sum of freeMagnitude and the sum of all pending completable deallocations.
      * @param operator the operator to get the allocatable magnitude for
      * @param strategy the strategy to get the allocatable magnitude for
-     * @param numToComplete the number of pending free magnitudes deallocations to complete, 0 to complete all (uint8 max 256)
+     * @param numToComplete the number of pending free magnitudes deallocations to complete
      */
     function getAllocatableMagnitude(
         address operator,
         IStrategy strategy,
-        uint8 numToComplete
+        uint16 numToComplete
     ) external view returns (uint64);
 
     /**
      * @notice Get the allocation delay (in seconds) for an operator. Can only be configured one-time
      * from calling initializeAllocationDelay.
      * @param operator the operator to get the allocation delay for
+     * @param timestamp the timestamp to read the operator's allocationDelay
      */
-    function getAllocationDelay(address operator) external view returns (uint32);
+    function getAllocationDelay(address operator, uint32 timestamp) external view returns (uint32);
 
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
@@ -161,7 +157,7 @@ interface IAVSDirectory {
 
 ### modifyAllocations
 
-Operators call this to set the proportions of slashable stake allocated to a list of operatorSets for a set of strategies. Depending on what the new magnitude/proportion and current magnitude value is configured to, this will either create a pending allocation or deallocation. Allocations by default have a delay of 21 days but can be one-time configured by an operator. Deallocation delays all have a built-in delay of 17.5 days until they can be "completed". There is a "completing" second step to deallocations that must take place to account for the fact that deallocations are still susceptible to slashing by the operatorSet up until the completeableTimestamp for the deallocation has passed. Pending allocations on the other hand are not slashable (referring to the added increase in magnitude).
+Operators call this to set the proportions of slashable stake allocated to a list of operatorSets for a set of strategies. Depending on what the new magnitude/proportion and current magnitude value is configured to, this will either create a pending allocation or deallocation. Allocation delays can be configured by operators but setting a new value itself has a delay of 21 days. Deallocation delays all have a built-in delay of 17.5 days until they take effect. Deallocations are still susceptible to slashing by the operatorSet up until they take effect. Pending allocations on the other hand are not slashable (referring to the added increase in magnitude).
 
 Note that allocation delays are more of a concern to stakers as it is increasing the risk to an operator's delegated stakers. Thus they may need enough time to undelegate and withdraw their stake from an operator if they do not agree with a pending allocation. However, some operators are also their own staker (ex. LRTs) and may not care about this allocation delay so they could configure it to be 0.
 
@@ -175,30 +171,32 @@ The function can be called with an EIP1271 signature from the operator or by the
 
 Emits
 
-1. if a `MagnitudeAllocation` results in a value greater than the current magnitude, `MagnitudeAllocated` is emitted for the given (operator, IStrategy, operatorSet)
-2. if a `MagnitudeAllocation` results in a value less than the current magnitude,
+1. For each allocation input, \
+        `MagnitudeAllocated` is emitted for the given (operator, IStrategy, operatorSet)
+2. For each deallocation input, \
 `MagnitudeDeallocated` is emitted for the given (operator, IStrategy, operatorSet)
-3. 
 
 Reverts if
 
 1. The `operatorSignature` is invalid or `msg.sender` is not the `operator`
 2. The operator's allocation delay has not been configured
 3. The sum of all magnitude allocations for a IStrategy is greater than the free magnitude that is available to allocate.
+4. if the operator has never set their allocationDelay before
 
 ### updateFreeMagnitude
 
 For all pending deallocations that have become completable, their pending free magnitude can be
 added back to the free magnitude of the (operator, IStrategy) amount. This is by default done whenever `modifyAllocations` is called but this a separate interface in case of gas limitations in a tx because there is no bound on the number of pending completable deallocations for a given IStrategy.
 
-### initializeAllocationDelay
+### setAllocationDelay
 
-Operators can call this to initialize a one-time configurable allocation delay. It is not modifiable afterwards.
+Operators can call this to set their allocationDelay. Operators will not be able to call `modifyAllocations` if they
+have never set their allocation delay before.
 
 Reverts if
 
 1. msg.sender is not a operator
-2. msg.sender already has configured a delay
+2. msg.sender already has a pending update to their delay
 
 ### getSlashableBips
 
@@ -216,7 +214,7 @@ Returns the available free magnitude that can be allocated for a given Strategy.
 
 ### getAllocationDelay
 
-Returns the allocation delay for a operator
+Returns the current allocation delay for a operator at a given timestamp
 
 ### isOperatorSlashable
 
