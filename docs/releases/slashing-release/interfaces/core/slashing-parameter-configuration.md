@@ -183,7 +183,8 @@ Emits
 Reverts if
 
 1. The `operatorSignature` is invalid or `msg.sender` is not the `operator`
-2. The sum of all magnitude allocations for a IStrategy is greater than the free magnitude that is available to allocate.
+2. The operator's allocation delay has not been configured
+3. The sum of all magnitude allocations for a IStrategy is greater than the free magnitude that is available to allocate.
 
 ### updateFreeMagnitude
 
