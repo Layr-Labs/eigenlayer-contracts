@@ -46,7 +46,11 @@ interface IStrategyManager {
      * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
      */
-    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (uint256 scaledShares);
+    function depositIntoStrategy(
+        IStrategy strategy,
+        IERC20 token,
+        uint256 amount
+    ) external returns (uint256 scaledShares);
 
     /**
      * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
@@ -94,10 +98,7 @@ interface IStrategyManager {
     ) external view returns (uint256 scaledShares);
 
     /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(
-        address user,
-        IStrategy strategy
-    ) external view returns (uint256 shares);
+    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
 
     /**
      * @notice Get all details on the staker's deposits and corresponding shares

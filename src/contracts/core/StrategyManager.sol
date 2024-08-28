@@ -167,7 +167,11 @@ contract StrategyManager is
     }
 
     /// @notice Used by the DelegationManager to remove a Staker's scaled shares from a particular strategy when entering the withdrawal queue
-    function removeScaledShares(address staker, IStrategy strategy, uint256 scaledShares) external onlyDelegationManager {
+    function removeScaledShares(
+        address staker,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) external onlyDelegationManager {
         _removeScaledShares(staker, strategy, scaledShares);
     }
 
@@ -335,7 +339,11 @@ contract StrategyManager is
      * @dev If the amount of scaled shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
-    function _removeScaledShares(address staker, IStrategy strategy, uint256 scaledSharesAmount) internal returns (bool) {
+    function _removeScaledShares(
+        address staker,
+        IStrategy strategy,
+        uint256 scaledSharesAmount
+    ) internal returns (bool) {
         // sanity checks on inputs
         require(scaledSharesAmount != 0, "StrategyManager._removeScaledShares: scaledSharesAmount should not be zero!");
 
@@ -427,10 +435,7 @@ contract StrategyManager is
     }
 
     /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(
-        address user,
-        IStrategy strategy
-    ) public view returns (uint256 shares) {
+    function stakerStrategyShares(address user, IStrategy strategy) public view returns (uint256 shares) {
         uint256 scaledShares = stakerStrategyScaledShares[user][strategy];
         return delegation.getStakerShares(user, strategy, scaledShares);
     }

@@ -539,10 +539,7 @@ contract AVSDirectory is
         );
 
         // Assert that the AVS is not an operator set AVS.
-        require(
-            !isOperatorSetAVS[msg.sender], 
-            "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS"
-        );
+        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS");
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
@@ -760,10 +757,7 @@ contract AVSDirectory is
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
         if (!exists) {
             totalMagnitude = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
-            _totalMagnitudeUpdate[operator][strategy].push({
-                key: uint32(block.timestamp),
-                value: totalMagnitude
-            });
+            _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
             freeMagnitude[operator][strategy] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
         }
 
@@ -1038,7 +1032,10 @@ contract AVSDirectory is
     }
 
     /// @notice Returns the total magnitude of an operator for a given set of strategies
-    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory) {
+    function getTotalMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length;) {
             (bool exists, uint32 key, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestCheckpoint();
@@ -1063,11 +1060,8 @@ contract AVSDirectory is
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length;) {
-            (
-                uint224 value,
-                uint256 pos,
-                uint256 length
-            ) = _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
+            (uint224 value, uint256 pos, uint256 length) =
+                _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
 
             // if there is no existing total magnitude checkpoint
             if (value != 0 || pos != 0) {

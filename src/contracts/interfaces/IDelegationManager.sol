@@ -302,12 +302,8 @@ interface IDelegationManager is ISignatureUtils {
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `scaledShares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function increaseDelegatedScaledShares(
-        address staker,
-        IStrategy strategy,
-        uint256 scaledShares
-    ) external;
-    
+    function increaseDelegatedScaledShares(address staker, IStrategy strategy, uint256 scaledShares) external;
+
     /**
      * @notice Decreases a staker's delegated share balance in a strategy.
      * @param staker The address to increase the delegated scaled shares for their operator.

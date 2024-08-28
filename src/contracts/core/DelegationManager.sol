@@ -317,10 +317,7 @@ contract DelegationManager is
             // Withdrawer inputs the number of real Strategy shares they expect to withdraw,
             // convert accordingly to scaledShares in storage
             uint256[] memory scaledShares = ShareScalingLib.scaleShares(
-                avsDirectory,
-                operator,
-                queuedWithdrawalParams[i].strategies,
-                queuedWithdrawalParams[i].shares
+                avsDirectory, operator, queuedWithdrawalParams[i].strategies, queuedWithdrawalParams[i].shares
             );
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
@@ -393,7 +390,12 @@ contract DelegationManager is
             address operator = delegatedTo[staker];
 
             // add strategy shares to delegate's shares
-            _increaseOperatorScaledShares({operator: operator, staker: staker, strategy: strategy, scaledShares: scaledShares});
+            _increaseOperatorScaledShares({
+                operator: operator,
+                staker: staker,
+                strategy: strategy,
+                scaledShares: scaledShares
+            });
         }
     }
 
@@ -500,10 +502,7 @@ contract DelegationManager is
             !_operatorAllocationDelay[msg.sender].isSet,
             "DelegationManager._initializeAllocationDelay: allocation delay already set"
         );
-        _operatorAllocationDelay[msg.sender] = AllocationDelayDetails({
-            isSet: true,
-            allocationDelay: delay
-        });
+        _operatorAllocationDelay[msg.sender] = AllocationDelayDetails({isSet: true, allocationDelay: delay});
     }
 
     /**
@@ -611,7 +610,7 @@ contract DelegationManager is
 
     /**
      * @dev This function "descales" the scaledShares according to the totalMagnitude at the time of withdrawal completion.
-     * This will apply any slashing that has occurred since the scaledShares were initially set in storage. 
+     * This will apply any slashing that has occurred since the scaledShares were initially set in storage.
      * If receiveAsTokens is true, then these descaled shares will be withdrawn as tokens.
      * If receiveAsTokens is false, then they will be rescaled according to the current operator the staker is delegated to, and added back to the operator's scaledShares.
      */
@@ -651,18 +650,10 @@ contract DelegationManager is
 
         if (receiveAsTokens) {
             // complete the withdrawal by converting descaled shares to tokens
-            _completeReceiveAsTokens(
-                withdrawal,
-                tokens,
-                descaledShares
-            );
+            _completeReceiveAsTokens(withdrawal, tokens, descaledShares);
         } else {
             // Award shares back in StrategyManager/EigenPodManager.
-            _completeReceiveAsShares(
-                withdrawal,
-                tokens,
-                descaledShares
-            );
+            _completeReceiveAsShares(withdrawal, tokens, descaledShares);
         }
 
         // Remove `withdrawalRoot` from pending roots
@@ -706,12 +697,8 @@ contract DelegationManager is
         // read delegated operator for scaling and adding shares back if needed
         address currentOperator = delegatedTo[msg.sender];
         // We scale shares again to the new totalMagnitude of the currentOperator.
-        uint256[] memory scaledShares = ShareScalingLib.scaleShares(
-            avsDirectory,
-            currentOperator,
-            withdrawal.strategies,
-            descaledShares
-        );
+        uint256[] memory scaledShares =
+            ShareScalingLib.scaleShares(avsDirectory, currentOperator, withdrawal.strategies, descaledShares);
 
         for (uint256 i = 0; i < withdrawal.strategies.length;) {
             require(
@@ -762,14 +749,24 @@ contract DelegationManager is
     }
 
     // @notice Increases `operator`s delegated scaled shares in `strategy` by `scaledShares` and emits an `OperatorSharesIncreased` event
-    function _increaseOperatorScaledShares(address operator, address staker, IStrategy strategy, uint256 scaledShares) internal {
+    function _increaseOperatorScaledShares(
+        address operator,
+        address staker,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) internal {
         operatorScaledShares[operator][strategy] += scaledShares;
         // TODO: What to do about event wrt scaling?
         emit OperatorSharesIncreased(operator, staker, strategy, scaledShares);
     }
 
     // @notice Decreases `operator`s delegated scaled shares in `strategy` by `scaledShares` and emits an `OperatorSharesDecreased` event
-    function _decreaseOperatorScaledShares(address operator, address staker, IStrategy strategy, uint256 scaledShares) internal {
+    function _decreaseOperatorScaledShares(
+        address operator,
+        address staker,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) internal {
         // This will revert on underflow, so no check needed
         operatorScaledShares[operator][strategy] -= scaledShares;
         // TODO: What to do about event wrt scaling?
@@ -935,9 +932,7 @@ contract DelegationManager is
 
             // set the new withdrawal delay (in seconds)
             strategyWithdrawalDelays[strategy] = newStrategyWithdrawalDelay;
-            emit StrategyWithdrawalDelaySet(
-                strategy, prevStrategyWithdrawalDelay, newStrategyWithdrawalDelay
-            );
+            emit StrategyWithdrawalDelaySet(strategy, prevStrategyWithdrawalDelay, newStrategyWithdrawalDelay);
         }
     }
 
@@ -1118,7 +1113,7 @@ contract DelegationManager is
             scaledShares[0] = uint256(scaledPodShares);
         } else {
             // Has shares in both
-// TODO: make more efficient by resizing array
+            // TODO: make more efficient by resizing array
             // 1. Allocate return arrays
             strategies = new IStrategy[](strategyManagerStrats.length + 1);
             scaledShares = new uint256[](strategies.length);
@@ -1137,7 +1132,7 @@ contract DelegationManager is
             strategies[strategies.length - 1] = beaconChainETHStrategy;
             scaledShares[strategies.length - 1] = uint256(scaledPodShares);
         }
-        
+
         return (strategies, scaledShares);
     }
 

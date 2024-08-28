@@ -10,6 +10,7 @@ interface IAVSDirectory is ISignatureUtils {
     enum OperatorAVSRegistrationStatus {
         UNREGISTERED, // Operator not registered to AVS
         REGISTERED // Operator registered to AVS
+
     }
 
     /**
@@ -356,7 +357,10 @@ interface IAVSDirectory is ISignatureUtils {
 
     /// @notice Returns the total magnitude of an operator for a given set of strategies
     /// TODO: finish natspec
-    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory);
+    function getTotalMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory);
 
     /// @notice Returns the total magnitude of an operator for a given set of strategies at a given timestamp
     /// TODO: finish natspec
