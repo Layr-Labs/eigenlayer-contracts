@@ -388,13 +388,13 @@ contract AVSDirectory is
                 "AVSDirectory._registerOperatorToOperatorSets: invalid operator set"
             );
 
+            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+
             require(
-                !isMember(operator, operatorSet),
+                _operatorSetsMemberOf[operator].add(encodedOperatorSet),
                 "AVSDirectory._registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
-            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
-            _operatorSetsMemberOf[operator].add(encodedOperatorSet);
             _operatorSetMembers[encodedOperatorSet].add(operator);
             
 
@@ -414,13 +414,13 @@ contract AVSDirectory is
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
 
+            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+
             require(
-                isMember(operator, operatorSet),
+                _operatorSetsMemberOf[operator].remove(encodedOperatorSet),
                 "AVSDirectory._deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
-            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
-            _operatorSetsMemberOf[operator].remove(encodedOperatorSet);
             _operatorSetMembers[encodedOperatorSet].remove(operator);
 
             emit OperatorRemovedFromOperatorSet(operator, operatorSet);
@@ -445,8 +445,8 @@ contract AVSDirectory is
  
     /**
      * @notice Returns the operator registered to an operatorSet in the order that it was registered. 
-     *  @param operatorSet The operatorSet to query.
-     *  @param index The index of the enumerated list of operators. 
+     * @param operatorSet The operatorSet to query.
+     * @param index The index of the enumerated list of operators. 
      */
     function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address) {
         return _operatorSetMembers[_encodeOperatorSet(operatorSet)].at(index);
