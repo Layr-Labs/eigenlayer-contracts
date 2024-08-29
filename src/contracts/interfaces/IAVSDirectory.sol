@@ -313,6 +313,19 @@ interface IAVSDirectory is ISignatureUtils {
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
     /**
+     * @param operator the operator to get the slashable magnitude for
+     * @param strategies the strategies to get the slashable magnitude for
+     * @param timestamp the timestamp to get the slashable magnitude for
+     * 
+     * @return operatorSets the operator sets the operator is a member of and the slashable magnitudes for each strategy
+     */
+    function getSlashableMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 timestamp
+    ) external view returns (OperatorSet[] memory, uint64[][] memory);
+
+    /**
      * @param operator the operator to get the slashable ppm for
      * @param operatorSet the operatorSet to get the slashable ppm for
      * @param strategies the strategies to get the slashable ppm for

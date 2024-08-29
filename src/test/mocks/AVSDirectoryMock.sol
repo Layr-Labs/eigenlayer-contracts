@@ -71,6 +71,12 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function operatorSetMemberCount(address avs, uint32 operatorSetId) external view returns (uint256) {}
 
+    function getSlashableMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 timestamp
+    ) external view returns (OperatorSet[] memory, uint64[][] memory) {}
+
     function getSlashablePPM(
         address operator,
         OperatorSet calldata operatorSet,
