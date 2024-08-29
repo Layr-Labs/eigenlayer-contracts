@@ -58,6 +58,10 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @dev Each item is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
     mapping(address => EnumerableSet.Bytes32Set) internal _operatorSetsMemberOf;
 
+    /// @notice Mapping: operatorSet => List of operators that are registered to the operatorSet
+    /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
+    mapping(bytes32 => EnumerableSet.AddressSet) internal _operatorSetMembers;
+
     /// @notice Mapping: operator => avs => operatorSetId => operator registration status
     mapping(address => mapping(address => mapping(uint32 => OperatorSetRegistrationStatus))) public operatorSetStatus;
 
@@ -80,14 +84,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     /// @notice Mapping: operator => strategy => operatorSet (encoded) => list of queuedDeallocation indices
     mapping(address => mapping(IStrategy => mapping(bytes32 => uint256[]))) internal _queuedDeallocationIndices;
-
-    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
-    /// This determines how long it takes for allocations to take in the future. Can only be set one time for each operator
-    mapping(address => AllocationDelayDetails) public allocationDelay;
-
-    /// @notice Mapping: operatorSet => List of operators that are registered to the operatorSet
-    /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
-    mapping(bytes32 => EnumerableSet.AddressSet) internal _operatorSetMembers;
 
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
