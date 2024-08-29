@@ -354,8 +354,6 @@ interface IAVSDirectory is ISignatureUtils {
 
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
 
-    function operatorSetMemberCount(address avs, uint32 operatorSetId) external view returns (uint256);
-
     /**
      * @notice Returns operator set an operator is registered to in the order they were registered.
      * @param operator The operator address to query.
