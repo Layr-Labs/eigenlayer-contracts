@@ -39,14 +39,14 @@ interface IStrategyManager {
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
      * @param amount is the amount of token to be deposited in the strategy by the staker
-     * @return shares The amount of new shares in the `strategy` created as part of the action.
+     * @return scaledShares The amount of new scaled shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
      *
      * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
      */
-    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (uint256 shares);
+    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (uint256 scaledShares);
 
     /**
      * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
@@ -60,7 +60,7 @@ interface IStrategyManager {
      * @param expiry the timestamp at which the signature expires
      * @param signature is a valid signature from the `staker`. either an ECDSA signature if the `staker` is an EOA, or data to forward
      * following EIP-1271 if the `staker` is a contract
-     * @return shares The amount of new shares in the `strategy` created as part of the action.
+     * @return scaledShares The amount of new scaled shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
@@ -76,19 +76,28 @@ interface IStrategyManager {
         address staker,
         uint256 expiry,
         bytes memory signature
-    ) external returns (uint256 shares);
+    ) external returns (uint256 scaledShares);
 
     /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
-    function removeShares(address staker, IStrategy strategy, uint256 shares) external;
+    function removeScaledShares(address staker, IStrategy strategy, uint256 shares) external;
 
-    /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
-    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external;
+    /// @notice Used by the DelegationManager to award a Staker some scaled shares that have passed through the withdrawal queue
+    function addScaledShares(address staker, IERC20 token, IStrategy strategy, uint256 scaledShares) external;
 
-    /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
+    /// @notice Used by the DelegationManager to convert withdrawn descaled shares to tokens and send them to a recipient
     function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external;
 
+    /// @notice Returns the current scaled shares of `user` in `strategy`
+    function stakerStrategyScaledShares(
+        address user,
+        IStrategy strategy
+    ) external view returns (uint256 scaledShares);
+
     /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
+    function stakerStrategyShares(
+        address user,
+        IStrategy strategy
+    ) external view returns (uint256 shares);
 
     /**
      * @notice Get all details on the staker's deposits and corresponding shares

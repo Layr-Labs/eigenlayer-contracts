@@ -21,7 +21,13 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     mapping (address => address) public delegatedTo;
 
-    function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external pure {}
+    function registerAsOperator(
+        OperatorDetails calldata /*registeringOperatorDetails*/,
+        uint32 /*allocationDelay*/,
+        string calldata /*metadataURI*/
+    ) external pure {}
+
+    function initializeAllocationDelay(uint32 /*delay*/) external {}
     
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
@@ -46,13 +52,13 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return withdrawalRoot;
     }
 
-    function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
-
-    function decreaseDelegatedShares(
-        address /*staker*/,
-        IStrategy /*strategy*/,
-        uint256 /*shares*/
-    ) external pure {}
+    function increaseDelegatedScaledShares(
+        address staker,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) external {}
+    
+    function decreaseDelegatedScaledShares(address staker, IStrategy strategy, uint256 shares) external {}
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
@@ -62,6 +68,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
         });
         return returnValue;
     }
+
+    function operatorAllocationDelay(address operator) external view returns (AllocationDelayDetails memory) {}
 
     function delegationApprover(address operator) external pure returns (address) {
         return operator;
@@ -85,15 +93,34 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external pure returns (uint256) {
         return 0;
     }
+
+    function getOperatorScaledShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory) {}
     
     function getOperatorShares(
         address operator,
         IStrategy[] memory strategies
     ) external view returns (uint256[] memory) {}
 
+    function getStakerScaledShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external view returns (uint256 scaledShares) {}
+
+    function getStakerShares(
+        address staker,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) public view returns (uint256 shares) {}
+
     function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) public pure returns (uint256) {
         return 0;
     }
+
+    function operatorScaledShares(address operator, IStrategy strategy) external view returns (uint256) {}
 
     function isDelegated(address staker) external view returns (bool) {
         return (delegatedTo[staker] != address(0));
@@ -155,35 +182,33 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
         bool receiveAsTokens
     ) external {}
 
     function completeQueuedWithdrawals(
         Withdrawal[] calldata withdrawals,
         IERC20[][] calldata tokens,
-        uint256[] calldata middlewareTimesIndexes,
         bool[] calldata receiveAsTokens
     ) external {}
     
     // onlyDelegationManager functions in StrategyManager
-    function addShares(
+    function addScaledShares(
         IStrategyManager strategyManager,
         address staker,
         IERC20 token,
         IStrategy strategy,
         uint256 shares
     ) external {
-        strategyManager.addShares(staker, token, strategy, shares);
+        strategyManager.addScaledShares(staker, token, strategy, shares);
     }
 
-    function removeShares(
+    function removeScaledShares(
         IStrategyManager strategyManager,
         address staker,
         IStrategy strategy,
         uint256 shares
     ) external {
-        strategyManager.removeShares(staker, strategy, shares);
+        strategyManager.removeScaledShares(staker, strategy, shares);
     }
 
     function withdrawSharesAsTokens(

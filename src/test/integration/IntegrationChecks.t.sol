@@ -266,11 +266,11 @@ contract IntegrationCheckUtils is IntegrationBase {
             if (operator != staker) {
                 assert_Snap_Unchanged_TokenBalances(User(operator), "operator should not have any change in underlying token balances");
             }
-            assert_Snap_Added_OperatorShares(User(operator), withdrawal.strategies, withdrawal.shares, "operator should have received shares");
+            assert_Snap_Added_OperatorShares(User(operator), withdrawal.strategies, withdrawal.scaledShares, "operator should have received scaledShares");
         }
     }
 
-    /// @notice Difference from above is that operator shares do not increase since staker is not delegated
+    /// @notice Difference from above is that operator scaledShares do not increase since staker is not delegated
     function check_Withdrawal_AsShares_Undelegated_State(
         User staker,
         User operator,

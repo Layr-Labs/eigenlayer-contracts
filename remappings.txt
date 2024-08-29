@@ -4,3 +4,4 @@
 @openzeppelin-upgrades-v4.9.0/=lib/openzeppelin-contracts-upgradeable-v4.9.0/
 ds-test/=lib/ds-test/src/
 forge-std/=lib/forge-std/src/
+@risc0-ethereum/=lib/risc0-ethereum/contracts/src

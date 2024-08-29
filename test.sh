@@ -17,7 +17,20 @@ operator4address=$(cast w a --private-key $OPERATOR_4)
 # cast send --rpc-url $RPC_URL --private-key $OPERATOR_3 0x78697cd4EE4BdE0514fE8a7C61E8cB1A152B5d78 "registerOperatorWithCoordinator(bytes memory, bytes calldata)" "" ""
 # cast send --rpc-url $RPC_URL --private-key $OPERATOR_4 0x78697cd4EE4BdE0514fE8a7C61E8cB1A152B5d78 "registerOperatorWithCoordinator(bytes memory, bytes calldata)" "" ""
 
-cast send --rpc-url $RPC_URL --private-key $OPERATOR_1 0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332 "updateOperatorMetadataURI(string calldata)" "https://operator-metadata.s3.amazonaws.com/operator_1.json"
-cast send --rpc-url $RPC_URL --private-key $OPERATOR_2 0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332 "updateOperatorMetadataURI(string calldata)" "https://operator-metadata.s3.amazonaws.com/operator_2.json"
-cast send --rpc-url $RPC_URL --private-key $OPERATOR_3 0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332 "updateOperatorMetadataURI(string calldata)" "https://operator-metadata.s3.amazonaws.com/operator_3.json"
-cast send --rpc-url $RPC_URL --private-key $OPERATOR_4 0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332 "updateOperatorMetadataURI(string calldata)" "https://operator-metadata.s3.amazonaws.com/operator_4.json"
+# cast send --rpc-url $RPC_URL --private-key $OPERATOR_1 0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332 "updateOperatorMetadataURI(string calldata)" "https://operator-metadata.s3.amazonaws.com/operator_1.json"
+# cast send --rpc-url $RPC_URL --private-key $OPERATOR_2 0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332 "updateOperatorMetadataURI(string calldata)" "https://operator-metadata.s3.amazonaws.com/operator_2.json"
+# cast send --rpc-url $RPC_URL --private-key $OPERATOR_3 0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332 "updateOperatorMetadataURI(string calldata)" "https://operator-metadata.s3.amazonaws.com/operator_3.json"
+# cast send --rpc-url $RPC_URL --private-key $OPERATOR_4 0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332 "updateOperatorMetadataURI(string calldata)" "https://operator-metadata.s3.amazonaws.com/operator_4.json"
+
+# #!/bin/bash
+
+# Define the target directory
+TARGET_DIR="./src/test"  # Replace with your folder path
+
+# Find all JavaScript files in the directory and its subdirectories
+find "$TARGET_DIR" -type f -name "*.sol" | while read -r file; do
+  # Use sed to prepend '//' to each line in the file
+  sed -i '' 's/^/\/\/ /' "$file"
+done
+
+echo "All JavaScript files in $TARGET_DIR have been commented out."

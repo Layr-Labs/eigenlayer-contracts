@@ -85,7 +85,7 @@ contract User is PrintUtils {
             stakerOptOutWindowBlocks: 0
         });
 
-        delegationManager.registerAsOperator(details, "metadata");
+        delegationManager.registerAsOperator(details, 0, "metadata");
     }
 
     /// @dev Delegate to the operator without a signature
@@ -107,7 +107,7 @@ contract User is PrintUtils {
             emit log("expecting withdrawal:");
             emit log_named_uint("nonce: ", expectedWithdrawals[i].nonce);
             emit log_named_address("strat: ", address(expectedWithdrawals[i].strategies[0]));
-            emit log_named_uint("shares: ", expectedWithdrawals[i].shares[0]);
+            emit log_named_uint("scaledShares: ", expectedWithdrawals[i].scaledShares[0]);
         }
         
         return expectedWithdrawals;
@@ -125,7 +125,7 @@ contract User is PrintUtils {
     /// @dev Queues a single withdrawal for every share and strategy pair
     function queueWithdrawals(
         IStrategy[] memory strategies, 
-        uint[] memory shares
+        uint[] memory scaledShares
     ) public createSnapshot virtual returns (IDelegationManager.Withdrawal[] memory) {
         _logM("queueWithdrawals");
 
@@ -137,7 +137,7 @@ contract User is PrintUtils {
         IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategies,
-            shares: shares,
+            shares: scaledShares,
             withdrawer: withdrawer
         });
 
@@ -148,9 +148,9 @@ contract User is PrintUtils {
             delegatedTo: operator,
             withdrawer: withdrawer,
             nonce: nonce,
-            startBlock: uint32(block.number),
+            startTimestamp: uint32(block.number), //TODO
             strategies: strategies,
-            shares: shares
+            scaledShares: scaledShares
         });
 
         bytes32[] memory withdrawalRoots = delegationManager.queueWithdrawals(params);
@@ -339,7 +339,7 @@ contract User is PrintUtils {
             }
         }
 
-        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0, receiveAsTokens);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
 
         return tokens;
     }
@@ -467,8 +467,8 @@ contract User is PrintUtils {
     /// @notice Gets the expected withdrawals to be created when the staker is undelegated via a call to `DelegationManager.undelegate()`
     /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
     function _getExpectedWithdrawalStructsForStaker(address staker) internal view returns (IDelegationManager.Withdrawal[] memory) {
-        (IStrategy[] memory strategies, uint256[] memory shares)
-            = delegationManager.getDelegatableShares(staker);
+        (IStrategy[] memory strategies, uint256[] memory scaledShares)
+            = delegationManager.getDelegatableScaledShares(staker);
 
         IDelegationManager.Withdrawal[] memory expectedWithdrawals = new IDelegationManager.Withdrawal[](strategies.length);
         address delegatedTo = delegationManager.delegatedTo(staker);
@@ -478,15 +478,15 @@ contract User is PrintUtils {
             IStrategy[] memory singleStrategy = new IStrategy[](1);
             uint256[] memory singleShares = new uint256[](1);
             singleStrategy[0] = strategies[i];
-            singleShares[0] = shares[i];
+            singleShares[0] = scaledShares[i];
             expectedWithdrawals[i] = IDelegationManager.Withdrawal({
                 staker: staker,
                 delegatedTo: delegatedTo,
                 withdrawer: staker,
                 nonce: (nonce + i),
-                startBlock: uint32(block.number),
+                startTimestamp: uint32(block.number), //TODO fix
                 strategies: singleStrategy,
-                shares: singleShares
+                scaledShares: singleShares
             });
         }
 

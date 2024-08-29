@@ -1,33 +1,46 @@
 {
   "addresses": {
-    "avsDirectory": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
-    "avsDirectoryImplementation": "0x9A676e781A523b5d0C0e43731313A708CB607508",
-    "baseStrategyImplementation": "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F",
-    "delayedWithdrawalRouter": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
-    "delayedWithdrawalRouterImplementation": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE",
-    "delegation": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-    "delegationImplementation": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
-    "eigenLayerPauserReg": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    "eigenLayerProxyAdmin": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    "eigenPodBeacon": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
-    "eigenPodImplementation": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
-    "eigenPodManager": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
-    "eigenPodManagerImplementation": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
-    "emptyContract": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-    "rewardsCoordinator": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
-    "rewardsCoordinatorImplementation": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
-    "slasher": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-    "slasherImplementation": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
-    "strategies": "",
-    "strategyManager": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-    "strategyManagerImplementation": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+    "avsDirectory": "0x851356ae760d987E095750cCeb3bC6014560891C",
+    "avsDirectoryImplementation": "0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf",
+    "baseStrategyImplementation": "0x82e01223d51Eb87e16A03E24687EDF0F294da6f1",
+    "delegationManager": "0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9",
+    "delegationManagerImplementation": "0x99bbA657f2BbC93c02D617f8bA121cB8Fc104Acf",
+    "eigenLayerPauserReg": "0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB",
+    "eigenLayerProxyAdmin": "0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690",
+    "eigenPodBeacon": "0x4826533B4897376654Bb4d4AD88B7faFD0C98528",
+    "eigenPodImplementation": "0x70e0bA845a1A0F2DA3359C97E0285013525FFC49",
+    "eigenPodManager": "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
+    "eigenPodManagerImplementation": "0x5eb3Bc0a489C5A8288765d2336659EbCA68FCd00",
+    "emptyContract": "0x9E545E3C0baAB3E08CdfD552C960A1050f373042",
+    "numStrategiesDeployed": 0,
+    "rewardsCoordinator": "0x998abeb3E57409262aE5b751f60747921B33613E",
+    "rewardsCoordinatorImplementation": "0x36C02dA8a0983159322a80FFE9F24b1acfF8B570",
+    "slasher": "0xf5059a5D33d5853360D16C683c16e67980206f36",
+    "slasherImplementation": "0x9d4454B023096f34B160D6B654540c56A1F81688",
+    "strategies": {
+      "WETH": "0x7969c5eD335650692Bc04293B07F5BF2e7A673C0"
+    },
+    "strategyManager": "0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8",
+    "strategyManagerImplementation": "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF",
+    "token": {
+      "tokenProxyAdmin": "0x0000000000000000000000000000000000000000",
+      "EIGEN": "0x0000000000000000000000000000000000000000",
+      "bEIGEN": "0x0000000000000000000000000000000000000000",
+      "EIGENImpl": "0x0000000000000000000000000000000000000000",
+      "bEIGENImpl": "0x0000000000000000000000000000000000000000",
+      "eigenStrategy": "0x0000000000000000000000000000000000000000",
+      "eigenStrategyImpl": "0x0000000000000000000000000000000000000000"
+    }
   },
   "chainInfo": {
     "chainId": 31337,
-    "deploymentBlock": 0
+    "deploymentBlock": 31
   },
   "parameters": {
+    "communityMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "executorMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    "operationsMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    "operationsMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "pauserMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "timelock": "0x0000000000000000000000000000000000000000"
   }
 }

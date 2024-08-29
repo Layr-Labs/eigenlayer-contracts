@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
+import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IEigenPodManager.sol";
 
 /**
@@ -33,6 +34,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     bytes32 internal _DOMAIN_SEPARATOR;
 
+    /// TODO @dev actually make this immutable and add to constructor
+    IAVSDirectory public immutable avsDirectory;
+
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
 
@@ -42,17 +46,16 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216_000;
-
     /**
-     * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
-     * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
+     * @notice returns the total number of scaled shares (i.e. shares scaled down by a factor of the `operator`'s
+     * totalMagnitude) in `strategy` that are delegated to `operator`.
+     * @notice Mapping: operator => strategy => total number of scaled shares in the strategy delegated to the operator.
      * @dev By design, the following invariant should hold for each Strategy:
-     * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
-     * = sum (delegateable shares of all stakers delegated to the operator)
+     * (operator's scaled shares in delegation manager) = sum (scaled shares above zero of all stakers delegated to operator)
+     * = sum (delegateable scaled shares of all stakers delegated to the operator)
+     * @dev FKA `operatorShares`
      */
-    mapping(address => mapping(IStrategy => uint256)) public operatorShares;
+    mapping(address => mapping(IStrategy => uint256)) public operatorScaledShares;
 
     /**
      * @notice Mapping: operator => OperatorDetails struct
@@ -102,10 +105,31 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks;
 
-    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
+    /**
+     * @notice Global minimum withdrawal delay for all strategy withdrawals.
+     * NOTE: This is used equivalently to minWithdrawalDelayBlocks and strategyWithdrawalDelayBlocks but
+     * using timestamps instead in the Slashing release.
+     * In addition, we now also configure withdrawal delays on a per-strategy basis.
+     * To withdraw from a strategy, max(minWithdrawalDelay, strategyWithdrawalDelay[strategy]) number of seconds must have passed.
+     * See mapping strategyWithdrawalDelay below for per-strategy withdrawal delays.
+     */
+    uint256 public minWithdrawalDelay;
+
+    /**
+     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in seconds, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY`. Minimum value is 0 (i.e. no delay enforced).
+     */
+    mapping(IStrategy => uint256) public strategyWithdrawalDelays;
+
+    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
+    /// This determines how long it takes for allocations to take effect in the future. Can only be set one time for each operator
+    mapping(address => AllocationDelayDetails) internal _operatorAllocationDelay;
+
+    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager, IAVSDirectory _avsDirectory) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
         slasher = _slasher;
+        avsDirectory = _avsDirectory;
     }
 
     /**
@@ -113,5 +137,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[39] private __gap;
+    uint256[38] private __gap;
 }
