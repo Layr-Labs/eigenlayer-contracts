@@ -181,6 +181,56 @@ interface IAVSDirectory is ISignatureUtils {
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
 
     /**
+     * @notice Returns operator set an operator is registered to in the order they were registered.
+     * @param operator The operator address to query.
+     * @param index The index of the enumerated list of operator sets.
+     */
+    function operatorSetsMemberOfAtIndex(address operator, uint256 index) external view returns (OperatorSet memory);
+ 
+    /**
+     * @notice Retursn the operator registered to an operatorSet in the order that it was registered. 
+     *  @param operatorSet The operatorSet to query.
+     *  @param index The index of the enumerated list of operators. 
+     */
+    function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address);
+
+    /**
+     * @notice Returns an array of operator sets an operator is registered to.
+     * @param operator The operator address to query.
+     * @param start The starting index of the array to query.
+     *  @param length The amount of items of the array to return.
+     */
+    function getOperatorSetsOfOperator(
+        address operator,
+        uint256 start,
+        uint256 length
+    ) external view returns (OperatorSet[] memory operatorSets);
+    
+    /**
+     * @notice Returns an array of operators registered to the operatorSet. 
+     * @param operatorSet The operatorSet to query.
+     * @param start The starting index of the array to query.
+     * @param length The amount of items of the array to return.
+     */
+    function getOperatorsInOperatorSet(
+        OperatorSet memory operatorSet,
+        uint256 start,
+        uint256 length
+    ) external view returns (address[] memory operators);
+
+    /**
+     * @notice Returns the number of operators registered to an operatorSet.
+     * @param operatorSet The operatorSet to get the member count for
+     */
+    function getNumOperatorsInOperatorSet(OperatorSet memory operatorSet) external view returns (uint256);
+
+    /**
+     *  @notice Returns the total number of operator sets an operator is registered to.
+     *  @param operator The operator address to query.
+     */
+    function inTotalOperatorSets(address operator) external view returns (uint256);
+
+    /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
      *
      *  @param operator The account registering as an operator.

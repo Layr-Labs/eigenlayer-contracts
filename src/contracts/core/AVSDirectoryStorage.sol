@@ -8,6 +8,7 @@ import "../interfaces/IDelegationManager.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
@@ -48,12 +49,13 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: avs => operatorSetId => Whether or not an operator set is valid.
     mapping(address => mapping(uint32 => bool)) public isOperatorSet;
 
-    /// @notice Mapping: avs => operatorSetId => Total operators within the given operator set.
-    mapping(address => mapping(uint32 => uint256)) public operatorSetMemberCount;
-
     /// @notice Mapping: operator => List of operator sets that operator is registered to.
     /// @dev Each item is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
     mapping(address => EnumerableSet.Bytes32Set) internal _operatorSetsMemberOf;
+
+    /// @notice Mapping: operatorSet => List of operators that are registered to the operatorSet
+    /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
+    mapping(bytes32 => EnumerableSet.AddressSet) internal _operatorSetMembers; 
 
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
