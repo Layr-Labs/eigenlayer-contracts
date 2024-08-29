@@ -105,7 +105,7 @@ interface IStakeRootCompendium {
 
     /**
      * @notice Returns the operatorSet leaves for the operatorSet at a given index for a certain set of operators
-     * @param operatorSetIndex the index of the operatorSet to calculate the operator set leaves for
+     * @param operatorSetIndex the index of the operatorSet within the SRC's operatorSets list to calculate the operator set leaves for
      * @param startOperatorIndex the index of the first operator to get the leaves for
      * @param numOperators the number of operators to get the leaves for
      * @return the operatorSet leaves
