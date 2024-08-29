@@ -17,6 +17,7 @@ contract AVSDirectory is
     ReentrancyGuardUpgradeable
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @dev Index for flag that pauses operator register/deregister to avs when set.
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
@@ -354,10 +355,7 @@ contract AVSDirectory is
         );
 
         // Assert that the AVS is not an operator set AVS.
-        require(
-            !isOperatorSetAVS[msg.sender], 
-            "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS"
-        );
+        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS");
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
@@ -387,14 +385,14 @@ contract AVSDirectory is
                 "AVSDirectory._registerOperatorToOperatorSets: invalid operator set"
             );
 
+            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+
             require(
-                !isMember(operator, operatorSet),
+                _operatorSetsMemberOf[operator].add(encodedOperatorSet),
                 "AVSDirectory._registerOperatorToOperatorSets: operator already registered to operator set"
             );
 
-            ++operatorSetMemberCount[avs][operatorSetIds[i]];
-
-            _operatorSetsMemberOf[operator].add(_encodeOperatorSet(operatorSet));
+            _operatorSetMembers[encodedOperatorSet].add(operator);
 
             emit OperatorAddedToOperatorSet(operator, operatorSet);
         }
@@ -412,14 +410,14 @@ contract AVSDirectory is
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
 
+            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+
             require(
-                isMember(operator, operatorSet),
+                _operatorSetsMemberOf[operator].remove(encodedOperatorSet),
                 "AVSDirectory._deregisterOperatorFromOperatorSet: operator not registered for operator set"
             );
 
-            --operatorSetMemberCount[avs][operatorSetIds[i]];
-
-            _operatorSetsMemberOf[operator].remove(_encodeOperatorSet(operatorSet));
+            _operatorSetMembers[encodedOperatorSet].remove(operator);
 
             emit OperatorRemovedFromOperatorSet(operator, operatorSet);
         }
@@ -431,22 +429,35 @@ contract AVSDirectory is
      *
      */
 
-    /// @notice Returns operator sets an operator is registered to in the order they were registered.
-    /// @param operator The operator address to query.
-    /// @param index The index of the enumerated list of operator sets.
-    function operatorSetsMemberOf(address operator, uint256 index) public view returns (OperatorSet memory) {
+    /**
+     * @notice Returns operatorSet an operator is registered to in the order they were registered.
+     * @param operator The operator address to query.
+     * @param index The index of the enumerated list of operator sets.
+     */
+    function operatorSetsMemberOfAtIndex(address operator, uint256 index) external view returns (OperatorSet memory) {
         return _decodeOperatorSet(_operatorSetsMemberOf[operator].at(index));
     }
 
-    /// @notice Returns an array of operator sets an operator is registered to.
-    /// @param operator The operator address to query.
-    /// @param start The starting index of the array to query.
-    /// @param length The amount of items of the array to return.
-    function operatorSetsMemberOf(
+    /**
+     * @notice Returns the operator registered to an operatorSet in the order that it was registered.
+     * @param operatorSet The operatorSet to query.
+     * @param index The index of the enumerated list of operators.
+     */
+    function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address) {
+        return _operatorSetMembers[_encodeOperatorSet(operatorSet)].at(index);
+    }
+
+    /**
+     * @notice Returns an array of operator sets an operator is registered to.
+     * @param operator The operator address to query.
+     * @param start The starting index of the array to query.
+     *  @param length The amount of items of the array to return.
+     */
+    function getOperatorSetsOfOperator(
         address operator,
         uint256 start,
         uint256 length
-    ) public view returns (OperatorSet[] memory operatorSets) {
+    ) external view returns (OperatorSet[] memory operatorSets) {
         uint256 maxLength = _operatorSetsMemberOf[operator].length() - start;
         if (length > maxLength) length = maxLength;
         operatorSets = new OperatorSet[](length);
@@ -455,15 +466,47 @@ contract AVSDirectory is
         }
     }
 
-    /// @notice Returns the total number of operator sets an operator is registered to.
-    /// @param operator The operator address to query.
-    function inTotalOperatorSets(address operator) public view returns (uint256) {
+    /**
+     * @notice Returns an array of operators registered to the operatorSet.
+     * @param operatorSet The operatorSet to query.
+     * @param start The starting index of the array to query.
+     * @param length The amount of items of the array to return.
+     */
+    function getOperatorsInOperatorSet(
+        OperatorSet memory operatorSet,
+        uint256 start,
+        uint256 length
+    ) external view returns (address[] memory operators) {
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        uint256 maxLength = _operatorSetMembers[encodedOperatorSet].length() - start;
+        if (length > maxLength) length = maxLength;
+        operators = new address[](length);
+        for (uint256 i; i < length; ++i) {
+            operators[i] = _operatorSetMembers[encodedOperatorSet].at(start + i);
+        }
+    }
+
+    /**
+     * @notice Returns the number of operators registered to an operatorSet.
+     * @param operatorSet The operatorSet to get the member count for
+     */
+    function getNumOperatorsInOperatorSet(OperatorSet memory operatorSet) external view returns (uint256) {
+        return _operatorSetMembers[_encodeOperatorSet(operatorSet)].length();
+    }
+
+    /**
+     *  @notice Returns the total number of operator sets an operator is registered to.
+     *  @param operator The operator address to query.
+     */
+    function inTotalOperatorSets(address operator) external view returns (uint256) {
         return _operatorSetsMemberOf[operator].length();
     }
 
-    /// @notice Returns whether or not an operator is registered to an operator set.
-    /// @param operator The operator address to query.
-    /// @param operatorSet The `OperatorSet` to query.
+    /**
+     * @notice Returns whether or not an operator is registered to an operator set.
+     * @param operator The operator address to query.
+     *  @param operatorSet The `OperatorSet` to query.
+     */
     function isMember(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
     }

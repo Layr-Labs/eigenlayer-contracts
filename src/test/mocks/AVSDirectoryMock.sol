@@ -82,4 +82,24 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
     function OPERATOR_SET_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
 
     function isMember(address operator, IAVSDirectory.OperatorSet memory operatorSet) external view returns (bool) {}
+
+    function operatorSetsMemberOfAtIndex(address operator, uint256 index) external view returns (OperatorSet memory) {}
+ 
+    function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address) {}
+
+    function getOperatorSetsOfOperator(
+        address operator,
+        uint256 start,
+        uint256 length
+    ) external view returns (OperatorSet[] memory operatorSets) {}
+    
+    function getOperatorsInOperatorSet(
+        OperatorSet memory operatorSet,
+        uint256 start,
+        uint256 length
+    ) external view returns (address[] memory operators) {}
+
+    function getNumOperatorsInOperatorSet(OperatorSet memory operatorSet) external view returns (uint256) {}
+
+    function inTotalOperatorSets(address operator) external view returns (uint256) {}
 }
