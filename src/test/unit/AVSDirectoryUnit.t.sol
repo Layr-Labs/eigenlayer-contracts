@@ -52,7 +52,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         // Deploy DelegationManager implmentation and proxy
         initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         initializeWithdrawalDelayBlocks = new uint256[](0);
-        delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
+        delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock, avsDirectory); // TODO: fix
         delegationManager = DelegationManager(
             address(
                 new TransparentUpgradeableProxy(

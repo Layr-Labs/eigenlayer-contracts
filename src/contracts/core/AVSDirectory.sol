@@ -770,6 +770,16 @@ contract AVSDirectory is
         return uint64(totalMagnitude);
     }
 
+    /// @dev gets the latest total magnitude or overwrites it if it is not set
+    function _getLatestTotalMagnitudeView(address operator, IStrategy strategy) internal view returns (uint64) {
+        (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
+        if (!exists) {
+            return ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+        }
+
+        return uint64(totalMagnitude);
+    }
+
     /// @dev gets the pending free magnitude available to add by completing numToComplete pending deallocations
     /// and returns the next index to start from if completed.
     function _getPendingFreeMagnitude(
@@ -911,57 +921,21 @@ contract AVSDirectory is
         return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
     }
 
-    /**
-     * @param operator the operator to get the slashable ppm for
-     * @param operatorSet the operatorSet to get the slashable ppm for
-     * @param strategies the strategies to get the slashable ppm for
-     * @param timestamp the timestamp to get the slashable ppm for for
-     * @param linear whether the search should be linear (from the most recent) or binary
-     *
-     * @return slashablePPM the slashable ppm of the given list of strategies allocated to
-     * the given OperatorSet for the given operator and timestamp
-     */
-    function getSlashablePPM(
+    function _getTotalAndAllocatedMagnitude(
         address operator,
         OperatorSet calldata operatorSet,
-        IStrategy[] calldata strategies,
-        uint32 timestamp,
-        bool linear
-    ) public view returns (uint24[] memory) {
-        uint24[] memory slashablePPM = new uint24[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            slashablePPM[i] = _getSlashablePPM(operator, operatorSet, strategies[i], timestamp, linear);
-        }
-        return slashablePPM;
-    }
+        IStrategy strategy
+    ) internal view returns (uint64, uint64) {
+        uint64 totalMagnitude = _getLatestTotalMagnitudeView(operator, strategy);
 
-    function _getSlashablePPM(
-        address operator,
-        OperatorSet calldata operatorSet,
-        IStrategy strategy,
-        uint32 timestamp,
-        bool linear
-    ) public view returns (uint24) {
-        uint64 totalMagnitude;
-        if (linear) {
-            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookupLinear(timestamp));
-        } else {
-            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
-        }
-        // return early if totalMagnitude is 0
-        if (totalMagnitude == 0) {
-            return 0;
-        }
-
-        uint64 currentMagnitude;
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
-        if (linear) {
-            currentMagnitude = uint64(_magnitudeUpdate[operator][strategy][operatorSetKey].upperLookupLinear(timestamp));
-        } else {
-            currentMagnitude = uint64(_magnitudeUpdate[operator][strategy][operatorSetKey].upperLookup(timestamp));
-        }
+        uint64 currentMagnitude = uint64(
+                _magnitudeUpdate[operator][strategy][operatorSetKey].upperLookupLinear(
+                    uint32(block.timestamp)
+                )
+            );
 
-        return uint16(currentMagnitude * 1e6 / totalMagnitude);
+        return (totalMagnitude, currentMagnitude);
     }
 
     /**
@@ -1032,6 +1006,26 @@ contract AVSDirectory is
             }
         }
         return totalMagnitudes;
+    }
+
+    /**
+     * @param operator the operator to get the total and allocated magnitudes for
+     * @param operatorSet the operatorSet to get the total and allocated magnitudes for
+     * @param strategies the strategies to get the total and allocated magnitudes for
+     *
+     * @return the list of total magnitudes for each strategy and the list of allocated magnitudes for each strategy
+     */
+    function getTotalAndAllocatedMagnitudes(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies
+    ) public view returns (uint64[] memory, uint64[] memory) {
+        uint64[] memory totalMagnitude = new uint64[](strategies.length);
+        uint64[] memory allocatedMagnitude = new uint64[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            (totalMagnitude[i], allocatedMagnitude[i]) = _getTotalAndAllocatedMagnitude(operator, operatorSet, strategies[i]);
+        }
+        return (totalMagnitude, allocatedMagnitude);
     }
 
     // /**
