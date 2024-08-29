@@ -506,6 +506,12 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
             assertEq(operatorSets[i].operatorSetId, oids[i]);
         }
 
+        for (uint256 i; i < oids.length; ++i) {
+            address[] memory operators = avsDirectory.getOperatorsInOperatorSet(IAVSDirectory.OperatorSet(address(this), oids[i]), 0, type(uint256).max);
+            assertEq(operators.length, 1);
+            assertEq(operators[0], operator);
+        }
+
         assertEq(operatorSets.length, totalSets);
         assertEq(avsDirectory.inTotalOperatorSets(operator), totalSets);
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
@@ -547,6 +553,9 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
         assertEq(operatorSet.avs, address(this));
         assertEq(operatorSet.operatorSetId, oids[0]);
+        
+        address operatorInSet = avsDirectory.operatorSetMemberAtIndex(IAVSDirectory.OperatorSet(address(this), operatorSetId), 0);
+        assertEq(operator, operatorInSet);
 
         assertEq(avsDirectory.inTotalOperatorSets(operator), 1);
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt));
@@ -598,6 +607,12 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
             assertEq(operatorSets[i - 1].avs, address(this));
             assertEq(operatorSets[i - 1].operatorSetId, i);
+        }
+
+        for(uint32 i = 1; i < totalSets + 1; ++i) {
+            address[] memory operators = avsDirectory.getOperatorsInOperatorSet(IAVSDirectory.OperatorSet(address(this), i), 0, type(uint256).max);
+            assertEq(operators.length, 1);
+            assertEq(operators[0], operator);
         }
 
         assertEq(avsDirectory.inTotalOperatorSets(operator), totalSets);
@@ -677,6 +692,9 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
                 avsDirectory.isMember(operator, IAVSDirectory.OperatorSet(address(this), oids[i])),
                 "operator still in operator set"
             );
+
+            address[] memory operators = avsDirectory.getOperatorsInOperatorSet(IAVSDirectory.OperatorSet(address(this), oids[i]), 0, type(uint256).max);
+            assertEq(operators.length, 0);
         }
 
         IAVSDirectory.OperatorSet[] memory operatorSets =
@@ -1096,6 +1114,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
         uint8 numOids
     ) public {
         numOperators = uint8(bound(numOperators, 1, 64));
+        numOids = uint8(bound(numOids, 1, 32));
 
         // Create Operator Set IDs
         uint32[] memory oids = new uint32[](numOids);
@@ -1143,6 +1162,14 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
                 avsDirectory.avsOperatorStatus(address(this), operators[i])
                     == IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED
             );
+
+            IAVSDirectory.OperatorSet[] memory opSets = avsDirectory.getOperatorSetsOfOperator(operators[i], 0, type(uint256).max);
+            assertEq(oids.length, opSets.length);
+        }
+
+        for(uint256 i = 0; i < oids.length; i++) {
+            address[] memory operatorsInSet = avsDirectory.getOperatorsInOperatorSet(IAVSDirectory.OperatorSet(address(this), oids[i]), 0, type(uint256).max);
+            assertEq(operatorsInSet.length, operators.length);
         }
     }
 

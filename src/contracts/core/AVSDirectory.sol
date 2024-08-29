@@ -435,7 +435,7 @@ contract AVSDirectory is
 
 
     /**
-     * @notice Returns operator set an operator is registered to in the order they were registered.
+     * @notice Returns operatorSet an operator is registered to in the order they were registered.
      * @param operator The operator address to query.
      * @param index The index of the enumerated list of operator sets.
      */
@@ -444,7 +444,7 @@ contract AVSDirectory is
     }
  
     /**
-     * @notice Retursn the operator registered to an operatorSet in the order that it was registered. 
+     * @notice Returns the operator registered to an operatorSet in the order that it was registered. 
      *  @param operatorSet The operatorSet to query.
      *  @param index The index of the enumerated list of operators. 
      */
