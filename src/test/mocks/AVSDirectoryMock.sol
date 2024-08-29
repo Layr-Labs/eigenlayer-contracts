@@ -82,13 +82,11 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
         uint32 timestamp
     ) external view returns (OperatorSet[] memory, uint64[][] memory) {}
 
-    function getSlashablePPM(
+    function getTotalAndAllocatedMagnitudes(
         address operator,
         OperatorSet calldata operatorSet,
-        IStrategy[] calldata strategies,
-        uint32 timestamp,
-        bool linear
-    ) public view returns (uint24[] memory) {}
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory, uint64[] memory) {}
 
     function getAllocatableMagnitude(
         address operator,

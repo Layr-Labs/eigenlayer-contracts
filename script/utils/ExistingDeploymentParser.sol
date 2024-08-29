@@ -234,6 +234,15 @@ contract ExistingDeploymentParser is Script, Test {
         });
     }
 
+    function _parseDeployedStrategies(string memory existingStrategyDeploymentInfoPath) internal returns (address[] memory strategyAddresses) {
+        uint256 currentChainId = block.chainid;
+
+        // READ JSON CONFIG DATA
+        string memory existingDeploymentData = vm.readFile(existingStrategyDeploymentInfoPath);
+        strategyAddresses = stdJson.readAddressArray(existingDeploymentData, ".strategies");
+        return strategyAddresses;
+    }
+
     /// @notice use for deploying a new set of EigenLayer contracts
     /// Note that this does require multisigs to already be deployed
     function _parseInitialDeploymentParams(string memory initialDeploymentParamsPath) internal virtual {

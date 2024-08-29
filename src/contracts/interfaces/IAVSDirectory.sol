@@ -350,19 +350,14 @@ interface IAVSDirectory is ISignatureUtils {
      * @param operator the operator to get the slashable ppm for
      * @param operatorSet the operatorSet to get the slashable ppm for
      * @param strategies the strategies to get the slashable ppm for
-     * @param timestamp the timestamp to get the slashable ppm for for
-     * @param linear whether the search should be linear (from the most recent) or binary
      *
-     * @return slashablePPM the slashable ppm of the given list of strategies allocated to
-     * the given OperatorSet for the given operator and timestamp
+     * @return the list of total magnitudes for each strategy and the list of allocated magnitudes for each strategy
      */
-    function getSlashablePPM(
+    function getTotalAndAllocatedMagnitudes(
         address operator,
         OperatorSet calldata operatorSet,
-        IStrategy[] calldata strategies,
-        uint32 timestamp,
-        bool linear
-    ) external view returns (uint24[] memory);
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory, uint64[] memory);
 
     /// @notice Returns the total magnitude of an operator for a given set of strategies
     /// TODO: finish natspec
