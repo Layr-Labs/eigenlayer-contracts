@@ -355,10 +355,7 @@ contract AVSDirectory is
         );
 
         // Assert that the AVS is not an operator set AVS.
-        require(
-            !isOperatorSetAVS[msg.sender], 
-            "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS"
-        );
+        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS");
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
@@ -396,7 +393,6 @@ contract AVSDirectory is
             );
 
             _operatorSetMembers[encodedOperatorSet].add(operator);
-            
 
             emit OperatorAddedToOperatorSet(operator, operatorSet);
         }
@@ -433,7 +429,6 @@ contract AVSDirectory is
      *
      */
 
-
     /**
      * @notice Returns operatorSet an operator is registered to in the order they were registered.
      * @param operator The operator address to query.
@@ -442,11 +437,11 @@ contract AVSDirectory is
     function operatorSetsMemberOfAtIndex(address operator, uint256 index) external view returns (OperatorSet memory) {
         return _decodeOperatorSet(_operatorSetsMemberOf[operator].at(index));
     }
- 
+
     /**
-     * @notice Returns the operator registered to an operatorSet in the order that it was registered. 
+     * @notice Returns the operator registered to an operatorSet in the order that it was registered.
      * @param operatorSet The operatorSet to query.
-     * @param index The index of the enumerated list of operators. 
+     * @param index The index of the enumerated list of operators.
      */
     function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address) {
         return _operatorSetMembers[_encodeOperatorSet(operatorSet)].at(index);
@@ -470,9 +465,9 @@ contract AVSDirectory is
             operatorSets[i] = _decodeOperatorSet(_operatorSetsMemberOf[operator].at(start + i));
         }
     }
-    
+
     /**
-     * @notice Returns an array of operators registered to the operatorSet. 
+     * @notice Returns an array of operators registered to the operatorSet.
      * @param operatorSet The operatorSet to query.
      * @param start The starting index of the array to query.
      * @param length The amount of items of the array to return.
@@ -487,7 +482,7 @@ contract AVSDirectory is
         if (length > maxLength) length = maxLength;
         operators = new address[](length);
         for (uint256 i; i < length; ++i) {
-            operators[i] = _operatorSetMembers[encodedOperatorSet].at(start+i);
+            operators[i] = _operatorSetMembers[encodedOperatorSet].at(start + i);
         }
     }
 
@@ -507,8 +502,7 @@ contract AVSDirectory is
         return _operatorSetsMemberOf[operator].length();
     }
 
-
-    /** 
+    /**
      * @notice Returns whether or not an operator is registered to an operator set.
      * @param operator The operator address to query.
      *  @param operatorSet The `OperatorSet` to query.
