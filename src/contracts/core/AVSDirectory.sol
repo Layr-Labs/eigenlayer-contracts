@@ -914,6 +914,29 @@ contract AVSDirectory is
     /**
      * @param operator the operator to get the slashable magnitude for
      * @param strategies the strategies to get the slashable magnitude for
+     * 
+     * @return operatorSets the operator sets the operator is a member of and the current slashable magnitudes for each strategy
+     */
+    function getCurrentSlashableMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies,
+    ) external view returns (OperatorSet[] memory, uint64[][] memory) {
+        OperatorSet[] memory operatorSets = getOperatorSetsOfOperator(operator, 0, _operatorSetsMemberOf[operator].length());
+        uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            slashableMagnitudes[i] = new uint64[](operatorSets.length);
+            for (uint256 j = 0; j < operatorSets.length; ++j) {
+                slashableMagnitudes[i][j] = uint64(
+                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupLinear(block.timestamp)
+                );
+            }
+        }
+        return (operatorSets, slashableMagnitudes);
+    }
+
+    /**
+     * @param operator the operator to get the slashable magnitude for
+     * @param strategies the strategies to get the slashable magnitude for
      * @param timestamp the timestamp to get the slashable magnitude for
      * 
      * @return operatorSets the operator sets the operator is a member of and the slashable magnitudes for each strategy
@@ -929,7 +952,7 @@ contract AVSDirectory is
             slashableMagnitudes[i] = new uint64[](operatorSets.length);
             for (uint256 j = 0; j < operatorSets.length; ++j) {
                 slashableMagnitudes[i][j] = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupLinear(timestamp)
+                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupRecent(timestamp)
                 );
             }
         }

@@ -315,6 +315,17 @@ interface IAVSDirectory is ISignatureUtils {
     /**
      * @param operator the operator to get the slashable magnitude for
      * @param strategies the strategies to get the slashable magnitude for
+     * 
+     * @return operatorSets the operator sets the operator is a member of and the current slashable magnitudes for each strategy
+     */
+    function getCurrentSlashableMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies,
+    ) external view returns (OperatorSet[] memory, uint64[][] memory)
+
+    /**
+     * @param operator the operator to get the slashable magnitude for
+     * @param strategies the strategies to get the slashable magnitude for
      * @param timestamp the timestamp to get the slashable magnitude for
      * 
      * @return operatorSets the operator sets the operator is a member of and the slashable magnitudes for each strategy
