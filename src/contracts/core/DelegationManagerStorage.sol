@@ -35,7 +35,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     bytes32 internal _DOMAIN_SEPARATOR;
 
     /// TODO @dev actually make this immutable and add to constructor
-    IAVSDirectory public constant avsDirectory = IAVSDirectory(address(0));
+    IAVSDirectory public immutable avsDirectory;
 
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
@@ -125,10 +125,11 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// This determines how long it takes for allocations to take effect in the future. Can only be set one time for each operator
     mapping(address => AllocationDelayDetails) internal _operatorAllocationDelay;
 
-    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
+    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager, IAVSDirectory _avsDirectory) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
         slasher = _slasher;
+        avsDirectory = _avsDirectory;
     }
 
     /**

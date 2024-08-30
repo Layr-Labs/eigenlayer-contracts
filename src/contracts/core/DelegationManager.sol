@@ -68,8 +68,9 @@ contract DelegationManager is
     constructor(
         IStrategyManager _strategyManager,
         ISlasher _slasher,
-        IEigenPodManager _eigenPodManager
-    ) DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager) {
+        IEigenPodManager _eigenPodManager,
+        IAVSDirectory _avsDirectory
+    ) DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager, _avsDirectory) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
