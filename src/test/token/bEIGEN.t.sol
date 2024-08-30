@@ -64,12 +64,12 @@ contract bEIGENTest is Test {
         assertEq(bEIGEN.balanceOf(address(eigen)), bEIGEN.totalSupply());
     }
 
-    function test_setMinterAndMint() public {
+    function test_setIsMinterAndMint() public {
         bEIGEN.initialize(initialOwner);
 
         vm.prank(initialOwner);
-        bEIGEN.setMinter(minterToSet);
-        assertEq(bEIGEN.minter(), minterToSet, "minter not set correctly");
+        bEIGEN.setIsMinter(minterToSet, true);
+        require(bEIGEN.isMinter(minterToSet), "minter not set correctly");
 
         uint256 amountToMint = 5e25;
         uint256 balanceBefore = bEIGEN.balanceOf(mintTo);
@@ -81,24 +81,16 @@ contract bEIGENTest is Test {
         assertEq(balanceDiff, amountToMint, "mint not working correctly");
     }
 
-    function test_setMinter_revertsWhenNotCalledByOwner() public {
+    function test_setIsMinter_revertsWhenNotCalledByOwner() public {
         bEIGEN.initialize(initialOwner);
 
         vm.prank(mintTo);
         vm.expectRevert("Ownable: caller is not the owner");
-        bEIGEN.setMinter(minterToSet);
-    }
-
-    function test_setMinter_revertsWhenCalledTwice() public {
-        test_setMinterAndMint();
-
-        vm.prank(initialOwner);
-        vm.expectRevert("BackingEigen.setMinter: minter already set");
-        bEIGEN.setMinter(minterToSet);
+        bEIGEN.setIsMinter(minterToSet, true);
     }
 
     function test_burn() public {
-        test_setMinterAndMint();
+        test_setIsMinterAndMint();
         vm.prank(initialOwner);
         bEIGEN.setAllowedFrom(mintTo, true);
 
@@ -113,10 +105,10 @@ contract bEIGENTest is Test {
     }
 
     function test_mint_revertsWhenNotCalledByMinter() public {
-        test_setMinterAndMint();
+        test_setIsMinterAndMint();
 
         uint256 amountToMint = 5e25;
-        vm.expectRevert("BackingEigen.mintTo: caller is not the minter");
+        vm.expectRevert("BackingEigen.mintTo: caller is not a minter");
         bEIGEN.mint(mintTo, amountToMint);
     }
 }

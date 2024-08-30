@@ -17,8 +17,8 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     mapping(address => bool) public allowedFrom;
     /// @notice mapping of addresses that are allowed to receive tokens from any address
     mapping(address => bool) public allowedTo;
-    // @notice single address that is allowed to mint new bEIGEN tokens
-    address public minter;
+    // @notice whether or not an address is allowed to mint new bEIGEN tokens
+    mapping(address => bool) public isMinter;
 
     /// @notice event emitted when the allowedFrom status of an address is set
     event SetAllowedFrom(address indexed from, bool isAllowedFrom);
@@ -28,30 +28,26 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     event TransferRestrictionsDisabled();
     /// @notice event emitted when the EIGEN token is backed
     event Backed();
-    // @notice event emitted when the `minter` address is modified
-    event MinterTransferred(address indexed previousMinter, address indexed newMinter);
+    // @notice event emitted when the `isMinter` mapping is modified
+    event IsMinterModified(address indexed minterAddress, bool newStatus);
 
     constructor(IERC20 _EIGEN) {
         EIGEN = _EIGEN;
         _disableInitializers();
     }
 
-    /**
-     * @notice Allows the contract owner to modify the `minter` address *one time only*.
-     * @dev Only callable if the minter address has not yet been set.
-     */
-    function setMinter(address newMinter) external onlyOwner {
-        require(minter == address(0), "BackingEigen.setMinter: minter already set");
-        emit MinterTransferred(minter, newMinter);
-        minter = newMinter;
+    // @notice Allows the contract owner to modify an entry in the `isMinter` mapping.
+    function setIsMinter(address minterAddress, bool newStatus) external onlyOwner {
+        emit IsMinterModified(minterAddress, newStatus);
+        isMinter[minterAddress] = newStatus;
     }
 
     /**
-     * @notice Allows the `minter` to mint `amount` new tokens to the address `to`.
-     * @dev Callable only by the `minter` defined in this contract.
+     * @notice Allows any privileged address to mint `amount` new tokens to the address `to`.
+     * @dev Callable only by an address that has `isMinter` set to true.
      */
     function mint(address to, uint256 amount) external {
-        require(msg.sender == minter, "BackingEigen.mintTo: caller is not the minter");
+        require(isMinter[msg.sender], "BackingEigen.mintTo: caller is not a minter");
         _mint(to, amount);
     }
 
