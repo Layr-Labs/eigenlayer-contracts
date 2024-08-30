@@ -859,7 +859,7 @@ contract AVSDirectory is
         address operator,
         uint256 start,
         uint256 length
-    ) external view returns (OperatorSet[] memory operatorSets) {
+    ) public view returns (OperatorSet[] memory operatorSets) {
         uint256 maxLength = _operatorSetsMemberOf[operator].length() - start;
         if (length > maxLength) length = maxLength;
         operatorSets = new OperatorSet[](length);
@@ -911,6 +911,54 @@ contract AVSDirectory is
      */
     function isMember(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
+    }
+
+    /**
+     * @param operator the operator to get the slashable magnitude for
+     * @param strategies the strategies to get the slashable magnitude for
+     * 
+     * @return operatorSets the operator sets the operator is a member of and the current slashable magnitudes for each strategy
+     */
+    function getCurrentSlashableMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (OperatorSet[] memory, uint64[][] memory) {
+        OperatorSet[] memory operatorSets = getOperatorSetsOfOperator(operator, 0, _operatorSetsMemberOf[operator].length());
+        uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            slashableMagnitudes[i] = new uint64[](operatorSets.length);
+            for (uint256 j = 0; j < operatorSets.length; ++j) {
+                slashableMagnitudes[i][j] = uint64(
+                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupLinear(uint32(block.timestamp))
+                );
+            }
+        }
+        return (operatorSets, slashableMagnitudes);
+    }
+
+    /**
+     * @param operator the operator to get the slashable magnitude for
+     * @param strategies the strategies to get the slashable magnitude for
+     * @param timestamp the timestamp to get the slashable magnitude for
+     * 
+     * @return operatorSets the operator sets the operator is a member of and the slashable magnitudes for each strategy
+     */
+    function getSlashableMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 timestamp
+    ) external view returns (OperatorSet[] memory, uint64[][] memory) {
+        OperatorSet[] memory operatorSets = getOperatorSetsOfOperator(operator, 0, _operatorSetsMemberOf[operator].length());
+        uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            slashableMagnitudes[i] = new uint64[](operatorSets.length);
+            for (uint256 j = 0; j < operatorSets.length; ++j) {
+                slashableMagnitudes[i][j] = uint64(
+                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupRecent(timestamp)
+                );
+            }
+        }
+        return (operatorSets, slashableMagnitudes);
     }
 
     /**
