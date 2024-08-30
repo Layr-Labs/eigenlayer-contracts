@@ -106,7 +106,6 @@ contract DelegationManager is
     /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
-     * @param allocationDelay is a one-time configurable delay for the operator when performing slashable magnitude allocations.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      *
      * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
@@ -115,7 +114,6 @@ contract DelegationManager is
      */
     function registerAsOperator(
         OperatorDetails calldata registeringOperatorDetails,
-        uint32 allocationDelay,
         string calldata metadataURI
     ) external {
         require(!isDelegated(msg.sender), "DelegationManager.registerAsOperator: caller is already actively delegated");
@@ -123,20 +121,9 @@ contract DelegationManager is
         SignatureWithExpiry memory emptySignatureAndExpiry;
         // delegate from the operator to themselves
         _delegate(msg.sender, msg.sender, emptySignatureAndExpiry, bytes32(0));
-        // set the allocation delay
-        _initializeAllocationDelay(allocationDelay);
         // emit events
         emit OperatorRegistered(msg.sender, registeringOperatorDetails);
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
-    }
-
-    /**
-     * @notice Called by operators to set their allocation delay one time. Cannot be updated
-     * after being set. This delay is required to be set for an operator to be able to allocate slashable magnitudes.
-     * @param delay the allocation delay in seconds
-     */
-    function initializeAllocationDelay(uint32 delay) external {
-        _initializeAllocationDelay(delay);
     }
 
     /**
@@ -484,26 +471,6 @@ contract DelegationManager is
         );
         _operatorDetails[operator] = newOperatorDetails;
         emit OperatorDetailsModified(msg.sender, newOperatorDetails);
-    }
-
-    /**
-     * @notice Called by operators to set their allocation delay one time. Cannot be updated
-     * after being set. This delay is required to be set for an operator to be able to allocate slashable magnitudes.
-     * @param delay the allocation delay in seconds
-     */
-    function _initializeAllocationDelay(uint32 delay) internal {
-        require(
-            isOperator(msg.sender),
-            "DelegationManager._initializeAllocationDelay: operator not registered to EigenLayer yet"
-        );
-        require(
-            !_operatorAllocationDelay[msg.sender].isSet,
-            "DelegationManager._initializeAllocationDelay: allocation delay already set"
-        );
-        _operatorAllocationDelay[msg.sender] = AllocationDelayDetails({
-            isSet: true,
-            allocationDelay: delay
-        });
     }
 
     /**
@@ -981,14 +948,6 @@ contract DelegationManager is
      */
     function operatorDetails(address operator) external view returns (OperatorDetails memory) {
         return _operatorDetails[operator];
-    }
-
-    /**
-     * @notice Returns the AllocationDelayDetails struct associated with an `operator`
-     * @dev If the operator has not set an allocation delay, then the `isSet` field will be `false`.
-     */
-    function operatorAllocationDelay(address operator) external view returns (AllocationDelayDetails memory) {
-        return _operatorAllocationDelay[operator];
     }
 
     /**

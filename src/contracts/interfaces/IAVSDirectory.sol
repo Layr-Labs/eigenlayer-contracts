@@ -483,6 +483,22 @@ interface IAVSDirectory is ISignatureUtils {
         uint256 expiry
     ) external view returns (bytes32);
 
+    /**
+     * @notice Returns the allocation delay of an operator
+     * @param operator The operator to get the allocation delay for
+     * @dev Defaults to `DEFAULT_ALLOCATION_DELAY` if none is set
+     */
+    function operatorAllocationDelay(address operator) external view returns (uint32);
+
+    /**
+     * @notice Called by operators to set their allocation delay. 
+     * @param delay the allocation delay in seconds
+     * @dev msg.sender is assumed to be the operator
+     * @dev Fails if setting a delay would result in the ability to set an
+     *      an allocation that is active BEFORE the latest set allocation. 
+     */
+    function setAllocationDelay(uint32 delay) external;
+
     /// @notice Getter function for the current EIP-712 domain separator for this contract.
     /// @dev The domain separator will change in the event of a fork that changes the ChainID.
     function domainSeparator() external view returns (bytes32);

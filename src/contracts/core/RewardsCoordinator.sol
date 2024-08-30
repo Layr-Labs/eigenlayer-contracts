@@ -635,7 +635,6 @@ contract RewardsCoordinator is
     }
 
     /// @notice the commission for an operator for a specific operatorSet and reward type
-    /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
     function getOperatorCommissionBips(
         address operator,
         IAVSDirectory.OperatorSet calldata operatorSet,

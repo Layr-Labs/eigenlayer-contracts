@@ -23,11 +23,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function registerAsOperator(
         OperatorDetails calldata /*registeringOperatorDetails*/,
-        uint32 /*allocationDelay*/,
         string calldata /*metadataURI*/
     ) external pure {}
-
-    function initializeAllocationDelay(uint32 /*delay*/) external {}
     
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
@@ -68,8 +65,6 @@ contract DelegationManagerMock is IDelegationManager, Test {
         });
         return returnValue;
     }
-
-    function operatorAllocationDelay(address operator) external view returns (AllocationDelayDetails memory) {}
 
     function delegationApprover(address operator) external pure returns (address) {
         return operator;

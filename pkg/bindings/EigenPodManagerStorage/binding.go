@@ -31,7 +31,7 @@ var (
 
 // EigenPodManagerStorageMetaData contains all meta data concerning the EigenPodManagerStorage contract.
 var EigenPodManagerStorageMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"addShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"beaconChainETHStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createPod\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"eigenPodBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ethPOS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIETHPOSDeposit\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hasPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"numPods\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ownerToPod\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"podOwnerShares\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"recordBeaconChainETHBalanceUpdate\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slasher\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractISlasher\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stake\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"depositDataRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawSharesAsTokens\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destination\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"BeaconChainETHDeposited\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BeaconChainETHWithdrawalCompleted\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"},{\"name\":\"delegatedAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewTotalShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newTotalShares\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodDeployed\",\"inputs\":[{\"name\":\"eigenPod\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodSharesUpdated\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"addScaledShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"scaledShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"beaconChainETHStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createPod\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"eigenPodBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ethPOS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIETHPOSDeposit\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hasPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"numPods\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ownerToPod\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"podOwnerScaledShares\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"podOwnerShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"recordBeaconChainETHBalanceUpdate\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeScaledShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"scaledShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slasher\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractISlasher\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stake\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"depositDataRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawSharesAsTokens\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destination\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"BeaconChainETHDeposited\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BeaconChainETHWithdrawalCompleted\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"},{\"name\":\"delegatedAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewTotalShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newTotalShares\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodDeployed\",\"inputs\":[{\"name\":\"eigenPod\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodSharesUpdated\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
 }
 
 // EigenPodManagerStorageABI is the input ABI used to generate the binding from.
@@ -521,12 +521,43 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) PauserRegist
 	return _EigenPodManagerStorage.Contract.PauserRegistry(&_EigenPodManagerStorage.CallOpts)
 }
 
+// PodOwnerScaledShares is a free data retrieval call binding the contract method 0x0c3a13f9.
+//
+// Solidity: function podOwnerScaledShares(address ) view returns(int256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) PodOwnerScaledShares(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _EigenPodManagerStorage.contract.Call(opts, &out, "podOwnerScaledShares", arg0)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// PodOwnerScaledShares is a free data retrieval call binding the contract method 0x0c3a13f9.
+//
+// Solidity: function podOwnerScaledShares(address ) view returns(int256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) PodOwnerScaledShares(arg0 common.Address) (*big.Int, error) {
+	return _EigenPodManagerStorage.Contract.PodOwnerScaledShares(&_EigenPodManagerStorage.CallOpts, arg0)
+}
+
+// PodOwnerScaledShares is a free data retrieval call binding the contract method 0x0c3a13f9.
+//
+// Solidity: function podOwnerScaledShares(address ) view returns(int256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) PodOwnerScaledShares(arg0 common.Address) (*big.Int, error) {
+	return _EigenPodManagerStorage.Contract.PodOwnerScaledShares(&_EigenPodManagerStorage.CallOpts, arg0)
+}
+
 // PodOwnerShares is a free data retrieval call binding the contract method 0x60f4062b.
 //
-// Solidity: function podOwnerShares(address ) view returns(int256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) PodOwnerShares(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+// Solidity: function podOwnerShares(address podOwner) view returns(int256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) PodOwnerShares(opts *bind.CallOpts, podOwner common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _EigenPodManagerStorage.contract.Call(opts, &out, "podOwnerShares", arg0)
+	err := _EigenPodManagerStorage.contract.Call(opts, &out, "podOwnerShares", podOwner)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -540,16 +571,16 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) PodOwnerShares(opts
 
 // PodOwnerShares is a free data retrieval call binding the contract method 0x60f4062b.
 //
-// Solidity: function podOwnerShares(address ) view returns(int256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) PodOwnerShares(arg0 common.Address) (*big.Int, error) {
-	return _EigenPodManagerStorage.Contract.PodOwnerShares(&_EigenPodManagerStorage.CallOpts, arg0)
+// Solidity: function podOwnerShares(address podOwner) view returns(int256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) PodOwnerShares(podOwner common.Address) (*big.Int, error) {
+	return _EigenPodManagerStorage.Contract.PodOwnerShares(&_EigenPodManagerStorage.CallOpts, podOwner)
 }
 
 // PodOwnerShares is a free data retrieval call binding the contract method 0x60f4062b.
 //
-// Solidity: function podOwnerShares(address ) view returns(int256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) PodOwnerShares(arg0 common.Address) (*big.Int, error) {
-	return _EigenPodManagerStorage.Contract.PodOwnerShares(&_EigenPodManagerStorage.CallOpts, arg0)
+// Solidity: function podOwnerShares(address podOwner) view returns(int256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) PodOwnerShares(podOwner common.Address) (*big.Int, error) {
+	return _EigenPodManagerStorage.Contract.PodOwnerShares(&_EigenPodManagerStorage.CallOpts, podOwner)
 }
 
 // Slasher is a free data retrieval call binding the contract method 0xb1344271.
@@ -614,25 +645,25 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) StrategyMana
 	return _EigenPodManagerStorage.Contract.StrategyManager(&_EigenPodManagerStorage.CallOpts)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0x0e81073c.
+// AddScaledShares is a paid mutator transaction binding the contract method 0xc1b28714.
 //
-// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) AddShares(opts *bind.TransactOpts, podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.contract.Transact(opts, "addShares", podOwner, shares)
+// Solidity: function addScaledShares(address podOwner, uint256 scaledShares) returns(uint256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) AddScaledShares(opts *bind.TransactOpts, podOwner common.Address, scaledShares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.contract.Transact(opts, "addScaledShares", podOwner, scaledShares)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0x0e81073c.
+// AddScaledShares is a paid mutator transaction binding the contract method 0xc1b28714.
 //
-// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) AddShares(podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.AddShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
+// Solidity: function addScaledShares(address podOwner, uint256 scaledShares) returns(uint256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) AddScaledShares(podOwner common.Address, scaledShares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.AddScaledShares(&_EigenPodManagerStorage.TransactOpts, podOwner, scaledShares)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0x0e81073c.
+// AddScaledShares is a paid mutator transaction binding the contract method 0xc1b28714.
 //
-// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) AddShares(podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.AddShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
+// Solidity: function addScaledShares(address podOwner, uint256 scaledShares) returns(uint256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) AddScaledShares(podOwner common.Address, scaledShares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.AddScaledShares(&_EigenPodManagerStorage.TransactOpts, podOwner, scaledShares)
 }
 
 // CreatePod is a paid mutator transaction binding the contract method 0x84d81062.
@@ -719,25 +750,25 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) RecordBe
 	return _EigenPodManagerStorage.Contract.RecordBeaconChainETHBalanceUpdate(&_EigenPodManagerStorage.TransactOpts, podOwner, sharesDelta)
 }
 
-// RemoveShares is a paid mutator transaction binding the contract method 0xbeffbb89.
+// RemoveScaledShares is a paid mutator transaction binding the contract method 0xee7d93c7.
 //
-// Solidity: function removeShares(address podOwner, uint256 shares) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) RemoveShares(opts *bind.TransactOpts, podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.contract.Transact(opts, "removeShares", podOwner, shares)
+// Solidity: function removeScaledShares(address podOwner, uint256 scaledShares) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) RemoveScaledShares(opts *bind.TransactOpts, podOwner common.Address, scaledShares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.contract.Transact(opts, "removeScaledShares", podOwner, scaledShares)
 }
 
-// RemoveShares is a paid mutator transaction binding the contract method 0xbeffbb89.
+// RemoveScaledShares is a paid mutator transaction binding the contract method 0xee7d93c7.
 //
-// Solidity: function removeShares(address podOwner, uint256 shares) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) RemoveShares(podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.RemoveShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
+// Solidity: function removeScaledShares(address podOwner, uint256 scaledShares) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) RemoveScaledShares(podOwner common.Address, scaledShares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.RemoveScaledShares(&_EigenPodManagerStorage.TransactOpts, podOwner, scaledShares)
 }
 
-// RemoveShares is a paid mutator transaction binding the contract method 0xbeffbb89.
+// RemoveScaledShares is a paid mutator transaction binding the contract method 0xee7d93c7.
 //
-// Solidity: function removeShares(address podOwner, uint256 shares) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) RemoveShares(podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.RemoveShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
+// Solidity: function removeScaledShares(address podOwner, uint256 scaledShares) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) RemoveScaledShares(podOwner common.Address, scaledShares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.RemoveScaledShares(&_EigenPodManagerStorage.TransactOpts, podOwner, scaledShares)
 }
 
 // SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.

@@ -85,6 +85,13 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: operator => strategy => operatorSet (encoded) => list of queuedDeallocation indices
     mapping(address => mapping(IStrategy => mapping(bytes32 => uint256[]))) internal _queuedDeallocationIndices;
 
+    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
+    /// This determines how long it takes for allocations to take effect in the future.
+    mapping(address => uint32) internal _operatorAllocationDelay;
+
+    /// @notice The last set allocation delay for the operator. 
+    mapping(address => uint32) public latestAllocationEffectTimestamp;
+
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
     }
@@ -94,5 +101,5 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[35] private __gap;
+    uint256[33] private __gap;
 }

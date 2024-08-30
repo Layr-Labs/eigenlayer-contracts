@@ -121,10 +121,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(IStrategy => uint256) public strategyWithdrawalDelays;
 
-    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
-    /// This determines how long it takes for allocations to take effect in the future. Can only be set one time for each operator
-    mapping(address => AllocationDelayDetails) internal _operatorAllocationDelay;
-
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager, IAVSDirectory _avsDirectory) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
@@ -137,5 +133,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[38] private __gap;
+    uint256[39] private __gap;
 }

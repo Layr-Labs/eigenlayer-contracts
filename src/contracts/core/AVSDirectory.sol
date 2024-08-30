@@ -32,6 +32,9 @@ contract AVSDirectory is
     /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
     uint32 public constant DEALLOCATION_DELAY = 17.5 days;
 
+    /// @dev Default delay before allocations are activated.
+    uint32 public constant DEFAULT_ALLOCATION_DELAY = 21 days;
+
     /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
     uint256 public constant MAX_PENDING_UPDATES = 1;
 
@@ -261,6 +264,27 @@ contract AVSDirectory is
         _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
+
+    /**
+     * @notice Called by operators to set their allocation delay. 
+     * @param delay the allocation delay in seconds
+     * @dev msg.sender is assumed to be the operator
+     * @dev Fails if setting a delay would result in the ability to set an
+     *      an allocation that is active BEFORE the latest set allocation. 
+     */
+    function setAllocationDelay(uint32 delay) external {
+        require(
+            delegation.isOperator(msg.sender),
+            "avsDirectory.initializeAllocationDelay: operator not registered to EigenLayer yet"
+        );
+        require(
+            delay + block.timestamp >= latestAllocationEffectTimestamp[msg.sender],
+            "avsDirectory.initializeAllocationDelay: new delay must be after latestAllocationEffectTimestamp"
+        );
+        
+        _operatorAllocationDelay[msg.sender] = delay;
+    }
+
     /**
      * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
      * @param operator address to modify allocations for
@@ -283,13 +307,9 @@ contract AVSDirectory is
         require(
             delegation.isOperator(operator), "AVSDirectory.modifyAllocations: operator not registered to EigenLayer yet"
         );
-        IDelegationManager.AllocationDelayDetails memory details = delegation.operatorAllocationDelay(operator);
-        require(
-            details.isSet,
-            "AVSDirectory.modifyAllocations: operator must initialize allocation delay before modifying allocations"
-        );
+
         // effect timestamp for allocations to take effect. This is configurable by operators
-        uint32 effectTimestamp = uint32(block.timestamp) + details.allocationDelay;
+        uint32 effectTimestamp = uint32(block.timestamp) + operatorAllocationDelay(operator);
         // completable timestamp for deallocations
         uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
 
@@ -653,7 +673,6 @@ contract AVSDirectory is
             "AVSDirectory._modifyAllocations: operatorSets and magnitudes length mismatch"
         );
         uint64 newFreeMagnitude = freeMagnitude[operator][allocation.strategy];
-        // OperatorSet[] calldata opSets = allocation.operatorSets;
 
         bytes32 prevOperatorSet = bytes32(0);
 
@@ -721,7 +740,10 @@ contract AVSDirectory is
 
         // update freeMagnitude after all allocations.
         // if provided allocations only resulted in deallocating, then this value would be unchanged
-        freeMagnitude[operator][allocation.strategy] = newFreeMagnitude;
+        if (newFreeMagnitude != freeMagnitude[operator][allocation.strategy]) {
+            latestAllocationEffectTimestamp[operator] = allocationEffectTimestamp;
+            freeMagnitude[operator][allocation.strategy] = newFreeMagnitude;
+        }
     }
 
     /**
@@ -845,6 +867,15 @@ contract AVSDirectory is
      */
     function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address) {
         return _operatorSetMembers[_encodeOperatorSet(operatorSet)].at(index);
+    }
+
+    /**
+     * @notice Returns the allocation delay of an operator
+     * @param operator The operator to get the allocation delay for
+     * @dev Defaults to `DEFAULT_ALLOCATION_DELAY` if none is set
+     */
+    function operatorAllocationDelay(address operator) public view returns (uint32) {
+        return _operatorAllocationDelay[operator] == 0 ? DEFAULT_ALLOCATION_DELAY : _operatorAllocationDelay[operator];
     }
 
     /**

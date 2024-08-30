@@ -161,4 +161,8 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
     function getNumOperatorsInOperatorSet(OperatorSet memory operatorSet) external view returns (uint256) {}
 
     function inTotalOperatorSets(address operator) external view returns (uint256) {}
+
+    function operatorAllocationDelay(address operator) external view returns (uint32) {}
+
+    function setAllocationDelay(uint32 delay) external {}
 }
