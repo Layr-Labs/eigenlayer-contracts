@@ -82,17 +82,6 @@ interface IRewardsCoordinator {
      *      using `OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP` instead of `GENESIS_REWARDS_TIMESTAMP` and
      *      `OPERATOR_SET_MAX_RETROACTIVE_LENGTH` instead of `MAX_RETROACTIVE_LENGTH`
      */
-
-    struct OperatorSetRewardsSubmission {
-        RewardType rewardType;
-        uint32 operatorSetId;
-        StrategyAndMultiplier[] strategiesAndMultipliers;
-        IERC20 token;
-        uint256 amount;
-        uint32 startTimestamp;
-        uint32 duration;
-    }
-
     struct OperatorSetRewardsSubmission {
         RewardType rewardType;
         uint32 operatorSetId;
