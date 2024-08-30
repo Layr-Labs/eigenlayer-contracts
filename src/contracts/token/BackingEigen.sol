@@ -17,6 +17,8 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     mapping(address => bool) public allowedFrom;
     /// @notice mapping of addresses that are allowed to receive tokens from any address
     mapping(address => bool) public allowedTo;
+    // @notice single address that is allowed to mint new bEIGEN tokens
+    address public minter;
 
     /// @notice event emitted when the allowedFrom status of an address is set
     event SetAllowedFrom(address indexed from, bool isAllowedFrom);
@@ -26,10 +28,40 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     event TransferRestrictionsDisabled();
     /// @notice event emitted when the EIGEN token is backed
     event Backed();
+    // @notice event emitted when the `minter` address is modified
+    event MinterTransferred(address indexed previousMinter, address indexed newMinter);
 
     constructor(IERC20 _EIGEN) {
         EIGEN = _EIGEN;
         _disableInitializers();
+    }
+
+    /**
+     * @notice Allows the contract owner to modify the `minter` address *one time only*.
+     * @dev Only callable if the minter address has not yet been set.
+     */
+    function setMinter(address newMinter) external onlyOwner {
+        require(minter == address(0), "BackingEigen.setMinter: minter already set");
+        emit MinterTransferred(minter, newMinter);
+        minter = newMinter;
+    }
+
+    /**
+     * @notice Allows the `minter` to mint `amount` new tokens to the address `to`.
+     * @dev Callable only by the `minter` defined in this contract.
+     */
+    function mint(address to, uint256 amount) external {
+        require(msg.sender == minter, "BackingEigen.mintTo: caller is not the minter");
+        _mint(to, amount);
+    }
+
+    /**
+     * @dev Destroys `amount` tokens from the caller.
+     *
+     * See {ERC20-_burn}.
+     */
+    function burn(uint256 amount) public virtual {
+        _burn(_msgSender(), amount);
     }
 
     /**
