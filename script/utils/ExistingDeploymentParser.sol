@@ -63,6 +63,7 @@ contract ExistingDeploymentParser is Script, Test {
     StrategyFactory public strategyFactory;
     StrategyFactory public strategyFactoryImplementation;
     UpgradeableBeacon public strategyBeacon;
+    StrategyBase public strategyFactoryBeaconImplementation;
 
     // Token
     ProxyAdmin public tokenProxyAdmin;
