@@ -11,6 +11,7 @@ import "src/contracts/strategies/StrategyBase.sol";
 
 import "src/test/events/IAVSDirectoryEvents.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
+import "src/test/harnesses/AVSDirectoryHarness.sol";
 
 contract EmptyContract {}
 
@@ -24,8 +25,8 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     uint256 internal constant MAX_PRIVATE_KEY = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140;
 
     // Contract under test
-    AVSDirectory avsDirectory;
-    AVSDirectory avsDirectoryImplementation;
+    AVSDirectoryHarness avsDirectory;
+    AVSDirectoryHarness avsDirectoryImplementation;
 
     // Contract dependencies
     DelegationManager delegationManager;
@@ -45,6 +46,9 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     IStrategy[] public initializeStrategiesToSetDelayBlocks;
     uint256[] public initializeWithdrawalDelayBlocks;
 
+    // Allocations/Deallocations
+    uint32 defaultAllocationDelay = 5 days;
+
     // Index for flag that pauses registering/deregistering for AVSs
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
     // Index for flag that pauses operator register/deregister to operator sets when set.
@@ -61,7 +65,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         /// @dev First, deploy upgradeable proxy contracts that **will point** to the implementations.
         /// Since the implementation contracts are not yet deployed, we give these proxies an empty
         /// contract as the initial implementation before upgrading.
-        avsDirectory = AVSDirectory(
+        avsDirectory = AVSDirectoryHarness(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
         delegationManager = DelegationManager(
@@ -70,7 +74,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
 
         delegationManagerImplementation =
             new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock, avsDirectory);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectoryImplementation = new AVSDirectoryHarness(delegationManager);
 
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(avsDirectory))),
@@ -168,7 +172,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     ) internal filterFuzzedAddressInputs(operator) {
         _filterOperatorDetails(operator, operatorDetails);
         cheats.prank(operator);
-        delegationManager.registerAsOperator(operatorDetails, 0, metadataURI);
+        delegationManager.registerAsOperator(operatorDetails, defaultAllocationDelay, metadataURI);
     }
 
     function _filterOperatorDetails(
@@ -250,7 +254,7 @@ contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
         address pauserRegistry,
         uint256 initialPausedStatus
     ) public virtual {
-        AVSDirectory dir = new AVSDirectory(IDelegationManager(delegationManager));
+        AVSDirectory dir = new AVSDirectoryHarness(IDelegationManager(delegationManager));
 
         assertEq(address(dir.delegation()), delegationManager);
 
@@ -1141,6 +1145,58 @@ contract AVSDirectoryUnitTests_modifyAllocations is AVSDirectoryUnitTests {
             operator,
             allocations,
             ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(65), bytes32(0), block.timestamp)
+        );
+    }
+
+    // after a pending allocation no longer becomes pending when enough time passes. Should
+    // be able to create another allocation
+    function test_modifyAllocations_allocateTwice() public {
+        uint64 max = 1e18;
+        address operator = address(0xCAFE);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+
+        _registerOperatorWithBaseDetails(operator);
+
+        _createOperatorSet(0);
+
+        IAVSDirectory.OperatorSet[] memory operatorSets = new IAVSDirectory.OperatorSet[](1);
+        operatorSets[0] = IAVSDirectory.OperatorSet(address(this), 0);
+
+        // create first allocation
+        uint64[] memory firstAllocationMagnitude = new uint64[](1);
+        firstAllocationMagnitude[0] = max/2;
+
+        IAVSDirectory.MagnitudeAllocation[] memory allocations = new IAVSDirectory.MagnitudeAllocation[](1);
+        allocations[0] = IAVSDirectory.MagnitudeAllocation({
+            strategy: IStrategy(address(0)),
+            expectedTotalMagnitude: max,
+            operatorSets: operatorSets,
+            magnitudes: firstAllocationMagnitude
+        });
+
+        cheats.prank(operator);
+        avsDirectory.modifyAllocations(
+            operator,
+            allocations,
+            emptySig
+        );
+
+        // create second allocation which will allocate even more
+        uint64[] memory secondAllocationMagnitude = new uint64[](1);
+        secondAllocationMagnitude[0] = max;
+        allocations[0] = IAVSDirectory.MagnitudeAllocation({
+            strategy: IStrategy(address(0)),
+            expectedTotalMagnitude: max,
+            operatorSets: operatorSets,
+            magnitudes: secondAllocationMagnitude
+        });
+
+        cheats.prank(operator);
+        cheats.warp(block.timestamp + defaultAllocationDelay);
+        avsDirectory.modifyAllocations(
+            operator,
+            allocations,
+            emptySig
         );
     }
 }
