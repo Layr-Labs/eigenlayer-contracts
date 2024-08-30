@@ -919,7 +919,7 @@ contract AVSDirectory is
      */
     function getCurrentSlashableMagnitudes(
         address operator,
-        IStrategy[] calldata strategies,
+        IStrategy[] calldata strategies
     ) external view returns (OperatorSet[] memory, uint64[][] memory) {
         OperatorSet[] memory operatorSets = getOperatorSetsOfOperator(operator, 0, _operatorSetsMemberOf[operator].length());
         uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
@@ -927,7 +927,7 @@ contract AVSDirectory is
             slashableMagnitudes[i] = new uint64[](operatorSets.length);
             for (uint256 j = 0; j < operatorSets.length; ++j) {
                 slashableMagnitudes[i][j] = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupLinear(block.timestamp)
+                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupLinear(uint32(block.timestamp))
                 );
             }
         }

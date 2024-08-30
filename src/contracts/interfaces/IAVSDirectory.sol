@@ -320,8 +320,8 @@ interface IAVSDirectory is ISignatureUtils {
      */
     function getCurrentSlashableMagnitudes(
         address operator,
-        IStrategy[] calldata strategies,
-    ) external view returns (OperatorSet[] memory, uint64[][] memory)
+        IStrategy[] calldata strategies
+    ) external view returns (OperatorSet[] memory, uint64[][] memory);
 
     /**
      * @param operator the operator to get the slashable magnitude for
