@@ -34,7 +34,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Fork ids for specific fork tests
     bool isUpgraded;
-    uint256 mainnetForkBlock = 19_280_000;
+    uint256 mainnetForkBlock = 20_664_017;
     uint256 mainnetForkId;
     uint256 holeskyForkBLock = 1_213_950;
     uint256 holeskyForkId;
