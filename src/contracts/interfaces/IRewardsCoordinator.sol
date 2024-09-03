@@ -155,7 +155,6 @@ interface IRewardsCoordinator {
     event RewardsForAllSubmitterSet(
         address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
-    event TokenHopperSet(address indexed oldTokenHopper, address indexed newTokenHopper);
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
