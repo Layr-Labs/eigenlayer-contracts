@@ -143,11 +143,19 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+    /// @notice emitted when a valid RewardsSubmission is created when rewardAllStakersAndOperators is called
+    event RewardsForAllStakersAndOperatorsCreated(
+        address indexed tokenHopper,
+        uint256 indexed submissionNonce,
+        bytes32 indexed rewardsSubmissionHash,
+        RewardsSubmission rewardsSubmission
+    );
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
     event RewardsForAllSubmitterSet(
         address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
+    event TokenHopperSet(address indexed oldTokenHopper, address indexed newTokenHopper);
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
