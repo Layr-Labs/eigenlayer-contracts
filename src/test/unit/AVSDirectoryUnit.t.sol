@@ -1193,6 +1193,41 @@ contract AVSDirectoryUnitTests_modifyAllocations is AVSDirectoryUnitTests {
 
         cheats.prank(operator);
         cheats.warp(block.timestamp + defaultAllocationDelay);
+        cheats.expectRevert("AVSDirectory._modifyAllocations: Cannot set magnitude with a pending allocation or deallocation");
+        avsDirectory.modifyAllocations(
+            operator,
+            allocations,
+            emptySig
+        );
+    }
+
+    function test_revert_modifyAllocations_DuplicateOperatorSets() public {
+        uint64 max = 1e18;
+        address operator = address(0xCAFE);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+
+        _registerOperatorWithBaseDetails(operator);
+        _createOperatorSet(0);
+
+        IAVSDirectory.OperatorSet[] memory operatorSets = new IAVSDirectory.OperatorSet[](2);
+        operatorSets[0] = IAVSDirectory.OperatorSet(address(this), 0);
+        operatorSets[1] = IAVSDirectory.OperatorSet(address(this), 0);
+
+        // create first allocation
+        uint64[] memory firstAllocationMagnitude = new uint64[](2);
+        firstAllocationMagnitude[0] = max/2;
+        firstAllocationMagnitude[1] = max/2;
+
+        IAVSDirectory.MagnitudeAllocation[] memory allocations = new IAVSDirectory.MagnitudeAllocation[](1);
+        allocations[0] = IAVSDirectory.MagnitudeAllocation({
+            strategy: IStrategy(address(0)),
+            expectedTotalMagnitude: max,
+            operatorSets: operatorSets,
+            magnitudes: firstAllocationMagnitude
+        });
+
+        cheats.prank(operator);
+        cheats.expectRevert("AVSDirectory._modifyAllocations: operatorSets not ordered");
         avsDirectory.modifyAllocations(
             operator,
             allocations,
