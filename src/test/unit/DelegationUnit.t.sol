@@ -2936,9 +2936,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
                 "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
             );
             cheats.roll(validBlockNumber - 1);
-            delegationManager.completeQueuedWithdrawal(
-                withdrawal, tokens, receiveAsTokens
-            );
+            delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
         }
 
         cheats.stopPrank();
@@ -3116,3 +3114,24 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         );
     }
 }
+
+// contract DelegationManagerUnitTests_initializeAllocationDelay is DelegationManagerUnitTests {
+//     function test_revert_initializeAllocationDelay_CallerNotOperator() public {
+//         address operator = address(0xB0B);
+//         vm.prank(operator);
+//         vm.expectRevert("DelegationManager._initializeAllocationDelay: operator not registered to EigenLayer yet");
+//         delegationManager.initializeAllocationDelay(defaultAllocationDelay);
+//     }
+
+//     function test_initializeAllocationDelay_Correctness() public {
+//         address operator = address(0xB0B);
+//         _registerOperatorWithBaseDetails(operator);
+//         vm.prank(operator);
+//         delegationManager.initializeAllocationDelay(defaultAllocationDelay);
+//         IDelegationManager.AllocationDelayDetails memory details = delegationManager.operatorAllocationDelay(operator);
+//         assertEq(
+//             uint256(details.allocationDelay),
+//             uint256(defaultAllocationDelay)
+//         );
+//     }
+// }
