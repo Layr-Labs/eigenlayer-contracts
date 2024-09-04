@@ -676,7 +676,15 @@ contract AVSDirectory is
 
             // Check that there is at MOST `MAX_PENDING_UPDATES` combined allocations & deallocations for the operator, operatorSet, strategy
             {
-                uint256 numPendingAllocations = length - pos;
+                uint256 numPendingAllocations;
+                // if no lookup found (currentMagnitude == 0 && pos == 0), then we are at the beginning of the array
+                // the number of pending allocations is simply length
+                if (currentMagnitude == 0 && pos == 0) {
+                    numPendingAllocations = length;
+                // if lookup found, then we take the difference between length-1 and pos
+                } else {
+                    numPendingAllocations = length - pos - 1;
+                }
                 uint256 numPendingDeallocations =
                     _getNumQueuedDeallocations(operator, allocation.strategy, operatorSetKey);
 
