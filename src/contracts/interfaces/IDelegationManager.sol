@@ -178,7 +178,9 @@ interface IDelegationManager is ISignatureUtils {
      * after being set. This delay is required to be set for an operator to be able to allocate slashable magnitudes.
      * @param delay the allocation delay in seconds
      */
-    function initializeAllocationDelay(uint32 delay) external;
+    function initializeAllocationDelay(
+        uint32 delay
+    ) external;
 
     /**
      * @notice Updates an operator's stored `OperatorDetails`.
@@ -186,14 +188,18 @@ interface IDelegationManager is ISignatureUtils {
      *
      * @dev The caller must have previously registered as an operator in EigenLayer.
      */
-    function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external;
+    function modifyOperatorDetails(
+        OperatorDetails calldata newOperatorDetails
+    ) external;
 
     /**
      * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
      * @param metadataURI The URI for metadata associated with an operator
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
-    function updateOperatorMetadataURI(string calldata metadataURI) external;
+    function updateOperatorMetadataURI(
+        string calldata metadataURI
+    ) external;
 
     /**
      * @notice Caller delegates their stake to an operator.
@@ -249,7 +255,9 @@ interface IDelegationManager is ISignatureUtils {
      * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
      * @dev Reverts if the `staker` is already undelegated.
      */
-    function undelegate(address staker) external returns (bytes32[] memory withdrawalRoot);
+    function undelegate(
+        address staker
+    ) external returns (bytes32[] memory withdrawalRoot);
 
     /**
      * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
@@ -258,9 +266,9 @@ interface IDelegationManager is ISignatureUtils {
      *
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
-    function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams)
-        external
-        returns (bytes32[] memory);
+    function queueWithdrawals(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+    ) external returns (bytes32[] memory);
 
     /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
@@ -302,12 +310,8 @@ interface IDelegationManager is ISignatureUtils {
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `scaledShares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function increaseDelegatedScaledShares(
-        address staker,
-        IStrategy strategy,
-        uint256 scaledShares
-    ) external;
-    
+    function increaseDelegatedScaledShares(address staker, IStrategy strategy, uint256 scaledShares) external;
+
     /**
      * @notice Decreases a staker's delegated share balance in a strategy.
      * @param staker The address to increase the delegated scaled shares for their operator.
@@ -324,28 +328,38 @@ interface IDelegationManager is ISignatureUtils {
      * @notice Mapping: staker => operator whom the staker is currently delegated to.
      * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
      */
-    function delegatedTo(address staker) external view returns (address);
+    function delegatedTo(
+        address staker
+    ) external view returns (address);
 
     /**
      * @notice Returns the OperatorDetails struct associated with an `operator`.
      */
-    function operatorDetails(address operator) external view returns (OperatorDetails memory);
+    function operatorDetails(
+        address operator
+    ) external view returns (OperatorDetails memory);
 
     /**
      * @notice Returns the AllocationDelayDetails struct associated with an `operator`
      * @dev If the operator has not set an allocation delay, then the `isSet` field will be `false`.
      */
-    function operatorAllocationDelay(address operator) external view returns (AllocationDelayDetails memory);
+    function operatorAllocationDelay(
+        address operator
+    ) external view returns (AllocationDelayDetails memory);
 
     /**
      * @notice Returns the delegationApprover account for an operator
      */
-    function delegationApprover(address operator) external view returns (address);
+    function delegationApprover(
+        address operator
+    ) external view returns (address);
 
     /**
      * @notice Returns the stakerOptOutWindowBlocks for an operator
      */
-    function stakerOptOutWindowBlocks(address operator) external view returns (uint256);
+    function stakerOptOutWindowBlocks(
+        address operator
+    ) external view returns (uint256);
 
     /**
      * @notice Given array of strategies, returns array of shares for the operator
@@ -390,7 +404,9 @@ interface IDelegationManager is ISignatureUtils {
      * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
      * @param strategies The strategies to check withdrawal delays for
      */
-    function getWithdrawalDelay(IStrategy[] calldata strategies) external view returns (uint256);
+    function getWithdrawalDelay(
+        IStrategy[] calldata strategies
+    ) external view returns (uint256);
 
     /**
      * @notice returns the total number of scaled shares (i.e. shares scaled down by a factor of the `operator`'s
@@ -406,15 +422,21 @@ interface IDelegationManager is ISignatureUtils {
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
      */
-    function isDelegated(address staker) external view returns (bool);
+    function isDelegated(
+        address staker
+    ) external view returns (bool);
 
     /**
      * @notice Returns true is an operator has previously registered for delegation.
      */
-    function isOperator(address operator) external view returns (bool);
+    function isOperator(
+        address operator
+    ) external view returns (bool);
 
     /// @notice Mapping: staker => number of signed delegation nonces (used in `delegateToBySignature`) from the staker that the contract has already checked
-    function stakerNonce(address staker) external view returns (uint256);
+    function stakerNonce(
+        address staker
+    ) external view returns (uint256);
 
     /**
      * @notice Mapping: delegationApprover => 32-byte salt => whether or not the salt has already been used by the delegationApprover.
@@ -435,7 +457,9 @@ interface IDelegationManager is ISignatureUtils {
      * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
-    function strategyWithdrawalDelayBlocks(IStrategy strategy) external view returns (uint256);
+    function strategyWithdrawalDelayBlocks(
+        IStrategy strategy
+    ) external view returns (uint256);
 
     /// @notice return address of the beaconChainETHStrategy
     function beaconChainETHStrategy() external view returns (IStrategy);
@@ -502,8 +526,12 @@ interface IDelegationManager is ISignatureUtils {
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
-    function cumulativeWithdrawalsQueued(address staker) external view returns (uint256);
+    function cumulativeWithdrawalsQueued(
+        address staker
+    ) external view returns (uint256);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
-    function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);
+    function calculateWithdrawalRoot(
+        Withdrawal memory withdrawal
+    ) external pure returns (bytes32);
 }

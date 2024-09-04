@@ -38,7 +38,9 @@ interface IPausable {
      * @param newPausedStatus represents the new value for `_paused` to take, which means it may flip several bits at once.
      * @dev This function can only pause functionality, and thus cannot 'unflip' any bit in `_paused` from 1 to 0.
      */
-    function pause(uint256 newPausedStatus) external;
+    function pause(
+        uint256 newPausedStatus
+    ) external;
 
     /**
      * @notice Alias for `pause(type(uint256).max)`.
@@ -51,14 +53,20 @@ interface IPausable {
      * @param newPausedStatus represents the new value for `_paused` to take, which means it may flip several bits at once.
      * @dev This function can only unpause functionality, and thus cannot 'flip' any bit in `_paused` from 0 to 1.
      */
-    function unpause(uint256 newPausedStatus) external;
+    function unpause(
+        uint256 newPausedStatus
+    ) external;
 
     /// @notice Returns the current paused status as a uint256.
     function paused() external view returns (uint256);
 
     /// @notice Returns 'true' if the `indexed`th bit of `_paused` is 1, and 'false' otherwise
-    function paused(uint8 index) external view returns (bool);
+    function paused(
+        uint8 index
+    ) external view returns (bool);
 
     /// @notice Allows the unpauser to set a new pauser registry
-    function setPauserRegistry(IPauserRegistry newPauserRegistry) external;
+    function setPauserRegistry(
+        IPauserRegistry newPauserRegistry
+    ) external;
 }

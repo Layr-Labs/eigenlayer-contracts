@@ -28,7 +28,9 @@ contract EigenPodManager is
     EigenPodManagerStorage,
     ReentrancyGuardUpgradeable
 {
-    modifier onlyEigenPod(address podOwner) {
+    modifier onlyEigenPod(
+        address podOwner
+    ) {
         require(address(ownerToPod[podOwner]) == msg.sender, "EigenPodManager.onlyEigenPod: not a pod");
         _;
     }
@@ -288,7 +290,9 @@ contract EigenPodManager is
 
     // VIEW FUNCTIONS
     /// @notice Return the real number of ETH shares that the `podOwner` has
-    function podOwnerShares(address podOwner) public view returns (int256) {
+    function podOwnerShares(
+        address podOwner
+    ) public view returns (int256) {
         int256 podOwnerShares;
         if (podOwnerScaledShares[podOwner] < 0) {
             podOwnerShares = -int256(
@@ -307,7 +311,9 @@ contract EigenPodManager is
     }
 
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
-    function getPod(address podOwner) public view returns (IEigenPod) {
+    function getPod(
+        address podOwner
+    ) public view returns (IEigenPod) {
         IEigenPod pod = ownerToPod[podOwner];
         // if pod does not exist already, calculate what its address *will be* once it is deployed
         if (address(pod) == address(0)) {
@@ -322,7 +328,9 @@ contract EigenPodManager is
     }
 
     /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
-    function hasPod(address podOwner) public view returns (bool) {
+    function hasPod(
+        address podOwner
+    ) public view returns (bool) {
         return address(ownerToPod[podOwner]) != address(0);
     }
 }

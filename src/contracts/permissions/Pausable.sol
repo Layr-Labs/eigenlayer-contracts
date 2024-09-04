@@ -48,7 +48,9 @@ contract Pausable is IPausable {
     }
 
     /// @notice Throws if the `indexed`th bit of `_paused` is 1, i.e. if the `index`th pause switch is flipped.
-    modifier onlyWhenNotPaused(uint8 index) {
+    modifier onlyWhenNotPaused(
+        uint8 index
+    ) {
         require(!paused(index), "Pausable: index is paused");
         _;
     }
@@ -70,7 +72,9 @@ contract Pausable is IPausable {
      * @param newPausedStatus represents the new value for `_paused` to take, which means it may flip several bits at once.
      * @dev This function can only pause functionality, and thus cannot 'unflip' any bit in `_paused` from 1 to 0.
      */
-    function pause(uint256 newPausedStatus) external onlyPauser {
+    function pause(
+        uint256 newPausedStatus
+    ) external onlyPauser {
         // verify that the `newPausedStatus` does not *unflip* any bits (i.e. doesn't unpause anything, all 1 bits remain)
         require((_paused & newPausedStatus) == _paused, "Pausable.pause: invalid attempt to unpause functionality");
         _paused = newPausedStatus;
@@ -91,7 +95,9 @@ contract Pausable is IPausable {
      * @param newPausedStatus represents the new value for `_paused` to take, which means it may flip several bits at once.
      * @dev This function can only unpause functionality, and thus cannot 'flip' any bit in `_paused` from 0 to 1.
      */
-    function unpause(uint256 newPausedStatus) external onlyUnpauser {
+    function unpause(
+        uint256 newPausedStatus
+    ) external onlyUnpauser {
         // verify that the `newPausedStatus` does not *flip* any bits (i.e. doesn't pause anything, all 0 bits remain)
         require(
             ((~_paused) & (~newPausedStatus)) == (~_paused), "Pausable.unpause: invalid attempt to pause functionality"
@@ -106,18 +112,24 @@ contract Pausable is IPausable {
     }
 
     /// @notice Returns 'true' if the `indexed`th bit of `_paused` is 1, and 'false' otherwise
-    function paused(uint8 index) public view virtual returns (bool) {
+    function paused(
+        uint8 index
+    ) public view virtual returns (bool) {
         uint256 mask = 1 << index;
         return ((_paused & mask) == mask);
     }
 
     /// @notice Allows the unpauser to set a new pauser registry
-    function setPauserRegistry(IPauserRegistry newPauserRegistry) external onlyUnpauser {
+    function setPauserRegistry(
+        IPauserRegistry newPauserRegistry
+    ) external onlyUnpauser {
         _setPauserRegistry(newPauserRegistry);
     }
 
     /// internal function for setting pauser registry
-    function _setPauserRegistry(IPauserRegistry newPauserRegistry) internal {
+    function _setPauserRegistry(
+        IPauserRegistry newPauserRegistry
+    ) internal {
         require(
             address(newPauserRegistry) != address(0),
             "Pausable._setPauserRegistry: newPauserRegistry cannot be the zero address"

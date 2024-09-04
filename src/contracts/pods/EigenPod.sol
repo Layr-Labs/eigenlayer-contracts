@@ -85,7 +85,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      * is necessary for enabling pausing all EigenPods at the same time (due to EigenPods being Beacon Proxies).
      * Modifier throws if the `indexed`th bit of `_paused` in the EigenPodManager is 1, i.e. if the `index`th pause switch is flipped.
      */
-    modifier onlyWhenNotPaused(uint8 index) {
+    modifier onlyWhenNotPaused(
+        uint8 index
+    ) {
         require(
             !IPausable(address(eigenPodManager)).paused(index),
             "EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"
@@ -106,7 +108,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     }
 
     /// @notice Used to initialize the pointers to addresses crucial to the pod's functionality. Called on construction by the EigenPodManager.
-    function initialize(address _podOwner) external initializer {
+    function initialize(
+        address _podOwner
+    ) external initializer {
         require(_podOwner != address(0), "EigenPod.initialize: podOwner cannot be zero address");
         podOwner = _podOwner;
     }
@@ -134,11 +138,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      * @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
      * to prevent accidentally starting a checkpoint that will not increase their shares
      */
-    function startCheckpoint(bool revertIfNoBalance)
-        external
-        onlyOwnerOrProofSubmitter
-        onlyWhenNotPaused(PAUSED_START_CHECKPOINT)
-    {
+    function startCheckpoint(
+        bool revertIfNoBalance
+    ) external onlyOwnerOrProofSubmitter onlyWhenNotPaused(PAUSED_START_CHECKPOINT) {
         _startCheckpoint(revertIfNoBalance);
     }
 
@@ -384,7 +386,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     /// only address that can call these methods.
     /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
     /// pod owner will be able to call `startCheckpoint` and `verifyWithdrawalCredentials`
-    function setProofSubmitter(address newProofSubmitter) external onlyEigenPodOwner {
+    function setProofSubmitter(
+        address newProofSubmitter
+    ) external onlyEigenPodOwner {
         emit ProofSubmitterUpdated(proofSubmitter, newProofSubmitter);
         proofSubmitter = newProofSubmitter;
     }
@@ -593,7 +597,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      * @param revertIfNoBalance If the available ETH balance for checkpointing is 0 and this is
      * true, this method will revert
      */
-    function _startCheckpoint(bool revertIfNoBalance) internal {
+    function _startCheckpoint(
+        bool revertIfNoBalance
+    ) internal {
         require(
             currentCheckpointTimestamp == 0,
             "EigenPod._startCheckpoint: must finish previous checkpoint before starting another"
@@ -651,7 +657,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      * - `lastCheckpointTimestamp` is updated
      * - `_currentCheckpoint` and `currentCheckpointTimestamp` are deleted
      */
-    function _updateCheckpoint(Checkpoint memory checkpoint) internal {
+    function _updateCheckpoint(
+        Checkpoint memory checkpoint
+    ) internal {
         if (checkpoint.proofsRemaining == 0) {
             int256 totalShareDeltaWei =
                 (int128(uint128(checkpoint.podBalanceGwei)) + checkpoint.balanceDeltasGwei) * int256(GWEI_TO_WEI);
@@ -678,7 +686,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     }
 
     ///@notice Calculates the pubkey hash of a validator's pubkey as per SSZ spec
-    function _calculateValidatorPubkeyHash(bytes memory validatorPubkey) internal pure returns (bytes32) {
+    function _calculateValidatorPubkeyHash(
+        bytes memory validatorPubkey
+    ) internal pure returns (bytes32) {
         require(validatorPubkey.length == 48, "EigenPod._calculateValidatorPubkeyHash must be a 48-byte BLS public key");
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
     }
@@ -695,21 +705,29 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      */
 
     /// @notice Returns the validatorInfo for a given validatorPubkeyHash
-    function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory) {
+    function validatorPubkeyHashToInfo(
+        bytes32 validatorPubkeyHash
+    ) external view returns (ValidatorInfo memory) {
         return _validatorPubkeyHashToInfo[validatorPubkeyHash];
     }
 
     /// @notice Returns the validatorInfo for a given validatorPubkey
-    function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory) {
+    function validatorPubkeyToInfo(
+        bytes calldata validatorPubkey
+    ) external view returns (ValidatorInfo memory) {
         return _validatorPubkeyHashToInfo[_calculateValidatorPubkeyHash(validatorPubkey)];
     }
 
-    function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS) {
+    function validatorStatus(
+        bytes32 pubkeyHash
+    ) external view returns (VALIDATOR_STATUS) {
         return _validatorPubkeyHashToInfo[pubkeyHash].status;
     }
 
     /// @notice Returns the validator status for a given validatorPubkey
-    function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS) {
+    function validatorStatus(
+        bytes calldata validatorPubkey
+    ) external view returns (VALIDATOR_STATUS) {
         bytes32 validatorPubkeyHash = _calculateValidatorPubkeyHash(validatorPubkey);
         return _validatorPubkeyHashToInfo[validatorPubkeyHash].status;
     }
@@ -723,7 +741,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
     /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
     /// will revert.
-    function getParentBlockRoot(uint64 timestamp) public view returns (bytes32) {
+    function getParentBlockRoot(
+        uint64 timestamp
+    ) public view returns (bytes32) {
         require(
             block.timestamp - timestamp < BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12,
             "EigenPod.getParentBlockRoot: timestamp out of range"
