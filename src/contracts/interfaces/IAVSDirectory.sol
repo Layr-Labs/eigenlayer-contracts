@@ -54,6 +54,16 @@ interface IAVSDirectory is ISignatureUtils {
         uint32 completableTimestamp;
     }
 
+    /**
+     * @notice Struct containing info regarding free allocatable magnitude.
+     * @param nextPendingFreeMagnitudeIndex The next available update index.
+     * @param freeMagnitude The total amount of free allocatable magnitude.
+     */
+    struct OperatorMagnitudeInfo {
+        uint192 nextPendingFreeMagnitudeIndex;
+        uint64 freeMagnitude;
+    }
+
     /// @notice Emitted when an operator set is created by an AVS.
     event OperatorSetCreated(OperatorSet operatorSet);
 

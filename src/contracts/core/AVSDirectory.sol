@@ -1041,7 +1041,7 @@ contract AVSDirectory is
         uint16 numToComplete
     ) external view returns (uint64) {
         OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][strategy];
-        (, uint64 freeMagnitudeToAdd) =
+        (uint64 freeMagnitudeToAdd, ) =
             _getPendingFreeMagnitude(operator, strategy, numToComplete, info.nextPendingFreeMagnitudeIndex);
         return info.freeMagnitude + freeMagnitudeToAdd;
     }
