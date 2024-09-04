@@ -21,7 +21,7 @@ interface IRewardsCoordinatorEvents {
         IRewardsCoordinator.RewardsSubmission rewardsSubmission
     );
     /// @notice emitted when a valid RewardsSubmission is created when rewardAllStakersAndOperators is called
-    event RewardsForAllStakersAndOperatorsCreated(
+    event RewardsSubmissionForAllEarnersCreated(
         address indexed tokenHopper,
         uint256 indexed submissionNonce,
         bytes32 indexed rewardsSubmissionHash,

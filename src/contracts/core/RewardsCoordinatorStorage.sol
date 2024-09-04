@@ -79,15 +79,15 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Mapping: avs => avsRewardsSubmissionHash => bool to check if rewards submission hash has been submitted
     mapping(address => mapping(bytes32 => bool)) public isAVSRewardsSubmissionHash;
 
-    /// @notice Mapping: avs => rewardsSubmissionForALlHash => bool to check if rewards submission hash for all has been submitted
+    /// @notice Mapping: avs => rewardsSubmissionForAllHash => bool to check if rewards submission hash for all has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllHash;
 
     /// @notice Mapping: address => bool to check if the address is permissioned to call createRewardsForAllSubmission
     mapping(address => bool) public isRewardsForAllSubmitter;
 
-    /// @notice Mapping: avs => rewardAllStakersAndOperatorsHash => bool to check
+    /// @notice Mapping: avs => rewardsSubmissionForAllEarnersHash => bool to check
     /// if rewards submission hash for all stakers and operators has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isRewardAllStakersAndOperatorsHash;
+    mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllEarnersHash;
 
     constructor(
         IDelegationManager _delegationManager,

@@ -1113,7 +1113,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
     }
 }
 
-contract RewardsCoordinatorUnitTests_rewardAllStakersAndOperators is RewardsCoordinatorUnitTests {
+contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordinatorUnitTests {
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
@@ -1121,7 +1121,7 @@ contract RewardsCoordinatorUnitTests_rewardAllStakersAndOperators is RewardsCoor
 
         cheats.expectRevert("Pausable: index is paused");
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
-        rewardsCoordinator.rewardAllStakersAndOperators(rewardsSubmissions);
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
     }
 
     // Revert from reentrancy
@@ -1149,7 +1149,7 @@ contract RewardsCoordinatorUnitTests_rewardAllStakersAndOperators is RewardsCoor
 
         cheats.prank(rewardsForAllSubmitter);
         cheats.expectRevert();
-        rewardsCoordinator.rewardAllStakersAndOperators(rewardsSubmissions);
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
     }
 
     function testFuzz_Revert_WhenNotRewardsForAllSubmitter(
@@ -1159,7 +1159,7 @@ contract RewardsCoordinatorUnitTests_rewardAllStakersAndOperators is RewardsCoor
 
         cheats.expectRevert("RewardsCoordinator: caller is not a valid createRewardsForAllSubmission submitter");
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
-        rewardsCoordinator.rewardAllStakersAndOperators(rewardsSubmissions);
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
     }
 
     /**
@@ -1211,12 +1211,12 @@ contract RewardsCoordinatorUnitTests_rewardAllStakersAndOperators is RewardsCoor
         bytes32 rewardsSubmissionHash = keccak256(abi.encode(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissions[0]));
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit RewardsForAllStakersAndOperatorsCreated(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissionHash, rewardsSubmissions[0]);
-        rewardsCoordinator.rewardAllStakersAndOperators(rewardsSubmissions);
+        emit RewardsSubmissionForAllEarnersCreated(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissionHash, rewardsSubmissions[0]);
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
         cheats.stopPrank();
 
         assertTrue(
-            rewardsCoordinator.isRewardAllStakersAndOperatorsHash(rewardsForAllSubmitter, rewardsSubmissionHash),
+            rewardsCoordinator.isRewardsSubmissionForAllEarnersHash(rewardsForAllSubmitter, rewardsSubmissionHash),
             "rewards submission hash not submitted"
         );
         assertEq(
@@ -1288,7 +1288,7 @@ contract RewardsCoordinatorUnitTests_rewardAllStakersAndOperators is RewardsCoor
             // 3. expected event emitted for this rewardsSubmission
             rewardsSubmissionHashes[i] = keccak256(abi.encode(rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissions[i]));
             cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-            emit RewardsForAllStakersAndOperatorsCreated(
+            emit RewardsSubmissionForAllEarnersCreated(
                 rewardsForAllSubmitter,
                 startSubmissionNonce + i,
                 rewardsSubmissionHashes[i],
@@ -1298,7 +1298,7 @@ contract RewardsCoordinatorUnitTests_rewardAllStakersAndOperators is RewardsCoor
 
         // 4. call createAVSRewardsSubmission()
         cheats.prank(rewardsForAllSubmitter);
-        rewardsCoordinator.rewardAllStakersAndOperators(rewardsSubmissions);
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
 
         // 5. Check for submissionNonce() and rewardsSubmissionHashes being set
         assertEq(
@@ -1309,7 +1309,7 @@ contract RewardsCoordinatorUnitTests_rewardAllStakersAndOperators is RewardsCoor
 
         for (uint256 i = 0; i < numSubmissions; ++i) {
             assertTrue(
-                rewardsCoordinator.isRewardAllStakersAndOperatorsHash(rewardsForAllSubmitter, rewardsSubmissionHashes[i]),
+                rewardsCoordinator.isRewardsSubmissionForAllEarnersHash(rewardsForAllSubmitter, rewardsSubmissionHashes[i]),
                 "rewards submission hash not submitted"
             );
             assertEq(
