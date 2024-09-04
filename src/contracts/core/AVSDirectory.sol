@@ -48,7 +48,9 @@ contract AVSDirectory is
      * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher,
      * and eigenpodManager contracts
      */
-    constructor(IDelegationManager _delegation) AVSDirectoryStorage(_delegation) {
+    constructor(
+        IDelegationManager _delegation
+    ) AVSDirectoryStorage(_delegation) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -81,7 +83,9 @@ contract AVSDirectory is
      * @dev msg.sender must be the AVS.
      * @dev The AVS may create operator sets before it becomes an operator set AVS.
      */
-    function createOperatorSets(uint32[] calldata operatorSetIds) external {
+    function createOperatorSets(
+        uint32[] calldata operatorSetIds
+    ) external {
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             require(
                 !isOperatorSet[msg.sender][operatorSetIds[i]],
@@ -436,7 +440,9 @@ contract AVSDirectory is
      *
      *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
      */
-    function updateAVSMetadataURI(string calldata metadataURI) external override {
+    function updateAVSMetadataURI(
+        string calldata metadataURI
+    ) external override {
         emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
@@ -445,7 +451,9 @@ contract AVSDirectory is
      *
      * @param salt A unique and single use value associated with the approver signature.
      */
-    function cancelSalt(bytes32 salt) external override {
+    function cancelSalt(
+        bytes32 salt
+    ) external override {
         // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
@@ -528,21 +536,16 @@ contract AVSDirectory is
      *
      *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
      */
-    function deregisterOperatorFromAVS(address operator)
-        external
-        override
-        onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
-    {
+    function deregisterOperatorFromAVS(
+        address operator
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         require(
             avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
             "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
         );
 
         // Assert that the AVS is not an operator set AVS.
-        require(
-            !isOperatorSetAVS[msg.sender], 
-            "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS"
-        );
+        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS");
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
@@ -627,9 +630,11 @@ contract AVSDirectory is
      * In addition to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
      */
     function _updateFreeMagnitude(address operator, IStrategy strategy, uint16 numToComplete) internal {
-        (uint64 freeMagnitudeToAdd, uint256 nextIndex) = _getPendingFreeMagnitude(operator, strategy, numToComplete);
-        freeMagnitude[operator][strategy] += freeMagnitudeToAdd;
-        _nextPendingFreeMagnitudeIndex[operator][strategy] = nextIndex;
+        OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][strategy];
+        (uint64 freeMagnitudeToAdd, uint192 completed) =
+            _getPendingFreeMagnitude(operator, strategy, numToComplete, info.nextPendingFreeMagnitudeIndex);
+        info.freeMagnitude += freeMagnitudeToAdd;
+        info.nextPendingFreeMagnitudeIndex += completed;
     }
 
     /**
@@ -652,7 +657,7 @@ contract AVSDirectory is
             allocation.operatorSets.length == allocation.magnitudes.length,
             "AVSDirectory._modifyAllocations: operatorSets and magnitudes length mismatch"
         );
-        uint64 newFreeMagnitude = freeMagnitude[operator][allocation.strategy];
+
         // OperatorSet[] calldata opSets = allocation.operatorSets;
 
         bytes32 prevOperatorSet = bytes32(0);
@@ -679,7 +684,7 @@ contract AVSDirectory is
                 // the number of pending allocations is simply length
                 if (currentMagnitude == 0 && pos == 0) {
                     numPendingAllocations = length;
-                // if lookup found, then we take the difference between length-1 and pos
+                    // if lookup found, then we take the difference between length-1 and pos
                 } else {
                     numPendingAllocations = length - pos - 1;
                 }
@@ -707,7 +712,6 @@ contract AVSDirectory is
                     })
                 );
                 _queuedDeallocationIndices[operator][allocation.strategy][operatorSetKey].push(index);
-
             } else if (allocation.magnitudes[i] > uint64(currentMagnitude)) {
                 // Newly configured magnitude is greater than current value.
                 // Therefore we handle this as an allocation
@@ -719,17 +723,14 @@ contract AVSDirectory is
                 });
 
                 // 2. decrement free magnitude by incremented amount
+                OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][allocation.strategy];
                 require(
-                    newFreeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
+                    info.freeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
                     "AVSDirectory._modifyAllocations: insufficient available free magnitude to allocate"
                 );
-                newFreeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
+                info.freeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
             }
         }
-
-        // update freeMagnitude after all allocations.
-        // if provided allocations only resulted in deallocating, then this value would be unchanged
-        freeMagnitude[operator][allocation.strategy] = newFreeMagnitude;
     }
 
     /**
@@ -768,11 +769,8 @@ contract AVSDirectory is
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
         if (!exists) {
             totalMagnitude = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
-            _totalMagnitudeUpdate[operator][strategy].push({
-                key: uint32(block.timestamp),
-                value: totalMagnitude
-            });
-            freeMagnitude[operator][strategy] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+            _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
+            operatorMagnitudeInfo[operator][strategy].freeMagnitude = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
         }
 
         return uint64(totalMagnitude);
@@ -783,9 +781,9 @@ contract AVSDirectory is
     function _getPendingFreeMagnitude(
         address operator,
         IStrategy strategy,
-        uint16 numToComplete
-    ) internal view returns (uint64 freeMagnitudeToAdd, uint256 nextIndex) {
-        nextIndex = _nextPendingFreeMagnitudeIndex[operator][strategy];
+        uint16 numToComplete,
+        uint192 nextIndex
+    ) internal view returns (uint64 freeMagnitudeToAdd, uint192 completed) {
         uint256 pendingFreeMagnitudeLength = _pendingFreeMagnitude[operator][strategy].length;
         uint16 completed = 0;
         freeMagnitudeToAdd = 0;
@@ -898,7 +896,9 @@ contract AVSDirectory is
      * @notice Returns the number of operators registered to an operatorSet.
      * @param operatorSet The operatorSet to get the member count for
      */
-    function getNumOperatorsInOperatorSet(OperatorSet memory operatorSet) external view returns (uint256) {
+    function getNumOperatorsInOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256) {
         return _operatorSetMembers[_encodeOperatorSet(operatorSet)].length();
     }
 
@@ -906,7 +906,9 @@ contract AVSDirectory is
      *  @notice Returns the total number of operator sets an operator is registered to.
      *  @param operator The operator address to query.
      */
-    function inTotalOperatorSets(address operator) external view returns (uint256) {
+    function inTotalOperatorSets(
+        address operator
+    ) external view returns (uint256) {
         return _operatorSetsMemberOf[operator].length();
     }
 
@@ -922,20 +924,23 @@ contract AVSDirectory is
     /**
      * @param operator the operator to get the slashable magnitude for
      * @param strategies the strategies to get the slashable magnitude for
-     * 
+     *
      * @return operatorSets the operator sets the operator is a member of and the current slashable magnitudes for each strategy
      */
     function getCurrentSlashableMagnitudes(
         address operator,
         IStrategy[] calldata strategies
     ) external view returns (OperatorSet[] memory, uint64[][] memory) {
-        OperatorSet[] memory operatorSets = getOperatorSetsOfOperator(operator, 0, _operatorSetsMemberOf[operator].length());
+        OperatorSet[] memory operatorSets =
+            getOperatorSetsOfOperator(operator, 0, _operatorSetsMemberOf[operator].length());
         uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
             slashableMagnitudes[i] = new uint64[](operatorSets.length);
             for (uint256 j = 0; j < operatorSets.length; ++j) {
                 slashableMagnitudes[i][j] = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupLinear(uint32(block.timestamp))
+                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupLinear(
+                        uint32(block.timestamp)
+                    )
                 );
             }
         }
@@ -946,7 +951,7 @@ contract AVSDirectory is
      * @param operator the operator to get the slashable magnitude for
      * @param strategies the strategies to get the slashable magnitude for
      * @param timestamp the timestamp to get the slashable magnitude for
-     * 
+     *
      * @return operatorSets the operator sets the operator is a member of and the slashable magnitudes for each strategy
      */
     function getSlashableMagnitudes(
@@ -954,13 +959,16 @@ contract AVSDirectory is
         IStrategy[] calldata strategies,
         uint32 timestamp
     ) external view returns (OperatorSet[] memory, uint64[][] memory) {
-        OperatorSet[] memory operatorSets = getOperatorSetsOfOperator(operator, 0, _operatorSetsMemberOf[operator].length());
+        OperatorSet[] memory operatorSets =
+            getOperatorSetsOfOperator(operator, 0, _operatorSetsMemberOf[operator].length());
         uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
             slashableMagnitudes[i] = new uint64[](operatorSets.length);
             for (uint256 j = 0; j < operatorSets.length; ++j) {
                 slashableMagnitudes[i][j] = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupRecent(timestamp)
+                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupRecent(
+                        timestamp
+                    )
                 );
             }
         }
@@ -1032,8 +1040,10 @@ contract AVSDirectory is
         IStrategy strategy,
         uint16 numToComplete
     ) external view returns (uint64) {
-        (uint64 freeMagnitudeToAdd,) = _getPendingFreeMagnitude(operator, strategy, numToComplete);
-        return freeMagnitude[operator][strategy] + freeMagnitudeToAdd;
+        OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][strategy];
+        (, uint64 freeMagnitudeToAdd) =
+            _getPendingFreeMagnitude(operator, strategy, numToComplete, info.nextPendingFreeMagnitudeIndex);
+        return info.freeMagnitude + freeMagnitudeToAdd;
     }
 
     /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
@@ -1045,7 +1055,10 @@ contract AVSDirectory is
     }
 
     /// @notice Returns the total magnitude of an operator for a given set of strategies
-    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory) {
+    function getTotalMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length;) {
             (bool exists, uint32 key, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestCheckpoint();
@@ -1070,11 +1083,8 @@ contract AVSDirectory is
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length;) {
-            (
-                uint224 value,
-                uint256 pos,
-                uint256 length
-            ) = _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
+            (uint224 value, uint256 pos, uint256 length) =
+                _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
 
             // if there is no existing total magnitude checkpoint
             if (value != 0 || pos != 0) {
@@ -1200,20 +1210,26 @@ contract AVSDirectory is
     }
 
     /// @notice Returns an EIP-712 encoded hash struct.
-    function _calculateDigestHash(bytes32 structHash) internal view returns (bytes32) {
+    function _calculateDigestHash(
+        bytes32 structHash
+    ) internal view returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
     }
 
     /// @dev Returns an `OperatorSet` encoded into a 32-byte value.
     /// @param operatorSet The `OperatorSet` to encode.
-    function _encodeOperatorSet(OperatorSet memory operatorSet) internal pure returns (bytes32) {
+    function _encodeOperatorSet(
+        OperatorSet memory operatorSet
+    ) internal pure returns (bytes32) {
         return bytes32(abi.encodePacked(operatorSet.avs, uint96(operatorSet.operatorSetId)));
     }
 
     /// @dev Returns an `OperatorSet` decoded from an encoded 32-byte value.
     /// @param encoded The encoded `OperatorSet` to decode.
     /// @dev Assumes `encoded` is encoded via `_encodeOperatorSet(operatorSet)`.
-    function _decodeOperatorSet(bytes32 encoded) internal pure returns (OperatorSet memory) {
+    function _decodeOperatorSet(
+        bytes32 encoded
+    ) internal pure returns (OperatorSet memory) {
         return OperatorSet({
             avs: address(uint160(uint256(encoded) >> 96)),
             operatorSetId: uint32(uint256(encoded) & type(uint96).max)
