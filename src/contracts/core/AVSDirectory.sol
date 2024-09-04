@@ -9,13 +9,15 @@ import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 import "../libraries/ShareScalingLib.sol";
 import "./AVSDirectoryStorage.sol";
+import "../errors/AVSDirectoryErrors.sol";
 
 contract AVSDirectory is
     Initializable,
     OwnableUpgradeable,
     Pausable,
     AVSDirectoryStorage,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    AVSDirectoryErrors
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -74,7 +76,7 @@ contract AVSDirectory is
      *                    EXTERNAL FUNCTIONS
      *
      */
-
+    
     /**
      * @notice Called by an AVS to create a list of new operatorSets.
      *
@@ -89,7 +91,7 @@ contract AVSDirectory is
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             require(
                 !isOperatorSet[msg.sender][operatorSetIds[i]],
-                "AVSDirectory.createOperatorSet: operator set already exists"
+                AVSDirectory_createOperatorSets_OperatorSetAlreadyExists()
             );
             isOperatorSet[msg.sender][operatorSetIds[i]] = true;
             emit OperatorSetCreated(OperatorSet({avs: msg.sender, operatorSetId: operatorSetIds[i]}));
@@ -102,7 +104,7 @@ contract AVSDirectory is
      * @dev msg.sender must be the AVS.
      */
     function becomeOperatorSetAVS() external {
-        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.becomeOperatorSetAVS: already an operator set AVS");
+        require(!isOperatorSetAVS[msg.sender], AVSDirectory_becomeOperatorSetAVS_CallerAlreadyOperatorSetAVS());
         isOperatorSetAVS[msg.sender] = true;
         emit AVSMigratedToOperatorSets(msg.sender);
     }
@@ -124,14 +126,14 @@ contract AVSDirectory is
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
         // Assert that the AVS is an operator set AVS.
         require(
-            isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS"
+            isOperatorSetAVS[msg.sender], AVSDirectory_migrateOperatorsToOperatorSets_CallerNotOperatorSetAVS()
         );
 
         for (uint256 i = 0; i < operators.length; i++) {
             // Assert that the operator is registered & has not been migrated.
             require(
                 avsOperatorStatus[msg.sender][operators[i]] == OperatorAVSRegistrationStatus.REGISTERED,
-                "AVSDirectory.migrateOperatorsToOperatorSets: operator already migrated or not a legacy registered operator"
+                AVSDirectory_migrateOperatorsToOperatorSets_OperatorAlreadyNonLegacyOperator()
             );
 
             // Migrate operator to operator sets.
@@ -165,21 +167,21 @@ contract AVSDirectory is
         // Assert operator's signature has not expired.
         require(
             operatorSignature.expiry >= block.timestamp,
-            "AVSDirectory.registerOperatorToOperatorSets: operator signature expired"
+            AVSDirectory_registerOperatorToOperatorSets_OperatorSignatureExpired()
         );
         // Assert `operator` is actually an operator.
         require(
             delegation.isOperator(operator),
-            "AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet"
+            AVSDirectory_registerOperatorToOperatorSets_OperatorNotRegistered()
         );
         // Assert that the AVS is an operator set AVS.
         require(
-            isOperatorSetAVS[msg.sender], "AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS"
+            isOperatorSetAVS[msg.sender], AVSDirectory_registerOperatorToOperatorSets_CallerNotOperatorSetAVS()
         );
         // Assert operator's signature `salt` has not already been spent.
         require(
             !operatorSaltIsSpent[operator][operatorSignature.salt],
-            "AVSDirectory.registerOperatorToOperatorSets: salt already spent"
+            AVSDirectory_registerOperatorToOperatorSets_OperatorAlreadySpentSalt()
         );
 
         // Assert that `operatorSignature.signature` is a valid signature for operator set registrations.
@@ -217,37 +219,36 @@ contract AVSDirectory is
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
-        // COMMENTED FOR CODESIZE
-        // if (operatorSignature.signature.length == 0) {
-        //     require(msg.sender == operator, "AVSDirectory.forceDeregisterFromOperatorSets: caller must be operator");
-        // } else {
-        //     // Assert operator's signature has not expired.
-        //     require(
-        //         operatorSignature.expiry >= block.timestamp,
-        //         "AVSDirectory.forceDeregisterFromOperatorSets: operator signature expired"
-        //     );
-        //     // Assert operator's signature `salt` has not already been spent.
-        //     require(
-        //         !operatorSaltIsSpent[operator][operatorSignature.salt],
-        //         "AVSDirectory.forceDeregisterFromOperatorSets: salt already spent"
-        //     );
+        if (operatorSignature.signature.length == 0) {
+            require(msg.sender == operator, AVSDirectory_forceDeregisterFromOperatorSets_CallerMustBeOperatorIfSignatureNotProvided());
+        } else {
+            // Assert operator's signature has not expired.
+            require(
+                operatorSignature.expiry >= block.timestamp,
+                AVSDirectory_forceDeregisterFromOperatorSets_OperatorSignatureExpired()
+            );
+            // Assert operator's signature `salt` has not already been spent.
+            require(
+                !operatorSaltIsSpent[operator][operatorSignature.salt],
+                AVSDirectory_forceDeregisterFromOperatorSets_OperatorAlreadySpentSalt()
+            );
 
-        //     // Assert that `operatorSignature.signature` is a valid signature for operator set deregistrations.
-        //     EIP1271SignatureUtils.checkSignature_EIP1271(
-        //         operator,
-        //         calculateOperatorSetForceDeregistrationTypehash({
-        //             avs: avs,
-        //             operatorSetIds: operatorSetIds,
-        //             salt: operatorSignature.salt,
-        //             expiry: operatorSignature.expiry
-        //         }),
-        //         operatorSignature.signature
-        //     );
+            // Assert that `operatorSignature.signature` is a valid signature for operator set deregistrations.
+            EIP1271SignatureUtils.checkSignature_EIP1271(
+                operator,
+                calculateOperatorSetForceDeregistrationTypehash({
+                    avs: avs,
+                    operatorSetIds: operatorSetIds,
+                    salt: operatorSignature.salt,
+                    expiry: operatorSignature.expiry
+                }),
+                operatorSignature.signature
+            );
 
-        //     // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
-        //     operatorSaltIsSpent[operator][operatorSignature.salt] = true;
-        // }
-        // _deregisterFromOperatorSets(avs, operator, operatorSetIds);
+            // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
+            operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+        }
+        _deregisterFromOperatorSets(avs, operator, operatorSetIds);
     }
 
     /**
@@ -285,12 +286,12 @@ contract AVSDirectory is
             _verifyOperatorSignature(operator, allocations, operatorSignature);
         }
         require(
-            delegation.isOperator(operator), "AVSDirectory.modifyAllocations: operator not registered to EigenLayer yet"
+            delegation.isOperator(operator), AVSDirectory_modifyAllocations_OperatorNotRegistered()
         );
         IDelegationManager.AllocationDelayDetails memory details = delegation.operatorAllocationDelay(operator);
         require(
             details.isSet,
-            "AVSDirectory.modifyAllocations: operator must initialize allocation delay before modifying allocations"
+            AVSDirectory_modifyAllocations_OperatorMustInitializeAllocationDelay()
         );
         // effect timestamp for allocations to take effect. This is configurable by operators
         uint32 effectTimestamp = uint32(block.timestamp) + details.allocationDelay;
@@ -311,7 +312,7 @@ contract AVSDirectory is
             uint64 currentTotalMagnitude = _getLatestTotalMagnitude(operator, allocations[i].strategy);
             require(
                 currentTotalMagnitude == allocations[i].expectedTotalMagnitude,
-                "AVSDirectory.modifyAllocations: current total magnitude does not match expected"
+                AVSDirectory_modifyAllocations_OperatorTotalExpectedMagnitudeMismatch()
             );
 
             // 3. set allocations for the strategy after updating freeMagnitude
@@ -342,9 +343,9 @@ contract AVSDirectory is
     ) external {
         require(
             delegation.isOperator(operator),
-            "AVSDirectory.updateFreeMagnitude: operator not registered to EigenLayer yet"
+            AVSDirectory_updateFreeMagnitude_OperatorNotRegistered()
         );
-        require(strategies.length == numToComplete.length, "AVSDirectory.updateFreeMagnitude: array length mismatch");
+        require(strategies.length == numToComplete.length, AVSDirectory_updateFreeMagnitude_ArrayLengthMismatch());
         for (uint256 i = 0; i < strategies.length; ++i) {
             _updateFreeMagnitude({operator: operator, strategy: strategies[i], numToComplete: numToComplete[i]});
         }
@@ -371,7 +372,7 @@ contract AVSDirectory is
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
         require(
             isOperatorSlashable(operator, operatorSet),
-            "AVSDirectory.slashOperator: operator not slashable for operatorSet"
+            AVSDirectory_slashOperator_OperatorNotSlashableForOperatorSet()
         );
 
         for (uint256 i = 0; i < strategies.length; ++i) {
@@ -482,28 +483,28 @@ contract AVSDirectory is
         // Assert `operatorSignature.expiry` has not elapsed.
         require(
             operatorSignature.expiry >= block.timestamp,
-            "AVSDirectory.registerOperatorToAVS: operator signature expired"
+            AVSDirectory_registerOperatorToAVS_OperatorSignatureExpired()
         );
 
         // Assert that the AVS is not an operator set AVS.
-        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.registerOperatorToAVS: AVS is an operator set AVS");
+        require(!isOperatorSetAVS[msg.sender], AVSDirectory_registerOperatorToAVS_CallerIsOperatorSetAVS());
 
         // Assert that the `operator` is not actively registered to the AVS.
         require(
             avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.registerOperatorToAVS: operator already registered"
+            AVSDirectory_registerOperatorToAVS_OperatorAlreadyRegistered()
         );
 
         // Assert `operator` has not already spent `operatorSignature.salt`.
         require(
             !operatorSaltIsSpent[operator][operatorSignature.salt],
-            "AVSDirectory.registerOperatorToAVS: salt already spent"
+            AVSDirectory_registerOperatorToAVS_OperatorAlreadySpentSalt()
         );
 
         // Assert `operator` is a registered operator.
         require(
             delegation.isOperator(operator),
-            "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
+            AVSDirectory_registerOperatorToAVS_OperatorNotRegistered()
         );
 
         // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
@@ -541,11 +542,11 @@ contract AVSDirectory is
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         require(
             avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
+            AVSDirectory_deregisterOperatorFromAVS_OperatorNotRegistered()
         );
 
         // Assert that the AVS is not an operator set AVS.
-        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS");
+        require(!isOperatorSetAVS[msg.sender], AVSDirectory_deregisterOperatorFromAVS_CallerIsOperatorSetAVS());
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
@@ -572,14 +573,14 @@ contract AVSDirectory is
 
             require(
                 isOperatorSet[avs][operatorSetIds[i]],
-                "AVSDirectory._registerOperatorToOperatorSets: invalid operator set"
+                AVSDirectory_registerToOperatorSets_InvalidOperatorSet()
             );
 
             bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
 
             require(
                 _operatorSetsMemberOf[operator].add(encodedOperatorSet),
-                "AVSDirectory._registerOperatorToOperatorSets: operator already registered to operator set"
+                AVSDirectory_registerToOperatorSets_OperatorAlreadyRegistered()
             );
 
             _operatorSetMembers[encodedOperatorSet].add(operator);
@@ -588,7 +589,7 @@ contract AVSDirectory is
                 operatorSetStatus[avs][operator][operatorSetIds[i]];
             require(
                 !registrationStatus.registered,
-                "AVSDirectory._registerOperatorToOperatorSets: operator already registered for operator set"
+                AVSDirectory_registerToOperatorSets_OperatorAlreadyRegistered()
             );
             registrationStatus.registered = true;
 
@@ -612,7 +613,7 @@ contract AVSDirectory is
 
             require(
                 _operatorSetsMemberOf[operator].remove(encodedOperatorSet),
-                "AVSDirectory._deregisterOperatorFromOperatorSet: operator not registered for operator set"
+                AVSDirectory_deregisterFromOperatorSets_OperatorNotRegistered()
             );
 
             _operatorSetMembers[encodedOperatorSet].remove(operator);
@@ -655,7 +656,7 @@ contract AVSDirectory is
     ) internal {
         require(
             allocation.operatorSets.length == allocation.magnitudes.length,
-            "AVSDirectory._modifyAllocations: operatorSets and magnitudes length mismatch"
+            AVSDirectory_modifyAllocations_OperatorSetsAndMagnitudesLengthMismatch()
         );
 
         // OperatorSet[] calldata opSets = allocation.operatorSets;
@@ -665,11 +666,11 @@ contract AVSDirectory is
         for (uint256 i = 0; i < allocation.operatorSets.length; ++i) {
             require(
                 isOperatorSet[allocation.operatorSets[i].avs][allocation.operatorSets[i].operatorSetId],
-                "AVSDirectory._modifyAllocations: operatorSet does not exist"
+                AVSDirectory_modifyAllocations_InvalidOperatorSet()
             );
             // use encoding of operatorSet to ensure ordering and also used to use OperatorSet struct as key in mappings
             bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[i]);
-            require(prevOperatorSet < operatorSetKey, "AVSDirectory._modifyAllocations: operatorSets not ordered");
+            require(prevOperatorSet < operatorSetKey, AVSDirectory_modifyAllocations_OperatorSetsNotInAscendingOrder());
             prevOperatorSet = operatorSetKey;
 
             // Read current magnitude allocation including its respective array index and length.
@@ -693,7 +694,7 @@ contract AVSDirectory is
 
                 require(
                     numPendingAllocations + numPendingDeallocations < MAX_PENDING_UPDATES,
-                    "AVSDirectory._modifyAllocations: Cannot set magnitude with a pending allocation or deallocation"
+                    AVSDirectory_modifyAllocations_CannotSetMagnitudeWithPendingAllocationOrDeallocation()
                 );
             }
 
@@ -726,7 +727,7 @@ contract AVSDirectory is
                 OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][allocation.strategy];
                 require(
                     info.freeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
-                    "AVSDirectory._modifyAllocations: insufficient available free magnitude to allocate"
+                    AVSDirectory_modifyAllocations_InsuffientFreeAllocatableMagnitude()
                 );
                 info.freeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
             }
@@ -812,11 +813,11 @@ contract AVSDirectory is
         // check the signature expiry
         require(
             operatorSignature.expiry >= block.timestamp,
-            "AVSDirectory._verifyOperatorSignature: operator signature expired"
+            AVSDirectory_verifyOperatorSignature_OperatorSignatureExpired()
         );
         // Assert operator's signature cannot be replayed.
         require(
-            !operatorSaltIsSpent[operator][operatorSignature.salt], "AVSDirectory._verifyOperatorSignature: salt spent"
+            !operatorSaltIsSpent[operator][operatorSignature.salt], AVSDirectory_verifyOperatorSignature_OperatorAlreadySpentSalt()
         );
 
         bytes32 digestHash = calculateMagnitudeAllocationDigestHash(
