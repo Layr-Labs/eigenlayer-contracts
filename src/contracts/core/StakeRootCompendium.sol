@@ -447,7 +447,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint256 delegatedStake = 0;
         uint256 slashableStake = 0;
         {
-            uint256[] memory delegatedShares = delegationManager.getOperatorShares(operator, strategies);
+            uint256[] memory delegatedShares = delegationManager.getOperatorScaledShares(operator, strategies);
 
             (uint64[] memory totalMagnitudes, uint64[] memory allocatedMagnitudes) = 
                 avsDirectory.getTotalAndAllocatedMagnitudes(operator, operatorSet, strategies);
