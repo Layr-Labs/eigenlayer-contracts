@@ -54,6 +54,20 @@ interface IAVSDirectory is ISignatureUtils {
         uint32 completableTimestamp;
     }
 
+    /**
+     * @notice Struct containing allocation delay metadata for a given operator.
+     * @param delay Current allocation delay if `pendingDelay` is non-zero and `pendingDelayEffectTimestamp` has elapsed.
+     * @param pendingDelay Current allocation delay if it's non-zero and `pendingDelayEffectTimestamp` has elapsed.
+     * @param pendingDelayEffectTimestamp The timestamp for which `pendingDelay` becomes the curren allocation delay.
+     * @param latestAllocationEffectTimestamp The timestamp for which the latest allocation took effect.
+     */
+    struct AllocationDelayInfo {
+        uint32 delay;
+        uint32 pendingDelay;
+        uint32 pendingDelayEffectTimestamp;
+        uint32 latestAllocationEffectTimestamp;
+    }
+
     /// @notice Emitted when an operator set is created by an AVS.
     event OperatorSetCreated(OperatorSet operatorSet);
 
