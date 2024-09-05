@@ -1,0 +1,28 @@
+name: 📤 Publish Selectors
+
+on:
+  push:
+    branches:
+      - dev
+      - mainnet
+      - testnet-holesky
+
+jobs:
+  upload-selectors:
+    strategy:
+      fail-fast: true
+
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      - name: Publish selectors to openchain.xyz
+        run: |
+          forge selectors upload --all
