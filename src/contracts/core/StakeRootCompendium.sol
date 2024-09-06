@@ -500,11 +500,11 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         );
         IAVSDirectory.OperatorSet memory operatorSet = operatorSets[operatorSetIndex];
         address[] memory operators = avsDirectory.getOperatorsInOperatorSet(operatorSet, startOperatorIndex, numOperators);
+        (IStrategy[] memory strategies, uint256[] memory multipliers) = _getStrategiesAndMultipliers(operatorSet);
 
         OperatorLeaf[] memory operatorLeaves = new OperatorLeaf[](operators.length);
         for (uint256 i = 0; i < operatorLeaves.length; i++) {
             // calculate the weighted sum of the operator's shares for the strategies given the multipliers
-            (IStrategy[] memory strategies, uint256[] memory multipliers) = _getStrategiesAndMultipliers(operatorSet);
             (uint256 delegatedStake, uint256 slashableStake) = _getStakes(operatorSet, strategies, multipliers, operators[i]);
 
             operatorLeaves[i] = OperatorLeaf({
