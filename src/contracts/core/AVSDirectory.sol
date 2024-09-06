@@ -985,11 +985,6 @@ contract AVSDirectory is
         return (operatorSets, slashableMagnitudes);
     }
 
-    /**
-     * @param operator the operator to get the slashable ppm for
-     * @param operatorSet the operatorSet to get the slashable ppm for
-     * @param strategies the strategies to get the slashable ppm for
-     */
     function _getTotalAndAllocatedMagnitude(
         address operator,
         OperatorSet calldata operatorSet,
