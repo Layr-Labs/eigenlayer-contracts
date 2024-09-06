@@ -64,8 +64,6 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint32 public activationDelay;
     /// @notice Timestamp for last submitted DistributionRoot
     uint32 public currRewardsCalculationEndTimestamp;
-
-    /// Slot 4
     /// @notice the commission for all operators across all avss
     uint16 public globalOperatorCommissionBips;
 
@@ -75,14 +73,21 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Mapping: earner => token => total amount claimed
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
 
-    /// @notice Used for unique rewardsSubmissionHashes per AVS and for RewardsForAllSubmitters
+    /// @notice Used for unique rewardsSubmissionHashes per AVS and for RewardsForAllSubmitters and the tokenHopper
     mapping(address => uint256) public submissionNonce;
+
     /// @notice Mapping: avs => avsRewardsSubmissionHash => bool to check if rewards submission hash has been submitted
     mapping(address => mapping(bytes32 => bool)) public isAVSRewardsSubmissionHash;
-    /// @notice Mapping: avs => rewardsSubmissionForALlHash => bool to check if rewards submission hash for all has been submitted
+
+    /// @notice Mapping: avs => rewardsSubmissionForAllHash => bool to check if rewards submission hash for all has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllHash;
+
     /// @notice Mapping: address => bool to check if the address is permissioned to call createRewardsForAllSubmission
     mapping(address => bool) public isRewardsForAllSubmitter;
+
+    /// @notice Mapping: avs => rewardsSubmissionForAllEarnersHash => bool to check
+    /// if rewards submission hash for all stakers and operators has been submitted
+    mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllEarnersHash;
 
     constructor(
         IDelegationManager _delegationManager,
@@ -115,5 +120,5 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[39] private __gap;
 }

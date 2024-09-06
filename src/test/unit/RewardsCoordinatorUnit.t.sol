@@ -76,6 +76,9 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     /// @dev Index for flag that pauses submitRoots
     uint8 internal constant PAUSED_SUBMIT_ROOTS = 3;
 
+    /// @dev Index for flag that pauses rewardAllStakersAndOperators
+    uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
+
     // RewardsCoordinator entities
     address rewardsUpdater = address(1000);
     address defaultAVS = address(1001);
@@ -1094,6 +1097,219 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         for (uint256 i = 0; i < numSubmissions; ++i) {
             assertTrue(
                 rewardsCoordinator.isRewardsSubmissionForAllHash(rewardsForAllSubmitter, rewardsSubmissionHashes[i]),
+                "rewards submission hash not submitted"
+            );
+            assertEq(
+                submitterBalancesBefore[i] - amounts[i],
+                rewardTokens[i].balanceOf(rewardsForAllSubmitter),
+                "RewardsForAllSubmitter Submitter balance not decremented by amount of rewards submission"
+            );
+            assertEq(
+                rewardsCoordinatorBalancesBefore[i] + amounts[i],
+                rewardTokens[i].balanceOf(address(rewardsCoordinator)),
+                "RewardsCoordinator balance not incremented by amount of rewards submission"
+            );
+        }
+    }
+}
+
+contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordinatorUnitTests {
+    // Revert when paused
+    function test_Revert_WhenPaused() public {
+        cheats.prank(pauser);
+        rewardsCoordinator.pause(2 ** PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS);
+
+        cheats.expectRevert("Pausable: index is paused");
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
+    }
+
+    // Revert from reentrancy
+    function test_Revert_WhenReentrancy(uint256 amount) public {
+        Reenterer reenterer = new Reenterer();
+
+        reenterer.prepareReturnData(abi.encode(amount));
+
+        address targetToUse = address(rewardsCoordinator);
+        uint256 msgValueToUse = 0;
+
+        _deployMockRewardTokens(address(this), 1);
+
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: IERC20(address(reenterer)),
+            amount: amount,
+            startTimestamp: uint32(block.timestamp),
+            duration: 0
+        });
+
+        bytes memory calldataToUse = abi.encodeWithSelector(RewardsCoordinator.createAVSRewardsSubmission.selector, rewardsSubmissions);
+        reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
+
+        cheats.prank(rewardsForAllSubmitter);
+        cheats.expectRevert();
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
+    }
+
+    function testFuzz_Revert_WhenNotRewardsForAllSubmitter(
+        address invalidSubmitter
+    ) public filterFuzzedAddressInputs(invalidSubmitter) {
+        cheats.assume(invalidSubmitter != rewardsForAllSubmitter);
+
+        cheats.expectRevert("RewardsCoordinator: caller is not a valid createRewardsForAllSubmission submitter");
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
+    }
+
+    /**
+     * @notice test a single rewards submission asserting for the following
+     * - correct event emitted
+     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balance before and after of RewardsForAllSubmitter and rewardsCoordinator
+     */
+    function testFuzz_createRewardsForAllSubmission_SingleSubmission(uint256 startTimestamp, uint256 duration, uint256 amount) public {
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply(
+            "dog wif hat",
+            "MOCK1",
+            mockTokenInitialSupply,
+            rewardsForAllSubmitter
+        );
+        amount = bound(amount, 1, mockTokenInitialSupply);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            amount: amount,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
+        });
+
+        // 3. call createAVSRewardsSubmission() with expected event emitted
+        uint256 submitterBalanceBefore = rewardToken.balanceOf(rewardsForAllSubmitter);
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
+
+        cheats.startPrank(rewardsForAllSubmitter);
+        rewardToken.approve(address(rewardsCoordinator), amount);
+        uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(rewardsForAllSubmitter);
+        bytes32 rewardsSubmissionHash = keccak256(abi.encode(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissions[0]));
+
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit RewardsSubmissionForAllEarnersCreated(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissionHash, rewardsSubmissions[0]);
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
+        cheats.stopPrank();
+
+        assertTrue(
+            rewardsCoordinator.isRewardsSubmissionForAllEarnersHash(rewardsForAllSubmitter, rewardsSubmissionHash),
+            "rewards submission hash not submitted"
+        );
+        assertEq(
+            currSubmissionNonce + 1,
+            rewardsCoordinator.submissionNonce(rewardsForAllSubmitter),
+            "submission nonce not incremented"
+        );
+        assertEq(
+            submitterBalanceBefore - amount,
+            rewardToken.balanceOf(rewardsForAllSubmitter),
+            "createRewardsForAllSubmission Submitter balance not decremented by amount of rewards submission"
+        );
+        assertEq(
+            rewardsCoordinatorBalanceBefore + amount,
+            rewardToken.balanceOf(address(rewardsCoordinator)),
+            "RewardsCoordinator balance not incremented by amount of rewards submission"
+        );
+    }
+
+    /**
+     * @notice test multiple rewards submissions asserting for the following
+     * - correct event emitted
+     * - submission nonce incrementation by numSubmissions, and rewards submission hashes being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balances before and after of createRewardsForAllSubmission submitter and rewardsCoordinator
+     */
+    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint256 numSubmissions) public {
+        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        cheats.prank(rewardsCoordinator.owner());
+
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](numSubmissions);
+        bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
+        uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(rewardsForAllSubmitter);
+        _deployMockRewardTokens(rewardsForAllSubmitter, numSubmissions);
+
+        uint256[] memory submitterBalancesBefore = _getBalanceForTokens(rewardTokens, rewardsForAllSubmitter);
+        uint256[] memory rewardsCoordinatorBalancesBefore = _getBalanceForTokens(
+            rewardTokens,
+            address(rewardsCoordinator)
+        );
+        uint256[] memory amounts = new uint256[](numSubmissions);
+
+        // Create multiple rewards submissions and their expected event
+        for (uint256 i = 0; i < numSubmissions; ++i) {
+            // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
+            param.amount = bound(param.amount + i, 1, mockTokenInitialSupply);
+            amounts[i] = param.amount;
+            param.duration = bound(param.duration + i, 0, MAX_REWARDS_DURATION);
+            param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
+            param.startTimestamp = bound(
+                param.startTimestamp + i,
+                uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                    CALCULATION_INTERVAL_SECONDS -
+                    1,
+                block.timestamp + uint256(MAX_FUTURE_LENGTH)
+            );
+            param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+            // 2. Create rewards submission input param
+            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator.RewardsSubmission({
+                strategiesAndMultipliers: defaultStrategyAndMultipliers,
+                token: rewardTokens[i],
+                amount: amounts[i],
+                startTimestamp: uint32(param.startTimestamp),
+                duration: uint32(param.duration)
+            });
+            rewardsSubmissions[i] = rewardsSubmission;
+
+            // 3. expected event emitted for this rewardsSubmission
+            rewardsSubmissionHashes[i] = keccak256(abi.encode(rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissions[i]));
+            cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+            emit RewardsSubmissionForAllEarnersCreated(
+                rewardsForAllSubmitter,
+                startSubmissionNonce + i,
+                rewardsSubmissionHashes[i],
+                rewardsSubmissions[i]
+            );
+        }
+
+        // 4. call createAVSRewardsSubmission()
+        cheats.prank(rewardsForAllSubmitter);
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
+
+        // 5. Check for submissionNonce() and rewardsSubmissionHashes being set
+        assertEq(
+            startSubmissionNonce + numSubmissions,
+            rewardsCoordinator.submissionNonce(rewardsForAllSubmitter),
+            "submission nonce not incremented properly"
+        );
+
+        for (uint256 i = 0; i < numSubmissions; ++i) {
+            assertTrue(
+                rewardsCoordinator.isRewardsSubmissionForAllEarnersHash(rewardsForAllSubmitter, rewardsSubmissionHashes[i]),
                 "rewards submission hash not submitted"
             );
             assertEq(

@@ -43,6 +43,8 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
     /// @dev Index for flag that pauses submitRoots and disableRoot
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
+    /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
+    uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -169,6 +171,36 @@ contract RewardsCoordinator is
             submissionNonce[msg.sender] = nonce + 1;
 
             emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+        }
+    }
+
+    /**
+     * @notice Creates a new rewards submission for all earners across all AVSs.
+     * Earners in this case indicating all operators and their delegated stakers. Undelegated stake
+     * is not rewarded from this RewardsSubmission. This interface is only callable
+     * by the token hopper contract from the Eigen Foundation
+     * @param rewardsSubmissions The rewards submissions being created
+     */
+    function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions)
+        external
+        onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS)
+        onlyRewardsForAllSubmitter
+        nonReentrant
+    {
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[msg.sender];
+            bytes32 rewardsSubmissionForAllEarnersHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
+
+            _validateRewardsSubmission(rewardsSubmission);
+
+            isRewardsSubmissionForAllEarnersHash[msg.sender][rewardsSubmissionForAllEarnersHash] = true;
+            submissionNonce[msg.sender] = nonce + 1;
+
+            emit RewardsSubmissionForAllEarnersCreated(
+                msg.sender, nonce, rewardsSubmissionForAllEarnersHash, rewardsSubmission
+            );
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
