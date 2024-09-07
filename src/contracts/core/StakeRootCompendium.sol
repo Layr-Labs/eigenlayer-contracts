@@ -271,6 +271,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         _updateCumulativeCharges();
         constantChargePerProof = newConstantChargePerProof;
         linearChargePerProof = newLinearChargePerProof;
+        _updateTotals(0, 0);
     }
 
     function _setProofInterval(uint32 proofInterval) internal {
@@ -394,7 +395,10 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     // updates total strategies and the total charge per proof whenever an operator set's number of strategies changes
     function _updateTotals(uint256 numStrategiesBefore, uint256 numStrategiesAfter) internal {
         totalStrategies = totalStrategies - numStrategiesBefore + numStrategiesAfter;
-        totalChargeSnapshot.push(uint32(block.timestamp), uint224(totalStrategies * linearChargePerProof + constantChargePerProof));
+        totalChargeSnapshot.push(
+            uint32(block.timestamp), 
+            uint224(totalStrategies * linearChargePerProof + constantChargePerProof)
+        );
     }
 
     function _postStakeRoot(
