@@ -703,62 +703,62 @@ contract DelegationManager is
         IERC20[] calldata tokens,
         uint256[] memory descaledShares
     ) internal {
-        // read delegated operator for scaling and adding shares back if needed
-        address currentOperator = delegatedTo[msg.sender];
-        // We scale shares again to the new totalMagnitude of the currentOperator.
-        uint256[] memory scaledShares = ShareScalingLib.scaleShares(
-            avsDirectory,
-            currentOperator,
-            withdrawal.strategies,
-            descaledShares
-        );
+        // // read delegated operator for scaling and adding shares back if needed
+        // address currentOperator = delegatedTo[msg.sender];
+        // // We scale shares again to the new totalMagnitude of the currentOperator.
+        // uint256[] memory scaledShares = ShareScalingLib.scaleShares(
+        //     avsDirectory,
+        //     currentOperator,
+        //     withdrawal.strategies,
+        //     descaledShares
+        // );
 
-        for (uint256 i = 0; i < withdrawal.strategies.length;) {
-            require(
-                withdrawal.startTimestamp + strategyWithdrawalDelays[withdrawal.strategies[i]] <= block.number,
-                "DelegationManager._completeReceiveAsShares: withdrawalDelay period has not yet passed for this strategy"
-            );
+        // for (uint256 i = 0; i < withdrawal.strategies.length;) {
+        //     require(
+        //         withdrawal.startTimestamp + strategyWithdrawalDelays[withdrawal.strategies[i]] <= block.number,
+        //         "DelegationManager._completeReceiveAsShares: withdrawalDelay period has not yet passed for this strategy"
+        //     );
 
-            /**
-             * When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
-             * Other strategy shares can + will be awarded to the withdrawer.
-             */
-            if (withdrawal.strategies[i] == beaconChainETHStrategy) {
-                address staker = withdrawal.staker;
-                /**
-                 * Update shares amount depending upon the returned value.
-                 * The return value will be lower than the input value in the case where the staker has an existing share deficit
-                 */
-                uint256 increaseInDelegateableScaledShares =
-                    eigenPodManager.addScaledShares({podOwner: staker, scaledShares: scaledShares[i]});
-                address podOwnerOperator = delegatedTo[staker];
-                // Similar to `isDelegated` logic
-                if (podOwnerOperator != address(0)) {
-                    _increaseOperatorScaledShares({
-                        operator: podOwnerOperator,
-                        // the 'staker' here is the address receiving new shares
-                        staker: staker,
-                        strategy: withdrawal.strategies[i],
-                        scaledShares: increaseInDelegateableScaledShares
-                    });
-                }
-            } else {
-                strategyManager.addScaledShares(msg.sender, tokens[i], withdrawal.strategies[i], scaledShares[i]);
-                // Similar to `isDelegated` logic
-                if (currentOperator != address(0)) {
-                    _increaseOperatorScaledShares({
-                        operator: currentOperator,
-                        // the 'staker' here is the address receiving new shares
-                        staker: msg.sender,
-                        strategy: withdrawal.strategies[i],
-                        scaledShares: scaledShares[i]
-                    });
-                }
-            }
-            unchecked {
-                ++i;
-            }
-        }
+        //     /**
+        //      * When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
+        //      * Other strategy shares can + will be awarded to the withdrawer.
+        //      */
+        //     if (withdrawal.strategies[i] == beaconChainETHStrategy) {
+        //         address staker = withdrawal.staker;
+        //         /**
+        //          * Update shares amount depending upon the returned value.
+        //          * The return value will be lower than the input value in the case where the staker has an existing share deficit
+        //          */
+        //         uint256 increaseInDelegateableScaledShares =
+        //             eigenPodManager.addScaledShares({podOwner: staker, scaledShares: scaledShares[i]});
+        //         address podOwnerOperator = delegatedTo[staker];
+        //         // Similar to `isDelegated` logic
+        //         if (podOwnerOperator != address(0)) {
+        //             _increaseOperatorScaledShares({
+        //                 operator: podOwnerOperator,
+        //                 // the 'staker' here is the address receiving new shares
+        //                 staker: staker,
+        //                 strategy: withdrawal.strategies[i],
+        //                 scaledShares: increaseInDelegateableScaledShares
+        //             });
+        //         }
+        //     } else {
+        //         strategyManager.addScaledShares(msg.sender, tokens[i], withdrawal.strategies[i], scaledShares[i]);
+        //         // Similar to `isDelegated` logic
+        //         if (currentOperator != address(0)) {
+        //             _increaseOperatorScaledShares({
+        //                 operator: currentOperator,
+        //                 // the 'staker' here is the address receiving new shares
+        //                 staker: msg.sender,
+        //                 strategy: withdrawal.strategies[i],
+        //                 scaledShares: scaledShares[i]
+        //             });
+        //         }
+        //     }
+        //     unchecked {
+        //         ++i;
+        //     }
+        // }
     }
 
     // @notice Increases `operator`s delegated scaled shares in `strategy` by `scaledShares` and emits an `OperatorSharesIncreased` event
@@ -788,69 +788,70 @@ contract DelegationManager is
         IStrategy[] memory strategies,
         uint256[] memory scaledShares
     ) internal returns (bytes32) {
-        require(
-            staker != address(0), "DelegationManager._removeSharesAndQueueWithdrawal: staker cannot be zero address"
-        );
-        require(strategies.length != 0, "DelegationManager._removeSharesAndQueueWithdrawal: strategies cannot be empty");
+        return bytes32(0);
+        // require(
+        //     staker != address(0), "DelegationManager._removeSharesAndQueueWithdrawal: staker cannot be zero address"
+        // );
+        // require(strategies.length != 0, "DelegationManager._removeSharesAndQueueWithdrawal: strategies cannot be empty");
 
-        // Remove shares from staker and operator
-        // Each of these operations fail if we attempt to remove more shares than exist
-        for (uint256 i = 0; i < strategies.length;) {
-            // Similar to `isDelegated` logic
-            if (operator != address(0)) {
-                // forgefmt: disable-next-item
-                _decreaseOperatorScaledShares({
-                    operator: operator, 
-                    staker: staker, 
-                    strategy: strategies[i], 
-                    scaledShares: scaledShares[i]
-                });
-            }
+        // // Remove shares from staker and operator
+        // // Each of these operations fail if we attempt to remove more shares than exist
+        // for (uint256 i = 0; i < strategies.length;) {
+        //     // Similar to `isDelegated` logic
+        //     if (operator != address(0)) {
+        //         // forgefmt: disable-next-item
+        //         _decreaseOperatorScaledShares({
+        //             operator: operator, 
+        //             staker: staker, 
+        //             strategy: strategies[i], 
+        //             scaledShares: scaledShares[i]
+        //         });
+        //     }
 
-            // Remove active shares from EigenPodManager/StrategyManager
-            if (strategies[i] == beaconChainETHStrategy) {
-                /**
-                 * This call will revert if it would reduce the Staker's virtual beacon chain ETH shares below zero.
-                 * This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
-                 * shares from the operator to whom the staker is delegated.
-                 * It will also revert if the share amount being withdrawn is not a whole Gwei amount.
-                 */
-                eigenPodManager.removeScaledShares(staker, scaledShares[i]);
-            } else {
-                require(
-                    staker == withdrawer || !strategyManager.thirdPartyTransfersForbidden(strategies[i]),
-                    "DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if thirdPartyTransfersForbidden are set"
-                );
-                // this call will revert if `scaledShares[i]` exceeds the Staker's current shares in `strategies[i]`
-                strategyManager.removeScaledShares(staker, strategies[i], scaledShares[i]);
-            }
+        //     // Remove active shares from EigenPodManager/StrategyManager
+        //     if (strategies[i] == beaconChainETHStrategy) {
+        //         /**
+        //          * This call will revert if it would reduce the Staker's virtual beacon chain ETH shares below zero.
+        //          * This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
+        //          * shares from the operator to whom the staker is delegated.
+        //          * It will also revert if the share amount being withdrawn is not a whole Gwei amount.
+        //          */
+        //         eigenPodManager.removeScaledShares(staker, scaledShares[i]);
+        //     } else {
+        //         require(
+        //             staker == withdrawer || !strategyManager.thirdPartyTransfersForbidden(strategies[i]),
+        //             "DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if thirdPartyTransfersForbidden are set"
+        //         );
+        //         // this call will revert if `scaledShares[i]` exceeds the Staker's current shares in `strategies[i]`
+        //         strategyManager.removeScaledShares(staker, strategies[i], scaledShares[i]);
+        //     }
 
-            unchecked {
-                ++i;
-            }
-        }
+        //     unchecked {
+        //         ++i;
+        //     }
+        // }
 
-        // Create queue entry and increment withdrawal nonce
-        uint256 nonce = cumulativeWithdrawalsQueued[staker];
-        cumulativeWithdrawalsQueued[staker]++;
+        // // Create queue entry and increment withdrawal nonce
+        // uint256 nonce = cumulativeWithdrawalsQueued[staker];
+        // cumulativeWithdrawalsQueued[staker]++;
 
-        Withdrawal memory withdrawal = Withdrawal({
-            staker: staker,
-            delegatedTo: operator,
-            withdrawer: withdrawer,
-            nonce: nonce,
-            startTimestamp: uint32(block.timestamp),
-            strategies: strategies,
-            scaledShares: scaledShares
-        });
+        // Withdrawal memory withdrawal = Withdrawal({
+        //     staker: staker,
+        //     delegatedTo: operator,
+        //     withdrawer: withdrawer,
+        //     nonce: nonce,
+        //     startTimestamp: uint32(block.timestamp),
+        //     strategies: strategies,
+        //     scaledShares: scaledShares
+        // });
 
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+        // bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
-        // Place withdrawal in queue
-        pendingWithdrawals[withdrawalRoot] = true;
+        // // Place withdrawal in queue
+        // pendingWithdrawals[withdrawalRoot] = true;
 
-        emit WithdrawalQueued(withdrawalRoot, withdrawal);
-        return withdrawalRoot;
+        // emit WithdrawalQueued(withdrawalRoot, withdrawal);
+        // return withdrawalRoot;
     }
 
     /**
@@ -889,26 +890,26 @@ contract DelegationManager is
         IStrategy[] calldata _strategies,
         uint256[] calldata _withdrawalDelayBlocks
     ) internal {
-        require(
-            _strategies.length == _withdrawalDelayBlocks.length,
-            "DelegationManager._setStrategyWithdrawalDelayBlocks: input length mismatch"
-        );
-        uint256 numStrats = _strategies.length;
-        for (uint256 i = 0; i < numStrats; ++i) {
-            IStrategy strategy = _strategies[i];
-            uint256 prevStrategyWithdrawalDelayBlocks = strategyWithdrawalDelayBlocks[strategy];
-            uint256 newStrategyWithdrawalDelayBlocks = _withdrawalDelayBlocks[i];
-            require(
-                newStrategyWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
-                "DelegationManager._setStrategyWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
-            );
+        // require(
+        //     _strategies.length == _withdrawalDelayBlocks.length,
+        //     "DelegationManager._setStrategyWithdrawalDelayBlocks: input length mismatch"
+        // );
+        // uint256 numStrats = _strategies.length;
+        // for (uint256 i = 0; i < numStrats; ++i) {
+        //     IStrategy strategy = _strategies[i];
+        //     uint256 prevStrategyWithdrawalDelayBlocks = strategyWithdrawalDelayBlocks[strategy];
+        //     uint256 newStrategyWithdrawalDelayBlocks = _withdrawalDelayBlocks[i];
+        //     require(
+        //         newStrategyWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
+        //         "DelegationManager._setStrategyWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+        //     );
 
-            // set the new withdrawal delay blocks
-            strategyWithdrawalDelayBlocks[strategy] = newStrategyWithdrawalDelayBlocks;
-            emit StrategyWithdrawalDelayBlocksSet(
-                strategy, prevStrategyWithdrawalDelayBlocks, newStrategyWithdrawalDelayBlocks
-            );
-        }
+        //     // set the new withdrawal delay blocks
+        //     strategyWithdrawalDelayBlocks[strategy] = newStrategyWithdrawalDelayBlocks;
+        //     emit StrategyWithdrawalDelayBlocksSet(
+        //         strategy, prevStrategyWithdrawalDelayBlocks, newStrategyWithdrawalDelayBlocks
+        //     );
+        // }
     }
 
     /**
@@ -919,26 +920,26 @@ contract DelegationManager is
         IStrategy[] calldata _strategies,
         uint256[] calldata _withdrawalDelays
     ) internal {
-        require(
-            _strategies.length == _withdrawalDelays.length,
-            "DelegationManager._setStrategyWithdrawalDelay: input length mismatch"
-        );
-        uint256 numStrats = _strategies.length;
-        for (uint256 i = 0; i < numStrats; ++i) {
-            IStrategy strategy = _strategies[i];
-            uint256 prevStrategyWithdrawalDelay = strategyWithdrawalDelays[strategy];
-            uint256 newStrategyWithdrawalDelay = _withdrawalDelays[i];
-            require(
-                newStrategyWithdrawalDelay <= MAX_WITHDRAWAL_DELAY,
-                "DelegationManager._setStrategyWithdrawalDelay: _withdrawalDelay cannot be > MAX_WITHDRAWAL_DELAY"
-            );
+        // require(
+        //     _strategies.length == _withdrawalDelays.length,
+        //     "DelegationManager._setStrategyWithdrawalDelay: input length mismatch"
+        // );
+        // uint256 numStrats = _strategies.length;
+        // for (uint256 i = 0; i < numStrats; ++i) {
+        //     IStrategy strategy = _strategies[i];
+        //     uint256 prevStrategyWithdrawalDelay = strategyWithdrawalDelays[strategy];
+        //     uint256 newStrategyWithdrawalDelay = _withdrawalDelays[i];
+        //     require(
+        //         newStrategyWithdrawalDelay <= MAX_WITHDRAWAL_DELAY,
+        //         "DelegationManager._setStrategyWithdrawalDelay: _withdrawalDelay cannot be > MAX_WITHDRAWAL_DELAY"
+        //     );
 
-            // set the new withdrawal delay (in seconds)
-            strategyWithdrawalDelays[strategy] = newStrategyWithdrawalDelay;
-            emit StrategyWithdrawalDelaySet(
-                strategy, prevStrategyWithdrawalDelay, newStrategyWithdrawalDelay
-            );
-        }
+        //     // set the new withdrawal delay (in seconds)
+        //     strategyWithdrawalDelays[strategy] = newStrategyWithdrawalDelay;
+        //     emit StrategyWithdrawalDelaySet(
+        //         strategy, prevStrategyWithdrawalDelay, newStrategyWithdrawalDelay
+        //     );
+        // }
     }
 
     /**

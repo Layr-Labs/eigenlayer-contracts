@@ -8,11 +8,9 @@ import "forge-std/Script.sol";
 
 
 contract PopulateSRC is Script, Test, ExistingDeploymentParser {
-    string internal constant TEST_MNEMONIC = "hundred february vast fluid produce radar notice ridge armed glare panther balance";
-
     uint32 constant NUM_OPSETS = 1;
-    uint32 constant NUM_OPERATORS_PER_OPSET = 10;
-    uint32 constant NUM_STRATS_PER_OPSET = 20;
+    uint32 constant NUM_OPERATORS_PER_OPSET = 250;
+    uint32 constant NUM_STRATS_PER_OPSET = 1;
     uint256 constant TOKEN_AMOUNT_PER_OPERATOR = 1 ether;
 
     
@@ -22,10 +20,11 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         address proxyAdmin = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
 
         vm.startBroadcast();
+        uint32 proofInterval = 1 hours;
         IStakeRootCompendium stakeRootCompendiumImplementation =  new StakeRootCompendium({
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
-            _proofInterval: 1 hours,
+            _proofInterval: proofInterval,
             _blacklistWindow: 12 seconds
         });
         StakeRootCompendium stakeRootCompendium = StakeRootCompendium(payable(new TransparentUpgradeableProxy(
@@ -33,6 +32,8 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             proxyAdmin,
             "" // TODO: initialize
         )));
+        IStakeRootCompendium.Proof memory proof;
+        stakeRootCompendium.verifyStakeRoot(uint32(block.timestamp - (block.timestamp % proofInterval)), bytes32(0), address(0), proof);
         vm.stopBroadcast();
 
         emit log_named_address("stakeRootCompendium", address(stakeRootCompendium));

@@ -122,29 +122,29 @@ contract AVSDirectory is
         address[] calldata operators,
         uint32[][] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
-        // Assert that the AVS is an operator set AVS.
-        require(
-            isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS"
-        );
+        // // Assert that the AVS is an operator set AVS.
+        // require(
+        //     isOperatorSetAVS[msg.sender], "AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS"
+        // );
 
-        for (uint256 i = 0; i < operators.length; i++) {
-            // Assert that the operator is registered & has not been migrated.
-            require(
-                avsOperatorStatus[msg.sender][operators[i]] == OperatorAVSRegistrationStatus.REGISTERED,
-                "AVSDirectory.migrateOperatorsToOperatorSets: operator already migrated or not a legacy registered operator"
-            );
+        // for (uint256 i = 0; i < operators.length; i++) {
+        //     // Assert that the operator is registered & has not been migrated.
+        //     require(
+        //         avsOperatorStatus[msg.sender][operators[i]] == OperatorAVSRegistrationStatus.REGISTERED,
+        //         "AVSDirectory.migrateOperatorsToOperatorSets: operator already migrated or not a legacy registered operator"
+        //     );
 
-            // Migrate operator to operator sets.
-            _registerToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
+        //     // Migrate operator to operator sets.
+        //     _registerToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
 
-            // Deregister operator from AVS - this prevents the operator from being migrated again since
-            // the AVS can no longer use the legacy M2 registration path
-            avsOperatorStatus[msg.sender][operators[i]] = OperatorAVSRegistrationStatus.UNREGISTERED;
-            emit OperatorAVSRegistrationStatusUpdated(
-                operators[i], msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED
-            );
-            emit OperatorMigratedToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
-        }
+        //     // Deregister operator from AVS - this prevents the operator from being migrated again since
+        //     // the AVS can no longer use the legacy M2 registration path
+        //     avsOperatorStatus[msg.sender][operators[i]] = OperatorAVSRegistrationStatus.UNREGISTERED;
+        //     emit OperatorAVSRegistrationStatusUpdated(
+        //         operators[i], msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED
+        //     );
+        //     emit OperatorMigratedToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
+        // }
     }
 
     /**
@@ -367,70 +367,70 @@ contract AVSDirectory is
         IStrategy[] calldata strategies,
         uint16 bipsToSlash
     ) external {
-        OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
-        require(
-            isOperatorSlashable(operator, operatorSet),
-            "AVSDirectory.slashOperator: operator not slashable for operatorSet"
-        );
+        // OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
+        // bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        // require(
+        //     isOperatorSlashable(operator, operatorSet),
+        //     "AVSDirectory.slashOperator: operator not slashable for operatorSet"
+        // );
 
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            // 1. calculate slashed magnitude from current allocation
-            // update current and all following queued magnitude updates for (operator, strategy, operatorSetId) tuple
-            uint64 slashedMagnitude;
-            {
-                uint64 currentMagnitude = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][operatorSetKey].upperLookupRecent(uint32(block.timestamp))
-                );
-                // TODO: if we don't continue here we get into weird "total/free magnitude" not initialized cases. Is this ok?
-                if (currentMagnitude == 0) {
-                    continue;
-                }
+        // for (uint256 i = 0; i < strategies.length; ++i) {
+        //     // 1. calculate slashed magnitude from current allocation
+        //     // update current and all following queued magnitude updates for (operator, strategy, operatorSetId) tuple
+        //     uint64 slashedMagnitude;
+        //     {
+        //         uint64 currentMagnitude = uint64(
+        //             _magnitudeUpdate[operator][strategies[i]][operatorSetKey].upperLookupRecent(uint32(block.timestamp))
+        //         );
+        //         // TODO: if we don't continue here we get into weird "total/free magnitude" not initialized cases. Is this ok?
+        //         if (currentMagnitude == 0) {
+        //             continue;
+        //         }
 
-                /// TODO: add wrapping library for rounding up for slashing accounting
-                slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
+        //         /// TODO: add wrapping library for rounding up for slashing accounting
+        //         slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
 
-                _magnitudeUpdate[operator][strategies[i]][operatorSetKey].decrementAtAndFutureCheckpoints({
-                    key: uint32(block.timestamp),
-                    decrementValue: slashedMagnitude
-                });
-            }
+        //         _magnitudeUpdate[operator][strategies[i]][operatorSetKey].decrementAtAndFutureCheckpoints({
+        //             key: uint32(block.timestamp),
+        //             decrementValue: slashedMagnitude
+        //         });
+        //     }
 
-            // 2. if there are any pending deallocations then need to update and decrement if they fall within slashable window
-            // loop backwards through _queuedDeallocationIndices, each element contains an array index to
-            // corresponding deallocation to access in pendingFreeMagnitude
-            // if completable, then break
-            //      (since ordered by completableTimestamps, older deallocations will also be completable and outside slashable window)
-            // if NOT completable, then add to slashed magnitude
-            {
-                uint256 queuedDeallocationIndicesLen =
-                    _queuedDeallocationIndices[operator][strategies[i]][operatorSetKey].length;
-                for (uint256 j = queuedDeallocationIndicesLen; j > 0; --j) {
-                    // index of pendingFreeMagnitude/deallocation to check for slashing
-                    uint256 index = _queuedDeallocationIndices[operator][strategies[i]][operatorSetKey][j - 1];
-                    PendingFreeMagnitude storage pendingFreeMagnitude =
-                        _pendingFreeMagnitude[operator][strategies[i]][index];
+        //     // 2. if there are any pending deallocations then need to update and decrement if they fall within slashable window
+        //     // loop backwards through _queuedDeallocationIndices, each element contains an array index to
+        //     // corresponding deallocation to access in pendingFreeMagnitude
+        //     // if completable, then break
+        //     //      (since ordered by completableTimestamps, older deallocations will also be completable and outside slashable window)
+        //     // if NOT completable, then add to slashed magnitude
+        //     {
+        //         uint256 queuedDeallocationIndicesLen =
+        //             _queuedDeallocationIndices[operator][strategies[i]][operatorSetKey].length;
+        //         for (uint256 j = queuedDeallocationIndicesLen; j > 0; --j) {
+        //             // index of pendingFreeMagnitude/deallocation to check for slashing
+        //             uint256 index = _queuedDeallocationIndices[operator][strategies[i]][operatorSetKey][j - 1];
+        //             PendingFreeMagnitude storage pendingFreeMagnitude =
+        //                 _pendingFreeMagnitude[operator][strategies[i]][index];
 
-                    // Reached pendingFreeMagnitude/deallocation that is completable and not within slashability window,
-                    // therefore older deallocations will also be completable. Since this is ordered by completableTimestamps break loop now
-                    if (pendingFreeMagnitude.completableTimestamp >= uint32(block.timestamp)) {
-                        break;
-                    }
+        //             // Reached pendingFreeMagnitude/deallocation that is completable and not within slashability window,
+        //             // therefore older deallocations will also be completable. Since this is ordered by completableTimestamps break loop now
+        //             if (pendingFreeMagnitude.completableTimestamp >= uint32(block.timestamp)) {
+        //                 break;
+        //             }
 
-                    // pending deallocation is still within slashable window, slash magnitudeDiff and add to slashedMagnitude
-                    uint64 slashedAmount =
-                        uint64(uint256(bipsToSlash) * uint256(pendingFreeMagnitude.magnitudeDiff) / BIPS_FACTOR);
-                    pendingFreeMagnitude.magnitudeDiff -= slashedAmount;
-                    slashedMagnitude += slashedAmount;
-                }
-            }
+        //             // pending deallocation is still within slashable window, slash magnitudeDiff and add to slashedMagnitude
+        //             uint64 slashedAmount =
+        //                 uint64(uint256(bipsToSlash) * uint256(pendingFreeMagnitude.magnitudeDiff) / BIPS_FACTOR);
+        //             pendingFreeMagnitude.magnitudeDiff -= slashedAmount;
+        //             slashedMagnitude += slashedAmount;
+        //         }
+        //     }
 
-            // 3. update totalMagnitude, get total magnitude and subtract slashedMagnitude
-            _totalMagnitudeUpdate[operator][strategies[i]].push({
-                key: uint32(block.timestamp),
-                value: _getLatestTotalMagnitude(operator, strategies[i]) - slashedMagnitude
-            });
-        }
+        //     // 3. update totalMagnitude, get total magnitude and subtract slashedMagnitude
+        //     _totalMagnitudeUpdate[operator][strategies[i]].push({
+        //         key: uint32(block.timestamp),
+        //         value: _getLatestTotalMagnitude(operator, strategies[i]) - slashedMagnitude
+        //     });
+        // }
     }
 
     /**
@@ -443,7 +443,7 @@ contract AVSDirectory is
     function updateAVSMetadataURI(
         string calldata metadataURI
     ) external override {
-        emit AVSMetadataURIUpdated(msg.sender, metadataURI);
+        // emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /**
@@ -455,7 +455,7 @@ contract AVSDirectory is
         bytes32 salt
     ) external override {
         // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
-        operatorSaltIsSpent[msg.sender][salt] = true;
+        // operatorSaltIsSpent[msg.sender][salt] = true;
     }
 
     /**
@@ -479,52 +479,52 @@ contract AVSDirectory is
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        // Assert `operatorSignature.expiry` has not elapsed.
-        require(
-            operatorSignature.expiry >= block.timestamp,
-            "AVSDirectory.registerOperatorToAVS: operator signature expired"
-        );
+        // // Assert `operatorSignature.expiry` has not elapsed.
+        // require(
+        //     operatorSignature.expiry >= block.timestamp,
+        //     "AVSDirectory.registerOperatorToAVS: operator signature expired"
+        // );
 
-        // Assert that the AVS is not an operator set AVS.
-        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.registerOperatorToAVS: AVS is an operator set AVS");
+        // // Assert that the AVS is not an operator set AVS.
+        // require(!isOperatorSetAVS[msg.sender], "AVSDirectory.registerOperatorToAVS: AVS is an operator set AVS");
 
-        // Assert that the `operator` is not actively registered to the AVS.
-        require(
-            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.registerOperatorToAVS: operator already registered"
-        );
+        // // Assert that the `operator` is not actively registered to the AVS.
+        // require(
+        //     avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
+        //     "AVSDirectory.registerOperatorToAVS: operator already registered"
+        // );
 
-        // Assert `operator` has not already spent `operatorSignature.salt`.
-        require(
-            !operatorSaltIsSpent[operator][operatorSignature.salt],
-            "AVSDirectory.registerOperatorToAVS: salt already spent"
-        );
+        // // Assert `operator` has not already spent `operatorSignature.salt`.
+        // require(
+        //     !operatorSaltIsSpent[operator][operatorSignature.salt],
+        //     "AVSDirectory.registerOperatorToAVS: salt already spent"
+        // );
 
-        // Assert `operator` is a registered operator.
-        require(
-            delegation.isOperator(operator),
-            "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
-        );
+        // // Assert `operator` is a registered operator.
+        // require(
+        //     delegation.isOperator(operator),
+        //     "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
+        // );
 
-        // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
-        EIP1271SignatureUtils.checkSignature_EIP1271({
-            signer: operator,
-            digestHash: calculateOperatorAVSRegistrationDigestHash({
-                operator: operator,
-                avs: msg.sender,
-                salt: operatorSignature.salt,
-                expiry: operatorSignature.expiry
-            }),
-            signature: operatorSignature.signature
-        });
+        // // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
+        // EIP1271SignatureUtils.checkSignature_EIP1271({
+        //     signer: operator,
+        //     digestHash: calculateOperatorAVSRegistrationDigestHash({
+        //         operator: operator,
+        //         avs: msg.sender,
+        //         salt: operatorSignature.salt,
+        //         expiry: operatorSignature.expiry
+        //     }),
+        //     signature: operatorSignature.signature
+        // });
 
-        // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
-        operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+        // // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
+        // operatorSaltIsSpent[operator][operatorSignature.salt] = true;
 
-        // Set the operator as registered
-        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
+        // // Set the operator as registered
+        // avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
 
-        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
+        // emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
     }
 
     /**
@@ -539,18 +539,18 @@ contract AVSDirectory is
     function deregisterOperatorFromAVS(
         address operator
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        require(
-            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
-        );
+        // require(
+        //     avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
+        //     "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
+        // );
 
-        // Assert that the AVS is not an operator set AVS.
-        require(!isOperatorSetAVS[msg.sender], "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS");
+        // // Assert that the AVS is not an operator set AVS.
+        // require(!isOperatorSetAVS[msg.sender], "AVSDirectory.deregisterOperatorFromAVS: AVS is an operator set AVS");
 
-        // Set the operator as deregistered
-        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
+        // // Set the operator as deregistered
+        // avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
 
-        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
+        // emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
     }
 
     /**
@@ -820,23 +820,23 @@ contract AVSDirectory is
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) internal {
         // check the signature expiry
-        require(
-            operatorSignature.expiry >= block.timestamp,
-            "AVSDirectory._verifyOperatorSignature: operator signature expired"
-        );
-        // Assert operator's signature cannot be replayed.
-        require(
-            !operatorSaltIsSpent[operator][operatorSignature.salt], "AVSDirectory._verifyOperatorSignature: salt spent"
-        );
+        // require(
+        //     operatorSignature.expiry >= block.timestamp,
+        //     "AVSDirectory._verifyOperatorSignature: operator signature expired"
+        // );
+        // // Assert operator's signature cannot be replayed.
+        // require(
+        //     !operatorSaltIsSpent[operator][operatorSignature.salt], "AVSDirectory._verifyOperatorSignature: salt spent"
+        // );
 
-        bytes32 digestHash = calculateMagnitudeAllocationDigestHash(
-            operator, allocations, operatorSignature.salt, operatorSignature.expiry
-        );
+        // bytes32 digestHash = calculateMagnitudeAllocationDigestHash(
+        //     operator, allocations, operatorSignature.salt, operatorSignature.expiry
+        // );
 
-        // Assert operator's signature is valid.
-        EIP1271SignatureUtils.checkSignature_EIP1271(operator, digestHash, operatorSignature.signature);
-        // Spend salt.
-        operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+        // // Assert operator's signature is valid.
+        // EIP1271SignatureUtils.checkSignature_EIP1271(operator, digestHash, operatorSignature.signature);
+        // // Spend salt.
+        // operatorSaltIsSpent[operator][operatorSignature.salt] = true;
     }
 
     /**
@@ -944,16 +944,16 @@ contract AVSDirectory is
         OperatorSet[] memory operatorSets =
             getOperatorSetsOfOperator(operator, 0, _operatorSetsMemberOf[operator].length());
         uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            slashableMagnitudes[i] = new uint64[](operatorSets.length);
-            for (uint256 j = 0; j < operatorSets.length; ++j) {
-                slashableMagnitudes[i][j] = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupLinear(
-                        uint32(block.timestamp)
-                    )
-                );
-            }
-        }
+        // for (uint256 i = 0; i < strategies.length; ++i) {
+        //     slashableMagnitudes[i] = new uint64[](operatorSets.length);
+        //     for (uint256 j = 0; j < operatorSets.length; ++j) {
+        //         slashableMagnitudes[i][j] = uint64(
+        //             _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupLinear(
+        //                 uint32(block.timestamp)
+        //             )
+        //         );
+        //     }
+        // }
         return (operatorSets, slashableMagnitudes);
     }
 

@@ -1,27 +1,27 @@
 {
   "addresses": {
-    "avsDirectory": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
-    "avsDirectoryImplementation": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
-    "baseStrategyImplementation": "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
-    "delegationManager": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-    "delegationManagerImplementation": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
-    "eigenLayerPauserReg": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    "eigenLayerProxyAdmin": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    "eigenPodBeacon": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
-    "eigenPodImplementation": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
-    "eigenPodManager": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
-    "eigenPodManagerImplementation": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
-    "emptyContract": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    "avsDirectory": "0x54840C8bb68B7Cc800F333ED53EaA530Ee0460db",
+    "avsDirectoryImplementation": "0x6e4c3B2a4d66e649538a0bF856F5059e56cEDc45",
+    "baseStrategyImplementation": "0x142e205cC099441A7B8A647B58b5AB5BD8a4589D",
+    "delegationManager": "0x4e2ea19AC3c04Ea398Def717e7c1DaF1e9fD7834",
+    "delegationManagerImplementation": "0x85c9f0e8C7D4Ae15100f59f2A4d8174467B34482",
+    "eigenLayerPauserReg": "0xF3e08CfDBeBbcaA25D1077b6bA0a7b1DAC4EF76a",
+    "eigenLayerProxyAdmin": "0xA41aE9f1Dd46dB8f29232b8Fa01Fb99A507C048b",
+    "eigenPodBeacon": "0xA5aA08FC774CB76346373827f1f54Dd976BcA2c1",
+    "eigenPodImplementation": "0x917284ad453ec3751Af5F6Cb63B6Df2Be9b5c6e1",
+    "eigenPodManager": "0x10Ea0Fe731837e90fc7bc08856eB9697BA1Bad8c",
+    "eigenPodManagerImplementation": "0x013a4dc2BeC5863b92c541545dd99502b6a1C6CE",
+    "emptyContract": "0x2b6887d4D75106C26b0DD690e3BFf12dDb091fFE",
     "numStrategiesDeployed": 0,
-    "rewardsCoordinator": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
-    "rewardsCoordinatorImplementation": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
-    "slasher": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-    "slasherImplementation": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+    "rewardsCoordinator": "0x73f77807797B10c6f3501358fbd00e93db24b94e",
+    "rewardsCoordinatorImplementation": "0x16c6BeA6Cb45d2b43943818d60C3B9f720553f4C",
+    "slasher": "0xB3Ad9bCB2D5F4ab041027C4403c27F60F7966d41",
+    "slasherImplementation": "0x447e3b069Fff65884c2215cc22BB0Cd1a52099d9",
     "strategies": {
-      "WETH": "0x4A679253410272dd5232B3Ff7cF5dbB88f295319"
+      "WETH": "0x1f5c9df90c18c12F11ef1896AA9d863356F62D9d"
     },
-    "strategyManager": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-    "strategyManagerImplementation": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+    "strategyManager": "0xF3c847E238a55ec2BD6F75feF10E5e9Ebb07CA35",
+    "strategyManagerImplementation": "0xd892e6129ffa13e0dE2231Da70637Df531e34f67",
     "token": {
       "tokenProxyAdmin": "0x0000000000000000000000000000000000000000",
       "EIGEN": "0x0000000000000000000000000000000000000000",
@@ -33,14 +33,14 @@
     }
   },
   "chainInfo": {
-    "chainId": 31337,
-    "deploymentBlock": 0
+    "chainId": 17000,
+    "deploymentBlock": 2287074
   },
   "parameters": {
-    "communityMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    "executorMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    "operationsMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    "pauserMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "communityMultisig": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597",
+    "executorMultisig": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597",
+    "operationsMultisig": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597",
+    "pauserMultisig": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597",
     "timelock": "0x0000000000000000000000000000000000000000"
   }
 }

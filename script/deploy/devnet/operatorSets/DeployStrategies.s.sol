@@ -18,8 +18,8 @@ contract DeployStrategies is ExistingDeploymentParser {
             executorMultisig,
             address(baseStrategyImplementation)
         );
-        uint256 batches = 1;
-        uint256 batchSize = 100;
+        uint256 batches = 3;
+        uint256 batchSize = 10;
 
         IStrategy[] memory strategies = new IStrategy[](batchSize * batches);
         bool[] memory falses = new bool[](batchSize);
