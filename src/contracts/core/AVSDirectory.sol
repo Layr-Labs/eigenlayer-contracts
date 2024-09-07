@@ -19,7 +19,7 @@ contract AVSDirectory is
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
-    using Checkpoints for Checkpoints.History;
+    using Snapshots for Snapshots.History;
 
     /// @dev Index for flag that pauses operator register/deregister to avs when set.
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
@@ -384,7 +384,7 @@ contract AVSDirectory is
                     /// TODO: add wrapping library for rounding up for slashing accounting
                     slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
 
-                    _magnitudeUpdate[operator][strategies[i]][operatorSetKey].decrementAtAndFutureCheckpoints({
+                    _magnitudeUpdate[operator][strategies[i]][operatorSetKey].decrementAtAndFutureSnapshots({
                         key: uint32(block.timestamp),
                         decrementValue: slashedMagnitude
                     });
@@ -761,7 +761,7 @@ contract AVSDirectory is
 
     /// @dev gets the latest total magnitude or overwrites it if it is not set
     function _getLatestTotalMagnitude(address operator, IStrategy strategy) internal returns (uint64) {
-        (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
+        (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
             totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
             _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
@@ -1061,7 +1061,7 @@ contract AVSDirectory is
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length;) {
-            (bool exists, , uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestCheckpoint();
+            (bool exists, , uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestSnapshot();
             if (!exists) {
                 totalMagnitudes[i] = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
             } else {
@@ -1092,7 +1092,7 @@ contract AVSDirectory is
             (uint224 value, uint256 pos, ) =
                 _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
 
-            // if there is no existing total magnitude checkpoint
+            // if there is no existing total magnitude snapshot
             if (value == 0 && pos == 0) {
                 totalMagnitudes[i] = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
             } else {
@@ -1117,7 +1117,7 @@ contract AVSDirectory is
         IStrategy strategy
     ) external view returns (uint64) {
         uint64 totalMagnitude;
-        (bool exists, , uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
+        (bool exists, , uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
             totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
         } else {
@@ -1145,7 +1145,7 @@ contract AVSDirectory is
             uint256 pos,
         ) = _totalMagnitudeUpdate[operator][strategy].upperLookupRecentWithPos(timestamp);
 
-        // if there is no existing total magnitude checkpoint
+        // if there is no existing total magnitude snapshot
         if (value == 0 && pos == 0) {
             totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
         } else {
