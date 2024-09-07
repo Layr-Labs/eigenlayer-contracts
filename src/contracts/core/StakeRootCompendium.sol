@@ -246,7 +246,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         (uint224 previousConstantCumulativeCharge, uint224 previousLinearCumulativeCharge) = _getPreviousCumulativeCharges(
             depositBalanceInfo[operatorSet.avs][operatorSet.operatorSetId].latestUpdateTime
         );
-        (uint224 currentConstantCumulativeCharge, uint224 currentLinearCumulativeCharge) = _getCurrentCumulativeCharges();
+        (uint224 currentConstantCumulativeCharge, uint224 currentLinearCumulativeCharge) = _getCurrentCumulativeCharges(_getLatestCalculationTimestamp());
 
         uint256 pendingCharge =
             uint256(currentConstantCumulativeCharge - previousConstantCumulativeCharge) +
@@ -274,28 +274,33 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     }
 
     function _setProofInterval(uint32 proofInterval) internal {
+        require(
+            stakeRootSubmissions.length == 0 || _getLatestSubmittedCalculationTimestamp() == _getLatestCalculationTimestamp(), 
+            "StakeRootCompendium._setProofInterval: make sure there are no pending proofs"
+        );
         _updateCumulativeCharges();
         proofInterval = proofInterval;
     }
 
     function _updateCumulativeCharges() internal {
-        (uint224 currentConstantCumulativeCharge, uint224 currentLinearCumulativeCharge) = _getCurrentCumulativeCharges();
+        uint32 latestCalculationTimestamp = _getLatestCalculationTimestamp();
+        (uint224 currentConstantCumulativeCharge, uint224 currentLinearCumulativeCharge) = _getCurrentCumulativeCharges(latestCalculationTimestamp);
 
         // update the cumulative charge snapshots
         cumulativeContantChargeSnapshot.push(
-            uint32(block.timestamp),
+            latestCalculationTimestamp,
             currentConstantCumulativeCharge
         );
         cumulativeLinearChargeSnapshot.push(
-            uint32(block.timestamp),
+            latestCalculationTimestamp,
             currentLinearCumulativeCharge
         );
     }
 
-    function _getCurrentCumulativeCharges() internal view returns(uint224, uint224) {
+    function _getCurrentCumulativeCharges(uint32 latestCalculationTimestamp) internal view returns(uint224, uint224) {
         return (
-            _getCurrentCumulativeCharges(cumulativeContantChargeSnapshot, constantChargePerProof),
-            _getCurrentCumulativeCharges(cumulativeLinearChargeSnapshot, linearChargePerProof)
+            _getCurrentCumulativeCharge(cumulativeContantChargeSnapshot, constantChargePerProof, latestCalculationTimestamp),
+            _getCurrentCumulativeCharge(cumulativeLinearChargeSnapshot, linearChargePerProof, latestCalculationTimestamp)
         );
     }
 
@@ -306,24 +311,25 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         );
     }
 
-    function _getCurrentCumulativeCharges(Checkpoints.History storage cumulativeChargeSnapshot, uint64 currentCharge) internal view returns (uint224) {
+    function _getCurrentCumulativeCharge(Checkpoints.History storage cumulativeChargeSnapshot, uint64 currentCharge, uint32 latestCalculationTimestamp) internal view returns (uint224) {
         (bool exists, uint32 latestSnapshotTimestamp, uint224 latestSnapshottedCumulativeCharge) = cumulativeChargeSnapshot.latestCheckpoint();
-        // return the latest snapshot if it is the current time
-        if(latestSnapshotTimestamp == block.timestamp) {
+        // return the latest snapshot if it has been accounted for
+        if(latestSnapshotTimestamp == latestCalculationTimestamp) {
             return latestSnapshottedCumulativeCharge;
         }
 
         // use "now" if this is the first time the charge is set
         if (!exists) {
-            latestSnapshotTimestamp = uint32(block.timestamp);
+            latestSnapshotTimestamp = latestCalculationTimestamp;
             latestSnapshottedCumulativeCharge = 0;
         }
 
         // keep track of the cumulative charge that would have been charged since the last change
         // this is: 
-        // latestSnapshottedCumulativeCharge + (time since snapshot) * (1 proof / proofInterval time) * (charge / proof)
+        // latestSnapshottedCumulativeCharge + proofs since latest snapshot * (charge / proof)
+        // latestSnapshottedCumulativeCharge + (latestCalculationTimestamp - latestSnapshotTimestamp) * (1 proof / proofInterval time) * (charge / proof)
         // latestSnapshottedCumulativeCharge + (charge / proof) * (time since snapshot) * (1 proof / proofInterval time)
-        return latestSnapshottedCumulativeCharge + uint224(currentCharge * (block.timestamp - latestSnapshotTimestamp) / proofInterval);
+        return latestSnapshottedCumulativeCharge + uint224(currentCharge * (latestCalculationTimestamp - latestSnapshotTimestamp) / proofInterval);
     }
 
     function _removeStrategiesAndMultipliers(IAVSDirectory.OperatorSet memory operatorSet, IStrategy[] memory strategies) internal {
@@ -405,7 +411,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint256 stakeRootSubmissionsLength = stakeRootSubmissions.length;
         if (stakeRootSubmissionsLength != 0) {
             require(
-                stakeRootSubmissions[stakeRootSubmissionsLength - 1].calculationTimestamp < calculationTimestamp,
+                stakeRootSubmissions[stakeRootSubmissionsLength - 1].calculationTimestamp + proofInterval == calculationTimestamp,
                 "StakeRootCompendium._postStakeRoot: calculationTimestamp must be greater than the last posted calculationTimestamp"
             );
         }
@@ -422,6 +428,23 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         );
 
         // todo: emit events
+    }
+
+    /// @notice gets the latest calculation timestamp, whether a stakeRoot has been posted or not
+    function _getLatestCalculationTimestamp() internal view returns (uint32) {
+        uint256 stakeRootSubmissionsLength = stakeRootSubmissions.length;
+        require(stakeRootSubmissionsLength > 0, "StakeRootCompendium._getLatestCalculationTimestamp: first empty stakeRoot must be posted");
+        uint32 latestCalculationTimestamp = stakeRootSubmissions[stakeRootSubmissionsLength - 1].calculationTimestamp;
+        if (latestCalculationTimestamp + proofInterval < block.timestamp) {
+            latestCalculationTimestamp += proofInterval;
+        }
+        return latestCalculationTimestamp;
+    }
+
+    function _getLatestSubmittedCalculationTimestamp() internal view returns (uint32) {
+        uint256 stakeRootSubmissionsLength = stakeRootSubmissions.length;
+        require(stakeRootSubmissionsLength > 0, "StakeRootCompendium._getLatestCalculationTimestamp: first empty stakeRoot must be posted");
+        return stakeRootSubmissions[stakeRootSubmissionsLength - 1].calculationTimestamp;
     }
 
     function _getStrategiesAndMultipliers(IAVSDirectory.OperatorSet memory operatorSet)
@@ -453,8 +476,9 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
                 avsDirectory.getTotalAndAllocatedMagnitudes(operator, operatorSet, strategies);
 
             for (uint256 i = 0; i < strategies.length; i++) {
-                delegatedStake += delegatedShares[i] * totalMagnitudes[i] / 1 ether * multipliers[i];
-                slashableStake += delegatedShares[i] * allocatedMagnitudes[i] / 1 ether * multipliers[i];
+                uint256 multipliedDelegatedShares = delegatedShares[i] * multipliers[i] / 1 ether;
+                delegatedStake += multipliedDelegatedShares * totalMagnitudes[i];
+                slashableStake += multipliedDelegatedShares * allocatedMagnitudes[i];
             }
         }
         return (delegatedStake, slashableStake);
