@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import "../interfaces/IAVSDirectory.sol";
-import {Checkpoints} from "../libraries/Checkpoints.sol";
+import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -65,12 +65,12 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: operator => avs => operatorSetId => operator registration status
     mapping(address => mapping(address => mapping(uint32 => OperatorSetRegistrationStatus))) public operatorSetStatus;
 
-    /// @notice Mapping: operator => strategy => checkpointed totalMagnitude
+    /// @notice Mapping: operator => strategy => snapshotted totalMagnitude
     /// Note that totalMagnitude is monotonically decreasing and only gets updated upon slashing
-    mapping(address => mapping(IStrategy => Checkpoints.History)) internal _totalMagnitudeUpdate;
+    mapping(address => mapping(IStrategy => Snapshots.History)) internal _totalMagnitudeUpdate;
 
-    /// @notice Mapping: operator => strategy => operatorSet (encoded) => checkpointed magnitude
-    mapping(address => mapping(IStrategy => mapping(bytes32 => Checkpoints.History))) internal _magnitudeUpdate;
+    /// @notice Mapping: operator => strategy => operatorSet (encoded) => snapshotted magnitude
+    mapping(address => mapping(IStrategy => mapping(bytes32 => Snapshots.History))) internal _magnitudeUpdate;
 
     /// @notice Mapping: operator => strategy => OperatorMagnitudeInfo to keep track of info regarding pending magnitude allocations.
     mapping(address => mapping(IStrategy => OperatorMagnitudeInfo)) public operatorMagnitudeInfo;

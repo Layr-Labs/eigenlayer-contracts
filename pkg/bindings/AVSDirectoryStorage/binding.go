@@ -52,7 +52,7 @@ type ISignatureUtilsSignatureWithSaltAndExpiry struct {
 
 // AVSDirectoryStorageMetaData contains all meta data concerning the AVSDirectoryStorage contract.
 var AVSDirectoryStorageMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"DOMAIN_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"INITIAL_TOTAL_MAGNITUDE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAGNITUDE_ADJUSTMENT_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_AVS_REGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_SET_REGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allocationDelay\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"isSet\",\"type\":\"bool\",\"internalType\":\"bool\"},{\"name\":\"allocationDelay\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"avsOperatorStatus\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"becomeOperatorSetAVS\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"calculateMagnitudeAllocationDigestHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"allocations\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.MagnitudeAllocation[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"expectedTotalMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"operatorSets\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.OperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"magnitudes\",\"type\":\"uint64[]\",\"internalType\":\"uint64[]\"}]},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorAVSRegistrationDigestHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorSetForceDeregistrationTypehash\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorSetRegistrationDigestHash\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"cancelSalt\",\"inputs\":[{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createOperatorSets\",\"inputs\":[{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"domainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"forceDeregisterFromOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"freeMagnitude\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getAllocatableMagnitude\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"numToComplete\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getAllocationDelay\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashablePPM\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"timestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"linear\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint24[]\",\"internalType\":\"uint24[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initializeAllocationDelay\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delay\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isMember\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorSet\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorSetAVS\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorSlashable\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"migrateOperatorsToOperatorSets\",\"inputs\":[{\"name\":\"operators\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[][]\",\"internalType\":\"uint32[][]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"modifyAllocations\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"allocations\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.MagnitudeAllocation[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"expectedTotalMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"operatorSets\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.OperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"magnitudes\",\"type\":\"uint64[]\",\"internalType\":\"uint64[]\"}]},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"operatorSaltIsSpent\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetMemberCount\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetStatus\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"registered\",\"type\":\"bool\",\"internalType\":\"bool\"},{\"name\":\"lastDeregisteredTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperatorToOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slashOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"bipsToSlash\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateAVSMetadataURI\",\"inputs\":[{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateFreeMagnitude\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"numToComplete\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AVSMetadataURIUpdated\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AVSMigratedToOperatorSets\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MagnitudeAllocated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"magnitudeToAllocate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"effectTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MagnitudeDeallocationCompleted\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"freeMagnitudeAdded\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MagnitudeQueueDeallocated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"magnitudeToDeallocate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"completableTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAVSRegistrationStatusUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"status\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAddedToOperatorSet\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorMigratedToOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"indexed\":false,\"internalType\":\"uint32[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorRemovedFromOperatorSet\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetCreated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSlashed\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"bipsToSlash\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"DOMAIN_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAGNITUDE_ADJUSTMENT_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_AVS_REGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_SET_REGISTRATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"avsOperatorStatus\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"becomeOperatorSetAVS\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"calculateMagnitudeAllocationDigestHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"allocations\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.MagnitudeAllocation[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"expectedTotalMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"operatorSets\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.OperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"magnitudes\",\"type\":\"uint64[]\",\"internalType\":\"uint64[]\"}]},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorAVSRegistrationDigestHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorSetForceDeregistrationTypehash\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorSetRegistrationDigestHash\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"cancelSalt\",\"inputs\":[{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createOperatorSets\",\"inputs\":[{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"domainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"forceDeregisterFromOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getAllocatableMagnitude\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"numToComplete\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentSlashableMagnitudes\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.OperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"\",\"type\":\"uint64[][]\",\"internalType\":\"uint64[][]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumOperatorsInOperatorSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorSetsOfOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"start\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"length\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"operatorSets\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.OperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorsInOperatorSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"start\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"length\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"operators\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashableMagnitudes\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"timestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.OperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"\",\"type\":\"uint64[][]\",\"internalType\":\"uint64[][]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashablePPM\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"timestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"linear\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint24[]\",\"internalType\":\"uint24[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTotalMagnitude\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTotalMagnitudeAtTimestamp\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"timestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTotalMagnitudes\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64[]\",\"internalType\":\"uint64[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTotalMagnitudesAtTimestamp\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"timestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64[]\",\"internalType\":\"uint64[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"inTotalOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isMember\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorSet\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorSetAVS\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorSlashable\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"migrateOperatorsToOperatorSets\",\"inputs\":[{\"name\":\"operators\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[][]\",\"internalType\":\"uint32[][]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"modifyAllocations\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"allocations\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.MagnitudeAllocation[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"expectedTotalMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"operatorSets\",\"type\":\"tuple[]\",\"internalType\":\"structIAVSDirectory.OperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"magnitudes\",\"type\":\"uint64[]\",\"internalType\":\"uint64[]\"}]},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"operatorMagnitudeInfo\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"nextPendingFreeMagnitudeIndex\",\"type\":\"uint192\",\"internalType\":\"uint192\"},{\"name\":\"freeMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSaltIsSpent\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetMemberAtIndex\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"index\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetStatus\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"registered\",\"type\":\"bool\",\"internalType\":\"bool\"},{\"name\":\"lastDeregisteredTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetsMemberOfAtIndex\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperatorToAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerOperatorToOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slashOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"bipsToSlash\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateAVSMetadataURI\",\"inputs\":[{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateFreeMagnitude\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"numToComplete\",\"type\":\"uint16[]\",\"internalType\":\"uint16[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AVSMetadataURIUpdated\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AVSMigratedToOperatorSets\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MagnitudeAllocated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"magnitudeToAllocate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"effectTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MagnitudeDeallocationCompleted\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"freeMagnitudeAdded\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MagnitudeQueueDeallocated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"magnitudeToDeallocate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"completableTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAVSRegistrationStatusUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"status\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIAVSDirectory.OperatorAVSRegistrationStatus\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAddedToOperatorSet\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorMigratedToOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"indexed\":false,\"internalType\":\"uint32[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorRemovedFromOperatorSet\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetCreated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAVSDirectory.OperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSlashed\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"bipsToSlash\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false}]",
 }
 
 // AVSDirectoryStorageABI is the input ABI used to generate the binding from.
@@ -232,37 +232,6 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) DOMAINTYPEHASH() (
 	return _AVSDirectoryStorage.Contract.DOMAINTYPEHASH(&_AVSDirectoryStorage.CallOpts)
 }
 
-// INITIALTOTALMAGNITUDE is a free data retrieval call binding the contract method 0x9a543ca4.
-//
-// Solidity: function INITIAL_TOTAL_MAGNITUDE() view returns(uint64)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) INITIALTOTALMAGNITUDE(opts *bind.CallOpts) (uint64, error) {
-	var out []interface{}
-	err := _AVSDirectoryStorage.contract.Call(opts, &out, "INITIAL_TOTAL_MAGNITUDE")
-
-	if err != nil {
-		return *new(uint64), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
-
-	return out0, err
-
-}
-
-// INITIALTOTALMAGNITUDE is a free data retrieval call binding the contract method 0x9a543ca4.
-//
-// Solidity: function INITIAL_TOTAL_MAGNITUDE() view returns(uint64)
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) INITIALTOTALMAGNITUDE() (uint64, error) {
-	return _AVSDirectoryStorage.Contract.INITIALTOTALMAGNITUDE(&_AVSDirectoryStorage.CallOpts)
-}
-
-// INITIALTOTALMAGNITUDE is a free data retrieval call binding the contract method 0x9a543ca4.
-//
-// Solidity: function INITIAL_TOTAL_MAGNITUDE() view returns(uint64)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) INITIALTOTALMAGNITUDE() (uint64, error) {
-	return _AVSDirectoryStorage.Contract.INITIALTOTALMAGNITUDE(&_AVSDirectoryStorage.CallOpts)
-}
-
 // MAGNITUDEADJUSTMENTTYPEHASH is a free data retrieval call binding the contract method 0x7b205de3.
 //
 // Solidity: function MAGNITUDE_ADJUSTMENT_TYPEHASH() view returns(bytes32)
@@ -385,51 +354,6 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageSession) OPERATORSETREGISTRATIONT
 // Solidity: function OPERATOR_SET_REGISTRATION_TYPEHASH() view returns(bytes32)
 func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OPERATORSETREGISTRATIONTYPEHASH() ([32]byte, error) {
 	return _AVSDirectoryStorage.Contract.OPERATORSETREGISTRATIONTYPEHASH(&_AVSDirectoryStorage.CallOpts)
-}
-
-// AllocationDelay is a free data retrieval call binding the contract method 0xbe4e1fd3.
-//
-// Solidity: function allocationDelay(address ) view returns(bool isSet, uint32 allocationDelay)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) AllocationDelay(opts *bind.CallOpts, arg0 common.Address) (struct {
-	IsSet           bool
-	AllocationDelay uint32
-}, error) {
-	var out []interface{}
-	err := _AVSDirectoryStorage.contract.Call(opts, &out, "allocationDelay", arg0)
-
-	outstruct := new(struct {
-		IsSet           bool
-		AllocationDelay uint32
-	})
-	if err != nil {
-		return *outstruct, err
-	}
-
-	outstruct.IsSet = *abi.ConvertType(out[0], new(bool)).(*bool)
-	outstruct.AllocationDelay = *abi.ConvertType(out[1], new(uint32)).(*uint32)
-
-	return *outstruct, err
-
-}
-
-// AllocationDelay is a free data retrieval call binding the contract method 0xbe4e1fd3.
-//
-// Solidity: function allocationDelay(address ) view returns(bool isSet, uint32 allocationDelay)
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) AllocationDelay(arg0 common.Address) (struct {
-	IsSet           bool
-	AllocationDelay uint32
-}, error) {
-	return _AVSDirectoryStorage.Contract.AllocationDelay(&_AVSDirectoryStorage.CallOpts, arg0)
-}
-
-// AllocationDelay is a free data retrieval call binding the contract method 0xbe4e1fd3.
-//
-// Solidity: function allocationDelay(address ) view returns(bool isSet, uint32 allocationDelay)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) AllocationDelay(arg0 common.Address) (struct {
-	IsSet           bool
-	AllocationDelay uint32
-}, error) {
-	return _AVSDirectoryStorage.Contract.AllocationDelay(&_AVSDirectoryStorage.CallOpts, arg0)
 }
 
 // AvsOperatorStatus is a free data retrieval call binding the contract method 0x49075da3.
@@ -623,10 +547,6 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) Delegation() (comm
 // Solidity: function domainSeparator() view returns(bytes32)
 func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) DomainSeparator(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 6b2ab7ed (build: bindings)
 	err := _AVSDirectoryStorage.contract.Call(opts, &out, "domainSeparator")
 
 	if err != nil {
@@ -653,7 +573,69 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) DomainSeparator() 
 	return _AVSDirectoryStorage.Contract.DomainSeparator(&_AVSDirectoryStorage.CallOpts)
 }
 
-<<<<<<< HEAD
+// GetAllocatableMagnitude is a free data retrieval call binding the contract method 0x3f78612f.
+//
+// Solidity: function getAllocatableMagnitude(address operator, address strategy, uint16 numToComplete) view returns(uint64)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetAllocatableMagnitude(opts *bind.CallOpts, operator common.Address, strategy common.Address, numToComplete uint16) (uint64, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "getAllocatableMagnitude", operator, strategy, numToComplete)
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// GetAllocatableMagnitude is a free data retrieval call binding the contract method 0x3f78612f.
+//
+// Solidity: function getAllocatableMagnitude(address operator, address strategy, uint16 numToComplete) view returns(uint64)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) GetAllocatableMagnitude(operator common.Address, strategy common.Address, numToComplete uint16) (uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetAllocatableMagnitude(&_AVSDirectoryStorage.CallOpts, operator, strategy, numToComplete)
+}
+
+// GetAllocatableMagnitude is a free data retrieval call binding the contract method 0x3f78612f.
+//
+// Solidity: function getAllocatableMagnitude(address operator, address strategy, uint16 numToComplete) view returns(uint64)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetAllocatableMagnitude(operator common.Address, strategy common.Address, numToComplete uint16) (uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetAllocatableMagnitude(&_AVSDirectoryStorage.CallOpts, operator, strategy, numToComplete)
+}
+
+// GetCurrentSlashableMagnitudes is a free data retrieval call binding the contract method 0x1d95b524.
+//
+// Solidity: function getCurrentSlashableMagnitudes(address operator, address[] strategies) view returns((address,uint32)[], uint64[][])
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetCurrentSlashableMagnitudes(opts *bind.CallOpts, operator common.Address, strategies []common.Address) ([]IAVSDirectoryOperatorSet, [][]uint64, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "getCurrentSlashableMagnitudes", operator, strategies)
+
+	if err != nil {
+		return *new([]IAVSDirectoryOperatorSet), *new([][]uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IAVSDirectoryOperatorSet)).(*[]IAVSDirectoryOperatorSet)
+	out1 := *abi.ConvertType(out[1], new([][]uint64)).(*[][]uint64)
+
+	return out0, out1, err
+
+}
+
+// GetCurrentSlashableMagnitudes is a free data retrieval call binding the contract method 0x1d95b524.
+//
+// Solidity: function getCurrentSlashableMagnitudes(address operator, address[] strategies) view returns((address,uint32)[], uint64[][])
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) GetCurrentSlashableMagnitudes(operator common.Address, strategies []common.Address) ([]IAVSDirectoryOperatorSet, [][]uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetCurrentSlashableMagnitudes(&_AVSDirectoryStorage.CallOpts, operator, strategies)
+}
+
+// GetCurrentSlashableMagnitudes is a free data retrieval call binding the contract method 0x1d95b524.
+//
+// Solidity: function getCurrentSlashableMagnitudes(address operator, address[] strategies) view returns((address,uint32)[], uint64[][])
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetCurrentSlashableMagnitudes(operator common.Address, strategies []common.Address) ([]IAVSDirectoryOperatorSet, [][]uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetCurrentSlashableMagnitudes(&_AVSDirectoryStorage.CallOpts, operator, strategies)
+}
+
 // GetNumOperatorsInOperatorSet is a free data retrieval call binding the contract method 0x1023aa35.
 //
 // Solidity: function getNumOperatorsInOperatorSet((address,uint32) operatorSet) view returns(uint256)
@@ -666,26 +648,11 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetNumOperatorsInOperator
 	}
 
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-=======
-// FreeMagnitude is a free data retrieval call binding the contract method 0x5fd6abfd.
-//
-// Solidity: function freeMagnitude(address , address ) view returns(uint64)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) FreeMagnitude(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address) (uint64, error) {
-	var out []interface{}
-	err := _AVSDirectoryStorage.contract.Call(opts, &out, "freeMagnitude", arg0, arg1)
-
-	if err != nil {
-		return *new(uint64), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
->>>>>>> 6b2ab7ed (build: bindings)
 
 	return out0, err
 
 }
 
-<<<<<<< HEAD
 // GetNumOperatorsInOperatorSet is a free data retrieval call binding the contract method 0x1023aa35.
 //
 // Solidity: function getNumOperatorsInOperatorSet((address,uint32) operatorSet) view returns(uint256)
@@ -712,76 +679,11 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetOperatorSetsOfOperator
 	}
 
 	out0 := *abi.ConvertType(out[0], new([]IAVSDirectoryOperatorSet)).(*[]IAVSDirectoryOperatorSet)
-=======
-// FreeMagnitude is a free data retrieval call binding the contract method 0x5fd6abfd.
-//
-// Solidity: function freeMagnitude(address , address ) view returns(uint64)
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) FreeMagnitude(arg0 common.Address, arg1 common.Address) (uint64, error) {
-	return _AVSDirectoryStorage.Contract.FreeMagnitude(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
-}
-
-// FreeMagnitude is a free data retrieval call binding the contract method 0x5fd6abfd.
-//
-// Solidity: function freeMagnitude(address , address ) view returns(uint64)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) FreeMagnitude(arg0 common.Address, arg1 common.Address) (uint64, error) {
-	return _AVSDirectoryStorage.Contract.FreeMagnitude(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
-}
-
-// GetAllocatableMagnitude is a free data retrieval call binding the contract method 0xdd63ac60.
-//
-// Solidity: function getAllocatableMagnitude(address operator, address strategy, uint8 numToComplete) view returns(uint64)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetAllocatableMagnitude(opts *bind.CallOpts, operator common.Address, strategy common.Address, numToComplete uint8) (uint64, error) {
-	var out []interface{}
-	err := _AVSDirectoryStorage.contract.Call(opts, &out, "getAllocatableMagnitude", operator, strategy, numToComplete)
-
-	if err != nil {
-		return *new(uint64), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
 
 	return out0, err
 
 }
 
-// GetAllocatableMagnitude is a free data retrieval call binding the contract method 0xdd63ac60.
-//
-// Solidity: function getAllocatableMagnitude(address operator, address strategy, uint8 numToComplete) view returns(uint64)
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) GetAllocatableMagnitude(operator common.Address, strategy common.Address, numToComplete uint8) (uint64, error) {
-	return _AVSDirectoryStorage.Contract.GetAllocatableMagnitude(&_AVSDirectoryStorage.CallOpts, operator, strategy, numToComplete)
-}
-
-// GetAllocatableMagnitude is a free data retrieval call binding the contract method 0xdd63ac60.
-//
-// Solidity: function getAllocatableMagnitude(address operator, address strategy, uint8 numToComplete) view returns(uint64)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetAllocatableMagnitude(operator common.Address, strategy common.Address, numToComplete uint8) (uint64, error) {
-	return _AVSDirectoryStorage.Contract.GetAllocatableMagnitude(&_AVSDirectoryStorage.CallOpts, operator, strategy, numToComplete)
-}
-
-// GetAllocationDelay is a free data retrieval call binding the contract method 0xb9fbaed1.
-//
-// Solidity: function getAllocationDelay(address operator) view returns(uint32)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetAllocationDelay(opts *bind.CallOpts, operator common.Address) (uint32, error) {
-	var out []interface{}
-	err := _AVSDirectoryStorage.contract.Call(opts, &out, "getAllocationDelay", operator)
-
-	if err != nil {
-		return *new(uint32), err
-	}
-
-<<<<<<< HEAD
-	out0 := *abi.ConvertType(out[0], new(uint16)).(*uint16)
->>>>>>> 6b2ab7ed (build: bindings)
-=======
-	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
->>>>>>> 49569901 (feat: set allocations (#691))
-
-	return out0, err
-
-}
-
-<<<<<<< HEAD
-<<<<<<< HEAD
 // GetOperatorSetsOfOperator is a free data retrieval call binding the contract method 0x16ae76cb.
 //
 // Solidity: function getOperatorSetsOfOperator(address operator, uint256 start, uint256 length) view returns((address,uint32)[] operatorSets)
@@ -827,57 +729,36 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetOperatorsInOper
 	return _AVSDirectoryStorage.Contract.GetOperatorsInOperatorSet(&_AVSDirectoryStorage.CallOpts, operatorSet, start, length)
 }
 
-// InTotalOperatorSets is a free data retrieval call binding the contract method 0xcbdf0e42.
+// GetSlashableMagnitudes is a free data retrieval call binding the contract method 0x43b0592d.
 //
-// Solidity: function inTotalOperatorSets(address operator) view returns(uint256)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) InTotalOperatorSets(opts *bind.CallOpts, operator common.Address) (*big.Int, error) {
+// Solidity: function getSlashableMagnitudes(address operator, address[] strategies, uint32 timestamp) view returns((address,uint32)[], uint64[][])
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetSlashableMagnitudes(opts *bind.CallOpts, operator common.Address, strategies []common.Address, timestamp uint32) ([]IAVSDirectoryOperatorSet, [][]uint64, error) {
 	var out []interface{}
-	err := _AVSDirectoryStorage.contract.Call(opts, &out, "inTotalOperatorSets", operator)
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "getSlashableMagnitudes", operator, strategies, timestamp)
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new([]IAVSDirectoryOperatorSet), *new([][]uint64), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new([]IAVSDirectoryOperatorSet)).(*[]IAVSDirectoryOperatorSet)
+	out1 := *abi.ConvertType(out[1], new([][]uint64)).(*[][]uint64)
 
-	return out0, err
+	return out0, out1, err
 
 }
 
-// InTotalOperatorSets is a free data retrieval call binding the contract method 0xcbdf0e42.
+// GetSlashableMagnitudes is a free data retrieval call binding the contract method 0x43b0592d.
 //
-// Solidity: function inTotalOperatorSets(address operator) view returns(uint256)
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) InTotalOperatorSets(operator common.Address) (*big.Int, error) {
-	return _AVSDirectoryStorage.Contract.InTotalOperatorSets(&_AVSDirectoryStorage.CallOpts, operator)
+// Solidity: function getSlashableMagnitudes(address operator, address[] strategies, uint32 timestamp) view returns((address,uint32)[], uint64[][])
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) GetSlashableMagnitudes(operator common.Address, strategies []common.Address, timestamp uint32) ([]IAVSDirectoryOperatorSet, [][]uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetSlashableMagnitudes(&_AVSDirectoryStorage.CallOpts, operator, strategies, timestamp)
 }
 
-// InTotalOperatorSets is a free data retrieval call binding the contract method 0xcbdf0e42.
+// GetSlashableMagnitudes is a free data retrieval call binding the contract method 0x43b0592d.
 //
-// Solidity: function inTotalOperatorSets(address operator) view returns(uint256)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) InTotalOperatorSets(operator common.Address) (*big.Int, error) {
-	return _AVSDirectoryStorage.Contract.InTotalOperatorSets(&_AVSDirectoryStorage.CallOpts, operator)
-=======
-// GetSlashableBips is a free data retrieval call binding the contract method 0x33429a6a.
-=======
-// GetAllocationDelay is a free data retrieval call binding the contract method 0xb9fbaed1.
->>>>>>> 49569901 (feat: set allocations (#691))
-//
-// Solidity: function getAllocationDelay(address operator) view returns(uint32)
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) GetAllocationDelay(operator common.Address) (uint32, error) {
-	return _AVSDirectoryStorage.Contract.GetAllocationDelay(&_AVSDirectoryStorage.CallOpts, operator)
-}
-
-// GetAllocationDelay is a free data retrieval call binding the contract method 0xb9fbaed1.
-//
-<<<<<<< HEAD
-// Solidity: function getSlashableBips(address operator, (address,uint32) operatorSet, address strategy, uint32 timestamp) view returns(uint16)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetSlashableBips(operator common.Address, operatorSet IAVSDirectoryOperatorSet, strategy common.Address, timestamp uint32) (uint16, error) {
-	return _AVSDirectoryStorage.Contract.GetSlashableBips(&_AVSDirectoryStorage.CallOpts, operator, operatorSet, strategy, timestamp)
->>>>>>> 6b2ab7ed (build: bindings)
-=======
-// Solidity: function getAllocationDelay(address operator) view returns(uint32)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetAllocationDelay(operator common.Address) (uint32, error) {
-	return _AVSDirectoryStorage.Contract.GetAllocationDelay(&_AVSDirectoryStorage.CallOpts, operator)
+// Solidity: function getSlashableMagnitudes(address operator, address[] strategies, uint32 timestamp) view returns((address,uint32)[], uint64[][])
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetSlashableMagnitudes(operator common.Address, strategies []common.Address, timestamp uint32) ([]IAVSDirectoryOperatorSet, [][]uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetSlashableMagnitudes(&_AVSDirectoryStorage.CallOpts, operator, strategies, timestamp)
 }
 
 // GetSlashablePPM is a free data retrieval call binding the contract method 0x1c699d65.
@@ -909,7 +790,161 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageSession) GetSlashablePPM(operator
 // Solidity: function getSlashablePPM(address operator, (address,uint32) operatorSet, address[] strategies, uint32 timestamp, bool linear) view returns(uint24[])
 func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetSlashablePPM(operator common.Address, operatorSet IAVSDirectoryOperatorSet, strategies []common.Address, timestamp uint32, linear bool) ([]*big.Int, error) {
 	return _AVSDirectoryStorage.Contract.GetSlashablePPM(&_AVSDirectoryStorage.CallOpts, operator, operatorSet, strategies, timestamp, linear)
->>>>>>> 49569901 (feat: set allocations (#691))
+}
+
+// GetTotalMagnitude is a free data retrieval call binding the contract method 0xb47265e2.
+//
+// Solidity: function getTotalMagnitude(address operator, address strategy) view returns(uint64)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetTotalMagnitude(opts *bind.CallOpts, operator common.Address, strategy common.Address) (uint64, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "getTotalMagnitude", operator, strategy)
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// GetTotalMagnitude is a free data retrieval call binding the contract method 0xb47265e2.
+//
+// Solidity: function getTotalMagnitude(address operator, address strategy) view returns(uint64)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) GetTotalMagnitude(operator common.Address, strategy common.Address) (uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetTotalMagnitude(&_AVSDirectoryStorage.CallOpts, operator, strategy)
+}
+
+// GetTotalMagnitude is a free data retrieval call binding the contract method 0xb47265e2.
+//
+// Solidity: function getTotalMagnitude(address operator, address strategy) view returns(uint64)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetTotalMagnitude(operator common.Address, strategy common.Address) (uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetTotalMagnitude(&_AVSDirectoryStorage.CallOpts, operator, strategy)
+}
+
+// GetTotalMagnitudeAtTimestamp is a free data retrieval call binding the contract method 0xdabe97c7.
+//
+// Solidity: function getTotalMagnitudeAtTimestamp(address operator, address strategy, uint32 timestamp) view returns(uint64)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetTotalMagnitudeAtTimestamp(opts *bind.CallOpts, operator common.Address, strategy common.Address, timestamp uint32) (uint64, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "getTotalMagnitudeAtTimestamp", operator, strategy, timestamp)
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// GetTotalMagnitudeAtTimestamp is a free data retrieval call binding the contract method 0xdabe97c7.
+//
+// Solidity: function getTotalMagnitudeAtTimestamp(address operator, address strategy, uint32 timestamp) view returns(uint64)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) GetTotalMagnitudeAtTimestamp(operator common.Address, strategy common.Address, timestamp uint32) (uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetTotalMagnitudeAtTimestamp(&_AVSDirectoryStorage.CallOpts, operator, strategy, timestamp)
+}
+
+// GetTotalMagnitudeAtTimestamp is a free data retrieval call binding the contract method 0xdabe97c7.
+//
+// Solidity: function getTotalMagnitudeAtTimestamp(address operator, address strategy, uint32 timestamp) view returns(uint64)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetTotalMagnitudeAtTimestamp(operator common.Address, strategy common.Address, timestamp uint32) (uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetTotalMagnitudeAtTimestamp(&_AVSDirectoryStorage.CallOpts, operator, strategy, timestamp)
+}
+
+// GetTotalMagnitudes is a free data retrieval call binding the contract method 0x39a9a3ed.
+//
+// Solidity: function getTotalMagnitudes(address operator, address[] strategies) view returns(uint64[])
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetTotalMagnitudes(opts *bind.CallOpts, operator common.Address, strategies []common.Address) ([]uint64, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "getTotalMagnitudes", operator, strategies)
+
+	if err != nil {
+		return *new([]uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]uint64)).(*[]uint64)
+
+	return out0, err
+
+}
+
+// GetTotalMagnitudes is a free data retrieval call binding the contract method 0x39a9a3ed.
+//
+// Solidity: function getTotalMagnitudes(address operator, address[] strategies) view returns(uint64[])
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) GetTotalMagnitudes(operator common.Address, strategies []common.Address) ([]uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetTotalMagnitudes(&_AVSDirectoryStorage.CallOpts, operator, strategies)
+}
+
+// GetTotalMagnitudes is a free data retrieval call binding the contract method 0x39a9a3ed.
+//
+// Solidity: function getTotalMagnitudes(address operator, address[] strategies) view returns(uint64[])
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetTotalMagnitudes(operator common.Address, strategies []common.Address) ([]uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetTotalMagnitudes(&_AVSDirectoryStorage.CallOpts, operator, strategies)
+}
+
+// GetTotalMagnitudesAtTimestamp is a free data retrieval call binding the contract method 0x858d0b47.
+//
+// Solidity: function getTotalMagnitudesAtTimestamp(address operator, address[] strategies, uint32 timestamp) view returns(uint64[])
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) GetTotalMagnitudesAtTimestamp(opts *bind.CallOpts, operator common.Address, strategies []common.Address, timestamp uint32) ([]uint64, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "getTotalMagnitudesAtTimestamp", operator, strategies, timestamp)
+
+	if err != nil {
+		return *new([]uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]uint64)).(*[]uint64)
+
+	return out0, err
+
+}
+
+// GetTotalMagnitudesAtTimestamp is a free data retrieval call binding the contract method 0x858d0b47.
+//
+// Solidity: function getTotalMagnitudesAtTimestamp(address operator, address[] strategies, uint32 timestamp) view returns(uint64[])
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) GetTotalMagnitudesAtTimestamp(operator common.Address, strategies []common.Address, timestamp uint32) ([]uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetTotalMagnitudesAtTimestamp(&_AVSDirectoryStorage.CallOpts, operator, strategies, timestamp)
+}
+
+// GetTotalMagnitudesAtTimestamp is a free data retrieval call binding the contract method 0x858d0b47.
+//
+// Solidity: function getTotalMagnitudesAtTimestamp(address operator, address[] strategies, uint32 timestamp) view returns(uint64[])
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetTotalMagnitudesAtTimestamp(operator common.Address, strategies []common.Address, timestamp uint32) ([]uint64, error) {
+	return _AVSDirectoryStorage.Contract.GetTotalMagnitudesAtTimestamp(&_AVSDirectoryStorage.CallOpts, operator, strategies, timestamp)
+}
+
+// InTotalOperatorSets is a free data retrieval call binding the contract method 0xcbdf0e42.
+//
+// Solidity: function inTotalOperatorSets(address operator) view returns(uint256)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) InTotalOperatorSets(opts *bind.CallOpts, operator common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "inTotalOperatorSets", operator)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// InTotalOperatorSets is a free data retrieval call binding the contract method 0xcbdf0e42.
+//
+// Solidity: function inTotalOperatorSets(address operator) view returns(uint256)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) InTotalOperatorSets(operator common.Address) (*big.Int, error) {
+	return _AVSDirectoryStorage.Contract.InTotalOperatorSets(&_AVSDirectoryStorage.CallOpts, operator)
+}
+
+// InTotalOperatorSets is a free data retrieval call binding the contract method 0xcbdf0e42.
+//
+// Solidity: function inTotalOperatorSets(address operator) view returns(uint256)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) InTotalOperatorSets(operator common.Address) (*big.Int, error) {
+	return _AVSDirectoryStorage.Contract.InTotalOperatorSets(&_AVSDirectoryStorage.CallOpts, operator)
 }
 
 // IsMember is a free data retrieval call binding the contract method 0xda2ff05d.
@@ -918,12 +953,6 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) GetSlashablePPM(op
 func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) IsMember(opts *bind.CallOpts, operator common.Address, operatorSet IAVSDirectoryOperatorSet) (bool, error) {
 	var out []interface{}
 	err := _AVSDirectoryStorage.contract.Call(opts, &out, "isMember", operator, operatorSet)
-<<<<<<< HEAD
-=======
-	err := _AVSDirectoryStorage.contract.Call(opts, &out, "isMember", arg0, arg1, arg2)
->>>>>>> ce94473c (feat: operator commission bips (#627))
-=======
->>>>>>> 6b2ab7ed (build: bindings)
 
 	if err != nil {
 		return *new(bool), err
@@ -1042,6 +1071,51 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) IsOperatorSlashabl
 	return _AVSDirectoryStorage.Contract.IsOperatorSlashable(&_AVSDirectoryStorage.CallOpts, operator, operatorSet)
 }
 
+// OperatorMagnitudeInfo is a free data retrieval call binding the contract method 0xcb13e56b.
+//
+// Solidity: function operatorMagnitudeInfo(address , address ) view returns(uint192 nextPendingFreeMagnitudeIndex, uint64 freeMagnitude)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) OperatorMagnitudeInfo(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address) (struct {
+	NextPendingFreeMagnitudeIndex *big.Int
+	FreeMagnitude                 uint64
+}, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "operatorMagnitudeInfo", arg0, arg1)
+
+	outstruct := new(struct {
+		NextPendingFreeMagnitudeIndex *big.Int
+		FreeMagnitude                 uint64
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.NextPendingFreeMagnitudeIndex = *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	outstruct.FreeMagnitude = *abi.ConvertType(out[1], new(uint64)).(*uint64)
+
+	return *outstruct, err
+
+}
+
+// OperatorMagnitudeInfo is a free data retrieval call binding the contract method 0xcb13e56b.
+//
+// Solidity: function operatorMagnitudeInfo(address , address ) view returns(uint192 nextPendingFreeMagnitudeIndex, uint64 freeMagnitude)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) OperatorMagnitudeInfo(arg0 common.Address, arg1 common.Address) (struct {
+	NextPendingFreeMagnitudeIndex *big.Int
+	FreeMagnitude                 uint64
+}, error) {
+	return _AVSDirectoryStorage.Contract.OperatorMagnitudeInfo(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
+}
+
+// OperatorMagnitudeInfo is a free data retrieval call binding the contract method 0xcb13e56b.
+//
+// Solidity: function operatorMagnitudeInfo(address , address ) view returns(uint192 nextPendingFreeMagnitudeIndex, uint64 freeMagnitude)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OperatorMagnitudeInfo(arg0 common.Address, arg1 common.Address) (struct {
+	NextPendingFreeMagnitudeIndex *big.Int
+	FreeMagnitude                 uint64
+}, error) {
+	return _AVSDirectoryStorage.Contract.OperatorMagnitudeInfo(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
+}
+
 // OperatorSaltIsSpent is a free data retrieval call binding the contract method 0x374823b5.
 //
 // Solidity: function operatorSaltIsSpent(address , bytes32 ) view returns(bool)
@@ -1073,8 +1147,6 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OperatorSaltIsSpen
 	return _AVSDirectoryStorage.Contract.OperatorSaltIsSpent(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 // OperatorSetMemberAtIndex is a free data retrieval call binding the contract method 0x411d415b.
 //
 // Solidity: function operatorSetMemberAtIndex((address,uint32) operatorSet, uint256 index) view returns(address)
@@ -1104,6 +1176,51 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageSession) OperatorSetMemberAtIndex
 // Solidity: function operatorSetMemberAtIndex((address,uint32) operatorSet, uint256 index) view returns(address)
 func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OperatorSetMemberAtIndex(operatorSet IAVSDirectoryOperatorSet, index *big.Int) (common.Address, error) {
 	return _AVSDirectoryStorage.Contract.OperatorSetMemberAtIndex(&_AVSDirectoryStorage.CallOpts, operatorSet, index)
+}
+
+// OperatorSetStatus is a free data retrieval call binding the contract method 0x1e68134e.
+//
+// Solidity: function operatorSetStatus(address , address , uint32 ) view returns(bool registered, uint32 lastDeregisteredTimestamp)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) OperatorSetStatus(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address, arg2 uint32) (struct {
+	Registered                bool
+	LastDeregisteredTimestamp uint32
+}, error) {
+	var out []interface{}
+	err := _AVSDirectoryStorage.contract.Call(opts, &out, "operatorSetStatus", arg0, arg1, arg2)
+
+	outstruct := new(struct {
+		Registered                bool
+		LastDeregisteredTimestamp uint32
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.Registered = *abi.ConvertType(out[0], new(bool)).(*bool)
+	outstruct.LastDeregisteredTimestamp = *abi.ConvertType(out[1], new(uint32)).(*uint32)
+
+	return *outstruct, err
+
+}
+
+// OperatorSetStatus is a free data retrieval call binding the contract method 0x1e68134e.
+//
+// Solidity: function operatorSetStatus(address , address , uint32 ) view returns(bool registered, uint32 lastDeregisteredTimestamp)
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) OperatorSetStatus(arg0 common.Address, arg1 common.Address, arg2 uint32) (struct {
+	Registered                bool
+	LastDeregisteredTimestamp uint32
+}, error) {
+	return _AVSDirectoryStorage.Contract.OperatorSetStatus(&_AVSDirectoryStorage.CallOpts, arg0, arg1, arg2)
+}
+
+// OperatorSetStatus is a free data retrieval call binding the contract method 0x1e68134e.
+//
+// Solidity: function operatorSetStatus(address , address , uint32 ) view returns(bool registered, uint32 lastDeregisteredTimestamp)
+func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OperatorSetStatus(arg0 common.Address, arg1 common.Address, arg2 uint32) (struct {
+	Registered                bool
+	LastDeregisteredTimestamp uint32
+}, error) {
+	return _AVSDirectoryStorage.Contract.OperatorSetStatus(&_AVSDirectoryStorage.CallOpts, arg0, arg1, arg2)
 }
 
 // OperatorSetsMemberOfAtIndex is a free data retrieval call binding the contract method 0xb5a768ca.
@@ -1200,148 +1317,25 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) CreateOperator
 	return _AVSDirectoryStorage.Contract.CreateOperatorSets(&_AVSDirectoryStorage.TransactOpts, operatorSetIds)
 }
 
-=======
->>>>>>> ce94473c (feat: operator commission bips (#627))
 // DeregisterOperatorFromAVS is a paid mutator transaction binding the contract method 0xa364f4da.
-=======
-// OperatorSetMemberCount is a free data retrieval call binding the contract method 0xdae226b6.
->>>>>>> 6b2ab7ed (build: bindings)
 //
-// Solidity: function operatorSetMemberCount(address , uint32 ) view returns(uint256)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) OperatorSetMemberCount(opts *bind.CallOpts, arg0 common.Address, arg1 uint32) (*big.Int, error) {
-	var out []interface{}
-	err := _AVSDirectoryStorage.contract.Call(opts, &out, "operatorSetMemberCount", arg0, arg1)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
+// Solidity: function deregisterOperatorFromAVS(address operator) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) DeregisterOperatorFromAVS(opts *bind.TransactOpts, operator common.Address) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.contract.Transact(opts, "deregisterOperatorFromAVS", operator)
 }
 
-// OperatorSetMemberCount is a free data retrieval call binding the contract method 0xdae226b6.
+// DeregisterOperatorFromAVS is a paid mutator transaction binding the contract method 0xa364f4da.
 //
-// Solidity: function operatorSetMemberCount(address , uint32 ) view returns(uint256)
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) OperatorSetMemberCount(arg0 common.Address, arg1 uint32) (*big.Int, error) {
-	return _AVSDirectoryStorage.Contract.OperatorSetMemberCount(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
+// Solidity: function deregisterOperatorFromAVS(address operator) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) DeregisterOperatorFromAVS(operator common.Address) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.DeregisterOperatorFromAVS(&_AVSDirectoryStorage.TransactOpts, operator)
 }
 
-// OperatorSetMemberCount is a free data retrieval call binding the contract method 0xdae226b6.
+// DeregisterOperatorFromAVS is a paid mutator transaction binding the contract method 0xa364f4da.
 //
-// Solidity: function operatorSetMemberCount(address , uint32 ) view returns(uint256)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OperatorSetMemberCount(arg0 common.Address, arg1 uint32) (*big.Int, error) {
-	return _AVSDirectoryStorage.Contract.OperatorSetMemberCount(&_AVSDirectoryStorage.CallOpts, arg0, arg1)
-}
-
-// OperatorSetStatus is a free data retrieval call binding the contract method 0x1e68134e.
-//
-// Solidity: function operatorSetStatus(address , address , uint32 ) view returns(bool registered, uint32 lastDeregisteredTimestamp)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCaller) OperatorSetStatus(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address, arg2 uint32) (struct {
-	Registered                bool
-	LastDeregisteredTimestamp uint32
-}, error) {
-	var out []interface{}
-	err := _AVSDirectoryStorage.contract.Call(opts, &out, "operatorSetStatus", arg0, arg1, arg2)
-
-	outstruct := new(struct {
-		Registered                bool
-		LastDeregisteredTimestamp uint32
-	})
-	if err != nil {
-		return *outstruct, err
-	}
-
-	outstruct.Registered = *abi.ConvertType(out[0], new(bool)).(*bool)
-	outstruct.LastDeregisteredTimestamp = *abi.ConvertType(out[1], new(uint32)).(*uint32)
-
-	return *outstruct, err
-
-}
-
-// OperatorSetStatus is a free data retrieval call binding the contract method 0x1e68134e.
-//
-// Solidity: function operatorSetStatus(address , address , uint32 ) view returns(bool registered, uint32 lastDeregisteredTimestamp)
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) OperatorSetStatus(arg0 common.Address, arg1 common.Address, arg2 uint32) (struct {
-	Registered                bool
-	LastDeregisteredTimestamp uint32
-}, error) {
-	return _AVSDirectoryStorage.Contract.OperatorSetStatus(&_AVSDirectoryStorage.CallOpts, arg0, arg1, arg2)
-}
-
-// OperatorSetStatus is a free data retrieval call binding the contract method 0x1e68134e.
-//
-// Solidity: function operatorSetStatus(address , address , uint32 ) view returns(bool registered, uint32 lastDeregisteredTimestamp)
-func (_AVSDirectoryStorage *AVSDirectoryStorageCallerSession) OperatorSetStatus(arg0 common.Address, arg1 common.Address, arg2 uint32) (struct {
-	Registered                bool
-	LastDeregisteredTimestamp uint32
-}, error) {
-	return _AVSDirectoryStorage.Contract.OperatorSetStatus(&_AVSDirectoryStorage.CallOpts, arg0, arg1, arg2)
-}
-
-// BecomeOperatorSetAVS is a paid mutator transaction binding the contract method 0xaec205c5.
-//
-// Solidity: function becomeOperatorSetAVS() returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) BecomeOperatorSetAVS(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _AVSDirectoryStorage.contract.Transact(opts, "becomeOperatorSetAVS")
-}
-
-// BecomeOperatorSetAVS is a paid mutator transaction binding the contract method 0xaec205c5.
-//
-// Solidity: function becomeOperatorSetAVS() returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) BecomeOperatorSetAVS() (*types.Transaction, error) {
-	return _AVSDirectoryStorage.Contract.BecomeOperatorSetAVS(&_AVSDirectoryStorage.TransactOpts)
-}
-
-// BecomeOperatorSetAVS is a paid mutator transaction binding the contract method 0xaec205c5.
-//
-// Solidity: function becomeOperatorSetAVS() returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) BecomeOperatorSetAVS() (*types.Transaction, error) {
-	return _AVSDirectoryStorage.Contract.BecomeOperatorSetAVS(&_AVSDirectoryStorage.TransactOpts)
-}
-
-// CancelSalt is a paid mutator transaction binding the contract method 0xec76f442.
-//
-// Solidity: function cancelSalt(bytes32 salt) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) CancelSalt(opts *bind.TransactOpts, salt [32]byte) (*types.Transaction, error) {
-	return _AVSDirectoryStorage.contract.Transact(opts, "cancelSalt", salt)
-}
-
-// CancelSalt is a paid mutator transaction binding the contract method 0xec76f442.
-//
-// Solidity: function cancelSalt(bytes32 salt) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) CancelSalt(salt [32]byte) (*types.Transaction, error) {
-	return _AVSDirectoryStorage.Contract.CancelSalt(&_AVSDirectoryStorage.TransactOpts, salt)
-}
-
-// CancelSalt is a paid mutator transaction binding the contract method 0xec76f442.
-//
-// Solidity: function cancelSalt(bytes32 salt) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) CancelSalt(salt [32]byte) (*types.Transaction, error) {
-	return _AVSDirectoryStorage.Contract.CancelSalt(&_AVSDirectoryStorage.TransactOpts, salt)
-}
-
-// CreateOperatorSets is a paid mutator transaction binding the contract method 0xafe02ed5.
-//
-// Solidity: function createOperatorSets(uint32[] operatorSetIds) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) CreateOperatorSets(opts *bind.TransactOpts, operatorSetIds []uint32) (*types.Transaction, error) {
-	return _AVSDirectoryStorage.contract.Transact(opts, "createOperatorSets", operatorSetIds)
-}
-
-// CreateOperatorSets is a paid mutator transaction binding the contract method 0xafe02ed5.
-//
-// Solidity: function createOperatorSets(uint32[] operatorSetIds) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) CreateOperatorSets(operatorSetIds []uint32) (*types.Transaction, error) {
-	return _AVSDirectoryStorage.Contract.CreateOperatorSets(&_AVSDirectoryStorage.TransactOpts, operatorSetIds)
-}
-
-// CreateOperatorSets is a paid mutator transaction binding the contract method 0xafe02ed5.
-//
-// Solidity: function createOperatorSets(uint32[] operatorSetIds) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) CreateOperatorSets(operatorSetIds []uint32) (*types.Transaction, error) {
-	return _AVSDirectoryStorage.Contract.CreateOperatorSets(&_AVSDirectoryStorage.TransactOpts, operatorSetIds)
+// Solidity: function deregisterOperatorFromAVS(address operator) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) DeregisterOperatorFromAVS(operator common.Address) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.DeregisterOperatorFromAVS(&_AVSDirectoryStorage.TransactOpts, operator)
 }
 
 // DeregisterOperatorFromOperatorSets is a paid mutator transaction binding the contract method 0xc1a8e2c5.
@@ -1386,27 +1380,6 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) ForceDeregiste
 	return _AVSDirectoryStorage.Contract.ForceDeregisterFromOperatorSets(&_AVSDirectoryStorage.TransactOpts, operator, avs, operatorSetIds, operatorSignature)
 }
 
-// InitializeAllocationDelay is a paid mutator transaction binding the contract method 0x80fe6da4.
-//
-// Solidity: function initializeAllocationDelay(address operator, uint32 delay) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) InitializeAllocationDelay(opts *bind.TransactOpts, operator common.Address, delay uint32) (*types.Transaction, error) {
-	return _AVSDirectoryStorage.contract.Transact(opts, "initializeAllocationDelay", operator, delay)
-}
-
-// InitializeAllocationDelay is a paid mutator transaction binding the contract method 0x80fe6da4.
-//
-// Solidity: function initializeAllocationDelay(address operator, uint32 delay) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) InitializeAllocationDelay(operator common.Address, delay uint32) (*types.Transaction, error) {
-	return _AVSDirectoryStorage.Contract.InitializeAllocationDelay(&_AVSDirectoryStorage.TransactOpts, operator, delay)
-}
-
-// InitializeAllocationDelay is a paid mutator transaction binding the contract method 0x80fe6da4.
-//
-// Solidity: function initializeAllocationDelay(address operator, uint32 delay) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) InitializeAllocationDelay(operator common.Address, delay uint32) (*types.Transaction, error) {
-	return _AVSDirectoryStorage.Contract.InitializeAllocationDelay(&_AVSDirectoryStorage.TransactOpts, operator, delay)
-}
-
 // MigrateOperatorsToOperatorSets is a paid mutator transaction binding the contract method 0xef2dfa8d.
 //
 // Solidity: function migrateOperatorsToOperatorSets(address[] operators, uint32[][] operatorSetIds) returns()
@@ -1447,6 +1420,27 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageSession) ModifyAllocations(operat
 // Solidity: function modifyAllocations(address operator, (address,uint64,(address,uint32)[],uint64[])[] allocations, (bytes,bytes32,uint256) operatorSignature) returns()
 func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) ModifyAllocations(operator common.Address, allocations []IAVSDirectoryMagnitudeAllocation, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
 	return _AVSDirectoryStorage.Contract.ModifyAllocations(&_AVSDirectoryStorage.TransactOpts, operator, allocations, operatorSignature)
+}
+
+// RegisterOperatorToAVS is a paid mutator transaction binding the contract method 0x9926ee7d.
+//
+// Solidity: function registerOperatorToAVS(address operator, (bytes,bytes32,uint256) operatorSignature) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) RegisterOperatorToAVS(opts *bind.TransactOpts, operator common.Address, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.contract.Transact(opts, "registerOperatorToAVS", operator, operatorSignature)
+}
+
+// RegisterOperatorToAVS is a paid mutator transaction binding the contract method 0x9926ee7d.
+//
+// Solidity: function registerOperatorToAVS(address operator, (bytes,bytes32,uint256) operatorSignature) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) RegisterOperatorToAVS(operator common.Address, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.RegisterOperatorToAVS(&_AVSDirectoryStorage.TransactOpts, operator, operatorSignature)
+}
+
+// RegisterOperatorToAVS is a paid mutator transaction binding the contract method 0x9926ee7d.
+//
+// Solidity: function registerOperatorToAVS(address operator, (bytes,bytes32,uint256) operatorSignature) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) RegisterOperatorToAVS(operator common.Address, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error) {
+	return _AVSDirectoryStorage.Contract.RegisterOperatorToAVS(&_AVSDirectoryStorage.TransactOpts, operator, operatorSignature)
 }
 
 // RegisterOperatorToOperatorSets is a paid mutator transaction binding the contract method 0x1e2199e2.
@@ -1512,24 +1506,24 @@ func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) UpdateAVSMetad
 	return _AVSDirectoryStorage.Contract.UpdateAVSMetadataURI(&_AVSDirectoryStorage.TransactOpts, metadataURI)
 }
 
-// UpdateFreeMagnitude is a paid mutator transaction binding the contract method 0x84b78fc2.
+// UpdateFreeMagnitude is a paid mutator transaction binding the contract method 0xce770388.
 //
-// Solidity: function updateFreeMagnitude(address operator, address[] strategies, uint8[] numToComplete) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) UpdateFreeMagnitude(opts *bind.TransactOpts, operator common.Address, strategies []common.Address, numToComplete []uint8) (*types.Transaction, error) {
+// Solidity: function updateFreeMagnitude(address operator, address[] strategies, uint16[] numToComplete) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactor) UpdateFreeMagnitude(opts *bind.TransactOpts, operator common.Address, strategies []common.Address, numToComplete []uint16) (*types.Transaction, error) {
 	return _AVSDirectoryStorage.contract.Transact(opts, "updateFreeMagnitude", operator, strategies, numToComplete)
 }
 
-// UpdateFreeMagnitude is a paid mutator transaction binding the contract method 0x84b78fc2.
+// UpdateFreeMagnitude is a paid mutator transaction binding the contract method 0xce770388.
 //
-// Solidity: function updateFreeMagnitude(address operator, address[] strategies, uint8[] numToComplete) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageSession) UpdateFreeMagnitude(operator common.Address, strategies []common.Address, numToComplete []uint8) (*types.Transaction, error) {
+// Solidity: function updateFreeMagnitude(address operator, address[] strategies, uint16[] numToComplete) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageSession) UpdateFreeMagnitude(operator common.Address, strategies []common.Address, numToComplete []uint16) (*types.Transaction, error) {
 	return _AVSDirectoryStorage.Contract.UpdateFreeMagnitude(&_AVSDirectoryStorage.TransactOpts, operator, strategies, numToComplete)
 }
 
-// UpdateFreeMagnitude is a paid mutator transaction binding the contract method 0x84b78fc2.
+// UpdateFreeMagnitude is a paid mutator transaction binding the contract method 0xce770388.
 //
-// Solidity: function updateFreeMagnitude(address operator, address[] strategies, uint8[] numToComplete) returns()
-func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) UpdateFreeMagnitude(operator common.Address, strategies []common.Address, numToComplete []uint8) (*types.Transaction, error) {
+// Solidity: function updateFreeMagnitude(address operator, address[] strategies, uint16[] numToComplete) returns()
+func (_AVSDirectoryStorage *AVSDirectoryStorageTransactorSession) UpdateFreeMagnitude(operator common.Address, strategies []common.Address, numToComplete []uint16) (*types.Transaction, error) {
 	return _AVSDirectoryStorage.Contract.UpdateFreeMagnitude(&_AVSDirectoryStorage.TransactOpts, operator, strategies, numToComplete)
 }
 
