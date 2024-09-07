@@ -299,7 +299,7 @@ pragma solidity ^0.8.27;
 //             uint256 amountDeposited = _testDepositWeth(staker, amountToDeposit);
 //             // We can't withdraw more than we deposit
 //             if (shareAmounts[0] > amountDeposited) {
-//                 cheats.expectRevert("StrategyManager._removeScaledShares: shareAmount too high");
+//                 cheats.expectRevert("StrategyManager._removeShares: shareAmount too high");
 //             }
 //         }
 

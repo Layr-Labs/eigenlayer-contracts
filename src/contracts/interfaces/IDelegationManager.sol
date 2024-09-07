@@ -142,7 +142,9 @@ interface IDelegationManager is ISignatureUtils {
         uint32 startTimestamp;
         // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
-        // Array containing the amount of scaled shares for withdrawal in each Strategy in the `strategies` array
+        // Array containing the amount of staker scaled shares for withdrawal in each Strategy in the `strategies` array
+        // Note that these shares need to be rescaled again at completion based on the operator's totalMagnitude in case
+        // of slashing occurring during the queue withdrawal period
         uint256[] scaledShares;
     }
 
@@ -343,30 +345,44 @@ interface IDelegationManager is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Increases a staker's delegated share balance in a strategy.
-     * @param staker The address to increase the delegated scaled shares for their operator.
-     * @param strategy The strategy in which to increase the delegated scaled shares.
-     * @param scaledShares The number of scaled shares to increase.
+     * @notice Increases a staker's delegated share balance in a strategy. Note that before adding to operator shares,
+     * the delegated shares are scaled according to the operator's total magnitude as part of slashing accounting.
+     * The staker's scaling factor is updated here.
+     * @param staker The address to increase the delegated shares for their operator.
+     * @param strategy The strategy in which to increase the delegated shares.
+     * @param existingShares The number of shares the staker already has in the strategy. This is the shares amount stored in the 
+     * StrategyManager/EigenPodManager for the staker's shares.
+     * @param addedShares The number of shares to added to the staker's shares in the strategy. This amount will be scaled prior to adding
+     * to the operator's scaled shares.
      *
-     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `scaledShares`. Otherwise does nothing.
+     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated scaled shares in `strategy` after scaling `shares`.
+     * Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function increaseDelegatedScaledShares(
+    function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 scaledShares
+        uint256 existingShares,
+        uint256 addedShares
     ) external;
     
     /**
-     * @notice Decreases a staker's delegated share balance in a strategy.
+     * @notice Decreases a staker's delegated share balance in a strategy. Note that before removing from operator shares,
+     * the delegated shares are scaled according to the operator's total magnitude as part of slashing accounting. Unlike
+     * `increaseDelegatedShares`, the staker's scaling factor is not updated here.
      * @param staker The address to increase the delegated scaled shares for their operator.
      * @param strategy The strategy in which to decrease the delegated scaled shares.
-     * @param scaledShares The number of scaled shares to decrease.
+     * @param removedShares The number of shares to decremented for the strategy in the
+     * StrategyManager/EigenPodManager
      *
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated scaled shares in `strategy` by `scaledShares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedScaledShares(address staker, IStrategy strategy, uint256 scaledShares) external;
+    function decreaseDelegatedShares(
+        address staker,
+        IStrategy strategy,
+        uint256 removedShares
+    ) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
@@ -403,44 +419,6 @@ interface IDelegationManager is ISignatureUtils {
     function stakerOptOutWindowBlocks(
         address operator
     ) external view returns (uint256);
-
-    /**
-     * @notice Given array of strategies, returns array of shares for the operator
-     */
-    function getOperatorShares(
-        address operator,
-        IStrategy[] memory strategies
-    ) external view returns (uint256[] memory);
-
-    /**
-     * @notice Given array of strategies, returns array of scaled shares for the operator
-     */
-    function getOperatorScaledShares(
-        address operator,
-        IStrategy[] memory strategies
-    ) external view returns (uint256[] memory);
-
-    /**
-     * @notice Given a staker and shares amounts of deposits, return the scaled shares calculated if
-     * the staker were to deposit. Depends on who the operator the staker is delegated to.
-     */
-    function getStakerScaledShares(
-        address staker,
-        IStrategy strategy,
-        uint256 shares
-    ) external view returns (uint256 scaledShares);
-
-    /**
-     * @notice Given a staker and scaled shares amounts of deposits, return the shares calculated if
-     * the staker were to withdraw. This value depends on which operator the staker is delegated to.
-     * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
-     * to each strategy's underlying shares to token ratio).
-     */
-    function getStakerShares(
-        address staker,
-        IStrategy strategy,
-        uint256 scaledShares
-    ) external view returns (uint256 shares);
 
     /**
      * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
