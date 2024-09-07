@@ -311,9 +311,6 @@ interface IAVSDirectory is ISignatureUtils {
         uint16 numToComplete
     ) external view returns (uint64);
 
-    /// @dev Delay before deallocations take effect and are added back into freeMagnitude
-    function DEALLOCATION_DELAY() external view returns (uint32);
-
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
      * @param operator the operator to check slashability for
@@ -364,17 +361,53 @@ interface IAVSDirectory is ISignatureUtils {
         bool linear
     ) external view returns (uint24[] memory);
 
-    /// @notice Returns the total magnitude of an operator for a given set of strategies
-    /// TODO: finish natspec
-    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory);
+    /**
+     * @notice Returns the current total magnitudes of an operator for a given set of strategies
+     * @param operator the operator to get the total magnitude for
+     * @param strategies the strategies to get the total magnitudes for
+     * @return totalMagnitudes the total magnitudes for each strategy
+     */
+    function getTotalMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory);
 
-    /// @notice Returns the total magnitude of an operator for a given set of strategies at a given timestamp
-    /// TODO: finish natspec
+    /**
+     * @notice Returns the total magnitudes of an operator for a given set of strategies at a given timestamp
+     * @param operator the operator to get the total magnitude for
+     * @param strategies the strategies to get the total magnitudes for
+     * @param timestamp the timestamp to get the total magnitudes at
+     * @return totalMagnitudes the total magnitudes for each strategy
+     */
     function getTotalMagnitudesAtTimestamp(
         address operator,
         IStrategy[] calldata strategies,
         uint32 timestamp
     ) external view returns (uint64[] memory);
+
+    /**
+     * @notice Returns the current total magnitude of an operator for a given strategy
+     * @param operator the operator to get the total magnitude for
+     * @param strategy the strategy to get the total magnitude for
+     * @return totalMagnitude the total magnitude for the strategy
+     */
+    function getTotalMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64);
+
+    /**
+     * @notice Returns the total magnitude of an operator for a given strategy at a given timestamp
+     * @param operator the operator to get the total magnitude for
+     * @param strategy the strategy to get the total magnitude for
+     * @param timestamp the timestamp to get the total magnitude at
+     * @return totalMagnitude the total magnitude for the strategy
+     */
+    function getTotalMagnitudeAtTimestamp(
+        address operator,
+        IStrategy strategy,
+        uint32 timestamp
+    ) external view returns (uint64);
 
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 

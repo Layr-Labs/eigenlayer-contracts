@@ -98,9 +98,27 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function DEALLOCATION_DELAY() external view returns (uint32) {}
 
-    function getTotalMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory) {}
+    function getTotalMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory) {}
 
-    function getTotalMagnitudesAtTimestamp(address operator, IStrategy[] calldata strategies, uint32 timestamp) external view returns (uint64[] memory) {}
+    function getTotalMagnitudesAtTimestamp(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 timestamp
+    ) external view returns (uint64[] memory) {}
+
+    function getTotalMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64) {}
+
+    function getTotalMagnitudeAtTimestamp(
+        address operator,
+        IStrategy strategy,
+        uint32 timestamp
+    ) external view returns (uint64) {}
 
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,

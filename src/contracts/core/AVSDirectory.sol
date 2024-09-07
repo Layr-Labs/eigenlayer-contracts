@@ -7,7 +7,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
-import "../libraries/ShareScalingLib.sol";
+import "../libraries/SlashingConstants.sol";
 import "./AVSDirectoryStorage.sol";
 
 contract AVSDirectory is
@@ -28,9 +28,6 @@ contract AVSDirectory is
 
     /// @dev BIPS factor for slashable bips
     uint256 internal constant BIPS_FACTOR = 10_000;
-
-    /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
-    uint32 public constant DEALLOCATION_DELAY = 17.5 days;
 
     /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
     uint256 public constant MAX_PENDING_UPDATES = 1;
@@ -295,7 +292,7 @@ contract AVSDirectory is
         // effect timestamp for allocations to take effect. This is configurable by operators
         uint32 effectTimestamp = uint32(block.timestamp) + details.allocationDelay;
         // completable timestamp for deallocations
-        uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
+        uint32 completableTimestamp = uint32(block.timestamp) + SlashingConstants.DEALLOCATION_DELAY;
 
         for (uint256 i = 0; i < allocations.length; ++i) {
             // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
@@ -382,18 +379,16 @@ contract AVSDirectory is
                 uint64 currentMagnitude = uint64(
                     _magnitudeUpdate[operator][strategies[i]][operatorSetKey].upperLookupRecent(uint32(block.timestamp))
                 );
-                // TODO: if we don't continue here we get into weird "total/free magnitude" not initialized cases. Is this ok?
-                if (currentMagnitude == 0) {
-                    continue;
+                // slash nonzero current magnitude
+                if (currentMagnitude != 0) {
+                    /// TODO: add wrapping library for rounding up for slashing accounting
+                    slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
+
+                    _magnitudeUpdate[operator][strategies[i]][operatorSetKey].decrementAtAndFutureCheckpoints({
+                        key: uint32(block.timestamp),
+                        decrementValue: slashedMagnitude
+                    });
                 }
-
-                /// TODO: add wrapping library for rounding up for slashing accounting
-                slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
-
-                _magnitudeUpdate[operator][strategies[i]][operatorSetKey].decrementAtAndFutureCheckpoints({
-                    key: uint32(block.timestamp),
-                    decrementValue: slashedMagnitude
-                });
             }
 
             // 2. if there are any pending deallocations then need to update and decrement if they fall within slashable window
@@ -768,9 +763,9 @@ contract AVSDirectory is
     function _getLatestTotalMagnitude(address operator, IStrategy strategy) internal returns (uint64) {
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
         if (!exists) {
-            totalMagnitude = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
             _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
-            operatorMagnitudeInfo[operator][strategy].freeMagnitude = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+            operatorMagnitudeInfo[operator][strategy].freeMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
         }
 
         return uint64(totalMagnitude);
@@ -1051,19 +1046,24 @@ contract AVSDirectory is
         OperatorSetRegistrationStatus memory registrationStatus =
             operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
         return isMember(operator, operatorSet)
-            || registrationStatus.lastDeregisteredTimestamp + DEALLOCATION_DELAY >= block.timestamp;
+            || registrationStatus.lastDeregisteredTimestamp + SlashingConstants.DEALLOCATION_DELAY >= block.timestamp;
     }
 
-    /// @notice Returns the total magnitude of an operator for a given set of strategies
+    /**
+     * @notice Returns the current total magnitudes of an operator for a given set of strategies
+     * @param operator the operator to get the total magnitude for
+     * @param strategies the strategies to get the total magnitudes for
+     * @return totalMagnitudes the total magnitudes for each strategy
+     */
     function getTotalMagnitudes(
         address operator,
         IStrategy[] calldata strategies
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length;) {
-            (bool exists, uint32 key, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestCheckpoint();
+            (bool exists, , uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestCheckpoint();
             if (!exists) {
-                totalMagnitudes[i] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+                totalMagnitudes[i] = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
             } else {
                 totalMagnitudes[i] = uint64(value);
             }
@@ -1075,7 +1075,13 @@ contract AVSDirectory is
         return totalMagnitudes;
     }
 
-    /// @notice Returns the total magnitude of an operator for a given set of strategies at a given timestamp
+    /**
+     * @notice Returns the total magnitudes of an operator for a given set of strategies at a given timestamp
+     * @param operator the operator to get the total magnitude for
+     * @param strategies the strategies to get the total magnitudes for
+     * @param timestamp the timestamp to get the total magnitudes at
+     * @return totalMagnitudes the total magnitudes for each strategy
+     */
     function getTotalMagnitudesAtTimestamp(
         address operator,
         IStrategy[] calldata strategies,
@@ -1083,12 +1089,12 @@ contract AVSDirectory is
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length;) {
-            (uint224 value, uint256 pos, uint256 length) =
+            (uint224 value, uint256 pos, ) =
                 _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
 
             // if there is no existing total magnitude checkpoint
-            if (value != 0 || pos != 0) {
-                totalMagnitudes[i] = ShareScalingLib.INITIAL_TOTAL_MAGNITUDE;
+            if (value == 0 && pos == 0) {
+                totalMagnitudes[i] = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
             } else {
                 totalMagnitudes[i] = uint64(value);
             }
@@ -1098,6 +1104,55 @@ contract AVSDirectory is
             }
         }
         return totalMagnitudes;
+    }
+
+    /**
+     * @notice Returns the current total magnitude of an operator for a given strategy
+     * @param operator the operator to get the total magnitude for
+     * @param strategy the strategy to get the total magnitude for
+     * @return totalMagnitude the total magnitude for the strategy
+     */
+    function getTotalMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64) {
+        uint64 totalMagnitude;
+        (bool exists, , uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestCheckpoint();
+        if (!exists) {
+            totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
+        } else {
+            totalMagnitude = uint64(value);
+        }
+
+        return totalMagnitude;
+    }
+
+    /**
+     * @notice Returns the total magnitude of an operator for a given strategy at a given timestamp
+     * @param operator the operator to get the total magnitude for
+     * @param strategy the strategy to get the total magnitude for
+     * @param timestamp the timestamp to get the total magnitude at
+     * @return totalMagnitude the total magnitude for the strategy
+     */
+    function getTotalMagnitudeAtTimestamp(
+        address operator,
+        IStrategy strategy,
+        uint32 timestamp
+    ) external view returns (uint64) {
+        uint64 totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
+        (
+            uint224 value,
+            uint256 pos,
+        ) = _totalMagnitudeUpdate[operator][strategy].upperLookupRecentWithPos(timestamp);
+
+        // if there is no existing total magnitude checkpoint
+        if (value == 0 && pos == 0) {
+            totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
+        } else {
+            totalMagnitude = uint64(value);
+        }
+
+        return totalMagnitude;
     }
 
     // /**

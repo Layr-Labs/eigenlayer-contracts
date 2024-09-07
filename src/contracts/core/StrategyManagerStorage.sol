@@ -45,9 +45,9 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * This variable was migrated to the DelegationManager instead.
      */
     uint256 private __deprecated_withdrawalDelayBlocks;
-    /// @notice Mapping: staker => Strategy => number of scaled shares which they currently hold
-    mapping(address => mapping(IStrategy => uint256)) public stakerStrategyScaledShares;
-    /// @notice Mapping: staker => array of strategies in which they have nonzero scaled shares
+    /// @notice Mapping: staker => Strategy => number of shares which they currently hold
+    mapping(address => mapping(IStrategy => uint256)) public stakerStrategyShares;
+    /// @notice Mapping: staker => array of strategies in which they have nonzero shares
     mapping(address => IStrategy[]) public stakerStrategyList;
     /// @notice *Deprecated* mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     /// @dev This mapping is preserved to allow the migration of withdrawals to the DelegationManager contract.
@@ -68,7 +68,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(address => uint256) internal beaconChainETHSharesToDecrementOnWithdrawal;
 
     /**
-     * @notice Mapping: strategy => whether or not stakers are allowed to transfer strategy scaled shares to another address
+     * @notice Mapping: strategy => whether or not stakers are allowed to transfer strategy shares to another address
      * if true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
      * and also when performing queueWithdrawals, a staker can only withdraw to themselves
      */

@@ -34,7 +34,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     bytes32 internal _DOMAIN_SEPARATOR;
 
-    /// TODO @dev actually make this immutable and add to constructor
+    /// @notice The AVSDirectory contract for EigenLayer
     IAVSDirectory public immutable avsDirectory;
 
     /// @notice The StrategyManager contract for EigenLayer
@@ -121,6 +121,10 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(IStrategy => uint256) public strategyWithdrawalDelays;
 
+    /// @notice Mapping: staker => strategy => scaling factor used to calculate the staker's withdrawable shares in the strategy.
+    /// This is updated upon each deposit based on the staker's currently delegated operator's totalMagnitude.
+    mapping(address => mapping(IStrategy => uint256)) public stakerScalingFactors;
+
     /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
     /// This determines how long it takes for allocations to take effect in the future. Can only be set one time for each operator
     mapping(address => AllocationDelayDetails) internal _operatorAllocationDelay;
@@ -137,5 +141,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[38] private __gap;
+    uint256[37] private __gap;
 }
