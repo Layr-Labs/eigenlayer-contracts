@@ -111,61 +111,57 @@ contract EigenPodManager is
             sharesDelta % int256(GWEI_TO_WEI) == 0,
             "EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount"
         );
-        int256 currentPodOwnerScaledShares = podOwnerScaledShares[podOwner];
-        int256 updatedPodOwnerScaledShares;
-        // scale the sharesDelta and add to the podOwnerShares
-        if (sharesDelta < 0) {
-            updatedPodOwnerScaledShares = currentPodOwnerScaledShares
-                - int256(delegationManager.getStakerScaledShares(podOwner, beaconChainETHStrategy, uint256(-sharesDelta)));
-        } else {
-            updatedPodOwnerScaledShares = currentPodOwnerScaledShares
-                + int256(delegationManager.getStakerScaledShares(podOwner, beaconChainETHStrategy, uint256(sharesDelta)));
-        }
-        podOwnerScaledShares[podOwner] = updatedPodOwnerScaledShares;
+        int256 currentPodOwnerShares = podOwnerShares[podOwner];
+        int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
+        podOwnerShares[podOwner] = updatedPodOwnerShares;
 
         // inform the DelegationManager of the change in delegateable shares
-        int256 changeInDelegatableScaledShares = _calculateChangeInDelegatableScaledShares({
-            scaledSharesBefore: currentPodOwnerScaledShares,
-            scaledSharesAfter: updatedPodOwnerScaledShares
+        int256 changeInDelegatableShares = _calculateChangeInDelegatableShares({
+            sharesBefore: currentPodOwnerShares,
+            sharesAfter: updatedPodOwnerShares
         });
         // skip making a call to the DelegationManager if there is no change in delegateable shares
-        if (changeInDelegatableScaledShares != 0) {
-            if (changeInDelegatableScaledShares < 0) {
-                delegationManager.decreaseDelegatedScaledShares({
+        // or if the currentPodShares < 0 and updatedPodShares is still < 0. Means no update required
+        // in delegated shares
+        if (changeInDelegatableShares != 0) {
+            if (changeInDelegatableShares < 0) {
+                delegationManager.decreaseDelegatedShares({
                     staker: podOwner,
                     strategy: beaconChainETHStrategy,
-                    scaledShares: uint256(-changeInDelegatableScaledShares)
+                    removedShares: uint256(-changeInDelegatableShares)
                 });
             } else {
-                delegationManager.increaseDelegatedScaledShares({
+                delegationManager.increaseDelegatedShares({
                     staker: podOwner,
                     strategy: beaconChainETHStrategy,
-                    scaledShares: uint256(changeInDelegatableScaledShares)
+                    // existing shares from standpoint of the DelegationManager
+                    existingShares: currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares),
+                    addedShares: uint256(changeInDelegatableShares)
                 });
             }
         }
         emit PodSharesUpdated(podOwner, sharesDelta);
-        emit NewTotalShares(podOwner, updatedPodOwnerScaledShares);
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
     }
 
     /**
      * @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue.
      * Simply decreases the `podOwner`'s shares by `shares`, down to a minimum of zero.
-     * @dev This function reverts if it would result in `podOwnerScaledShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
+     * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
      * result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
      * shares from the operator to whom the staker is delegated.
      * @dev Reverts if `shares` is not a whole Gwei amount
      * @dev The delegation manager validates that the podOwner is not address(0)
      */
-    function removeScaledShares(address podOwner, uint256 scaledShares) external onlyDelegationManager {
-        require(int256(scaledShares) >= 0, "EigenPodManager.removeShares: shares cannot be negative");
-        require(scaledShares % GWEI_TO_WEI == 0, "EigenPodManager.removeShares: shares must be a whole Gwei amount");
-        int256 updatedPodOwnerShares = podOwnerScaledShares[podOwner] - int256(scaledShares);
+    function removeShares(address podOwner, uint256 shares) external onlyDelegationManager {
+        require(int256(shares) >= 0, "EigenPodManager.removeShares: shares cannot be negative");
+        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.removeShares: shares must be a whole Gwei amount");
+        int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
         require(
             updatedPodOwnerShares >= 0,
             "EigenPodManager.removeShares: cannot result in pod owner having negative shares"
         );
-        podOwnerScaledShares[podOwner] = updatedPodOwnerShares;
+        podOwnerShares[podOwner] = updatedPodOwnerShares;
 
         emit NewTotalShares(podOwner, updatedPodOwnerShares);
     }
@@ -173,27 +169,34 @@ contract EigenPodManager is
     /**
      * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
      * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
-     * @dev Returns the number of shares added to `podOwnerScaledShares[podOwner]` above zero, which will be less than the `shares` input
-     * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerScaledShares[podOwner]` starts below zero)
+     * @dev Returns the number of shares added to `podOwnerShares[podOwner]` above zero, which will be less than the `shares` input
+     * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero).
+     * Also returns existingPodShares prior to adding shares, this is returned as 0 if the existing podOwnerShares is negative
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
-    function addScaledShares(address podOwner, uint256 scaledShares) external onlyDelegationManager returns (uint256) {
+    function addShares(
+        address podOwner,
+        uint256 shares
+    ) external onlyDelegationManager returns (uint256 increaseInDelegateableShares, uint256 existingPodShares) {
         require(podOwner != address(0), "EigenPodManager.addShares: podOwner cannot be zero address");
-        require(int256(scaledShares) >= 0, "EigenPodManager.addShares: shares cannot be negative");
-        require(scaledShares % GWEI_TO_WEI == 0, "EigenPodManager.addShares: shares must be a whole Gwei amount");
-        int256 currentPodOwnerScaledShares = podOwnerScaledShares[podOwner];
-        int256 updatedPodOwnerScaledShares = currentPodOwnerScaledShares + int256(scaledShares);
-        podOwnerScaledShares[podOwner] = updatedPodOwnerScaledShares;
+        require(int256(shares) >= 0, "EigenPodManager.addShares: shares cannot be negative");
+        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.addShares: shares must be a whole Gwei amount");
+        int256 currentPodOwnerShares = podOwnerShares[podOwner];
+        int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
+        podOwnerShares[podOwner] = updatedPodOwnerShares;
 
-        emit PodSharesUpdated(podOwner, int256(scaledShares));
-        emit NewTotalShares(podOwner, updatedPodOwnerScaledShares);
+        emit PodSharesUpdated(podOwner, int256(shares));
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
 
-        return uint256(
-            _calculateChangeInDelegatableScaledShares({
-                scaledSharesBefore: currentPodOwnerScaledShares,
-                scaledSharesAfter: updatedPodOwnerScaledShares
+        increaseInDelegateableShares = uint256(
+            _calculateChangeInDelegatableShares({
+                sharesBefore: currentPodOwnerShares,
+                sharesAfter: updatedPodOwnerShares
             })
         );
+        existingPodShares = currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares);
+
+        return (increaseInDelegateableShares, existingPodShares);
     }
 
     /**
@@ -212,22 +215,22 @@ contract EigenPodManager is
         require(destination != address(0), "EigenPodManager.withdrawSharesAsTokens: destination cannot be zero address");
         require(int256(shares) >= 0, "EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");
         require(shares % GWEI_TO_WEI == 0, "EigenPodManager.withdrawSharesAsTokens: shares must be a whole Gwei amount");
-        int256 currentPodOwnerScaledShares = podOwnerScaledShares[podOwner];
+        int256 currentPodOwnerShares = podOwnerShares[podOwner];
 
         // if there is an existing shares deficit, prioritize decreasing the deficit first
-        if (currentPodOwnerScaledShares < 0) {
-            uint256 currentShareDeficit = uint256(-currentPodOwnerScaledShares);
+        if (currentPodOwnerShares < 0) {
+            uint256 currentShareDeficit = uint256(-currentPodOwnerShares);
 
             if (shares > currentShareDeficit) {
                 // get rid of the whole deficit if possible, and pass any remaining shares onto destination
-                podOwnerScaledShares[podOwner] = 0;
+                podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
                 emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
                 emit NewTotalShares(podOwner, 0);
             } else {
                 // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
-                int256 updatedPodOwnerShares = podOwnerScaledShares[podOwner] + int256(shares);
-                podOwnerScaledShares[podOwner] = updatedPodOwnerShares;
+                int256 updatedPodOwnerShares = podOwnerShares[podOwner] + int256(shares);
+                podOwnerShares[podOwner] = updatedPodOwnerShares;
                 emit PodSharesUpdated(podOwner, int256(shares));
                 emit NewTotalShares(podOwner, updatedPodOwnerShares);
                 return;
@@ -259,53 +262,33 @@ contract EigenPodManager is
 
     /**
      * @notice Calculates the change in a pod owner's delegateable shares as a result of their beacon chain ETH shares changing
-     * from `scaledSharesBefore` to `scaledSharesAfter`. The key concept here is that negative/"deficit" scaledShares are not delegateable.
+     * from `sharesBefore` to `sharesAfter`. The key concept here is that negative/"deficit" shares are not delegateable.
      */
-    function _calculateChangeInDelegatableScaledShares(
-        int256 scaledSharesBefore,
-        int256 scaledSharesAfter
+    function _calculateChangeInDelegatableShares(
+        int256 sharesBefore,
+        int256 sharesAfter
     ) internal pure returns (int256) {
-        if (scaledSharesBefore <= 0) {
-            if (scaledSharesAfter <= 0) {
+        if (sharesBefore <= 0) {
+            if (sharesAfter <= 0) {
                 // if the shares started negative and stayed negative, then there cannot have been an increase in delegateable shares
                 return 0;
-                // if the shares started negative and became positive, then the increase in delegateable shares is the ending share amount
             } else {
                 // if the shares started negative and became positive, then the increase in delegateable shares is the ending share amount
-                return scaledSharesAfter;
+                return sharesAfter;
             }
         } else {
-            if (scaledSharesAfter <= 0) {
+            if (sharesAfter <= 0) {
                 // if the shares started positive and became negative, then the decrease in delegateable shares is the starting share amount
-                return (-scaledSharesBefore);
+                return (-sharesBefore);
             } else {
                 // if the shares started positive and stayed positive, then the change in delegateable shares
                 // is the difference between starting and ending amounts
-                return (scaledSharesAfter - scaledSharesBefore);
+                return (sharesAfter - sharesBefore);
             }
         }
     }
 
     // VIEW FUNCTIONS
-    /// @notice Return the real number of ETH shares that the `podOwner` has
-    function podOwnerShares(address podOwner) public view returns (int256) {
-        int256 podOwnerShares;
-        if (podOwnerScaledShares[podOwner] < 0) {
-            podOwnerShares = -int256(
-                delegationManager.getStakerShares(
-                    podOwner, beaconChainETHStrategy, uint256(-podOwnerScaledShares[podOwner])
-                )
-            );
-        } else {
-            podOwnerShares = int256(
-                delegationManager.getStakerShares(
-                    podOwner, beaconChainETHStrategy, uint256(podOwnerScaledShares[podOwner])
-                )
-            );
-        }
-        return podOwnerShares;
-    }
-
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
     function getPod(
         address podOwner
