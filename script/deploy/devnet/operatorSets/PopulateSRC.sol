@@ -66,7 +66,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             }
             
             vm.startBroadcast();
-            operators[i] = operatorFactory.createManyOperators(strategies[i], NUM_OPERATORS_PER_OPSET);
+            operators[i] = operatorFactory.createManyOperators(NUM_OPERATORS_PER_OPSET);
             for (uint j = 0; j < strategies[i].length; j++) {
                 operatorFactory.depositForOperators(strategies[i][j], operators[i], TOKEN_AMOUNT_PER_OPERATOR);
             }
@@ -180,16 +180,7 @@ contract OperatorFactory is Test {
         avsDirectory = _avsDirectory;
     }
 
-    uint256 constant AMOUNT_TOKEN = 1000;
-
-    function createManyOperators(IStrategy[] memory strategies, uint256 numOperatorsPerOpset) public returns(address[] memory) {
-        IERC20[] memory tokens = new IERC20[](strategies.length);
-        // approve all transfers
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            tokens[i] = strategies[i].underlyingToken();
-            tokens[i].approve(address(strategyManager), type(uint256).max);
-        }
-
+    function createManyOperators(uint256 numOperatorsPerOpset) public returns(address[] memory) {
         address[] memory operators = new address[](numOperatorsPerOpset);
         for (uint256 i = 0; i < operators.length; ++i) {
             operators[i] = address(new Operator(delegationManager, avsDirectory));
