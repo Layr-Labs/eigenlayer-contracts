@@ -27,7 +27,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     uint32 public constant REMOVED_INDEX = type(uint32).max;
 
     /// @notice the minimum balance that must be maintained for an operatorSet
-    uint256 public constant MIN_DEPOSIT_BALANCE = 0.1 ether;
+    uint256 public constant MIN_DEPOSIT_BALANCE = 0.001 ether;
 
     /// @notice the delegation manager contract
     IDelegationManager public immutable delegationManager;
