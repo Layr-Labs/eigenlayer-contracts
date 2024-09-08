@@ -9,8 +9,9 @@ import "forge-std/Script.sol";
 
 contract PopulateSRC is Script, Test, ExistingDeploymentParser {
     uint32 constant NUM_OPSETS = 1;
-    uint32 constant NUM_OPERATORS_PER_OPSET = 250;
-    uint32 constant NUM_STRATS_PER_OPSET = 1;
+    uint32 constant NUM_BATCHES_PER_OPSET = 5;
+    uint32 constant NUM_OPERATORS_PER_BATCH = 50;
+    uint32 constant NUM_STRATS_PER_OPSET = 20;
     uint256 constant TOKEN_AMOUNT_PER_OPERATOR = 1 ether;
 
     
@@ -52,7 +53,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
         vm.broadcast();
         OperatorFactory operatorFactory = new OperatorFactory(delegationManager, strategyManager, avsDirectory);
-        address[][] memory operators = new address[][](strategies.length);
+        address[][][] memory operators = new address[][][](strategies.length);
         for (uint i = 0; i < operators.length; i++) {
             // todo: send operators[i].length*1 ether of strategy token to operatorfactory
             // //transfer enough tokens for every operator in the operator set for all the strategies in the operator set
@@ -61,16 +62,19 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
                 IERC20 token = strategies[i][j].underlyingToken();
                 vm.startBroadcast();
                 token.approve(msg.sender, type(uint256).max);
-                token.transfer(address(operatorFactory), NUM_OPERATORS_PER_OPSET*TOKEN_AMOUNT_PER_OPERATOR);
+                token.transfer(address(operatorFactory), NUM_BATCHES_PER_OPSET*NUM_OPERATORS_PER_BATCH*TOKEN_AMOUNT_PER_OPERATOR);
                 vm.stopBroadcast();
             }
-            
-            vm.startBroadcast();
-            operators[i] = operatorFactory.createManyOperators(strategies[i], NUM_OPERATORS_PER_OPSET);
-            for (uint j = 0; j < strategies[i].length; j++) {
-                operatorFactory.depositForOperators(strategies[i][j], operators[i], TOKEN_AMOUNT_PER_OPERATOR);
+
+            operators[i] = new address[][](NUM_BATCHES_PER_OPSET);
+            for (uint j = 0; j < operators[i].length; j++) {
+                vm.startBroadcast();
+                operators[i][j] = operatorFactory.createManyOperators(strategies[i], NUM_OPERATORS_PER_BATCH);
+                for (uint k = 0; k < strategies[i].length; k++) {
+                    operatorFactory.depositForOperators(strategies[i][k], operators[i][j], TOKEN_AMOUNT_PER_OPERATOR);
+                }
+                vm.stopBroadcast();
             }
-            vm.stopBroadcast();
         }
 
         uint64 magnitudeForOperators = 0.1 ether;
@@ -79,13 +83,15 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         payable(address(avs)).transfer(2 * stakeRootCompendium.MIN_DEPOSIT_BALANCE() * strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
-            avs.createOperatorSetAndRegisterOperators(uint32(i), strategies[i], operators[i]);
-            IAVSDirectory.OperatorSet memory operatorSet = IAVSDirectory.OperatorSet({
-                avs: address(avs),
-                operatorSetId: uint32(i)
-            });
-            for (uint j = 0; j < strategies[i].length; j++) {
-                operatorFactory.allocateForOperators(strategies[i][j], operatorSet, operators[i], magnitudeForOperators);
+            for (uint j = 0; j < operators[i].length; j++) {
+                avs.createOperatorSetAndRegisterOperators(uint32(i), strategies[i], operators[i][j]);
+                IAVSDirectory.OperatorSet memory operatorSet = IAVSDirectory.OperatorSet({
+                    avs: address(avs),
+                    operatorSetId: uint32(i)
+                });
+                for (uint k = 0; k < strategies[i].length; k++) {
+                    operatorFactory.allocateForOperators(strategies[i][k], operatorSet, operators[i][j], magnitudeForOperators);
+                }
             }
         }
         vm.stopBroadcast();
@@ -105,9 +111,9 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
             string memory parent_object = "success";
             vm.serializeAddress(parent_object, "stakeRootCompendium", address(stakeRootCompendium));
-            vm.serializeAddress(parent_object, "avs", address(avs));
-            vm.serializeAddress(parent_object, "operators", operators[i]);
-            vm.serializeAddress(parent_object, "strategies", strategyAddresses);
+            // vm.serializeAddress(parent_object, "avs", address(avs));
+            // vm.serializeAddress(parent_object, "operators", operators[i]);
+            // vm.serializeAddress(parent_object, "strategies", strategyAddresses);
             string memory finalJson = vm.serializeString("success", "success", parent_object);
             vm.writeJson(finalJson, string.concat("script/output/devnet/populate_src/opset_", string.concat(vm.toString(i), ".json")));
         }
