@@ -52,6 +52,9 @@ interface IStakeRootCompendium {
     function verifier() external view returns (address);
     function imageId() external view returns (bytes32);
 
+    /// @notice the number of operator sets in the StakeTree
+    function getNumOperatorSets() external view returns (uint256);
+
     /// @notice the interval at which proofs can be posted, to not overcharge the operatorSets
     function proofInterval() external view returns (uint32);
 

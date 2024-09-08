@@ -215,6 +215,11 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     /// VIEW FUNCTIONS
 
     /// @inheritdoc IStakeRootCompendium
+    function getNumOperatorSets() external view returns (uint256) {
+        return operatorSets.length;
+    }
+
+    /// @inheritdoc IStakeRootCompendium
     function getStakes(IAVSDirectory.OperatorSet calldata operatorSet, address operator)
         external
         view
