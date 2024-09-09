@@ -99,6 +99,21 @@ interface IDelegationManager is ISignatureUtils {
         address withdrawer;
     }
 
+    struct QueuedWithdrawalWithSignatureParams {
+        // Array of strategies that the QueuedWithdrawal contains
+        IStrategy[] strategies;
+        // Array containing the amount of shares in each Strategy in the `strategies` array
+        uint256[] shares;
+        // The address of the withdrawer
+        address withdrawer;
+        // The address of the staker
+        address staker;
+        // signature of the staker
+        bytes signature;
+        // expiration timestamp of the signature
+        uint256 expiry;
+    }
+
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 
@@ -236,6 +251,18 @@ interface IDelegationManager is ISignatureUtils {
     function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams)
         external
         returns (bytes32[] memory);
+
+    /**
+     * Allows a third party to withdraw shares on behalf of a staker with their signature.
+     * Withdrawn shares/strategies are immediately removed from the staker.
+     * If the staker is delegated, withdrawn shares/strategies are also removed from
+     * their operator.
+     *
+     * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
+     */
+    function queueWithdrawalsWithSignature(
+        QueuedWithdrawalWithSignatureParams[] calldata queuedWithdrawalWithSigParams
+    ) external returns (bytes32[] memory);
 
     /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
@@ -418,6 +445,14 @@ interface IDelegationManager is ISignatureUtils {
         address operator,
         address _delegationApprover,
         bytes32 approverSalt,
+        uint256 expiry
+    ) external view returns (bytes32);
+
+    function calculateQueueWithdrawalDigestHash(
+        address staker,
+        IStrategy[] memory strategies,
+        uint256[] memory shares,
+        uint256 stakerNonce,
         uint256 expiry
     ) external view returns (bytes32);
 

@@ -22,7 +22,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
     mapping (address => address) public delegatedTo;
 
     function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external pure {}
-    
+
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
     function updateAVSMetadataURI(string calldata /*metadataURI*/) external pure {}
@@ -85,7 +85,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external pure returns (uint256) {
         return 0;
     }
-    
+
     function getOperatorShares(
         address operator,
         IStrategy[] memory strategies
@@ -116,6 +116,14 @@ contract DelegationManagerMock is IDelegationManager, Test {
         address /*operator*/,
         address /*_delegationApprover*/,
         bytes32 /*approverSalt*/,
+        uint256 /*expiry*/
+    ) external view returns (bytes32) {}
+
+    function calculateQueueWithdrawalDigestHash(
+        address /*staker*/,
+        IStrategy[] memory /*strategies*/,
+        uint256[] memory /*shares*/,
+        uint256 /*stakerNonce*/,
         uint256 /*expiry*/
     ) external view returns (bytes32) {}
 
@@ -152,6 +160,10 @@ contract DelegationManagerMock is IDelegationManager, Test {
         QueuedWithdrawalParams[] calldata queuedWithdrawalParams
     ) external returns (bytes32[] memory) {}
 
+   function queueWithdrawalsWithSignature(
+        QueuedWithdrawalWithSignatureParams[] calldata queuedWithdrawalWithSigParams
+    ) external returns (bytes32[] memory) {}
+
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
@@ -165,7 +177,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         uint256[] calldata middlewareTimesIndexes,
         bool[] calldata receiveAsTokens
     ) external {}
-    
+
     // onlyDelegationManager functions in StrategyManager
     function addShares(
         IStrategyManager strategyManager,
