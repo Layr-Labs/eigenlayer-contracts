@@ -7,7 +7,6 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
-import "../libraries/SlashingConstants.sol";
 import "./AVSDirectoryStorage.sol";
 
 contract AVSDirectory is

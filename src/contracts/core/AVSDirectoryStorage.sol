@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import "../interfaces/IAVSDirectory.sol";
-import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
     using EnumerableSet for EnumerableSet.Bytes32Set;
