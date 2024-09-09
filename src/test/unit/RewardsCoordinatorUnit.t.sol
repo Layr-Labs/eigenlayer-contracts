@@ -2151,7 +2151,7 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
 
     function testFuzz_operatorCommissionBips_EmptyHistory(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         uint8 rewardTypeEnum
     ) public {
         rewardTypeEnum = uint8(bound(rewardTypeEnum, 0, numberOfRewardTypes - 1));
@@ -2168,7 +2168,7 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
 
     function testFuzz_setOperatorCommissionBips_Reverts_WhenBipsGreaterThanMax(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         uint8 rewardTypeEnum,
         uint16 newOperatorCommissionBips
     ) public filterFuzzedAddressInputs(operator) {
@@ -2183,7 +2183,7 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
     /// @notice test setting operator commission bips to a new value with empty history
     function testFuzz_setOperatorCommissionBips_EmptyHistory(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         uint8 rewardTypeEnum,
         uint16 newOperatorCommissionBips,
         uint256 randSalt
@@ -2228,7 +2228,7 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
     /// @notice test setting operator commission bips to a new value with non empty history
     function testFuzz_setOperatorCommissionBips_WithHistory(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         uint8 rewardTypeEnum,
         uint16 newOperatorCommissionBips,
         uint256 randSalt
@@ -2299,7 +2299,7 @@ contract RewardsCoordinatorUnitTests_operatorCommission is RewardsCoordinatorUni
     /// has same effectTimestamp. Should overrwrite previous value
     function testFuzz_setOperatorCommissionBips_SameBlockUpdate(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         uint8 rewardTypeEnum,
         uint16 pendingCommissionBips,
         uint16 overwriteCommissionBips

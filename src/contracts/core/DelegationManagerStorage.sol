@@ -6,6 +6,7 @@ import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IEigenPodManager.sol";
+import "../interfaces/IAllocationManager.sol";
 
 /**
  * @title Storage variables for the `DelegationManager` contract.
@@ -45,6 +46,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
+
+    /// @notice The AllocationManager contract for EigenLayer
+    IAllocationManager public immutable allocationManager;
 
     /**
      * @notice returns the total number of scaled shares (i.e. shares scaled down by a factor of the `operator`'s
@@ -133,12 +137,14 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         IStrategyManager _strategyManager,
         ISlasher _slasher,
         IEigenPodManager _eigenPodManager,
-        IAVSDirectory _avsDirectory
+        IAVSDirectory _avsDirectory,
+        IAllocationManager _allocationManager
     ) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
         slasher = _slasher;
         avsDirectory = _avsDirectory;
+        allocationManager = _allocationManager;
     }
 
     /**

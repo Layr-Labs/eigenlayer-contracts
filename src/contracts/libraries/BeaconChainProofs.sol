@@ -274,32 +274,44 @@ library BeaconChainProofs {
     /// (See https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator)
 
     /// @dev Retrieves a validator's pubkey hash
-    function getPubkeyHash(bytes32[] memory validatorFields) internal pure returns (bytes32) {
+    function getPubkeyHash(
+        bytes32[] memory validatorFields
+    ) internal pure returns (bytes32) {
         return validatorFields[VALIDATOR_PUBKEY_INDEX];
     }
 
     /// @dev Retrieves a validator's withdrawal credentials
-    function getWithdrawalCredentials(bytes32[] memory validatorFields) internal pure returns (bytes32) {
+    function getWithdrawalCredentials(
+        bytes32[] memory validatorFields
+    ) internal pure returns (bytes32) {
         return validatorFields[VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX];
     }
 
     /// @dev Retrieves a validator's effective balance (in gwei)
-    function getEffectiveBalanceGwei(bytes32[] memory validatorFields) internal pure returns (uint64) {
+    function getEffectiveBalanceGwei(
+        bytes32[] memory validatorFields
+    ) internal pure returns (uint64) {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_BALANCE_INDEX]);
     }
 
     /// @dev Retrieves a validator's activation epoch
-    function getActivationEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
+    function getActivationEpoch(
+        bytes32[] memory validatorFields
+    ) internal pure returns (uint64) {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_ACTIVATION_EPOCH_INDEX]);
     }
 
     /// @dev Retrieves true IFF a validator is marked slashed
-    function isValidatorSlashed(bytes32[] memory validatorFields) internal pure returns (bool) {
+    function isValidatorSlashed(
+        bytes32[] memory validatorFields
+    ) internal pure returns (bool) {
         return validatorFields[VALIDATOR_SLASHED_INDEX] != 0;
     }
 
     /// @dev Retrieves a validator's exit epoch
-    function getExitEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
+    function getExitEpoch(
+        bytes32[] memory validatorFields
+    ) internal pure returns (uint64) {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
     }
 }

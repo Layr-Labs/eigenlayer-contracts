@@ -89,7 +89,9 @@ interface IEigenPod {
      */
 
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
-    function initialize(address owner) external;
+    function initialize(
+        address owner
+    ) external;
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
@@ -115,7 +117,9 @@ interface IEigenPod {
      * @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
      * to prevent accidentally starting a checkpoint that will not increase their shares
      */
-    function startCheckpoint(bool revertIfNoBalance) external;
+    function startCheckpoint(
+        bool revertIfNoBalance
+    ) external;
 
     /**
      * @dev Progress the current checkpoint towards completion by submitting one or more validator
@@ -200,7 +204,9 @@ interface IEigenPod {
     /// only address that can call these methods.
     /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
     /// pod owner will be able to call `startCheckpoint` and `verifyWithdrawalCredentials`
-    function setProofSubmitter(address newProofSubmitter) external;
+    function setProofSubmitter(
+        address newProofSubmitter
+    ) external;
 
     /**
      *
@@ -224,16 +230,24 @@ interface IEigenPod {
     function podOwner() external view returns (address);
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
-    function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory);
+    function validatorPubkeyHashToInfo(
+        bytes32 validatorPubkeyHash
+    ) external view returns (ValidatorInfo memory);
 
     /// @notice Returns the validatorInfo struct for the provided pubkey
-    function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory);
+    function validatorPubkeyToInfo(
+        bytes calldata validatorPubkey
+    ) external view returns (ValidatorInfo memory);
 
     /// @notice This returns the status of a given validator
-    function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS);
+    function validatorStatus(
+        bytes32 pubkeyHash
+    ) external view returns (VALIDATOR_STATUS);
 
     /// @notice This returns the status of a given validator pubkey
-    function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS);
+    function validatorStatus(
+        bytes calldata validatorPubkey
+    ) external view returns (VALIDATOR_STATUS);
 
     /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
     function activeValidatorCount() external view returns (uint256);
@@ -275,11 +289,15 @@ interface IEigenPod {
     /// - The final partial withdrawal for an exited validator will be likely be included in this mapping.
     ///   i.e. if a validator was last checkpointed at 32.1 ETH before exiting, the next checkpoint will calculate their
     ///   "exited" amount to be 32.1 ETH rather than 32 ETH.
-    function checkpointBalanceExitedGwei(uint64) external view returns (uint64);
+    function checkpointBalanceExitedGwei(
+        uint64
+    ) external view returns (uint64);
 
     /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
     /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
     /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
     /// will revert.
-    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32);
+    function getParentBlockRoot(
+        uint64 timestamp
+    ) external view returns (bytes32);
 }

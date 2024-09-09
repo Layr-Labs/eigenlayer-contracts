@@ -24,7 +24,9 @@ interface IStrategyFactory {
     /// though deployNewStrategy does whitelist by default.
     /// These strategies MIGHT not be the only strategy for the underlying token
     /// as additional strategies can be whitelisted by the owner of the factory.
-    function deployedStrategies(IERC20 token) external view returns (IStrategy);
+    function deployedStrategies(
+        IERC20 token
+    ) external view returns (IStrategy);
 
     /**
      * @notice Deploy a new strategyBeacon contract for the ERC20 token.
@@ -33,7 +35,9 @@ interface IStrategyFactory {
      * $dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
      * like those that conform to ERC777.
      */
-    function deployNewStrategy(IERC20 token) external returns (IStrategy newStrategy);
+    function deployNewStrategy(
+        IERC20 token
+    ) external returns (IStrategy newStrategy);
 
     /**
      * @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
@@ -51,7 +55,9 @@ interface IStrategyFactory {
     /**
      * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
      */
-    function removeStrategiesFromWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
+    function removeStrategiesFromWhitelist(
+        IStrategy[] calldata strategiesToRemoveFromWhitelist
+    ) external;
 
     /// @notice Emitted when the `strategyBeacon` is changed
     event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);

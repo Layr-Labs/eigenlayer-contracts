@@ -67,6 +67,10 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        allocationManager = AllocationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             IETHPOSDeposit(ETHPOSDepositAddress),
@@ -76,7 +80,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
-        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory);
+        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory, allocationManager);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher, avsDirectory);
         slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
@@ -86,6 +90,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
+        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory);
 
         // Third, upgrade the proxy contracts to point to the implementations
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
@@ -147,6 +152,17 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
                 msg.sender, // initialOwner is msg.sender for now to set forktimestamp later
                 eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
+            )
+        );
+        // AllocationManager
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation),
+            abi.encodeWithSelector(
+                AllocationManager.initialize.selector,
+                msg.sender, // initialOwner is msg.sender for now to set forktimestamp later
+                eigenLayerPauserReg,
+                ALLOCATION_MANAGER_INIT_PAUSED_STATUS
             )
         );
 

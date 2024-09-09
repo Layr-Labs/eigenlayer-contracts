@@ -41,7 +41,9 @@ contract StrategyManager is
         _;
     }
 
-    modifier onlyStrategiesWhitelistedForDeposit(IStrategy strategy) {
+    modifier onlyStrategiesWhitelistedForDeposit(
+        IStrategy strategy
+    ) {
         require(
             strategyIsWhitelistedForDeposit[strategy],
             "StrategyManager.onlyStrategiesWhitelistedForDeposit: strategy not whitelisted"
@@ -209,7 +211,9 @@ contract StrategyManager is
      * @notice Owner-only function to change the `strategyWhitelister` address.
      * @param newStrategyWhitelister new address for the `strategyWhitelister`.
      */
-    function setStrategyWhitelister(address newStrategyWhitelister) external onlyOwner {
+    function setStrategyWhitelister(
+        address newStrategyWhitelister
+    ) external onlyOwner {
         _setStrategyWhitelister(newStrategyWhitelister);
     }
 
@@ -244,10 +248,9 @@ contract StrategyManager is
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
      */
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist)
-        external
-        onlyStrategyWhitelister
-    {
+    function removeStrategiesFromDepositWhitelist(
+        IStrategy[] calldata strategiesToRemoveFromWhitelist
+    ) external onlyStrategyWhitelister {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
         for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength;) {
             // change storage and emit event only if strategy is already in whitelist
@@ -412,7 +415,9 @@ contract StrategyManager is
      * @notice Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
      * @param newStrategyWhitelister The new address for the `strategyWhitelister` to take.
      */
-    function _setStrategyWhitelister(address newStrategyWhitelister) internal {
+    function _setStrategyWhitelister(
+        address newStrategyWhitelister
+    ) internal {
         emit StrategyWhitelisterChanged(strategyWhitelister, newStrategyWhitelister);
         strategyWhitelister = newStrategyWhitelister;
     }
@@ -424,7 +429,9 @@ contract StrategyManager is
      * @param staker The staker of interest, whose deposits this function will fetch
      * @return (staker's strategies, shares in these strategies)
      */
-    function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
+    function getDeposits(
+        address staker
+    ) external view returns (IStrategy[] memory, uint256[] memory) {
         uint256 strategiesLength = stakerStrategyList[staker].length;
         uint256[] memory shares = new uint256[](strategiesLength);
 
@@ -438,7 +445,9 @@ contract StrategyManager is
     }
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
-    function stakerStrategyListLength(address staker) external view returns (uint256) {
+    function stakerStrategyListLength(
+        address staker
+    ) external view returns (uint256) {
         return stakerStrategyList[staker].length;
     }
 
