@@ -30,7 +30,7 @@ contract AVSDirectory is
     uint256 internal constant BIPS_FACTOR = 10_000;
 
     /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
-    uint32 public constant DEALLOCATION_DELAY = 10 minutes;
+    uint32 public constant DEALLOCATION_DELAY = 17.5 days;
 
     /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
     uint256 public constant MAX_PENDING_UPDATES = 1;
@@ -262,7 +262,7 @@ contract AVSDirectory is
         address operator,
         uint32[] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
-        // _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
+        _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
     /**
@@ -443,7 +443,7 @@ contract AVSDirectory is
     function updateAVSMetadataURI(
         string calldata metadataURI
     ) external override {
-        // emit AVSMetadataURIUpdated(msg.sender, metadataURI);
+        emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /**
@@ -992,11 +992,11 @@ contract AVSDirectory is
         uint32 timestamp,
         bool linear
     ) public view returns (uint24[] memory) {
-        // uint24[] memory slashablePPM = new uint24[](strategies.length);
-        // for (uint256 i = 0; i < strategies.length; ++i) {
-        //     slashablePPM[i] = _getSlashablePPM(operator, operatorSet, strategies[i], timestamp, linear);
-        // }
-        // return slashablePPM;
+        uint24[] memory slashablePPM = new uint24[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            slashablePPM[i] = _getSlashablePPM(operator, operatorSet, strategies[i], timestamp, linear);
+        }
+        return slashablePPM;
     }
 
     function _getSlashablePPM(
