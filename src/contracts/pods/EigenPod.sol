@@ -85,7 +85,10 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     modifier onlyWhenNotPaused(
         uint8 index
     ) {
-        require(!IPausable(address(eigenPodManager)).paused(index), CurrentlyPaused());
+        require(
+            !IPausable(address(eigenPodManager)).paused(index),
+            "EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"
+        );
         _;
     }
 
@@ -105,7 +108,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     function initialize(
         address _podOwner
     ) external initializer {
-        require(_podOwner != address(0), InputAddressZero());
+        require(_podOwner != address(0), "EigenPod.initialize: podOwner cannot be zero address");
         podOwner = _podOwner;
     }
 
@@ -568,7 +571,10 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     function _startCheckpoint(
         bool revertIfNoBalance
     ) internal {
-        require(currentCheckpointTimestamp == 0, IncompletePreviousCheckpoint());
+        require(
+            currentCheckpointTimestamp == 0,
+            "EigenPod._startCheckpoint: must finish previous checkpoint before starting another"
+        );
 
         // Prevent a checkpoint being completable twice in the same block. This prevents an edge case
         // where the second checkpoint would not be completable.
@@ -651,7 +657,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     function _calculateValidatorPubkeyHash(
         bytes memory validatorPubkey
     ) internal pure returns (bytes32) {
-        require(validatorPubkey.length == 48, InvalidValidatorPubKeyLength());
+        require(validatorPubkey.length == 48, "EigenPod._calculateValidatorPubkeyHash must be a 48-byte BLS public key");
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
     }
 
@@ -706,7 +712,10 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     function getParentBlockRoot(
         uint64 timestamp
     ) public view returns (bytes32) {
-        require(block.timestamp - timestamp < BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12, TimestampOutOfRange());
+        require(
+            block.timestamp - timestamp < BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12,
+            "EigenPod.getParentBlockRoot: timestamp out of range"
+        );
 
         (bool success, bytes memory result) = BEACON_ROOTS_ADDRESS.staticcall(abi.encode(timestamp));
 

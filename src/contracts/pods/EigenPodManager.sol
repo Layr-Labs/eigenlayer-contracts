@@ -31,7 +31,7 @@ contract EigenPodManager is
     modifier onlyEigenPod(
         address podOwner
     ) {
-        require(address(ownerToPod[podOwner]) == msg.sender, OnlyEigenPod());
+        require(address(ownerToPod[podOwner]) == msg.sender, "EigenPodManager.onlyEigenPod: not a pod");
         _;
     }
 

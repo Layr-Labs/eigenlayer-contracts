@@ -84,7 +84,9 @@ library Snapshots {
     /**
      * @dev Returns the value in the most recent snapshot, or zero if there are no snapshots.
      */
-    function latest(History storage self) internal view returns (uint224) {
+    function latest(
+        History storage self
+    ) internal view returns (uint224) {
         uint256 pos = self._snapshots.length;
         return pos == 0 ? 0 : _unsafeAccess(self._snapshots, pos - 1)._value;
     }
@@ -93,7 +95,9 @@ library Snapshots {
      * @dev Returns whether there is a snapshot in the structure (i.e. it is not empty), and if so the key and value
      * in the most recent snapshot.
      */
-    function latestSnapshot(History storage self) internal view returns (bool exists, uint32 _key, uint224 _value) {
+    function latestSnapshot(
+        History storage self
+    ) internal view returns (bool exists, uint32 _key, uint224 _value) {
         uint256 pos = self._snapshots.length;
         if (pos == 0) {
             return (false, 0, 0);
@@ -106,7 +110,9 @@ library Snapshots {
     /**
      * @dev Returns the number of snapshot.
      */
-    function length(History storage self) internal view returns (uint256) {
+    function length(
+        History storage self
+    ) internal view returns (uint256) {
         return self._snapshots.length;
     }
 
@@ -186,10 +192,7 @@ library Snapshots {
     /**
      * @dev Access an element of the array without performing bounds check. The position is assumed to be within bounds.
      */
-    function _unsafeAccess(
-        Snapshot[] storage self,
-        uint256 pos
-    ) private pure returns (Snapshot storage result) {
+    function _unsafeAccess(Snapshot[] storage self, uint256 pos) private pure returns (Snapshot storage result) {
         assembly {
             mstore(0, self.slot)
             result.slot := add(keccak256(0, 0x20), pos)
@@ -238,7 +241,10 @@ library Snapshots {
      * NOTE: That if value != 0 && pos == 0, then that means the value is the first snapshot and actually exists
      * a snapshot DNE iff value == 0 && pos == 0 => value == 0
      */
-    function upperLookupRecentWithPos(History storage self, uint32 key) internal view returns (uint224, uint256, uint256) {
+    function upperLookupRecentWithPos(
+        History storage self,
+        uint32 key
+    ) internal view returns (uint224, uint256, uint256) {
         uint256 len = self._snapshots.length;
 
         uint256 low = 0;
@@ -261,11 +267,7 @@ library Snapshots {
     /// @notice WARNING: this function is only used because of the invariant property
     /// that from the current key, all future snapshotted magnitude values are strictly > current value.
     /// Use function with extreme care for other situations.
-    function decrementAtAndFutureSnapshots(
-        History storage self,
-        uint32 key,
-        uint224 decrementValue
-    ) internal {
+    function decrementAtAndFutureSnapshots(History storage self, uint32 key, uint224 decrementValue) internal {
         (uint224 value, uint256 pos, uint256 len) = upperLookupRecentWithPos(self, key);
 
         // if there is no snapshot, return

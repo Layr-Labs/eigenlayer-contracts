@@ -48,8 +48,11 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     function deployNewStrategy(
         IERC20 token
     ) external onlyWhenNotPaused(PAUSED_NEW_STRATEGIES) returns (IStrategy newStrategy) {
-        require(!isBlacklisted[token], BlacklistedToken());
-        require(deployedStrategies[token] == IStrategy(address(0)), StrategyAlreadyExists());
+        require(!isBlacklisted[token], "StrategyFactory.deployNewStrategy: Token is blacklisted");
+        require(
+            deployedStrategies[token] == IStrategy(address(0)),
+            "StrategyFactory.deployNewStrategy: Strategy already exists for token"
+        );
         IStrategy strategy = IStrategy(
             address(
                 new BeaconProxy(

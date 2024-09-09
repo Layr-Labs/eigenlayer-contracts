@@ -6,7 +6,7 @@ import "../interfaces/IAVSDirectory.sol";
 library SlashingConstants {
     /// @dev The initial total magnitude for an operator
     uint64 public constant INITIAL_TOTAL_MAGNITUDE = 1e18;
-    
+
     /// @notice that stakerScalingFactor and totalMagnitude have initial default values to 1e18 as "1"
     /// to preserve precision with uint256 math. We use `PRECISION_FACTOR` where these variables are used
     /// and divide to represent as 1

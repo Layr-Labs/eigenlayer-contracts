@@ -137,11 +137,9 @@ contract RewardsCoordinator is
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
-        nonReentrant
-    {
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length;) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -175,12 +173,9 @@ contract RewardsCoordinator is
      * a permissioned call based on isRewardsForAllSubmitter mapping.
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length;) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -221,11 +216,9 @@ contract RewardsCoordinator is
      * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
      * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
      */
-    function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARD_OPERATOR_SET)
-        nonReentrant
-    {
+    function rewardOperatorSetForRange(
+        OperatorSetRewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARD_OPERATOR_SET) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length;) {
             OperatorSetRewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -359,7 +352,7 @@ contract RewardsCoordinator is
     function disableRoot(
         uint32 rootIndex
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
-        require(rootIndex < _distributionRoots.length, InvalidRootIndex());
+        require(rootIndex < _distributionRoots.length, "RewardsCoordinator.disableRoot: invalid rootIndex");
         DistributionRoot storage root = _distributionRoots[rootIndex];
         require(!root.disabled, RootDisabled());
         require(block.timestamp < root.activatedAt, RootActivated());
@@ -392,7 +385,7 @@ contract RewardsCoordinator is
      * @dev The commission update takes effect after 7 days
      */
     function setOperatorCommissionBips(
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType,
         uint16 commissionBips
     ) external returns (uint32 effectTimestamp) {
@@ -663,7 +656,7 @@ contract RewardsCoordinator is
     /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
     function getOperatorCommissionBips(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType
     ) external view returns (uint16) {
         // if no value set, default to globalOperatorCommissionBips
@@ -725,7 +718,7 @@ contract RewardsCoordinator is
     /// @notice returns the length of the operator commission update history
     function getOperatorCommissionUpdateHistoryLength(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType
     ) external view returns (uint256) {
         return operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.operatorSetId][rewardType].length;
