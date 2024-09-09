@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IAllocationManager.sol";
 import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
-    using EnumerableSet for EnumerableSet.Bytes32Set;
-    using EnumerableSet for EnumerableSet.AddressSet;
     using Snapshots for Snapshots.History;
 
     /// @notice The EIP-712 typehash for the contract's domain
