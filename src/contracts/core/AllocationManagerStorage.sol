@@ -15,7 +15,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-        
+
     /// @notice The EIP-712 typehash for the `MagnitudeAdjustments` struct used by the contract
     bytes32 public constant MAGNITUDE_ADJUSTMENT_TYPEHASH = keccak256(
         "MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)"
@@ -53,10 +53,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @notice Mapping: operator => strategy => operatorSet (encoded) => list of queuedDeallocation indices
     mapping(address => mapping(IStrategy => mapping(bytes32 => uint256[]))) internal _queuedDeallocationIndices;
 
-    constructor(
-        IDelegationManager _delegation,
-        IAVSDirectory _avsDirectory
-    ) {
+    constructor(IDelegationManager _delegation, IAVSDirectory _avsDirectory) {
         delegation = _delegation;
         avsDirectory = _avsDirectory;
     }

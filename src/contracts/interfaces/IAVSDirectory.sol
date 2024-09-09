@@ -16,6 +16,7 @@ interface IAVSDirectory is ISignatureUtils {
     enum OperatorAVSRegistrationStatus {
         UNREGISTERED, // Operator not registered to AVS
         REGISTERED // Operator registered to AVS
+
     }
 
     /**
@@ -70,7 +71,9 @@ interface IAVSDirectory is ISignatureUtils {
      * @dev msg.sender must be the AVS.
      * @dev The AVS may create operator sets before it becomes an operator set AVS.
      */
-    function createOperatorSets(uint32[] calldata operatorSetIds) external;
+    function createOperatorSets(
+        uint32[] calldata operatorSetIds
+    ) external;
 
     /**
      * @notice Sets the AVS as an operator set AVS, preventing legacy M2 operator registrations.
@@ -164,7 +167,9 @@ interface IAVSDirectory is ISignatureUtils {
      *
      *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
      */
-    function deregisterOperatorFromAVS(address operator) external;
+    function deregisterOperatorFromAVS(
+        address operator
+    ) external;
 
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
@@ -173,26 +178,31 @@ interface IAVSDirectory is ISignatureUtils {
      *
      *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
      */
-    function updateAVSMetadataURI(string calldata metadataURI) external;
+    function updateAVSMetadataURI(
+        string calldata metadataURI
+    ) external;
 
     /**
      * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
      *
      * @param salt A unique and single use value associated with the approver signature.
      */
-    function cancelSalt(bytes32 salt) external;
+    function cancelSalt(
+        bytes32 salt
+    ) external;
 
     /**
      *
      *                         VIEW FUNCTIONS
      *
      */
-
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 
     function isMember(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
-    function isOperatorSetAVS(address avs) external view returns (bool);
+    function isOperatorSetAVS(
+        address avs
+    ) external view returns (bool);
 
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
 
@@ -238,13 +248,17 @@ interface IAVSDirectory is ISignatureUtils {
      * @notice Returns the number of operators registered to an operatorSet.
      * @param operatorSet The operatorSet to get the member count for
      */
-    function getNumOperatorsInOperatorSet(OperatorSet memory operatorSet) external view returns (uint256);
+    function getNumOperatorsInOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256);
 
     /**
      *  @notice Returns the total number of operator sets an operator is registered to.
      *  @param operator The operator address to query.
      */
-    function inTotalOperatorSets(address operator) external view returns (uint256);
+    function inTotalOperatorSets(
+        address operator
+    ) external view returns (uint256);
 
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
@@ -300,10 +314,10 @@ interface IAVSDirectory is ISignatureUtils {
 
     /// @notice The EIP-712 typehash for the OperatorSetRegistration struct used by the contract.
     function OPERATOR_SET_REGISTRATION_TYPEHASH() external view returns (bytes32);
-    
+
     function operatorSetStatus(
-        address avs, 
-        address operator, 
+        address avs,
+        address operator,
         uint32 operatorSetId
     ) external view returns (bool registered, uint32 lastDeregisteredTimestamp);
 }

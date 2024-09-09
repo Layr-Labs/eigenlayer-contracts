@@ -130,7 +130,9 @@ interface IAllocationManager is ISignatureUtils {
      *
      * @param salt A unique and single use value associated with the approver signature.
      */
-    function cancelSalt(bytes32 salt) external;
+    function cancelSalt(
+        bytes32 salt
+    ) external;
 
     /**
      *
@@ -162,7 +164,7 @@ interface IAllocationManager is ISignatureUtils {
     /**
      * @param operator the operator to get the slashable magnitude for
      * @param strategies the strategies to get the slashable magnitude for
-     * 
+     *
      * @return operatorSets the operator sets the operator is a member of and the current slashable magnitudes for each strategy
      */
     function getCurrentSlashableMagnitudes(
@@ -174,7 +176,7 @@ interface IAllocationManager is ISignatureUtils {
      * @param operator the operator to get the slashable magnitude for
      * @param strategies the strategies to get the slashable magnitude for
      * @param timestamp the timestamp to get the slashable magnitude for
-     * 
+     *
      * @return operatorSets the operator sets the operator is a member of and the slashable magnitudes for each strategy
      */
     function getSlashableMagnitudes(
@@ -231,10 +233,7 @@ interface IAllocationManager is ISignatureUtils {
      * @param strategy the strategy to get the total magnitude for
      * @return totalMagnitude the total magnitude for the strategy
      */
-    function getTotalMagnitude(
-        address operator,
-        IStrategy strategy
-    ) external view returns (uint64);
+    function getTotalMagnitude(address operator, IStrategy strategy) external view returns (uint64);
 
     /**
      * @notice Returns the total magnitude of an operator for a given strategy at a given timestamp

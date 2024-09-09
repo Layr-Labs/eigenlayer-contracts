@@ -15,7 +15,7 @@ contract AllocationManager is
     OwnableUpgradeable,
     Pausable,
     AllocationManagerStorage,
-    ReentrancyGuardUpgradeable 
+    ReentrancyGuardUpgradeable
 {
     using Snapshots for Snapshots.History;
 
@@ -80,7 +80,9 @@ contract AllocationManager is
             delegation.isOperator(operator),
             "AllocationManager.updateFreeMagnitude: operator not registered to EigenLayer yet"
         );
-        require(strategies.length == numToComplete.length, "AllocationManager.updateFreeMagnitude: array length mismatch");
+        require(
+            strategies.length == numToComplete.length, "AllocationManager.updateFreeMagnitude: array length mismatch"
+        );
         for (uint256 i = 0; i < strategies.length; ++i) {
             _updateFreeMagnitude({operator: operator, strategy: strategies[i], numToComplete: numToComplete[i]});
         }
@@ -106,7 +108,8 @@ contract AllocationManager is
             _verifyOperatorSignature(operator, allocations, operatorSignature);
         }
         require(
-            delegation.isOperator(operator), "AllocationManager.modifyAllocations: operator not registered to EigenLayer yet"
+            delegation.isOperator(operator),
+            "AllocationManager.modifyAllocations: operator not registered to EigenLayer yet"
         );
         IDelegationManager.AllocationDelayDetails memory details = delegation.operatorAllocationDelay(operator);
         require(
@@ -237,7 +240,6 @@ contract AllocationManager is
         // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
-
 
     /**
      * @notice For a single strategy, update freeMagnitude by adding completable pending free magnitudes
@@ -431,8 +433,7 @@ contract AllocationManager is
         address operator,
         IStrategy[] calldata strategies
     ) external view returns (OperatorSet[] memory, uint64[][] memory) {
-        OperatorSet[] memory operatorSets =
-            avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
+        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
         uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
             slashableMagnitudes[i] = new uint64[](operatorSets.length);
@@ -459,8 +460,7 @@ contract AllocationManager is
         IStrategy[] calldata strategies,
         uint32 timestamp
     ) external view returns (OperatorSet[] memory, uint64[][] memory) {
-        OperatorSet[] memory operatorSets =
-            avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
+        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
         uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
             slashableMagnitudes[i] = new uint64[](operatorSets.length);
@@ -541,7 +541,7 @@ contract AllocationManager is
         uint16 numToComplete
     ) external view returns (uint64) {
         OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][strategy];
-        (uint64 freeMagnitudeToAdd, ) =
+        (uint64 freeMagnitudeToAdd,) =
             _getPendingFreeMagnitude(operator, strategy, numToComplete, info.nextPendingFreeMagnitudeIndex);
         return info.freeMagnitude + freeMagnitudeToAdd;
     }
@@ -566,7 +566,7 @@ contract AllocationManager is
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            (bool exists, , uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestSnapshot();
+            (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestSnapshot();
             if (!exists) {
                 totalMagnitudes[i] = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
             } else {
@@ -590,7 +590,7 @@ contract AllocationManager is
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            (uint224 value, uint256 pos, ) =
+            (uint224 value, uint256 pos,) =
                 _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
             // if there is no existing total magnitude snapshot
             if (value == 0 && pos == 0) {
@@ -608,12 +608,9 @@ contract AllocationManager is
      * @param strategy the strategy to get the total magnitude for
      * @return totalMagnitude the total magnitude for the strategy
      */
-    function getTotalMagnitude(
-        address operator,
-        IStrategy strategy
-    ) external view returns (uint64) {
+    function getTotalMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
         uint64 totalMagnitude;
-        (bool exists, , uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
+        (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
             totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
         } else {
@@ -636,10 +633,7 @@ contract AllocationManager is
         uint32 timestamp
     ) external view returns (uint64) {
         uint64 totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
-        (
-            uint224 value,
-            uint256 pos,
-        ) = _totalMagnitudeUpdate[operator][strategy].upperLookupRecentWithPos(timestamp);
+        (uint224 value, uint256 pos,) = _totalMagnitudeUpdate[operator][strategy].upperLookupRecentWithPos(timestamp);
 
         // if there is no existing total magnitude snapshot
         if (value == 0 && pos == 0) {
@@ -684,7 +678,8 @@ contract AllocationManager is
         );
         // Assert operator's signature cannot be replayed.
         require(
-            !avsDirectory.operatorSaltIsSpent(operator, operatorSignature.salt), "AllocationManager._verifyOperatorSignature: salt spent"
+            !avsDirectory.operatorSaltIsSpent(operator, operatorSignature.salt),
+            "AllocationManager._verifyOperatorSignature: salt spent"
         );
 
         bytes32 digestHash = calculateMagnitudeAllocationDigestHash(
@@ -736,7 +731,6 @@ contract AllocationManager is
     ) internal view returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
     }
-
 
     /// @dev Returns an `OperatorSet` encoded into a 32-byte value.
     /// @param operatorSet The `OperatorSet` to encode.

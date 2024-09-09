@@ -27,7 +27,9 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /// @notice event emitted when the EIGEN token is backed
     event Backed();
 
-    constructor(IERC20 _EIGEN) {
+    constructor(
+        IERC20 _EIGEN
+    ) {
         EIGEN = _EIGEN;
         _disableInitializers();
     }
@@ -35,7 +37,9 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /**
      * @notice An initializer function that sets initial values for the contract's state variables.
      */
-    function initialize(address initialOwner) public initializer {
+    function initialize(
+        address initialOwner
+    ) public initializer {
         __Ownable_init();
         __ERC20_init("Backing Eigen", "bEIGEN");
         _transferOwnership(initialOwner);

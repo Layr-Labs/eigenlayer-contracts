@@ -8,7 +8,6 @@ import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IAllocationManager.sol";
 
-
 /**
  * @title Storage variables for the `DelegationManager` contract.
  * @author Layr Labs, Inc.
