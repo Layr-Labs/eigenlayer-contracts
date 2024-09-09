@@ -661,7 +661,8 @@ contract AllocationManager is
         uint64[] memory pendingMagnitude = new uint64[](operatorSets.length);
         uint64[] memory timestamps = new uint64[](operatorSets.length);
         for (uint256 i = 0; i < operatorSets.length; ++i) {
-            (bool exists, uint32 key, uint224 value) = _magnitudeUpdate[operator][strategy][_encodeOperatorSet(operatorSets[i])].latestSnapshot();
+            (bool exists, uint32 key, uint224 value) =
+                _magnitudeUpdate[operator][strategy][_encodeOperatorSet(operatorSets[i])].latestSnapshot();
             if (exists) {
                 if (key > block.timestamp) {
                     pendingMagnitude[i] = uint64(value);
@@ -691,10 +692,12 @@ contract AllocationManager is
         uint64[] memory pendingMagnitudeDiff = new uint64[](operatorSets.length);
         uint64[] memory timestamps = new uint64[](operatorSets.length);
         for (uint256 i = 0; i < operatorSets.length; ++i) {
-            uint256[] memory indices = _queuedDeallocationIndices[operator][strategy][_encodeOperatorSet(operatorSets[i])];
+            uint256[] memory indices =
+                _queuedDeallocationIndices[operator][strategy][_encodeOperatorSet(operatorSets[i])];
             uint256 length = indices.length;
             uint256 deallocationIndex = indices[length - 1];
-            PendingFreeMagnitude memory latestPendingMagnitude = _pendingFreeMagnitude[operator][strategy][deallocationIndex];
+            PendingFreeMagnitude memory latestPendingMagnitude =
+                _pendingFreeMagnitude[operator][strategy][deallocationIndex];
             if (latestPendingMagnitude.completableTimestamp > block.timestamp) {
                 pendingMagnitudeDiff[i] = latestPendingMagnitude.magnitudeDiff;
                 timestamps[i] = latestPendingMagnitude.completableTimestamp;
