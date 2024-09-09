@@ -207,29 +207,29 @@ contract DelegationManager is
         SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 approverSalt
     ) external {
-        // // check the signature expiry
-        // require(
-        //     stakerSignatureAndExpiry.expiry >= block.timestamp,
-        //     "DelegationManager.delegateToBySignature: staker signature expired"
-        // );
-        // require(!isDelegated(staker), "DelegationManager.delegateToBySignature: staker is already actively delegated");
-        // require(
-        //     isOperator(operator), "DelegationManager.delegateToBySignature: operator is not registered in EigenLayer"
-        // );
+        // check the signature expiry
+        require(
+            stakerSignatureAndExpiry.expiry >= block.timestamp,
+            "DelegationManager.delegateToBySignature: staker signature expired"
+        );
+        require(!isDelegated(staker), "DelegationManager.delegateToBySignature: staker is already actively delegated");
+        require(
+            isOperator(operator), "DelegationManager.delegateToBySignature: operator is not registered in EigenLayer"
+        );
 
-        // // calculate the digest hash, then increment `staker`'s nonce
-        // uint256 currentStakerNonce = stakerNonce[staker];
-        // bytes32 stakerDigestHash =
-        //     calculateStakerDelegationDigestHash(staker, currentStakerNonce, operator, stakerSignatureAndExpiry.expiry);
-        // unchecked {
-        //     stakerNonce[staker] = currentStakerNonce + 1;
-        // }
+        // calculate the digest hash, then increment `staker`'s nonce
+        uint256 currentStakerNonce = stakerNonce[staker];
+        bytes32 stakerDigestHash =
+            calculateStakerDelegationDigestHash(staker, currentStakerNonce, operator, stakerSignatureAndExpiry.expiry);
+        unchecked {
+            stakerNonce[staker] = currentStakerNonce + 1;
+        }
 
-        // // actually check that the signature is valid
-        // EIP1271SignatureUtils.checkSignature_EIP1271(staker, stakerDigestHash, stakerSignatureAndExpiry.signature);
+        // actually check that the signature is valid
+        EIP1271SignatureUtils.checkSignature_EIP1271(staker, stakerDigestHash, stakerSignatureAndExpiry.signature);
 
-        // // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
-        // _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
+        // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
+        _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
     }
 
     /**
@@ -242,51 +242,51 @@ contract DelegationManager is
         onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
         returns (bytes32[] memory withdrawalRoots)
     {
-        // require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
-        // require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
-        // require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
-        // address operator = delegatedTo[staker];
-        // require(
-        //     msg.sender == staker || msg.sender == operator
-        //         || msg.sender == _operatorDetails[operator].delegationApprover,
-        //     "DelegationManager.undelegate: caller cannot undelegate staker"
-        // );
+        require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
+        require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
+        require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
+        address operator = delegatedTo[staker];
+        require(
+            msg.sender == staker || msg.sender == operator
+                || msg.sender == _operatorDetails[operator].delegationApprover,
+            "DelegationManager.undelegate: caller cannot undelegate staker"
+        );
 
-        // // Gather strategies and scaled shares to remove from staker/operator during undelegation
-        // // Undelegation removes ALL currently-active strategies and shares
-        // (IStrategy[] memory strategies, uint256[] memory scaledShares) = getDelegatableScaledShares(staker);
+        // Gather strategies and scaled shares to remove from staker/operator during undelegation
+        // Undelegation removes ALL currently-active strategies and shares
+        (IStrategy[] memory strategies, uint256[] memory scaledShares) = getDelegatableScaledShares(staker);
 
-        // // emit an event if this action was not initiated by the staker themselves
-        // if (msg.sender != staker) {
-        //     emit StakerForceUndelegated(staker, operator);
-        // }
+        // emit an event if this action was not initiated by the staker themselves
+        if (msg.sender != staker) {
+            emit StakerForceUndelegated(staker, operator);
+        }
 
-        // // undelegate the staker
-        // emit StakerUndelegated(staker, operator);
-        // delegatedTo[staker] = address(0);
+        // undelegate the staker
+        emit StakerUndelegated(staker, operator);
+        delegatedTo[staker] = address(0);
 
-        // // if no delegatable shares, return an empty array, and don't queue a withdrawal
-        // if (strategies.length == 0) {
-        //     withdrawalRoots = new bytes32[](0);
-        // } else {
-        //     withdrawalRoots = new bytes32[](strategies.length);
-        //     for (uint256 i = 0; i < strategies.length; i++) {
-        //         IStrategy[] memory singleStrategy = new IStrategy[](1);
-        //         uint256[] memory singleScaledShare = new uint256[](1);
-        //         singleStrategy[0] = strategies[i];
-        //         singleScaledShare[0] = scaledShares[i];
+        // if no delegatable shares, return an empty array, and don't queue a withdrawal
+        if (strategies.length == 0) {
+            withdrawalRoots = new bytes32[](0);
+        } else {
+            withdrawalRoots = new bytes32[](strategies.length);
+            for (uint256 i = 0; i < strategies.length; i++) {
+                IStrategy[] memory singleStrategy = new IStrategy[](1);
+                uint256[] memory singleScaledShare = new uint256[](1);
+                singleStrategy[0] = strategies[i];
+                singleScaledShare[0] = scaledShares[i];
 
-        //         withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
-        //             staker: staker,
-        //             operator: operator,
-        //             withdrawer: staker,
-        //             strategies: singleStrategy,
-        //             scaledShares: singleScaledShare
-        //         });
-        //     }
-        // }
+                withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
+                    staker: staker,
+                    operator: operator,
+                    withdrawer: staker,
+                    strategies: singleStrategy,
+                    scaledShares: singleScaledShare
+                });
+            }
+        }
 
-        // return withdrawalRoots;
+        return withdrawalRoots;
     }
 
     /**
@@ -301,40 +301,40 @@ contract DelegationManager is
         onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
         returns (bytes32[] memory)
     {
-        // bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
-        // address operator = delegatedTo[msg.sender];
+        bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
+        address operator = delegatedTo[msg.sender];
 
-        // for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
-        //     require(
-        //         queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length,
-        //         "DelegationManager.queueWithdrawal: input length mismatch"
-        //     );
-        //     require(
-        //         queuedWithdrawalParams[i].withdrawer == msg.sender,
-        //         "DelegationManager.queueWithdrawal: withdrawer must be staker"
-        //     );
+        for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
+            require(
+                queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length,
+                "DelegationManager.queueWithdrawal: input length mismatch"
+            );
+            require(
+                queuedWithdrawalParams[i].withdrawer == msg.sender,
+                "DelegationManager.queueWithdrawal: withdrawer must be staker"
+            );
 
-        //     // Withdrawer inputs the number of real Strategy shares they expect to withdraw,
-        //     // convert accordingly to scaledShares in storage
-        //     uint256[] memory scaledShares = ShareScalingLib.scaleShares(
-        //         avsDirectory,
-        //         operator,
-        //         queuedWithdrawalParams[i].strategies,
-        //         queuedWithdrawalParams[i].shares
-        //     );
+            // Withdrawer inputs the number of real Strategy shares they expect to withdraw,
+            // convert accordingly to scaledShares in storage
+            uint256[] memory scaledShares = ShareScalingLib.scaleShares(
+                avsDirectory,
+                operator,
+                queuedWithdrawalParams[i].strategies,
+                queuedWithdrawalParams[i].shares
+            );
 
-        //     // Remove shares from staker's strategies and place strategies/shares in queue.
-        //     // If the staker is delegated to an operator, the operator's delegated shares are also reduced
-        //     // NOTE: This will fail if the staker doesn't have the shares implied by the input parameters
-        //     withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
-        //         staker: msg.sender,
-        //         operator: operator,
-        //         withdrawer: queuedWithdrawalParams[i].withdrawer,
-        //         strategies: queuedWithdrawalParams[i].strategies,
-        //         scaledShares: scaledShares
-        //     });
-        // }
-        // return withdrawalRoots;
+            // Remove shares from staker's strategies and place strategies/shares in queue.
+            // If the staker is delegated to an operator, the operator's delegated shares are also reduced
+            // NOTE: This will fail if the staker doesn't have the shares implied by the input parameters
+            withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
+                staker: msg.sender,
+                operator: operator,
+                withdrawer: queuedWithdrawalParams[i].withdrawer,
+                strategies: queuedWithdrawalParams[i].strategies,
+                scaledShares: scaledShares
+            });
+        }
+        return withdrawalRoots;
     }
 
     /**
@@ -620,54 +620,54 @@ contract DelegationManager is
         IERC20[] calldata tokens,
         bool receiveAsTokens
     ) internal {
-        // bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
-        // require(
-        //     pendingWithdrawals[withdrawalRoot], "DelegationManager._completeQueuedWithdrawal: action is not in queue"
-        // );
-        // require(
-        //     withdrawal.startTimestamp + minWithdrawalDelay <= block.number,
-        //     "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelay period has not yet passed"
-        // );
-        // require(
-        //     msg.sender == withdrawal.withdrawer,
-        //     "DelegationManager._completeQueuedWithdrawal: only withdrawer can complete action"
-        // );
-        // require(
-        //     tokens.length == withdrawal.strategies.length,
-        //     "DelegationManager._completeQueuedWithdrawal: input length mismatch"
-        // );
+        require(
+            pendingWithdrawals[withdrawalRoot], "DelegationManager._completeQueuedWithdrawal: action is not in queue"
+        );
+        require(
+            withdrawal.startTimestamp + minWithdrawalDelay <= block.number,
+            "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelay period has not yet passed"
+        );
+        require(
+            msg.sender == withdrawal.withdrawer,
+            "DelegationManager._completeQueuedWithdrawal: only withdrawer can complete action"
+        );
+        require(
+            tokens.length == withdrawal.strategies.length,
+            "DelegationManager._completeQueuedWithdrawal: input length mismatch"
+        );
 
-        // // read delegated operator for scaling and adding shares back if needed
-        // address currentOperator = delegatedTo[msg.sender];
-        // // descale shares to get the "real" strategy share values of the withdrawal
-        // uint256[] memory descaledShares = ShareScalingLib.descaleSharesAtTimestamp(
-        //     avsDirectory,
-        //     withdrawal.delegatedTo,
-        //     withdrawal.strategies,
-        //     withdrawal.scaledShares,
-        //     withdrawal.startTimestamp + avsDirectory.DEALLOCATION_DELAY()
-        // );
+        // read delegated operator for scaling and adding shares back if needed
+        address currentOperator = delegatedTo[msg.sender];
+        // descale shares to get the "real" strategy share values of the withdrawal
+        uint256[] memory descaledShares = ShareScalingLib.descaleSharesAtTimestamp(
+            avsDirectory,
+            withdrawal.delegatedTo,
+            withdrawal.strategies,
+            withdrawal.scaledShares,
+            withdrawal.startTimestamp + avsDirectory.DEALLOCATION_DELAY()
+        );
 
-        // if (receiveAsTokens) {
-        //     // complete the withdrawal by converting descaled shares to tokens
-        //     _completeReceiveAsTokens(
-        //         withdrawal,
-        //         tokens,
-        //         descaledShares
-        //     );
-        // } else {
-        //     // Award shares back in StrategyManager/EigenPodManager.
-        //     _completeReceiveAsShares(
-        //         withdrawal,
-        //         tokens,
-        //         descaledShares
-        //     );
-        // }
+        if (receiveAsTokens) {
+            // complete the withdrawal by converting descaled shares to tokens
+            _completeReceiveAsTokens(
+                withdrawal,
+                tokens,
+                descaledShares
+            );
+        } else {
+            // Award shares back in StrategyManager/EigenPodManager.
+            _completeReceiveAsShares(
+                withdrawal,
+                tokens,
+                descaledShares
+            );
+        }
 
-        // // Remove `withdrawalRoot` from pending roots
-        // delete pendingWithdrawals[withdrawalRoot];
-        // emit WithdrawalCompleted(withdrawalRoot);
+        // Remove `withdrawalRoot` from pending roots
+        delete pendingWithdrawals[withdrawalRoot];
+        emit WithdrawalCompleted(withdrawalRoot);
     }
 
     /// TODO: natspec
