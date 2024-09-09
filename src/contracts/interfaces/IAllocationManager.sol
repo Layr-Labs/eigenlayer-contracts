@@ -6,6 +6,27 @@ import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 
 interface IAllocationManager is ISignatureUtils {
+    /// @dev Thrown when `operator` is not a registered operator.
+    error OperatorNotRegistered();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+    /// @dev Thrown when an operator's allocation delay has yet to be set.
+    error UninitializedAllocationDelay();
+    /// @dev Thrown when provided `expectedTotalMagnitude` for a given allocation does not match `currentTotalMagnitude`.
+    error InvalidExpectedTotalMagnitude();
+    /// @dev Thrown when an invalid operator set is provided.
+    error InvalidOperatorSet();
+    /// @dev Thrown when provided operator sets are not in ascending order.
+    error OperatorSetsNotInAscendingOrder();
+    /// @dev Thrown when an allocation is attempted for a given operator when they have pending allocations or deallocations.
+    error PendingAllocationOrDeallocation();
+    /// @dev Thrown when an allocation is attempted that exceeds a given operators total allocatable magnitude.
+    error InsufficientAllocatableMagnitude();
+    /// @dev Thrown when attempting to use an expired eip-712 signature.
+    error SignatureExpired();
+    /// @dev Thrown when attempting to spend a spent eip-712 salt.
+    error SaltSpent();
+
     /**
      * @notice struct used to modify the allocation of slashable magnitude to list of operatorSets
      * @param strategy the strategy to allocate magnitude for

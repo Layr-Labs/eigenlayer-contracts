@@ -277,15 +277,12 @@ contract RewardsCoordinator is
         if (claimer == address(0)) {
             claimer = earner;
         }
-        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
+        require(msg.sender == claimer, InvalidClaimer());
         for (uint256 i = 0; i < claim.tokenIndices.length; ++i) {
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
 
             uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
-            require(
-                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
-                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
-            );
+            require(tokenLeaf.cumulativeEarnings > currCumulativeClaimed, EarningsNotGreaterThanClaimed());
 
             // Calculate amount to claim and update cumulativeClaimed
             uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
@@ -307,13 +304,9 @@ contract RewardsCoordinator is
         uint32 rewardsCalculationEndTimestamp
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
         require(
-            rewardsCalculationEndTimestamp > currRewardsCalculationEndTimestamp,
-            "RewardsCoordinator.submitRoot: new root must be for newer calculated period"
+            rewardsCalculationEndTimestamp > currRewardsCalculationEndTimestamp, NewRootMustBeForNewCalculatedPeriod()
         );
-        require(
-            rewardsCalculationEndTimestamp < block.timestamp,
-            "RewardsCoordinator.submitRoot: rewardsCalculationEndTimestamp cannot be in the future"
-        );
+        require(rewardsCalculationEndTimestamp < block.timestamp, RewardsEndTimestampNotElapsed());
         uint32 rootIndex = uint32(_distributionRoots.length);
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         _distributionRoots.push(
@@ -335,10 +328,10 @@ contract RewardsCoordinator is
     function disableRoot(
         uint32 rootIndex
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
-        require(rootIndex < _distributionRoots.length, "RewardsCoordinator.disableRoot: invalid rootIndex");
+        require(rootIndex < _distributionRoots.length, InvalidRootIndex());
         DistributionRoot storage root = _distributionRoots[rootIndex];
-        require(!root.disabled, "RewardsCoordinator.disableRoot: root already disabled");
-        require(block.timestamp < root.activatedAt, "RewardsCoordinator.disableRoot: root already activated");
+        require(!root.disabled, RootDisabled());
+        require(block.timestamp < root.activatedAt, RootActivated());
         root.disabled = true;
         emit DistributionRootDisabled(rootIndex);
     }
@@ -372,10 +365,7 @@ contract RewardsCoordinator is
         RewardType rewardType,
         uint16 commissionBips
     ) external returns (uint32 effectTimestamp) {
-        require(
-            commissionBips <= MAX_COMMISSION_BIPS,
-            "RewardsCoordinator.setOperatorCommissionBips: commissionBips too high"
-        );
+        require(commissionBips <= MAX_COMMISSION_BIPS, CommissionBipsExceedsMax());
         effectTimestamp = uint32(block.timestamp + OPERATOR_COMMISSION_ACTIVATION_DELAY);
         OperatorCommissionUpdate[] storage commissionHistory =
             operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.operatorSetId][rewardType];

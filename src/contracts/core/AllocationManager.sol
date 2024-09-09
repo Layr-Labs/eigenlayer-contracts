@@ -76,13 +76,8 @@ contract AllocationManager is
         IStrategy[] calldata strategies,
         uint16[] calldata numToComplete
     ) external {
-        require(
-            delegation.isOperator(operator),
-            "AllocationManager.updateFreeMagnitude: operator not registered to EigenLayer yet"
-        );
-        require(
-            strategies.length == numToComplete.length, "AllocationManager.updateFreeMagnitude: array length mismatch"
-        );
+        require(strategies.length == numToComplete.length, InputArrayLengthMismatch());
+        require(delegation.isOperator(operator), OperatorNotRegistered());
         for (uint256 i = 0; i < strategies.length; ++i) {
             _updateFreeMagnitude({operator: operator, strategy: strategies[i], numToComplete: numToComplete[i]});
         }
@@ -107,15 +102,9 @@ contract AllocationManager is
         if (msg.sender != operator) {
             _verifyOperatorSignature(operator, allocations, operatorSignature);
         }
-        require(
-            delegation.isOperator(operator),
-            "AllocationManager.modifyAllocations: operator not registered to EigenLayer yet"
-        );
+        require(delegation.isOperator(operator), OperatorNotRegistered());
         IDelegationManager.AllocationDelayDetails memory details = delegation.operatorAllocationDelay(operator);
-        require(
-            details.isSet,
-            "AllocationManager.modifyAllocations: operator must initialize allocation delay before modifying allocations"
-        );
+        require(details.isSet, UninitializedAllocationDelay());
         // effect timestamp for allocations to take effect. This is configurable by operators
         uint32 effectTimestamp = uint32(block.timestamp) + details.allocationDelay;
         // completable timestamp for deallocations
@@ -133,10 +122,7 @@ contract AllocationManager is
             // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
             // proprtional magnitudes relative to eachother. This check prevents any surprising behavior.
             uint64 currentTotalMagnitude = _getLatestTotalMagnitude(operator, allocations[i].strategy);
-            require(
-                currentTotalMagnitude == allocations[i].expectedTotalMagnitude,
-                "AllocationManager.modifyAllocations: current total magnitude does not match expected"
-            );
+            require(currentTotalMagnitude == allocations[i].expectedTotalMagnitude, InvalidExpectedTotalMagnitude());
 
             // 3. set allocations for the strategy after updating freeMagnitude
             _modifyAllocations({
@@ -167,10 +153,7 @@ contract AllocationManager is
     ) external {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
-        require(
-            isOperatorSlashable(operator, operatorSet),
-            "AllocationManager.slashOperator: operator not slashable for operatorSet"
-        );
+        require(isOperatorSlashable(operator, operatorSet), InvalidOperator());
 
         for (uint256 i = 0; i < strategies.length; ++i) {
             // 1. calculate slashed magnitude from current allocation
@@ -273,10 +256,7 @@ contract AllocationManager is
         uint32 allocationEffectTimestamp,
         uint32 deallocationCompletableTimestamp
     ) internal {
-        require(
-            allocation.operatorSets.length == allocation.magnitudes.length,
-            "AllocationManager._modifyAllocations: operatorSets and magnitudes length mismatch"
-        );
+        require(allocation.operatorSets.length == allocation.magnitudes.length, InputArrayLengthMismatch());
 
         // OperatorSet[] calldata opSets = allocation.operatorSets;
 
@@ -285,11 +265,11 @@ contract AllocationManager is
         for (uint256 i = 0; i < allocation.operatorSets.length; ++i) {
             require(
                 avsDirectory.isOperatorSet(allocation.operatorSets[i].avs, allocation.operatorSets[i].operatorSetId),
-                "AllocationManager._modifyAllocations: operatorSet does not exist"
+                InvalidOperatorSet()
             );
             // use encoding of operatorSet to ensure ordering and also used to use OperatorSet struct as key in mappings
             bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[i]);
-            require(prevOperatorSet < operatorSetKey, "AllocationManager._modifyAllocations: operatorSets not ordered");
+            require(prevOperatorSet < operatorSetKey, OperatorSetsNotInAscendingOrder());
             prevOperatorSet = operatorSetKey;
 
             // Read current magnitude allocation including its respective array index and length.
@@ -313,7 +293,7 @@ contract AllocationManager is
 
                 require(
                     numPendingAllocations + numPendingDeallocations < MAX_PENDING_UPDATES,
-                    "AllocationManager._modifyAllocations: Cannot set magnitude with a pending allocation or deallocation"
+                    PendingAllocationOrDeallocation()
                 );
             }
 
@@ -346,7 +326,7 @@ contract AllocationManager is
                 OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][allocation.strategy];
                 require(
                     info.freeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
-                    "AllocationManager._modifyAllocations: insufficient available free magnitude to allocate"
+                    InsufficientAllocatableMagnitude()
                 );
                 info.freeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
             }
@@ -672,15 +652,9 @@ contract AllocationManager is
         SignatureWithSaltAndExpiry calldata operatorSignature
     ) internal {
         // check the signature expiry
-        require(
-            operatorSignature.expiry >= block.timestamp,
-            "AllocationManager._verifyOperatorSignature: operator signature expired"
-        );
+        require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
         // Assert operator's signature cannot be replayed.
-        require(
-            !avsDirectory.operatorSaltIsSpent(operator, operatorSignature.salt),
-            "AllocationManager._verifyOperatorSignature: salt spent"
-        );
+        require(!avsDirectory.operatorSaltIsSpent(operator, operatorSignature.salt), SaltSpent());
 
         bytes32 digestHash = calculateMagnitudeAllocationDigestHash(
             operator, allocations, operatorSignature.salt, operatorSignature.expiry

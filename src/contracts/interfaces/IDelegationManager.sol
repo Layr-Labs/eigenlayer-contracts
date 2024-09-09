@@ -15,6 +15,23 @@ import "./ISignatureUtils.sol";
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
 interface IDelegationManager is ISignatureUtils {
+    /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
+    error OnlyStrategyManagerOrEigenPodManager();
+    /// @dev Thrown when an invalid operator is provided.
+    error InvalidOperator();
+    /// @dev Thrown when `operator` is not a registered operator.
+    error OperatorNotRegistered();
+    /// @dev Thrown when an account is actively delegated.
+    error ActivelyDelegated();
+    /// @dev Thrown when an account is not actively delegated.
+    error NotActivelyDelegated();
+    /// @dev Thrown when an operator attempts to undelegate.
+    error OperatorsCannotUndelegate();
+    /// @dev Thrown when a null address is provided.
+    error ZeroAddress();
+    /// @dev Thrown when a caller cannot undelegate on behalf of a staker.
+    error CallerCannotUndelegate();
+
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
         /// @notice DEPRECATED -- this field is no longer used, payments are handled in PaymentCoordinator.sol
