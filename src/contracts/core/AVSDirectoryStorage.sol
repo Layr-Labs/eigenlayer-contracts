@@ -65,22 +65,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: operator => avs => operatorSetId => operator registration status
     mapping(address => mapping(address => mapping(uint32 => OperatorSetRegistrationStatus))) public operatorSetStatus;
 
-    /// @notice Mapping: operator => strategy => snapshotted totalMagnitude
-    /// Note that totalMagnitude is monotonically decreasing and only gets updated upon slashing
-    mapping(address => mapping(IStrategy => Snapshots.History)) internal _totalMagnitudeUpdate;
-
-    /// @notice Mapping: operator => strategy => operatorSet (encoded) => snapshotted magnitude
-    mapping(address => mapping(IStrategy => mapping(bytes32 => Snapshots.History))) internal _magnitudeUpdate;
-
-    /// @notice Mapping: operator => strategy => OperatorMagnitudeInfo to keep track of info regarding pending magnitude allocations.
-    mapping(address => mapping(IStrategy => OperatorMagnitudeInfo)) public operatorMagnitudeInfo;
-
-    /// @notice Mapping: operator => strategy => PendingFreeMagnitude[] to keep track of pending free magnitude from deallocations
-    mapping(address => mapping(IStrategy => PendingFreeMagnitude[])) internal _pendingFreeMagnitude;
-
-    /// @notice Mapping: operator => strategy => operatorSet (encoded) => list of queuedDeallocation indices
-    mapping(address => mapping(IStrategy => mapping(bytes32 => uint256[]))) internal _queuedDeallocationIndices;
-
     constructor(
         IDelegationManager _delegation
     ) {

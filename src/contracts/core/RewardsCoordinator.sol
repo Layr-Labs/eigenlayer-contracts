@@ -371,7 +371,7 @@ contract RewardsCoordinator is
      * @dev The commission update takes effect after 7 days
      */
     function setOperatorCommissionBips(
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType,
         uint16 commissionBips
     ) external returns (uint32 effectTimestamp) {
@@ -638,7 +638,7 @@ contract RewardsCoordinator is
     /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
     function getOperatorCommissionBips(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType
     ) external view returns (uint16) {
         // if no value set, default to globalOperatorCommissionBips
@@ -696,7 +696,7 @@ contract RewardsCoordinator is
     /// @notice returns the length of the operator commission update history
     function getOperatorCommissionUpdateHistoryLength(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType
     ) external view returns (uint256) {
         return operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.operatorSetId][rewardType].length;

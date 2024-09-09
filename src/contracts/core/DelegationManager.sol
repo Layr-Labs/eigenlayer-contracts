@@ -72,8 +72,9 @@ contract DelegationManager is
         IStrategyManager _strategyManager,
         ISlasher _slasher,
         IEigenPodManager _eigenPodManager,
-        IAVSDirectory _avsDirectory
-    ) DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager, _avsDirectory) {
+        IAVSDirectory _avsDirectory,
+        IAllocationManager _allocationManager
+    ) DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager, _avsDirectory, _allocationManager) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -270,7 +271,7 @@ contract DelegationManager is
             withdrawalRoots = new bytes32[](0);
         } else {
             withdrawalRoots = new bytes32[](strategies.length);
-            uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudes(operator, strategies);
+            uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
 
             for (uint256 i = 0; i < strategies.length; i++) {
                 IStrategy[] memory singleStrategy = new IStrategy[](1);
@@ -320,7 +321,7 @@ contract DelegationManager is
             );
 
             uint64[] memory totalMagnitudes =
-                avsDirectory.getTotalMagnitudes(operator, queuedWithdrawalParams[i].strategies);
+                allocationManager.getTotalMagnitudes(operator, queuedWithdrawalParams[i].strategies);
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
             // If the staker is delegated to an operator, the operator's delegated shares are also reduced
@@ -398,7 +399,7 @@ contract DelegationManager is
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
-            uint64 totalMagnitude = avsDirectory.getTotalMagnitude(operator, strategy);
+            uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
 
             // update stakers scaling deposit scaling factor
             uint256 newStakerScalingFactor = _calculateStakerScalingFactor({
@@ -442,7 +443,7 @@ contract DelegationManager is
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
 
-            uint64 totalMagnitude = avsDirectory.getTotalMagnitude(operator, strategy);
+            uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
 
             // subtract strategy shares from delegated scaled shares
             _decreaseOperatorScaledShares({
@@ -597,7 +598,7 @@ contract DelegationManager is
         // read staker's delegatable shares and strategies to add to operator's scaled shares
         // and also update the staker scaling factor for each strategy
         (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
-        uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudes(operator, strategies);
+        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
 
         for (uint256 i = 0; i < strategies.length;) {
             // update stakers scaling deposit scaling factor
@@ -658,7 +659,7 @@ contract DelegationManager is
 
         // read delegated operator's totalMagnitudes at time of withdrawal to scale shares again if any slashing has occurred
         // during withdrawal delay period
-        uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudesAtTimestamp({
+        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudesAtTimestamp({
             operator: withdrawal.delegatedTo,
             strategies: withdrawal.strategies,
             timestamp: withdrawal.startTimestamp + SlashingConstants.DEALLOCATION_DELAY
@@ -1215,7 +1216,7 @@ contract DelegationManager is
 
     /// @notice a legacy function that returns the total delegated shares for an operator and strategy
     function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
-        uint64 totalMagnitude = avsDirectory.getTotalMagnitude(operator, strategy);
+        uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
         return _descaleShares(operatorScaledShares[operator][strategy], totalMagnitude);
     }
 
@@ -1242,7 +1243,7 @@ contract DelegationManager is
             // 2. if the staker is delegated, actual withdrawable shares can be different from what is stored
             // in the StrategyManager/EigenPodManager because they could have been slashed
             if (operator != address(0)) {
-                uint64 totalMagnitude = avsDirectory.getTotalMagnitude(operator, strategies[i]);
+                uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategies[i]);
                 shares[i] = _getWithdrawableShares(staker, strategies[i], shares[i], totalMagnitude);
             }
         }

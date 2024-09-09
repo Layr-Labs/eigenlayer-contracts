@@ -13,6 +13,7 @@ import "../../../src/contracts/core/Slasher.sol";
 import "../../../src/contracts/core/DelegationManager.sol";
 import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
+import "../../../src/contracts/core/AllocationManager.sol";
 
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
@@ -63,6 +64,8 @@ contract DeployFromScratch is Script, Test {
     UpgradeableBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
+    AllocationManager public allocationManagerImplementation;
+    AllocationManager public allocationManager;
 
     EmptyContract public emptyContract;
 
@@ -198,6 +201,9 @@ contract DeployFromScratch is Script, Test {
         rewardsCoordinator = RewardsCoordinator(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        allocationManager = AllocationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
 
         // if on mainnet, use the ETH2 deposit contract address
         if (chainId == 1) {
@@ -215,7 +221,7 @@ contract DeployFromScratch is Script, Test {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory);
+        delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory, allocationManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher, avsDirectory);
         avsDirectoryImplementation = new AVSDirectory(delegation);
         slasherImplementation = new Slasher(strategyManager, delegation);
@@ -238,6 +244,7 @@ contract DeployFromScratch is Script, Test {
             REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
             REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         );
+        allocationManagerImplementation = new AllocationManager(delegation, avsDirectory);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {

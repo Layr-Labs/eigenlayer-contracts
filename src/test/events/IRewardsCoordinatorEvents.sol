@@ -32,7 +32,7 @@ interface IRewardsCoordinatorEvents {
     /// @notice emitted when an operator commission is set for a specific OperatorSet
     event OperatorCommissionUpdated(
         address indexed operator,
-        IAVSDirectory.OperatorSet indexed operatorSet,
+        OperatorSet indexed operatorSet,
         IRewardsCoordinator.RewardType rewardType,
         uint16 newCommissionBips,
         uint32 effectTimestamp

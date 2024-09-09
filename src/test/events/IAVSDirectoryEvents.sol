@@ -5,7 +5,7 @@ import "src/contracts/interfaces/IAVSDirectory.sol";
 
 interface IAVSDirectoryEvents {
     /// @notice Emitted when an operator set is created by an AVS.
-    event OperatorSetCreated(IAVSDirectory.OperatorSet operatorSet);
+    event OperatorSetCreated(OperatorSet operatorSet);
 
     /**
      *  @notice Emitted when an operator's registration status with an AVS id udpated
@@ -14,10 +14,10 @@ interface IAVSDirectoryEvents {
     event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, IAVSDirectory.OperatorAVSRegistrationStatus status);
 
     /// @notice Emitted when an operator is added to an operator set.
-    event OperatorAddedToOperatorSet(address indexed operator, IAVSDirectory.OperatorSet operatorSet);
+    event OperatorAddedToOperatorSet(address indexed operator, OperatorSet operatorSet);
 
     /// @notice Emitted when an operator is removed from an operator set.
-    event OperatorRemovedFromOperatorSet(address indexed operator, IAVSDirectory.OperatorSet operatorSet);
+    event OperatorRemovedFromOperatorSet(address indexed operator, OperatorSet operatorSet);
 
     /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
     /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.

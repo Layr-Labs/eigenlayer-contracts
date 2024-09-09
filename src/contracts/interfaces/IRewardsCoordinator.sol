@@ -204,7 +204,7 @@ interface IRewardsCoordinator {
     /// @notice emitted when an operator commission is set for a specific OperatorSet and RewardType
     event OperatorCommissionUpdated(
         address indexed operator,
-        IAVSDirectory.OperatorSet indexed operatorSet,
+        OperatorSet indexed operatorSet,
         RewardType rewardType,
         uint16 newCommissionBips,
         uint32 effectTimestamp
@@ -274,7 +274,7 @@ interface IRewardsCoordinator {
     /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
     function getOperatorCommissionBips(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType
     ) external view returns (uint16);
 
@@ -310,7 +310,7 @@ interface IRewardsCoordinator {
     /// @notice returns the length of the operator commission update history
     function getOperatorCommissionUpdateHistoryLength(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType
     ) external view returns (uint256);
 
@@ -431,7 +431,7 @@ interface IRewardsCoordinator {
      * @dev The commission update takes effect after 7 days
      */
     function setOperatorCommissionBips(
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType,
         uint16 commissionBips
     ) external returns (uint32);
