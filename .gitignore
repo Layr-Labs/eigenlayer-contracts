@@ -8,6 +8,8 @@ config.json
 contract.addresses
 deployedAddresses
 
+script/output/eigenpods.json
+
 #Hardhat files
 cache_hardhat
 artifacts
