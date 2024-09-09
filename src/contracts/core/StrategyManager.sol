@@ -42,7 +42,10 @@ contract StrategyManager is
     modifier onlyStrategiesWhitelistedForDeposit(
         IStrategy strategy
     ) {
-        require(strategyIsWhitelistedForDeposit[strategy], StrategyNotWhitelisted());
+        require(
+            strategyIsWhitelistedForDeposit[strategy],
+            "StrategyManager.onlyStrategiesWhitelistedForDeposit: strategy not whitelisted"
+        );
         _;
     }
 

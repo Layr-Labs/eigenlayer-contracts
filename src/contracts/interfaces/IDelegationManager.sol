@@ -223,7 +223,9 @@ interface IDelegationManager is ISignatureUtils {
      * after being set. This delay is required to be set for an operator to be able to allocate slashable magnitudes.
      * @param delay the allocation delay in seconds
      */
-    function initializeAllocationDelay(uint32 delay) external;
+    function initializeAllocationDelay(
+        uint32 delay
+    ) external;
 
     /**
      * @notice Updates an operator's stored `OperatorDetails`.
@@ -350,7 +352,7 @@ interface IDelegationManager is ISignatureUtils {
      * The staker's scaling factor is updated here.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
-     * @param existingShares The number of shares the staker already has in the strategy. This is the shares amount stored in the 
+     * @param existingShares The number of shares the staker already has in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
      * @param addedShares The number of shares to added to the staker's shares in the strategy. This amount will be scaled prior to adding
      * to the operator's scaled shares.
@@ -365,7 +367,7 @@ interface IDelegationManager is ISignatureUtils {
         uint256 existingShares,
         uint256 addedShares
     ) external;
-    
+
     /**
      * @notice Decreases a staker's delegated share balance in a strategy. Note that before removing from operator shares,
      * the delegated shares are scaled according to the operator's total magnitude as part of slashing accounting. Unlike
@@ -378,11 +380,7 @@ interface IDelegationManager is ISignatureUtils {
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated scaled shares in `strategy` by `scaledShares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedShares(
-        address staker,
-        IStrategy strategy,
-        uint256 removedShares
-    ) external;
+    function decreaseDelegatedShares(address staker, IStrategy strategy, uint256 removedShares) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
@@ -404,7 +402,9 @@ interface IDelegationManager is ISignatureUtils {
      * @notice Returns the AllocationDelayDetails struct associated with an `operator`
      * @dev If the operator has not set an allocation delay, then the `isSet` field will be `false`.
      */
-    function operatorAllocationDelay(address operator) external view returns (AllocationDelayDetails memory);
+    function operatorAllocationDelay(
+        address operator
+    ) external view returns (AllocationDelayDetails memory);
 
     /**
      * @notice Returns the delegationApprover account for an operator

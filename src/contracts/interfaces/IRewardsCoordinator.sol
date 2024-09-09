@@ -137,6 +137,7 @@ interface IRewardsCoordinator {
      *      using `OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP` instead of `GENESIS_REWARDS_TIMESTAMP` and
      *      `OPERATOR_SET_MAX_RETROACTIVE_LENGTH` instead of `MAX_RETROACTIVE_LENGTH`
      */
+
     struct OperatorSetRewardsSubmission {
         RewardType rewardType;
         uint32 operatorSetId;
@@ -265,7 +266,7 @@ interface IRewardsCoordinator {
     /// @notice emitted when an operator commission is set for a specific OperatorSet and RewardType
     event OperatorCommissionUpdated(
         address indexed operator,
-        IAVSDirectory.OperatorSet indexed operatorSet,
+        OperatorSet indexed operatorSet,
         RewardType rewardType,
         uint16 newCommissionBips,
         uint32 effectTimestamp
@@ -337,7 +338,7 @@ interface IRewardsCoordinator {
     /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
     function getOperatorCommissionBips(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType
     ) external view returns (uint16);
 
@@ -383,7 +384,7 @@ interface IRewardsCoordinator {
     /// @notice returns the length of the operator commission update history
     function getOperatorCommissionUpdateHistoryLength(
         address operator,
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType
     ) external view returns (uint256);
 
@@ -423,7 +424,9 @@ interface IRewardsCoordinator {
      * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
      * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
      */
-    function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions) external;
+    function rewardOperatorSetForRange(
+        OperatorSetRewardsSubmission[] calldata rewardsSubmissions
+    ) external;
 
     /**
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
@@ -432,17 +435,6 @@ interface IRewardsCoordinator {
      */
     function createRewardsForAllSubmission(
         RewardsSubmission[] calldata rewardsSubmission
-    ) external;
-
-    /**
-     * @notice Creates a new rewards submission for all earners across all AVSs.
-     * Earners in this case indicating all operators and their delegated stakers. Undelegated stake
-     * is not rewarded from this RewardsSubmission. This interface is only callable
-     * by the token hopper contract from the Eigen Foundation
-     * @param rewardsSubmissions The rewards submissions being created
-     */
-    function createRewardsForAllEarners(
-        RewardsSubmission[] calldata rewardsSubmissions
     ) external;
 
     /**
@@ -529,7 +521,7 @@ interface IRewardsCoordinator {
      * @dev The commission update takes effect after 7 days
      */
     function setOperatorCommissionBips(
-        IAVSDirectory.OperatorSet calldata operatorSet,
+        OperatorSet calldata operatorSet,
         RewardType rewardType,
         uint16 commissionBips
     ) external returns (uint32);

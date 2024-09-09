@@ -51,7 +51,7 @@ contract Pausable is IPausable {
     modifier onlyWhenNotPaused(
         uint8 index
     ) {
-        require(!paused(index), CurrentlyPaused());
+        require(!paused(index), "Pausable: index is paused");
         _;
     }
 
@@ -125,7 +125,10 @@ contract Pausable is IPausable {
     function _setPauserRegistry(
         IPauserRegistry newPauserRegistry
     ) internal {
-        require(address(newPauserRegistry) != address(0), InputAddressZero());
+        require(
+            address(newPauserRegistry) != address(0),
+            "Pausable._setPauserRegistry: newPauserRegistry cannot be the zero address"
+        );
         emit PauserRegistrySet(pauserRegistry, newPauserRegistry);
         pauserRegistry = newPauserRegistry;
     }

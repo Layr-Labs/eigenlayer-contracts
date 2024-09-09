@@ -301,7 +301,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice convenience function for fetching the current total shares of `user` in this strategy, by
      * querying the `strategyManager` contract
      */
-    function shares(address user) public view virtual returns (uint256) {
+    function shares(
+        address user
+    ) public view virtual returns (uint256) {
         return strategyManager.stakerStrategyShares(user, IStrategy(address(this)));
     }
 

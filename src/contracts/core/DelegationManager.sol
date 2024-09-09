@@ -69,8 +69,9 @@ contract DelegationManager is
         IStrategyManager _strategyManager,
         ISlasher _slasher,
         IEigenPodManager _eigenPodManager,
-        IAVSDirectory _avsDirectory
-    ) DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager, _avsDirectory) {
+        IAVSDirectory _avsDirectory,
+        IAllocationManager _allocationManager
+    ) DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager, _avsDirectory, _allocationManager) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -132,7 +133,9 @@ contract DelegationManager is
      * after being set. This delay is required to be set for an operator to be able to allocate slashable magnitudes.
      * @param delay the allocation delay in seconds
      */
-    function initializeAllocationDelay(uint32 delay) external {
+    function initializeAllocationDelay(
+        uint32 delay
+    ) external {
         _initializeAllocationDelay(delay);
     }
 
@@ -145,7 +148,7 @@ contract DelegationManager is
     function modifyOperatorDetails(
         OperatorDetails calldata newOperatorDetails
     ) external {
-        require(isOperator(msg.sender), OperatorDoesNotExist());
+        require(isOperator(msg.sender), "DelegationManager.modifyOperatorDetails: caller must be an operator");
         _setOperatorDetails(msg.sender, newOperatorDetails);
     }
 
@@ -156,7 +159,7 @@ contract DelegationManager is
     function updateOperatorMetadataURI(
         string calldata metadataURI
     ) external {
-        require(isOperator(msg.sender), OperatorDoesNotExist());
+        require(isOperator(msg.sender), "DelegationManager.updateOperatorMetadataURI: caller must be an operator");
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
 
@@ -236,9 +239,9 @@ contract DelegationManager is
     function undelegate(
         address staker
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
-        require(isDelegated(staker), NotCurrentlyDelegated());
-        require(!isOperator(staker), OperatorsCannotUndelegate());
-        require(staker != address(0), InputAddressZero());
+        require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
+        require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
+        require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
         address operator = delegatedTo[staker];
         require(
             msg.sender == staker || msg.sender == operator
@@ -264,7 +267,7 @@ contract DelegationManager is
             withdrawalRoots = new bytes32[](0);
         } else {
             withdrawalRoots = new bytes32[](strategies.length);
-            uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudes(operator, strategies);
+            uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
 
             for (uint256 i = 0; i < strategies.length; i++) {
                 IStrategy[] memory singleStrategy = new IStrategy[](1);
@@ -309,7 +312,7 @@ contract DelegationManager is
             require(queuedWithdrawalParams[i].withdrawer == msg.sender, WithdrawerNotStaker());
 
             uint64[] memory totalMagnitudes =
-                avsDirectory.getTotalMagnitudes(operator, queuedWithdrawalParams[i].strategies);
+                allocationManager.getTotalMagnitudes(operator, queuedWithdrawalParams[i].strategies);
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
             // If the staker is delegated to an operator, the operator's delegated shares are also reduced
@@ -387,7 +390,7 @@ contract DelegationManager is
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
-            uint64 totalMagnitude = avsDirectory.getTotalMagnitude(operator, strategy);
+            uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
 
             // update stakers scaling deposit scaling factor
             uint256 newStakerScalingFactor = _calculateStakerScalingFactor({
@@ -431,7 +434,7 @@ contract DelegationManager is
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
 
-            uint64 totalMagnitude = avsDirectory.getTotalMagnitude(operator, strategy);
+            uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
 
             // subtract strategy shares from delegated scaled shares
             _decreaseOperatorScaledShares({
@@ -511,7 +514,9 @@ contract DelegationManager is
      * after being set. This delay is required to be set for an operator to be able to allocate slashable magnitudes.
      * @param delay the allocation delay in seconds
      */
-    function _initializeAllocationDelay(uint32 delay) internal {
+    function _initializeAllocationDelay(
+        uint32 delay
+    ) internal {
         require(
             isOperator(msg.sender),
             "DelegationManager._initializeAllocationDelay: operator not registered to EigenLayer yet"
@@ -582,7 +587,7 @@ contract DelegationManager is
         // read staker's delegatable shares and strategies to add to operator's scaled shares
         // and also update the staker scaling factor for each strategy
         (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
-        uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudes(operator, strategies);
+        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
 
         for (uint256 i = 0; i < strategies.length;) {
             // update stakers scaling deposit scaling factor
@@ -643,7 +648,7 @@ contract DelegationManager is
 
         // read delegated operator's totalMagnitudes at time of withdrawal to scale shares again if any slashing has occurred
         // during withdrawal delay period
-        uint64[] memory totalMagnitudes = avsDirectory.getTotalMagnitudesAtTimestamp({
+        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudesAtTimestamp({
             operator: withdrawal.delegatedTo,
             strategies: withdrawal.strategies,
             timestamp: withdrawal.startTimestamp + SlashingConstants.DEALLOCATION_DELAY
@@ -957,7 +962,10 @@ contract DelegationManager is
     function _setMinWithdrawalDelayBlocks(
         uint256 _minWithdrawalDelayBlocks
     ) internal {
-        require(_minWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS, WithdrawalDelayExceedsMax());
+        require(
+            _minWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
+            "DelegationManager._setMinWithdrawalDelayBlocks: _minWithdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+        );
         emit MinWithdrawalDelayBlocksSet(minWithdrawalDelayBlocks, _minWithdrawalDelayBlocks);
         minWithdrawalDelayBlocks = _minWithdrawalDelayBlocks;
     }
@@ -1178,7 +1186,9 @@ contract DelegationManager is
      * @notice Returns the AllocationDelayDetails struct associated with an `operator`
      * @dev If the operator has not set an allocation delay, then the `isSet` field will be `false`.
      */
-    function operatorAllocationDelay(address operator) external view returns (AllocationDelayDetails memory) {
+    function operatorAllocationDelay(
+        address operator
+    ) external view returns (AllocationDelayDetails memory) {
         return _operatorAllocationDelay[operator];
     }
 
@@ -1202,7 +1212,7 @@ contract DelegationManager is
 
     /// @notice a legacy function that returns the total delegated shares for an operator and strategy
     function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
-        uint64 totalMagnitude = avsDirectory.getTotalMagnitude(operator, strategy);
+        uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
         return _descaleShares(operatorScaledShares[operator][strategy], totalMagnitude);
     }
 
@@ -1229,7 +1239,7 @@ contract DelegationManager is
             // 2. if the staker is delegated, actual withdrawable shares can be different from what is stored
             // in the StrategyManager/EigenPodManager because they could have been slashed
             if (operator != address(0)) {
-                uint64 totalMagnitude = avsDirectory.getTotalMagnitude(operator, strategies[i]);
+                uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategies[i]);
                 shares[i] = _getWithdrawableShares(staker, strategies[i], shares[i], totalMagnitude);
             }
         }
@@ -1242,7 +1252,9 @@ contract DelegationManager is
      * delegatable shares!
      * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
      */
-    function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
+    function getDelegatableShares(
+        address staker
+    ) public view returns (IStrategy[] memory, uint256[] memory) {
         // Get current StrategyManager/EigenPodManager shares and strategies for `staker`
         // If `staker` is already delegated, these may not be the full withdrawable amounts due to slashing
         int256 podShares = eigenPodManager.podOwnerShares(staker);
