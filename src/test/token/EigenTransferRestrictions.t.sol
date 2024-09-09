@@ -3,8 +3,9 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Test.sol";
 
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin-v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol";
+import "@openzeppelin-v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin-v4.9.0/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "../harnesses/EigenHarness.sol";
 
 contract EigenTransferRestrictionsTest is Test {
@@ -38,8 +39,15 @@ contract EigenTransferRestrictionsTest is Test {
         vm.startPrank(minter1);
         proxyAdmin = new ProxyAdmin();
         // initialize with dummy BackingEigen address
-        eigenImpl = new EigenHarness(IERC20(address(0)));
+        
+        eigenImpl = new EigenHarness(new ERC20PresetFixedSupply({
+            name: "bEIGEN",
+            symbol: "bEIGEN",
+            initialSupply: totalSupply,
+            owner: minter1
+        }));
         eigen = Eigen(address(new TransparentUpgradeableProxy(address(eigenImpl), address(proxyAdmin), "")));
+        eigen.bEIGEN().transfer(address(eigen), totalSupply);
         vm.stopPrank();
 
         fuzzedOutAddresses[minter1] = true;

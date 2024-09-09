@@ -17,6 +17,8 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     mapping(address => bool) public allowedFrom;
     /// @notice mapping of addresses that are allowed to receive tokens from any address
     mapping(address => bool) public allowedTo;
+    // @notice whether or not an address is allowed to mint new bEIGEN tokens
+    mapping(address => bool) public isMinter;
 
     /// @notice event emitted when the allowedFrom status of an address is set
     event SetAllowedFrom(address indexed from, bool isAllowedFrom);
@@ -26,10 +28,36 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     event TransferRestrictionsDisabled();
     /// @notice event emitted when the EIGEN token is backed
     event Backed();
+    // @notice event emitted when the `isMinter` mapping is modified
+    event IsMinterModified(address indexed minterAddress, bool newStatus);
 
     constructor(IERC20 _EIGEN) {
         EIGEN = _EIGEN;
         _disableInitializers();
+    }
+
+    // @notice Allows the contract owner to modify an entry in the `isMinter` mapping.
+    function setIsMinter(address minterAddress, bool newStatus) external onlyOwner {
+        emit IsMinterModified(minterAddress, newStatus);
+        isMinter[minterAddress] = newStatus;
+    }
+
+    /**
+     * @notice Allows any privileged address to mint `amount` new tokens to the address `to`.
+     * @dev Callable only by an address that has `isMinter` set to true.
+     */
+    function mint(address to, uint256 amount) external {
+        require(isMinter[msg.sender], "BackingEigen.mint: caller is not a minter");
+        _mint(to, amount);
+    }
+
+    /**
+     * @dev Destroys `amount` tokens from the caller.
+     *
+     * See {ERC20-_burn}.
+     */
+    function burn(uint256 amount) public virtual {
+        _burn(_msgSender(), amount);
     }
 
     /**
@@ -51,7 +79,7 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
 
         // Mint the entire supply of EIGEN - this is a one-time event that
         // ensures bEIGEN fully backs EIGEN.
-        _mint(address(EIGEN), EIGEN.totalSupply());
+        _mint(address(EIGEN), 1673646668284660000000000000);
         emit Backed();
     }
 

@@ -13,7 +13,9 @@ import "../../contracts/token/BackingEigen.sol";
 contract bEIGENTest is Test {
     mapping(address => bool) fuzzedOutAddresses;
 
-    address minter1 = 0xbb00DDa2832850a43840A3A86515E3Fe226865F2;
+    address initialOwner = 0xbb00DDa2832850a43840A3A86515E3Fe226865F2;
+    address minterToSet = address(500);
+    address mintTo = address(12345);
 
     ProxyAdmin proxyAdmin;
 
@@ -25,7 +27,7 @@ contract bEIGENTest is Test {
 
 
     function setUp() public {
-        vm.startPrank(minter1);
+        vm.startPrank(initialOwner);
         proxyAdmin = new ProxyAdmin();
 
         // deploy proxies
@@ -44,10 +46,10 @@ contract bEIGENTest is Test {
     }
 
     function test_Initialize() public {
-        bEIGEN.initialize(minter1);
+        bEIGEN.initialize(initialOwner);
         
-        // check that the owner is minter1
-        assertEq(bEIGEN.owner(), minter1);
+        // check that the owner is initialOwner
+        assertEq(bEIGEN.owner(), initialOwner);
         // check the transfer restrictions are disabled after one year in the future
         assertEq(bEIGEN.transferRestrictionsDisabledAfter(), type(uint256).max);
     }
@@ -55,10 +57,58 @@ contract bEIGENTest is Test {
     function testFuzz_CanBackTheEigenToken(uint eigenSupply) public {
         StdCheats.deal(address(eigen), address(this), eigenSupply);
 
-        bEIGEN.initialize(minter1);
+        bEIGEN.initialize(initialOwner);
         
         // check that the total supply of bEIGEN is equal to the total supply of EIGEN
         assertEq(bEIGEN.totalSupply(), eigen.totalSupply());
         assertEq(bEIGEN.balanceOf(address(eigen)), bEIGEN.totalSupply());
+    }
+
+    function test_setIsMinterAndMint() public {
+        bEIGEN.initialize(initialOwner);
+
+        vm.prank(initialOwner);
+        bEIGEN.setIsMinter(minterToSet, true);
+        require(bEIGEN.isMinter(minterToSet), "minter not set correctly");
+
+        uint256 amountToMint = 5e25;
+        uint256 balanceBefore = bEIGEN.balanceOf(mintTo);
+        vm.prank(minterToSet);
+        bEIGEN.mint(mintTo, amountToMint);
+
+        uint256 balanceAfter = bEIGEN.balanceOf(mintTo);
+        uint256 balanceDiff = balanceAfter - balanceBefore;
+        assertEq(balanceDiff, amountToMint, "mint not working correctly");
+    }
+
+    function test_setIsMinter_revertsWhenNotCalledByOwner() public {
+        bEIGEN.initialize(initialOwner);
+
+        vm.prank(mintTo);
+        vm.expectRevert("Ownable: caller is not the owner");
+        bEIGEN.setIsMinter(minterToSet, true);
+    }
+
+    function test_burn() public {
+        test_setIsMinterAndMint();
+        vm.prank(initialOwner);
+        bEIGEN.setAllowedFrom(mintTo, true);
+
+        uint256 amountToBurn = 1005e18;
+        uint256 balanceBefore = bEIGEN.balanceOf(mintTo);
+        vm.prank(mintTo);
+        bEIGEN.burn(amountToBurn);
+
+        uint256 balanceAfter = bEIGEN.balanceOf(mintTo);
+        uint256 balanceDiff = balanceBefore - balanceAfter;
+        assertEq(balanceDiff, amountToBurn, "mint not working correctly");
+    }
+
+    function test_mint_revertsWhenNotCalledByMinter() public {
+        test_setIsMinterAndMint();
+
+        uint256 amountToMint = 5e25;
+        vm.expectRevert("BackingEigen.mint: caller is not a minter");
+        bEIGEN.mint(mintTo, amountToMint);
     }
 }

@@ -38,6 +38,12 @@ interface IEigen is IERC20 {
      */
     function unwrap(uint256 amount) external;
 
+    // @notice Burns EIGEN tokens held by the EIGEN token address itself
+    function burnExtraTokens() external;
+
+    /// @notice the address of the backing Eigen token bEIGEN
+    function bEIGEN() external view returns (IERC20);
+
     /**
      * @dev Clock used for flagging checkpoints. Has been overridden to implement timestamp based
      * checkpoints (and voting).
