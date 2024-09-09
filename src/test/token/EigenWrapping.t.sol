@@ -202,7 +202,6 @@ contract EigenWrappingTests is Test {
 
         vm.startPrank(minter1);
         bEIGEN.setAllowedFrom(minter1, true);
-        eigen.setAllowedTo(address(0), true);
         vm.stopPrank();
 
     }
