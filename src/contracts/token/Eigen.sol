@@ -155,7 +155,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
         if (block.timestamp <= transferRestrictionsDisabledAfter) {
             // if both from and to are not whitelisted
             require(
-                from == address(0) || from == address(this) || to == address(this) || allowedFrom[from] || allowedTo[to],
+                from == address(0) || to == address(0) || allowedFrom[from] || allowedTo[to],
                 "Eigen._beforeTokenTransfer: from or to must be whitelisted"
             );
         }
