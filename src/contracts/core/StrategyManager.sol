@@ -295,7 +295,7 @@ contract StrategyManager is
         }
 
         // add the returned shares to their existing shares for this strategy
-        uint256 existingShares = stakerStrategyShares[staker][strategy];
+        existingShares = stakerStrategyShares[staker][strategy];
         stakerStrategyShares[staker][strategy] += shares;
 
         emit Deposit(staker, token, strategy, shares);
@@ -338,24 +338,24 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Decreases the shares that `staker` holds in `strategy` by `sharesAmount`.
+     * @notice Decreases the shares that `staker` holds in `strategy` by `shareAmount`.
      * @param staker The address to decrement shares from
      * @param strategy The strategy for which the `staker`'s shares are being decremented
-     * @param sharesAmount The amount of shares to decrement
+     * @param shareAmount The amount of shares to decrement
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
-    function _removeShares(address staker, IStrategy strategy, uint256 sharesAmount) internal returns (bool) {
+    function _removeShares(address staker, IStrategy strategy, uint256 shareAmount) internal returns (bool) {
         // sanity checks on inputs
-        require(sharesAmount != 0, "StrategyManager._removeShares: sharesAmount should not be zero!");
+        require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
 
         //check that the user has sufficient shares
         uint256 userShares = stakerStrategyShares[staker][strategy];
 
-        require(sharesAmount <= userShares, "StrategyManager._removeShares: sharesAmount too high");
+        require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
         //unchecked arithmetic since we just checked this above
         unchecked {
-            userShares = userShares - sharesAmount;
+            userShares = userShares - shareAmount;
         }
 
         // subtract the shares from the staker's existing shares for this strategy
