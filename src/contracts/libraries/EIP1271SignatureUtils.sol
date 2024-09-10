@@ -11,6 +11,8 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 library EIP1271SignatureUtils {
+    error InvalidSignature();
+
     // bytes4(keccak256("isValidSignature(bytes32,bytes)")
     bytes4 internal constant EIP1271_MAGICVALUE = 0x1626ba7e;
 
@@ -27,15 +29,9 @@ library EIP1271SignatureUtils {
          * 2) if `signer` is a contract, then `signature` must will be checked according to EIP-1271
          */
         if (Address.isContract(signer)) {
-            require(
-                IERC1271(signer).isValidSignature(digestHash, signature) == EIP1271_MAGICVALUE,
-                "EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"
-            );
+            require(IERC1271(signer).isValidSignature(digestHash, signature) == EIP1271_MAGICVALUE, InvalidSignature());
         } else {
-            require(
-                ECDSA.recover(digestHash, signature) == signer,
-                "EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"
-            );
+            require(ECDSA.recover(digestHash, signature) == signer, InvalidSignature());
         }
     }
 }
