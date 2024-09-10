@@ -61,6 +61,7 @@ Rewards are initially submitted to the contract to be distributed to Operators a
 
 * [`RewardsCoordinator.createAVSRewardsSubmission`](#createavsrewardssubmission)
 * [`RewardsCoordinator.createRewardsForAllSubmission`](#createrewardsforallsubmission)
+* [`RewardsCoordinator.createRewardsForAllEarners`](#createrewardsforallearners)
 
 #### `createAVSRewardsSubmission`
 
