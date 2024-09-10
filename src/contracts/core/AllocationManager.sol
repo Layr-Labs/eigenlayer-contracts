@@ -646,7 +646,9 @@ contract AllocationManager is
     }
 
     /**
-     * @notice Returns the pending allocations of an operator for a given strategy and operatorSets
+     * @notice Returns the latest pending allocation of an operator for a given strategy and operatorSets.
+     * One of the assumptions here is we don't allow more than one pending allocation for an operatorSet at a time.
+     * If that changes, we would need to change this function to return all pending allocations for an operatorSet.
      * @param operator the operator to get the pending allocations for
      * @param strategy the strategy to get the pending allocations for
      * @param operatorSets the operatorSets to get the pending allocations for
@@ -657,10 +659,11 @@ contract AllocationManager is
         address operator,
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
-    ) external view returns (uint64[] memory, uint64[] memory) {
+    ) external view returns (uint64[] memory, uint32[] memory) {
         uint64[] memory pendingMagnitude = new uint64[](operatorSets.length);
-        uint64[] memory timestamps = new uint64[](operatorSets.length);
+        uint32[] memory timestamps = new uint32[](operatorSets.length);
         for (uint256 i = 0; i < operatorSets.length; ++i) {
+            // We use latestSnapshot to get the latest pending allocation for an operatorSet.
             (bool exists, uint32 key, uint224 value) =
                 _magnitudeUpdate[operator][strategy][_encodeOperatorSet(operatorSets[i])].latestSnapshot();
             if (exists) {
@@ -677,7 +680,9 @@ contract AllocationManager is
     }
 
     /**
-     * @notice Returns the pending deallocations of an operator for a given strategy and operatorSets
+     * @notice Returns the pending deallocations of an operator for a given strategy and operatorSets.
+     * One of the assumptions here is we don't allow more than one pending deallocation for an operatorSet at a time.
+     * If that changes, we would need to change this function to return all pending deallocations for an operatorSet.
      * @param operator the operator to get the pending deallocations for
      * @param strategy the strategy to get the pending deallocations for
      * @param operatorSets the operatorSets to get the pending deallocations for
@@ -688,9 +693,9 @@ contract AllocationManager is
         address operator,
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
-    ) external view returns (uint64[] memory, uint64[] memory) {
+    ) external view returns (uint64[] memory, uint32[] memory) {
         uint64[] memory pendingMagnitudeDiff = new uint64[](operatorSets.length);
-        uint64[] memory timestamps = new uint64[](operatorSets.length);
+        uint32[] memory timestamps = new uint32[](operatorSets.length);
         for (uint256 i = 0; i < operatorSets.length; ++i) {
             uint256[] memory indices =
                 _queuedDeallocationIndices[operator][strategy][_encodeOperatorSet(operatorSets[i])];
