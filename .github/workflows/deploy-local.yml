@@ -1,0 +1,51 @@
+name: Run Local Build
+
+on:
+  push:
+  workflow_dispatch: {}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+  run-local-build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Install lcov
+      run: |
+        sudo apt-get install lcov
+      id: lcov
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+    - name: Run forge install
+      run: forge install
+    - name: Start anvil and deploy
+      run: |
+        anvil --block-time 1 --chain-id 31337 &
+        ANVIL_PID=$!
+        echo "---Waiting for anvil to start..."
+        sleep 10 # Give Anvil some time to start
+        export RPC_URL="http://127.0.0.1:8545"
+        echo "Extracted PRIVATE_KEY: $PRIVATE_KEY"
+        echo "---Deploying Contracts"
+        RUST_LOG=forge,foundry=trace forge script script/deploy/local/Deploy_From_Scratch.s.sol \
+          --rpc-url $RPC_URL \
+          --private-key "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" \
+          --broadcast \
+          --sig "run(string memory configFile)" \
+          -- local/deploy_from_scratch.anvil.config.json
+        kill $ANVIL_PID
