@@ -16,6 +16,8 @@ interface IAllocationManager is ISignatureUtils {
     error InvalidExpectedTotalMagnitude();
     /// @dev Thrown when an invalid operator set is provided.
     error InvalidOperatorSet();
+    /// @dev Thrown when an invalid operator is provided.
+    error InvalidOperator();
     /// @dev Thrown when provided operator sets are not in ascending order.
     error OperatorSetsNotInAscendingOrder();
     /// @dev Thrown when an allocation is attempted for a given operator when they have pending allocations or deallocations.

@@ -15,6 +15,7 @@ import "./IStrategy.sol";
  * a Merkle root against which Stakers & Operators can make claims.
  */
 interface IRewardsCoordinator {
+    error OnlyRewardsUpdater();
     /// @dev Thrown when claim is attempted by invalid claimer.
     error InvalidClaimer();
     /// @dev Thrown when cummulative earnings are not greater than cummulative claimed.

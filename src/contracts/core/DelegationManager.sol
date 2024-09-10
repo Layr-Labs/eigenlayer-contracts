@@ -53,7 +53,7 @@ contract DelegationManager is
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
     modifier onlyStrategyManagerOrEigenPodManager() {
         require(
-            msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager),
+            (msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager)),
             OnlyStrategyManagerOrEigenPodManager()
         );
         _;

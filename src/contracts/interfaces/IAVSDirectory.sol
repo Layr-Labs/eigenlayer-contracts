@@ -22,28 +22,6 @@ interface IAVSDirectory is ISignatureUtils {
     error SaltSpent();
     /// @dev Thrown when `operator` is not a registered operator.
     error OperatorNotRegistered();
-    /// @dev Thrown when two array parameters have mismatching lengths.
-    error InputArrayLengthMismatch();
-    /// @dev Thrown when `withdrawer` is not staker.
-    error WithdrawerNotStaker();
-    /// @dev Thrown when provided `stakerOptOutWindowBlocks` exceeds maximum.
-    error StakerOptOutWindowBlocksExceedsMax();
-    /// @dev Thrown when provided `stakerOptOutWindowBlocks` is less than previous.
-    error StakerOptOutWindowBlocksCannotDecrease();
-    /// @dev Thrown when an operators allocation delay is already set (can only be set once).
-    error AllocationDelaySet();
-    /// @dev Thrown when attempting to execute an action that was not queued.
-    error ActionNotQueued();
-    /// @dev Thrown when attempting to withdraw before delay has elapsed.
-    error WithdrawalDelayNotElapsed();
-    /// @dev Thrown when withdrawer is not the current caller.
-    error WithdrawerNotCaller();
-    /// @dev Thrown when input arrays length is zero.
-    error InputArrayLengthZero();
-    /// @dev Thrown when a withdraw amount larger than max is attempted.
-    error WithdrawalExeedsMax();
-    /// @dev Thrown when provided delay exceeds maximum.
-    error WithdrawalDelayExeedsMax();
 
     /// @notice Enum representing the registration status of an operator with an AVS.
     /// @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.

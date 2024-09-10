@@ -59,7 +59,7 @@ contract RewardsCoordinator is
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     modifier onlyRewardsUpdater() {
-        require(msg.sender == rewardsUpdater, "RewardsCoordinator: caller is not the rewardsUpdater");
+        require(msg.sender == rewardsUpdater, OnlyRewardsUpdater());
         _;
     }
 

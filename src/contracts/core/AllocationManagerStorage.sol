@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IAllocationManager.sol";
+import "../interfaces/IDelegationManager.sol";
 import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
