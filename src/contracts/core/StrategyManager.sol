@@ -123,7 +123,6 @@ contract StrategyManager is
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
-     * @dev Cannot be called if thirdPartyTransfersForbidden is set to true for this strategy
      *
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
@@ -136,7 +135,6 @@ contract StrategyManager is
         uint256 expiry,
         bytes memory signature
     ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
-        require(!thirdPartyTransfersForbidden[strategy], ThirdPartyTransfersDisabled());
         require(expiry >= block.timestamp, SignatureExpired());
         // calculate struct hash, then increment `staker`'s nonce
         uint256 nonce = nonces[staker];
@@ -189,17 +187,6 @@ contract StrategyManager is
     }
 
     /**
-     * If true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
-     * and also when performing DelegationManager.queueWithdrawals, a staker can only withdraw to themselves.
-     * Defaulted to false for all existing strategies.
-     * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
-     * @param value bool value to set `thirdPartyTransfersForbidden` to
-     */
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external onlyStrategyWhitelister {
-        _setThirdPartyTransfersForbidden(strategy, value);
-    }
-
-    /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
      * @param newStrategyWhitelister new address for the `strategyWhitelister`.
      */
@@ -212,20 +199,16 @@ contract StrategyManager is
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-     * @param thirdPartyTransfersForbiddenValues bool values to set `thirdPartyTransfersForbidden` to for each strategy
      */
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external onlyStrategyWhitelister {
-        require(strategiesToWhitelist.length == thirdPartyTransfersForbiddenValues.length, InputArrayLengthMismatch());
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
         for (uint256 i = 0; i < strategiesToWhitelistLength; ++i) {
             // change storage and emit event only if strategy is not already in whitelist
             if (!strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
                 emit StrategyAddedToDepositWhitelist(strategiesToWhitelist[i]);
-                _setThirdPartyTransfersForbidden(strategiesToWhitelist[i], thirdPartyTransfersForbiddenValues[i]);
             }
         }
     }
@@ -243,8 +226,6 @@ contract StrategyManager is
             if (strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]] = false;
                 emit StrategyRemovedFromDepositWhitelist(strategiesToRemoveFromWhitelist[i]);
-                // Set mapping value to default false value
-                _setThirdPartyTransfersForbidden(strategiesToRemoveFromWhitelist[i], false);
             }
         }
     }
@@ -375,17 +356,6 @@ contract StrategyManager is
         require(j != stratsLength, StrategyNotFound());
         // pop off the last entry in the list of strategies
         stakerStrategyList[staker].pop();
-    }
-
-    /**
-     * @notice Internal function for modifying `thirdPartyTransfersForbidden`.
-     * Used inside of the `setThirdPartyTransfersForbidden` and `addStrategiesToDepositWhitelist` functions.
-     * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
-     * @param value bool value to set `thirdPartyTransfersForbidden` to
-     */
-    function _setThirdPartyTransfersForbidden(IStrategy strategy, bool value) internal {
-        emit UpdatedThirdPartyTransfersForbidden(strategy, value);
-        thirdPartyTransfersForbidden[strategy] = value;
     }
 
     /**

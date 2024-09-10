@@ -72,7 +72,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * if true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
      * and also when performing queueWithdrawals, a staker can only withdraw to themselves
      */
-    mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
+    mapping(IStrategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
     constructor(
         IDelegationManager _delegation,

@@ -22,14 +22,13 @@ contract DeployStrategies is ExistingDeploymentParser {
         uint256 batchSize = 100;
 
         IStrategy[] memory strategies = new IStrategy[](batchSize * batches);
-        bool[] memory falses = new bool[](batchSize);
 
         for (uint256 i = 0; i < batches; i++) {
             IStrategy[] memory strategiesJustDeployed = strategyDeployer.createManyStrategies(batchSize);
             for (uint256 j = 0; j < batchSize; j++) {
                 strategies[i * batchSize + j] = strategiesJustDeployed[j];
             }
-            strategyManager.addStrategiesToDepositWhitelist(strategiesJustDeployed, falses);
+            strategyManager.addStrategiesToDepositWhitelist(strategiesJustDeployed);
         }
 
         vm.stopBroadcast();
