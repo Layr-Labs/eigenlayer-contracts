@@ -5,102 +5,87 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 
-import "../../../src/contracts/token/BackingEigen.sol";
-import "../../../src/contracts/token/Eigen.sol";
-
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-// # To load the variables in the .env file
-// source .env
+import "../../../src/contracts/token/BackingEigen.sol";
+import "../../../src/contracts/token/Eigen.sol";
 
-// # To deploy and verify our contract
-// forge script script/deploy/mainnet/EIGEN_upgrade.s.sol:EIGEN_upgrade -vvvv --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
-contract EIGEN_upgrade is Script, Test {
+// forge script script/deploy/holesky/Preprod_Upgrade_bEIGEN_and_EIGEN.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --verify --etherscan-api-key $ETHERSCAN_API_KEY
+contract Preprod_Upgrade_bEIGEN_and_EIGEN is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    BackingEigen public bEIGEN_proxy = BackingEigen(0x83E9115d334D248Ce39a6f36144aEaB5b3456e75);
+    BackingEigen public bEIGEN_proxy = BackingEigen(0xA72942289a043874249E60469F68f08B8c6ECCe8);
     BackingEigen public bEIGEN_implementation;
-    Eigen public EIGEN_proxy = Eigen(0xec53bF9167f50cDEB3Ae105f56099aaaB9061F83);
+    Eigen public EIGEN_proxy = Eigen(0xD58f6844f79eB1fbd9f7091d05f7cb30d3363926);
     Eigen public EIGEN_implementation;
-    ProxyAdmin public EIGEN_ProxyAdmin = ProxyAdmin(0xB8915E195121f2B5D989Ec5727fd47a5259F1CEC);
-    TimelockController public EIGEN_TimelockController = TimelockController(payable(0x2520C6b2C1FBE1813AB5c7c1018CDa39529e9FF2));
-    address public EIGEN_TimelockAdmin = 0xbb00DDa2832850a43840A3A86515E3Fe226865F2;
+    ProxyAdmin public EIGEN_ProxyAdmin = ProxyAdmin(0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B);
+    address public proxyAdminOwner = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
 
     IERC20 public bEIGEN_addressBefore;
+    IERC20 public EIGEN_addressBefore;
 
     function run() external {
         // Read and log the chain ID
         uint256 chainId = block.chainid;
         emit log_named_uint("You are deploying on ChainID", chainId);
 
-        if (chainId == 1) {
-            // rpcUrl = "RPC_MAINNET";
-        } else {
+        if (chainId != 17000) {
             revert("Chain not supported");
         }
 
         bEIGEN_addressBefore = EIGEN_proxy.bEIGEN();
+        require(bEIGEN_addressBefore == IERC20(0xA72942289a043874249E60469F68f08B8c6ECCe8),
+            "something horribly wrong");
 
-        require(bEIGEN_addressBefore == IERC20(0x83E9115d334D248Ce39a6f36144aEaB5b3456e75),
+        EIGEN_addressBefore = bEIGEN_proxy.EIGEN();
+        require(EIGEN_addressBefore == IERC20(0xD58f6844f79eB1fbd9f7091d05f7cb30d3363926),
             "something horribly wrong");
 
         // Begin deployment
         vm.startBroadcast();
 
-        // Deploy new implmementation contract
+        // Deploy new implmementation contracts
         EIGEN_implementation = new Eigen({
             _bEIGEN: bEIGEN_addressBefore
+        });
+        bEIGEN_implementation = new BackingEigen({
+            _EIGEN: EIGEN_addressBefore
         });
 
         vm.stopBroadcast();
 
         emit log_named_address("EIGEN_implementation", address(EIGEN_implementation));
+        emit log_named_address("bEIGEN_implementation", address(bEIGEN_implementation));
+
+        // Perform upgrade
+        vm.startBroadcast();
+        EIGEN_ProxyAdmin.upgrade(
+                TransparentUpgradeableProxy(payable(address(bEIGEN_proxy))),
+                address(bEIGEN_implementation)
+            );
+        EIGEN_ProxyAdmin.upgrade(
+                TransparentUpgradeableProxy(payable(address(EIGEN_proxy))),
+                address(EIGEN_implementation)
+            );
+        vm.stopBroadcast();
 
         // Perform post-upgrade tests
-        simulatePerformingUpgrade();
         checkUpgradeCorrectness();
         simulateWrapAndUnwrap();
     }
 
-    function simulatePerformingUpgrade() public {
-        // Upgrade beacon
-        uint256 delay = EIGEN_TimelockController.getMinDelay();
-        bytes memory data = abi.encodeWithSelector(
-                ProxyAdmin.upgrade.selector,
-                TransparentUpgradeableProxy(payable(address(EIGEN_proxy))),
-                EIGEN_implementation
-        );
-        emit log_named_bytes("data", data);
-
-        vm.startPrank(EIGEN_TimelockAdmin);
-        EIGEN_TimelockController.schedule({
-            target: address(EIGEN_ProxyAdmin),
-            value: 0,
-            data: data,
-            predecessor: bytes32(0),
-            salt: bytes32(0),
-            delay: delay
-        });
-
-        vm.warp(block.timestamp + delay);
-        EIGEN_TimelockController.execute({
-            target: address(EIGEN_ProxyAdmin),
-            value: 0,
-            payload: data,
-            predecessor: bytes32(0),
-            salt: bytes32(0)
-        });
-
-        cheats.stopPrank();
-    }
-
     function checkUpgradeCorrectness() public {
-        vm.prank(address(EIGEN_TimelockController));
+        cheats.startPrank(address(proxyAdminOwner));
         require(EIGEN_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN_proxy)))) == address(EIGEN_implementation),
             "implementation set incorrectly");
         require(EIGEN_proxy.bEIGEN() == bEIGEN_addressBefore,
             "bEIGEN address changed unexpectedly");
+        require(EIGEN_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(bEIGEN_proxy)))) == address(bEIGEN_implementation),
+            "implementation set incorrectly");
+        require(bEIGEN_proxy.EIGEN() == EIGEN_addressBefore,
+            "EIGEN address changed unexpectedly");
+        cheats.stopPrank();
     }
 
     function simulateWrapAndUnwrap() public {
