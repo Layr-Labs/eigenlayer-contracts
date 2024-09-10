@@ -13,6 +13,61 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
 interface IEigenPod {
+    /// @dev Thrown when amount exceeds `withdrawableRestakedExecutionLayerGwei`.
+    error AmountExceedsWithdrawableRestakedExecutionLayerGwei();
+    /// @dev Thrown when provided `amountGwei` is not a multiple of gwei.
+    error AmountMustBeMultipleOfGwei();
+    /// @dev Thrown when provided `beaconTimestamp` is too far in the past.
+    error BeaconTimestampTooFarInPast();
+    /// @dev Thrown when attempting to create a checkpoint twice within a given block.
+    error CannotCheckpointTwiceInSingleBlock();
+    /// @dev Thrown when attempting an action that is currently paused.
+    error CurrentlyPaused();
+    /// @dev Thrown if a validator must be exiting.
+    error ValidatorMustBeExiting();
+    /// @dev Thrown when no active checkpoints are found.
+    error NoActiveCheckpoints();
+    /// @dev Thrown if there's not a balance available to checkpoint.
+    error NoBalanceToCheckpoint();
+    /// @dev Thrown when an address of zero is provided.
+    error InputAddressZero();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+    /// @dev Thrown when a proof is invalid.
+    error InvalidProof();
+    /// @dev Thrown when a proof with an invalid length is provided.
+    error InvalidProofLength();
+    /// @dev Thrown when an invalid block root is returned.
+    error InvalidBlockRoot();
+    /// @dev Thrown when a validator fields length is invalid.
+    error InvalidValidatorFieldsLength();
+    /// @dev Thrown when `validatorPubKey` length is not equal to 48-bytes.
+    error InvalidValidatorPubKeyLength();
+    /// @dev Thrown when a proof is older than the last checkpoint.
+    error ProofOlderThanLastCheckpoint();
+    /// @dev Thrown when a validator is not active.
+    error ValidatorNotActive();
+    /// @dev Thrown when a validator is not inactive.
+    error ValidatorNotInactive();
+    /// @dev Thrown when a validator is not stale.
+    error ValidatorNotStale();
+    /// @dev Thrown when validator is not in the process of becoming active.
+    error ValidatorNoPendingActivation();
+    /// @dev Thrown if a previous uncomplete checkpoint exists.
+    error IncompletePreviousCheckpoint();
+    /// @dev Thrown when msg.value is not equal to 32 eth.
+    error MsgValueNot32ETH();
+    /// @dev Thrown when provided timestamp is out of range.
+    error TimestampOutOfRange();
+    /// @dev Thrown when only the EigenPodManager can perform the action.
+    error OnlyEigenPodManager();
+    /// @dev Thrown when only the EigenPodOwner can perform the action.
+    error OnlyEigenPodOwner();
+    /// @dev Thrown when either the EigenPodOwner or a proof submitter can perform the action.
+    error OnlyEigenPodOwnerOrProofSubmitter();
+    /// @dev Thrown if the provided proof is not valid for this EigenPod.
+    error WrongProofForEigenPod();
+
     /**
      *
      *                                STRUCTS / ENUMS

@@ -12,6 +12,13 @@ import "./IStrategy.sol";
  * @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
  */
 interface IStrategyFactory {
+    /// @dev Thrown when attempting to deploy a strategy for a blacklisted token.
+    error BlacklistedToken();
+    /// @dev Thrown when attempting to deploy a strategy that already exists.
+    error StrategyAlreadyExists();
+    /// @dev Thrown when attempting to blacklist a token that already has a deployed strategy.
+    error CannotBlacklistDeployedStrategy();
+
     event TokenBlacklisted(IERC20 token);
 
     /// @notice Upgradeable beacon which new Strategies deployed by this contract point to
