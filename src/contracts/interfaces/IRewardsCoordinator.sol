@@ -15,23 +15,24 @@ import "./IStrategy.sol";
  * a Merkle root against which Stakers & Operators can make claims.
  */
 interface IRewardsCoordinator {
-    error OnlyRewardsUpdater();
     /// @dev Thrown when claim is attempted by invalid claimer.
     error InvalidClaimer();
-    /// @dev Thrown when cummulative earnings are not greater than cummulative claimed.
-    error EarningsNotGreaterThanClaimed();
-    /// @dev Thrown when provided root is not for new calculated period.
-    error NewRootMustBeForNewCalculatedPeriod();
-    /// @dev Thrown when rewards end timestamp has not elapsed.
-    error RewardsEndTimestampNotElapsed();
     /// @dev Thrown when an invalid root index is provided.
     error InvalidRootIndex();
-    /// @dev Thrown if a root has already been disabled.
-    error RootDisabled();
-    /// @dev Thrown if a root has already been activated.
-    error RootActivated();
     /// @dev Thrown if provided commision bips exceeds maximum.
     error CommissionBipsExceedsMax();
+    /// @dev Thrown when cummulative earnings are not greater than cummulative claimed.
+    error EarningsNotGreaterThanClaimed();
+    /// @dev Thrown when call is attempted by address that's not the rewards updater.
+    error OnlyRewardsUpdater();
+    /// @dev Thrown when rewards end timestamp has not elapsed.
+    error RewardsEndTimestampNotElapsed();
+    /// @dev Thrown if a root has already been activated.
+    error RootActivated();
+    /// @dev Thrown if a root has already been disabled.
+    error RootDisabled();
+    /// @dev Thrown when provided root is not for new calculated period.
+    error NewRootMustBeForNewCalculatedPeriod();
 
     /// STRUCTS ///
 
