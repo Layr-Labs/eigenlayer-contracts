@@ -101,6 +101,9 @@ contract DeployFromScratch is Script, Test {
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
 
+    // AllocationManager
+    uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
+
     // one week in blocks -- 50400
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
     uint256 DELEGATION_WITHDRAWAL_DELAY_BLOCKS;
@@ -144,6 +147,10 @@ contract DeployFromScratch is Script, Test {
         );
         REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH = uint32(
             stdJson.readUint(config_data, ".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH")
+        );
+
+        ALLOCATION_MANAGER_INIT_PAUSED_STATUS = uint32(
+            stdJson.readUint(config_data, ".allocationManager.init_paused_status")
         );
 
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(
@@ -311,6 +318,16 @@ contract DeployFromScratch is Script, Test {
                 REWARDS_COORDINATOR_UPDATER,
                 REWARDS_COORDINATOR_ACTIVATION_DELAY,
                 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS
+            )
+        );
+         eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation),
+            abi.encodeWithSelector(
+                AllocationManager.initialize.selector,
+                executorMultisig,
+                eigenLayerPauserReg,
+                ALLOCATION_MANAGER_INIT_PAUSED_STATUS
             )
         );
 
@@ -531,6 +548,13 @@ contract DeployFromScratch is Script, Test {
                 TransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
             ) == address(rewardsCoordinatorImplementation),
             "rewardsCoordinator: implementation set incorrectly"
+        );
+
+        require(
+            eigenLayerProxyAdmin.getProxyImplementation(
+                TransparentUpgradeableProxy(payable(address(allocationManager)))
+            ) == address(allocationManagerImplementation),
+            "allocationManager: implementation set incorrectly"
         );
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
