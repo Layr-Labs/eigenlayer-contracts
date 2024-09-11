@@ -18,7 +18,7 @@ interface IDelegationManager is ISignatureUtils {
     /// @dev Thrown when an account is actively delegated.
     error ActivelyDelegated();
     /// @dev Thrown when attempting to execute an action that was not queued.
-    error ActionNotQueued();
+    error WithdrawalNotQueued();
     /// @dev Thrown when provided delay exceeds maximum.
     error AllocationDelaySet();
     /// @dev Thrown when caller cannot undelegate on behalf of a staker.

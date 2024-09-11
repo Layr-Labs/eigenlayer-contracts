@@ -625,7 +625,7 @@ contract DelegationManager is
 
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
-        require(pendingWithdrawals[withdrawalRoot], ActionNotQueued());
+        require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
         require(withdrawal.startTimestamp + minWithdrawalDelay <= block.number, WithdrawalDelayNotElapsed());
         require(msg.sender == withdrawal.withdrawer, WithdrawerNotCaller());
 
