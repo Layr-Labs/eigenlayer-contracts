@@ -171,7 +171,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         uint256 numStrategiesToDeploy = strategiesToDeploy.length;
         // whitelist params
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](numStrategiesToDeploy);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](numStrategiesToDeploy);
 
         for (uint256 i = 0; i < numStrategiesToDeploy; i++) {
             StrategyUnderlyingTokenConfig memory strategyConfig = strategiesToDeploy[i];
@@ -193,13 +192,12 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             );
 
             strategiesToWhitelist[i] = strategy;
-            thirdPartyTransfersForbiddenValues[i] = false;
 
             deployedStrategyArray.push(strategy);
         }
 
         // Add strategies to whitelist and set whitelister to STRATEGY_MANAGER_WHITELISTER
-        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
         strategyManager.setStrategyWhitelister(STRATEGY_MANAGER_WHITELISTER);
 
         // Transfer ownership

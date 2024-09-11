@@ -589,7 +589,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Whitelist strategy
         IStrategy[] memory strategies = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         strategies[0] = strategy;
 
         if (forkType == MAINNET) {
@@ -599,7 +598,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             StrategyBaseTVLLimits(address(strategy)).setTVLLimits(type(uint256).max, type(uint256).max);
         } else {
             cheats.prank(strategyManager.strategyWhitelister());
-            strategyManager.addStrategiesToDepositWhitelist(strategies, _thirdPartyTransfersForbiddenValues);
+            strategyManager.addStrategiesToDepositWhitelist(strategies);
         }
 
         // Add to lstStrats and allStrats

@@ -90,7 +90,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * To withdraw from a strategy, max(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy]) number of blocks must have passed.
      * See mapping strategyWithdrawalDelayBlocks below for per-strategy withdrawal delays.
      */
-    uint256 public minWithdrawalDelayBlocks;
+    uint256 private __deprecated_minWithdrawalDelayBlocks;
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public pendingWithdrawals;
@@ -107,23 +107,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
-    mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks;
-
-    /**
-     * @notice Global minimum withdrawal delay for all strategy withdrawals.
-     * NOTE: This is used equivalently to minWithdrawalDelayBlocks and strategyWithdrawalDelayBlocks but
-     * using timestamps instead in the Slashing release.
-     * In addition, we now also configure withdrawal delays on a per-strategy basis.
-     * To withdraw from a strategy, max(minWithdrawalDelay, strategyWithdrawalDelay[strategy]) number of seconds must have passed.
-     * See mapping strategyWithdrawalDelay below for per-strategy withdrawal delays.
-     */
-    uint256 public minWithdrawalDelay;
-
-    /**
-     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in seconds, and adjustable by this contract's owner,
-     * up to a maximum of `MAX_WITHDRAWAL_DELAY`. Minimum value is 0 (i.e. no delay enforced).
-     */
-    mapping(IStrategy => uint256) public strategyWithdrawalDelays;
+    mapping(IStrategy => uint256) private __deprecated_strategyWithdrawalDelayBlocks;
 
     /// @notice Mapping: staker => strategy => scaling factor used to calculate the staker's withdrawable shares in the strategy.
     /// This is updated upon each deposit based on the staker's currently delegated operator's totalMagnitude.
@@ -152,5 +136,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[37] private __gap;
+    uint256[39] private __gap;
 }

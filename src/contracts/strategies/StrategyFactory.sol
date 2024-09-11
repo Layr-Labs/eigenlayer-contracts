@@ -60,10 +60,8 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         );
         _setStrategyForToken(token, strategy);
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](1);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         strategiesToWhitelist[0] = strategy;
-        thirdPartyTransfersForbiddenValues[0] = false;
-        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
         return strategy;
     }
 
@@ -106,17 +104,9 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
      * @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
      */
     function whitelistStrategies(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external onlyOwner {
-        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
-    }
-
-    /**
-     * @notice Owner-only function to pass through a call to `StrategyManager.setThirdPartyTransfersForbidden`
-     */
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external onlyOwner {
-        strategyManager.setThirdPartyTransfersForbidden(strategy, value);
+        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
     }
 
     /**
