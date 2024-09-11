@@ -273,7 +273,7 @@ contract StrategyManager is
 
         // if they dont have existing shares of this strategy, add it to their strats
         if (stakerStrategyShares[staker][strategy] == 0) {
-            require(stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, DepositWouldExceedMax());
+            require(stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, MaxStrategiesExceeded());
             stakerStrategyList[staker].push(strategy);
         }
 

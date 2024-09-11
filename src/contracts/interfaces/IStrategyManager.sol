@@ -13,8 +13,8 @@ import "./IEigenPodManager.sol";
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
 interface IStrategyManager {
-    /// @dev Thrown when deposit amount would exceed max.
-    error DepositWouldExceedMax();
+    /// @dev Thrown when total strategies deployed exceeds max.
+    error MaxStrategiesExceeded();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
     /// @dev Thrown when call attempted from address that's not delegation manager.
