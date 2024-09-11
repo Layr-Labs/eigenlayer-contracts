@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -35,24 +35,19 @@ contract StrategyManager is
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
     modifier onlyStrategyWhitelister() {
-        require(
-            msg.sender == strategyWhitelister, "StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister"
-        );
+        require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
         _;
     }
 
     modifier onlyStrategiesWhitelistedForDeposit(
         IStrategy strategy
     ) {
-        require(
-            strategyIsWhitelistedForDeposit[strategy],
-            "StrategyManager.onlyStrategiesWhitelistedForDeposit: strategy not whitelisted"
-        );
+        require(strategyIsWhitelistedForDeposit[strategy], StrategyNotWhitelisted());
         _;
     }
 
     modifier onlyDelegationManager() {
-        require(msg.sender == address(delegation), "StrategyManager.onlyDelegationManager: not the DelegationManager");
+        require(msg.sender == address(delegation), OnlyDelegationManager());
         _;
     }
 
@@ -141,11 +136,8 @@ contract StrategyManager is
         uint256 expiry,
         bytes memory signature
     ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
-        require(
-            !thirdPartyTransfersForbidden[strategy],
-            "StrategyManager.depositIntoStrategyWithSignature: third transfers disabled"
-        );
-        require(expiry >= block.timestamp, "StrategyManager.depositIntoStrategyWithSignature: signature expired");
+        require(!thirdPartyTransfersForbidden[strategy], ThirdPartyTransfersDisabled());
+        require(expiry >= block.timestamp, SignatureExpired());
         // calculate struct hash, then increment `staker`'s nonce
         uint256 nonce = nonces[staker];
         bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, staker, strategy, token, amount, nonce, expiry));
@@ -226,20 +218,14 @@ contract StrategyManager is
         IStrategy[] calldata strategiesToWhitelist,
         bool[] calldata thirdPartyTransfersForbiddenValues
     ) external onlyStrategyWhitelister {
-        require(
-            strategiesToWhitelist.length == thirdPartyTransfersForbiddenValues.length,
-            "StrategyManager.addStrategiesToDepositWhitelist: array lengths do not match"
-        );
+        require(strategiesToWhitelist.length == thirdPartyTransfersForbiddenValues.length, InputArrayLengthMismatch());
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
-        for (uint256 i = 0; i < strategiesToWhitelistLength;) {
+        for (uint256 i = 0; i < strategiesToWhitelistLength; ++i) {
             // change storage and emit event only if strategy is not already in whitelist
             if (!strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
                 emit StrategyAddedToDepositWhitelist(strategiesToWhitelist[i]);
                 _setThirdPartyTransfersForbidden(strategiesToWhitelist[i], thirdPartyTransfersForbiddenValues[i]);
-            }
-            unchecked {
-                ++i;
             }
         }
     }
@@ -252,16 +238,13 @@ contract StrategyManager is
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external onlyStrategyWhitelister {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
-        for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength;) {
+        for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength; ++i) {
             // change storage and emit event only if strategy is already in whitelist
             if (strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]] = false;
                 emit StrategyRemovedFromDepositWhitelist(strategiesToRemoveFromWhitelist[i]);
                 // Set mapping value to default false value
                 _setThirdPartyTransfersForbidden(strategiesToRemoveFromWhitelist[i], false);
-            }
-            unchecked {
-                ++i;
             }
         }
     }
@@ -285,15 +268,12 @@ contract StrategyManager is
         uint256 shares
     ) internal returns (uint256 existingShares) {
         // sanity checks on inputs
-        require(staker != address(0), "StrategyManager._addShares: staker cannot be zero address");
-        require(shares != 0, "StrategyManager._addShares: shares should not be zero!");
+        require(staker != address(0), StakerAddressZero());
+        require(shares != 0, SharesAmountZero());
 
         // if they dont have existing shares of this strategy, add it to their strats
         if (stakerStrategyShares[staker][strategy] == 0) {
-            require(
-                stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH,
-                "StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH"
-            );
+            require(stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, MaxStrategiesExceeded());
             stakerStrategyList[staker].push(strategy);
         }
 
@@ -350,12 +330,12 @@ contract StrategyManager is
      */
     function _removeShares(address staker, IStrategy strategy, uint256 shareAmount) internal returns (bool) {
         // sanity checks on inputs
-        require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
+        require(shareAmount != 0, SharesAmountZero());
 
         //check that the user has sufficient shares
         uint256 userShares = stakerStrategyShares[staker][strategy];
 
-        require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
+        require(shareAmount <= userShares, SharesAmountTooHigh());
         //unchecked arithmetic since we just checked this above
         unchecked {
             userShares = userShares - shareAmount;
@@ -384,18 +364,15 @@ contract StrategyManager is
         //loop through all of the strategies, find the right one, then replace
         uint256 stratsLength = stakerStrategyList[staker].length;
         uint256 j = 0;
-        for (; j < stratsLength;) {
+        for (; j < stratsLength; ++j) {
             if (stakerStrategyList[staker][j] == strategy) {
                 //replace the strategy with the last strategy in the list
                 stakerStrategyList[staker][j] = stakerStrategyList[staker][stakerStrategyList[staker].length - 1];
                 break;
             }
-            unchecked {
-                ++j;
-            }
         }
         // if we didn't find the strategy, revert
-        require(j != stratsLength, "StrategyManager._removeStrategyFromStakerStrategyList: strategy not found");
+        require(j != stratsLength, StrategyNotFound());
         // pop off the last entry in the list of strategies
         stakerStrategyList[staker].pop();
     }
@@ -435,11 +412,8 @@ contract StrategyManager is
         uint256 strategiesLength = stakerStrategyList[staker].length;
         uint256[] memory shares = new uint256[](strategiesLength);
 
-        for (uint256 i = 0; i < strategiesLength;) {
+        for (uint256 i = 0; i < strategiesLength; ++i) {
             shares[i] = stakerStrategyShares[staker][stakerStrategyList[staker][i]];
-            unchecked {
-                ++i;
-            }
         }
         return (stakerStrategyList[staker], shares);
     }

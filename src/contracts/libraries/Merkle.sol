@@ -18,6 +18,8 @@ pragma solidity ^0.8.0;
  * against this attack out of the box.
  */
 library Merkle {
+    error ProofLengthNotMultipleOf32();
+
     /**
      * @dev Returns the rebuilt hash obtained by traversing a Merkle tree up
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
@@ -51,7 +53,7 @@ library Merkle {
         bytes32 leaf,
         uint256 index
     ) internal pure returns (bytes32) {
-        require(proof.length % 32 == 0, "Merkle.processInclusionProofKeccak: proof length should be a multiple of 32");
+        require(proof.length % 32 == 0, ProofLengthNotMultipleOf32());
         bytes32 computedHash = leaf;
         for (uint256 i = 32; i <= proof.length; i += 32) {
             if (index % 2 == 0) {
@@ -107,10 +109,7 @@ library Merkle {
         bytes32 leaf,
         uint256 index
     ) internal view returns (bytes32) {
-        require(
-            proof.length != 0 && proof.length % 32 == 0,
-            "Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32"
-        );
+        require(proof.length != 0 && proof.length % 32 == 0, ProofLengthNotMultipleOf32());
         bytes32[1] memory computedHash = [leaf];
         for (uint256 i = 32; i <= proof.length; i += 32) {
             if (index % 2 == 0) {

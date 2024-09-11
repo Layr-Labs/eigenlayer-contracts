@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -48,11 +48,8 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     function deployNewStrategy(
         IERC20 token
     ) external onlyWhenNotPaused(PAUSED_NEW_STRATEGIES) returns (IStrategy newStrategy) {
-        require(!isBlacklisted[token], "StrategyFactory.deployNewStrategy: Token is blacklisted");
-        require(
-            deployedStrategies[token] == IStrategy(address(0)),
-            "StrategyFactory.deployNewStrategy: Strategy already exists for token"
-        );
+        require(!isBlacklisted[token], BlacklistedToken());
+        require(deployedStrategies[token] == IStrategy(address(0)), StrategyAlreadyExists());
         IStrategy strategy = IStrategy(
             address(
                 new BeaconProxy(
@@ -81,7 +78,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         uint256 removeIdx = 0;
 
         for (uint256 i; i < tokens.length; ++i) {
-            require(!isBlacklisted[tokens[i]], "StrategyFactory.blacklistTokens: Cannot blacklist deployed strategy");
+            require(!isBlacklisted[tokens[i]], CannotBlacklistDeployedStrategy());
             isBlacklisted[tokens[i]] = true;
             emit TokenBlacklisted(tokens[i]);
 

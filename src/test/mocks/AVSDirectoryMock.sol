@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
 import "../../contracts/interfaces/IAVSDirectory.sol";
+import "../../contracts/interfaces/IStrategy.sol";
 
 contract AVSDirectoryMock is IAVSDirectory, Test {
     function createOperatorSets(uint32[] calldata operatorSetIds) external {}

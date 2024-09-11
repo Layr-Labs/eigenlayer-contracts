@@ -15,6 +15,45 @@ import "./ISignatureUtils.sol";
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
 interface IDelegationManager is ISignatureUtils {
+    /// @dev Thrown when an account is actively delegated.
+    error ActivelyDelegated();
+    /// @dev Thrown when attempting to execute an action that was not queued.
+    error WithdrawalNotQueued();
+    /// @dev Thrown when provided delay exceeds maximum.
+    error AllocationDelaySet();
+    /// @dev Thrown when caller cannot undelegate on behalf of a staker.
+    error CallerCannotUndelegate();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+    /// @dev Thrown when input arrays length is zero.
+    error InputArrayLengthZero();
+    /// @dev Thrown when `operator` is not a registered operator.
+    error OperatorNotRegistered();
+    /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
+    error OnlyStrategyManagerOrEigenPodManager();
+    /// @dev Thrown when an operator attempts to undelegate.
+    error OperatorsCannotUndelegate();
+    /// @dev Thrown when an account is not actively delegated.
+    error NotActivelyDelegated();
+    /// @dev Thrown when attempting to spend a spent eip-712 salt.
+    error SaltSpent();
+    /// @dev Thrown when attempting to use an expired eip-712 signature.
+    error SignatureExpired();
+    /// @dev Thrown when provided `stakerOptOutWindowBlocks` cannot decrease.
+    error StakerOptOutWindowBlocksCannotDecrease();
+    /// @dev Thrown when provided `stakerOptOutWindowBlocks` exceeds maximum.
+    error StakerOptOutWindowBlocksExceedsMax();
+    /// @dev Thrown when attempting to withdraw before delay has elapsed.
+    error WithdrawalDelayNotElapsed();
+    /// @dev Thrown when provided delay exceeds maximum.
+    error WithdrawalDelayExeedsMax();
+    /// @dev Thrown when a withdraw amount larger than max is attempted.
+    error WithdrawalExeedsMax();
+    /// @dev Thrown when withdrawer is not the current caller.
+    error WithdrawerNotCaller();
+    /// @dev Thrown when `withdrawer` is not staker.
+    error WithdrawerNotStaker();
+
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
         /// @notice DEPRECATED -- this field is no longer used, payments are handled in PaymentCoordinator.sol

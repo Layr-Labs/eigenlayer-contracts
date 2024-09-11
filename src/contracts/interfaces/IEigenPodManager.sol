@@ -15,6 +15,17 @@ import "./IStrategy.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IEigenPodManager is IPausable {
+    /// @dev Thrown when caller is not a EigenPod.
+    error OnlyEigenPod();
+    /// @dev Thrown when caller is not DelegationManager.
+    error OnlyDelegationManager();
+    /// @dev Thrown when caller already has an EigenPod.
+    error EigenPodAlreadyExists();
+    /// @dev Thrown when shares is not a multiple of gwei.
+    error SharesNotMultipleOfGwei();
+    /// @dev Thrown when shares would result in a negative integer.
+    error SharesNegative();
+
     /// @notice Emitted to notify the deployment of an EigenPod
     event PodDeployed(address indexed eigenPod, address indexed podOwner);
 
