@@ -526,7 +526,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint256 operatorSetIndex,
         uint256 startOperatorIndex,
         uint256 numOperators
-    ) external view returns (OperatorLeaf[] memory) {
+    ) external view returns (IAVSDirectory.OperatorSet memory, address[] memory, OperatorLeaf[] memory) {
         require(
             operatorSetIndex < operatorSets.length,
             "StakeRootCompendium.getOperatorSetLeaves: operator set index out of bounds"
@@ -546,7 +546,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
                 extraData: operatorExtraDatas[operatorSet.avs][operatorSet.operatorSetId][operators[i]]
             });
         }
-        return operatorLeaves;
+        return (operatorSet, operators, operatorLeaves);
     }
 
     /// @inheritdoc IStakeRootCompendium
