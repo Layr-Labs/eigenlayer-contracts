@@ -50,7 +50,7 @@ contract PauserRegistry is IPauserRegistry {
     function _setUnpauser(
         address newUnpauser
     ) internal {
-        require(newUnpauser != address(0), "PauserRegistry._setUnpauser: zero address input");
+        require(newUnpauser != address(0), InputAddressZero());
         emit UnpauserChanged(unpauser, newUnpauser);
         unpauser = newUnpauser;
     }

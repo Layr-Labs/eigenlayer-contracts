@@ -224,10 +224,7 @@ contract RewardsCoordinator is
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
 
-            require(
-                avsDirectory.isOperatorSet(msg.sender, rewardsSubmission.operatorSetId),
-                "RewardsCoordinator.rewardOperatorSetForRange: invalid operatorSet"
-            );
+            require(avsDirectory.isOperatorSet(msg.sender, rewardsSubmission.operatorSetId), InvalidOperatorSet());
             _validateRewardsSubmission(
                 rewardsSubmission.strategiesAndMultipliers,
                 rewardsSubmission.token,
@@ -301,7 +298,7 @@ contract RewardsCoordinator is
         if (claimer == address(0)) {
             claimer = earner;
         }
-        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
+        require(msg.sender == claimer, InvalidClaimer());
         for (uint256 i = 0; i < claim.tokenIndices.length; ++i) {
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
 
@@ -352,7 +349,7 @@ contract RewardsCoordinator is
     function disableRoot(
         uint32 rootIndex
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
-        require(rootIndex < _distributionRoots.length, "RewardsCoordinator.disableRoot: invalid rootIndex");
+        require(rootIndex < _distributionRoots.length, InvalidRootIndex());
         DistributionRoot storage root = _distributionRoots[rootIndex];
         require(!root.disabled, RootDisabled());
         require(block.timestamp < root.activatedAt, RootActivated());
@@ -389,10 +386,7 @@ contract RewardsCoordinator is
         RewardType rewardType,
         uint16 commissionBips
     ) external returns (uint32 effectTimestamp) {
-        require(
-            commissionBips <= MAX_COMMISSION_BIPS,
-            "RewardsCoordinator.setOperatorCommissionBips: commissionBips too high"
-        );
+        require(commissionBips <= MAX_COMMISSION_BIPS, CommissionBipsExceedsMax());
         effectTimestamp = uint32(block.timestamp + OPERATOR_COMMISSION_ACTIVATION_DELAY);
         OperatorCommissionUpdate[] storage commissionHistory =
             operatorCommissionUpdates[msg.sender][operatorSet.avs][operatorSet.operatorSetId][rewardType];
@@ -477,30 +471,19 @@ contract RewardsCoordinator is
         uint32 maxRetroactiveLength,
         uint32 genesisRewardsTimestamp
     ) internal view {
-        require(strategiesAndMultipliers.length > 0, "RewardsCoordinator._validateRewardsSubmission: no strategies set");
-        require(amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
-        require(amount <= MAX_REWARDS_AMOUNT, "RewardsCoordinator._validateRewardsSubmission: amount too large");
+        require(strategiesAndMultipliers.length > 0, InputArrayLengthZero());
+        require(amount > 0, AmountZero());
+        require(amount <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
+        require(duration <= MAX_REWARDS_DURATION, DurationExceedsMax());
+        require(duration % CALCULATION_INTERVAL_SECONDS == 0, DurationNotMultipleOfCalculationIntervalSeconds());
         require(
-            duration <= MAX_REWARDS_DURATION,
-            "RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
-        );
-        require(
-            duration % CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator._validateRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
-        );
-        require(
-            startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            startTimestamp % CALCULATION_INTERVAL_SECONDS == 0, StartTimestampNotMultipleOfCalculationIntervalSeconds()
         );
         require(
             block.timestamp - maxRetroactiveLength <= startTimestamp && genesisRewardsTimestamp <= startTimestamp,
-            "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
+            StartTimestampTooFarInPast()
         );
-        require(
-            startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
-            "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the future"
-        );
-        require(rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH, StartTimestampTooFarInFuture());
+        require(startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH, StartTimestampTooFarInFuture());
 
         // Require rewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
         address currAddress = address(0);
@@ -587,7 +570,7 @@ contract RewardsCoordinator is
     ) internal pure {
         // Validate index size so that there aren't multiple valid indices for the given proof
         // index can't be greater than 2**(earnerProof/32)
-        require(earnerLeafIndex < (1 << (earnerProof.length / 32)), InvalidClaimProof());
+        require(earnerLeafIndex < (1 << (earnerProof.length / 32)), InvalidEarnerLeafIndex());
         // Verify inclusion of earner leaf
         bytes32 earnerLeafHash = calculateEarnerLeafHash(earnerLeaf);
         // forgefmt: disable-next-item
@@ -664,14 +647,10 @@ contract RewardsCoordinator is
         OperatorCommissionUpdate[] memory commissionHistory =
             operatorCommissionUpdates[operator][operatorSet.avs][operatorSet.operatorSetId][rewardType];
 
-        for (uint256 i = commissionHistory.length; i > 0;) {
+        for (uint256 i = commissionHistory.length; i > 0; --i) {
             if (commissionHistory[i - 1].effectTimestamp <= uint32(block.timestamp)) {
                 commissionBips = commissionHistory[i - 1].commissionBips;
                 break;
-            }
-
-            unchecked {
-                --i;
             }
         }
         return commissionBips;

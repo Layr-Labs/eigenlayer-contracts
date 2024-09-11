@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
