@@ -470,7 +470,8 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // Ensure the validator's withdrawal credentials are pointed at this pod
         require(
-            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()), WithdrawCredentialsNotForEigenPod()
+            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()),
+            WithdrawCredentialsNotForEigenPod()
         );
 
         // Get the validator's effective balance. Note that this method uses effective balance, while
