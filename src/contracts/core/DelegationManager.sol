@@ -39,11 +39,11 @@ contract DelegationManager is
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
     /// @dev The minimum number of blocks to complete a withdrawal of a strategy. 50400 * 12 seconds = 1 week
-    uint256 public constant LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS = 50400;
+    uint256 public constant LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS = 50_400;
 
     /// @dev Wed Jan 01 2025 17:00:00 GMT+0000, timestamp used to check whether a pending withdrawal
     /// should be processed as legacy M2 or with slashing considered.
-    uint32 public constant LEGACY_WITHDRAWALS_TIMESTAMP = 1735750800;
+    uint32 public constant LEGACY_WITHDRAWALS_TIMESTAMP = 1_735_750_800;
 
     uint32 public constant WITHDRAWAL_DELAY = SlashingConstants.DEALLOCATION_DELAY;
 
@@ -131,9 +131,7 @@ contract DelegationManager is
      * after being set. This delay is required to be set for an operator to be able to allocate slashable magnitudes.
      * @param delay the allocation delay in seconds
      */
-    function initializeAllocationDelay(
-        uint32 delay
-    ) external {
+    function initializeAllocationDelay(uint32 delay) external {
         _initializeAllocationDelay(delay);
     }
 
@@ -143,9 +141,7 @@ contract DelegationManager is
      *
      * @dev The caller must have previously registered as an operator in EigenLayer.
      */
-    function modifyOperatorDetails(
-        OperatorDetails calldata newOperatorDetails
-    ) external {
+    function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external {
         require(isOperator(msg.sender), OperatorNotRegistered());
         _setOperatorDetails(msg.sender, newOperatorDetails);
     }
@@ -154,9 +150,7 @@ contract DelegationManager is
      * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
      * @param metadataURI The URI for metadata associated with an operator
      */
-    function updateOperatorMetadataURI(
-        string calldata metadataURI
-    ) external {
+    function updateOperatorMetadataURI(string calldata metadataURI) external {
         require(isOperator(msg.sender), OperatorNotRegistered());
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
@@ -234,9 +228,11 @@ contract DelegationManager is
      * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
      * both the staker and operator, and places the shares and strategies in the withdrawal queue
      */
-    function undelegate(
-        address staker
-    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
+    function undelegate(address staker)
+        external
+        onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
+        returns (bytes32[] memory withdrawalRoots)
+    {
         require(isDelegated(staker), NotActivelyDelegated());
         require(!isOperator(staker), OperatorsCannotUndelegate());
         require(staker != address(0), InputAddressZero());
@@ -296,9 +292,11 @@ contract DelegationManager is
      *
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
-    function queueWithdrawals(
-        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
-    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
+    function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams)
+        external
+        onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
+        returns (bytes32[] memory)
+    {
         bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
         address operator = delegatedTo[msg.sender];
 
@@ -466,9 +464,7 @@ contract DelegationManager is
      * after being set. This delay is required to be set for an operator to be able to allocate slashable magnitudes.
      * @param delay the allocation delay in seconds
      */
-    function _initializeAllocationDelay(
-        uint32 delay
-    ) internal {
+    function _initializeAllocationDelay(uint32 delay) internal {
         require(isOperator(msg.sender), OperatorNotRegistered());
         require(!_operatorAllocationDelay[msg.sender].isSet, AllocationDelaySet());
         _operatorAllocationDelay[msg.sender] = AllocationDelayDetails({isSet: true, allocationDelay: delay});
@@ -580,7 +576,10 @@ contract DelegationManager is
             // this is a legacy M2 withdrawal using blocknumbers. We use the LEGACY_WITHDRAWALS_TIMESTAMP to check
             // if the withdrawal is a legacy withdrawal or not. It would take up to 600+ years for the blocknumber
             // to reach the LEGACY_WITHDRAWALS_TIMESTAMP, so this is a safe check.
-            require(withdrawal.startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number, WithdrawalDelayNotElapsed());
+            require(
+                withdrawal.startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number,
+                WithdrawalDelayNotElapsed()
+            );
             isLegacyWithdrawal = true;
         } else {
             // this is a post Slashing release withdrawal using timestamps
@@ -1023,27 +1022,21 @@ contract DelegationManager is
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
      */
-    function isDelegated(
-        address staker
-    ) public view returns (bool) {
+    function isDelegated(address staker) public view returns (bool) {
         return (delegatedTo[staker] != address(0));
     }
 
     /**
      * @notice Returns true is an operator has previously registered for delegation.
      */
-    function isOperator(
-        address operator
-    ) public view returns (bool) {
+    function isOperator(address operator) public view returns (bool) {
         return operator != address(0) && delegatedTo[operator] == operator;
     }
 
     /**
      * @notice Returns the OperatorDetails struct associated with an `operator`.
      */
-    function operatorDetails(
-        address operator
-    ) external view returns (OperatorDetails memory) {
+    function operatorDetails(address operator) external view returns (OperatorDetails memory) {
         return _operatorDetails[operator];
     }
 
@@ -1051,27 +1044,21 @@ contract DelegationManager is
      * @notice Returns the AllocationDelayDetails struct associated with an `operator`
      * @dev If the operator has not set an allocation delay, then the `isSet` field will be `false`.
      */
-    function operatorAllocationDelay(
-        address operator
-    ) external view returns (AllocationDelayDetails memory) {
+    function operatorAllocationDelay(address operator) external view returns (AllocationDelayDetails memory) {
         return _operatorAllocationDelay[operator];
     }
 
     /**
      * @notice Returns the delegationApprover account for an operator
      */
-    function delegationApprover(
-        address operator
-    ) external view returns (address) {
+    function delegationApprover(address operator) external view returns (address) {
         return _operatorDetails[operator].delegationApprover;
     }
 
     /**
      * @notice Returns the stakerOptOutWindowBlocks for an operator
      */
-    function stakerOptOutWindowBlocks(
-        address operator
-    ) external view returns (uint256) {
+    function stakerOptOutWindowBlocks(address operator) external view returns (uint256) {
         return _operatorDetails[operator].stakerOptOutWindowBlocks;
     }
 
@@ -1117,9 +1104,7 @@ contract DelegationManager is
      * delegatable shares!
      * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
      */
-    function getDelegatableShares(
-        address staker
-    ) public view returns (IStrategy[] memory, uint256[] memory) {
+    function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
         // Get current StrategyManager/EigenPodManager shares and strategies for `staker`
         // If `staker` is already delegated, these may not be the full withdrawable amounts due to slashing
         int256 podShares = eigenPodManager.podOwnerShares(staker);
@@ -1162,9 +1147,7 @@ contract DelegationManager is
     }
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
-    function calculateWithdrawalRoot(
-        Withdrawal memory withdrawal
-    ) public pure returns (bytes32) {
+    function calculateWithdrawalRoot(Withdrawal memory withdrawal) public pure returns (bytes32) {
         return keccak256(abi.encode(withdrawal));
     }
 

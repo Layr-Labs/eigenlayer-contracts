@@ -407,15 +407,6 @@ interface IDelegationManager is ISignatureUtils {
         address operator
     ) external view returns (uint256);
 
-    // /**
-    //  * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
-    //  * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
-    //  * @param strategies The strategies to check withdrawal delays for
-    //  */
-    // function getWithdrawalDelay(
-    //     IStrategy[] calldata strategies
-    // ) external view returns (uint256);
-
     /**
      * @notice returns the total number of scaled shares (i.e. shares scaled down by a factor of the `operator`'s
      * totalMagnitude) in `strategy` that are delegated to `operator`.
