@@ -27,8 +27,6 @@ interface IDelegationManager is ISignatureUtils {
     error InputArrayLengthMismatch();
     /// @dev Thrown when input arrays length is zero.
     error InputArrayLengthZero();
-    /// @dev Thrown when an invalid operator is provided.
-    error InvalidOperator();
     /// @dev Thrown when `operator` is not a registered operator.
     error OperatorNotRegistered();
     /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
@@ -55,8 +53,6 @@ interface IDelegationManager is ISignatureUtils {
     error WithdrawerNotCaller();
     /// @dev Thrown when `withdrawer` is not staker.
     error WithdrawerNotStaker();
-    /// @dev Thrown when a null address is provided.
-    error ZeroAddress();
 
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {

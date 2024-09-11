@@ -2694,7 +2694,7 @@
 //     }
 
 //     //TODO: verify that this check is even needed
-//     function test_undelegate_revert_zeroAddress() public {
+//     function test_undelegate_revert_InputAddressZero() public {
 //         _registerOperatorWithBaseDetails(defaultOperator);
 //         _delegateToOperatorWhoAcceptsAllStakers(address(0), defaultOperator);
 

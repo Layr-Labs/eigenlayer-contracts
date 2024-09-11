@@ -244,7 +244,7 @@ contract DelegationManager is
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
         require(isDelegated(staker), NotActivelyDelegated());
         require(!isOperator(staker), OperatorsCannotUndelegate());
-        require(staker != address(0), ZeroAddress());
+        require(staker != address(0), InputAddressZero());
         address operator = delegatedTo[staker];
         require(
             msg.sender == staker || msg.sender == operator
@@ -821,7 +821,7 @@ contract DelegationManager is
         uint256[] memory sharesToWithdraw,
         uint64[] memory totalMagnitudes
     ) internal returns (bytes32) {
-        require(staker != address(0), ZeroAddress());
+        require(staker != address(0), InputAddressZero());
         require(strategies.length != 0, InputArrayLengthZero());
 
         uint256[] memory scaledStakerShares = new uint256[](strategies.length);

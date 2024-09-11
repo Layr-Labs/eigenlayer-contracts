@@ -51,7 +51,7 @@ contract Pausable is IPausable {
     modifier onlyWhenNotPaused(
         uint8 index
     ) {
-        require(!paused(index), CurrentlyUnpaused());
+        require(!paused(index), CurrentlyPaused());
         _;
     }
 

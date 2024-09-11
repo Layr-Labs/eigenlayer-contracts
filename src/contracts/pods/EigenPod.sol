@@ -325,7 +325,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActive());
 
         // Validator must be slashed on the beacon chain
-        require(proof.validatorFields.isValidatorSlashed(), ValidatorNotStale());
+        require(proof.validatorFields.isValidatorSlashed(), ValidatorNotSlashed());
 
         // Verify passed-in `beaconStateRoot` against the beacon block root
         // forgefmt: disable-next-item
@@ -425,7 +425,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[pubkeyHash];
 
         // Withdrawal credential proofs should only be processed for "INACTIVE" validators
-        require(validatorInfo.status == VALIDATOR_STATUS.INACTIVE, ValidatorNotInactive());
+        require(validatorInfo.status == VALIDATOR_STATUS.INACTIVE, ValidatorAlreadyActive());
 
         // Validator should be active on the beacon chain, or in the process of activating.
         // This implies the validator has reached the minimum effective balance required
@@ -466,11 +466,11 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         //   1 + MAX_SEED_LOOKAHEAD + MIN_VALIDATOR_WITHDRAWABILITY_DELAY == 261 epochs (8352 slots).
         //
         // (See https://eth2book.info/capella/part3/helper/mutators/#initiate_validator_exit)
-        require(validatorFields.getExitEpoch() == BeaconChainProofs.FAR_FUTURE_EPOCH, ValidatorMustBeExiting());
+        require(validatorFields.getExitEpoch() == BeaconChainProofs.FAR_FUTURE_EPOCH, ValidatorIsExiting());
 
         // Ensure the validator's withdrawal credentials are pointed at this pod
         require(
-            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()), WrongProofForEigenPod()
+            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()), WithdrawCredentialsNotForEigenPod()
         );
 
         // Get the validator's effective balance. Note that this method uses effective balance, while

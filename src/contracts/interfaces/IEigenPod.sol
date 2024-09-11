@@ -23,8 +23,8 @@ interface IEigenPod {
     error CannotCheckpointTwiceInSingleBlock();
     /// @dev Thrown when attempting an action that is currently paused.
     error CurrentlyPaused();
-    /// @dev Thrown if a validator must be exiting.
-    error ValidatorMustBeExiting();
+    /// @dev Thrown if a validator is exiting.
+    error ValidatorIsExiting();
     /// @dev Thrown when no active checkpoints are found.
     error NoActiveCheckpoints();
     /// @dev Thrown if there's not a balance available to checkpoint.
@@ -33,24 +33,18 @@ interface IEigenPod {
     error InputAddressZero();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
-    /// @dev Thrown when a proof is invalid.
-    error InvalidProof();
-    /// @dev Thrown when a proof with an invalid length is provided.
-    error InvalidProofLength();
     /// @dev Thrown when an invalid block root is returned.
     error InvalidBlockRoot();
-    /// @dev Thrown when a validator fields length is invalid.
-    error InvalidValidatorFieldsLength();
     /// @dev Thrown when `validatorPubKey` length is not equal to 48-bytes.
     error InvalidValidatorPubKeyLength();
     /// @dev Thrown when a proof is older than the last checkpoint.
     error ProofOlderThanLastCheckpoint();
+    /// @dev Thrown when a validator is not inactive.
+    error ValidatorAlreadyActive();
     /// @dev Thrown when a validator is not active.
     error ValidatorNotActive();
-    /// @dev Thrown when a validator is not inactive.
-    error ValidatorNotInactive();
     /// @dev Thrown when a validator is not stale.
-    error ValidatorNotStale();
+    error ValidatorNotSlashed();
     /// @dev Thrown when validator is not in the process of becoming active.
     error ValidatorNoPendingActivation();
     /// @dev Thrown if a previous uncomplete checkpoint exists.
@@ -66,7 +60,7 @@ interface IEigenPod {
     /// @dev Thrown when either the EigenPodOwner or a proof submitter can perform the action.
     error OnlyEigenPodOwnerOrProofSubmitter();
     /// @dev Thrown if the provided proof is not valid for this EigenPod.
-    error WrongProofForEigenPod();
+    error WithdrawCredentialsNotForEigenPod();
 
     /**
      *
