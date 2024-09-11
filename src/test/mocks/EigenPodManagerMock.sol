@@ -53,7 +53,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
         podShares[podOwner] = shares;
     }
 
-    function addShares(address /*podOwner*/, uint256 shares) external pure returns (uint256, uint256) {
+    function addShares(address /*podOwner*/, uint256 shares) external pure {
         // this is the "increase in delegateable tokens"
         // return (shares);
     }

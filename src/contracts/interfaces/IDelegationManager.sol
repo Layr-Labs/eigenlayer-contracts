@@ -397,6 +397,12 @@ interface IDelegationManager is ISignatureUtils {
      */
     function operatorScaledShares(address operator, IStrategy strategy) external view returns (uint256);
 
+    function getWithdrawableShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external view returns (uint256);
+
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
      */

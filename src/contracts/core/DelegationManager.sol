@@ -59,6 +59,11 @@ contract DelegationManager is
         _;
     }
 
+    modifier onlyEigenPodManager() {
+        require(msg.sender == address(eigenPodManager), "DelegationManager: onlyEigenPodManager");
+        _;s
+    }
+
     /**
      *
      *                         INITIALIZING FUNCTIONS
@@ -409,7 +414,7 @@ contract DelegationManager is
                 strategy: strategy,
                 totalMagnitude: totalMagnitude,
                 existingShares: existingShares,
-                addedShares: addedShares
+                addedShares: int256(addedShares)
             });
             stakerScalingFactors[staker][strategy] = newStakerScalingFactor;
 
@@ -430,22 +435,34 @@ contract DelegationManager is
      * `increaseDelegatedShares`, the staker's scaling factor is not updated here.
      * @param staker The address to increase the delegated scaled shares for their operator.
      * @param strategy The strategy in which to decrease the delegated scaled shares.
+     * @param existingShares The number of shares the staker already has in the strategy. This is the shares amount stored in the
+     * StrategyManager/EigenPodManager for the staker's shares.
      * @param removedShares The number of shares to decremented for the strategy in the
      * StrategyManager/EigenPodManager
      *
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated scaled shares in `strategy` by `scaledShares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedShares(
+    function decreaseStakerScalingFactor(
         address staker,
         IStrategy strategy,
-        uint256 removedShares
-    ) external onlyStrategyManagerOrEigenPodManager {
+        uint256 proportionSlashed
+    ) external onlyEigenPodManager {
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
 
             uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
+
+            // update stakers scaling deposit scaling factor
+            uint256 newStakerScalingFactor = _calculateStakerScalingFactor({
+                staker: staker,
+                strategy: strategy,
+                totalMagnitude: totalMagnitude,
+                existingShares: existingShares,
+                addedShares: int256(removedShares)
+            });
+            stakerScalingFactors[staker][strategy] = newStakerScalingFactor;
 
             // subtract strategy shares from delegated scaled shares
             _decreaseOperatorScaledShares({
@@ -613,7 +630,7 @@ contract DelegationManager is
                 strategy: strategies[i],
                 totalMagnitude: totalMagnitudes[i],
                 existingShares: 0,
-                addedShares: shares[i]
+                addedShares: int256(shares[i])
             });
             stakerScalingFactors[staker][strategies[i]] = newStakerScalingFactor;
 
@@ -747,56 +764,15 @@ contract DelegationManager is
             // are still susceptible to slashing
             uint256 shares = _calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
 
-            // store existing shares to calculate new staker scaling factor later
-            uint256 existingShares;
-
             /**
              * When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
              * Other strategy shares can + will be awarded to the withdrawer.
              */
             if (withdrawal.strategies[i] == beaconChainETHStrategy) {
-                address staker = withdrawal.staker;
-                /**
-                 * Update shares amount depending upon the returned value.
-                 * The return value will be lower than the input value in the case where the staker has an existing share deficit
-                 */
-                (shares, existingShares) = eigenPodManager.addShares({podOwner: staker, shares: shares});
-                address podOwnerOperator = delegatedTo[staker];
-                // Similar to `isDelegated` logic
-                if (podOwnerOperator != address(0)) {
-                    _increaseOperatorScaledShares({
-                        operator: podOwnerOperator,
-                        // the 'staker' here is the address receiving new shares
-                        staker: staker,
-                        strategy: withdrawal.strategies[i],
-                        shares: shares,
-                        totalMagnitude: totalMagnitudes[i]
-                    });
-                }
+                eigenPodManager.addShares(msg.sender, shares);
             } else {
-                existingShares = strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], shares);
-                // Similar to `isDelegated` logic
-                if (currentOperator != address(0)) {
-                    _increaseOperatorScaledShares({
-                        operator: currentOperator,
-                        // the 'staker' here is the address receiving new shares
-                        staker: msg.sender,
-                        strategy: withdrawal.strategies[i],
-                        shares: shares,
-                        totalMagnitude: totalMagnitudes[i]
-                    });
-                }
+                strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], shares);
             }
-
-            // update stakers scaling deposit scaling factor
-            uint256 newStakerScalingFactor = _calculateStakerScalingFactor({
-                staker: withdrawal.staker,
-                strategy: withdrawal.strategies[i],
-                totalMagnitude: totalMagnitudes[i],
-                existingShares: existingShares,
-                addedShares: shares
-            });
-            stakerScalingFactors[withdrawal.staker][withdrawal.strategies[i]] = newStakerScalingFactor;
 
             unchecked {
                 ++i;
@@ -1120,25 +1096,24 @@ contract DelegationManager is
         IStrategy strategy,
         uint64 totalMagnitude,
         uint256 existingShares,
-        uint256 addedShares
+        int256 addedShares
     ) internal view returns (uint256) {
         uint256 newStakerScalingFactor;
-
-        if (existingShares == 0) {
+        // if this is the a delegation or an eigenPod decrement to 0, then the new staker scaling factor is re-initialized
+        if (existingShares == 0 || (existingShares + addedShares) == 0) {
             // existing shares are 0, meaning no existing delegated shares. In this case, the new staker scaling factor
             // is re-initialized to
             newStakerScalingFactor = SlashingConstants.PRECISION_FACTOR / (totalMagnitude);
         } else {
             uint256 currStakerScalingFactor = _getStakerScalingFactor(staker, strategy);
-
             // TODO: DOUBLE CHECK THIS BEHAVIOR AND OVERFLOWS
             // staker scaling factor is initialized to PRECISION_FACTOR(1e18) and totalMagnitude is initialized to INITIAL_TOTAL_MAGNITUDE(1e18)
             // and is monotonically decreasing. You can deduce that the newStakerScalingFactor will never decrease to less than the PRECISION_FACTOR
             // so this won't round to 0.
             newStakerScalingFactor = (
-                currStakerScalingFactor * existingShares * totalMagnitude / SlashingConstants.PRECISION_FACTOR
-                    + addedShares * SlashingConstants.PRECISION_FACTOR
-            ) / ((existingShares + addedShares) * totalMagnitude);
+                existingShares * currStakerScalingFactor / SlashingConstants.PRECISION_FACTOR * totalMagnitude / SlashingConstants.INITIAL_TOTAL_MAGNITUDE
+                    + addedShares
+            ) / ((existingShares + addedShares) * totalMagnitude / SlashingConstants.INITIAL_TOTAL_MAGNITUDE);
         }
 
         return newStakerScalingFactor;
@@ -1238,6 +1213,19 @@ contract DelegationManager is
     function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
         uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
         return _descaleShares(operatorScaledShares[operator][strategy], totalMagnitude);
+    }
+
+    function getWithdrawableShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external view returns (uint256) {
+        return _getWithdrawableShares(
+            staker,
+            strategy,
+            shares,
+            allocationManager.getTotalMagnitude(delegatedTo[staker], strategy)
+        );
     }
 
     /**

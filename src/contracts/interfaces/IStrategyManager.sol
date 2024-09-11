@@ -87,7 +87,7 @@ interface IStrategyManager {
         IERC20 token,
         IStrategy strategy,
         uint256 shares
-    ) external returns (uint256 existingShares);
+    ) external;
 
     /// @notice Used by the DelegationManager to convert withdrawn descaled shares to tokens and send them to a recipient
     function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external;

@@ -121,15 +121,12 @@ interface IEigenPodManager is IPausable {
     /**
      * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
      * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
-     * @dev Returns the number of shares added to `podOwnerShares[podOwner]` above zero, which will be less than the `shares` input
-     * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero).
-     * Also returns existingPodShares prior to adding shares, this is returned as 0 if the existing podOwnerShares is negative
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function addShares(
         address podOwner,
         uint256 shares
-    ) external returns (uint256 increaseInDelegateableShares, uint256 existingPodShares);
+    ) external;
 
     /**
      * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address

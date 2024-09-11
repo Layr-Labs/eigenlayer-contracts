@@ -107,43 +107,14 @@ contract EigenPodManager is
         int256 sharesDelta
     ) external onlyEigenPod(podOwner) nonReentrant {
         require(
-            podOwner != address(0), "EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address"
-        );
-        require(
             sharesDelta % int256(GWEI_TO_WEI) == 0,
             "EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount"
         );
-        int256 currentPodOwnerShares = podOwnerShares[podOwner];
-        int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
-        podOwnerShares[podOwner] = updatedPodOwnerShares;
-
-        // inform the DelegationManager of the change in delegateable shares
-        int256 changeInDelegatableShares = _calculateChangeInDelegatableShares({
-            sharesBefore: currentPodOwnerShares,
-            sharesAfter: updatedPodOwnerShares
-        });
-        // skip making a call to the DelegationManager if there is no change in delegateable shares
-        // or if the currentPodShares < 0 and updatedPodShares is still < 0. Means no update required
-        // in delegated shares
-        if (changeInDelegatableShares != 0) {
-            if (changeInDelegatableShares < 0) {
-                delegationManager.decreaseDelegatedShares({
-                    staker: podOwner,
-                    strategy: beaconChainETHStrategy,
-                    removedShares: uint256(-changeInDelegatableShares)
-                });
-            } else {
-                delegationManager.increaseDelegatedShares({
-                    staker: podOwner,
-                    strategy: beaconChainETHStrategy,
-                    // existing shares from standpoint of the DelegationManager
-                    existingShares: currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares),
-                    addedShares: uint256(changeInDelegatableShares)
-                });
-            }
+        if (sharesDelta > 0) {
+            _addShares(podOwner, uint256(sharesDelta));
+        } else if (sharesDelta < 0) {
+            _removeShares(podOwner, uint256(-sharesDelta));
         }
-        emit PodSharesUpdated(podOwner, sharesDelta);
-        emit NewTotalShares(podOwner, updatedPodOwnerShares);
     }
 
     /**
@@ -179,26 +150,8 @@ contract EigenPodManager is
     function addShares(
         address podOwner,
         uint256 shares
-    ) external onlyDelegationManager returns (uint256 increaseInDelegateableShares, uint256 existingPodShares) {
-        require(podOwner != address(0), "EigenPodManager.addShares: podOwner cannot be zero address");
-        require(int256(shares) >= 0, "EigenPodManager.addShares: shares cannot be negative");
-        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.addShares: shares must be a whole Gwei amount");
-        int256 currentPodOwnerShares = podOwnerShares[podOwner];
-        int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
-        podOwnerShares[podOwner] = updatedPodOwnerShares;
-
-        emit PodSharesUpdated(podOwner, int256(shares));
-        emit NewTotalShares(podOwner, updatedPodOwnerShares);
-
-        increaseInDelegateableShares = uint256(
-            _calculateChangeInDelegatableShares({
-                sharesBefore: currentPodOwnerShares,
-                sharesAfter: updatedPodOwnerShares
-            })
-        );
-        existingPodShares = currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares);
-
-        return (increaseInDelegateableShares, existingPodShares);
+    ) external onlyDelegationManager {
+        _addShares(podOwner, shares);
     }
 
     /**
@@ -260,6 +213,33 @@ contract EigenPodManager is
         ownerToPod[msg.sender] = pod;
         emit PodDeployed(address(pod), msg.sender);
         return pod;
+    }
+
+    // increase the pod owner's shares by `shares`
+    function _addShares(address podOwner, uint256 shares) {
+        require(podOwner != address(0), "EigenPodManager._addShares: podOwner cannot be zero address");
+        int256 currentPodOwnerShares = podOwnerShares[podOwner];
+        int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
+        
+        podOwnerShares[podOwner] = updatedPodOwnerShares;
+
+        emit PodSharesUpdated(podOwner, int256(shares));
+        emit NewTotalShares(podOwner, updatedPodOwnerShares);
+
+        delegationManager.increaseDelegatedShares({
+            staker: podOwner
+            strategy: beaconChainETHStrategy,
+            existingShares: currentPodOwnerShares,
+            addedShares: shares
+        });
+    }
+
+    function _decrementShares(address podOwner, uint256 proportionBeaconChainSlashed) {
+        delegationManager.decreaseStakerScalingFactor({
+            staker: podOwner,
+            strategy: beaconChainETHStrategy,
+            proportionSlashed: proportionBeaconChainSlashed
+        });
     }
 
     /**
