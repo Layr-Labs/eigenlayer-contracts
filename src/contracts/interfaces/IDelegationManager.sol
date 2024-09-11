@@ -190,15 +190,6 @@ interface IDelegationManager is ISignatureUtils {
     /// @notice Emitted when a queued withdrawal is completed
     event WithdrawalCompleted(bytes32 withdrawalRoot);
 
-    /// @notice Emitted when the `minWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
-    event MinWithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
-
-    /// @notice Emitted when the `strategyWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
-    event StrategyWithdrawalDelayBlocksSet(IStrategy strategy, uint256 previousValue, uint256 newValue);
-
-    /// @notice Emitted when the `strategyWithdrawalDelay` variable is modified from `previousValue` to `newValue`.
-    event StrategyWithdrawalDelaySet(IStrategy strategy, uint256 previousValue, uint256 newValue);
-
     /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
@@ -417,15 +408,6 @@ interface IDelegationManager is ISignatureUtils {
     ) external view returns (uint256);
 
     /**
-     * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
-     * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
-     * @param strategies The strategies to check withdrawal delays for
-     */
-    function getWithdrawalDelay(
-        IStrategy[] calldata strategies
-    ) external view returns (uint256);
-
-    /**
      * @notice returns the total number of scaled shares (i.e. shares scaled down by a factor of the `operator`'s
      * totalMagnitude) in `strategy` that are delegated to `operator`.
      * @notice Mapping: operator => strategy => total number of scaled shares in the strategy delegated to the operator.
@@ -461,22 +443,6 @@ interface IDelegationManager is ISignatureUtils {
      * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
      */
     function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
-
-    /**
-     * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
-     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     * Note that strategies each have a separate withdrawal delay, which can be greater than this value. So the minimum number of blocks that must pass
-     * to withdraw a strategy is MAX(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy])
-     */
-    function minWithdrawalDelayBlocks() external view returns (uint256);
-
-    /**
-     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
-     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     */
-    function strategyWithdrawalDelayBlocks(
-        IStrategy strategy
-    ) external view returns (uint256);
 
     /// @notice return address of the beaconChainETHStrategy
     function beaconChainETHStrategy() external view returns (IStrategy);

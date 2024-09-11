@@ -50,14 +50,8 @@ interface IStrategyFactory {
      * @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
      */
     function whitelistStrategies(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external;
-
-    /**
-     * @notice Owner-only function to pass through a call to `StrategyManager.setThirdPartyTransfersForbidden`
-     */
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external;
 
     /**
      * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`

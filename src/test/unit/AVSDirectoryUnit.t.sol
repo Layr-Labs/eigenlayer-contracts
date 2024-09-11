@@ -198,8 +198,6 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     ) internal view {
         // filter out zero address since people can't delegate to the zero address and operators are delegated to themselves
         cheats.assume(operator != address(0));
-        // filter out disallowed stakerOptOutWindowBlocks values
-        cheats.assume(operatorDetails.stakerOptOutWindowBlocks <= delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
     }
 
     function _registerOperatorToOperatorSet(

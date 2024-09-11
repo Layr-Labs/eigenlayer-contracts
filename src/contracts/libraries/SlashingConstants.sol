@@ -14,5 +14,6 @@ library SlashingConstants {
     uint256 public constant PRECISION_FACTOR_SQUARED = 1e36;
 
     /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
+    /// This is also the same delay for withdrawals to be completable
     uint32 public constant DEALLOCATION_DELAY = 17.5 days;
 }

@@ -33,8 +33,6 @@ interface IStrategyManager {
     error StrategyNotFound();
     /// @dev Thrown when attempting to deposit to a non-whitelisted strategy.
     error StrategyNotWhitelisted();
-    /// @dev Thrown when attempting a third party transfer from a strategy that's disabled it.
-    error ThirdPartyTransfersDisabled();
 
     /**
      * @notice Emitted when a new deposit occurs on behalf of `staker`.
@@ -44,9 +42,6 @@ interface IStrategyManager {
      * @param shares Is the number of new shares `staker` has been granted in `strategy`.
      */
     event Deposit(address staker, IERC20 token, IStrategy strategy, uint256 shares);
-
-    /// @notice Emitted when `thirdPartyTransfersForbidden` is updated for a strategy and value by the owner
-    event UpdatedThirdPartyTransfersForbidden(IStrategy strategy, bool value);
 
     /// @notice Emitted when the `strategyWhitelister` is changed
     event StrategyWhitelisterChanged(address previousAddress, address newAddress);
@@ -87,7 +82,6 @@ interface IStrategyManager {
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
-     * @dev Cannot be called if thirdPartyTransfersForbidden is set to true for this strategy
      *
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
@@ -134,11 +128,9 @@ interface IStrategyManager {
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-     * @param thirdPartyTransfersForbiddenValues bool values to set `thirdPartyTransfersForbidden` to for each strategy
      */
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external;
 
     /**
@@ -148,15 +140,6 @@ interface IStrategyManager {
     function removeStrategiesFromDepositWhitelist(
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external;
-
-    /**
-     * If true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
-     * and also when performing DelegationManager.queueWithdrawals, a staker can only withdraw to themselves.
-     * Defaulted to false for all existing strategies.
-     * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
-     * @param value bool value to set `thirdPartyTransfersForbidden` to
-     */
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external;
 
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
@@ -172,14 +155,6 @@ interface IStrategyManager {
 
     /// @notice Returns bool for whether or not `strategy` is whitelisted for deposit
     function strategyIsWhitelistedForDeposit(
-        IStrategy strategy
-    ) external view returns (bool);
-
-    /**
-     * @notice Returns bool for whether or not `strategy` enables credit transfers. i.e enabling
-     * depositIntoStrategyWithSignature calls or queueing withdrawals to a different address than the staker.
-     */
-    function thirdPartyTransfersForbidden(
         IStrategy strategy
     ) external view returns (bool);
 }

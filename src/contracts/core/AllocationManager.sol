@@ -217,9 +217,7 @@ contract AllocationManager is
      *
      * @param salt A unique and single use value associated with the approver signature.
      */
-    function cancelSalt(
-        bytes32 salt
-    ) external override {
+    function cancelSalt(bytes32 salt) external override {
         // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
@@ -700,26 +698,20 @@ contract AllocationManager is
     }
 
     /// @notice Returns an EIP-712 encoded hash struct.
-    function _calculateDigestHash(
-        bytes32 structHash
-    ) internal view returns (bytes32) {
+    function _calculateDigestHash(bytes32 structHash) internal view returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
     }
 
     /// @dev Returns an `OperatorSet` encoded into a 32-byte value.
     /// @param operatorSet The `OperatorSet` to encode.
-    function _encodeOperatorSet(
-        OperatorSet memory operatorSet
-    ) internal pure returns (bytes32) {
+    function _encodeOperatorSet(OperatorSet memory operatorSet) internal pure returns (bytes32) {
         return bytes32(abi.encodePacked(operatorSet.avs, uint96(operatorSet.operatorSetId)));
     }
 
     /// @dev Returns an `OperatorSet` decoded from an encoded 32-byte value.
     /// @param encoded The encoded `OperatorSet` to decode.
     /// @dev Assumes `encoded` is encoded via `_encodeOperatorSet(operatorSet)`.
-    function _decodeOperatorSet(
-        bytes32 encoded
-    ) internal pure returns (OperatorSet memory) {
+    function _decodeOperatorSet(bytes32 encoded) internal pure returns (OperatorSet memory) {
         return OperatorSet({
             avs: address(uint160(uint256(encoded) >> 96)),
             operatorSetId: uint32(uint256(encoded) & type(uint96).max)

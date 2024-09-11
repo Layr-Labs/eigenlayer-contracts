@@ -38,14 +38,14 @@ contract DelegationManager is
     // @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
-    // @dev Maximum Value for `stakerOptOutWindowBlocks`. Approximately equivalent to 6 months in blocks.
-    uint256 public constant MAX_STAKER_OPT_OUT_WINDOW_BLOCKS = (180 days) / 12;
+    /// @dev The minimum number of blocks to complete a withdrawal of a strategy. 50400 * 12 seconds = 1 week
+    uint256 public constant LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS = 50_400;
 
-    // The max configurable withdrawal delay per strategy. Set to 30 days in seconds
-    uint256 public constant MAX_WITHDRAWAL_DELAY = 30 days;
+    /// @dev Wed Jan 01 2025 17:00:00 GMT+0000, timestamp used to check whether a pending withdrawal
+    /// should be processed as legacy M2 or with slashing considered.
+    uint32 public constant LEGACY_WITHDRAWALS_TIMESTAMP = 1_735_750_800;
 
-    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = MAX_WITHDRAWAL_DELAY / 12;
+    uint32 public constant WITHDRAWAL_DELAY = SlashingConstants.DEALLOCATION_DELAY;
 
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
@@ -86,16 +86,11 @@ contract DelegationManager is
     function initialize(
         address initialOwner,
         IPauserRegistry _pauserRegistry,
-        uint256 initialPausedStatus,
-        uint256 _minWithdrawalDelayBlocks,
-        IStrategy[] calldata _strategies,
-        uint256[] calldata _withdrawalDelayBlocks
+        uint256 initialPausedStatus
     ) external initializer {
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
-        _setMinWithdrawalDelayBlocks(_minWithdrawalDelayBlocks);
-        _setStrategyWithdrawalDelayBlocks(_strategies, _withdrawalDelayBlocks);
     }
 
     /**
@@ -136,9 +131,7 @@ contract DelegationManager is
      * after being set. This delay is required to be set for an operator to be able to allocate slashable magnitudes.
      * @param delay the allocation delay in seconds
      */
-    function initializeAllocationDelay(
-        uint32 delay
-    ) external {
+    function initializeAllocationDelay(uint32 delay) external {
         _initializeAllocationDelay(delay);
     }
 
@@ -148,9 +141,7 @@ contract DelegationManager is
      *
      * @dev The caller must have previously registered as an operator in EigenLayer.
      */
-    function modifyOperatorDetails(
-        OperatorDetails calldata newOperatorDetails
-    ) external {
+    function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external {
         require(isOperator(msg.sender), OperatorNotRegistered());
         _setOperatorDetails(msg.sender, newOperatorDetails);
     }
@@ -159,9 +150,7 @@ contract DelegationManager is
      * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
      * @param metadataURI The URI for metadata associated with an operator
      */
-    function updateOperatorMetadataURI(
-        string calldata metadataURI
-    ) external {
+    function updateOperatorMetadataURI(string calldata metadataURI) external {
         require(isOperator(msg.sender), OperatorNotRegistered());
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
@@ -239,9 +228,11 @@ contract DelegationManager is
      * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
      * both the staker and operator, and places the shares and strategies in the withdrawal queue
      */
-    function undelegate(
-        address staker
-    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
+    function undelegate(address staker)
+        external
+        onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
+        returns (bytes32[] memory withdrawalRoots)
+    {
         require(isDelegated(staker), NotActivelyDelegated());
         require(!isOperator(staker), OperatorsCannotUndelegate());
         require(staker != address(0), InputAddressZero());
@@ -301,9 +292,11 @@ contract DelegationManager is
      *
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
-    function queueWithdrawals(
-        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
-    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
+    function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams)
+        external
+        onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
+        returns (bytes32[] memory)
+    {
         bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
         address operator = delegatedTo[msg.sender];
 
@@ -451,44 +444,6 @@ contract DelegationManager is
     }
 
     /**
-     * @notice Owner-only function for modifying the value of the `minWithdrawalDelayBlocks` variable.
-     * @param newMinWithdrawalDelayBlocks new value of `minWithdrawalDelayBlocks`.
-     */
-    function setMinWithdrawalDelayBlocks(
-        uint256 newMinWithdrawalDelayBlocks
-    ) external onlyOwner {
-        _setMinWithdrawalDelayBlocks(newMinWithdrawalDelayBlocks);
-    }
-
-    /**
-     * @notice Called by owner to set the minimum withdrawal delay blocks for each passed in strategy
-     * Note that the min number of blocks to complete a withdrawal of a strategy is
-     * MAX(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy])
-     * @param strategies The strategies to set the minimum withdrawal delay blocks for
-     * @param withdrawalDelayBlocks The minimum withdrawal delay blocks to set for each strategy
-     */
-    function setStrategyWithdrawalDelayBlocks(
-        IStrategy[] calldata strategies,
-        uint256[] calldata withdrawalDelayBlocks
-    ) external onlyOwner {
-        _setStrategyWithdrawalDelayBlocks(strategies, withdrawalDelayBlocks);
-    }
-
-    /**
-     * @notice Called by owner to set the minimum withdrawal delay for each passed in strategy
-     * Note that the min number of blocks to complete a withdrawal of a strategy is
-     * MAX(minWithdrawalDelay, strategyWithdrawalDelay[strategy])
-     * @param strategies The strategies to set the minimum withdrawal delay for
-     * @param withdrawalDelays The minimum withdrawal delay (in seconds) to set for each strategy
-     */
-    function setStrategyWithdrawalDelay(
-        IStrategy[] calldata strategies,
-        uint256[] calldata withdrawalDelays
-    ) external onlyOwner {
-        _setStrategyWithdrawalDelay(strategies, withdrawalDelays);
-    }
-
-    /**
      *
      *                         INTERNAL FUNCTIONS
      *
@@ -500,14 +455,6 @@ contract DelegationManager is
      * @param newOperatorDetails The new parameters for the operator
      */
     function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
-        require(
-            newOperatorDetails.stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS,
-            StakerOptOutWindowBlocksExceedsMax()
-        );
-        require(
-            newOperatorDetails.stakerOptOutWindowBlocks >= _operatorDetails[operator].stakerOptOutWindowBlocks,
-            StakerOptOutWindowBlocksCannotDecrease()
-        );
         _operatorDetails[operator] = newOperatorDetails;
         emit OperatorDetailsModified(msg.sender, newOperatorDetails);
     }
@@ -517,9 +464,7 @@ contract DelegationManager is
      * after being set. This delay is required to be set for an operator to be able to allocate slashable magnitudes.
      * @param delay the allocation delay in seconds
      */
-    function _initializeAllocationDelay(
-        uint32 delay
-    ) internal {
+    function _initializeAllocationDelay(uint32 delay) internal {
         require(isOperator(msg.sender), OperatorNotRegistered());
         require(!_operatorAllocationDelay[msg.sender].isSet, AllocationDelaySet());
         _operatorAllocationDelay[msg.sender] = AllocationDelayDetails({isSet: true, allocationDelay: delay});
@@ -622,27 +567,39 @@ contract DelegationManager is
         bool receiveAsTokens
     ) internal {
         require(tokens.length == withdrawal.strategies.length, InputArrayLengthMismatch());
-
+        require(msg.sender == withdrawal.withdrawer, WithdrawerNotCaller());
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+        bool isLegacyWithdrawal = false;
 
         require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
-        require(withdrawal.startTimestamp + minWithdrawalDelay <= block.number, WithdrawalDelayNotElapsed());
-        require(msg.sender == withdrawal.withdrawer, WithdrawerNotCaller());
+        if (withdrawal.startTimestamp < LEGACY_WITHDRAWALS_TIMESTAMP) {
+            // this is a legacy M2 withdrawal using blocknumbers. We use the LEGACY_WITHDRAWALS_TIMESTAMP to check
+            // if the withdrawal is a legacy withdrawal or not. It would take up to 600+ years for the blocknumber
+            // to reach the LEGACY_WITHDRAWALS_TIMESTAMP, so this is a safe check.
+            require(
+                withdrawal.startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number,
+                WithdrawalDelayNotElapsed()
+            );
+            isLegacyWithdrawal = true;
+        } else {
+            // this is a post Slashing release withdrawal using timestamps
+            require(withdrawal.startTimestamp + WITHDRAWAL_DELAY <= block.timestamp, WithdrawalDelayNotElapsed());
+        }
 
         // read delegated operator's totalMagnitudes at time of withdrawal to scale shares again if any slashing has occurred
         // during withdrawal delay period
         uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudesAtTimestamp({
             operator: withdrawal.delegatedTo,
             strategies: withdrawal.strategies,
-            timestamp: withdrawal.startTimestamp + SlashingConstants.DEALLOCATION_DELAY
+            timestamp: withdrawal.startTimestamp + WITHDRAWAL_DELAY
         });
 
         if (receiveAsTokens) {
             // complete the withdrawal by converting shares to tokens
-            _completeReceiveAsTokens(withdrawal, tokens, totalMagnitudes);
+            _completeReceiveAsTokens(withdrawal, tokens, totalMagnitudes, isLegacyWithdrawal);
         } else {
             // Award shares back in StrategyManager/EigenPodManager.
-            _completeReceiveAsShares(withdrawal, tokens, totalMagnitudes);
+            _completeReceiveAsShares(withdrawal, tokens, totalMagnitudes, isLegacyWithdrawal);
         }
 
         // Remove `withdrawalRoot` from pending roots
@@ -658,21 +615,22 @@ contract DelegationManager is
     function _completeReceiveAsTokens(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
-        uint64[] memory totalMagnitudes
+        uint64[] memory totalMagnitudes,
+        bool isLegacyWithdrawal
     ) internal {
         // Finalize action by converting scaled shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
         for (uint256 i = 0; i < withdrawal.strategies.length; ++i) {
-            require(
-                withdrawal.startTimestamp + strategyWithdrawalDelays[withdrawal.strategies[i]] <= block.timestamp,
-                WithdrawalDelayNotElapsed()
-            );
-
-            // Take already scaled staker shares and scale again according to current operator totalMagnitude
-            // This is because the totalMagnitude may have changed since withdrawal was queued and the staker shares
-            // are still susceptible to slashing
-            uint256 sharesToWithdraw =
-                _calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
+            uint256 sharesToWithdraw;
+            if (isLegacyWithdrawal) {
+                // This is a legacy M2 withdrawal. There is no slashing applied to the withdrawn shares.
+                sharesToWithdraw = withdrawal.scaledShares[i];
+            } else {
+                // Take already scaled staker shares and scale again according to current operator totalMagnitude
+                // This is because the totalMagnitude may have changed since withdrawal was queued and the staker shares
+                // are still susceptible to slashing
+                sharesToWithdraw = _calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
+            }
 
             _withdrawSharesAsTokens({
                 staker: withdrawal.staker,
@@ -694,24 +652,25 @@ contract DelegationManager is
     function _completeReceiveAsShares(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
-        uint64[] memory totalMagnitudes
+        uint64[] memory totalMagnitudes,
+        bool isLegacyWithdrawal
     ) internal {
         // read delegated operator for scaling and adding shares back if needed
         address currentOperator = delegatedTo[msg.sender];
 
         for (uint256 i = 0; i < withdrawal.strategies.length; ++i) {
-            require(
-                withdrawal.startTimestamp + strategyWithdrawalDelays[withdrawal.strategies[i]] <= block.number,
-                WithdrawalDelayNotElapsed()
-            );
-
-            // Take already scaled staker shares and scale again according to current operator totalMagnitude
-            // This is because the totalMagnitude may have changed since withdrawal was queued and the staker shares
-            // are still susceptible to slashing
-            uint256 shares = _calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
-
             // store existing shares to calculate new staker scaling factor later
             uint256 existingShares;
+            uint256 shares;
+            if (isLegacyWithdrawal) {
+                // This is a legacy M2 withdrawal. There is no slashing applied to withdrawn shares
+                shares = withdrawal.scaledShares[i];
+            } else {
+                // Take already scaled staker shares and scale again according to current operator totalMagnitude
+                // This is because the totalMagnitude may have changed since withdrawal was queued and the staker shares
+                // are still susceptible to slashing
+                shares = _calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
+            }
 
             /**
              * When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
@@ -811,7 +770,7 @@ contract DelegationManager is
     /**
      * @notice Removes `scaledShares` in `strategies` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
      * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
-     * @dev If `withdrawer` is not the same address as `staker`, then thirdPartyTransfersForbidden[strategy] must be set to false in the StrategyManager.
+     * @dev If `withdrawer` is not the same address as `staker`
      */
     function _removeSharesAndQueueWithdrawal(
         address staker,
@@ -823,6 +782,7 @@ contract DelegationManager is
     ) internal returns (bytes32) {
         require(staker != address(0), InputAddressZero());
         require(strategies.length != 0, InputArrayLengthZero());
+        require(staker == withdrawer, WithdrawerNotStaker());
 
         uint256[] memory scaledStakerShares = new uint256[](strategies.length);
 
@@ -875,11 +835,6 @@ contract DelegationManager is
                  */
                 eigenPodManager.removeShares(staker, sharesToDecrement);
             } else {
-                // If thirdPartyTransfersForbidden is set, withdrawer and staker must be the same address
-                require(
-                    staker == withdrawer || !strategyManager.thirdPartyTransfersForbidden(strategies[i]),
-                    WithdrawerNotStaker()
-                );
                 // this call will revert if `scaledShares[i]` exceeds the Staker's current shares in `strategies[i]`
                 strategyManager.removeShares(staker, strategies[i], sharesToDecrement);
             }
@@ -928,60 +883,6 @@ contract DelegationManager is
                 shares: shares,
                 token: token
             });
-        }
-    }
-
-    function _setMinWithdrawalDelayBlocks(
-        uint256 _minWithdrawalDelayBlocks
-    ) internal {
-        require(_minWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS, WithdrawalDelayExeedsMax());
-        emit MinWithdrawalDelayBlocksSet(minWithdrawalDelayBlocks, _minWithdrawalDelayBlocks);
-        minWithdrawalDelayBlocks = _minWithdrawalDelayBlocks;
-    }
-
-    /**
-     * @notice Sets the withdrawal delay blocks for each strategy in `_strategies` to `_withdrawalDelayBlocks`.
-     * gets called when initializing contract or by calling `setStrategyWithdrawalDelayBlocks`
-     */
-    function _setStrategyWithdrawalDelayBlocks(
-        IStrategy[] calldata _strategies,
-        uint256[] calldata _withdrawalDelayBlocks
-    ) internal {
-        require(_strategies.length == _withdrawalDelayBlocks.length, InputArrayLengthMismatch());
-        uint256 numStrats = _strategies.length;
-        for (uint256 i = 0; i < numStrats; ++i) {
-            IStrategy strategy = _strategies[i];
-            uint256 prevStrategyWithdrawalDelayBlocks = strategyWithdrawalDelayBlocks[strategy];
-            uint256 newStrategyWithdrawalDelayBlocks = _withdrawalDelayBlocks[i];
-            require(newStrategyWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS, WithdrawalDelayExeedsMax());
-
-            // set the new withdrawal delay blocks
-            strategyWithdrawalDelayBlocks[strategy] = newStrategyWithdrawalDelayBlocks;
-            emit StrategyWithdrawalDelayBlocksSet(
-                strategy, prevStrategyWithdrawalDelayBlocks, newStrategyWithdrawalDelayBlocks
-            );
-        }
-    }
-
-    /**
-     * @notice Sets the withdrawal delay (in seconds) for each strategy in `_strategies` to `_withdrawalDelay`.
-     * gets called when initializing contract or by calling `setStrategyWithdrawalDelay`
-     */
-    function _setStrategyWithdrawalDelay(
-        IStrategy[] calldata _strategies,
-        uint256[] calldata _withdrawalDelays
-    ) internal {
-        require(_strategies.length == _withdrawalDelays.length, InputArrayLengthMismatch());
-        uint256 numStrats = _strategies.length;
-        for (uint256 i = 0; i < numStrats; ++i) {
-            IStrategy strategy = _strategies[i];
-            uint256 prevStrategyWithdrawalDelay = strategyWithdrawalDelays[strategy];
-            uint256 newStrategyWithdrawalDelay = _withdrawalDelays[i];
-            require(newStrategyWithdrawalDelay <= MAX_WITHDRAWAL_DELAY, WithdrawalDelayExeedsMax());
-
-            // set the new withdrawal delay (in seconds)
-            strategyWithdrawalDelays[strategy] = newStrategyWithdrawalDelay;
-            emit StrategyWithdrawalDelaySet(strategy, prevStrategyWithdrawalDelay, newStrategyWithdrawalDelay);
         }
     }
 
@@ -1121,27 +1022,21 @@ contract DelegationManager is
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
      */
-    function isDelegated(
-        address staker
-    ) public view returns (bool) {
+    function isDelegated(address staker) public view returns (bool) {
         return (delegatedTo[staker] != address(0));
     }
 
     /**
      * @notice Returns true is an operator has previously registered for delegation.
      */
-    function isOperator(
-        address operator
-    ) public view returns (bool) {
+    function isOperator(address operator) public view returns (bool) {
         return operator != address(0) && delegatedTo[operator] == operator;
     }
 
     /**
      * @notice Returns the OperatorDetails struct associated with an `operator`.
      */
-    function operatorDetails(
-        address operator
-    ) external view returns (OperatorDetails memory) {
+    function operatorDetails(address operator) external view returns (OperatorDetails memory) {
         return _operatorDetails[operator];
     }
 
@@ -1149,27 +1044,21 @@ contract DelegationManager is
      * @notice Returns the AllocationDelayDetails struct associated with an `operator`
      * @dev If the operator has not set an allocation delay, then the `isSet` field will be `false`.
      */
-    function operatorAllocationDelay(
-        address operator
-    ) external view returns (AllocationDelayDetails memory) {
+    function operatorAllocationDelay(address operator) external view returns (AllocationDelayDetails memory) {
         return _operatorAllocationDelay[operator];
     }
 
     /**
      * @notice Returns the delegationApprover account for an operator
      */
-    function delegationApprover(
-        address operator
-    ) external view returns (address) {
+    function delegationApprover(address operator) external view returns (address) {
         return _operatorDetails[operator].delegationApprover;
     }
 
     /**
      * @notice Returns the stakerOptOutWindowBlocks for an operator
      */
-    function stakerOptOutWindowBlocks(
-        address operator
-    ) external view returns (uint256) {
+    function stakerOptOutWindowBlocks(address operator) external view returns (uint256) {
         return _operatorDetails[operator].stakerOptOutWindowBlocks;
     }
 
@@ -1215,9 +1104,7 @@ contract DelegationManager is
      * delegatable shares!
      * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
      */
-    function getDelegatableShares(
-        address staker
-    ) public view returns (IStrategy[] memory, uint256[] memory) {
+    function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
         // Get current StrategyManager/EigenPodManager shares and strategies for `staker`
         // If `staker` is already delegated, these may not be the full withdrawable amounts due to slashing
         int256 podShares = eigenPodManager.podOwnerShares(staker);
@@ -1259,28 +1146,8 @@ contract DelegationManager is
         return (strategies, shares);
     }
 
-    /**
-     * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
-     * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
-     * @param strategies The strategies to check withdrawal delays for
-     */
-    function getWithdrawalDelay(
-        IStrategy[] calldata strategies
-    ) public view returns (uint256) {
-        uint256 withdrawalDelay = minWithdrawalDelayBlocks;
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            uint256 currWithdrawalDelay = strategyWithdrawalDelayBlocks[strategies[i]];
-            if (currWithdrawalDelay > withdrawalDelay) {
-                withdrawalDelay = currWithdrawalDelay;
-            }
-        }
-        return withdrawalDelay;
-    }
-
     /// @notice Returns the keccak256 hash of `withdrawal`.
-    function calculateWithdrawalRoot(
-        Withdrawal memory withdrawal
-    ) public pure returns (bytes32) {
+    function calculateWithdrawalRoot(Withdrawal memory withdrawal) public pure returns (bytes32) {
         return keccak256(abi.encode(withdrawal));
     }
 

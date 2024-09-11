@@ -479,10 +479,7 @@ contract ExistingDeploymentParser is Script, Test {
         delegationManager.initialize(
             address(0),
             eigenLayerPauserReg,
-            0,
-            0, // minWithdrawalDelayBLocks
-            initializeStrategiesToSetDelayBlocks,
-            initializeWithdrawalDelayBlocks
+            0
         );
         // StrategyManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
@@ -572,10 +569,6 @@ contract ExistingDeploymentParser is Script, Test {
         require(
             delegationManager.paused() == DELEGATION_MANAGER_INIT_PAUSED_STATUS,
             "delegationManager: init paused status set incorrectly"
-        );
-        require(
-            delegationManager.minWithdrawalDelayBlocks() == DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
-            "delegationManager: minWithdrawalDelayBlocks not set correctly"
         );
         // StrategyManager
         require(

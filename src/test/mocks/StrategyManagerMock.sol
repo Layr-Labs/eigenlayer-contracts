@@ -34,8 +34,6 @@ contract StrategyManagerMock is
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
-    
-    mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
 
     function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) external
     {
@@ -76,11 +74,6 @@ contract StrategyManagerMock is
         require(_strategiesToReturn.length == _sharesToReturn.length, "StrategyManagerMock: length mismatch");
         strategiesToReturn[staker] = _strategiesToReturn;
         sharesToReturn[staker] = _sharesToReturn;
-    }
-
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external {
-        emit UpdatedThirdPartyTransfersForbidden(strategy, value);
-        thirdPartyTransfersForbidden[strategy] = value;
     }
 
     /**
@@ -127,12 +120,10 @@ contract StrategyManagerMock is
     // function withdrawalDelayBlocks() external view returns (uint256) {}
 
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external {
         for (uint256 i = 0; i < strategiesToWhitelist.length; ++i) {
             strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
-            thirdPartyTransfersForbidden[strategiesToWhitelist[i]] = thirdPartyTransfersForbiddenValues[i];
         }
     }
 
