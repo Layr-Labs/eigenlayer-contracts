@@ -197,7 +197,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         eigenPodManager.addShares(defaultStaker, 0);
     }
     
-    function test_addShares_revert_podOwnerZeroAddress() public {
+    function test_addShares_revert_podOwnerInputAddressZero() public {
         cheats.prank(address(delegationManagerMock));
         cheats.expectRevert("EigenPodManager.addShares: podOwner cannot be zero address");
         eigenPodManager.addShares(address(0), 0);
@@ -312,13 +312,13 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
                         WithdrawSharesAsTokens Tests
     ******************************************************************************/
 
-    function test_withdrawSharesAsTokens_revert_podOwnerZeroAddress() public {
+    function test_withdrawSharesAsTokens_revert_podOwnerInputAddressZero() public {
         cheats.prank(address(delegationManagerMock));
         cheats.expectRevert("EigenPodManager.withdrawSharesAsTokens: podOwner cannot be zero address");
         eigenPodManager.withdrawSharesAsTokens(address(0), address(0), 0);
     }
 
-    function test_withdrawSharesAsTokens_revert_destinationZeroAddress() public {
+    function test_withdrawSharesAsTokens_revert_destinationInputAddressZero() public {
         cheats.prank(address(delegationManagerMock));
         cheats.expectRevert("EigenPodManager.withdrawSharesAsTokens: destination cannot be zero address");
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, address(0), 0);  
@@ -403,7 +403,7 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, 0);
     }
 
-    function test_recordBalanceUpdate_revert_zeroAddress() public {
+    function test_recordBalanceUpdate_revert_InputAddressZero() public {
         IEigenPod zeroAddressPod = _deployAndReturnEigenPodForStaker(address(0));
         cheats.prank(address(zeroAddressPod));
         cheats.expectRevert("EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address");

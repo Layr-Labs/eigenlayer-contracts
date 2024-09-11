@@ -31,7 +31,7 @@ contract EigenPodManager is
     modifier onlyEigenPod(
         address podOwner
     ) {
-        require(address(ownerToPod[podOwner]) == msg.sender, "EigenPodManager.onlyEigenPod: not a pod");
+        require(address(ownerToPod[podOwner]) == msg.sender, OnlyEigenPod());
         _;
     }
 
@@ -104,13 +104,8 @@ contract EigenPodManager is
         address podOwner,
         int256 sharesDelta
     ) external onlyEigenPod(podOwner) nonReentrant {
-        require(
-            podOwner != address(0), "EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address"
-        );
-        require(
-            sharesDelta % int256(GWEI_TO_WEI) == 0,
-            "EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount"
-        );
+        require(podOwner != address(0), InputAddressZero());
+        require(sharesDelta % int256(GWEI_TO_WEI) == 0, SharesNotMultipleOfGwei());
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
         int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
         podOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -154,13 +149,10 @@ contract EigenPodManager is
      * @dev The delegation manager validates that the podOwner is not address(0)
      */
     function removeShares(address podOwner, uint256 shares) external onlyDelegationManager {
-        require(int256(shares) >= 0, "EigenPodManager.removeShares: shares cannot be negative");
-        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.removeShares: shares must be a whole Gwei amount");
+        require(int256(shares) >= 0, SharesNegative());
+        require(shares % GWEI_TO_WEI == 0, SharesNotMultipleOfGwei());
         int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
-        require(
-            updatedPodOwnerShares >= 0,
-            "EigenPodManager.removeShares: cannot result in pod owner having negative shares"
-        );
+        require(updatedPodOwnerShares >= 0, SharesNegative());
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
         emit NewTotalShares(podOwner, updatedPodOwnerShares);
@@ -178,9 +170,9 @@ contract EigenPodManager is
         address podOwner,
         uint256 shares
     ) external onlyDelegationManager returns (uint256 increaseInDelegateableShares, uint256 existingPodShares) {
-        require(podOwner != address(0), "EigenPodManager.addShares: podOwner cannot be zero address");
-        require(int256(shares) >= 0, "EigenPodManager.addShares: shares cannot be negative");
-        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.addShares: shares must be a whole Gwei amount");
+        require(podOwner != address(0), InputAddressZero());
+        require(int256(shares) >= 0, SharesNegative());
+        require(shares % GWEI_TO_WEI == 0, SharesNotMultipleOfGwei());
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
         int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
         podOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -211,10 +203,10 @@ contract EigenPodManager is
         address destination,
         uint256 shares
     ) external onlyDelegationManager {
-        require(podOwner != address(0), "EigenPodManager.withdrawSharesAsTokens: podOwner cannot be zero address");
-        require(destination != address(0), "EigenPodManager.withdrawSharesAsTokens: destination cannot be zero address");
-        require(int256(shares) >= 0, "EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");
-        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.withdrawSharesAsTokens: shares must be a whole Gwei amount");
+        require(podOwner != address(0), InputAddressZero());
+        require(destination != address(0), InputAddressZero());
+        require(int256(shares) >= 0, SharesNegative());
+        require(shares % GWEI_TO_WEI == 0, SharesNotMultipleOfGwei());
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
 
         // if there is an existing shares deficit, prioritize decreasing the deficit first
