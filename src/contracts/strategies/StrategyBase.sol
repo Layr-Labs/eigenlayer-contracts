@@ -158,7 +158,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         // copy `totalShares` value to memory, prior to any change
         uint256 priorTotalShares = totalShares;
 
-        require(amountShares <= priorTotalShares, AmountSharesMustBeLessThanOrEqualToTotalShares());
+        require(amountShares <= priorTotalShares, WithdrawalAmountExceedsDeposit());
 
         /**
          * @notice calculation of amountToSend *mirrors* `sharesToUnderlying(amountShares)`, but is different since the `totalShares` has already

@@ -77,7 +77,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
      */
     function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
         require(amount <= maxPerDeposit, MaxPerDepositExceedsMax());
-        require(_tokenBalance() <= maxTotalDeposits, MaxPerDepositExceedsMax());
+        require(_tokenBalance() <= maxTotalDeposits, BalanceExceedsMaxTotalDeposits());
 
         super._beforeDeposit(token, amount);
     }
