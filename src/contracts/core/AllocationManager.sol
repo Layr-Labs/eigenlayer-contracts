@@ -19,6 +19,15 @@ contract AllocationManager is
 {
     using Snapshots for Snapshots.History;
 
+    /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
+    uint32 public constant DEALLOCATION_DELAY = 17.5 days;
+
+    /// @dev Default delay before allocations are activated.
+    uint32 public constant DEFAULT_ALLOCATION_DELAY = 21 days;
+
+    /// @dev Delay before alloaction delay modifications take effect.
+    uint32 public constant ALLOCATION_DELAY_CONFIGURATION_DELAY = 21 days; // QUESTION: 21 days?
+
     /// @dev BIPS factor for slashable bips
     uint256 internal constant BIPS_FACTOR = 10_000;
 
@@ -58,6 +67,32 @@ contract AllocationManager is
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
+    }
+
+    /**
+     * @notice Called by operators to set their allocation delay.
+     * @param delay the allocation delay in seconds
+     * @dev msg.sender is assumed to be the operator
+     * @dev Fails if setting a delay would result in the ability to set an
+     *      an allocation that is active BEFORE the latest set allocation.
+     */
+    function setAllocationDelay(
+        uint32 delay
+    ) external {
+        require(delegation.isOperator(msg.sender), OperatorNotRegistered());
+
+        AllocationDelayInfo storage delayInfo = _allocationDelayInfo[msg.sender];
+
+        bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
+
+        if (pendingInEffect) {
+            delayInfo.delay = delayInfo.pendingDelay;
+        }
+
+        delayInfo.pendingDelay = delay;
+        delayInfo.pendingDelayEffectTimestamp = uint32(block.timestamp + ALLOCATION_DELAY_CONFIGURATION_DELAY);
+
+        emit AllocationDelaySet(msg.sender, delay);
     }
 
     /**
@@ -399,6 +434,27 @@ contract AllocationManager is
             ++completed;
         }
         return (freeMagnitudeToAdd, nextIndex);
+    }
+
+    /**
+     * @notice Returns the allocation delay of an operator
+     * @param operator The operator to get the allocation delay for
+     * @dev Defaults to `DEFAULT_ALLOCATION_DELAY` if none is set
+     */
+    function allocationDelay(
+        address operator
+    ) public view returns (uint32 delay) {
+        AllocationDelayInfo memory delayInfo = _allocationDelayInfo[operator];
+
+        bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
+
+        if (delayInfo.delay == 0 && !pendingInEffect) {
+            return DEFAULT_ALLOCATION_DELAY;
+        }
+
+        if (pendingInEffect) return delayInfo.pendingDelay;
+
+        return delayInfo.delay;
     }
 
     /**

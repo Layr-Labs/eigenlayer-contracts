@@ -64,6 +64,21 @@ interface IAllocationManager is ISignatureUtils {
         uint64 freeMagnitude;
     }
 
+    /**
+     * @notice Struct containing allocation delay metadata for a given operator.
+     * @param delay Current allocation delay if `pendingDelay` is non-zero and `pendingDelayEffectTimestamp` has elapsed.
+     * @param pendingDelay Current allocation delay if it's non-zero and `pendingDelayEffectTimestamp` has elapsed.
+     * @param pendingDelayEffectTimestamp The timestamp for which `pendingDelay` becomes the curren allocation delay.
+     */
+    struct AllocationDelayInfo {
+        uint32 delay;
+        uint32 pendingDelay;
+        uint32 pendingDelayEffectTimestamp;
+    }
+
+    /// @notice Emitted when operator updates their allocation delay.
+    event AllocationDelaySet(address operator, uint32 delay);
+
     /// @notice Emitted when an operator set is created by an AVS.
     event OperatorSetCreated(OperatorSet operatorSet);
 
