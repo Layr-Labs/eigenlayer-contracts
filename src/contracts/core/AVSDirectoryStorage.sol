@@ -65,9 +65,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: operator => avs => operatorSetId => operator registration status
     mapping(address => mapping(address => mapping(uint32 => OperatorSetRegistrationStatus))) public operatorSetStatus;
 
-    constructor(
-        IDelegationManager _delegation
-    ) {
+    constructor(IDelegationManager _delegation) {
         delegation = _delegation;
     }
 
