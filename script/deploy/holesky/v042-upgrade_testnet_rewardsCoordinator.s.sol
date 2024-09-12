@@ -63,10 +63,12 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
         address hopper;
 
         require(hopper != address(0), "Hopper address is not set");
-        
+
         // Set reward for all submitters
         vm.startBroadcast();
         rewardsCoordinator.setRewardForAllSubmitter(hopper);
         vm.stopBroadcast();
+
+        require(rewardsCoordinator.isRewardsForAllSubmitter(hopper), "Hopper is not set as rewards for all submitter");
     }
 }
