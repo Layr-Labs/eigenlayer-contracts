@@ -73,8 +73,6 @@ contract AllocationManager is
      * @notice Called by operators to set their allocation delay.
      * @param delay the allocation delay in seconds
      * @dev msg.sender is assumed to be the operator
-     * @dev Fails if setting a delay would result in the ability to set an
-     *      an allocation that is active BEFORE the latest set allocation.
      */
     function setAllocationDelay(
         uint32 delay
@@ -138,10 +136,13 @@ contract AllocationManager is
             _verifyOperatorSignature(operator, allocations, operatorSignature);
         }
         require(delegation.isOperator(operator), OperatorNotRegistered());
-        IDelegationManager.AllocationDelayDetails memory details = delegation.operatorAllocationDelay(operator);
-        require(details.isSet, UninitializedAllocationDelay());
+
+        (bool isSet, uint32 allocationDelay) = allocationDelay(operator);
+
+        require(isSet, UninitializedAllocationDelay());
+
         // effect timestamp for allocations to take effect. This is configurable by operators
-        uint32 effectTimestamp = uint32(block.timestamp) + details.allocationDelay;
+        uint32 effectTimestamp = uint32(block.timestamp) + allocationDelay;
         // completable timestamp for deallocations
         uint32 completableTimestamp = uint32(block.timestamp) + SlashingConstants.DEALLOCATION_DELAY;
 
@@ -364,6 +365,8 @@ contract AllocationManager is
                 info.freeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
             }
         }
+
+        _allocationDelayInfo[operator].pendingDelayEffectTimestamp = allocationEffectTimestamp;
     }
 
     /**
@@ -443,18 +446,18 @@ contract AllocationManager is
      */
     function allocationDelay(
         address operator
-    ) public view returns (uint32 delay) {
+    ) public view returns (bool isSet, uint32 delay) {
         AllocationDelayInfo memory delayInfo = _allocationDelayInfo[operator];
 
         bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
 
         if (delayInfo.delay == 0 && !pendingInEffect) {
-            return DEFAULT_ALLOCATION_DELAY;
+            return (false, DEFAULT_ALLOCATION_DELAY);
         }
 
-        if (pendingInEffect) return delayInfo.pendingDelay;
+        if (pendingInEffect) return (true, delayInfo.pendingDelay);
 
-        return delayInfo.delay;
+        return (true, delayInfo.delay);
     }
 
     /**

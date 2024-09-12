@@ -116,6 +116,15 @@ interface IAllocationManager is ISignatureUtils {
      */
 
     /**
+     * @notice Called by operators to set their allocation delay.
+     * @param delay the allocation delay in seconds
+     * @dev msg.sender is assumed to be the operator
+     */
+    function setAllocationDelay(
+        uint32 delay
+    ) external;
+
+    /**
      * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
      * @param operator address to modify allocations for
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
@@ -177,6 +186,15 @@ interface IAllocationManager is ISignatureUtils {
      *                         VIEW FUNCTIONS
      *
      */
+
+    /**
+     * @notice Returns the allocation delay of an operator
+     * @param operator The operator to get the allocation delay for
+     * @dev Defaults to `DEFAULT_ALLOCATION_DELAY` if none is set
+     */
+    function allocationDelay(
+        address operator
+    ) external view returns (bool isSet, uint32 delay);
 
     /**
      * @notice Get the allocatable magnitude for an operator and strategy based on number of pending deallocations

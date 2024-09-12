@@ -113,10 +113,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// This is updated upon each deposit based on the staker's currently delegated operator's totalMagnitude.
     mapping(address => mapping(IStrategy => uint256)) public stakerScalingFactors;
 
-    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
-    /// This determines how long it takes for allocations to take effect in the future. Can only be set one time for each operator
-    mapping(address => AllocationDelayDetails) internal _operatorAllocationDelay;
-
     constructor(
         IStrategyManager _strategyManager,
         ISlasher _slasher,
