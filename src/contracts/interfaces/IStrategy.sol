@@ -10,20 +10,26 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @notice Custom `Strategy` implementations may expand extensively on this interface.
  */
 interface IStrategy {
-    /// @dev Thrown when balance exceeds max total deposits.
-    error BalanceExceedsMaxTotalDeposits();
-    /// @dev Thrown when called by an account that is not strategy manager.
-    error OnlyStrategyManager();
+    /// @dev Thrown when msg.sender is not allowed to call a function
+    error UnauthorizedCaller();
+
+    /// StrategyBase
+
     /// @dev Thrown when new shares value is zero.
     error NewSharesZero();
     /// @dev Thrown when total shares exceeds max.
     error TotalSharesExceedsMax();
     /// @dev Thrown when amount shares is greater than total shares.
-    error WithdrawalAmountExceedsDeposit();
+    error WithdrawalAmountExceedsTotalDeposits();
     /// @dev Thrown when attempting an action with a token that is not accepted.
     error OnlyUnderlyingToken();
+
+    /// StrategyBaseWithTVLLimits
+
     /// @dev Thrown when `maxPerDeposit` exceeds max.
     error MaxPerDepositExceedsMax();
+    /// @dev Thrown when balance exceeds max total deposits.
+    error BalanceExceedsMaxTotalDeposits();
 
     /**
      * @notice Used to emit an event for the exchange rate between 1 share and underlying token in a strategy contract

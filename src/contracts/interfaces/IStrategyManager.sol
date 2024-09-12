@@ -13,24 +13,31 @@ import "./IEigenPodManager.sol";
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
 interface IStrategyManager {
-    /// @dev Thrown when total strategies deployed exceeds max.
-    error MaxStrategiesExceeded();
-    /// @dev Thrown when two array parameters have mismatching lengths.
-    error InputArrayLengthMismatch();
-    /// @dev Thrown when call attempted from address that's not delegation manager.
-    error OnlyDelegationManager();
-    /// @dev Thrown when call attempted from address that's not strategy whitelister.
-    error OnlyStrategyWhitelister();
-    /// @dev Thrown when provided `shares` amount is too high.
-    error SharesAmountTooHigh();
-    /// @dev Thrown when provided `shares` amount is zero.
-    error SharesAmountZero();
+    /// @dev Thrown when msg.sender is not allowed to call a function
+    error UnauthorizedCaller();
     /// @dev Thrown when attempting to use an expired eip-712 signature.
     error SignatureExpired();
+
+    /// Invalid Inputs
+
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+
+    /// Adding and Removing Shares
+
     /// @dev Thrown when provided `staker` address is null.
     error StakerAddressZero();
+    /// @dev Thrown when provided `shares` amount is zero.
+    error SharesAmountZero();
+    /// @dev Thrown when staker does not have enough shares
+    error InsufficientShares();
+
+    /// Strategy-Specific
+
     /// @dev Thrown when provided `strategy` not found.
     error StrategyNotFound();
+    /// @dev Thrown when total strategies deployed exceeds max.
+    error MaxStrategiesExceeded();
     /// @dev Thrown when attempting to deposit to a non-whitelisted strategy.
     error StrategyNotWhitelisted();
     /// @dev Thrown when attempting a third party transfer from a strategy that's disabled it.

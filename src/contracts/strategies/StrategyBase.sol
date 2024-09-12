@@ -64,7 +64,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /// @notice Simply checks that the `msg.sender` is the `strategyManager`, which is an address stored immutably at construction.
     modifier onlyStrategyManager() {
-        require(msg.sender == address(strategyManager), OnlyStrategyManager());
+        require(msg.sender == address(strategyManager), UnauthorizedCaller());
         _;
     }
 
@@ -129,7 +129,6 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         // update total share amount to account for deposit
         totalShares = (priorTotalShares + newShares);
-
         require(totalShares <= MAX_TOTAL_SHARES, TotalSharesExceedsMax());
 
         // emit exchange rate
@@ -157,8 +156,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         // copy `totalShares` value to memory, prior to any change
         uint256 priorTotalShares = totalShares;
-
-        require(amountShares <= priorTotalShares, WithdrawalAmountExceedsDeposit());
+        require(amountShares <= priorTotalShares, WithdrawalAmountExceedsTotalDeposits());
 
         /**
          * @notice calculation of amountToSend *mirrors* `sharesToUnderlying(amountShares)`, but is different since the `totalShares` has already

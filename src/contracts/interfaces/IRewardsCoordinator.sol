@@ -14,60 +14,64 @@ import "./IStrategy.sol";
  * a Merkle root against which Stakers & Operators can make claims.
  */
 interface IRewardsCoordinator {
-    /// @dev Thrown when input `amount` exceeds maximum.
-    error AmountExceedsMax();
-    /// @dev Thrown when input `amount` is zero.
-    error AmountZero();
-    /// @dev Thrown if provided commision bips exceeds maximum.
-    error CommissionBipsExceedsMax();
-    /// @dev Thrown when input `duration` exceeds maximum.
-    error DurationExceedsMax();
-    /// @dev Thrown when input `duration` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
-    error DurationNotMultipleOfCalculationIntervalSeconds();
-    /// @dev Thrown when cummulative earnings are not greater than cummulative claimed.
-    error EarningsNotGreaterThanClaimed();
-    /// @dev Thrown when claim is attempted by invalid claimer.
-    error InvalidClaimer();
-    /// @dev Thrown when an invalid earn leaf index is provided.
-    error InvalidEarnerLeafIndex();
-    /// @dev Thrown when an invalid earner claim proof is provided.
-    error InvalidClaimProof();
-    /// @dev Thrown when an invalid operator set is provided.
-    error InvalidOperatorSet();
+    /// @dev Thrown when msg.sender is not allowed to call a function
+    error UnauthorizedCaller();
+
+    /// Invalid Inputs
+
     /// @dev Thrown when an invalid root is provided.
     error InvalidRoot();
     /// @dev Thrown when an invalid root index is provided.
     error InvalidRootIndex();
-    /// @dev Thrown when an invalid token leaf index is provided.
-    error InvalidTokenLeafIndex();
-    /// @dev Thrown when an attempt to use a non-whitelisted strategy is made.
-    error InvalidStrategy();
-    /// @dev Thrown when two array parameters have mismatching lengths.
-    error InputArrayLengthMismatch();
     /// @dev Thrown when input arrays length is zero.
     error InputArrayLengthZero();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
     /// @dev Thrown when provided root is not for new calculated period.
     error NewRootMustBeForNewCalculatedPeriod();
-    /// @dev Thrown when call is attempted by address that's not a rewards for all submitter.
-    error OnlyRewardsForAllSubmitter();
-    /// @dev Thrown when call is attempted by address that's not the rewards updater.
-    error OnlyRewardsUpdater();
     /// @dev Thrown when rewards end timestamp has not elapsed.
     error RewardsEndTimestampNotElapsed();
-    /// @dev Thrown if a root has already been activated.
-    error RootActivated();
-    /// @dev Thrown if a root has already been disabled.
-    error RootDisabled();
-    /// @dev Thrown if a root has not been activated yet.
-    error RootNotActivated();
+
+    /// Rewards Submissions
+
+    /// @dev Thrown when input `amount` is zero.
+    error AmountIsZero();
+    /// @dev Thrown when input `amount` exceeds maximum.
+    error AmountExceedsMax();
+    /// @dev Thrown when input `duration` exceeds maximum.
+    error DurationExceedsMax();
+    /// @dev Thrown when input `duration` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
+    error InvalidDurationRemainder();
     /// @dev Thrown when `startTimestamp` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
-    error StartTimestampNotMultipleOfCalculationIntervalSeconds();
+    error InvalidStartTimestampRemainder();
     /// @dev Thrown when `startTimestamp` is too far in the future.
     error StartTimestampTooFarInFuture();
     /// @dev Thrown when `startTimestamp` is too far in the past.
     error StartTimestampTooFarInPast();
+    /// @dev Thrown when an attempt to use a non-whitelisted strategy is made.
+    error StrategyNotWhitelisted();
     /// @dev Thrown when `strategies` is not sorted in ascending order.
     error StrategiesNotInAscendingOrder();
+
+    /// Claims
+
+    /// @dev Thrown when an invalid earner claim proof is provided.
+    error InvalidClaimProof();
+    /// @dev Thrown when an invalid token leaf index is provided.
+    error InvalidTokenLeafIndex();
+    /// @dev Thrown when an invalid earner leaf index is provided.
+    error InvalidEarnerLeafIndex();
+    /// @dev Thrown when cummulative earnings are not greater than cummulative claimed.
+    error EarningsNotGreaterThanClaimed();
+
+    /// Reward Root Checks
+
+    /// @dev Thrown if a root has already been disabled.
+    error RootDisabled();
+    /// @dev Thrown if a root has not been activated yet.
+    error RootNotActivated();
+    /// @dev Thrown if a root has already been activated.
+    error RootAlreadyActivated();
 
     /// STRUCTS ///
     /**
