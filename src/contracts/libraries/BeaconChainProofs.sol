@@ -10,6 +10,13 @@ import "../libraries/Endian.sol";
 //BeaconBlockHeader Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader
 //BeaconState Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconstate
 library BeaconChainProofs {
+    /// @dev Thrown when a proof is invalid.
+    error InvalidProof();
+    /// @dev Thrown when a proof with an invalid length is provided.
+    error InvalidProofLength();
+    /// @dev Thrown when a validator fields length is invalid.
+    error InvalidValidatorFieldsLength();
+
     /// @notice Heights of various merkle trees in the beacon chain
     /// - beaconBlockRoot
     /// |                                             HEIGHT: BEACON_BLOCK_HEADER_TREE_HEIGHT
@@ -101,7 +108,7 @@ library BeaconChainProofs {
     function verifyStateRoot(bytes32 beaconBlockRoot, StateRootProof calldata proof) internal view {
         require(
             proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT),
-            "BeaconChainProofs.verifyStateRoot: Proof has incorrect length"
+            InvalidProofLength()
         );
 
         /// This merkle proof verifies the `beaconStateRoot` under the `beaconBlockRoot`
@@ -115,7 +122,7 @@ library BeaconChainProofs {
                 leaf: proof.beaconStateRoot,
                 index: STATE_ROOT_INDEX
             }),
-            "BeaconChainProofs.verifyStateRoot: Invalid state root merkle proof"
+            InvalidProof()
         );
     }
 
@@ -137,14 +144,14 @@ library BeaconChainProofs {
     ) internal view {
         require(
             validatorFields.length == VALIDATOR_FIELDS_LENGTH,
-            "BeaconChainProofs.verifyValidatorFields: Validator fields has incorrect length"
+            InvalidValidatorFieldsLength()
         );
 
         /// Note: the reason we use `VALIDATOR_TREE_HEIGHT + 1` here is because the merklization process for
         /// this container includes hashing the root of the validator tree with the length of the validator list
         require(
             validatorFieldsProof.length == 32 * ((VALIDATOR_TREE_HEIGHT + 1) + BEACON_STATE_TREE_HEIGHT),
-            "BeaconChainProofs.verifyValidatorFields: Proof has incorrect length"
+            InvalidProofLength()
         );
 
         // Merkleize `validatorFields` to get the leaf to prove
@@ -165,7 +172,7 @@ library BeaconChainProofs {
                 leaf: validatorRoot,
                 index: index
             }),
-            "BeaconChainProofs.verifyValidatorFields: Invalid merkle proof"
+            InvalidProof()
         );
     }
 
@@ -187,7 +194,7 @@ library BeaconChainProofs {
     function verifyBalanceContainer(bytes32 beaconBlockRoot, BalanceContainerProof calldata proof) internal view {
         require(
             proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT + BEACON_STATE_TREE_HEIGHT),
-            "BeaconChainProofs.verifyBalanceContainer: Proof has incorrect length"
+            InvalidProofLength()
         );
 
         /// This proof combines two proofs, so its index accounts for the relative position of leaves in two trees:
@@ -205,7 +212,7 @@ library BeaconChainProofs {
                 leaf: proof.balanceContainerRoot,
                 index: index
             }),
-            "BeaconChainProofs.verifyBalanceContainer: invalid balance container proof"
+            InvalidProof()
         );
     }
 
@@ -223,7 +230,7 @@ library BeaconChainProofs {
         /// this container includes hashing the root of the balances tree with the length of the balances list
         require(
             proof.proof.length == 32 * (BALANCE_TREE_HEIGHT + 1),
-            "BeaconChainProofs.verifyValidatorBalance: Proof has incorrect length"
+            InvalidProofLength()
         );
 
         /// When merkleized, beacon chain balances are combined into groups of 4 called a `balanceRoot`. The merkle
@@ -240,7 +247,7 @@ library BeaconChainProofs {
                 leaf: proof.balanceRoot,
                 index: balanceIndex
             }),
-            "BeaconChainProofs.verifyValidatorBalance: Invalid merkle proof"
+            InvalidProof()
         );
 
         /// Extract the individual validator's balance from the `balanceRoot`

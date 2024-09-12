@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -55,14 +55,14 @@ contract RewardsCoordinator is
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     modifier onlyRewardsUpdater() {
-        require(msg.sender == rewardsUpdater, "RewardsCoordinator: caller is not the rewardsUpdater");
+        require(msg.sender == rewardsUpdater, OnlyRewardsUpdater());
         _;
     }
 
     modifier onlyRewardsForAllSubmitter() {
         require(
             isRewardsForAllSubmitter[msg.sender],
-            "RewardsCoordinator: caller is not a valid createRewardsForAllSubmission submitter"
+            OnlyRewardsForAllSubmitter()
         );
         _;
     }
@@ -229,14 +229,14 @@ contract RewardsCoordinator is
         if (claimer == address(0)) {
             claimer = earner;
         }
-        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
+        require(msg.sender == claimer, InvalidClaimer());
         for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
 
             uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
             require(
                 tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
-                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
+                EarningsNotGreaterThanClaimed()
             );
 
             // Calculate amount to claim and update cumulativeClaimed
@@ -260,11 +260,11 @@ contract RewardsCoordinator is
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
         require(
             rewardsCalculationEndTimestamp > currRewardsCalculationEndTimestamp,
-            "RewardsCoordinator.submitRoot: new root must be for newer calculated period"
+            NewRootMustBeForNewCalculatedPeriod()
         );
         require(
             rewardsCalculationEndTimestamp < block.timestamp,
-            "RewardsCoordinator.submitRoot: rewardsCalculationEndTimestamp cannot be in the future"
+            RewardsEndTimestampNotElapsed()
         );
         uint32 rootIndex = uint32(_distributionRoots.length);
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
@@ -285,10 +285,10 @@ contract RewardsCoordinator is
      * @param rootIndex The index of the root to be disabled
      */
     function disableRoot(uint32 rootIndex) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
-        require(rootIndex < _distributionRoots.length, "RewardsCoordinator.disableRoot: invalid rootIndex");
+        require(rootIndex < _distributionRoots.length, InvalidRootIndex());
         DistributionRoot storage root = _distributionRoots[rootIndex];
-        require(!root.disabled, "RewardsCoordinator.disableRoot: root already disabled");
-        require(block.timestamp < root.activatedAt, "RewardsCoordinator.disableRoot: root already activated");
+        require(!root.disabled, RootDisabled());
+        require(block.timestamp < root.activatedAt, RootActivated());
         root.disabled = true;
         emit DistributionRootDisabled(rootIndex);
     }
@@ -356,33 +356,33 @@ contract RewardsCoordinator is
     function _validateRewardsSubmission(RewardsSubmission calldata rewardsSubmission) internal view {
         require(
             rewardsSubmission.strategiesAndMultipliers.length > 0,
-            "RewardsCoordinator._validateRewardsSubmission: no strategies set"
+            InputArrayLengthZero()
         );
-        require(rewardsSubmission.amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
+        require(rewardsSubmission.amount > 0, AmountZero());
         require(
             rewardsSubmission.amount <= MAX_REWARDS_AMOUNT,
-            "RewardsCoordinator._validateRewardsSubmission: amount too large"
+            AmountExceedsMax()
         );
         require(
             rewardsSubmission.duration <= MAX_REWARDS_DURATION,
-            "RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
+            DurationExceedsMax()
         );
         require(
             rewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator._validateRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            DurationNotMultipleOfCalculationIntervalSeconds()
         );
         require(
             rewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            StartTimestampNotMultipleOfCalculationIntervalSeconds()
         );
         require(
             block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp
                 && GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
-            "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
+            StartTimestampTooFarInPast()
         );
         require(
             rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
-            "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the future"
+            StartTimestampTooFarInFuture()
         );
 
         // Require rewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
@@ -391,26 +391,26 @@ contract RewardsCoordinator is
             IStrategy strategy = rewardsSubmission.strategiesAndMultipliers[i].strategy;
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
-                "RewardsCoordinator._validateRewardsSubmission: invalid strategy considered"
+                InvalidStrategy()
             );
             require(
                 currAddress < address(strategy),
-                "RewardsCoordinator._validateRewardsSubmission: strategies must be in ascending order to handle duplicates"
+                StrategiesNotInAscendingOrder()
             );
             currAddress = address(strategy);
         }
     }
 
     function _checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root) internal view {
-        require(!root.disabled, "RewardsCoordinator._checkClaim: root is disabled");
-        require(block.timestamp >= root.activatedAt, "RewardsCoordinator._checkClaim: root not activated yet");
+        require(!root.disabled, RootDisabled());
+        require(block.timestamp >= root.activatedAt, RootNotActivated());
         require(
             claim.tokenIndices.length == claim.tokenTreeProofs.length,
-            "RewardsCoordinator._checkClaim: tokenIndices and tokenProofs length mismatch"
+            InputArrayLengthMismatch()
         );
         require(
             claim.tokenTreeProofs.length == claim.tokenLeaves.length,
-            "RewardsCoordinator._checkClaim: tokenTreeProofs and leaves length mismatch"
+            InputArrayLengthMismatch()
         );
 
         // Verify inclusion of earners leaf (earner, earnerTokenRoot) in the distribution root
@@ -449,7 +449,7 @@ contract RewardsCoordinator is
         // index can't be greater than 2**(tokenProof/32)
         require(
             tokenLeafIndex < (1 << (tokenProof.length / 32)),
-            "RewardsCoordinator._verifyTokenClaim: invalid tokenLeafIndex"
+            InvalidTokenLeafIndex()
         );
 
         // Verify inclusion of token leaf
@@ -461,7 +461,7 @@ contract RewardsCoordinator is
                 proof: tokenProof,
                 leaf: tokenLeafHash
             }),
-            "RewardsCoordinator._verifyTokenClaim: invalid token claim proof"
+            InvalidClaimProof()
         );
     }
 
@@ -484,7 +484,7 @@ contract RewardsCoordinator is
         // index can't be greater than 2**(earnerProof/32)
         require(
             earnerLeafIndex < (1 << (earnerProof.length / 32)),
-            "RewardsCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex"
+            InvalidClaimProof()
         );
         // Verify inclusion of earner leaf
         bytes32 earnerLeafHash = calculateEarnerLeafHash(earnerLeaf);
@@ -496,7 +496,7 @@ contract RewardsCoordinator is
                 proof: earnerProof, 
                 leaf: earnerLeafHash
             }),
-            "RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof"
+            InvalidClaimProof()
         );
     }
 
@@ -575,7 +575,7 @@ contract RewardsCoordinator is
                 return i - 1;
             }
         }
-        revert("RewardsCoordinator.getRootIndexFromHash: root not found");
+        revert InvalidRoot();
     }
 
     /**

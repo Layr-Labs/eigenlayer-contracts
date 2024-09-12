@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../interfaces/IPausable.sol";
 
@@ -32,24 +32,24 @@ contract Pausable is IPausable {
 
     /// @notice
     modifier onlyPauser() {
-        require(pauserRegistry.isPauser(msg.sender), "msg.sender is not permissioned as pauser");
+        require(pauserRegistry.isPauser(msg.sender), OnlyPauser());
         _;
     }
 
     modifier onlyUnpauser() {
-        require(msg.sender == pauserRegistry.unpauser(), "msg.sender is not permissioned as unpauser");
+        require(msg.sender == pauserRegistry.unpauser(), OnlyUnpauser());
         _;
     }
 
     /// @notice Throws if the contract is paused, i.e. if any of the bits in `_paused` is flipped to 1.
     modifier whenNotPaused() {
-        require(_paused == 0, "Pausable: contract is paused");
+        require(_paused == 0, CurrentlyPaused());
         _;
     }
 
     /// @notice Throws if the `indexed`th bit of `_paused` is 1, i.e. if the `index`th pause switch is flipped.
     modifier onlyWhenNotPaused(uint8 index) {
-        require(!paused(index), "Pausable: index is paused");
+        require(!paused(index), CurrentlyPaused());
         _;
     }
 
@@ -57,7 +57,7 @@ contract Pausable is IPausable {
     function _initializePauser(IPauserRegistry _pauserRegistry, uint256 initPausedStatus) internal {
         require(
             address(pauserRegistry) == address(0) && address(_pauserRegistry) != address(0),
-            "Pausable._initializePauser: _initializePauser() can only be called once"
+            InputAddressZero()
         );
         _paused = initPausedStatus;
         emit Paused(msg.sender, initPausedStatus);
@@ -72,7 +72,7 @@ contract Pausable is IPausable {
      */
     function pause(uint256 newPausedStatus) external onlyPauser {
         // verify that the `newPausedStatus` does not *unflip* any bits (i.e. doesn't unpause anything, all 1 bits remain)
-        require((_paused & newPausedStatus) == _paused, "Pausable.pause: invalid attempt to unpause functionality");
+        require((_paused & newPausedStatus) == _paused, InvalidNewPausedStatus());
         _paused = newPausedStatus;
         emit Paused(msg.sender, newPausedStatus);
     }
@@ -94,7 +94,7 @@ contract Pausable is IPausable {
     function unpause(uint256 newPausedStatus) external onlyUnpauser {
         // verify that the `newPausedStatus` does not *flip* any bits (i.e. doesn't pause anything, all 0 bits remain)
         require(
-            ((~_paused) & (~newPausedStatus)) == (~_paused), "Pausable.unpause: invalid attempt to pause functionality"
+            ((~_paused) & (~newPausedStatus)) == (~_paused), InvalidNewPausedStatus()
         );
         _paused = newPausedStatus;
         emit Unpaused(msg.sender, newPausedStatus);
@@ -120,7 +120,7 @@ contract Pausable is IPausable {
     function _setPauserRegistry(IPauserRegistry newPauserRegistry) internal {
         require(
             address(newPauserRegistry) != address(0),
-            "Pausable._setPauserRegistry: newPauserRegistry cannot be the zero address"
+            InputAddressZero()
         );
         emit PauserRegistrySet(pauserRegistry, newPauserRegistry);
         pauserRegistry = newPauserRegistry;
