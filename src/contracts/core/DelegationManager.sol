@@ -905,9 +905,11 @@ contract DelegationManager is
         // NOTE that to prevent numerator overflow, the max sharesToWithdraw is
         // x*1e36 <= 2^256-1
         // => x <= 1.1579e41
+        // however we know that the max shares in a strategy is 1e38-1 and all the ETH on the beaconchain staked
+        // in one eigenPod would be ~3e25. This product here is safe
         sharesToDecrement =
             (sharesToWithdraw * SlashingConstants.PRECISION_FACTOR_SQUARED) / (stakerScalingFactor * totalMagnitude);
-        scaledStakerShares = sharesToWithdraw * stakerScalingFactor / SlashingConstants.PRECISION_FACTOR;
+        scaledStakerShares = sharesToWithdraw * SlashingConstants.PRECISION_FACTOR / totalMagnitude;
         return (sharesToDecrement, scaledStakerShares);
     }
 
