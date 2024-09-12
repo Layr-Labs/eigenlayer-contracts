@@ -10,7 +10,7 @@
 | __gap                                | uint256[48]                                             | 103  | 0      | 1536  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | _status                              | uint256                                                 | 151  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | __gap                                | uint256[49]                                             | 152  | 0      | 1568  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
-| _DOMAIN_SEPARATOR                    | bytes32                                                 | 201  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
+| __deprecated_DOMAIN_SEPARATOR        | bytes32                                                 | 201  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | _distributionRoots                   | struct IRewardsCoordinator.DistributionRoot[]           | 202  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | rewardsUpdater                       | address                                                 | 203  | 0      | 20    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | activationDelay                      | uint32                                                  | 203  | 20     | 4     | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |

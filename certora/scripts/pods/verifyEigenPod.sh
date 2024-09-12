@@ -7,7 +7,7 @@ fi
 
 # certoraRun certora/harnesses/EigenPodHarness.sol \
 #     src/contracts/core/DelegationManager.sol src/contracts/pods/EigenPodManager.sol \
-#     src/contracts/core/Slasher.sol src/contracts/permissions/PauserRegistry.sol \
+#     src/contracts/permissions/PauserRegistry.sol \
 #     src/contracts/core/StrategyManager.sol \
 #     src/contracts/strategies/StrategyBase.sol \
 #     lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol \

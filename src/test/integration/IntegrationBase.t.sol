@@ -185,7 +185,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_HasNoDelegatableShares(User user, string memory err) internal {
         (IStrategy[] memory strategies, uint[] memory shares) = 
-            delegationManager.getDelegatableShares(address(user));
+            delegationManager.getDepositedShares(address(user));
         
         assertEq(strategies.length, 0, err);
         assertEq(strategies.length, shares.length, "assert_HasNoDelegatableShares: return length mismatch");
@@ -231,14 +231,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // This method should only be used for tests that handle positive
                 // balances. Negative balances are an edge case that require
                 // the own tests and helper methods.
-                int shares = eigenPodManager.podOwnerShares(address(user));
+                int shares = eigenPodManager.podOwnerDepositShares(address(user));
                 if (shares < 0) {
                     revert("assert_HasExpectedShares: negative shares");
                 }
 
                 actualShares = uint(shares);
             } else {
-                actualShares = strategyManager.stakerStrategyShares(address(user), strat);
+                actualShares = strategyManager.stakerDepositShares(address(user), strat);
             }
 
             assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
@@ -284,7 +284,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function assert_ValidWithdrawalHashes(
-        IDelegationManager.Withdrawal[] memory withdrawals,
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         string memory err
     ) internal {
@@ -294,7 +294,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function assert_ValidWithdrawalHash(
-        IDelegationManager.Withdrawal memory withdrawal,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
         bytes32 withdrawalRoot,
         string memory err
     ) internal {
@@ -626,7 +626,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawals(
         User staker, 
-        IDelegationManager.Withdrawal[] memory withdrawals,
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         string memory err
     ) internal {
         uint curQueuedWithdrawals = _getCumulativeWithdrawals(staker);
@@ -638,7 +638,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawal(
         User staker, 
-        IDelegationManager.Withdrawal memory /*withdrawal*/,
+        IDelegationManagerTypes.Withdrawal memory /*withdrawal*/,
         string memory err
     ) internal {
         uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
@@ -691,12 +691,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal {
         bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(addedValidators);
 
-        IEigenPod.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
-        IEigenPod.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
         for (uint i = 0; i < curStatuses.length; i++) {
-            assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.INACTIVE, err);
-            assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(prevStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.INACTIVE, err);
+            assertTrue(curStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, err);
         }
     }
 
@@ -707,12 +707,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal {
         bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(exitedValidators);
 
-        IEigenPod.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
-        IEigenPod.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
         for (uint i = 0; i < curStatuses.length; i++) {
-            assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
-            assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.WITHDRAWN, err);
+            assertTrue(prevStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(curStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.WITHDRAWN, err);
         }
     }
 
@@ -898,7 +898,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
-        int curPodOwnerShares = eigenPodManager.podOwnerShares(address(staker));
+        int curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
         int newPodOwnerShares = curPodOwnerShares + shareDelta;
 
         if (curPodOwnerShares <= 0) {
@@ -959,7 +959,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getWithdrawalHashes(
-        IDelegationManager.Withdrawal[] memory withdrawals
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals
     ) internal view returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](withdrawals.length);
 
@@ -1003,7 +1003,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         //         blocksToRoll = withdrawalDelayBlocks;
         //     }
         // }
-        cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
+        // cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot
@@ -1044,14 +1044,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // This method should only be used for tests that handle positive
                 // balances. Negative balances are an edge case that require
                 // the own tests and helper methods.
-                int shares = eigenPodManager.podOwnerShares(address(staker));
+                int shares = eigenPodManager.podOwnerDepositShares(address(staker));
                 if (shares < 0) {
                     revert("_getStakerShares: negative shares");
                 }
 
                 curShares[i] = uint(shares);
             } else {
-                curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat);
+                curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
             }
         }
 
@@ -1074,9 +1074,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
             IStrategy strat = strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                curShares[i] = eigenPodManager.podOwnerShares(address(staker));
+                curShares[i] = eigenPodManager.podOwnerDepositShares(address(staker));
             } else {
-                curShares[i] = int(strategyManager.stakerStrategyShares(address(staker), strat));
+                curShares[i] = int(strategyManager.stakerDepositShares(address(staker), strat));
             }
         }
 
@@ -1135,9 +1135,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return _getActiveValidatorCount(staker);
     }
 
-    function _getValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal view returns (IEigenPod.VALIDATOR_STATUS[] memory) {
+    function _getValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal view returns (IEigenPodTypes.VALIDATOR_STATUS[] memory) {
         EigenPod pod = staker.pod();
-        IEigenPod.VALIDATOR_STATUS[] memory statuses = new IEigenPod.VALIDATOR_STATUS[](pubkeyHashes.length);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory statuses = new IEigenPodTypes.VALIDATOR_STATUS[](pubkeyHashes.length);
 
         for (uint i = 0; i < statuses.length; i++) {
             statuses[i] = pod.validatorStatus(pubkeyHashes[i]);
@@ -1146,7 +1146,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return statuses;
     }
 
-    function _getPrevValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (IEigenPod.VALIDATOR_STATUS[] memory) {
+    function _getPrevValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (IEigenPodTypes.VALIDATOR_STATUS[] memory) {
         return _getValidatorStatuses(staker, pubkeyHashes);
     }
 

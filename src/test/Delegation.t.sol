@@ -15,6 +15,8 @@ contract DelegationTests is EigenLayerTestHelper {
     uint8 defaultQuorumNumber = 0;
     bytes32 defaultOperatorId = bytes32(uint256(0));
 
+    uint256 public constant DEFAULT_ALLOCATION_DELAY = 17.5 days;
+
     modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
         cheats.assume(ethAmount >= 0 && ethAmount <= 1e18);
         cheats.assume(eigenAmount >= 0 && eigenAmount <= 1e18);
@@ -35,12 +37,12 @@ contract DelegationTests is EigenLayerTestHelper {
     function testSelfOperatorDelegate(address sender) public {
         cheats.assume(sender != address(0));
         cheats.assume(sender != address(eigenLayerProxyAdmin));
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: sender,
             delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
-        _testRegisterAsOperator(sender, operatorDetails);
+        _testRegisterAsOperator(sender, 1, operatorDetails);
     }
 
     function testTwoSelfOperatorsRegister() public {
@@ -84,13 +86,13 @@ contract DelegationTests is EigenLayerTestHelper {
         // use storage to solve stack-too-deep
         operator = _operator;
 
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
         if (!delegation.isOperator(operator)) {
-            _testRegisterAsOperator(operator, operatorDetails);
+            _testRegisterAsOperator(operator, 1, operatorDetails);
         }
 
         uint256 amountBefore = delegation.operatorShares(operator, wethStrat);
@@ -116,7 +118,7 @@ contract DelegationTests is EigenLayerTestHelper {
 
             cheats.startPrank(address(strategyManager));
 
-            IDelegationManager.OperatorDetails memory expectedOperatorDetails = delegation.operatorDetails(operator);
+            IDelegationManagerTypes.OperatorDetails memory expectedOperatorDetails = delegation.operatorDetails(operator);
             assertTrue(
                 keccak256(abi.encode(expectedOperatorDetails)) == keccak256(abi.encode(operatorDetails)),
                 "failed to set correct operator details"
@@ -174,7 +176,7 @@ contract DelegationTests is EigenLayerTestHelper {
         }
 
         if (expiry < block.timestamp) {
-            cheats.expectRevert(IDelegationManager.SignatureExpired.selector);
+            cheats.expectRevert(IDelegationManagerErrors.SignatureExpired.selector);
         }
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
@@ -258,7 +260,7 @@ contract DelegationTests is EigenLayerTestHelper {
             signature = abi.encodePacked(r, s, v);
         }
 
-        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEIP1271.selector);
+        cheats.expectRevert(ISignatureUtils.InvalidSignature.selector);
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max
@@ -327,24 +329,21 @@ contract DelegationTests is EigenLayerTestHelper {
         delegation.initialize(
             address(this),
             eigenLayerPauserReg,
-            0,
-            minWithdrawalDelayBlocks,
-            initializeStrategiesToSetDelayBlocks,
-            initializeWithdrawalDelayBlocks
+            0
         );
     }
 
     /// @notice This function tests to ensure that a you can't register as a delegate multiple times
     /// @param operator is the operator being delegated to.
     function testRegisterAsOperatorMultipleTimes(address operator) public fuzzedAddress(operator) {
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
-        _testRegisterAsOperator(operator, operatorDetails);
-        cheats.expectRevert(IDelegationManager.AlreadyDelegated.selector);
-        _testRegisterAsOperator(operator, operatorDetails);
+        _testRegisterAsOperator(operator, 1, operatorDetails);
+        cheats.expectRevert(IDelegationManagerErrors.ActivelyDelegated.selector);
+        _testRegisterAsOperator(operator, 1, operatorDetails);
     }
 
     /// @notice This function tests to ensure that a staker cannot delegate to an unregistered operator
@@ -354,7 +353,7 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDepositStrategies(getOperatorAddress(1), 1e18, 1);
         _testDepositEigen(getOperatorAddress(1), 1e18);
 
-        cheats.expectRevert(IDelegationManager.OperatorDoesNotExist.selector);
+        cheats.expectRevert(IDelegationManagerErrors.OperatorNotRegistered.selector);
         cheats.startPrank(getOperatorAddress(1));
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(delegate, signatureWithExpiry, bytes32(0));
@@ -371,10 +370,7 @@ contract DelegationTests is EigenLayerTestHelper {
         delegation.initialize(
             _attacker,
             eigenLayerPauserReg,
-            0,
-            0, // minWithdrawalDelayBLocks
-            initializeStrategiesToSetDelayBlocks,
-            initializeWithdrawalDelayBlocks
+            0
         );
     }
 
@@ -385,15 +381,15 @@ contract DelegationTests is EigenLayerTestHelper {
     ) public fuzzedAddress(_operator) fuzzedAddress(_dt) {
         vm.assume(_dt != address(0));
         vm.startPrank(_operator);
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: msg.sender,
             delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
         string memory emptyStringForMetadataURI;
-        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
-        cheats.expectRevert(IDelegationManager.AlreadyDelegated.selector);
-        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        delegation.registerAsOperator(operatorDetails, 1, emptyStringForMetadataURI);
+        cheats.expectRevert(IDelegationManagerErrors.ActivelyDelegated.selector);
+        delegation.registerAsOperator(operatorDetails, 1, emptyStringForMetadataURI);
         cheats.stopPrank();
     }
 
@@ -403,10 +399,10 @@ contract DelegationTests is EigenLayerTestHelper {
         address _unregisteredoperator
     ) public fuzzedAddress(_staker) {
         vm.startPrank(_staker);
-        cheats.expectRevert(IDelegationManager.OperatorDoesNotExist.selector);
+        cheats.expectRevert(IDelegationManagerErrors.OperatorNotRegistered.selector);
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(_unregisteredoperator, signatureWithExpiry, bytes32(0));
-        cheats.expectRevert(IDelegationManager.OperatorDoesNotExist.selector);
+        cheats.expectRevert(IDelegationManagerErrors.OperatorNotRegistered.selector);
         delegation.delegateTo(_staker, signatureWithExpiry, bytes32(0));
         cheats.stopPrank();
     }
@@ -421,20 +417,20 @@ contract DelegationTests is EigenLayerTestHelper {
 
         // setup delegation
         vm.prank(_operator);
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: _dt,
             delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
         string memory emptyStringForMetadataURI;
-        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        delegation.registerAsOperator(operatorDetails, 1, emptyStringForMetadataURI);
         vm.prank(_staker);
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(_operator, signatureWithExpiry, bytes32(0));
 
         // operators cannot undelegate from themselves
         vm.prank(_operator);
-        cheats.expectRevert(IDelegationManager.OperatorsCannotUndelegate.selector);
+        cheats.expectRevert(IDelegationManagerErrors.OperatorsCannotUndelegate.selector);
         delegation.undelegate(_operator);
 
         // assert still delegated
@@ -458,12 +454,12 @@ contract DelegationTests is EigenLayerTestHelper {
         uint256 eigenToDeposit = 1e10;
         _testDepositWeth(sender, wethToDeposit);
         _testDepositEigen(sender, eigenToDeposit);
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: sender,
             delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
-        _testRegisterAsOperator(sender, operatorDetails);
+        _testRegisterAsOperator(sender, 1, operatorDetails);
         cheats.startPrank(sender);
 
         cheats.stopPrank();
@@ -483,12 +479,12 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.assume(eigenAmount >= 1 && eigenAmount <= 1e18);
 
         if (!delegation.isOperator(operator)) {
-            IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
                 __deprecated_earningsReceiver: operator,
                 delegationApprover: address(0),
-                stakerOptOutWindowBlocks: 0
+                __deprecated_stakerOptOutWindowBlocks: 0
             });
-            _testRegisterAsOperator(operator, operatorDetails);
+            _testRegisterAsOperator(operator, 1, operatorDetails);
         }
 
         //making additional deposits to the strategies

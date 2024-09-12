@@ -2,19 +2,11 @@
 pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../libraries/SlashingLib.sol";
 
-/**
- * @title Minimal interface for an `Strategy` contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice Custom `Strategy` implementations may expand extensively on this interface.
- */
-interface IStrategy {
-    /// @dev Thrown when msg.sender is not allowed to call a function
-    error UnauthorizedCaller();
-
-    /// StrategyBase
-
+interface IStrategyErrors {
+    /// @dev Thrown when called by an account that is not strategy manager.
+    error OnlyStrategyManager();
     /// @dev Thrown when new shares value is zero.
     error NewSharesZero();
     /// @dev Thrown when total shares exceeds max.
@@ -30,7 +22,9 @@ interface IStrategy {
     error MaxPerDepositExceedsMax();
     /// @dev Thrown when balance exceeds max total deposits.
     error BalanceExceedsMaxTotalDeposits();
+}
 
+interface IStrategyEvents {
     /**
      * @notice Used to emit an event for the exchange rate between 1 share and underlying token in a strategy contract
      * @param rate is the exchange rate in wad 18 decimals
@@ -45,7 +39,15 @@ interface IStrategy {
      * @param decimals are the decimals of the ERC20 token in the strategy
      */
     event StrategyTokenSet(IERC20 token, uint8 decimals);
+}
 
+/**
+ * @title Minimal interface for an `Strategy` contract.
+ * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ * @notice Custom `Strategy` implementations may expand extensively on this interface.
+ */
+interface IStrategy is IStrategyErrors, IStrategyEvents {
     /**
      * @notice Used to deposit tokens into this Strategy
      * @param token is the ERC20 token being deposited

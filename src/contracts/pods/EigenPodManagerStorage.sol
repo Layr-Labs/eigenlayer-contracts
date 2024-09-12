@@ -26,9 +26,6 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
 
-    /// @notice EigenLayer's Slasher contract
-    ISlasher public immutable slasher;
-
     /// @notice EigenLayer's DelegationManager contract
     IDelegationManager public immutable delegationManager;
 
@@ -68,14 +65,15 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
 
     // BEGIN STORAGE VARIABLES ADDED AFTER MAINNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /**
-     * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
-     * @dev The share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
+     * // TODO: Update this comment
+     * @notice Mapping from Pod owner owner to the number of deposit shares they have in the virtual beacon chain ETH strategy.
+     * @dev The deposit share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
      * decrease between the pod owner queuing and completing a withdrawal.
      * When the pod owner's shares would otherwise increase, this "deficit" is decreased first _instead_.
      * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
      * as the withdrawal "paying off the deficit".
      */
-    mapping(address => int256) public podOwnerShares;
+    mapping(address => int256) public podOwnerDepositShares;
 
     uint64 internal __deprecated_denebForkTimestamp;
 
@@ -83,13 +81,11 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
         IStrategyManager _strategyManager,
-        ISlasher _slasher,
         IDelegationManager _delegationManager
     ) {
         ethPOS = _ethPOS;
         eigenPodBeacon = _eigenPodBeacon;
         strategyManager = _strategyManager;
-        slasher = _slasher;
         delegationManager = _delegationManager;
     }
 

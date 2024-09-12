@@ -1,6 +1,6 @@
 | Name                                 | Type                                                    | Slot | Offset | Bytes | Contract                                                                   |
 |--------------------------------------|---------------------------------------------------------|------|--------|-------|----------------------------------------------------------------------------|
-| _DOMAIN_SEPARATOR                    | bytes32                                                 | 0    | 0      | 32    | src/contracts/core/RewardsCoordinatorStorage.sol:RewardsCoordinatorStorage |
+| __deprecated_DOMAIN_SEPARATOR        | bytes32                                                 | 0    | 0      | 32    | src/contracts/core/RewardsCoordinatorStorage.sol:RewardsCoordinatorStorage |
 | _distributionRoots                   | struct IRewardsCoordinator.DistributionRoot[]           | 1    | 0      | 32    | src/contracts/core/RewardsCoordinatorStorage.sol:RewardsCoordinatorStorage |
 | rewardsUpdater                       | address                                                 | 2    | 0      | 20    | src/contracts/core/RewardsCoordinatorStorage.sol:RewardsCoordinatorStorage |
 | activationDelay                      | uint32                                                  | 2    | 20     | 4     | src/contracts/core/RewardsCoordinatorStorage.sol:RewardsCoordinatorStorage |

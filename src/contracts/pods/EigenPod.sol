@@ -61,19 +61,19 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
     /// @notice Callable only by the EigenPodManager
     modifier onlyEigenPodManager() {
-        require(msg.sender == address(eigenPodManager), UnauthorizedCaller());
+        require(msg.sender == address(eigenPodManager), OnlyEigenPodManager());
         _;
     }
 
     /// @notice Callable only by the pod's owner
     modifier onlyEigenPodOwner() {
-        require(msg.sender == podOwner, UnauthorizedCaller());
+        require(msg.sender == podOwner, OnlyEigenPodOwner());
         _;
     }
 
     /// @notice Callable only by the pod's owner or proof submitter
     modifier onlyOwnerOrProofSubmitter() {
-        require(msg.sender == podOwner || msg.sender == proofSubmitter, UnauthorizedCaller());
+        require(msg.sender == podOwner || msg.sender == proofSubmitter, OnlyEigenPodOwnerOrProofSubmitter());
         _;
     }
 
@@ -189,7 +189,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             // If the proof shows the validator has a balance of 0, they are marked `WITHDRAWN`.
             // The assumption is that if this is the case, any withdrawn ETH was already in
             // the pod when `startCheckpoint` was originally called.
-            (int128 balanceDeltaGwei, uint64 exitedBalanceGwei) = _verifyCheckpointProof({
+            (uint64 prevBalanceGwei, int64 balanceDeltaGwei, uint64 exitedBalanceGwei) = _verifyCheckpointProof({
                 validatorInfo: validatorInfo,
                 checkpointTimestamp: checkpointTimestamp,
                 balanceContainerRoot: balanceContainerProof.balanceContainerRoot,
@@ -197,6 +197,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             });
 
             checkpoint.proofsRemaining--;
+            checkpoint.beaconChainBalanceBeforeGwei += prevBalanceGwei;
             checkpoint.balanceDeltasGwei += balanceDeltaGwei;
             exitedBalancesGwei += exitedBalanceGwei;
 
@@ -260,8 +261,12 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             );
         }
 
+        if (currentCheckpointTimestamp != 0) {
+            _currentCheckpoint.beaconChainBalanceBeforeGwei += uint64(totalAmountToBeRestakedWei / GWEI_TO_WEI);
+        }
+
         // Update the EigenPodManager on this pod's new balance
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, int256(totalAmountToBeRestakedWei));
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, int256(totalAmountToBeRestakedWei), 0); // no decrease
     }
 
     /**
@@ -490,8 +495,10 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // purpose of `lastCheckpointedAt` is to enforce that newly-verified validators are not
         // eligible to progress already-existing checkpoints - however in this case, no checkpoints exist.
         activeValidatorCount++;
-        uint64 lastCheckpointedAt =
-            currentCheckpointTimestamp == 0 ? lastCheckpointTimestamp : currentCheckpointTimestamp;
+        uint64 lastCheckpointedAt = lastCheckpointTimestamp;
+        if (currentCheckpointTimestamp != 0) {
+            lastCheckpointedAt = currentCheckpointTimestamp;
+        }
 
         // Proofs complete - create the validator in state
         _validatorPubkeyHashToInfo[pubkeyHash] = ValidatorInfo({
@@ -511,11 +518,11 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         uint64 checkpointTimestamp,
         bytes32 balanceContainerRoot,
         BeaconChainProofs.BalanceProof calldata proof
-    ) internal returns (int128 balanceDeltaGwei, uint64 exitedBalanceGwei) {
+    ) internal returns (uint64 prevBalanceGwei, int64 balanceDeltaGwei, uint64 exitedBalanceGwei) {
         uint40 validatorIndex = uint40(validatorInfo.validatorIndex);
 
         // Verify validator balance against `balanceContainerRoot`
-        uint64 prevBalanceGwei = validatorInfo.restakedBalanceGwei;
+        prevBalanceGwei = validatorInfo.restakedBalanceGwei;
         uint64 newBalanceGwei = BeaconChainProofs.verifyValidatorBalance({
             balanceContainerRoot: balanceContainerRoot,
             validatorIndex: validatorIndex,
@@ -542,12 +549,12 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
             // If we reach this point, `balanceDeltaGwei` should always be negative,
             // so this should be a safe conversion
-            exitedBalanceGwei = uint64(uint128(-balanceDeltaGwei));
+            exitedBalanceGwei = uint64(-balanceDeltaGwei);
 
             emit ValidatorWithdrawn(checkpointTimestamp, validatorIndex);
         }
 
-        return (balanceDeltaGwei, exitedBalanceGwei);
+        return (prevBalanceGwei, balanceDeltaGwei, exitedBalanceGwei);
     }
 
     /**
@@ -598,7 +605,8 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             beaconBlockRoot: getParentBlockRoot(uint64(block.timestamp)),
             proofsRemaining: uint24(activeValidatorCount),
             podBalanceGwei: podBalanceGwei,
-            balanceDeltasGwei: 0
+            balanceDeltasGwei: 0,
+            beaconChainBalanceBeforeGwei: 0
         });
 
         // Place checkpoint in storage. If `proofsRemaining` is 0, the checkpoint
@@ -633,8 +641,17 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             delete currentCheckpointTimestamp;
             delete _currentCheckpoint;
 
+            // Calculate the slashing proportion
+            uint64 proportionOfOldBalance = 0;
+            if (totalShareDeltaWei < 0) {
+                uint256 totalRestakedBeforeWei =
+                    (withdrawableRestakedExecutionLayerGwei + checkpoint.beaconChainBalanceBeforeGwei) * GWEI_TO_WEI;
+                proportionOfOldBalance =
+                    uint64((totalRestakedBeforeWei + uint256(-totalShareDeltaWei)) * WAD / totalRestakedBeforeWei);
+            }
+
             // Update pod owner's shares
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei);
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei, proportionOfOldBalance);
             emit CheckpointFinalized(lastCheckpointTimestamp, totalShareDeltaWei);
         } else {
             _currentCheckpoint = checkpoint;
@@ -654,8 +671,8 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     }
 
     /// @dev Calculates the delta between two Gwei amounts and returns as an int256
-    function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int128) {
-        return int128(uint128(newAmountGwei)) - int128(uint128(previousAmountGwei));
+    function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int64) {
+        return int64(newAmountGwei) - int64(previousAmountGwei);
     }
 
     /**

@@ -15,7 +15,7 @@ contract PauserRegistryUnitTests is Test {
     address public pauser = address(555);
     address public unpauser = address(999);
 
-    mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
+    mapping(address => bool) public isExcludedFuzzAddress;
 
     event PauserStatusChanged(address pauser, bool canPause);
 

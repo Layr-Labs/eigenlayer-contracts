@@ -28,12 +28,12 @@ interface IWhitelister {
 
     function queueWithdrawal(
         address staker,
-        IDelegationManager.QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+        IDelegationManagerTypes.QueuedWithdrawalParams[] calldata queuedWithdrawalParams
     ) external returns (bytes memory);
 
     function completeQueuedWithdrawal(
         address staker,
-        IDelegationManager.Withdrawal calldata queuedWithdrawal,
+        IDelegationManagerTypes.Withdrawal calldata queuedWithdrawal,
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens

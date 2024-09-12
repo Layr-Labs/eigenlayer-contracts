@@ -64,7 +64,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /// @notice Simply checks that the `msg.sender` is the `strategyManager`, which is an address stored immutably at construction.
     modifier onlyStrategyManager() {
-        require(msg.sender == address(strategyManager), UnauthorizedCaller());
+        require(msg.sender == address(strategyManager), OnlyStrategyManager());
         _;
     }
 
@@ -181,16 +181,16 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
      * @param token The token being deposited
      */
-    function _beforeDeposit(IERC20 token, uint256 /** amount **/) internal virtual {
-        require(token == underlyingToken, "StrategyBase.deposit: Can only deposit underlyingToken");
+    function _beforeDeposit(IERC20 token, uint256 amount) internal virtual {
+        require(token == underlyingToken, OnlyUnderlyingToken());
     }
 
     /**
      * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
      * @param token The token being withdrawn
      */
-    function _beforeWithdrawal(address /** recipient **/, IERC20 token, uint256 /** amountShares **/) internal virtual {
-        require(token == underlyingToken, "StrategyBase.withdraw: Can only withdraw the strategy token");
+    function _beforeWithdrawal(address recipient, IERC20 token, uint256 amountShares) internal virtual {
+        require(token == underlyingToken, OnlyUnderlyingToken());
     }
 
     /**
@@ -299,7 +299,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     function shares(
         address user
     ) public view virtual returns (uint256) {
-        return strategyManager.stakerStrategyShares(user, IStrategy(address(this)));
+        return strategyManager.stakerDepositShares(user, IStrategy(address(this)));
     }
 
     /// @notice Internal function used to fetch this contract's current balance of `underlyingToken`.

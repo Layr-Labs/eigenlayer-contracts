@@ -133,7 +133,9 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /**
      * @notice This function allows Eigen holders to unwrap their tokens into bEIGEN
      */
-    function unwrap(uint256 amount) external {
+    function unwrap(
+        uint256 amount
+    ) external {
         _burn(msg.sender, amount);
         require(bEIGEN.transfer(msg.sender, amount), "Eigen.unwrap: bEIGEN transfer failed");
     }

@@ -166,7 +166,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         User operator, 
         IStrategy[] memory strategies, 
         uint[] memory shares, 
-        IDelegationManager.Withdrawal[] memory withdrawals, 
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals, 
         bytes32[] memory withdrawalRoots
     ) internal {
         // The staker will queue one or more withdrawals for the selected strategies and shares
@@ -190,7 +190,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Undelegate_State(
         User staker, 
         User operator, 
-        IDelegationManager.Withdrawal[] memory withdrawals,
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         IStrategy[] memory strategies,
         uint[] memory shares 
@@ -227,7 +227,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Withdrawal_AsTokens_State(
         User staker,
         User operator,
-        IDelegationManager.Withdrawal memory withdrawal,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory shares,
         IERC20[] memory tokens,
@@ -251,7 +251,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Withdrawal_AsShares_State(
         User staker,
         User operator,
-        IDelegationManager.Withdrawal memory withdrawal,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory shares
     ) internal {
@@ -266,7 +266,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             if (operator != staker) {
                 assert_Snap_Unchanged_TokenBalances(User(operator), "operator should not have any change in underlying token balances");
             }
-            assert_Snap_Added_OperatorShares(User(operator), withdrawal.strategies, withdrawal.shares, "operator should have received shares");
+            assert_Snap_Added_OperatorShares(User(operator), withdrawal.strategies, withdrawal.scaledSharesToWithdraw, "operator should have received shares");
         }
     }
 
@@ -274,7 +274,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Withdrawal_AsShares_Undelegated_State(
         User staker,
         User operator,
-        IDelegationManager.Withdrawal memory withdrawal,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory shares
     ) internal {
