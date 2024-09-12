@@ -106,10 +106,7 @@ library BeaconChainProofs {
     /// @param beaconBlockRoot merkle root of the beacon block
     /// @param proof the beacon state root and merkle proof of its inclusion under `beaconBlockRoot`
     function verifyStateRoot(bytes32 beaconBlockRoot, StateRootProof calldata proof) internal view {
-        require(
-            proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT),
-            InvalidProofLength()
-        );
+        require(proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT), InvalidProofLength());
 
         /// This merkle proof verifies the `beaconStateRoot` under the `beaconBlockRoot`
         /// - beaconBlockRoot
@@ -142,10 +139,7 @@ library BeaconChainProofs {
         bytes calldata validatorFieldsProof,
         uint40 validatorIndex
     ) internal view {
-        require(
-            validatorFields.length == VALIDATOR_FIELDS_LENGTH,
-            InvalidValidatorFieldsLength()
-        );
+        require(validatorFields.length == VALIDATOR_FIELDS_LENGTH, InvalidValidatorFieldsLength());
 
         /// Note: the reason we use `VALIDATOR_TREE_HEIGHT + 1` here is because the merklization process for
         /// this container includes hashing the root of the validator tree with the length of the validator list
@@ -228,10 +222,7 @@ library BeaconChainProofs {
     ) internal view returns (uint64 validatorBalanceGwei) {
         /// Note: the reason we use `BALANCE_TREE_HEIGHT + 1` here is because the merklization process for
         /// this container includes hashing the root of the balances tree with the length of the balances list
-        require(
-            proof.proof.length == 32 * (BALANCE_TREE_HEIGHT + 1),
-            InvalidProofLength()
-        );
+        require(proof.proof.length == 32 * (BALANCE_TREE_HEIGHT + 1), InvalidProofLength());
 
         /// When merkleized, beacon chain balances are combined into groups of 4 called a `balanceRoot`. The merkle
         /// proof here verifies that this validator's `balanceRoot` is included in the `balanceContainerRoot`
@@ -281,32 +272,44 @@ library BeaconChainProofs {
     /// (See https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator)
 
     /// @dev Retrieves a validator's pubkey hash
-    function getPubkeyHash(bytes32[] memory validatorFields) internal pure returns (bytes32) {
+    function getPubkeyHash(
+        bytes32[] memory validatorFields
+    ) internal pure returns (bytes32) {
         return validatorFields[VALIDATOR_PUBKEY_INDEX];
     }
 
     /// @dev Retrieves a validator's withdrawal credentials
-    function getWithdrawalCredentials(bytes32[] memory validatorFields) internal pure returns (bytes32) {
+    function getWithdrawalCredentials(
+        bytes32[] memory validatorFields
+    ) internal pure returns (bytes32) {
         return validatorFields[VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX];
     }
 
     /// @dev Retrieves a validator's effective balance (in gwei)
-    function getEffectiveBalanceGwei(bytes32[] memory validatorFields) internal pure returns (uint64) {
+    function getEffectiveBalanceGwei(
+        bytes32[] memory validatorFields
+    ) internal pure returns (uint64) {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_BALANCE_INDEX]);
     }
 
     /// @dev Retrieves a validator's activation epoch
-    function getActivationEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
+    function getActivationEpoch(
+        bytes32[] memory validatorFields
+    ) internal pure returns (uint64) {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_ACTIVATION_EPOCH_INDEX]);
     }
 
     /// @dev Retrieves true IFF a validator is marked slashed
-    function isValidatorSlashed(bytes32[] memory validatorFields) internal pure returns (bool) {
+    function isValidatorSlashed(
+        bytes32[] memory validatorFields
+    ) internal pure returns (bool) {
         return validatorFields[VALIDATOR_SLASHED_INDEX] != 0;
     }
 
     /// @dev Retrieves a validator's exit epoch
-    function getExitEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
+    function getExitEpoch(
+        bytes32[] memory validatorFields
+    ) internal pure returns (uint64) {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
     }
 }

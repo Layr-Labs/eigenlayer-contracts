@@ -75,10 +75,14 @@ interface IEigenPodManager is IPausable {
     function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
-    function ownerToPod(address podOwner) external view returns (IEigenPod);
+    function ownerToPod(
+        address podOwner
+    ) external view returns (IEigenPod);
 
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
-    function getPod(address podOwner) external view returns (IEigenPod);
+    function getPod(
+        address podOwner
+    ) external view returns (IEigenPod);
 
     /// @notice The ETH2 Deposit Contract
     function ethPOS() external view returns (IETHPOSDeposit);
@@ -93,7 +97,9 @@ interface IEigenPodManager is IPausable {
     function slasher() external view returns (ISlasher);
 
     /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
-    function hasPod(address podOwner) external view returns (bool);
+    function hasPod(
+        address podOwner
+    ) external view returns (bool);
 
     /// @notice Returns the number of EigenPods that have been created
     function numPods() external view returns (uint256);
@@ -106,7 +112,9 @@ interface IEigenPodManager is IPausable {
      * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
      * as the withdrawal "paying off the deficit".
      */
-    function podOwnerShares(address podOwner) external view returns (int256);
+    function podOwnerShares(
+        address podOwner
+    ) external view returns (int256);
 
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);

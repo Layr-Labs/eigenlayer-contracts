@@ -60,10 +60,7 @@ contract RewardsCoordinator is
     }
 
     modifier onlyRewardsForAllSubmitter() {
-        require(
-            isRewardsForAllSubmitter[msg.sender],
-            OnlyRewardsForAllSubmitter()
-        );
+        require(isRewardsForAllSubmitter[msg.sender], OnlyRewardsForAllSubmitter());
         _;
     }
 
@@ -128,11 +125,9 @@ contract RewardsCoordinator is
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
-        nonReentrant
-    {
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -154,12 +149,9 @@ contract RewardsCoordinator is
      * a permissioned call based on isRewardsForAllSubmitter mapping.
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -182,12 +174,9 @@ contract RewardsCoordinator is
      * by the token hopper contract from the Eigen Foundation
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllEarners(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -234,10 +223,7 @@ contract RewardsCoordinator is
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
 
             uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
-            require(
-                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
-                EarningsNotGreaterThanClaimed()
-            );
+            require(tokenLeaf.cumulativeEarnings > currCumulativeClaimed, EarningsNotGreaterThanClaimed());
 
             // Calculate amount to claim and update cumulativeClaimed
             uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
@@ -259,13 +245,9 @@ contract RewardsCoordinator is
         uint32 rewardsCalculationEndTimestamp
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
         require(
-            rewardsCalculationEndTimestamp > currRewardsCalculationEndTimestamp,
-            NewRootMustBeForNewCalculatedPeriod()
+            rewardsCalculationEndTimestamp > currRewardsCalculationEndTimestamp, NewRootMustBeForNewCalculatedPeriod()
         );
-        require(
-            rewardsCalculationEndTimestamp < block.timestamp,
-            RewardsEndTimestampNotElapsed()
-        );
+        require(rewardsCalculationEndTimestamp < block.timestamp, RewardsEndTimestampNotElapsed());
         uint32 rootIndex = uint32(_distributionRoots.length);
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         _distributionRoots.push(
@@ -284,7 +266,9 @@ contract RewardsCoordinator is
      * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
      * @param rootIndex The index of the root to be disabled
      */
-    function disableRoot(uint32 rootIndex) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
+    function disableRoot(
+        uint32 rootIndex
+    ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
         require(rootIndex < _distributionRoots.length, InvalidRootIndex());
         DistributionRoot storage root = _distributionRoots[rootIndex];
         require(!root.disabled, RootDisabled());
@@ -298,7 +282,9 @@ contract RewardsCoordinator is
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
      * @dev Only callable by the `earner`
      */
-    function setClaimerFor(address claimer) external {
+    function setClaimerFor(
+        address claimer
+    ) external {
         address earner = msg.sender;
         address prevClaimer = claimerFor[earner];
         claimerFor[earner] = claimer;
@@ -310,7 +296,9 @@ contract RewardsCoordinator is
      * @dev Only callable by the contract owner
      * @param _activationDelay The new value for activationDelay
      */
-    function setActivationDelay(uint32 _activationDelay) external onlyOwner {
+    function setActivationDelay(
+        uint32 _activationDelay
+    ) external onlyOwner {
         _setActivationDelay(_activationDelay);
     }
 
@@ -319,7 +307,9 @@ contract RewardsCoordinator is
      * @dev Only callable by the contract owner
      * @param _globalCommissionBips The commission for all operators across all avss
      */
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external onlyOwner {
+    function setGlobalOperatorCommission(
+        uint16 _globalCommissionBips
+    ) external onlyOwner {
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
 
@@ -328,7 +318,9 @@ contract RewardsCoordinator is
      * @dev Only callable by the contract owner
      * @param _rewardsUpdater The address of the new rewardsUpdater
      */
-    function setRewardsUpdater(address _rewardsUpdater) external onlyOwner {
+    function setRewardsUpdater(
+        address _rewardsUpdater
+    ) external onlyOwner {
         _setRewardsUpdater(_rewardsUpdater);
     }
 
@@ -353,20 +345,13 @@ contract RewardsCoordinator is
     /**
      * @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
      */
-    function _validateRewardsSubmission(RewardsSubmission calldata rewardsSubmission) internal view {
-        require(
-            rewardsSubmission.strategiesAndMultipliers.length > 0,
-            InputArrayLengthZero()
-        );
+    function _validateRewardsSubmission(
+        RewardsSubmission calldata rewardsSubmission
+    ) internal view {
+        require(rewardsSubmission.strategiesAndMultipliers.length > 0, InputArrayLengthZero());
         require(rewardsSubmission.amount > 0, AmountZero());
-        require(
-            rewardsSubmission.amount <= MAX_REWARDS_AMOUNT,
-            AmountExceedsMax()
-        );
-        require(
-            rewardsSubmission.duration <= MAX_REWARDS_DURATION,
-            DurationExceedsMax()
-        );
+        require(rewardsSubmission.amount <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
+        require(rewardsSubmission.duration <= MAX_REWARDS_DURATION, DurationExceedsMax());
         require(
             rewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
             DurationNotMultipleOfCalculationIntervalSeconds()
@@ -380,10 +365,7 @@ contract RewardsCoordinator is
                 && GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
             StartTimestampTooFarInPast()
         );
-        require(
-            rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
-            StartTimestampTooFarInFuture()
-        );
+        require(rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH, StartTimestampTooFarInFuture());
 
         // Require rewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
         address currAddress = address(0);
@@ -393,10 +375,7 @@ contract RewardsCoordinator is
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
                 InvalidStrategy()
             );
-            require(
-                currAddress < address(strategy),
-                StrategiesNotInAscendingOrder()
-            );
+            require(currAddress < address(strategy), StrategiesNotInAscendingOrder());
             currAddress = address(strategy);
         }
     }
@@ -404,14 +383,8 @@ contract RewardsCoordinator is
     function _checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root) internal view {
         require(!root.disabled, RootDisabled());
         require(block.timestamp >= root.activatedAt, RootNotActivated());
-        require(
-            claim.tokenIndices.length == claim.tokenTreeProofs.length,
-            InputArrayLengthMismatch()
-        );
-        require(
-            claim.tokenTreeProofs.length == claim.tokenLeaves.length,
-            InputArrayLengthMismatch()
-        );
+        require(claim.tokenIndices.length == claim.tokenTreeProofs.length, InputArrayLengthMismatch());
+        require(claim.tokenTreeProofs.length == claim.tokenLeaves.length, InputArrayLengthMismatch());
 
         // Verify inclusion of earners leaf (earner, earnerTokenRoot) in the distribution root
         _verifyEarnerClaimProof({
@@ -447,10 +420,7 @@ contract RewardsCoordinator is
     ) internal pure {
         // Validate index size so that there aren't multiple valid indices for the given proof
         // index can't be greater than 2**(tokenProof/32)
-        require(
-            tokenLeafIndex < (1 << (tokenProof.length / 32)),
-            InvalidTokenLeafIndex()
-        );
+        require(tokenLeafIndex < (1 << (tokenProof.length / 32)), InvalidTokenLeafIndex());
 
         // Verify inclusion of token leaf
         bytes32 tokenLeafHash = calculateTokenLeafHash(tokenLeaf);
@@ -482,10 +452,7 @@ contract RewardsCoordinator is
     ) internal pure {
         // Validate index size so that there aren't multiple valid indices for the given proof
         // index can't be greater than 2**(earnerProof/32)
-        require(
-            earnerLeafIndex < (1 << (earnerProof.length / 32)),
-            InvalidClaimProof()
-        );
+        require(earnerLeafIndex < (1 << (earnerProof.length / 32)), InvalidClaimProof());
         // Verify inclusion of earner leaf
         bytes32 earnerLeafHash = calculateEarnerLeafHash(earnerLeaf);
         // forgefmt: disable-next-item
@@ -500,17 +467,23 @@ contract RewardsCoordinator is
         );
     }
 
-    function _setActivationDelay(uint32 _activationDelay) internal {
+    function _setActivationDelay(
+        uint32 _activationDelay
+    ) internal {
         emit ActivationDelaySet(activationDelay, _activationDelay);
         activationDelay = _activationDelay;
     }
 
-    function _setGlobalOperatorCommission(uint16 _globalCommissionBips) internal {
+    function _setGlobalOperatorCommission(
+        uint16 _globalCommissionBips
+    ) internal {
         emit GlobalCommissionBipsSet(globalOperatorCommissionBips, _globalCommissionBips);
         globalOperatorCommissionBips = _globalCommissionBips;
     }
 
-    function _setRewardsUpdater(address _rewardsUpdater) internal {
+    function _setRewardsUpdater(
+        address _rewardsUpdater
+    ) internal {
         emit RewardsUpdaterSet(rewardsUpdater, _rewardsUpdater);
         rewardsUpdater = _rewardsUpdater;
     }
@@ -522,18 +495,24 @@ contract RewardsCoordinator is
      */
 
     /// @notice return the hash of the earner's leaf
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+    function calculateEarnerLeafHash(
+        EarnerTreeMerkleLeaf calldata leaf
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(EARNER_LEAF_SALT, leaf.earner, leaf.earnerTokenRoot));
     }
 
     /// @notice returns the hash of the earner's token leaf
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+    function calculateTokenLeafHash(
+        TokenTreeMerkleLeaf calldata leaf
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(TOKEN_LEAF_SALT, leaf.token, leaf.cumulativeEarnings));
     }
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     /// but will revert if not valid
-    function checkClaim(RewardsMerkleClaim calldata claim) public view returns (bool) {
+    function checkClaim(
+        RewardsMerkleClaim calldata claim
+    ) public view returns (bool) {
         _checkClaim(claim, _distributionRoots[claim.rootIndex]);
         return true;
     }
@@ -548,7 +527,9 @@ contract RewardsCoordinator is
         return _distributionRoots.length;
     }
 
-    function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory) {
+    function getDistributionRootAtIndex(
+        uint256 index
+    ) external view returns (DistributionRoot memory) {
         return _distributionRoots[index];
     }
 
@@ -569,7 +550,9 @@ contract RewardsCoordinator is
     }
 
     /// @notice loop through distribution roots from reverse and return hash
-    function getRootIndexFromHash(bytes32 rootHash) public view returns (uint32) {
+    function getRootIndexFromHash(
+        bytes32 rootHash
+    ) public view returns (uint32) {
         for (uint32 i = uint32(_distributionRoots.length); i > 0; i--) {
             if (_distributionRoots[i - 1].root == rootHash) {
                 return i - 1;
