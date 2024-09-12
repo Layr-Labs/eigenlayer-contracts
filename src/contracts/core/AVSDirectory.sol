@@ -31,7 +31,9 @@ contract AVSDirectory is
      * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher,
      * and eigenpodManager contracts
      */
-    constructor(IDelegationManager _delegation) AVSDirectoryStorage(_delegation) {
+    constructor(
+        IDelegationManager _delegation
+    ) AVSDirectoryStorage(_delegation) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -66,25 +68,13 @@ contract AVSDirectory is
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert `operatorSignature.expiry` has not elapsed.
-        require(
-            operatorSignature.expiry >= block.timestamp,
-            SignatureExpired()
-        );
+        require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
         // Assert that the `operator` is not actively registered to the AVS.
-        require(
-            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
-            InvalidOperator()
-        );
+        require(avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED, InvalidOperator());
         // Assert `operator` has not already spent `operatorSignature.salt`.
-        require(
-            !operatorSaltIsSpent[operator][operatorSignature.salt],
-            SaltSpent()
-        );
+        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
         // Assert `operator` is a registered operator.
-        require(
-            delegation.isOperator(operator),
-            OperatorNotRegistered()
-        );
+        require(delegation.isOperator(operator), OperatorNotRegistered());
 
         // Calculate the digest hash
         bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
@@ -115,15 +105,11 @@ contract AVSDirectory is
      * @notice Called by an avs to deregister an operator with the avs.
      * @param operator The address of the operator to deregister.
      */
-    function deregisterOperatorFromAVS(address operator)
-        external
-        onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
-    {
+    function deregisterOperatorFromAVS(
+        address operator
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that operator is registered for the AVS.
-        require(
-            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
-            InvalidOperator()
-        );
+        require(avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, InvalidOperator());
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
@@ -135,7 +121,9 @@ contract AVSDirectory is
      * @notice Called by an avs to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      * @param metadataURI The URI for metadata associated with an avs
      */
-    function updateAVSMetadataURI(string calldata metadataURI) external {
+    function updateAVSMetadataURI(
+        string calldata metadataURI
+    ) external {
         emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
@@ -143,7 +131,9 @@ contract AVSDirectory is
      * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
      * @param salt A unique and single use value associated with the approver signature.
      */
-    function cancelSalt(bytes32 salt) external {
+    function cancelSalt(
+        bytes32 salt
+    ) external {
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
 
