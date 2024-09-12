@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  */
 library EIP1271SignatureUtils {
     error InvalidSignatureEIP1271();
-    error InvalidSignatureSigner();
+    error InvalidSignatureEOA();
 
     // bytes4(keccak256("isValidSignature(bytes32,bytes)")
     bytes4 internal constant EIP1271_MAGICVALUE = 0x1626ba7e;
@@ -35,7 +35,7 @@ library EIP1271SignatureUtils {
                 InvalidSignatureEIP1271()
             );
         } else {
-            require(ECDSA.recover(digestHash, signature) == signer, InvalidSignatureSigner());
+            require(ECDSA.recover(digestHash, signature) == signer, InvalidSignatureEOA());
         }
     }
 }

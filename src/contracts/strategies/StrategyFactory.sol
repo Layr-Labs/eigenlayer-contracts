@@ -78,7 +78,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         uint256 removeIdx = 0;
 
         for (uint256 i; i < tokens.length; ++i) {
-            require(!isBlacklisted[tokens[i]], CannotBlacklistDeployedStrategy());
+            require(!isBlacklisted[tokens[i]], AlreadyBlacklisted());
             isBlacklisted[tokens[i]] = true;
             emit TokenBlacklisted(tokens[i]);
 

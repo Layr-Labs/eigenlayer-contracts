@@ -70,11 +70,14 @@ contract AVSDirectory is
         // Assert `operatorSignature.expiry` has not elapsed.
         require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
         // Assert that the `operator` is not actively registered to the AVS.
-        require(avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED, InvalidOperator());
+        require(
+            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
+            OperatorAlreadyRegistered()
+        );
         // Assert `operator` has not already spent `operatorSignature.salt`.
-        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
+        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SignatureSaltSpent());
         // Assert `operator` is a registered operator.
-        require(delegation.isOperator(operator), OperatorNotRegistered());
+        require(delegation.isOperator(operator), OperatorDoesNotExist());
 
         // Calculate the digest hash
         bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
@@ -109,7 +112,9 @@ contract AVSDirectory is
         address operator
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that operator is registered for the AVS.
-        require(avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, InvalidOperator());
+        require(
+            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, OperatorNotRegistered()
+        );
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;

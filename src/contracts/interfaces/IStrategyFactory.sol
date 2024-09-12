@@ -16,8 +16,8 @@ interface IStrategyFactory {
     error BlacklistedToken();
     /// @dev Thrown when attempting to deploy a strategy that already exists.
     error StrategyAlreadyExists();
-    /// @dev Thrown when attempting to blacklist a token that already has a deployed strategy.
-    error CannotBlacklistDeployedStrategy();
+    /// @dev Thrown when attempting to blacklist a token that is already blacklisted
+    error AlreadyBlacklisted();
 
     event TokenBlacklisted(IERC20 token);
 

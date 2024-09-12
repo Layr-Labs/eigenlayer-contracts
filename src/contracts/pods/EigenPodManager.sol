@@ -31,12 +31,12 @@ contract EigenPodManager is
     modifier onlyEigenPod(
         address podOwner
     ) {
-        require(address(ownerToPod[podOwner]) == msg.sender, OnlyEigenPod());
+        require(address(ownerToPod[podOwner]) == msg.sender, UnauthorizedCaller());
         _;
     }
 
     modifier onlyDelegationManager() {
-        require(msg.sender == address(delegationManager), OnlyDelegationManager());
+        require(msg.sender == address(delegationManager), UnauthorizedCaller());
         _;
     }
 
