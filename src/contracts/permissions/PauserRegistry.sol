@@ -35,7 +35,9 @@ contract PauserRegistry is IPauserRegistry {
     }
 
     /// @notice Sets new unpauser - only callable by unpauser, as the unpauser is expected to be kept more secure, e.g. being a multisig with a higher threshold
-    function setUnpauser(address newUnpauser) external onlyUnpauser {
+    function setUnpauser(
+        address newUnpauser
+    ) external onlyUnpauser {
         _setUnpauser(newUnpauser);
     }
 
@@ -45,7 +47,9 @@ contract PauserRegistry is IPauserRegistry {
         emit PauserStatusChanged(pauser, canPause);
     }
 
-    function _setUnpauser(address newUnpauser) internal {
+    function _setUnpauser(
+        address newUnpauser
+    ) internal {
         require(newUnpauser != address(0), InputAddressZero());
         emit UnpauserChanged(unpauser, newUnpauser);
         unpauser = newUnpauser;

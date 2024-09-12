@@ -35,10 +35,7 @@ library EIP1271SignatureUtils {
                 InvalidSignatureEIP1271()
             );
         } else {
-            require(
-                ECDSA.recover(digestHash, signature) == signer,
-                InvalidSignatureSigner()
-            );
+            require(ECDSA.recover(digestHash, signature) == signer, InvalidSignatureSigner());
         }
     }
 }

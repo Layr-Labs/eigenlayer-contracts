@@ -28,15 +28,15 @@ contract EigenPodManager is
     EigenPodManagerStorage,
     ReentrancyGuardUpgradeable
 {
-    modifier onlyEigenPod(address podOwner) {
+    modifier onlyEigenPod(
+        address podOwner
+    ) {
         require(address(ownerToPod[podOwner]) == msg.sender, OnlyEigenPod());
         _;
     }
 
     modifier onlyDelegationManager() {
-        require(
-            msg.sender == address(delegationManager), OnlyDelegationManager()
-        );
+        require(msg.sender == address(delegationManager), OnlyDelegationManager());
         _;
     }
 
@@ -104,13 +104,8 @@ contract EigenPodManager is
         address podOwner,
         int256 sharesDelta
     ) external onlyEigenPod(podOwner) nonReentrant {
-        require(
-            podOwner != address(0), InputAddressZero()
-        );
-        require(
-            sharesDelta % int256(GWEI_TO_WEI) == 0,
-            SharesNotMultipleOfGwei()
-        );
+        require(podOwner != address(0), InputAddressZero());
+        require(sharesDelta % int256(GWEI_TO_WEI) == 0, SharesNotMultipleOfGwei());
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
         int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
         podOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -153,10 +148,7 @@ contract EigenPodManager is
         require(int256(shares) >= 0, SharesNegative());
         require(shares % GWEI_TO_WEI == 0, SharesNotMultipleOfGwei());
         int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
-        require(
-            updatedPodOwnerShares >= 0,
-            SharesNegative()
-        );
+        require(updatedPodOwnerShares >= 0, SharesNegative());
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
         emit NewTotalShares(podOwner, updatedPodOwnerShares);
@@ -279,7 +271,9 @@ contract EigenPodManager is
 
     // VIEW FUNCTIONS
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
-    function getPod(address podOwner) public view returns (IEigenPod) {
+    function getPod(
+        address podOwner
+    ) public view returns (IEigenPod) {
         IEigenPod pod = ownerToPod[podOwner];
         // if pod does not exist already, calculate what its address *will be* once it is deployed
         if (address(pod) == address(0)) {
@@ -294,7 +288,9 @@ contract EigenPodManager is
     }
 
     /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
-    function hasPod(address podOwner) public view returns (bool) {
+    function hasPod(
+        address podOwner
+    ) public view returns (bool) {
         return address(ownerToPod[podOwner]) != address(0);
     }
 }

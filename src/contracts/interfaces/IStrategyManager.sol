@@ -117,10 +117,14 @@ interface IStrategyManager {
      * @notice Get all details on the staker's deposits and corresponding shares
      * @return (staker's strategies, shares in these strategies)
      */
-    function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory);
+    function getDeposits(
+        address staker
+    ) external view returns (IStrategy[] memory, uint256[] memory);
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
-    function stakerStrategyListLength(address staker) external view returns (uint256);
+    function stakerStrategyListLength(
+        address staker
+    ) external view returns (uint256);
 
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
@@ -136,7 +140,9 @@ interface IStrategyManager {
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
      */
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
+    function removeStrategiesFromDepositWhitelist(
+        IStrategy[] calldata strategiesToRemoveFromWhitelist
+    ) external;
 
     /**
      * If true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
@@ -160,11 +166,15 @@ interface IStrategyManager {
     function strategyWhitelister() external view returns (address);
 
     /// @notice Returns bool for whether or not `strategy` is whitelisted for deposit
-    function strategyIsWhitelistedForDeposit(IStrategy strategy) external view returns (bool);
+    function strategyIsWhitelistedForDeposit(
+        IStrategy strategy
+    ) external view returns (bool);
 
     /**
      * @notice Returns bool for whether or not `strategy` enables credit transfers. i.e enabling
      * depositIntoStrategyWithSignature calls or queueing withdrawals to a different address than the staker.
      */
-    function thirdPartyTransfersForbidden(IStrategy strategy) external view returns (bool);
+    function thirdPartyTransfersForbidden(
+        IStrategy strategy
+    ) external view returns (bool);
 }
