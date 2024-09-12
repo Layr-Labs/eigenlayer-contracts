@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
@@ -61,13 +61,13 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
     /// @notice Callable only by the EigenPodManager
     modifier onlyEigenPodManager() {
-        require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
+        require(msg.sender == address(eigenPodManager), OnlyEigenPodManager());
         _;
     }
 
     /// @notice Callable only by the pod's owner
     modifier onlyEigenPodOwner() {
-        require(msg.sender == podOwner, "EigenPod.onlyEigenPodOwner: not podOwner");
+        require(msg.sender == podOwner, OnlyEigenPodOwner());
         _;
     }
 
@@ -75,7 +75,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     modifier onlyOwnerOrProofSubmitter() {
         require(
             msg.sender == podOwner || msg.sender == proofSubmitter,
-            "EigenPod.onlyOwnerOrProofSubmitter: caller is not pod owner or proof submitter"
+            OnlyEigenPodOwnerOrProofSubmitter()
         );
         _;
     }
@@ -88,7 +88,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     modifier onlyWhenNotPaused(uint8 index) {
         require(
             !IPausable(address(eigenPodManager)).paused(index),
-            "EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"
+            CurrentlyPaused()
         );
         _;
     }
@@ -107,7 +107,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
     /// @notice Used to initialize the pointers to addresses crucial to the pod's functionality. Called on construction by the EigenPodManager.
     function initialize(address _podOwner) external initializer {
-        require(_podOwner != address(0), "EigenPod.initialize: podOwner cannot be zero address");
+        require(_podOwner != address(0), InputAddressZero());
         podOwner = _podOwner;
     }
 
@@ -159,7 +159,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         uint64 checkpointTimestamp = currentCheckpointTimestamp;
         require(
             checkpointTimestamp != 0,
-            "EigenPod.verifyCheckpointProofs: must have active checkpoint to perform checkpoint proof"
+            NoActiveCheckpoints()
         );
 
         Checkpoint memory checkpoint = _currentCheckpoint;
@@ -241,7 +241,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         require(
             (validatorIndices.length == validatorFieldsProofs.length)
                 && (validatorFieldsProofs.length == validatorFields.length),
-            "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
+            InputArrayLengthMismatch()
         );
 
         // Calling this method using a `beaconTimestamp` <= `currentCheckpointTimestamp` would allow
@@ -249,7 +249,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // on an existing checkpoint.
         require(
             beaconTimestamp > currentCheckpointTimestamp,
-            "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
+            BeaconTimestampTooFarInPast()
         );
 
         // Verify passed-in `beaconStateRoot` against the beacon block root
@@ -331,16 +331,16 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // (regardless of the relationship between `beaconTimestamp` and `lastCheckpointedAt`).
         require(
             beaconTimestamp > validatorInfo.lastCheckpointedAt,
-            "EigenPod.verifyStaleBalance: proof is older than last checkpoint"
+            ProofOlderThanLastCheckpoint()
         );
 
         // Validator must be checkpoint-able
-        require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyStaleBalance: validator is not active");
+        require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActive());
 
         // Validator must be slashed on the beacon chain
         require(
             proof.validatorFields.isValidatorSlashed(),
-            "EigenPod.verifyStaleBalance: validator must be slashed to be marked stale"
+            ValidatorNotSlashed()
         );
 
         // Verify passed-in `beaconStateRoot` against the beacon block root
@@ -370,7 +370,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     ) external onlyEigenPodOwner onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS) {
         require(
             tokenList.length == amountsToWithdraw.length,
-            "EigenPod.recoverTokens: tokenList and amountsToWithdraw must be same length"
+            InputArrayLengthMismatch()
         );
         for (uint256 i = 0; i < tokenList.length; i++) {
             tokenList[i].safeTransfer(recipient, amountsToWithdraw[i]);
@@ -396,7 +396,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         bytes32 depositDataRoot
     ) external payable onlyEigenPodManager {
         // stake on ethpos
-        require(msg.value == 32 ether, "EigenPod.stake: must initially stake for any validator with 32 ether");
+        require(msg.value == 32 ether, MsgValueNot32ETH());
         ethPOS.deposit{value: 32 ether}(pubkey, _podWithdrawalCredentials(), signature, depositDataRoot);
         emit EigenPodStaked(pubkey);
     }
@@ -411,12 +411,12 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
         require(
             amountWei % GWEI_TO_WEI == 0,
-            "EigenPod.withdrawRestakedBeaconChainETH: amountWei must be a whole Gwei amount"
+            AmountMustBeMultipleOfGwei()
         );
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
         require(
             amountGwei <= withdrawableRestakedExecutionLayerGwei,
-            "EigenPod.withdrawRestakedBeaconChainETH: amountGwei exceeds withdrawableRestakedExecutionLayerGwei"
+            AmountExceedsWithdrawableRestakedExecutionLayerGwei()
         );
         withdrawableRestakedExecutionLayerGwei -= amountGwei;
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);
@@ -448,7 +448,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // Withdrawal credential proofs should only be processed for "INACTIVE" validators
         require(
             validatorInfo.status == VALIDATOR_STATUS.INACTIVE,
-            "EigenPod._verifyWithdrawalCredentials: validator must be inactive to prove withdrawal credentials"
+            ValidatorAlreadyActive()
         );
 
         // Validator should be active on the beacon chain, or in the process of activating.
@@ -466,7 +466,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // shares from being slashable on EigenLayer for a short period of time.
         require(
             validatorFields.getActivationEpoch() != BeaconChainProofs.FAR_FUTURE_EPOCH,
-            "EigenPod._verifyWithdrawalCredentials: validator must be in the process of activating"
+            ValidatorNoPendingActivation()
         );
 
         // Validator should not already be in the process of exiting. This is an important property
@@ -493,13 +493,13 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // (See https://eth2book.info/capella/part3/helper/mutators/#initiate_validator_exit)
         require(
             validatorFields.getExitEpoch() == BeaconChainProofs.FAR_FUTURE_EPOCH,
-            "EigenPod._verifyWithdrawalCredentials: validator must not be exiting"
+            ValidatorIsExiting()
         );
 
         // Ensure the validator's withdrawal credentials are pointed at this pod
         require(
             validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()),
-            "EigenPod._verifyWithdrawalCredentials: proof is not for this EigenPod"
+            WithdrawCredentialsNotForEigenPod()
         );
 
         // Get the validator's effective balance. Note that this method uses effective balance, while
@@ -596,7 +596,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     function _startCheckpoint(bool revertIfNoBalance) internal {
         require(
             currentCheckpointTimestamp == 0,
-            "EigenPod._startCheckpoint: must finish previous checkpoint before starting another"
+            IncompletePreviousCheckpoint()
         );
 
         // Prevent a checkpoint being completable twice in the same block. This prevents an edge case
@@ -606,7 +606,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // value equal to the second checkpoint, causing their proofs to get skipped in `verifyCheckpointProofs`
         require(
             lastCheckpointTimestamp != uint64(block.timestamp),
-            "EigenPod._startCheckpoint: cannot checkpoint twice in one block"
+            CannotCheckpointTwiceInSingleBlock()
         );
 
         // Snapshot pod balance at the start of the checkpoint, subtracting pod balance that has
@@ -622,7 +622,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // If the caller doesn't want a "0 balance" checkpoint, revert
         if (revertIfNoBalance && podBalanceGwei == 0) {
-            revert("EigenPod._startCheckpoint: no balance available to checkpoint");
+            revert NoBalanceToCheckpoint();
         }
 
         // Create checkpoint using the previous block's root for proofs, and the current
@@ -679,7 +679,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
     ///@notice Calculates the pubkey hash of a validator's pubkey as per SSZ spec
     function _calculateValidatorPubkeyHash(bytes memory validatorPubkey) internal pure returns (bytes32) {
-        require(validatorPubkey.length == 48, "EigenPod._calculateValidatorPubkeyHash must be a 48-byte BLS public key");
+        require(validatorPubkey.length == 48, InvalidValidatorPubKeyLength());
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
     }
 
@@ -726,12 +726,12 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     function getParentBlockRoot(uint64 timestamp) public view returns (bytes32) {
         require(
             block.timestamp - timestamp < BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12,
-            "EigenPod.getParentBlockRoot: timestamp out of range"
+            TimestampOutOfRange()
         );
 
         (bool success, bytes memory result) = BEACON_ROOTS_ADDRESS.staticcall(abi.encode(timestamp));
 
-        require(success && result.length > 0, "EigenPod.getParentBlockRoot: invalid block root returned");
+        require(success && result.length > 0, InvalidBlockRoot());
         return abi.decode(result, (bytes32));
     }
 }

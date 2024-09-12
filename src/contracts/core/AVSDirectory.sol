@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -65,21 +65,25 @@ contract AVSDirectory is
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+        // Assert `operatorSignature.expiry` has not elapsed.
         require(
             operatorSignature.expiry >= block.timestamp,
-            "AVSDirectory.registerOperatorToAVS: operator signature expired"
+            SignatureExpired()
         );
+        // Assert that the `operator` is not actively registered to the AVS.
         require(
             avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.registerOperatorToAVS: operator already registered"
+            InvalidOperator()
         );
+        // Assert `operator` has not already spent `operatorSignature.salt`.
         require(
             !operatorSaltIsSpent[operator][operatorSignature.salt],
-            "AVSDirectory.registerOperatorToAVS: salt already spent"
+            SaltSpent()
         );
+        // Assert `operator` is a registered operator.
         require(
             delegation.isOperator(operator),
-            "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
+            OperatorNotRegistered()
         );
 
         // Calculate the digest hash
@@ -115,9 +119,10 @@ contract AVSDirectory is
         external
         onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
     {
+        // Assert that operator is registered for the AVS.
         require(
             avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
+            InvalidOperator()
         );
 
         // Set the operator as deregistered
@@ -139,7 +144,6 @@ contract AVSDirectory is
      * @param salt A unique and single use value associated with the approver signature.
      */
     function cancelSalt(bytes32 salt) external {
-        require(!operatorSaltIsSpent[msg.sender][salt], "AVSDirectory.cancelSalt: cannot cancel spent salt");
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
 

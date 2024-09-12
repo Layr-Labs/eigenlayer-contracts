@@ -7,6 +7,9 @@ pragma solidity >=0.5.0;
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IPauserRegistry {
+    error OnlyUnpauser();
+    error InputAddressZero();
+
     event PauserStatusChanged(address pauser, bool canPause);
 
     event UnpauserChanged(address previousUnpauser, address newUnpauser);

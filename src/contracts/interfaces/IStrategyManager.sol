@@ -13,6 +13,29 @@ import "./IEigenPodManager.sol";
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
 interface IStrategyManager {
+    /// @dev Thrown when total strategies deployed exceeds max.
+    error MaxStrategiesExceeded();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+    /// @dev Thrown when call attempted from address that's not delegation manager.
+    error OnlyDelegationManager();
+    /// @dev Thrown when call attempted from address that's not strategy whitelister.
+    error OnlyStrategyWhitelister();
+    /// @dev Thrown when provided `shares` amount is too high.
+    error SharesAmountTooHigh();
+    /// @dev Thrown when provided `shares` amount is zero.
+    error SharesAmountZero();
+    /// @dev Thrown when attempting to use an expired eip-712 signature.
+    error SignatureExpired();
+    /// @dev Thrown when provided `staker` address is null.
+    error StakerAddressZero();
+    /// @dev Thrown when provided `strategy` not found.
+    error StrategyNotFound();
+    /// @dev Thrown when attempting to deposit to a non-whitelisted strategy.
+    error StrategyNotWhitelisted();
+    /// @dev Thrown when attempting a third party transfer from a strategy that's disabled it.
+    error ThirdPartyTransfersDisabled();
+
     /**
      * @notice Emitted when a new deposit occurs on behalf of `staker`.
      * @param staker Is the staker who is depositing funds into EigenLayer.
