@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
@@ -64,7 +64,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /// @notice Simply checks that the `msg.sender` is the `strategyManager`, which is an address stored immutably at construction.
     modifier onlyStrategyManager() {
-        require(msg.sender == address(strategyManager), "StrategyBase.onlyStrategyManager");
+        require(msg.sender == address(strategyManager), OnlyStrategyManager());
         _;
     }
 
@@ -123,12 +123,12 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         newShares = (amount * virtualShareAmount) / virtualPriorTokenBalance;
 
         // extra check for correctness / against edge case where share rate can be massively inflated as a 'griefing' sort of attack
-        require(newShares != 0, "StrategyBase.deposit: newShares cannot be zero");
+        require(newShares != 0, NewSharesZero());
 
         // update total share amount to account for deposit
         totalShares = (priorTotalShares + newShares);
 
-        require(totalShares <= MAX_TOTAL_SHARES, "StrategyBase.deposit: totalShares exceeds `MAX_TOTAL_SHARES`");
+        require(totalShares <= MAX_TOTAL_SHARES, TotalSharesExceedsMax());
 
         // emit exchange rate
         _emitExchangeRate(virtualTokenBalance, totalShares + SHARES_OFFSET);
@@ -158,7 +158,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         require(
             amountShares <= priorTotalShares,
-            "StrategyBase.withdraw: amountShares must be less than or equal to totalShares"
+            WithdrawalAmountExceedsDeposit()
         );
 
         /**
@@ -186,7 +186,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @param amount The amount of `token` being deposited
      */
     function _beforeDeposit(IERC20 token, uint256 amount) internal virtual {
-        require(token == underlyingToken, "StrategyBase.deposit: Can only deposit underlyingToken");
+        require(token == underlyingToken, OnlyUnderlyingToken());
     }
 
     /**
@@ -196,7 +196,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @param amountShares The amount of shares being withdrawn
      */
     function _beforeWithdrawal(address recipient, IERC20 token, uint256 amountShares) internal virtual {
-        require(token == underlyingToken, "StrategyBase.withdraw: Can only withdraw the strategy token");
+        require(token == underlyingToken, OnlyUnderlyingToken());
     }
 
     /**

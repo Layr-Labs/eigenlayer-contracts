@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "./StrategyBase.sol";
 
@@ -58,7 +58,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
         emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
         require(
             newMaxPerDeposit <= newMaxTotalDeposits,
-            "StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits"
+            MaxPerDepositExceedsMax()
         );
         maxPerDeposit = newMaxPerDeposit;
         maxTotalDeposits = newMaxTotalDeposits;
@@ -77,8 +77,8 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * @param amount The amount of `token` being deposited
      */
     function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
-        require(amount <= maxPerDeposit, "StrategyBaseTVLLimits: max per deposit exceeded");
-        require(_tokenBalance() <= maxTotalDeposits, "StrategyBaseTVLLimits: max deposits exceeded");
+        require(amount <= maxPerDeposit, MaxPerDepositExceedsMax());
+        require(_tokenBalance() <= maxTotalDeposits, BalanceExceedsMaxTotalDeposits());
 
         super._beforeDeposit(token, amount);
     }
