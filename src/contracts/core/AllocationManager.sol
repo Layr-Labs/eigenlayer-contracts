@@ -22,9 +22,6 @@ contract AllocationManager is
     /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
     uint32 public constant DEALLOCATION_DELAY = 17.5 days;
 
-    /// @dev Default delay before allocations are activated.
-    uint32 public constant DEFAULT_ALLOCATION_DELAY = 21 days;
-
     /// @dev Delay before alloaction delay modifications take effect.
     uint32 public constant ALLOCATION_DELAY_CONFIGURATION_DELAY = 21 days; // QUESTION: 21 days?
 
@@ -442,7 +439,6 @@ contract AllocationManager is
     /**
      * @notice Returns the allocation delay of an operator
      * @param operator The operator to get the allocation delay for
-     * @dev Defaults to `DEFAULT_ALLOCATION_DELAY` if none is set
      */
     function allocationDelay(
         address operator
@@ -451,13 +447,11 @@ contract AllocationManager is
 
         bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
 
-        if (delayInfo.delay == 0 && !pendingInEffect) {
-            return (false, DEFAULT_ALLOCATION_DELAY);
-        }
+        isSet = delayInfo.pendingDelayEffectTimestamp != 0;
 
-        if (pendingInEffect) return (true, delayInfo.pendingDelay);
+        if (pendingInEffect) return (isSet, delayInfo.pendingDelay);
 
-        return (true, delayInfo.delay);
+        return (isSet, delayInfo.delay);
     }
 
     /**
