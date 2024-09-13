@@ -636,7 +636,7 @@ contract DelegationManager is
     ) internal {
         // Finalize action by converting scaled shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
-        for (uint256 i = 0; i < withdrawal.strategies.length; ++i) {
+        for (uint256 i = 0; i < withdrawal.strategies.length;) {
             uint256 sharesToWithdraw;
             if (isLegacyWithdrawal) {
                 // This is a legacy M2 withdrawal. There is no slashing applied to the withdrawn shares.
@@ -666,6 +666,10 @@ contract DelegationManager is
                     token: tokens[i]
                 });
             }
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -685,7 +689,7 @@ contract DelegationManager is
         // read delegated operator for scaling and adding shares back if needed
         address currentOperator = delegatedTo[msg.sender];
 
-        for (uint256 i = 0; i < withdrawal.strategies.length; ++i) {
+        for (uint256 i = 0; i < withdrawal.strategies.length;) {
             // store existing shares to calculate new staker scaling factor later
             uint256 existingShares;
             uint256 shares;
@@ -704,6 +708,8 @@ contract DelegationManager is
              * Other strategy shares can + will be awarded to the withdrawer.
              */
             if (withdrawal.strategies[i] == beaconChainETHStrategy) {
+                // TODO: REFACTOR EPM AND NEGATIVE SHARES
+
                 address staker = withdrawal.staker;
                 /**
                  * Update shares amount depending upon the returned value.
@@ -723,29 +729,12 @@ contract DelegationManager is
                     });
                 }
             } else {
-                existingShares = strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], shares);
-                // Similar to `isDelegated` logic
-                if (currentOperator != address(0)) {
-                    _increaseOperatorScaledShares({
-                        operator: currentOperator,
-                        // the 'staker' here is the address receiving new shares
-                        staker: msg.sender,
-                        strategy: withdrawal.strategies[i],
-                        shares: shares,
-                        totalMagnitude: totalMagnitudes[i]
-                    });
-                }
+                strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], shares);
             }
 
-            // update stakers scaling deposit scaling factor
-            uint256 newStakerScalingFactor = SlashingLib.calculateStakerScalingFactor({
-                staker: withdrawal.staker,
-                currStakerScalingFactor: _getStakerScalingFactor(withdrawal.staker, withdrawal.strategies[i]),
-                totalMagnitude: totalMagnitudes[i],
-                existingShares: existingShares,
-                addedShares: shares
-            });
-            stakerScalingFactors[withdrawal.staker][withdrawal.strategies[i]] = newStakerScalingFactor;
+            unchecked {
+                ++i;
+            }
         }
     }
 
