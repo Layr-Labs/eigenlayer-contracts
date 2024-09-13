@@ -282,7 +282,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         // DelegationManager
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delegationManager))),
+            ITransparentUpgradeableProxy(payable(address(delegationManager))),
             address(delegationManagerImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
@@ -296,7 +296,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         // StrategyManager
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
@@ -308,7 +308,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         // Slasher
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slasher))),
+            ITransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation),
             abi.encodeWithSelector(
                 Slasher.initialize.selector,
@@ -319,7 +319,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         // EigenPodManager
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
@@ -330,7 +330,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         // AVSDirectory
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
             address(avsDirectoryImplementation),
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
@@ -347,7 +347,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Strategy Factory, upgrade and initalized
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(strategyFactory))),
+            ITransparentUpgradeableProxy(payable(address(strategyFactory))),
             address(strategyFactoryImplementation),
             abi.encodeWithSelector(
                 StrategyFactory.initialize.selector,
@@ -428,27 +428,27 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delegationManager))),
+            ITransparentUpgradeableProxy(payable(address(delegationManager))),
             address(delegationManagerImplementation)
         );
         // StrategyManager
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation)
         );
         // Slasher
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(slasher))),
+            ITransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation)
         );
         // EigenPodManager
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
         );
         // AVSDirectory, upgrade and initalized
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
             address(avsDirectoryImplementation),
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
@@ -465,7 +465,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         for (uint i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
             eigenLayerProxyAdmin.upgrade(
-                TransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
+                ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
                 address(baseStrategyImplementation)
             );
         }
@@ -529,27 +529,27 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delegationManager))),
+            ITransparentUpgradeableProxy(payable(address(delegationManager))),
             address(delegationManagerImplementation)
         );
         // StrategyManager
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation)
         );
         // Slasher
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(slasher))),
+            ITransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation)
         );
         // EigenPodManager
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
         );
         // AVSDirectory, upgrade and initalized
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
             address(avsDirectoryImplementation),
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
@@ -566,7 +566,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         for (uint i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
             eigenLayerProxyAdmin.upgrade(
-                TransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
+                ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
                 address(baseStrategyImplementation)
             );
         }

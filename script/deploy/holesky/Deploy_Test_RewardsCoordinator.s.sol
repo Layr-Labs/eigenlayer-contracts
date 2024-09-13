@@ -93,7 +93,7 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         );
 
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
+            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
             address(rewardsCoordinatorImplementation)
         );
     }

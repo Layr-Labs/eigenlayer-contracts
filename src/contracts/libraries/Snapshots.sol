@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin-upgrades-v4.9.0/contracts/utils/math/MathUpgradeable.sol";
-import "@openzeppelin-upgrades-v4.9.0/contracts/utils/math/SafeCastUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/utils/math/MathUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/utils/math/SafeCastUpgradeable.sol";
 
 /**
  * @title Library for handling snapshots as part of allocating and slashing.

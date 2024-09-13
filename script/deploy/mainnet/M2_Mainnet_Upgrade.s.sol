@@ -86,27 +86,27 @@
 //         // First, upgrade the proxy contracts to point to the implementations
 //         // AVSDirectory
 //         // eigenLayerProxyAdmin.upgrade(
-//         //     TransparentUpgradeableProxy(payable(address(avsDirectory))),
+//         //     ITransparentUpgradeableProxy(payable(address(avsDirectory))),
 //         //     address(avsDirectoryImplementation)
 //         // );
 //         // DelegationManager
 //         eigenLayerProxyAdmin.upgrade(
-//             TransparentUpgradeableProxy(payable(address(delegationManager))),
+//             ITransparentUpgradeableProxy(payable(address(delegationManager))),
 //             address(delegationManagerImplementation)
 //         );
 //         // StrategyManager
 //         eigenLayerProxyAdmin.upgrade(
-//             TransparentUpgradeableProxy(payable(address(strategyManager))),
+//             ITransparentUpgradeableProxy(payable(address(strategyManager))),
 //             address(strategyManagerImplementation)
 //         );
 //         // Slasher
 //         eigenLayerProxyAdmin.upgrade(
-//             TransparentUpgradeableProxy(payable(address(slasher))),
+//             ITransparentUpgradeableProxy(payable(address(slasher))),
 //             address(slasherImplementation)
 //         );
 //         // EigenPodManager
 //         eigenLayerProxyAdmin.upgrade(
-//             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+//             ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
 //             address(eigenPodManagerImplementation)
 //         );
 
@@ -139,7 +139,7 @@
 //             0,
 //             abi.encodeWithSelector(
 //                 ProxyAdmin.upgrade.selector, 
-//                 TransparentUpgradeableProxy(payable(address(delegationManager))), 
+//                 ITransparentUpgradeableProxy(payable(address(delegationManager))), 
 //                 delegationManagerImplementation
 //             )
 //         );
@@ -149,7 +149,7 @@
 //             0,
 //             abi.encodeWithSelector(
 //                 ProxyAdmin.upgrade.selector, 
-//                 TransparentUpgradeableProxy(payable(address(slasher))), 
+//                 ITransparentUpgradeableProxy(payable(address(slasher))), 
 //                 slasherImplementation
 //             )
 //         );
@@ -159,7 +159,7 @@
 //             0,
 //             abi.encodeWithSelector(
 //                 ProxyAdmin.upgrade.selector, 
-//                 TransparentUpgradeableProxy(payable(address(strategyManager))), 
+//                 ITransparentUpgradeableProxy(payable(address(strategyManager))), 
 //                 strategyManagerImplementation
 //             )
 //         );
@@ -169,7 +169,7 @@
 //         //     0,
 //         //     abi.encodeWithSelector(
 //         //         ProxyAdmin.upgrade.selector, 
-//         //         TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))), 
+//         //         ITransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))), 
 //         //         delayedWithdrawalRouterImplementation
 //         //     )
 //         // );
@@ -179,7 +179,7 @@
 //             0,
 //             abi.encodeWithSelector(
 //                 ProxyAdmin.upgrade.selector, 
-//                 TransparentUpgradeableProxy(payable(address(eigenPodManager))), 
+//                 ITransparentUpgradeableProxy(payable(address(eigenPodManager))), 
 //                 eigenPodManagerImplementation
 //             )
 //         );

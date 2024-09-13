@@ -71,7 +71,7 @@ contract PEPE_Deploy_Preprod is ExistingDeploymentParser {
 
         // upgrade TUPS
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
         );
     }
