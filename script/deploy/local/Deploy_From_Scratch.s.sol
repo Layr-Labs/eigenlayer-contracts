@@ -89,6 +89,12 @@ contract DeployFromScratch is Script, Test {
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint256 REWARDS_COORDINATOR_INIT_PAUSED_STATUS;
 
+    // DelegationManager
+    uint32 MIN_WITHDRAWAL_DELAY;
+
+    // AllocationManager
+    uint32 DEALLOCATION_DELAY;
+
     // RewardsCoordinator
     uint32 REWARDS_COORDINATOR_MAX_REWARDS_DURATION;
     uint32 REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH;
@@ -221,7 +227,7 @@ contract DeployFromScratch is Script, Test {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory, allocationManager);
+        delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory, allocationManager, MIN_WITHDRAWAL_DELAY);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher, avsDirectory);
         avsDirectoryImplementation = new AVSDirectory(delegation);
         slasherImplementation = new Slasher(strategyManager, delegation);
@@ -244,7 +250,7 @@ contract DeployFromScratch is Script, Test {
             REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
             REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         );
-        allocationManagerImplementation = new AllocationManager(delegation, avsDirectory);
+        allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, DEALLOCATION_DELAY);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {

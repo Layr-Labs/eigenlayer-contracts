@@ -108,6 +108,7 @@ contract ExistingDeploymentParser is Script, Test {
     // DelegationManager
     uint256 DELEGATION_MANAGER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS;
+    uint32 MIN_WITHDRAWAL_DELAY;
     // AVSDirectory
     uint256 AVS_DIRECTORY_INIT_PAUSED_STATUS;
     // RewardsCoordinator
@@ -124,8 +125,9 @@ contract ExistingDeploymentParser is Script, Test {
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
-    // AllocaitonManager
+    // AllocationManager
     uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
+    uint32 DEALLOCATION_DELAY;
     // EigenPod
     uint64 EIGENPOD_GENESIS_TIME;
     uint64 EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
