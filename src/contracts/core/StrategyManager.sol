@@ -59,8 +59,9 @@ contract StrategyManager is
     constructor(
         IDelegationManager _delegation,
         IEigenPodManager _eigenPodManager,
-        ISlasher _slasher
-    ) StrategyManagerStorage(_delegation, _eigenPodManager, _slasher) {
+        ISlasher _slasher,
+        IAVSDirectory _avsDirectory
+    ) StrategyManagerStorage(_delegation, _eigenPodManager, _slasher, _avsDirectory) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -285,7 +286,7 @@ contract StrategyManager is
         token.safeTransferFrom(msg.sender, address(strategy), amount);
 
         // deposit the assets into the specified strategy and get the equivalent amount of shares in that strategy
-        uint256 shares = strategy.deposit(token, amount);
+        shares = strategy.deposit(token, amount);
 
         // add the returned shares to the staker's existing shares for this strategy
         _addShares(staker, token, strategy, shares);

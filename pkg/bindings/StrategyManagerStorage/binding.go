@@ -242,6 +242,37 @@ func (_StrategyManagerStorage *StrategyManagerStorageCallerSession) DOMAINTYPEHA
 	return _StrategyManagerStorage.Contract.DOMAINTYPEHASH(&_StrategyManagerStorage.CallOpts)
 }
 
+// AvsDirectory is a free data retrieval call binding the contract method 0x6b3aa72e.
+//
+// Solidity: function avsDirectory() view returns(address)
+func (_StrategyManagerStorage *StrategyManagerStorageCaller) AvsDirectory(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _StrategyManagerStorage.contract.Call(opts, &out, "avsDirectory")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// AvsDirectory is a free data retrieval call binding the contract method 0x6b3aa72e.
+//
+// Solidity: function avsDirectory() view returns(address)
+func (_StrategyManagerStorage *StrategyManagerStorageSession) AvsDirectory() (common.Address, error) {
+	return _StrategyManagerStorage.Contract.AvsDirectory(&_StrategyManagerStorage.CallOpts)
+}
+
+// AvsDirectory is a free data retrieval call binding the contract method 0x6b3aa72e.
+//
+// Solidity: function avsDirectory() view returns(address)
+func (_StrategyManagerStorage *StrategyManagerStorageCallerSession) AvsDirectory() (common.Address, error) {
+	return _StrategyManagerStorage.Contract.AvsDirectory(&_StrategyManagerStorage.CallOpts)
+}
+
 // Delegation is a free data retrieval call binding the contract method 0xdf5cf723.
 //
 // Solidity: function delegation() view returns(address)
@@ -586,21 +617,21 @@ func (_StrategyManagerStorage *StrategyManagerStorageCallerSession) ThirdPartyTr
 
 // AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns()
+// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns(uint256 existingShares)
 func (_StrategyManagerStorage *StrategyManagerStorageTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, token common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _StrategyManagerStorage.contract.Transact(opts, "addShares", staker, token, strategy, shares)
 }
 
 // AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns()
+// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns(uint256 existingShares)
 func (_StrategyManagerStorage *StrategyManagerStorageSession) AddShares(staker common.Address, token common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _StrategyManagerStorage.Contract.AddShares(&_StrategyManagerStorage.TransactOpts, staker, token, strategy, shares)
 }
 
 // AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns()
+// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns(uint256 existingShares)
 func (_StrategyManagerStorage *StrategyManagerStorageTransactorSession) AddShares(staker common.Address, token common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _StrategyManagerStorage.Contract.AddShares(&_StrategyManagerStorage.TransactOpts, staker, token, strategy, shares)
 }

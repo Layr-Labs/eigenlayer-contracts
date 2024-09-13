@@ -162,6 +162,9 @@ contract DeployFromScratch is Script, Test {
         ALLOCATION_MANAGER_INIT_PAUSED_STATUS = uint32(
             stdJson.readUint(config_data, ".allocationManager.init_paused_status")
         );
+        DEALLOCATION_DELAY = uint32(
+            stdJson.readUint(config_data, ".allocationManager.DEALLOCATION_DELAY")
+        );
 
         // tokens to deploy strategies for
         StrategyConfig[] memory strategyConfigs;
@@ -234,8 +237,9 @@ contract DeployFromScratch is Script, Test {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
+
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
+        strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher, avsDirectory);
         avsDirectoryImplementation = new AVSDirectory(delegation);
         slasherImplementation = new Slasher(strategyManager, delegation);
         eigenPodManagerImplementation = new EigenPodManager(

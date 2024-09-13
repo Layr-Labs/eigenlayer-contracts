@@ -462,21 +462,21 @@ func (_IStrategyManager *IStrategyManagerCallerSession) ThirdPartyTransfersForbi
 
 // AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns()
+// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns(uint256 existingShares)
 func (_IStrategyManager *IStrategyManagerTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, token common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _IStrategyManager.contract.Transact(opts, "addShares", staker, token, strategy, shares)
 }
 
 // AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns()
+// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns(uint256 existingShares)
 func (_IStrategyManager *IStrategyManagerSession) AddShares(staker common.Address, token common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _IStrategyManager.Contract.AddShares(&_IStrategyManager.TransactOpts, staker, token, strategy, shares)
 }
 
 // AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns()
+// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns(uint256 existingShares)
 func (_IStrategyManager *IStrategyManagerTransactorSession) AddShares(staker common.Address, token common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _IStrategyManager.Contract.AddShares(&_IStrategyManager.TransactOpts, staker, token, strategy, shares)
 }

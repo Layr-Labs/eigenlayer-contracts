@@ -18,15 +18,15 @@ abstract contract AllocationManagerStorage is IAllocationManager {
         "MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)"
     );
 
-    /// @notice Delay before deallocations are completable and can be added back into freeMagnitude
-    /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
-    uint32 public immutable DEALLOCATION_DELAY;
-
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
     /// @notice The AVSDirectory contract for EigenLayer
     IAVSDirectory public immutable avsDirectory;
+
+    /// @notice Delay before deallocations are completable and can be added back into freeMagnitude
+    /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
+    uint32 public immutable DEALLOCATION_DELAY;
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -54,6 +54,10 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @notice Mapping: operator => strategy => operatorSet (encoded) => list of queuedDeallocation indices
     mapping(address => mapping(IStrategy => mapping(bytes32 => uint256[]))) internal _queuedDeallocationIndices;
 
+    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
+    /// This determines how long it takes for allocations to take effect in the future.
+    mapping(address => AllocationDelayInfo) internal _allocationDelayInfo;
+
     constructor(IDelegationManager _delegation, IAVSDirectory _avsDirectory, uint32 _DEALLOCATION_DELAY) {
         delegation = _delegation;
         avsDirectory = _avsDirectory;
@@ -65,5 +69,5 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[43] private __gap;
+    uint256[42] private __gap;
 }
