@@ -19,9 +19,6 @@ contract AllocationManager is
 {
     using Snapshots for Snapshots.History;
 
-    /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
-    uint32 public constant DEALLOCATION_DELAY = 17.5 days;
-
     /// @dev Delay before alloaction delay modifications take effect.
     uint32 public constant ALLOCATION_DELAY_CONFIGURATION_DELAY = 21 days; // QUESTION: 21 days?
 
@@ -52,6 +49,7 @@ contract AllocationManager is
     ) AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
+        DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
     }
 
     /**
@@ -136,12 +134,12 @@ contract AllocationManager is
         }
         require(delegation.isOperator(operator), OperatorNotRegistered());
 
-        (bool isSet, uint32 allocationDelay) = allocationDelay(operator);
+        (bool isSet, uint32 delay) = allocationDelay(operator);
 
         require(isSet, UninitializedAllocationDelay());
 
         // effect timestamp for allocations to take effect. This is configurable by operators
-        uint32 effectTimestamp = uint32(block.timestamp) + allocationDelay;
+        uint32 effectTimestamp = uint32(block.timestamp) + delay;
         // completable timestamp for deallocations
         uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
 
@@ -366,8 +364,6 @@ contract AllocationManager is
                 info.freeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
             }
         }
-
-        _allocationDelayInfo[operator].pendingDelayEffectTimestamp = allocationEffectTimestamp;
     }
 
     /**

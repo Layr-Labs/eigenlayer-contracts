@@ -162,6 +162,9 @@ contract DeployFromScratch is Script, Test {
         ALLOCATION_MANAGER_INIT_PAUSED_STATUS = uint32(
             stdJson.readUint(config_data, ".allocationManager.init_paused_status")
         );
+        DEALLOCATION_DELAY = uint32(
+            stdJson.readUint(config_data, ".allocationManager.DEALLOCATION_DELAY")
+        );
 
         // tokens to deploy strategies for
         StrategyConfig[] memory strategyConfigs;

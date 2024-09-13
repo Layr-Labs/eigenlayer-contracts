@@ -18,15 +18,15 @@ abstract contract AllocationManagerStorage is IAllocationManager {
         "MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)"
     );
 
-    /// @notice Delay before deallocations are completable and can be added back into freeMagnitude
-    /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
-    uint32 public immutable DEALLOCATION_DELAY;
-
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
     /// @notice The AVSDirectory contract for EigenLayer
     IAVSDirectory public immutable avsDirectory;
+
+    /// @notice Delay before deallocations are completable and can be added back into freeMagnitude
+    /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
+    uint32 public immutable DEALLOCATION_DELAY;
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.

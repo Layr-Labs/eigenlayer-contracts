@@ -170,8 +170,7 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 shares
     ) external onlyDelegationManager returns (uint256 existingShares) {
-        uint256 existingShares = _addShares(staker, token, strategy, shares);
-        return existingShares;
+        existingShares = _addShares(staker, token, strategy, shares);
     }
 
     /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
@@ -285,7 +284,7 @@ contract StrategyManager is
         token.safeTransferFrom(msg.sender, address(strategy), amount);
 
         // deposit the assets into the specified strategy and get the equivalent amount of shares in that strategy
-        uint256 shares = strategy.deposit(token, amount);
+        shares = strategy.deposit(token, amount);
 
         // add the returned shares to the staker's existing shares for this strategy
         uint256 existingShares = _addShares(staker, token, strategy, shares);
