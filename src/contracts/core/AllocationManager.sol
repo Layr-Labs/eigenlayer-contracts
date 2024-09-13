@@ -627,6 +627,76 @@ contract AllocationManager is
         return totalMagnitude;
     }
 
+    /**
+     * @notice Returns the latest pending allocation of an operator for a given strategy and operatorSets.
+     * One of the assumptions here is we don't allow more than one pending allocation for an operatorSet at a time.
+     * If that changes, we would need to change this function to return all pending allocations for an operatorSet.
+     * @param operator the operator to get the pending allocations for
+     * @param strategy the strategy to get the pending allocations for
+     * @param operatorSets the operatorSets to get the pending allocations for
+     * @return pendingMagnitude the pending allocations for each operatorSet
+     * @return timestamps the timestamps for each pending allocation
+     */
+    function getPendingAllocations(
+        address operator,
+        IStrategy strategy,
+        OperatorSet[] calldata operatorSets
+    ) external view returns (uint64[] memory, uint32[] memory) {
+        uint64[] memory pendingMagnitude = new uint64[](operatorSets.length);
+        uint32[] memory timestamps = new uint32[](operatorSets.length);
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            // We use latestSnapshot to get the latest pending allocation for an operatorSet.
+            (bool exists, uint32 key, uint224 value) =
+                _magnitudeUpdate[operator][strategy][_encodeOperatorSet(operatorSets[i])].latestSnapshot();
+            if (exists) {
+                if (key > block.timestamp) {
+                    pendingMagnitude[i] = uint64(value);
+                    timestamps[i] = key;
+                } else {
+                    pendingMagnitude[i] = 0;
+                    timestamps[i] = 0;
+                }
+            }
+        }
+        return (pendingMagnitude, timestamps);
+    }
+
+    /**
+     * @notice Returns the pending deallocations of an operator for a given strategy and operatorSets.
+     * One of the assumptions here is we don't allow more than one pending deallocation for an operatorSet at a time.
+     * If that changes, we would need to change this function to return all pending deallocations for an operatorSet.
+     * @param operator the operator to get the pending deallocations for
+     * @param strategy the strategy to get the pending deallocations for
+     * @param operatorSets the operatorSets to get the pending deallocations for
+     * @return pendingMagnitudeDiff the pending difference in deallocations for each operatorSet
+     * @return timestamps the timestamps for each pending deallocation
+     */
+    function getPendingDeallocations(
+        address operator,
+        IStrategy strategy,
+        OperatorSet[] calldata operatorSets
+    ) external view returns (uint64[] memory, uint32[] memory) {
+        uint64[] memory pendingMagnitudeDiff = new uint64[](operatorSets.length);
+        uint32[] memory timestamps = new uint32[](operatorSets.length);
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            uint256[] memory indices =
+                _queuedDeallocationIndices[operator][strategy][_encodeOperatorSet(operatorSets[i])];
+            uint256 length = indices.length;
+            uint256 deallocationIndex = indices[length - 1];
+            PendingFreeMagnitude memory latestPendingMagnitude =
+                _pendingFreeMagnitude[operator][strategy][deallocationIndex];
+            if (latestPendingMagnitude.completableTimestamp > block.timestamp) {
+                pendingMagnitudeDiff[i] = latestPendingMagnitude.magnitudeDiff;
+                timestamps[i] = latestPendingMagnitude.completableTimestamp;
+            } else {
+                // There is no pending deallocation, so we set the pending magnitude and timestamp to 0
+                pendingMagnitudeDiff[i] = 0;
+                timestamps[i] = 0;
+            }
+        }
+        return (pendingMagnitudeDiff, timestamps);
+    }
+
     // /**
     //  * @notice fetches the minimum slashable shares for a certain operator and operatorSet for a list of strategies
     //  * from the current timestamp until the given timestamp
