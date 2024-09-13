@@ -291,6 +291,10 @@ contract DelegationManager is
                     sharesToWithdraw: singleShare,
                     totalMagnitudes: singleTotalMagnitude
                 });
+
+                // all shares and queued withdrawn and no delegated operator
+                // reset staker's scaling factor to default
+                stakerScalingFactors[staker][strategies[i]] = SlashingLib.PRECISION_FACTOR;
             }
         }
 
