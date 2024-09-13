@@ -32,7 +32,7 @@ import "forge-std/Test.sol";
 // source .env
 
 // # To deploy and verify our contract
-// forge script script/deploy/devnet/Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- deploy_from_scratch.anvil.config.json
+// forge script script/deploy/local/Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/deploy_from_scratch.anvil.config.json
 contract DeployFromScratch is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
@@ -107,6 +107,9 @@ contract DeployFromScratch is Script, Test {
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
 
+    // AllocationManager
+    uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
+
     // one week in blocks -- 50400
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
     uint256 DELEGATION_WITHDRAWAL_DELAY_BLOCKS;
@@ -117,7 +120,7 @@ contract DeployFromScratch is Script, Test {
         emit log_named_uint("You are deploying on ChainID", chainId);
 
         // READ JSON CONFIG DATA
-        deployConfigPath = string(bytes(string.concat("script/configs/devnet/", configFileName)));
+        deployConfigPath = string(bytes(string.concat("script/configs/", configFileName)));
         string memory config_data = vm.readFile(deployConfigPath);
         // bytes memory parsedData = vm.parseJson(config_data);
 
@@ -154,6 +157,10 @@ contract DeployFromScratch is Script, Test {
 
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(
             stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks")
+        );
+
+        ALLOCATION_MANAGER_INIT_PAUSED_STATUS = uint32(
+            stdJson.readUint(config_data, ".allocationManager.init_paused_status")
         );
 
         // tokens to deploy strategies for
@@ -320,6 +327,17 @@ contract DeployFromScratch is Script, Test {
             )
         );
 
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation),
+            abi.encodeWithSelector(
+                AllocationManager.initialize.selector,
+                executorMultisig,
+                eigenLayerPauserReg,
+                ALLOCATION_MANAGER_INIT_PAUSED_STATUS
+            )
+        );
+
         // deploy StrategyBaseTVLLimits contract implementation
         baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         // create upgradeable proxies that each point to the implementation and initialize them
@@ -397,6 +415,8 @@ contract DeployFromScratch is Script, Test {
         vm.serializeAddress(deployed_addresses, "delegationManagerImplementation", address(delegationImplementation));
         vm.serializeAddress(deployed_addresses, "avsDirectory", address(avsDirectory));
         vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
+        vm.serializeAddress(deployed_addresses, "allocationManager", address(allocationManager));
+        vm.serializeAddress(deployed_addresses, "allocationManagerImplementation", address(allocationManagerImplementation));
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
         vm.serializeAddress(
             deployed_addresses,
@@ -535,6 +555,13 @@ contract DeployFromScratch is Script, Test {
                 TransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
             ) == address(rewardsCoordinatorImplementation),
             "rewardsCoordinator: implementation set incorrectly"
+        );
+
+        require(
+            eigenLayerProxyAdmin.getProxyImplementation(
+                TransparentUpgradeableProxy(payable(address(allocationManager)))
+            ) == address(allocationManagerImplementation),
+            "allocationManager: implementation set incorrectly"
         );
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
