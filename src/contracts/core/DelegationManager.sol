@@ -709,25 +709,27 @@ contract DelegationManager is
              */
             if (withdrawal.strategies[i] == beaconChainETHStrategy) {
                 // TODO: REFACTOR EPM AND NEGATIVE SHARES
+                // below commented code will simply be the following:
+                // eigenPodManager.addShares({podOwner: withdrawal.staker, shares: shares});
 
-                address staker = withdrawal.staker;
-                /**
-                 * Update shares amount depending upon the returned value.
-                 * The return value will be lower than the input value in the case where the staker has an existing share deficit
-                 */
-                (shares, existingShares) = eigenPodManager.addShares({podOwner: staker, shares: shares});
-                address podOwnerOperator = delegatedTo[staker];
-                // Similar to `isDelegated` logic
-                if (podOwnerOperator != address(0)) {
-                    _increaseOperatorScaledShares({
-                        operator: podOwnerOperator,
-                        // the 'staker' here is the address receiving new shares
-                        staker: staker,
-                        strategy: withdrawal.strategies[i],
-                        shares: shares,
-                        totalMagnitude: totalMagnitudes[i]
-                    });
-                }
+                // address staker = withdrawal.staker;
+                // /**
+                //  * Update shares amount depending upon the returned value.
+                //  * The return value will be lower than the input value in the case where the staker has an existing share deficit
+                //  */
+                // (shares, existingShares) = eigenPodManager.addShares({podOwner: staker, shares: shares});
+                // address podOwnerOperator = delegatedTo[staker];
+                // // Similar to `isDelegated` logic
+                // if (podOwnerOperator != address(0)) {
+                //     _increaseOperatorScaledShares({
+                //         operator: podOwnerOperator,
+                //         // the 'staker' here is the address receiving new shares
+                //         staker: staker,
+                //         strategy: withdrawal.strategies[i],
+                //         shares: shares,
+                //         totalMagnitude: totalMagnitudes[i]
+                //     });
+                // }
             } else {
                 strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], shares);
             }
