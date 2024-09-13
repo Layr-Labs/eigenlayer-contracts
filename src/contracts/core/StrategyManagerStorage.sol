@@ -6,6 +6,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
+import "../interfaces/IAVSDirectory.sol";
 
 /**
  * @title Storage variables for the `StrategyManager` contract.
@@ -27,6 +28,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     IDelegationManager public immutable delegation;
     IEigenPodManager public immutable eigenPodManager;
     ISlasher public immutable slasher;
+    IAVSDirectory public immutable avsDirectory;
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -72,10 +74,16 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      */
     mapping(IStrategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
-    constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) {
+    constructor(
+        IDelegationManager _delegation,
+        IEigenPodManager _eigenPodManager,
+        ISlasher _slasher,
+        IAVSDirectory _avsDirectory
+    ) {
         delegation = _delegation;
         eigenPodManager = _eigenPodManager;
         slasher = _slasher;
+        avsDirectory = _avsDirectory;
     }
 
     /**

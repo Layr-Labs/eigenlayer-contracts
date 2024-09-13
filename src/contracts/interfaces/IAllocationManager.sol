@@ -64,6 +64,21 @@ interface IAllocationManager is ISignatureUtils {
         uint64 freeMagnitude;
     }
 
+    /**
+     * @notice Struct containing allocation delay metadata for a given operator.
+     * @param delay Current allocation delay if `pendingDelay` is non-zero and `pendingDelayEffectTimestamp` has elapsed.
+     * @param pendingDelay Current allocation delay if it's non-zero and `pendingDelayEffectTimestamp` has elapsed.
+     * @param pendingDelayEffectTimestamp The timestamp for which `pendingDelay` becomes the curren allocation delay.
+     */
+    struct AllocationDelayInfo {
+        uint32 delay;
+        uint32 pendingDelay;
+        uint32 pendingDelayEffectTimestamp;
+    }
+
+    /// @notice Emitted when operator updates their allocation delay.
+    event AllocationDelaySet(address operator, uint32 delay);
+
     /// @notice Emitted when an operator set is created by an AVS.
     event OperatorSetCreated(OperatorSet operatorSet);
 
@@ -99,6 +114,15 @@ interface IAllocationManager is ISignatureUtils {
      *                         EXTERNAL FUNCTIONS
      *
      */
+
+    /**
+     * @notice Called by operators to set their allocation delay.
+     * @param delay the allocation delay in seconds
+     * @dev msg.sender is assumed to be the operator
+     */
+    function setAllocationDelay(
+        uint32 delay
+    ) external;
 
     /**
      * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
@@ -162,6 +186,15 @@ interface IAllocationManager is ISignatureUtils {
      *                         VIEW FUNCTIONS
      *
      */
+
+    /**
+     * @notice Returns the allocation delay of an operator
+     * @param operator The operator to get the allocation delay for
+     * @dev Defaults to `DEFAULT_ALLOCATION_DELAY` if none is set
+     */
+    function allocationDelay(
+        address operator
+    ) external view returns (bool isSet, uint32 delay);
 
     /**
      * @notice Get the allocatable magnitude for an operator and strategy based on number of pending deallocations

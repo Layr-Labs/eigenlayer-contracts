@@ -94,6 +94,7 @@ contract DeployFromScratch is Script, Test {
 
     // AllocationManager
     uint32 DEALLOCATION_DELAY;
+    uint32 ALLOCATION_DELAY_CONFIGURATION_DELAY;
 
     // RewardsCoordinator
     uint32 REWARDS_COORDINATOR_MAX_REWARDS_DURATION;
@@ -161,6 +162,12 @@ contract DeployFromScratch is Script, Test {
 
         ALLOCATION_MANAGER_INIT_PAUSED_STATUS = uint32(
             stdJson.readUint(config_data, ".allocationManager.init_paused_status")
+        );
+        DEALLOCATION_DELAY = uint32(
+            stdJson.readUint(config_data, ".allocationManager.DEALLOCATION_DELAY")
+        );
+        ALLOCATION_DELAY_CONFIGURATION_DELAY = uint32(
+            stdJson.readUint(config_data, ".allocationManager.ALLOCATION_DELAY_CONFIGURATION_DELAY")
         );
 
         // tokens to deploy strategies for
@@ -234,8 +241,9 @@ contract DeployFromScratch is Script, Test {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
+
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
+        strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher, avsDirectory);
         avsDirectoryImplementation = new AVSDirectory(delegation);
         slasherImplementation = new Slasher(strategyManager, delegation);
         eigenPodManagerImplementation = new EigenPodManager(
@@ -257,7 +265,7 @@ contract DeployFromScratch is Script, Test {
             REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
             REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         );
-        allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, DEALLOCATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_DELAY_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {

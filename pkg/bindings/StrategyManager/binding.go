@@ -44,7 +44,7 @@ var StrategyManagerABI = StrategyManagerMetaData.ABI
 var StrategyManagerBin = StrategyManagerMetaData.Bin
 
 // DeployStrategyManager deploys a new Ethereum contract, binding an instance of StrategyManager to it.
-func DeployStrategyManager(auth *bind.TransactOpts, backend bind.ContractBackend, _delegation common.Address, _eigenPodManager common.Address, _slasher common.Address) (common.Address, *types.Transaction, *StrategyManager, error) {
+func DeployStrategyManager(auth *bind.TransactOpts, backend bind.ContractBackend, _delegation common.Address, _eigenPodManager common.Address, _slasher common.Address, _avsDirectory common.Address) (common.Address, *types.Transaction, *StrategyManager, error) {
 	parsed, err := StrategyManagerMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, nil, err
@@ -53,7 +53,7 @@ func DeployStrategyManager(auth *bind.TransactOpts, backend bind.ContractBackend
 		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(StrategyManagerBin), backend, _delegation, _eigenPodManager, _slasher)
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(StrategyManagerBin), backend, _delegation, _eigenPodManager, _slasher, _avsDirectory)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -262,6 +262,37 @@ func (_StrategyManager *StrategyManagerSession) DOMAINTYPEHASH() ([32]byte, erro
 // Solidity: function DOMAIN_TYPEHASH() view returns(bytes32)
 func (_StrategyManager *StrategyManagerCallerSession) DOMAINTYPEHASH() ([32]byte, error) {
 	return _StrategyManager.Contract.DOMAINTYPEHASH(&_StrategyManager.CallOpts)
+}
+
+// AvsDirectory is a free data retrieval call binding the contract method 0x6b3aa72e.
+//
+// Solidity: function avsDirectory() view returns(address)
+func (_StrategyManager *StrategyManagerCaller) AvsDirectory(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _StrategyManager.contract.Call(opts, &out, "avsDirectory")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// AvsDirectory is a free data retrieval call binding the contract method 0x6b3aa72e.
+//
+// Solidity: function avsDirectory() view returns(address)
+func (_StrategyManager *StrategyManagerSession) AvsDirectory() (common.Address, error) {
+	return _StrategyManager.Contract.AvsDirectory(&_StrategyManager.CallOpts)
+}
+
+// AvsDirectory is a free data retrieval call binding the contract method 0x6b3aa72e.
+//
+// Solidity: function avsDirectory() view returns(address)
+func (_StrategyManager *StrategyManagerCallerSession) AvsDirectory() (common.Address, error) {
+	return _StrategyManager.Contract.AvsDirectory(&_StrategyManager.CallOpts)
 }
 
 // Delegation is a free data retrieval call binding the contract method 0xdf5cf723.
@@ -763,21 +794,21 @@ func (_StrategyManager *StrategyManagerCallerSession) ThirdPartyTransfersForbidd
 
 // AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns()
+// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns(uint256 existingShares)
 func (_StrategyManager *StrategyManagerTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, token common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _StrategyManager.contract.Transact(opts, "addShares", staker, token, strategy, shares)
 }
 
 // AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns()
+// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns(uint256 existingShares)
 func (_StrategyManager *StrategyManagerSession) AddShares(staker common.Address, token common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _StrategyManager.Contract.AddShares(&_StrategyManager.TransactOpts, staker, token, strategy, shares)
 }
 
 // AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns()
+// Solidity: function addShares(address staker, address token, address strategy, uint256 shares) returns(uint256 existingShares)
 func (_StrategyManager *StrategyManagerTransactorSession) AddShares(staker common.Address, token common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _StrategyManager.Contract.AddShares(&_StrategyManager.TransactOpts, staker, token, strategy, shares)
 }
