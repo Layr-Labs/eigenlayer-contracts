@@ -28,6 +28,9 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
     uint32 public immutable DEALLOCATION_DELAY;
 
+    /// @dev Delay before alloaction delay modifications take effect.
+    uint32 public immutable ALLOCATION_DELAY_CONFIGURATION_DELAY; // QUESTION: 21 days?
+
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -58,10 +61,16 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// This determines how long it takes for allocations to take effect in the future.
     mapping(address => AllocationDelayInfo) internal _allocationDelayInfo;
 
-    constructor(IDelegationManager _delegation, IAVSDirectory _avsDirectory, uint32 _DEALLOCATION_DELAY) {
+    constructor(
+        IDelegationManager _delegation, 
+        IAVSDirectory _avsDirectory, 
+        uint32 _DEALLOCATION_DELAY, 
+        uint32 _ALLOCATION_DELAY_CONFIGURATION_DELAY
+    ) {
         delegation = _delegation;
         avsDirectory = _avsDirectory;
         DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
+        ALLOCATION_DELAY_CONFIGURATION_DELAY = _ALLOCATION_DELAY_CONFIGURATION_DELAY;
     }
 
     /**

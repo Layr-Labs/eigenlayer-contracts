@@ -19,9 +19,6 @@ contract AllocationManager is
 {
     using Snapshots for Snapshots.History;
 
-    /// @dev Delay before alloaction delay modifications take effect.
-    uint32 public constant ALLOCATION_DELAY_CONFIGURATION_DELAY = 21 days; // QUESTION: 21 days?
-
     /// @dev BIPS factor for slashable bips
     uint256 internal constant BIPS_FACTOR = 10_000;
 
@@ -45,8 +42,9 @@ contract AllocationManager is
     constructor(
         IDelegationManager _delegation,
         IAVSDirectory _avsDirectory,
-        uint32 _DEALLOCATION_DELAY
-    ) AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY) {
+        uint32 _DEALLOCATION_DELAY,
+        uint32 _ALLOCATION_DELAY_CONFIGURATION_DELAY
+    ) AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY, _ALLOCATION_DELAY_CONFIGURATION_DELAY) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
         DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
