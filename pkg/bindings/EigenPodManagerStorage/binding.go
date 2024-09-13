@@ -616,21 +616,21 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) StrategyMana
 
 // AddShares is a paid mutator transaction binding the contract method 0x0e81073c.
 //
-// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256)
+// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256 increaseInDelegateableShares, uint256 existingPodShares)
 func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) AddShares(opts *bind.TransactOpts, podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _EigenPodManagerStorage.contract.Transact(opts, "addShares", podOwner, shares)
 }
 
 // AddShares is a paid mutator transaction binding the contract method 0x0e81073c.
 //
-// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256)
+// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256 increaseInDelegateableShares, uint256 existingPodShares)
 func (_EigenPodManagerStorage *EigenPodManagerStorageSession) AddShares(podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _EigenPodManagerStorage.Contract.AddShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
 }
 
 // AddShares is a paid mutator transaction binding the contract method 0x0e81073c.
 //
-// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256)
+// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256 increaseInDelegateableShares, uint256 existingPodShares)
 func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) AddShares(podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
 	return _EigenPodManagerStorage.Contract.AddShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
 }

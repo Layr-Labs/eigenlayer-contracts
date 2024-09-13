@@ -264,7 +264,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             allocationManager,
             MIN_WITHDRAWAL_DELAY
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher, avsDirectory);
         slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
@@ -414,7 +414,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             allocationManager,
             MIN_WITHDRAWAL_DELAY
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher, avsDirectory);
         slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
@@ -515,7 +515,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             allocationManager,
             MIN_WITHDRAWAL_DELAY
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher, avsDirectory);
         slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,

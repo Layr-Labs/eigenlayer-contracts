@@ -45,6 +45,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
 
     // deallocation delay in AllocationManager
     uint32 DEALLOCATION_DELAY = 17.5 days;
+    uint32 ALLOCATION_DELAY_CONFIGURATION_DELAY = 21 days;
     // withdrawal delay in DelegationManager
     uint32 MIN_WITHDRAWAL_DELAY = 17.5 days;
     uint256 minWithdrawalDelayBlocks = 216_000;
@@ -76,7 +77,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
-        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_DELAY_CONFIGURATION_DELAY);
 
         delegationManagerImplementation = new DelegationManager(
             strategyManagerMock, 
@@ -194,7 +195,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     ) internal filterFuzzedAddressInputs(operator) {
         _filterOperatorDetails(operator, operatorDetails);
         cheats.prank(operator);
-        delegationManager.registerAsOperator(operatorDetails, 0,metadataURI);
+        delegationManager.registerAsOperator(operatorDetails, metadataURI);
     }
 
     function _filterOperatorDetails(

@@ -37,7 +37,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
-        strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, slasherMock);
+        strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, slasherMock, avsDirectoryMock);
         strategyManager = StrategyManager(
             address(
                 new TransparentUpgradeableProxy(

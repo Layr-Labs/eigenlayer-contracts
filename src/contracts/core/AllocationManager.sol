@@ -42,10 +42,14 @@ contract AllocationManager is
     constructor(
         IDelegationManager _delegation,
         IAVSDirectory _avsDirectory,
-        uint32 _DEALLOCATION_DELAY
-    ) AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY) {
+        uint32 _DEALLOCATION_DELAY,
+        uint32 _ALLOCATION_DELAY_CONFIGURATION_DELAY
+    )
+        AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY, _ALLOCATION_DELAY_CONFIGURATION_DELAY)
+    {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
+        DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
     }
 
     /**
@@ -60,6 +64,30 @@ contract AllocationManager is
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
+    }
+
+    /**
+     * @notice Called by operators to set their allocation delay.
+     * @param delay the allocation delay in seconds
+     * @dev msg.sender is assumed to be the operator
+     */
+    function setAllocationDelay(
+        uint32 delay
+    ) external {
+        require(delegation.isOperator(msg.sender), OperatorNotRegistered());
+
+        AllocationDelayInfo storage delayInfo = _allocationDelayInfo[msg.sender];
+
+        bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
+
+        if (pendingInEffect) {
+            delayInfo.delay = delayInfo.pendingDelay;
+        }
+
+        delayInfo.pendingDelay = delay;
+        delayInfo.pendingDelayEffectTimestamp = uint32(block.timestamp + ALLOCATION_DELAY_CONFIGURATION_DELAY);
+
+        emit AllocationDelaySet(msg.sender, delay);
     }
 
     /**
@@ -105,10 +133,13 @@ contract AllocationManager is
             _verifyOperatorSignature(operator, allocations, operatorSignature);
         }
         require(delegation.isOperator(operator), OperatorNotRegistered());
-        IDelegationManager.AllocationDelayDetails memory details = delegation.operatorAllocationDelay(operator);
-        require(details.isSet, UninitializedAllocationDelay());
+
+        (bool isSet, uint32 delay) = allocationDelay(operator);
+
+        require(isSet, UninitializedAllocationDelay());
+
         // effect timestamp for allocations to take effect. This is configurable by operators
-        uint32 effectTimestamp = uint32(block.timestamp) + details.allocationDelay;
+        uint32 effectTimestamp = uint32(block.timestamp) + delay;
         // completable timestamp for deallocations
         uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
 
@@ -403,6 +434,24 @@ contract AllocationManager is
             ++completed;
         }
         return (freeMagnitudeToAdd, nextIndex);
+    }
+
+    /**
+     * @notice Returns the allocation delay of an operator
+     * @param operator The operator to get the allocation delay for
+     */
+    function allocationDelay(
+        address operator
+    ) public view returns (bool isSet, uint32 delay) {
+        AllocationDelayInfo memory delayInfo = _allocationDelayInfo[operator];
+
+        bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
+
+        isSet = delayInfo.pendingDelayEffectTimestamp != 0;
+
+        if (pendingInEffect) return (isSet, delayInfo.pendingDelay);
+
+        return (isSet, delayInfo.delay);
     }
 
     /**
