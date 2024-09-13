@@ -626,7 +626,7 @@ contract DelegationManager is
                 } else {
                     strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], sharesToWithdraw);
                 }
-            }           
+            }
         }
 
         // Remove `withdrawalRoot` from pending roots

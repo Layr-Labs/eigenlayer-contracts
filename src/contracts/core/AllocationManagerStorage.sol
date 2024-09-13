@@ -62,9 +62,9 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     mapping(address => AllocationDelayInfo) internal _allocationDelayInfo;
 
     constructor(
-        IDelegationManager _delegation, 
-        IAVSDirectory _avsDirectory, 
-        uint32 _DEALLOCATION_DELAY, 
+        IDelegationManager _delegation,
+        IAVSDirectory _avsDirectory,
+        uint32 _DEALLOCATION_DELAY,
         uint32 _ALLOCATION_DELAY_CONFIGURATION_DELAY
     ) {
         delegation = _delegation;

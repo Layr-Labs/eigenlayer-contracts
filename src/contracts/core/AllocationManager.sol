@@ -44,7 +44,9 @@ contract AllocationManager is
         IAVSDirectory _avsDirectory,
         uint32 _DEALLOCATION_DELAY,
         uint32 _ALLOCATION_DELAY_CONFIGURATION_DELAY
-    ) AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY, _ALLOCATION_DELAY_CONFIGURATION_DELAY) {
+    )
+        AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY, _ALLOCATION_DELAY_CONFIGURATION_DELAY)
+    {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
         DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
