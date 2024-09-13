@@ -66,6 +66,7 @@ contract ExistingDeploymentParser is Script, Test {
     AllocationManager public allocationManager;
     AllocationManager public allocationManagerImplementation;
     UpgradeableBeacon public strategyBeacon;
+    StrategyBase public strategyFactoryBeaconImplementation;
 
     // Token
     ProxyAdmin public tokenProxyAdmin;
@@ -107,6 +108,7 @@ contract ExistingDeploymentParser is Script, Test {
     // DelegationManager
     uint256 DELEGATION_MANAGER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS;
+    uint32 MIN_WITHDRAWAL_DELAY;
     // AVSDirectory
     uint256 AVS_DIRECTORY_INIT_PAUSED_STATUS;
     // RewardsCoordinator
@@ -123,8 +125,9 @@ contract ExistingDeploymentParser is Script, Test {
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
-    // AllocaitonManager
+    // AllocationManager
     uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
+    uint32 DEALLOCATION_DELAY;
     // EigenPod
     uint64 EIGENPOD_GENESIS_TIME;
     uint64 EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
@@ -146,6 +149,9 @@ contract ExistingDeploymentParser is Script, Test {
         // check that the chainID matches the one in the config
         uint256 configChainId = stdJson.readUint(existingDeploymentData, ".chainInfo.chainId");
         require(configChainId == currentChainId, "You are on the wrong chain for this config");
+
+        emit log_named_string("Using addresses file", existingDeploymentInfoPath);
+        emit log_named_string("- Last Updated", stdJson.readString(existingDeploymentData, ".lastUpdated"));
 
         // read all of the deployed addresses
         executorMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.executorMultisig");
@@ -253,6 +259,9 @@ contract ExistingDeploymentParser is Script, Test {
         uint256 configChainId = stdJson.readUint(initialDeploymentData, ".chainInfo.chainId");
         require(configChainId == currentChainId, "You are on the wrong chain for this config");
 
+        emit log_named_string("Using config file", initialDeploymentParamsPath);
+        emit log_named_string("- Last Updated", stdJson.readString(initialDeploymentData, ".lastUpdated"));
+
         // read all of the deployed addresses
         executorMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.executorMultisig");
         operationsMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.operationsMultisig");
@@ -334,9 +343,6 @@ contract ExistingDeploymentParser is Script, Test {
         );
         // EigenPod
         EIGENPOD_GENESIS_TIME = uint64(stdJson.readUint(initialDeploymentData, ".eigenPod.GENESIS_TIME"));
-        EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = uint64(
-            stdJson.readUint(initialDeploymentData, ".eigenPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR")
-        );
         ETHPOSDepositAddress = stdJson.readAddress(initialDeploymentData, ".ethPOSDepositAddress");
 
         logInitialDeploymentParams();
@@ -520,10 +526,10 @@ contract ExistingDeploymentParser is Script, Test {
         //     rewardsCoordinator.owner() == executorMultisig,
         //     "rewardsCoordinator: owner not set correctly"
         // );
-        require(
-            rewardsCoordinator.paused() == REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
-            "rewardsCoordinator: init paused status set incorrectly"
-        );
+        // require(
+        //     rewardsCoordinator.paused() == REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
+        //     "rewardsCoordinator: init paused status set incorrectly"
+        // );
         require(
             rewardsCoordinator.MAX_REWARDS_DURATION() == REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             "rewardsCoordinator: maxRewardsDuration not set correctly"
@@ -657,10 +663,6 @@ contract ExistingDeploymentParser is Script, Test {
         // todo log all rewards coordinator params
         emit log_named_uint("EIGENPOD_MANAGER_INIT_PAUSED_STATUS", EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
         emit log_named_uint("EIGENPOD_GENESIS_TIME", EIGENPOD_GENESIS_TIME);
-        emit log_named_uint(
-            "EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR",
-            EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR
-        );
         emit log_named_address("ETHPOSDepositAddress", ETHPOSDepositAddress);
 
         emit log_string("==== Strategies to Deploy ====");

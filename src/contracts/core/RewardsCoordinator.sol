@@ -47,8 +47,10 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
     /// @dev Index for flag that pauses submitRoots and disableRoot
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
+    /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
+    uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
     /// @dev Index for flag that pauses calling rewardOperatorSetForRange
-    uint8 internal constant PAUSED_REWARD_OPERATOR_SET = 4;
+    uint8 internal constant PAUSED_REWARD_OPERATOR_SET = 5;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -137,11 +139,9 @@ contract RewardsCoordinator is
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
-        nonReentrant
-    {
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length;) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -175,12 +175,9 @@ contract RewardsCoordinator is
      * a permissioned call based on isRewardsForAllSubmitter mapping.
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length;) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -221,11 +218,9 @@ contract RewardsCoordinator is
      * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
      * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
      */
-    function rewardOperatorSetForRange(OperatorSetRewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARD_OPERATOR_SET)
-        nonReentrant
-    {
+    function rewardOperatorSetForRange(
+        OperatorSetRewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARD_OPERATOR_SET) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length;) {
             OperatorSetRewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -251,6 +246,41 @@ contract RewardsCoordinator is
             unchecked {
                 ++i;
             }
+        }
+    }
+
+    /**
+     * @notice Creates a new rewards submission for all earners across all AVSs.
+     * Earners in this case indicating all operators and their delegated stakers. Undelegated stake
+     * is not rewarded from this RewardsSubmission. This interface is only callable
+     * by the token hopper contract from the Eigen Foundation
+     * @param rewardsSubmissions The rewards submissions being created
+     */
+    function createRewardsForAllEarners(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS) onlyRewardsForAllSubmitter nonReentrant {
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[msg.sender];
+            bytes32 rewardsSubmissionForAllEarnersHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
+
+            _validateRewardsSubmission(
+                rewardsSubmission.strategiesAndMultipliers,
+                rewardsSubmission.token,
+                rewardsSubmission.amount,
+                rewardsSubmission.startTimestamp,
+                rewardsSubmission.duration,
+                MAX_RETROACTIVE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP
+            );
+
+            isRewardsSubmissionForAllEarnersHash[msg.sender][rewardsSubmissionForAllEarnersHash] = true;
+            submissionNonce[msg.sender] = nonce + 1;
+
+            emit RewardsSubmissionForAllEarnersCreated(
+                msg.sender, nonce, rewardsSubmissionForAllEarnersHash, rewardsSubmission
+            );
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
@@ -326,7 +356,9 @@ contract RewardsCoordinator is
      * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
      * @param rootIndex The index of the root to be disabled
      */
-    function disableRoot(uint32 rootIndex) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
+    function disableRoot(
+        uint32 rootIndex
+    ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
         require(rootIndex < _distributionRoots.length, InvalidRootIndex());
         DistributionRoot storage root = _distributionRoots[rootIndex];
         require(!root.disabled, RootDisabled());
@@ -340,7 +372,9 @@ contract RewardsCoordinator is
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
      * @dev Only callable by the `earner`
      */
-    function setClaimerFor(address claimer) external {
+    function setClaimerFor(
+        address claimer
+    ) external {
         address earner = msg.sender;
         address prevClaimer = claimerFor[earner];
         claimerFor[earner] = claimer;
@@ -385,7 +419,9 @@ contract RewardsCoordinator is
      * @dev Only callable by the contract owner
      * @param _activationDelay The new value for activationDelay
      */
-    function setActivationDelay(uint32 _activationDelay) external onlyOwner {
+    function setActivationDelay(
+        uint32 _activationDelay
+    ) external onlyOwner {
         _setActivationDelay(_activationDelay);
     }
 
@@ -394,7 +430,9 @@ contract RewardsCoordinator is
      * @dev Only callable by the contract owner
      * @param _globalCommissionBips The commission for all operators across all avss
      */
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external onlyOwner {
+    function setGlobalOperatorCommission(
+        uint16 _globalCommissionBips
+    ) external onlyOwner {
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
 
@@ -403,7 +441,9 @@ contract RewardsCoordinator is
      * @dev Only callable by the contract owner
      * @param _rewardsUpdater The address of the new rewardsUpdater
      */
-    function setRewardsUpdater(address _rewardsUpdater) external onlyOwner {
+    function setRewardsUpdater(
+        address _rewardsUpdater
+    ) external onlyOwner {
         _setRewardsUpdater(_rewardsUpdater);
     }
 
@@ -555,17 +595,23 @@ contract RewardsCoordinator is
         );
     }
 
-    function _setActivationDelay(uint32 _activationDelay) internal {
+    function _setActivationDelay(
+        uint32 _activationDelay
+    ) internal {
         emit ActivationDelaySet(activationDelay, _activationDelay);
         activationDelay = _activationDelay;
     }
 
-    function _setGlobalOperatorCommission(uint16 _globalCommissionBips) internal {
+    function _setGlobalOperatorCommission(
+        uint16 _globalCommissionBips
+    ) internal {
         emit GlobalCommissionBipsSet(globalOperatorCommissionBips, _globalCommissionBips);
         globalOperatorCommissionBips = _globalCommissionBips;
     }
 
-    function _setRewardsUpdater(address _rewardsUpdater) internal {
+    function _setRewardsUpdater(
+        address _rewardsUpdater
+    ) internal {
         emit RewardsUpdaterSet(rewardsUpdater, _rewardsUpdater);
         rewardsUpdater = _rewardsUpdater;
     }
@@ -577,18 +623,24 @@ contract RewardsCoordinator is
      */
 
     /// @notice return the hash of the earner's leaf
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+    function calculateEarnerLeafHash(
+        EarnerTreeMerkleLeaf calldata leaf
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(EARNER_LEAF_SALT, leaf.earner, leaf.earnerTokenRoot));
     }
 
     /// @notice returns the hash of the earner's token leaf
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+    function calculateTokenLeafHash(
+        TokenTreeMerkleLeaf calldata leaf
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(TOKEN_LEAF_SALT, leaf.token, leaf.cumulativeEarnings));
     }
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     /// but will revert if not valid
-    function checkClaim(RewardsMerkleClaim calldata claim) public view returns (bool) {
+    function checkClaim(
+        RewardsMerkleClaim calldata claim
+    ) public view returns (bool) {
         _checkClaim(claim, _distributionRoots[claim.rootIndex]);
         return true;
     }
@@ -618,7 +670,9 @@ contract RewardsCoordinator is
         return _distributionRoots.length;
     }
 
-    function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory) {
+    function getDistributionRootAtIndex(
+        uint256 index
+    ) external view returns (DistributionRoot memory) {
         return _distributionRoots[index];
     }
 
@@ -639,7 +693,9 @@ contract RewardsCoordinator is
     }
 
     /// @notice loop through distribution roots from reverse and return hash
-    function getRootIndexFromHash(bytes32 rootHash) public view returns (uint32) {
+    function getRootIndexFromHash(
+        bytes32 rootHash
+    ) public view returns (uint32) {
         for (uint32 i = uint32(_distributionRoots.length); i > 0; i--) {
             if (_distributionRoots[i - 1].root == rootHash) {
                 return i - 1;

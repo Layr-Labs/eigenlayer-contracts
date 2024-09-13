@@ -210,6 +210,38 @@ interface IAllocationManager is ISignatureUtils {
     ) external view returns (uint64);
 
     /**
+     * @notice Returns the pending allocations of an operator for a given strategy and operatorSets
+     * One of the assumptions here is we don't allow more than one pending allocation for an operatorSet at a time.
+     * If that changes, we would need to change this function to return all pending allocations for an operatorSet.
+     * @param operator the operator to get the pending allocations for
+     * @param strategy the strategy to get the pending allocations for
+     * @param operatorSets the operatorSets to get the pending allocations for
+     * @return pendingMagnitude the pending allocations for each operatorSet
+     * @return timestamps the timestamps for each pending allocation
+     */
+    function getPendingAllocations(
+        address operator,
+        IStrategy strategy,
+        OperatorSet[] calldata operatorSets
+    ) external view returns (uint64[] memory, uint32[] memory);
+
+    /**
+     * @notice Returns the pending deallocations of an operator for a given strategy and operatorSets.
+     * One of the assumptions here is we don't allow more than one pending deallocation for an operatorSet at a time.
+     * If that changes, we would need to change this function to return all pending deallocations for an operatorSet.
+     * @param operator the operator to get the pending deallocations for
+     * @param strategy the strategy to get the pending deallocations for
+     * @param operatorSets the operatorSets to get the pending deallocations for
+     * @return pendingMagnitudeDiff the pending difference in deallocations for each operatorSet
+     * @return timestamps the timestamps for each pending deallocation
+     */
+    function getPendingDeallocations(
+        address operator,
+        IStrategy strategy,
+        OperatorSet[] calldata operatorSets
+    ) external view returns (uint64[] memory, uint32[] memory);
+
+    /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
      * @param operator the operator to check slashability for
      * @param operatorSet the operatorSet to check slashability for

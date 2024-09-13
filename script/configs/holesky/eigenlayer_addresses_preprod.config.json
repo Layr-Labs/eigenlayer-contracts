@@ -1,4 +1,5 @@
 {
+  "lastUpdated": "v0.4.2-preprod-longtail",
   "addresses": {
     "avsDirectory": "0x141d6995556135D4997b2ff72EB443Be300353bC",
     "avsDirectoryImplementation": "0x357978adC03375BD6a3605DE055fABb84695d79A",
@@ -24,6 +25,10 @@
     "strategyAddresses": [],
     "strategyManager": "0xF9fbF2e35D8803273E214c99BF15174139f4E67a",
     "strategyManagerImplementation": "0x1a26B23a004C512350d7Dd89056655A80b850199",
+    "strategyFactory": "0xad4A89E3cA9b3dc25AABe0aa7d72E61D2Ec66052",
+    "strategyFactoryImplementation": "0x7a9478c0AcB819d7c235FbE2a6E13ee1D2fCD862",
+    "strategyFactoryBeacon": "0xf2c2AcA859C685895E60ca7A14274365b64c0c2a",
+    "strategyFactoryBeaconImplementation": "0xd648792F932FbabcCC80Cd376812074434412685",
     "token": {
       "EIGEN": "0xD58f6844f79eB1fbd9f7091d05f7cb30d3363926",
       "EIGENImpl": "0x95a7431400F362F3647a69535C5666cA0133CAA0",
