@@ -59,9 +59,8 @@ contract StrategyManager is
     constructor(
         IDelegationManager _delegation,
         IEigenPodManager _eigenPodManager,
-        ISlasher _slasher,
-        IAVSDirectory _avsDirectory
-    ) StrategyManagerStorage(_delegation, _eigenPodManager, _slasher, _avsDirectory) {
+        ISlasher _slasher
+    ) StrategyManagerStorage(_delegation, _eigenPodManager, _slasher) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }

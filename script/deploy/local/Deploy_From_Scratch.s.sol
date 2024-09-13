@@ -235,7 +235,7 @@ contract DeployFromScratch is Script, Test {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher, avsDirectory);
+        strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         avsDirectoryImplementation = new AVSDirectory(delegation);
         slasherImplementation = new Slasher(strategyManager, delegation);
         eigenPodManagerImplementation = new EigenPodManager(
