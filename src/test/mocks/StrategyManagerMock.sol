@@ -110,7 +110,7 @@ contract StrategyManagerMock is
 
     function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
 
-    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external returns (uint256 existingShares) {}
+    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external {}
     
     function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external {}
 

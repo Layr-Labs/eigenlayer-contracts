@@ -610,33 +610,7 @@ contract DelegationManager is
             timestamp: withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY
         });
 
-        if (receiveAsTokens) {
-            // complete the withdrawal by converting shares to tokens
-            _completeReceiveAsTokens(withdrawal, tokens, totalMagnitudes, isLegacyWithdrawal);
-        } else {
-            // Award shares back in StrategyManager/EigenPodManager.
-            _completeReceiveAsShares(withdrawal, tokens, totalMagnitudes, isLegacyWithdrawal);
-        }
-
-        // Remove `withdrawalRoot` from pending roots
-        delete pendingWithdrawals[withdrawalRoot];
-        emit WithdrawalCompleted(withdrawalRoot);
-    }
-
-    /**
-     * @dev This function completes a queued withdrawal for a staker by converting shares to tokens and transferring to the withdrawer.
-     * This will apply any slashing that has occurred since the scaledShares were initially set in the Withdrawal struct
-     * by reading the original delegated operator's totalMagnitude at the time of withdrawal completion.
-     */
-    function _completeReceiveAsTokens(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
-        uint64[] memory totalMagnitudes,
-        bool isLegacyWithdrawal
-    ) internal {
-        // Finalize action by converting scaled shares to tokens for each strategy, or
-        // by re-awarding shares in each strategy.
-        for (uint256 i = 0; i < withdrawal.strategies.length; ++i) {
+        for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
             uint256 sharesToWithdraw;
             if (isLegacyWithdrawal) {
                 // This is a legacy M2 withdrawal. There is no slashing applied to the withdrawn shares.
@@ -649,104 +623,43 @@ contract DelegationManager is
                     SlashingLib.calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
             }
 
-            // Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares,
-            // then a call is ultimately forwarded to the `staker`s EigenPod; otherwise a call is ultimately forwarded
-            // to the `strategy` with info on the `token`.
-            if (withdrawal.strategies[i] == beaconChainETHStrategy) {
-                eigenPodManager.withdrawSharesAsTokens({
-                    podOwner: withdrawal.staker,
-                    destination: msg.sender,
-                    shares: sharesToWithdraw
-                });
-            } else {
-                strategyManager.withdrawSharesAsTokens({
-                    recipient: msg.sender,
-                    strategy: withdrawal.strategies[i],
-                    shares: sharesToWithdraw,
-                    token: tokens[i]
-                });
-            }
-        }
-    }
+            if (receiveAsTokens) {
+                // withdraws the underlying token of the strategy to the staker
 
-    /**
-     * @dev This function completes a queued withdrawal for a staker by receiving them back as shares
-     * in the StrategyManager/EigenPodManager. If the withdrawer is delegated to an operator, this will also
-     * increase the operator's scaled shares.
-     * This will apply any slashing that has occurred since the scaledShares were initially set in the Withdrawal struct
-     * by reading the original delegated operator's totalMagnitude at the time of withdrawal completion.
-     */
-    function _completeReceiveAsShares(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
-        uint64[] memory totalMagnitudes,
-        bool isLegacyWithdrawal
-    ) internal {
-        // read delegated operator for scaling and adding shares back if needed
-        address currentOperator = delegatedTo[msg.sender];
-
-        for (uint256 i = 0; i < withdrawal.strategies.length; ++i) {
-            // store existing shares to calculate new staker scaling factor later
-            uint256 existingShares;
-            uint256 shares;
-            if (isLegacyWithdrawal) {
-                // This is a legacy M2 withdrawal. There is no slashing applied to withdrawn shares
-                shares = withdrawal.scaledShares[i];
-            } else {
-                // Take already scaled staker shares and scale again according to current operator totalMagnitude
-                // This is because the totalMagnitude may have changed since withdrawal was queued and the staker shares
-                // are still susceptible to slashing
-                shares = SlashingLib.calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
-            }
-
-            /**
-             * When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
-             * Other strategy shares can + will be awarded to the withdrawer.
-             */
-            if (withdrawal.strategies[i] == beaconChainETHStrategy) {
-                address staker = withdrawal.staker;
-                /**
-                 * Update shares amount depending upon the returned value.
-                 * The return value will be lower than the input value in the case where the staker has an existing share deficit
-                 */
-                (shares, existingShares) = eigenPodManager.addShares({podOwner: staker, shares: shares});
-                address podOwnerOperator = delegatedTo[staker];
-                // Similar to `isDelegated` logic
-                if (podOwnerOperator != address(0)) {
-                    _increaseOperatorScaledShares({
-                        operator: podOwnerOperator,
-                        // the 'staker' here is the address receiving new shares
-                        staker: staker,
+                // Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares,
+                // then a call is ultimately forwarded to the `staker`s EigenPod; otherwise a call is ultimately forwarded
+                // to the `strategy` with info on the `token`.
+                if (withdrawal.strategies[i] == beaconChainETHStrategy) {
+                    eigenPodManager.withdrawSharesAsTokens({
+                        podOwner: withdrawal.staker,
+                        destination: msg.sender,
+                        shares: sharesToWithdraw
+                    });
+                } else {
+                    strategyManager.withdrawSharesAsTokens({
+                        recipient: msg.sender,
                         strategy: withdrawal.strategies[i],
-                        shares: shares,
-                        totalMagnitude: totalMagnitudes[i]
+                        shares: sharesToWithdraw,
+                        token: tokens[i]
                     });
                 }
             } else {
-                existingShares = strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], shares);
-                // Similar to `isDelegated` logic
-                if (currentOperator != address(0)) {
-                    _increaseOperatorScaledShares({
-                        operator: currentOperator,
-                        // the 'staker' here is the address receiving new shares
-                        staker: msg.sender,
-                        strategy: withdrawal.strategies[i],
-                        shares: shares,
-                        totalMagnitude: totalMagnitudes[i]
-                    });
-                }
-            }
+                // adds the withdrawable shares back to the stakers account
 
-            // update stakers scaling deposit scaling factor
-            uint256 newStakerScalingFactor = SlashingLib.calculateStakerScalingFactor({
-                staker: withdrawal.staker,
-                currStakerScalingFactor: _getStakerScalingFactor(withdrawal.staker, withdrawal.strategies[i]),
-                totalMagnitude: totalMagnitudes[i],
-                existingShares: existingShares,
-                addedShares: shares
-            });
-            stakerScalingFactors[withdrawal.staker][withdrawal.strategies[i]] = newStakerScalingFactor;
+                // Award shares back in StrategyManager/EigenPodManager.
+                if (withdrawal.strategies[i] == beaconChainETHStrategy) {
+                    // Award shares back in EigenPodManager.
+                    // big fukn TODO: refactor EPM to increaseDelegatedShares if applicable. this is completely broken as is
+                    eigenPodManager.addShares({podOwner: withdrawal.staker, shares: sharesToWithdraw});
+                } else {
+                    strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], sharesToWithdraw);
+                }
+            }           
         }
+
+        // Remove `withdrawalRoot` from pending roots
+        delete pendingWithdrawals[withdrawalRoot];
+        emit WithdrawalCompleted(withdrawalRoot);
     }
 
     /**
