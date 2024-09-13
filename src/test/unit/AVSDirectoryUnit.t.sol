@@ -43,6 +43,10 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     // reused in various tests. in storage to help handle stack-too-deep errors
     address defaultAVS = address(this);
 
+    // deallocation delay in AllocationManager
+    uint32 DEALLOCATION_DELAY = 17.5 days;
+    // withdrawal delay in DelegationManager
+    uint32 MIN_WITHDRAWAL_DELAY = 17.5 days;
     uint256 minWithdrawalDelayBlocks = 216_000;
     IStrategy[] public initializeStrategiesToSetDelayBlocks;
     uint256[] public initializeWithdrawalDelayBlocks;
@@ -72,14 +76,15 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
-        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory);
+        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY);
 
         delegationManagerImplementation = new DelegationManager(
             strategyManagerMock, 
             slasherMock, 
             eigenPodManagerMock, 
             avsDirectory, 
-            allocationManager
+            allocationManager,
+            MIN_WITHDRAWAL_DELAY
         );
 
         avsDirectoryImplementation = new AVSDirectory(delegationManager);

@@ -61,6 +61,7 @@ Rewards are initially submitted to the contract to be distributed to Operators a
 
 * [`RewardsCoordinator.createAVSRewardsSubmission`](#createavsrewardssubmission)
 * [`RewardsCoordinator.createRewardsForAllSubmission`](#createrewardsforallsubmission)
+* [`RewardsCoordinator.createRewardsForAllEarners`](#createrewardsforallearners)
 
 #### `createAVSRewardsSubmission`
 
@@ -153,7 +154,7 @@ function createRewardsForAllSubmission(
 
 This method is identical in function to [`createAVSRewardsSubmission`](#createavsrewardssubmission) above, except:
 * It can only be called by a whitelisted "rewards for all submitter"
-* ALL Stakers/Operators are eligible for rewards, instead of those specifically registered for a given AVS
+* ALL Stakers are eligible for rewards, instead of those specifically registered for a given AVS
 
 *Effects*:
 * See [`createAVSRewardsSubmission`](#createavsrewardssubmission) above. The only differences are that:
@@ -162,6 +163,30 @@ This method is identical in function to [`createAVSRewardsSubmission`](#createav
 
 *Requirements*:
 * See [`createAVSRewardsSubmission`](#createavsrewardssubmission) above. The only difference is that each calculated rewards submission hash MUST NOT already exist in the `isRewardsSubmissionForAllHash` mapping.
+
+#### `createRewardsForAllEarners` 
+
+```solidity
+function createRewardsForAllEarners(
+    RewardsSubmission[] calldata RewardsSubmissions
+) 
+    external 
+    onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
+    onlyRewardsForAllSubmitter
+    nonReentrant
+```
+
+This method is identical in function to [`createAVSRewardsSubmission`](#createavsrewardssubmission) above, except:
+* It can only be called by a whitelisted "rewards for all submitter"
+* Only operators who have opted into at least one AVS and the operator's delegated stakers are eligible for rewards
+
+*Effects*:
+* See [`createAVSRewardsSubmission`](#createavsrewardssubmission) above. The only differences are that:
+    * Each rewards submission hash is stored in the `isRewardsSubmissionForAllEarnersHash` mapping
+    * Emits a `RewardsSubmissionForAllEarnersCreated` event
+
+*Requirements*:
+* See [`createAVSRewardsSubmission`](#createavsrewardssubmission) above. The only difference is that each calculated rewards submission hash MUST NOT already exist in the `isRewardsSubmissionForAllEarnersHash` mapping.
 
 ---
 

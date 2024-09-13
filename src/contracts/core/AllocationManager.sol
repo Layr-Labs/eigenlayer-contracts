@@ -7,7 +7,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
-import "../libraries/SlashingConstants.sol";
+import "../libraries/SlashingLib.sol";
 import "./AllocationManagerStorage.sol";
 
 contract AllocationManager is
@@ -23,6 +23,7 @@ contract AllocationManager is
     uint256 internal constant BIPS_FACTOR = 10_000;
 
     /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
+    /// Note this max applies for a single (operator, strategy, operatorSet) tuple.
     uint256 public constant MAX_PENDING_UPDATES = 1;
 
     /// @dev Returns the chain ID from the time the contract was deployed.
@@ -40,8 +41,9 @@ contract AllocationManager is
      */
     constructor(
         IDelegationManager _delegation,
-        IAVSDirectory _avsDirectory
-    ) AllocationManagerStorage(_delegation, _avsDirectory) {
+        IAVSDirectory _avsDirectory,
+        uint32 _DEALLOCATION_DELAY
+    ) AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -108,7 +110,7 @@ contract AllocationManager is
         // effect timestamp for allocations to take effect. This is configurable by operators
         uint32 effectTimestamp = uint32(block.timestamp) + details.allocationDelay;
         // completable timestamp for deallocations
-        uint32 completableTimestamp = uint32(block.timestamp) + SlashingConstants.DEALLOCATION_DELAY;
+        uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
 
         for (uint256 i = 0; i < allocations.length; ++i) {
             // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
@@ -217,7 +219,9 @@ contract AllocationManager is
      *
      * @param salt A unique and single use value associated with the approver signature.
      */
-    function cancelSalt(bytes32 salt) external override {
+    function cancelSalt(
+        bytes32 salt
+    ) external override {
         // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
@@ -366,9 +370,9 @@ contract AllocationManager is
     function _getLatestTotalMagnitude(address operator, IStrategy strategy) internal returns (uint64) {
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
             _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
-            operatorMagnitudeInfo[operator][strategy].freeMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
+            operatorMagnitudeInfo[operator][strategy].freeMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
         }
 
         return uint64(totalMagnitude);
@@ -529,7 +533,7 @@ contract AllocationManager is
         (, uint32 lastDeregisteredTimestamp) =
             avsDirectory.operatorSetStatus(operatorSet.avs, operator, operatorSet.operatorSetId);
         return avsDirectory.isMember(operator, operatorSet)
-            || lastDeregisteredTimestamp + SlashingConstants.DEALLOCATION_DELAY >= block.timestamp;
+            || lastDeregisteredTimestamp + DEALLOCATION_DELAY >= block.timestamp;
     }
 
     /**
@@ -546,7 +550,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < strategies.length; ++i) {
             (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestSnapshot();
             if (!exists) {
-                totalMagnitudes[i] = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
+                totalMagnitudes[i] = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
             } else {
                 totalMagnitudes[i] = uint64(value);
             }
@@ -572,7 +576,7 @@ contract AllocationManager is
                 _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
             // if there is no existing total magnitude snapshot
             if (value == 0 && pos == 0) {
-                totalMagnitudes[i] = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
+                totalMagnitudes[i] = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
             } else {
                 totalMagnitudes[i] = uint64(value);
             }
@@ -590,7 +594,7 @@ contract AllocationManager is
         uint64 totalMagnitude;
         (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
         } else {
             totalMagnitude = uint64(value);
         }
@@ -610,17 +614,87 @@ contract AllocationManager is
         IStrategy strategy,
         uint32 timestamp
     ) external view returns (uint64) {
-        uint64 totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
+        uint64 totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
         (uint224 value, uint256 pos,) = _totalMagnitudeUpdate[operator][strategy].upperLookupRecentWithPos(timestamp);
 
         // if there is no existing total magnitude snapshot
         if (value == 0 && pos == 0) {
-            totalMagnitude = SlashingConstants.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
         } else {
             totalMagnitude = uint64(value);
         }
 
         return totalMagnitude;
+    }
+
+    /**
+     * @notice Returns the latest pending allocation of an operator for a given strategy and operatorSets.
+     * One of the assumptions here is we don't allow more than one pending allocation for an operatorSet at a time.
+     * If that changes, we would need to change this function to return all pending allocations for an operatorSet.
+     * @param operator the operator to get the pending allocations for
+     * @param strategy the strategy to get the pending allocations for
+     * @param operatorSets the operatorSets to get the pending allocations for
+     * @return pendingMagnitude the pending allocations for each operatorSet
+     * @return timestamps the timestamps for each pending allocation
+     */
+    function getPendingAllocations(
+        address operator,
+        IStrategy strategy,
+        OperatorSet[] calldata operatorSets
+    ) external view returns (uint64[] memory, uint32[] memory) {
+        uint64[] memory pendingMagnitude = new uint64[](operatorSets.length);
+        uint32[] memory timestamps = new uint32[](operatorSets.length);
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            // We use latestSnapshot to get the latest pending allocation for an operatorSet.
+            (bool exists, uint32 key, uint224 value) =
+                _magnitudeUpdate[operator][strategy][_encodeOperatorSet(operatorSets[i])].latestSnapshot();
+            if (exists) {
+                if (key > block.timestamp) {
+                    pendingMagnitude[i] = uint64(value);
+                    timestamps[i] = key;
+                } else {
+                    pendingMagnitude[i] = 0;
+                    timestamps[i] = 0;
+                }
+            }
+        }
+        return (pendingMagnitude, timestamps);
+    }
+
+    /**
+     * @notice Returns the pending deallocations of an operator for a given strategy and operatorSets.
+     * One of the assumptions here is we don't allow more than one pending deallocation for an operatorSet at a time.
+     * If that changes, we would need to change this function to return all pending deallocations for an operatorSet.
+     * @param operator the operator to get the pending deallocations for
+     * @param strategy the strategy to get the pending deallocations for
+     * @param operatorSets the operatorSets to get the pending deallocations for
+     * @return pendingMagnitudeDiff the pending difference in deallocations for each operatorSet
+     * @return timestamps the timestamps for each pending deallocation
+     */
+    function getPendingDeallocations(
+        address operator,
+        IStrategy strategy,
+        OperatorSet[] calldata operatorSets
+    ) external view returns (uint64[] memory, uint32[] memory) {
+        uint64[] memory pendingMagnitudeDiff = new uint64[](operatorSets.length);
+        uint32[] memory timestamps = new uint32[](operatorSets.length);
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            uint256[] memory indices =
+                _queuedDeallocationIndices[operator][strategy][_encodeOperatorSet(operatorSets[i])];
+            uint256 length = indices.length;
+            uint256 deallocationIndex = indices[length - 1];
+            PendingFreeMagnitude memory latestPendingMagnitude =
+                _pendingFreeMagnitude[operator][strategy][deallocationIndex];
+            if (latestPendingMagnitude.completableTimestamp > block.timestamp) {
+                pendingMagnitudeDiff[i] = latestPendingMagnitude.magnitudeDiff;
+                timestamps[i] = latestPendingMagnitude.completableTimestamp;
+            } else {
+                // There is no pending deallocation, so we set the pending magnitude and timestamp to 0
+                pendingMagnitudeDiff[i] = 0;
+                timestamps[i] = 0;
+            }
+        }
+        return (pendingMagnitudeDiff, timestamps);
     }
 
     // /**
@@ -698,20 +772,26 @@ contract AllocationManager is
     }
 
     /// @notice Returns an EIP-712 encoded hash struct.
-    function _calculateDigestHash(bytes32 structHash) internal view returns (bytes32) {
+    function _calculateDigestHash(
+        bytes32 structHash
+    ) internal view returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
     }
 
     /// @dev Returns an `OperatorSet` encoded into a 32-byte value.
     /// @param operatorSet The `OperatorSet` to encode.
-    function _encodeOperatorSet(OperatorSet memory operatorSet) internal pure returns (bytes32) {
+    function _encodeOperatorSet(
+        OperatorSet memory operatorSet
+    ) internal pure returns (bytes32) {
         return bytes32(abi.encodePacked(operatorSet.avs, uint96(operatorSet.operatorSetId)));
     }
 
     /// @dev Returns an `OperatorSet` decoded from an encoded 32-byte value.
     /// @param encoded The encoded `OperatorSet` to decode.
     /// @dev Assumes `encoded` is encoded via `_encodeOperatorSet(operatorSet)`.
-    function _decodeOperatorSet(bytes32 encoded) internal pure returns (OperatorSet memory) {
+    function _decodeOperatorSet(
+        bytes32 encoded
+    ) internal pure returns (OperatorSet memory) {
         return OperatorSet({
             avs: address(uint160(uint256(encoded) >> 96)),
             operatorSetId: uint32(uint256(encoded) & type(uint96).max)
