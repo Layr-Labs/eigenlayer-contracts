@@ -73,7 +73,16 @@ contract DelegationManager is
         IAVSDirectory _avsDirectory,
         IAllocationManager _allocationManager,
         uint32 _MIN_WITHDRAWAL_DELAY
-    ) DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager, _avsDirectory, _allocationManager, _MIN_WITHDRAWAL_DELAY) {
+    )
+        DelegationManagerStorage(
+            _strategyManager,
+            _slasher,
+            _eigenPodManager,
+            _avsDirectory,
+            _allocationManager,
+            _MIN_WITHDRAWAL_DELAY
+        )
+    {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -632,7 +641,8 @@ contract DelegationManager is
                 // Take already scaled staker shares and scale again according to current operator totalMagnitude
                 // This is because the totalMagnitude may have changed since withdrawal was queued and the staker shares
                 // are still susceptible to slashing
-                sharesToWithdraw = SlashingLib.calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
+                sharesToWithdraw =
+                    SlashingLib.calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
             }
 
             // Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares,
@@ -814,12 +824,13 @@ contract DelegationManager is
             }
             uint256 stakerScalingFactor = _getStakerScalingFactor(staker, strategies[i]);
             require(
-                sharesToWithdraw[i] <= SlashingLib.getWithdrawableShares({
-                    staker: staker,
-                    stakerScalingFactor: stakerScalingFactor,
-                    shares: totalShares,
-                    currTotalMagnitude: totalMagnitudes[i]
-                }),
+                sharesToWithdraw[i]
+                    <= SlashingLib.getWithdrawableShares({
+                        staker: staker,
+                        stakerScalingFactor: stakerScalingFactor,
+                        shares: totalShares,
+                        currTotalMagnitude: totalMagnitudes[i]
+                    }),
                 WithdrawalExeedsMax()
             );
 
