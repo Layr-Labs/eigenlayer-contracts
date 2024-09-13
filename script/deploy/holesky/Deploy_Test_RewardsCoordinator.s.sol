@@ -16,7 +16,7 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
     address initOwner = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
 
     function run() external virtual {
-        _parseInitialDeploymentParams("script/configs/holesky/Deploy_RewardsCoordinator.holesky.config.json");
+        _parseInitialDeploymentParams("script/configs/holesky/eigenlayer_testnet.config.json");
         _parseDeployedContracts("script/configs/holesky/eigenlayer_addresses.config.json");
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT

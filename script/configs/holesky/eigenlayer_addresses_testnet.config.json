@@ -1,4 +1,5 @@
 {
+  "lastUpdated": "v0.4.3-rewards-incentives",
   "addresses": {
     "avsDirectory": "0x055733000064333CaDDbC92763c58BF0192fFeBf",
     "avsDirectoryImplementation": "0xEF5BA995Bc7722fd1e163edF8Dc09375de3d3e3a",
@@ -16,7 +17,7 @@
     "eigenPodManagerImplementation": "0x91A6525a4a843F5a5B633905300c33F79413CCc5",
     "emptyContract": "0x9690d52B1Ce155DB2ec5eCbF5a262ccCc7B3A6D2",
     "rewardsCoordinator": "0xAcc1fb458a1317E886dB376Fc8141540537E68fE",
-    "rewardsCoordinatorImplementation": "0xe54625095656206AC1B42819875343453c447f97",
+    "rewardsCoordinatorImplementation": "0x1131D88143a35011E35263b43eC66cDd27025584",
     "slasher": "0xcAe751b75833ef09627549868A04E32679386e7C",
     "slasherImplementation": "0x99715D255E34a39bE9943b82F281CA734bcF345A",
     "numStrategiesDeployed": 10,

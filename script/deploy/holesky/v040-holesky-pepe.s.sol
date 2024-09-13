@@ -16,7 +16,7 @@ contract PEPE_Deploy_Preprod is ExistingDeploymentParser {
 
     function run() external virtual {
         _parseInitialDeploymentParams(
-            "script/configs/holesky/Deploy_RewardsCoordinator.holesky.config.json"
+            "script/configs/holesky/eigenlayer_preprod.config.json"
         );
         _parseDeployedContracts(
             "script/configs/holesky/eigenlayer_addresses.config.json"
