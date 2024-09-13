@@ -72,11 +72,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      */
     mapping(IStrategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
-    constructor(
-        IDelegationManager _delegation,
-        IEigenPodManager _eigenPodManager,
-        ISlasher _slasher
-    ) {
+    constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) {
         delegation = _delegation;
         eigenPodManager = _eigenPodManager;
         slasher = _slasher;

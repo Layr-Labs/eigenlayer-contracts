@@ -93,16 +93,16 @@ library SlashingLib {
         if (existingShares == 0) {
             // existing shares are 0, meaning no existing delegated shares. In this case, the new staker scaling factor
             // is re-initialized to
-            newStakerScalingFactor = SlashingLib.PRECISION_FACTOR / (totalMagnitude);
+            newStakerScalingFactor = PRECISION_FACTOR / (totalMagnitude);
         } else {
             // TODO: DOUBLE CHECK THIS BEHAVIOR AND OVERFLOWS
             // staker scaling factor is initialized to PRECISION_FACTOR(1e18) and totalMagnitude is initialized to INITIAL_TOTAL_MAGNITUDE(1e18)
             // and is monotonically decreasing. You can deduce that the newStakerScalingFactor will never decrease to less than the PRECISION_FACTOR
             // so this won't round to 0.
             newStakerScalingFactor = (
-                currStakerScalingFactor * existingShares * totalMagnitude / PRECISION_FACTOR
-                    + addedShares * PRECISION_FACTOR
-            ) / ((existingShares + addedShares) * totalMagnitude);
+                existingShares * currStakerScalingFactor / PRECISION_FACTOR * totalMagnitude / PRECISION_FACTOR
+                    + addedShares
+            ) / ((existingShares + addedShares) * totalMagnitude / PRECISION_FACTOR);
         }
 
         return newStakerScalingFactor;
