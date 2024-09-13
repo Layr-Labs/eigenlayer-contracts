@@ -235,6 +235,11 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     }
 
     /// @inheritdoc IStakeRootCompendium
+    function getNumStakeRootSubmissions() external view returns (uint256) {
+        return stakeRootSubmissions.length;
+    }
+
+    /// @inheritdoc IStakeRootCompendium
     function getOperatorSetIndexAtTimestamp(
         IAVSDirectory.OperatorSet calldata operatorSet,
         uint32 timestamp
@@ -432,6 +437,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
                 calculationTimestamp: calculationTimestamp,
                 blacklistableBefore: uint32(block.timestamp) + blacklistWindow,
                 blacklisted: false,
+                crossPosted: false,
                 forcePosted: forcePosted
             })
         );

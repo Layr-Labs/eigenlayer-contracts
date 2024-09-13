@@ -33,6 +33,7 @@ interface IStakeRootCompendium {
         uint32 calculationTimestamp; // the timestamp the was generated against
         uint32 blacklistableBefore; // the timestamp the proof submission was submitted to the contract
         bool blacklisted; // whether the submission has been blacklisted by governance
+        bool crossPosted; 
         bool forcePosted; // whether the submission was posted without proof by governance
     }
 
@@ -54,6 +55,9 @@ interface IStakeRootCompendium {
 
     /// @notice the number of operator sets in the StakeTree
     function getNumOperatorSets() external view returns (uint256);
+
+    /// @notice the number of stake root submissions
+    function getNumStakeRootSubmissions() external view returns (uint256);
 
     /// @notice the interval at which proofs can be posted, to not overcharge the operatorSets
     function proofInterval() external view returns (uint32);
