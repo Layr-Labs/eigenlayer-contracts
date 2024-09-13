@@ -28,6 +28,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         "DelegationApproval(address delegationApprover,address staker,address operator,bytes32 salt,uint256 expiry)"
     );
 
+    /// @notice Minimum withdrawal delay in seconds until all queued withdrawals can be completed.
+    uint32 public immutable MIN_WITHDRAWAL_DELAY;
+
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -122,13 +125,15 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         ISlasher _slasher,
         IEigenPodManager _eigenPodManager,
         IAVSDirectory _avsDirectory,
-        IAllocationManager _allocationManager
+        IAllocationManager _allocationManager,
+        uint32 _MIN_WITHDRAWAL_DELAY
     ) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
         slasher = _slasher;
         avsDirectory = _avsDirectory;
         allocationManager = _allocationManager;
+        MIN_WITHDRAWAL_DELAY = _MIN_WITHDRAWAL_DELAY;
     }
 
     /**

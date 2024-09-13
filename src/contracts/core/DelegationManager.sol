@@ -6,7 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
-import "../libraries/SlashingConstants.sol";
+import "../libraries/SlashingLib.sol";
 import "./DelegationManagerStorage.sol";
 
 /**
@@ -45,8 +45,6 @@ contract DelegationManager is
     /// should be processed as legacy M2 or with slashing considered.
     uint32 public constant LEGACY_WITHDRAWALS_TIMESTAMP = 1_735_750_800;
 
-    uint32 public constant WITHDRAWAL_DELAY = SlashingConstants.DEALLOCATION_DELAY;
-
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
@@ -73,8 +71,9 @@ contract DelegationManager is
         ISlasher _slasher,
         IEigenPodManager _eigenPodManager,
         IAVSDirectory _avsDirectory,
-        IAllocationManager _allocationManager
-    ) DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager, _avsDirectory, _allocationManager) {
+        IAllocationManager _allocationManager,
+        uint32 _MIN_WITHDRAWAL_DELAY
+    ) DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager, _avsDirectory, _allocationManager, _MIN_WITHDRAWAL_DELAY) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -391,9 +390,9 @@ contract DelegationManager is
             uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
 
             // update stakers scaling deposit scaling factor
-            uint256 newStakerScalingFactor = _calculateStakerScalingFactor({
+            uint256 newStakerScalingFactor = SlashingLib.calculateStakerScalingFactor({
                 staker: staker,
-                strategy: strategy,
+                currStakerScalingFactor: _getStakerScalingFactor(staker, strategy),
                 totalMagnitude: totalMagnitude,
                 existingShares: existingShares,
                 addedShares: addedShares
@@ -537,9 +536,9 @@ contract DelegationManager is
 
         for (uint256 i = 0; i < strategies.length; ++i) {
             // update stakers scaling deposit scaling factor
-            uint256 newStakerScalingFactor = _calculateStakerScalingFactor({
+            uint256 newStakerScalingFactor = SlashingLib.calculateStakerScalingFactor({
                 staker: staker,
-                strategy: strategies[i],
+                currStakerScalingFactor: _getStakerScalingFactor(staker, strategies[i]),
                 totalMagnitude: totalMagnitudes[i],
                 existingShares: 0,
                 addedShares: shares[i]
@@ -587,7 +586,7 @@ contract DelegationManager is
             isLegacyWithdrawal = true;
         } else {
             // this is a post Slashing release withdrawal using timestamps
-            require(withdrawal.startTimestamp + WITHDRAWAL_DELAY <= block.timestamp, WithdrawalDelayNotElapsed());
+            require(withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY <= block.timestamp, WithdrawalDelayNotElapsed());
         }
 
         // read delegated operator's totalMagnitudes at time of withdrawal to scale shares again if any slashing has occurred
@@ -595,7 +594,7 @@ contract DelegationManager is
         uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudesAtTimestamp({
             operator: withdrawal.delegatedTo,
             strategies: withdrawal.strategies,
-            timestamp: withdrawal.startTimestamp + WITHDRAWAL_DELAY
+            timestamp: withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY
         });
 
         if (receiveAsTokens) {
@@ -633,16 +632,26 @@ contract DelegationManager is
                 // Take already scaled staker shares and scale again according to current operator totalMagnitude
                 // This is because the totalMagnitude may have changed since withdrawal was queued and the staker shares
                 // are still susceptible to slashing
-                sharesToWithdraw = _calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
+                sharesToWithdraw = SlashingLib.calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
             }
 
-            _withdrawSharesAsTokens({
-                staker: withdrawal.staker,
-                withdrawer: msg.sender,
-                strategy: withdrawal.strategies[i],
-                shares: sharesToWithdraw,
-                token: tokens[i]
-            });
+            // Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares,
+            // then a call is ultimately forwarded to the `staker`s EigenPod; otherwise a call is ultimately forwarded
+            // to the `strategy` with info on the `token`.
+            if (withdrawal.strategies[i] == beaconChainETHStrategy) {
+                eigenPodManager.withdrawSharesAsTokens({
+                    podOwner: withdrawal.staker,
+                    destination: msg.sender,
+                    shares: sharesToWithdraw
+                });
+            } else {
+                strategyManager.withdrawSharesAsTokens({
+                    recipient: msg.sender,
+                    strategy: withdrawal.strategies[i],
+                    shares: sharesToWithdraw,
+                    token: tokens[i]
+                });
+            }
         }
     }
 
@@ -673,7 +682,7 @@ contract DelegationManager is
                 // Take already scaled staker shares and scale again according to current operator totalMagnitude
                 // This is because the totalMagnitude may have changed since withdrawal was queued and the staker shares
                 // are still susceptible to slashing
-                shares = _calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
+                shares = SlashingLib.calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
             }
 
             /**
@@ -715,9 +724,9 @@ contract DelegationManager is
             }
 
             // update stakers scaling deposit scaling factor
-            uint256 newStakerScalingFactor = _calculateStakerScalingFactor({
+            uint256 newStakerScalingFactor = SlashingLib.calculateStakerScalingFactor({
                 staker: withdrawal.staker,
-                strategy: withdrawal.strategies[i],
+                currStakerScalingFactor: _getStakerScalingFactor(withdrawal.staker, withdrawal.strategies[i]),
                 totalMagnitude: totalMagnitudes[i],
                 existingShares: existingShares,
                 addedShares: shares
@@ -742,7 +751,7 @@ contract DelegationManager is
         uint64 totalMagnitude
     ) internal {
         // based on total magnitude, update operators scaled shares
-        uint256 scaledShares = _scaleShares(shares, totalMagnitude);
+        uint256 scaledShares = SlashingLib.scaleShares(shares, totalMagnitude);
         operatorScaledShares[operator][strategy] += scaledShares;
 
         // TODO: What to do about event wrt scaling?
@@ -765,7 +774,7 @@ contract DelegationManager is
         uint64 totalMagnitude
     ) internal {
         // based on total magnitude, decrement operator's scaled shares
-        uint256 scaledShares = _scaleShares(shares, totalMagnitude);
+        uint256 scaledShares = SlashingLib.scaleShares(shares, totalMagnitude);
         operatorScaledShares[operator][strategy] -= scaledShares;
         // TODO: What to do about event wrt scaling?
         emit OperatorSharesDecreased(operator, staker, strategy, scaledShares);
@@ -803,18 +812,23 @@ contract DelegationManager is
             } else {
                 totalShares = strategyManager.stakerStrategyShares(staker, strategies[i]);
             }
+            uint256 stakerScalingFactor = _getStakerScalingFactor(staker, strategies[i]);
             require(
-                sharesToWithdraw[i] <= _getWithdrawableShares(staker, strategies[i], totalShares, totalMagnitudes[i]),
+                sharesToWithdraw[i] <= SlashingLib.getWithdrawableShares({
+                    staker: staker,
+                    stakerScalingFactor: stakerScalingFactor,
+                    shares: totalShares,
+                    currTotalMagnitude: totalMagnitudes[i]
+                }),
                 WithdrawalExeedsMax()
             );
-            // calculate scaledShares to place into queue withdrawal and shares to decrement from SM/EPM
-            uint256 stakerScalingFactor = _getStakerScalingFactor(staker, strategies[i]);
+
             (
                 // shares to decrement from StrategyManager/EigenPodManager
                 uint256 sharesToDecrement,
                 // scaledShares for staker to place into queueWithdrawal
                 uint256 scaledShares
-            ) = _calculateSharesToQueueWithdraw(sharesToWithdraw[i], stakerScalingFactor, totalMagnitudes[i]);
+            ) = SlashingLib.calculateSharesToQueueWithdraw(sharesToWithdraw[i], stakerScalingFactor, totalMagnitudes[i]);
             scaledStakerShares[i] = scaledShares;
 
             // Similar to `isDelegated` logic
@@ -868,82 +882,10 @@ contract DelegationManager is
     }
 
     /**
-     * @notice Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares, then a call is ultimately forwarded to the
-     * `staker`s EigenPod; otherwise a call is ultimately forwarded to the `strategy` with info on the `token`.
-     */
-    function _withdrawSharesAsTokens(
-        address staker,
-        address withdrawer,
-        IStrategy strategy,
-        uint256 shares,
-        IERC20 token
-    ) internal {
-        if (strategy == beaconChainETHStrategy) {
-            eigenPodManager.withdrawSharesAsTokens({podOwner: staker, destination: withdrawer, shares: shares});
-        } else {
-            strategyManager.withdrawSharesAsTokens({
-                recipient: withdrawer,
-                strategy: strategy,
-                shares: shares,
-                token: token
-            });
-        }
-    }
-
-    /**
      *
      *                         SLASHING AND SHARES HELPER FUNCTIONS
      *
      */
-
-    /**
-     * @notice helper pure to calculate the scaledShares to store in queue withdrawal
-     * and the shares to decrement from StrategyManager/EigenPodManager
-     */
-    function _calculateSharesToQueueWithdraw(
-        uint256 sharesToWithdraw,
-        uint256 stakerScalingFactor,
-        uint64 totalMagnitude
-    ) internal pure returns (uint256 sharesToDecrement, uint256 scaledStakerShares) {
-        // TODO: DOUBLE CHECK THIS BEHAVIOR
-        // NOTE that to prevent numerator overflow, the max sharesToWithdraw is
-        // x*1e36 <= 2^256-1
-        // => x <= 1.1579e41
-        // however we know that the max shares in a strategy is 1e38-1 and all the ETH on the beaconchain staked
-        // in one eigenPod would be ~3e25. This product here is safe
-        sharesToDecrement =
-            (sharesToWithdraw * SlashingConstants.PRECISION_FACTOR_SQUARED) / (stakerScalingFactor * totalMagnitude);
-        scaledStakerShares = sharesToWithdraw * SlashingConstants.PRECISION_FACTOR / totalMagnitude;
-        return (sharesToDecrement, scaledStakerShares);
-    }
-
-    /**
-     * @notice helper pure to calculate the shares to complete a withdrawal after slashing
-     * We use the totalMagnitude of the delegated operator at the time of withdrawal completion to scale the shares
-     * back to real StrategyManager/EigenPodManager shares
-     */
-    function _calculateSharesToCompleteWithdraw(
-        uint256 scaledStakerShares,
-        uint64 totalMagnitudeAtCompletion
-    ) internal pure returns (uint256 shares) {
-        shares = scaledStakerShares * totalMagnitudeAtCompletion / SlashingConstants.PRECISION_FACTOR;
-    }
-
-    /**
-     * @notice helper pure to return scaledShares given shares and current totalMagnitude. Used for
-     * adding/removing staker shares from operatorScaledShares
-     */
-    function _scaleShares(uint256 shares, uint64 totalMagnitude) internal pure returns (uint256) {
-        return shares * SlashingConstants.PRECISION_FACTOR / totalMagnitude;
-    }
-
-    /**
-     * @notice helper pure to return real strategy shares given operator scaledShares and current totalMagnitude.
-     * Used for returning the total delegated shares for an operator and strategy
-     */
-    function _descaleShares(uint256 scaledShares, uint64 totalMagnitude) internal pure returns (uint256) {
-        return scaledShares * totalMagnitude / SlashingConstants.PRECISION_FACTOR;
-    }
 
     /**
      * @notice staker scaling factor should be initialized and lower bounded to 1e18
@@ -951,57 +893,9 @@ contract DelegationManager is
     function _getStakerScalingFactor(address staker, IStrategy strategy) internal view returns (uint256) {
         uint256 currStakerScalingFactor = stakerScalingFactors[staker][strategy];
         if (currStakerScalingFactor == 0) {
-            currStakerScalingFactor = SlashingConstants.PRECISION_FACTOR;
+            currStakerScalingFactor = SlashingLib.PRECISION_FACTOR;
         }
         return currStakerScalingFactor;
-    }
-
-    /**
-     * @notice helper to calculate the new staker scaling factor after adding shares. This is only used
-     * when a staker is depositing through the StrategyManager or EigenPodManager. A stakers scaling factor
-     * is only updated when they have new deposits and their shares are being increased.
-     */
-    function _calculateStakerScalingFactor(
-        address staker,
-        IStrategy strategy,
-        uint64 totalMagnitude,
-        uint256 existingShares,
-        uint256 addedShares
-    ) internal view returns (uint256) {
-        uint256 newStakerScalingFactor;
-
-        if (existingShares == 0) {
-            // existing shares are 0, meaning no existing delegated shares. In this case, the new staker scaling factor
-            // is re-initialized to
-            newStakerScalingFactor = SlashingConstants.PRECISION_FACTOR / (totalMagnitude);
-        } else {
-            uint256 currStakerScalingFactor = _getStakerScalingFactor(staker, strategy);
-
-            // TODO: DOUBLE CHECK THIS BEHAVIOR AND OVERFLOWS
-            // staker scaling factor is initialized to PRECISION_FACTOR(1e18) and totalMagnitude is initialized to INITIAL_TOTAL_MAGNITUDE(1e18)
-            // and is monotonically decreasing. You can deduce that the newStakerScalingFactor will never decrease to less than the PRECISION_FACTOR
-            // so this won't round to 0.
-            newStakerScalingFactor = (
-                currStakerScalingFactor * existingShares * totalMagnitude / SlashingConstants.PRECISION_FACTOR
-                    + addedShares * SlashingConstants.PRECISION_FACTOR
-            ) / ((existingShares + addedShares) * totalMagnitude);
-        }
-
-        return newStakerScalingFactor;
-    }
-
-    /**
-     * @notice helper to calculate the withdrawable shares for a staker given their shares and the
-     * current totalMagnitude. `shares` should be the staker's shares in storage in the StrategyManager/EigenPodManager.
-     */
-    function _getWithdrawableShares(
-        address staker,
-        IStrategy strategy,
-        uint256 shares,
-        uint64 currTotalMagnitude
-    ) internal view returns (uint256) {
-        uint256 stakerScalingFactor = _getStakerScalingFactor(staker, strategy);
-        return stakerScalingFactor * shares * currTotalMagnitude / SlashingConstants.PRECISION_FACTOR;
     }
 
     /**
@@ -1083,7 +977,7 @@ contract DelegationManager is
     /// @notice a legacy function that returns the total delegated shares for an operator and strategy
     function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
         uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
-        return _descaleShares(operatorScaledShares[operator][strategy], totalMagnitude);
+        return SlashingLib.descaleShares(operatorScaledShares[operator][strategy], totalMagnitude);
     }
 
     /**
@@ -1110,7 +1004,12 @@ contract DelegationManager is
             // in the StrategyManager/EigenPodManager because they could have been slashed
             if (operator != address(0)) {
                 uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategies[i]);
-                shares[i] = _getWithdrawableShares(staker, strategies[i], shares[i], totalMagnitude);
+                shares[i] = SlashingLib.getWithdrawableShares({
+                    staker: staker,
+                    stakerScalingFactor: _getStakerScalingFactor(staker, strategies[i]),
+                    shares: shares[i],
+                    currTotalMagnitude: totalMagnitude
+                });
             }
         }
         return shares;
