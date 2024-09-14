@@ -16,8 +16,10 @@ import "script/utils/TimelockEncoding.sol";
 contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, TimelockEncoding {
 
     // CALLDATA FOR CALL TO TIMELOCK
-    // TUESDAY, SEPTEMBER 17 2024 22:00:00 GMT (6pm EST/3pm PST)
-    uint256 timelockEta = 1727215200;
+    // TUESDAY, SEPTEMBER 27 2024 19:00:00 GMT (3pm EST/12pm PST)
+    uint256 timelockEta = 1727463600;
+
+    uint256 dayToQueueAction = 1726599600;
 
     // Calldatas for upgrading RC
     bytes final_calldata_to_executor_multisig;
@@ -120,7 +122,9 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
     }
 
     function test_mainnet_rc_upgrade() public {
-        run();
+        run();  
+
+        vm.warp(dayToQueueAction);
 
         // Queue Transaction
         vm.prank(operationsMultisig);
