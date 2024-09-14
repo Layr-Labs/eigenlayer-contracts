@@ -27,10 +27,20 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
     // Calldatas for setting reward for all submitter
     bytes hopper_setter_final_calldata_to_ops_multisig;
 
-    function run() public parseState {
+    modifier parseState() {
         _parseInitialDeploymentParams("script/configs/mainnet/mainnet-config.config.json");
         _parseDeployedContracts("script/configs/mainnet/mainnet-addresses.config.json");
+        _;
+    }
 
+    function run() public parseState {
+        uint256 chainId = block.chainid;
+        emit log_named_uint("You are deploying on ChainID", chainId);
+
+        if (chainId != 1) {
+            revert("Chain not supported");
+        }
+        
         RewardsCoordinator oldRewardsCoordinator = rewardsCoordinatorImplementation;
 
         // Deploy Rewards Coordinator
@@ -180,11 +190,5 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         rewardsCoordinator.setRewardsForAllSubmitter(hopper, true);
         
         assertTrue(rewardsCoordinator.isRewardsForAllSubmitter(hopper), "Hopper not set for all submitters");
-    }
-
-    modifier parseState() {
-        _parseInitialDeploymentParams("script/configs/mainnet/mainnet-config.config.json");
-        _parseDeployedContracts("script/configs/mainnet/mainnet-addresses.config.json");
-        _;
     }
 }
