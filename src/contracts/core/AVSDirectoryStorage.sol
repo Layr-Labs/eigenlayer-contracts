@@ -1,36 +1,52 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    // Constants
 
     /// @notice The EIP-712 typehash for the `Registration` struct used by the contract
     bytes32 public constant OPERATOR_AVS_REGISTRATION_TYPEHASH =
         keccak256("OperatorAVSRegistration(address operator,address avs,bytes32 salt,uint256 expiry)");
 
+    /// @notice The EIP-712 typehash for the `OperatorSetRegistration` struct used by the contract
+    bytes32 public constant OPERATOR_SET_REGISTRATION_TYPEHASH =
+        keccak256("OperatorSetRegistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
+
+    /// @notice The EIP-712 typehash for the `OperatorSetMembership` struct used by the contract
+    bytes32 public constant OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH =
+        keccak256("OperatorSetForceDeregistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
+
+    /// @dev Index for flag that pauses operator register/deregister to avs when set.
+    uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
+
+    /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
+    uint8 internal constant PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION = 1;
+
+    // Immutables
+
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
-    /**
-     * @notice Original EIP-712 Domain separator for this contract.
-     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
-     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
-     */
-    bytes32 internal _DOMAIN_SEPARATOR;
+    // Mutatables
 
-    /// @notice Mapping: AVS => operator => enum of operator status to the AVS
-    mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
+    /// @dev Do not remove, deprecated storage.
+    bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
-    /// @notice Mapping: operator => 32-byte salt => whether or not the salt has already been used by the operator.
-    /// @dev Salt is used in the `registerOperatorToAVS` function.
-    mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
+    /// @notice Returns the registration status of each `operator` for a given `avs`.
+    /// @dev This storage will be deprecated once M2-based deregistration is removed.
+    mapping(address avs => mapping(address operator => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 
-    constructor(IDelegationManager _delegation) {
+    /// @notice Returns whether a `salt` has been used by a given `operator`.
+    mapping(address operator => mapping(bytes32 salt => bool isSpent)) public operatorSaltIsSpent;
+
+    // Construction
+
+    constructor(
+        IDelegationManager _delegation
+    ) {
         delegation = _delegation;
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -46,12 +46,12 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);
 
-        strategyImplementation = new StrategyBase(strategyManagerMock);
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
 
         strategyBeacon = new UpgradeableBeacon(address(strategyImplementation));
         strategyBeacon.transferOwnership(beaconProxyOwner);
 
-        strategyFactoryImplementation = new StrategyFactory(strategyManagerMock);
+        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
 
         strategyFactory = StrategyFactory(
             address(
@@ -60,7 +60,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(StrategyFactory.initialize.selector,
                         initialOwner,
-                        pauserRegistry,
                         initialPausedStatus,
                         strategyBeacon
                     )
@@ -69,7 +68,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         );
     }
 
-    function test_initialization() public {
+    function test_initialization() public view {
         assertEq(
             address(strategyFactory.strategyManager()),
             address(strategyManagerMock),
@@ -99,7 +98,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         cheats.expectRevert("Initializable: contract is already initialized");
         strategyFactory.initialize({
             _initialOwner: initialOwner,
-            _pauserRegistry: pauserRegistry,
             _initialPausedStatus: initialPausedStatus,
             _strategyBeacon: strategyBeacon
         });
@@ -111,17 +109,16 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         StrategyBase newStrategy = StrategyBase(address(strategyFactory.deployNewStrategy(underlyingToken)));
 
         require(strategyFactory.deployedStrategies(underlyingToken) == newStrategy, "deployedStrategies mapping not set correctly");
-        require(newStrategy.strategyManager() == strategyManagerMock, "strategyManager not set correctly");
+        require(address(newStrategy.strategyManager()) == address(strategyManagerMock), "strategyManager not set correctly");
         require(strategyBeacon.implementation() == address(strategyImplementation), "strategyImplementation not set correctly");
         require(newStrategy.pauserRegistry() == pauserRegistry, "pauserRegistry not set correctly");
         require(newStrategy.underlyingToken() == underlyingToken, "underlyingToken not set correctly");
         require(strategyManagerMock.strategyIsWhitelistedForDeposit(newStrategy), "underlyingToken is not whitelisted");
-        require(!strategyManagerMock.thirdPartyTransfersForbidden(newStrategy), "newStrategy has 3rd party transfers forbidden");
     }
 
     function test_deployNewStrategy_revert_StrategyAlreadyExists() public {
         test_deployNewStrategy();
-        cheats.expectRevert("StrategyFactory.deployNewStrategy: Strategy already exists for token");
+        cheats.expectRevert(IStrategyFactory.StrategyAlreadyExists.selector);
         strategyFactory.deployNewStrategy(underlyingToken);
     }
 
@@ -134,7 +131,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         emit TokenBlacklisted(token);
         strategyFactory.blacklistTokens(tokens);
 
-        cheats.expectRevert("StrategyFactory.deployNewStrategy: Token is blacklisted");
+        cheats.expectRevert(IStrategyFactory.BlacklistedToken.selector);
         strategyFactory.deployNewStrategy(token);
     }
 
@@ -159,38 +156,18 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     function test_whitelistStrategies() public {
         StrategyBase strategy = _deployStrategy();
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](1);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         strategiesToWhitelist[0] = strategy;
-        thirdPartyTransfersForbiddenValues[0] = true;
-        strategyFactory.whitelistStrategies(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
+        strategyFactory.whitelistStrategies(strategiesToWhitelist);
 
         assertTrue(strategyManagerMock.strategyIsWhitelistedForDeposit(strategy), "Strategy not whitelisted");
-        require(strategyManagerMock.thirdPartyTransfersForbidden(strategy), "3rd party transfers forbidden not set correctly");
     }
 
     function test_whitelistStrategies_revert_notOwner() public {
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](1);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
 
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(notOwner);
-        strategyFactory.whitelistStrategies(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
-    }
-
-    function test_setThirdPartyTransfersForbidden_revert_notOwner() public {
-        IStrategy strategy;
-
-        cheats.expectRevert("Ownable: caller is not the owner");
-        cheats.prank(notOwner);
-        strategyFactory.setThirdPartyTransfersForbidden(strategy, true);
-    }
-
-    function test_setThirdPartyTransfersFrobidden() public {
-        StrategyBase strategy = _deployStrategy();
-        bool thirdPartyTransfersForbidden = true;
-
-        strategyFactory.setThirdPartyTransfersForbidden(strategy, thirdPartyTransfersForbidden);
-        assertTrue(strategyManagerMock.thirdPartyTransfersForbidden(strategy), "3rd party transfers forbidden not set");
+        strategyFactory.whitelistStrategies(strategiesToWhitelist);
     }
 
     function test_removeStrategiesFromWhitelist_revert_notOwner() public {
@@ -216,7 +193,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                 )
             )
         );

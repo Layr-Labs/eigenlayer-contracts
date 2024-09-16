@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
@@ -28,12 +28,12 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal as Shares
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, staker, withdrawals[i], strategies, shares);
@@ -63,12 +63,12 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal as Tokens
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
