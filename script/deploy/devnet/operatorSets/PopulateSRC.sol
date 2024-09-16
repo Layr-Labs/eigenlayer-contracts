@@ -24,8 +24,11 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         IStakeRootCompendium stakeRootCompendiumImplementation =  new StakeRootCompendium({
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
-            _proofInterval: proofInterval,
-            _blacklistWindow: 12 seconds
+            _maxTotalCharge: 100 ether,
+            _minBalanceThreshold: 0 ether,
+            _minProofsDuration: 20,
+            _verifier: address(0),
+            _imageId: bytes32(0)
         });
         StakeRootCompendium stakeRootCompendium = StakeRootCompendium(payable(new TransparentUpgradeableProxy(
             address(stakeRootCompendiumImplementation),
@@ -33,7 +36,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             "" // TODO: initialize
         )));
         IStakeRootCompendium.Proof memory proof;
-        stakeRootCompendium.verifyStakeRoot(uint32(block.timestamp - (block.timestamp % proofInterval)), bytes32(0), address(0), proof);
+        stakeRootCompendium.verifyStakeRoot(uint32(block.timestamp - (block.timestamp % proofInterval)), bytes32(0), address(0), 0, proof);
         vm.stopBroadcast();
 
         emit log_named_address("stakeRootCompendium", address(stakeRootCompendium));
@@ -76,7 +79,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         uint64 magnitudeForOperators = 0.1 ether;
         vm.startBroadcast();
         AVS avs = new AVS(avsDirectory, stakeRootCompendium);
-        payable(address(avs)).transfer(2 * stakeRootCompendium.MIN_DEPOSIT_BALANCE() * strategies.length);
+        payable(address(avs)).transfer(2 * stakeRootCompendium.MIN_BALANCE_THRESHOLD() * strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
             avs.createOperatorSetAndRegisterOperators(uint32(i), strategies[i], operators[i]);
@@ -132,7 +135,7 @@ contract AVS {
         if(!avsDirectory.isOperatorSet(address(this), operatorSetId)) {
             avsDirectory.createOperatorSets(operatorSetIdsToCreate);
 
-            stakeRootCompendium.depositForOperatorSet{value: 2 * stakeRootCompendium.MIN_DEPOSIT_BALANCE()}(IAVSDirectory.OperatorSet({
+            stakeRootCompendium.deposit{value: 2 * stakeRootCompendium.MIN_BALANCE_THRESHOLD()}(IAVSDirectory.OperatorSet({
                 avs: address(this),
                 operatorSetId: operatorSetId
             }));
@@ -159,7 +162,7 @@ contract AVS {
                 multiplier: 1 ether
             });
         }
-        stakeRootCompendium.addStrategiesAndMultipliers(operatorSetId, strategiesAndMultipliers); 
+        stakeRootCompendium.addOrModifyStrategiesAndMultipliers(operatorSetId, strategiesAndMultipliers); 
         stakeRootCompendium.setOperatorSetExtraData(operatorSetId, keccak256(abi.encodePacked(operatorSetId)));
         for (uint256 i = 0; i < operators.length; ++i) {
             stakeRootCompendium.setOperatorExtraData(operatorSetId, operators[i], keccak256(abi.encodePacked(operators[i])));

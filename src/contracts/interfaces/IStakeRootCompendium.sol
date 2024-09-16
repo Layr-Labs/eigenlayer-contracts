@@ -22,31 +22,24 @@ interface IStakeRootCompendium {
         bytes32 extraData;
     }
 
-    struct DepositBalanceInfo {
-        uint32 latestUpdateTime;
-        uint256 balance;
+    struct DepositInfo {
+        uint96 balance;
+        uint32 lastUpdatedTimestamp;
+        uint96 totalChargePerOperatorSetLastPaid;
+        uint96 totalChargePerStrategyLastPaid;
     }
 
     struct StakeRootSubmission {
         bytes32 stakeRoot;
-        address chargeRecipient; // the address to send the charge to
-        uint32 calculationTimestamp; // the timestamp the was generated against
-        uint32 blacklistableBefore; // the timestamp the proof submission was submitted to the contract
-        bool blacklisted; // whether the submission has been blacklisted by governance
-        bool crossPosted; 
-        bool forcePosted; // whether the submission was posted without proof by governance
+        uint32 calculationTimestamp;
+        bool confirmed; // whether the submission was posted without proof by governance
     }
 
     event SnarkProofVerified(bytes journal, bytes seal);
-    event VerifierChanged(address oldVerifier, address newVerifier);
-    event ImageIdChanged(bytes32 oldImageId, bytes32 newImageId);
+    event VerifierSet(address newVerifier);
+    event ImageIdSet(bytes32 newImageId);
 
-    function MAX_OPERATOR_SET_SIZE() external view returns (uint32);
-    function MAX_NUM_OPERATOR_SETS() external view returns (uint32);
-    function MAX_NUM_STRATEGIES() external view returns (uint32);
-
-    /// @notice the minimum balance that must be maintained for an operatorSet
-    function MIN_DEPOSIT_BALANCE() external view returns (uint256);
+    function MIN_BALANCE_THRESHOLD() external view returns (uint256);
 
     function delegationManager() external view returns (IDelegationManager);
     function avsDirectory() external view returns (IAVSDirectory);
@@ -56,11 +49,8 @@ interface IStakeRootCompendium {
     /// @notice the number of operator sets in the StakeTree
     function getNumOperatorSets() external view returns (uint256);
 
-    /// @notice the number of stake root submissions
-    function getNumStakeRootSubmissions() external view returns (uint256);
-
     /// @notice the interval at which proofs can be posted, to not overcharge the operatorSets
-    function proofInterval() external view returns (uint32);
+    function proofIntervalSeconds() external view returns (uint32);
 
     /**
      * @notice returns the stake root submission at the given index
@@ -79,12 +69,6 @@ interface IStakeRootCompendium {
         external
         view
         returns (uint256 delegatedStake, uint256 slashableStake);
-
-    /// @notice return the index of an operatorSet at a certain timestamp
-    function getOperatorSetIndexAtTimestamp(
-        IAVSDirectory.OperatorSet calldata operatorSet,
-        uint32 timestamp
-    ) external view returns (uint32);
 
     /**
      * @notice called offchain with the operatorSet roots ordered by the operatorSet index at the timestamp to calculate the stake root
@@ -115,13 +99,13 @@ interface IStakeRootCompendium {
      * @param operatorSetIndex the index of the operatorSet within the SRC's operatorSets list to calculate the operator set leaves for
      * @param startOperatorIndex the index of the first operator to get the leaves for
      * @param numOperators the number of operators to get the leaves for
-     * @return the operatorSet, the list of operators and the operatorSet leaves
+     * @return the operatorSet leaves
      */
     function getOperatorSetLeaves(
         uint256 operatorSetIndex,
         uint256 startOperatorIndex,
         uint256 numOperators
-    ) external view returns (IAVSDirectory.OperatorSet memory, address[] memory, OperatorLeaf[] memory);
+    ) external view returns (OperatorLeaf[] memory);
 
     /**
      * @notice deposits funds for an operator set
@@ -130,15 +114,15 @@ interface IStakeRootCompendium {
      * @dev the operator set must have a minimum balance of 2 * MIN_DEPOSIT_BALANCE to disallow joining with minimal cost after removal
      * @dev permissionless to deposit
      */
-    function depositForOperatorSet(IAVSDirectory.OperatorSet calldata operatorSet) external payable;
+    function deposit(IAVSDirectory.OperatorSet calldata operatorSet) external payable;
 
     /**
-     * @notice called by an AVS to set their strategies and multipliers used to determine stakes for stake roots
+     * @notice called by an AVS to add strategies and multipliers or modify multipliers used to determine stakes for stake roots
      * @param operatorSetId the id of the operatorSet to set the strategies and multipliers for
      * @param strategiesAndMultipliers the strategies and multipliers to set for the operatorSet
      * @dev msg.sender is used as the AVS in determining the operatorSet
      */
-    function addStrategiesAndMultipliers(
+    function addOrModifyStrategiesAndMultipliers(
         uint32 operatorSetId,
         StrategyAndMultiplier[] calldata strategiesAndMultipliers
     ) external;
@@ -167,42 +151,29 @@ interface IStakeRootCompendium {
     function setOperatorExtraData(uint32 operatorSetId, address operator, bytes32 extraData) external;
 
     /**
-     * @notice called by watchers to update the deposit balance infos for operatorSets, usually those that have
+     * @notice called by watchers to update the deposit balance infos for operatorSets that have
      * fallen below the minimum balance, in order to remove them from the stakeTree
-     * @param operatorSetsToUpdate the operatorSets to update the deposit balance infos for
+     * @param operatorSetsToRemove the operatorSets to update the deposit balance infos for
      * @dev sends the caller the leftover after charging if the balance is below the minimum
      */
-    function updateDepositBalanceInfos(IAVSDirectory.OperatorSet[] calldata operatorSetsToUpdate) external;
-
-    /**
-     * @notice Process charges for the next numToCharge stakeRootSubmissions that have not been redeemed
-     * @param numToCharge the number of charges to process
-     */
-    function processCharges(uint256 numToCharge) external;
+    function removeOperatorSetsFromStakeTree(IAVSDirectory.OperatorSet[] calldata operatorSetsToRemove) external;
 
     /**
      * @notice called by the claimer to claim a stake root
-     * @param calculationTimestamp the timestamp of the state the stakeRoot was calculated against
-     * @param stakeRoot the stakeRoot at calculationTimestamp
-     * @param chargeRecipient the address to send the charge to when processed
-     * @param proof todo
+     * @param _calculationTimestamp the timestamp of the state the stakeRoot was calculated against
+     * @param _stakeRoot the stakeRoot at calculationTimestamp
+     * @param _chargeRecipient the address to send the charge to when processed
+     * @param _indexChargePerProof the index of the charge per proof to use
+     * @param _proof todo
      * @dev permissionless to call
      */
     function verifyStakeRoot(
-        uint32 calculationTimestamp,
-        bytes32 stakeRoot,
-        address chargeRecipient,
-        Proof calldata proof
+        uint256 _calculationTimestamp,
+        bytes32 _stakeRoot,
+        address _chargeRecipient,
+        uint256 _indexChargePerProof,
+        Proof calldata _proof
     ) external;
-
-    /**
-     * @notice called by governance to blacklist a stakeRoot in case it's incorrect
-     * @param submissionIndex the index of the stakeRoot submission to blacklist
-     * @dev called in case there's a bug in the verifier stack or program to allow an incorrect stakeRoot to be proven
-     * @dev only callable by governance
-     * @dev must be called within blacklistWindow of the stakeRoot being posted
-     */
-    function blacklistStakeRoot(uint32 submissionIndex) external;
 
     /**
      * @notice called by governance
@@ -210,30 +181,28 @@ interface IStakeRootCompendium {
      * @param stakeRoot the stakeRoot at calculationTimestamp
      * @dev only callable by governance when a root has not been posted in forcePostWindow
      */
-    function forcePostStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot) external;
+    function confirmStakeRoot(uint32 calculationTimestamp, bytes32 stakeRoot) external;
 
     /**
-     * @notice sets the verifier contract that will be used to verify snark proofs
-     * @param _verifier the address of the verifier contract
-     * @dev only callable by the owner
+     * @param numStrategies the number of strategies the operatorSet has
+     * @return the minimum deposit balance required for the operatorSet, which is just enough to pay for a certain number of proofs
+     * @dev this is enforced upon deposits and additions or modifications of strategies and multipliers
      */
-    function setVerifier(address _verifier) external;
+    function minDepositBalance(uint256 numStrategies) external view returns (uint256);
 
     /**
-     * @notice sets/changes the id of the program being verified when roots are posted
-     * @param _imageId the new imageId to set
-     * @dev only callable by the owner
+     * @param operatorSet the operatorSet to check withdrawability for
+     * @return whether or not the operatorSet can withdraw any of their deposit balance
      */
-    function setImageId(bytes32 _imageId) external;
+    function canWithdrawDepositBalance(IAVSDirectory.OperatorSet memory operatorSet) external view returns (bool);
 
     /**
      * @notice get the deposit balance for the operator set
      * @param operatorSet the operator set to get the deposit balance for
      * @return balance the deposit balance for the operator set
-     * @return penalty the penalty to be received by calling updateDepositBalanceInfos if the operator set has fallen below the minimum deposit balance
      */
     function getDepositBalance(IAVSDirectory.OperatorSet memory operatorSet)
         external
         view
-        returns (uint256 balance, uint256 penalty);
+        returns (uint256 balance);
 }
