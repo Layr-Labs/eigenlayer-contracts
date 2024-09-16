@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../interfaces/IEigenPod.sol";
 
@@ -11,7 +11,7 @@ abstract contract EigenPodStorage is IEigenPod {
     uint64 internal __deprecated_mostRecentWithdrawalTimestamp;
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from the Beacon Chain but not from EigenLayer),
-    uint64 public withdrawableRestakedExecutionLayerGwei;
+    uint64 internal restakedExecutionLayerGwei;
 
     /// @notice DEPRECATED: previously used to track whether a pod had activated restaking
     bool internal __deprecated_hasRestaked;
@@ -81,5 +81,5 @@ abstract contract EigenPodStorage is IEigenPod {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[36] private __gap;
+    uint256[35] private __gap;
 }

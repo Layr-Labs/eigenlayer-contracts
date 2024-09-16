@@ -29,22 +29,22 @@ var (
 	_ = abi.ConvertType
 )
 
-// IDelegationManagerQueuedWithdrawalParams is an auto generated low-level Go binding around an user-defined struct.
-type IDelegationManagerQueuedWithdrawalParams struct {
-	Strategies []common.Address
-	Shares     []*big.Int
-	Withdrawer common.Address
+// IDelegationManagerTypesQueuedWithdrawalParams is an auto generated low-level Go binding around an user-defined struct.
+type IDelegationManagerTypesQueuedWithdrawalParams struct {
+	Strategies    []common.Address
+	DepositShares []*big.Int
+	Withdrawer    common.Address
 }
 
-// IDelegationManagerWithdrawal is an auto generated low-level Go binding around an user-defined struct.
-type IDelegationManagerWithdrawal struct {
-	Staker      common.Address
-	DelegatedTo common.Address
-	Withdrawer  common.Address
-	Nonce       *big.Int
-	StartBlock  uint32
-	Strategies  []common.Address
-	Shares      []*big.Int
+// IDelegationManagerTypesWithdrawal is an auto generated low-level Go binding around an user-defined struct.
+type IDelegationManagerTypesWithdrawal struct {
+	Staker       common.Address
+	DelegatedTo  common.Address
+	Withdrawer   common.Address
+	Nonce        *big.Int
+	StartBlock   uint32
+	Strategies   []common.Address
+	ScaledShares []*big.Int
 }
 
 // ISignatureUtilsSignatureWithExpiry is an auto generated low-level Go binding around an user-defined struct.
@@ -55,7 +55,7 @@ type ISignatureUtilsSignatureWithExpiry struct {
 
 // IDelegationFaucetMetaData contains all meta data concerning the IDelegationFaucet contract.
 var IDelegationFaucetMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"callAddress\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"completeQueuedWithdrawal\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"queuedWithdrawal\",\"type\":\"tuple\",\"internalType\":\"structIDelegationManager.Withdrawal\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"shares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"tokens\",\"type\":\"address[]\",\"internalType\":\"contractIERC20[]\"},{\"name\":\"middlewareTimesIndex\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"receiveAsTokens\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"depositIntoStrategy\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getStaker\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"mintDepositAndDelegate\",\"inputs\":[{\"name\":\"_operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"approverSignatureAndExpiry\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"approverSalt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"_depositAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"queueWithdrawal\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"queuedWithdrawalParams\",\"type\":\"tuple[]\",\"internalType\":\"structIDelegationManager.QueuedWithdrawalParams[]\",\"components\":[{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"shares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transfer\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"nonpayable\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"callAddress\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"completeQueuedWithdrawal\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"queuedWithdrawal\",\"type\":\"tuple\",\"internalType\":\"structIDelegationManagerTypes.Withdrawal\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"scaledShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"tokens\",\"type\":\"address[]\",\"internalType\":\"contractIERC20[]\"},{\"name\":\"middlewareTimesIndex\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"receiveAsTokens\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"depositIntoStrategy\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getStaker\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"mintDepositAndDelegate\",\"inputs\":[{\"name\":\"_operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"approverSignatureAndExpiry\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"approverSalt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"_depositAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"queueWithdrawal\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"queuedWithdrawalParams\",\"type\":\"tuple[]\",\"internalType\":\"structIDelegationManagerTypes.QueuedWithdrawalParams[]\",\"components\":[{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"depositShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transfer\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"nonpayable\"}]",
 }
 
 // IDelegationFaucetABI is the input ABI used to generate the binding from.
@@ -228,21 +228,21 @@ func (_IDelegationFaucet *IDelegationFaucetTransactorSession) CallAddress(to com
 // CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0x063dcd50.
 //
 // Solidity: function completeQueuedWithdrawal(address staker, (address,address,address,uint256,uint32,address[],uint256[]) queuedWithdrawal, address[] tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) returns(bytes)
-func (_IDelegationFaucet *IDelegationFaucetTransactor) CompleteQueuedWithdrawal(opts *bind.TransactOpts, staker common.Address, queuedWithdrawal IDelegationManagerWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
+func (_IDelegationFaucet *IDelegationFaucetTransactor) CompleteQueuedWithdrawal(opts *bind.TransactOpts, staker common.Address, queuedWithdrawal IDelegationManagerTypesWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
 	return _IDelegationFaucet.contract.Transact(opts, "completeQueuedWithdrawal", staker, queuedWithdrawal, tokens, middlewareTimesIndex, receiveAsTokens)
 }
 
 // CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0x063dcd50.
 //
 // Solidity: function completeQueuedWithdrawal(address staker, (address,address,address,uint256,uint32,address[],uint256[]) queuedWithdrawal, address[] tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) returns(bytes)
-func (_IDelegationFaucet *IDelegationFaucetSession) CompleteQueuedWithdrawal(staker common.Address, queuedWithdrawal IDelegationManagerWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
+func (_IDelegationFaucet *IDelegationFaucetSession) CompleteQueuedWithdrawal(staker common.Address, queuedWithdrawal IDelegationManagerTypesWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
 	return _IDelegationFaucet.Contract.CompleteQueuedWithdrawal(&_IDelegationFaucet.TransactOpts, staker, queuedWithdrawal, tokens, middlewareTimesIndex, receiveAsTokens)
 }
 
 // CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0x063dcd50.
 //
 // Solidity: function completeQueuedWithdrawal(address staker, (address,address,address,uint256,uint32,address[],uint256[]) queuedWithdrawal, address[] tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) returns(bytes)
-func (_IDelegationFaucet *IDelegationFaucetTransactorSession) CompleteQueuedWithdrawal(staker common.Address, queuedWithdrawal IDelegationManagerWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
+func (_IDelegationFaucet *IDelegationFaucetTransactorSession) CompleteQueuedWithdrawal(staker common.Address, queuedWithdrawal IDelegationManagerTypesWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
 	return _IDelegationFaucet.Contract.CompleteQueuedWithdrawal(&_IDelegationFaucet.TransactOpts, staker, queuedWithdrawal, tokens, middlewareTimesIndex, receiveAsTokens)
 }
 
@@ -312,21 +312,21 @@ func (_IDelegationFaucet *IDelegationFaucetTransactorSession) MintDepositAndDele
 // QueueWithdrawal is a paid mutator transaction binding the contract method 0xa76a9d2d.
 //
 // Solidity: function queueWithdrawal(address staker, (address[],uint256[],address)[] queuedWithdrawalParams) returns(bytes)
-func (_IDelegationFaucet *IDelegationFaucetTransactor) QueueWithdrawal(opts *bind.TransactOpts, staker common.Address, queuedWithdrawalParams []IDelegationManagerQueuedWithdrawalParams) (*types.Transaction, error) {
+func (_IDelegationFaucet *IDelegationFaucetTransactor) QueueWithdrawal(opts *bind.TransactOpts, staker common.Address, queuedWithdrawalParams []IDelegationManagerTypesQueuedWithdrawalParams) (*types.Transaction, error) {
 	return _IDelegationFaucet.contract.Transact(opts, "queueWithdrawal", staker, queuedWithdrawalParams)
 }
 
 // QueueWithdrawal is a paid mutator transaction binding the contract method 0xa76a9d2d.
 //
 // Solidity: function queueWithdrawal(address staker, (address[],uint256[],address)[] queuedWithdrawalParams) returns(bytes)
-func (_IDelegationFaucet *IDelegationFaucetSession) QueueWithdrawal(staker common.Address, queuedWithdrawalParams []IDelegationManagerQueuedWithdrawalParams) (*types.Transaction, error) {
+func (_IDelegationFaucet *IDelegationFaucetSession) QueueWithdrawal(staker common.Address, queuedWithdrawalParams []IDelegationManagerTypesQueuedWithdrawalParams) (*types.Transaction, error) {
 	return _IDelegationFaucet.Contract.QueueWithdrawal(&_IDelegationFaucet.TransactOpts, staker, queuedWithdrawalParams)
 }
 
 // QueueWithdrawal is a paid mutator transaction binding the contract method 0xa76a9d2d.
 //
 // Solidity: function queueWithdrawal(address staker, (address[],uint256[],address)[] queuedWithdrawalParams) returns(bytes)
-func (_IDelegationFaucet *IDelegationFaucetTransactorSession) QueueWithdrawal(staker common.Address, queuedWithdrawalParams []IDelegationManagerQueuedWithdrawalParams) (*types.Transaction, error) {
+func (_IDelegationFaucet *IDelegationFaucetTransactorSession) QueueWithdrawal(staker common.Address, queuedWithdrawalParams []IDelegationManagerTypesQueuedWithdrawalParams) (*types.Transaction, error) {
 	return _IDelegationFaucet.Contract.QueueWithdrawal(&_IDelegationFaucet.TransactOpts, staker, queuedWithdrawalParams)
 }
 

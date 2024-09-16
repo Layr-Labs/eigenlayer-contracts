@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -12,6 +12,13 @@ import "./IStrategy.sol";
  * @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
  */
 interface IStrategyFactory {
+    /// @dev Thrown when attempting to deploy a strategy for a blacklisted token.
+    error BlacklistedToken();
+    /// @dev Thrown when attempting to deploy a strategy that already exists.
+    error StrategyAlreadyExists();
+    /// @dev Thrown when attempting to blacklist a token that is already blacklisted
+    error AlreadyBlacklisted();
+
     event TokenBlacklisted(IERC20 token);
 
     /// @notice Upgradeable beacon which new Strategies deployed by this contract point to
@@ -24,7 +31,9 @@ interface IStrategyFactory {
     /// though deployNewStrategy does whitelist by default.
     /// These strategies MIGHT not be the only strategy for the underlying token
     /// as additional strategies can be whitelisted by the owner of the factory.
-    function deployedStrategies(IERC20 token) external view returns (IStrategy);
+    function deployedStrategies(
+        IERC20 token
+    ) external view returns (IStrategy);
 
     /**
      * @notice Deploy a new strategyBeacon contract for the ERC20 token.
@@ -33,25 +42,23 @@ interface IStrategyFactory {
      * $dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
      * like those that conform to ERC777.
      */
-    function deployNewStrategy(IERC20 token) external returns (IStrategy newStrategy);
+    function deployNewStrategy(
+        IERC20 token
+    ) external returns (IStrategy newStrategy);
 
     /**
      * @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
      */
     function whitelistStrategies(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external;
-
-    /**
-     * @notice Owner-only function to pass through a call to `StrategyManager.setThirdPartyTransfersForbidden`
-     */
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external;
 
     /**
      * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
      */
-    function removeStrategiesFromWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
+    function removeStrategiesFromWhitelist(
+        IStrategy[] calldata strategiesToRemoveFromWhitelist
+    ) external;
 
     /// @notice Emitted when the `strategyBeacon` is changed
     event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);

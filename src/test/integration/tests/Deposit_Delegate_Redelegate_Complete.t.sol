@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
@@ -51,16 +51,16 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator1, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares);
 
         // 4. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares);
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares);
         }
 
         // 5. Delegate to a new operator
@@ -75,13 +75,13 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
 
         // 7. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
 
         // Complete withdrawals
         for (uint i = 0; i < withdrawals.length; i++) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens);
         }
     }
 
@@ -123,16 +123,16 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator1, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares);
 
         // 4. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares);
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares);
         }
 
         // 5. Delegate to a new operator
@@ -147,7 +147,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
 
         // 7. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
 
         // Complete all but last withdrawal as tokens
         for (uint i = 0; i < withdrawals.length - 1; i++) {
@@ -218,16 +218,16 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             check_Delegation_State(staker, operator1, strategies, halfShares);
 
             // 3. Undelegate from an operator
-            IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+            IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
             bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
             check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, halfShares);
 
             // 4. Complete withdrawal as shares
             // Fast forward to when we can complete the withdrawal
-            _rollBlocksForCompleteWithdrawals(strategies);
+            _rollBlocksForCompleteWithdrawals(withdrawals);
             for (uint256 i = 0; i < withdrawals.length; ++i) {
                 staker.completeWithdrawalAsShares(withdrawals[i]);
-                check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares);
+                check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares);
             }
 
             // 5. Delegate to a new operator
@@ -245,17 +245,17 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         {
             // 7. Queue Withdrawal
             shares = _calculateExpectedShares(strategies, tokenBalances);
-            IDelegationManager.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, shares);
+            IDelegationManagerTypes.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, shares);
             bytes32[] memory newWithdrawalRoots = _getWithdrawalHashes(newWithdrawals);
             check_QueuedWithdrawal_State(staker, operator2, strategies, shares, newWithdrawals, newWithdrawalRoots);
 
             // 8. Complete withdrawal
             // Fast forward to when we can complete the withdrawal
-            _rollBlocksForCompleteWithdrawals(strategies);
+            _rollBlocksForCompleteWithdrawals(newWithdrawals);
 
             // Complete withdrawals
             for (uint i = 0; i < newWithdrawals.length; i++) {
-                uint[] memory expectedTokens = _calculateExpectedTokens(newWithdrawals[i].strategies, newWithdrawals[i].shares);
+                uint[] memory expectedTokens = _calculateExpectedTokens(newWithdrawals[i].strategies, newWithdrawals[i].scaledShares);
                 IERC20[] memory tokens = staker.completeWithdrawalAsTokens(newWithdrawals[i]);
                 check_Withdrawal_AsTokens_State(staker, operator2, newWithdrawals[i], strategies, shares, tokens, expectedTokens);
             }
@@ -310,16 +310,16 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             check_Delegation_State(staker, operator1, strategies, halfShares);
 
             // 3. Undelegate from an operator
-            IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+            IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
             bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
             check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, halfShares);
 
             // 4. Complete withdrawal as shares
             // Fast forward to when we can complete the withdrawal
-            _rollBlocksForCompleteWithdrawals(strategies);
+            _rollBlocksForCompleteWithdrawals(withdrawals);
             for (uint256 i = 0; i < withdrawals.length; ++i) {
                 staker.completeWithdrawalAsShares(withdrawals[i]);
-                check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares);
+                check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares);
             }
 
             // 5. Deposit into Strategies
@@ -337,17 +337,17 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         {
             // 7. Queue Withdrawal
             shares = _calculateExpectedShares(strategies, tokenBalances);
-            IDelegationManager.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, shares);
+            IDelegationManagerTypes.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, shares);
             bytes32[] memory newWithdrawalRoots = _getWithdrawalHashes(newWithdrawals);
             check_QueuedWithdrawal_State(staker, operator2, strategies, shares, newWithdrawals, newWithdrawalRoots);
 
             // 8. Complete withdrawal
             // Fast forward to when we can complete the withdrawal
-            _rollBlocksForCompleteWithdrawals(strategies);
+            _rollBlocksForCompleteWithdrawals(newWithdrawals);
 
             // Complete withdrawals
             for (uint i = 0; i < newWithdrawals.length; i++) {
-                uint[] memory expectedTokens = _calculateExpectedTokens(newWithdrawals[i].strategies, newWithdrawals[i].shares);
+                uint[] memory expectedTokens = _calculateExpectedTokens(newWithdrawals[i].strategies, newWithdrawals[i].scaledShares);
                 IERC20[] memory tokens = staker.completeWithdrawalAsTokens(newWithdrawals[i]);
                 check_Withdrawal_AsTokens_State(staker, operator2, newWithdrawals[i], strategies, shares, tokens, expectedTokens);
             }
@@ -388,17 +388,17 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator1, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares);
 
         // 4. Complete withdrawal as tokens
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens);
         }
 
         //5. Deposit into Strategies
@@ -418,11 +418,11 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
 
         // 8. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
 
         // Complete withdrawals as tokens
         for (uint i = 0; i < withdrawals.length; i++) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
@@ -462,17 +462,17 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator1, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares);
 
         // 4. Complete withdrawal as Tokens
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens);
         }
 
         //5. Deposit into Strategies
@@ -492,7 +492,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
 
         // 8. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
 
         // Complete withdrawals as shares
         for (uint i = 0; i < withdrawals.length; i++) {

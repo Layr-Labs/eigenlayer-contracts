@@ -1,75 +1,28 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../../contracts/permissions/Pausable.sol";
-import "../../contracts/core/StrategyManagerStorage.sol";
-import "../../contracts/interfaces/IEigenPodManager.sol";
+import "forge-std/Test.sol";
+
 import "../../contracts/interfaces/IDelegationManager.sol";
 
-// import "forge-std/Test.sol";
-
-contract StrategyManagerMock is
-    Initializable,
-    IStrategyManager,
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    Pausable
-    // ,Test
-{
-
-
+contract StrategyManagerMock is Test {
     IDelegationManager public delegation;
-    IEigenPodManager public eigenPodManager;
-    ISlasher public slasher;
     address public strategyWhitelister;
 
     mapping(address => IStrategy[]) public strategiesToReturn;
     mapping(address => uint256[]) public sharesToReturn;
 
+    /// @notice Mapping staker => strategy => shares withdrawn after a withdrawal has been completed
+    mapping(address => mapping(IStrategy => uint256)) public strategySharesWithdrawn;
+
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
-    
-    mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
 
-    function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) external
-    {
-       delegation = _delegation;
-       slasher = _slasher;
-       eigenPodManager = _eigenPodManager;
+    constructor(IDelegationManager _delegation) {
+        delegation = _delegation;
     }
-
-    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
-        external
-        returns (uint256) {}
-
-
-    function depositBeaconChainETH(address staker, uint256 amount) external{}
-
-
-    function recordBeaconChainETHBalanceUpdate(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
-        external{}
-
-    function setStrategyWhitelister(address newStrategyWhitelister) external {}
-
-    function depositIntoStrategyWithSignature(
-        IStrategy strategy,
-        IERC20 token,
-        uint256 amount,
-        address staker,
-        uint256 expiry,
-        bytes memory signature
-    )
-        external
-        returns (uint256 shares) {}
-
-    /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
 
     /**
      * @notice mocks the return value of getDeposits
@@ -83,9 +36,13 @@ contract StrategyManagerMock is
         sharesToReturn[staker] = _sharesToReturn;
     }
 
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external {
-        emit UpdatedThirdPartyTransfersForbidden(strategy, value);
-        thirdPartyTransfersForbidden[strategy] = value;
+    /**
+     * @notice Adds deposit to the staker's deposits. Note that this function does not check if the staker
+     * has already deposited for the strategy.
+     */
+    function addDeposit(address staker, IStrategy strategy, uint256 shares) external {
+        strategiesToReturn[staker].push(strategy);
+        sharesToReturn[staker].push(shares);
     }
 
     /**
@@ -96,10 +53,13 @@ contract StrategyManagerMock is
         return (strategiesToReturn[staker], sharesToReturn[staker]);
     }
 
-    /// @notice Returns the array of strategies in which `staker` has nonzero shares
-    function stakerStrats(address staker) external view returns (IStrategy[] memory) {}
+    function stakerDepositShares(address staker, IStrategy strategy) public view returns (uint256) {
+        uint256 strategyIndex = _getStrategyIndex(staker, strategy);
+        return sharesToReturn[staker][strategyIndex];
+    }
 
     uint256 public stakerStrategyListLengthReturnValue;
+
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
     function stakerStrategyListLength(address /*staker*/) external view returns (uint256) {
         return stakerStrategyListLengthReturnValue;
@@ -113,28 +73,69 @@ contract StrategyManagerMock is
         strategyIsWhitelistedForDeposit[strategy] = value;
     }
 
-    function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
-
-    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external {}
-    
-    function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external {}
-
-    /// @notice returns the enshrined beaconChainETH Strategy
-    function beaconChainETHStrategy() external view returns (IStrategy) {}
-
-    // function withdrawalDelayBlocks() external view returns (uint256) {}
-
-    function domainSeparator() external view returns (bytes32) {}
-
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external {
         for (uint256 i = 0; i < strategiesToWhitelist.length; ++i) {
             strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
-            thirdPartyTransfersForbidden[strategiesToWhitelist[i]] = thirdPartyTransfersForbiddenValues[i];
         }
     }
 
+    function removeDepositShares(
+        address staker, IStrategy strategy, uint256 sharesToRemove
+    ) external {
+        uint256 strategyIndex = _getStrategyIndex(staker, strategy);
+        sharesToReturn[staker][strategyIndex] -= sharesToRemove;
+    }
+
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}
+
+
+    function withdrawSharesAsTokens(
+        address staker, 
+        IStrategy strategy, 
+        address, // token 
+        uint256 shares
+    ) external {
+        strategySharesWithdrawn[staker][strategy] += shares;
+    }
+
+    function addShares(
+        address staker, 
+        IStrategy strategy, 
+        IERC20, // token 
+        uint256 addedShares
+    ) external returns (uint, uint) {
+        // Increase the staker's shares
+        uint256 strategyIndex = _getStrategyIndex(staker, strategy);
+        uint256 existingShares = sharesToReturn[staker][strategyIndex];
+        sharesToReturn[staker][strategyIndex] += addedShares;
+
+        return (existingShares, addedShares);
+    }
+
+    function burnShares(IStrategy strategy, uint256 sharesToBurn) external {}
+
+    function _getStrategyIndex(address staker, IStrategy strategy) internal view returns (uint256) {
+        IStrategy[] memory strategies = strategiesToReturn[staker];
+        uint256 strategyIndex = type(uint256).max;
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            if (strategies[i] == strategy) {
+                strategyIndex = i;
+                break;
+            }
+        }
+        if (strategyIndex == type(uint256).max) {
+            revert ("StrategyManagerMock: strategy not found");
+        }
+
+        return strategyIndex;
+    }
+
+    function setDelegationManager(IDelegationManager _delegation) external {
+        delegation = _delegation;
+    }
+
+    fallback() external payable {}
+    receive() external payable {}
 }

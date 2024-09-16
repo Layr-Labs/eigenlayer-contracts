@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 // NOTE: Mainnet uses the OpenZeppelin v4.9.0 contracts, but this imports the 4.7.1 version. This will be changed after an upgrade.
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -35,11 +35,14 @@ contract EigenStrategy is StrategyBase {
     IEigen public EIGEN;
 
     /// @notice Since this contract is designed to be initializable, the constructor simply sets `strategyManager`, the only immutable variable.
-    constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
+    constructor(
+        IStrategyManager _strategyManager,
+        IPauserRegistry _pauserRegistry
+    ) StrategyBase(_strategyManager, _pauserRegistry) {}
 
-    function initialize(IEigen _EIGEN, IERC20 _bEIGEN, IPauserRegistry _pauserRegistry) public virtual initializer {
+    function initialize(IEigen _EIGEN, IERC20 _bEIGEN) public virtual initializer {
         EIGEN = _EIGEN;
-        _initializeStrategyBase(_bEIGEN, _pauserRegistry);
+        _initializeStrategyBase(_bEIGEN);
     }
 
     /**
@@ -51,7 +54,7 @@ contract EigenStrategy is StrategyBase {
      * @param amount deposit amount
      */
     function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
-        require(token == underlyingToken || token == EIGEN, "EigenStrategy.deposit: Can only deposit bEIGEN or EIGEN");
+        require(token == underlyingToken || token == EIGEN, OnlyUnderlyingToken());
 
         if (token == EIGEN) {
             // unwrap EIGEN into bEIGEN assuming a 1-1 unwrapping amount
@@ -71,7 +74,7 @@ contract EigenStrategy is StrategyBase {
         IERC20 token,
         uint256 /*amountShares*/
     ) internal virtual override {
-        require(token == underlyingToken || token == EIGEN, "EigenStrategy.withdraw: Can only withdraw bEIGEN or EIGEN");
+        require(token == underlyingToken || token == EIGEN, OnlyUnderlyingToken());
     }
 
     /**
