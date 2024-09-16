@@ -412,7 +412,6 @@ contract RewardsCoordinator is
      */
     function _setOperatorSplit(OperatorSplit storage operatorSplit, uint16 split, uint32 activatedAt) internal {
         require(split <= ONE_HUNDRED_IN_BIPS, SplitExceedsMax());
-
         require(block.timestamp > operatorSplit.activatedAt, PreviousSplitPending());
 
         if (operatorSplit.activatedAt == 0) {

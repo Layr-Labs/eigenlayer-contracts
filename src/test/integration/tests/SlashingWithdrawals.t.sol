@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_ALMSlashBase is IntegrationCheckUtils {
-    
     AVS avs;
     OperatorSet operatorSet;
 
@@ -15,6 +14,7 @@ contract Integration_ALMSlashBase is IntegrationCheckUtils {
     IStrategy[] strategies;
     uint[] initTokenBalances;
     uint[] initDepositShares;
+
 
     /// Shared setup:
     /// 
@@ -135,6 +135,121 @@ contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
     ) public rand(_random) {
         // 4. Slash operator
         SlashingParams memory slashingParams;
+
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
+        check_Deposit_State(staker, strategies, shares);
+
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, initDepositShares);
+
+        // 3. Create an operator set and register an operator.
+        operatorSet = avs.createOperatorSet(strategies);
+
+        // randomly choose between:
+        // register -> allocate / allocate -> register
+        if (_randBool()) {
+            // register -> allocate
+            operator.registerForOperatorSet(operatorSet);
+            check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
+
+            allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+            operator.modifyAllocations(allocateParams);
+            check_IncrAlloc_State_Slashable(operator, allocateParams);
+        } else {
+            // allocate -> register
+            allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+            operator.modifyAllocations(allocateParams);
+            check_IncrAlloc_State_NotSlashable(operator, allocateParams);
+
+            operator.registerForOperatorSet(operatorSet);
+            check_Registration_State_PendingAllocation(operator, allocateParams);
+        }
+   
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+    }
+
+<<<<<<<< HEAD:src/test/integration/tests/Deposit_Delegate_Allocate.t.sol
+    function testFuzz_deposit_delegate_upgrade_allocate(
+        uint24 _random
+    ) public {
+        // Configure the random parameters for the test
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
+        (User operator,,) = _newRandomOperator();
+
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
+        (AVS avs,) = _newRandomAVS();
+
+        // 3. Set allocation delay for operator
+        operator.setAllocationDelay(1);
+        rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY});
+
+        // 4. Create an operator set and register an operator.
+        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
+        operator.registerForOperatorSet(operatorSet);
+
+        // 5. Allocate to operator set.
+        IAllocationManagerTypes.AllocateParams memory allocateParams =
+            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, false, "operator allocations should be updated before delay"
+        );
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, true, "operator allocations should be updated after delay"
+        );
+    }
+
+    function testFuzz_deposit_delegate_allocate_slash_undelegate_completeAsTokens(
+        uint24 _random
+    ) public {
+        _configRand({_randomSeed: _random, _assetTypes: HOLDS_ALL, _userTypes: DEFAULT});
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
+
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
+        (User operator,,) = _newRandomOperator();
+        (AVS avs,) = _newRandomAVS();
+
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+
+        // Create an operator set and register an operator.
+        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
+        operator.registerForOperatorSet(operatorSet);
+
+        // 3. Allocate to operator set.
+        IAllocationManagerTypes.AllocateParams memory allocateParams =
+            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, false, "operator allocations should be updated before delay"
+        );
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, true, "operator allocations should be updated after delay"
+        );
+
+    function testFuzz_slash_undelegate_completeAsTokens(
+        uint24 _random
+    ) public rand(_random) {
+        // 4. Slash operator
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -171,9 +286,53 @@ contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
 
     function testFuzz_slash_undelegate_completeAsShares(
         uint24 _random
+<<<<<<< HEAD
     ) public rand(_random) {
         // 4. Slash operator
         SlashingParams memory slashingParams;
+<<<<<<< HEAD
+=======
+<<<<<<<< HEAD:src/test/integration/tests/Deposit_Delegate_Allocate.t.sol
+    ) public {
+        _configRand({_randomSeed: _random, _assetTypes: HOLDS_ALL, _userTypes: DEFAULT});
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
+
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
+        (User operator,,) = _newRandomOperator();
+        (AVS avs,) = _newRandomAVS();
+
+
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        uint256[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        // TODO - post-deposit and post-delegate checks?
+
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+
+        // Create an operator set and register an operator.
+        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
+        operator.registerForOperatorSet(operatorSet);
+
+        // 3. Allocate to operator set.
+        IAllocationManagerTypes.AllocateParams memory allocateParams =
+            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, false, "operator allocations should be updated before delay"
+        );
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, true, "operator allocations should be updated after delay"
+        );
+
+========
+    ) public rand(_random) {
+>>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036)):src/test/integration/tests/SlashingWithdrawals.t.sol
+        // 4. Slash operator
+        IAllocationManagerTypes.SlashingParams memory slashingParams;
+>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036))
+=======
+>>>>>>> d6510cc7 (test(integration): implement registration and allocation invariants (#1042))
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -184,7 +343,15 @@ contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
         }
 
         // 5. Undelegate from an operator
+<<<<<<< HEAD
+<<<<<<< HEAD
         Withdrawal[] memory withdrawals = staker.undelegate();
+=======
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
+>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036))
+=======
+        Withdrawal[] memory withdrawals = staker.undelegate();
+>>>>>>> d6510cc7 (test(integration): implement registration and allocation invariants (#1042))
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 4. Complete withdrawal
@@ -203,14 +370,62 @@ contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
 
     function testFuzz_queue_slash_completeAsTokens(
         uint24 _random
+<<<<<<< HEAD
     ) public rand(_random) {
         // 4. Queue withdrawal
         Withdrawal[] memory withdrawals =
+<<<<<<< HEAD
+=======
+<<<<<<<< HEAD:src/test/integration/tests/Deposit_Delegate_Allocate.t.sol
+    ) public {
+        _configRand({_randomSeed: _random, _assetTypes: HOLDS_ALL, _userTypes: DEFAULT});
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
+
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
+        (User operator,,) = _newRandomOperator();
+        (AVS avs,) = _newRandomAVS();
+
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+
+        // Create an operator set and register an operator.
+        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
+        operator.registerForOperatorSet(operatorSet);
+
+        // 3. Allocate to operator set.
+        IAllocationManagerTypes.AllocateParams memory allocateParams =
+            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, false, "operator allocations should be updated before delay"
+        );
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, true, "operator allocations should be updated after delay"
+        );
+
+========
+    ) public rand(_random) {
+>>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036)):src/test/integration/tests/SlashingWithdrawals.t.sol
+        // 4. Queue withdrawal
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals =
+>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036))
+=======
+>>>>>>> d6510cc7 (test(integration): implement registration and allocation invariants (#1042))
             staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 5. Slash operator
+<<<<<<< HEAD
+<<<<<<< HEAD
         SlashingParams memory slashingParams;
+=======
+        IAllocationManagerTypes.SlashingParams memory slashingParams;
+>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036))
+=======
+        SlashingParams memory slashingParams;
+>>>>>>> d6510cc7 (test(integration): implement registration and allocation invariants (#1042))
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -245,14 +460,63 @@ contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
 
     function testFuzz_queue_slash_completeAsShares(
         uint24 _random
+<<<<<<< HEAD
     ) public rand(_random) {
         // 4. Queue withdrawal
         Withdrawal[] memory withdrawals =
+<<<<<<< HEAD
+=======
+<<<<<<<< HEAD:src/test/integration/tests/Deposit_Delegate_Allocate.t.sol
+    ) public {
+        _configRand({_randomSeed: _random, _assetTypes: HOLDS_ALL, _userTypes: DEFAULT});
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
+
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
+        (User operator,,) = _newRandomOperator();
+        (AVS avs,) = _newRandomAVS();
+
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+
+        // Create an operator set and register an operator.
+        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
+        operator.registerForOperatorSet(operatorSet);
+        operator.setAllocationDelay(1);
+
+        // 3. Allocate to operator set.
+        IAllocationManagerTypes.AllocateParams memory allocateParams =
+            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, false, "operator allocations should be updated before delay"
+        );
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, true, "operator allocations should be updated after delay"
+        );
+
+========
+    ) public rand(_random) {
+>>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036)):src/test/integration/tests/SlashingWithdrawals.t.sol
+        // 4. Queue withdrawal
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals =
+>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036))
+=======
+>>>>>>> d6510cc7 (test(integration): implement registration and allocation invariants (#1042))
             staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 5. Slash operator
+<<<<<<< HEAD
+<<<<<<< HEAD
         SlashingParams memory slashingParams;
+=======
+        IAllocationManagerTypes.SlashingParams memory slashingParams;
+>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036))
+=======
+        SlashingParams memory slashingParams;
+>>>>>>> d6510cc7 (test(integration): implement registration and allocation invariants (#1042))
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -278,6 +542,7 @@ contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
 
     function testFuzz_deallocate_slash_queue_completeAsTokens(
         uint24 _random
+<<<<<<< HEAD
     ) public rand(_random) {
         // 4. Deallocate all.
         AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
@@ -285,9 +550,57 @@ contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
         check_DecrAlloc_State_Slashable(operator, deallocateParams);
 
         _rollForward_DeallocationDelay();
+<<<<<<< HEAD
 
         // 5. Slash operator
         SlashingParams memory slashingParams;
+=======
+<<<<<<<< HEAD:src/test/integration/tests/Deposit_Delegate_Allocate.t.sol
+    ) public {
+        _configRand({_randomSeed: _random, _assetTypes: HOLDS_ALL, _userTypes: DEFAULT});
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
+
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
+        (User operator,,) = _newRandomOperator();
+        (AVS avs,) = _newRandomAVS();
+
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+
+        // Create an operator set and register an operator.
+        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
+        operator.registerForOperatorSet(operatorSet);
+        operator.setAllocationDelay(1);
+
+        console.log("block allocated", block.number);
+        // 3. Allocate to operator set.
+        IAllocationManagerTypes.AllocateParams memory allocateParams =
+            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, false, "operator allocations should be updated before delay"
+        );
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, true, "operator allocations should be updated after delay"
+        );
+
+========
+    ) public rand(_random) {
+>>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036)):src/test/integration/tests/SlashingWithdrawals.t.sol
+        // 4. Deallocate all.
+        IAllocationManagerTypes.AllocateParams memory deallocateParams = operator.deallocateAll(operatorSet);
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+
+        // 5. Slash operator
+        IAllocationManagerTypes.SlashingParams memory slashingParams;
+>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036))
+=======
+
+        // 5. Slash operator
+        SlashingParams memory slashingParams;
+>>>>>>> d6510cc7 (test(integration): implement registration and allocation invariants (#1042))
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -298,7 +611,15 @@ contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
         }
         
         // 6. Queue withdrawals
+<<<<<<< HEAD
+<<<<<<< HEAD
         Withdrawal[] memory withdrawals =
+=======
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals =
+>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036))
+=======
+        Withdrawal[] memory withdrawals =
+>>>>>>> d6510cc7 (test(integration): implement registration and allocation invariants (#1042))
             staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
@@ -325,13 +646,59 @@ contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
 
     function testFuzz_deregister_slash(
         uint24 _random
+<<<<<<< HEAD
     ) public rand(_random) {
         // 4. Deregister.
         operator.deregisterFromOperatorSet(operatorSet);
         check_Deregistration_State_PendingAllocation(operator, operatorSet);
+<<<<<<< HEAD
 
         // 5. Slash operator
         SlashingParams memory slashingParams;
+=======
+<<<<<<<< HEAD:src/test/integration/tests/Deposit_Delegate_Allocate.t.sol
+    ) public {
+        _configRand({_randomSeed: _random, _assetTypes: HOLDS_ALL, _userTypes: DEFAULT});
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
+
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
+        (User operator,,) = _newRandomOperator();
+        (AVS avs,) = _newRandomAVS();
+
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+
+        // Create an operator set and register an operator.
+        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
+        operator.registerForOperatorSet(operatorSet);
+
+        // 3. Allocate to operator set.
+        IAllocationManagerTypes.AllocateParams memory allocateParams =
+            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, false, "operator allocations should be updated before delay"
+        );
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, true, "operator allocations should be updated after delay"
+        );
+
+========
+    ) public rand(_random) {
+>>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036)):src/test/integration/tests/SlashingWithdrawals.t.sol
+        // 4. Deregister.
+        operator.deregisterFromOperatorSet(operatorSet);
+
+        // 5. Slash operator
+        IAllocationManagerTypes.SlashingParams memory slashingParams;
+>>>>>>> 6e2786c8 (test: enable shared setups for integration tests (#1036))
+=======
+
+        // 5. Slash operator
+        SlashingParams memory slashingParams;
+>>>>>>> d6510cc7 (test(integration): implement registration and allocation invariants (#1042))
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);

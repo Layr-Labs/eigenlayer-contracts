@@ -978,6 +978,13 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
+    function getQueuedWithdrawal(
+        bytes32 withdrawalRoot
+    ) external view returns (Withdrawal memory) {
+        return queuedWithdrawals[withdrawalRoot];
+    }
+
+    /// @inheritdoc IDelegationManager
     function getQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares) {

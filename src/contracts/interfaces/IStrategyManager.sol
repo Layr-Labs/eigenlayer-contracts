@@ -71,6 +71,33 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         uint256 initialPausedStatus
     ) external;
 
+    /// @notice Emitted when an operator is slashed and shares to be burned are increased
+    event BurnableSharesIncreased(IStrategy strategy, uint256 shares);
+
+    /// @notice Emitted when shares are burned
+    event BurnableSharesDecreased(IStrategy strategy, uint256 shares);
+}
+
+/**
+ * @title Interface for the primary entrypoint for funds into EigenLayer.
+ * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ * @notice See the `StrategyManager` contract itself for implementation details.
+ */
+interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IShareManager, ISemVerMixin {
+    /**
+     * @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
+     * and transfers contract ownership to the specified `initialOwner`.
+     * @param initialOwner Ownership of this contract is transferred to this address.
+     * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
+     * @param initialPausedStatus The initial value of `_paused` to set.
+     */
+    function initialize(
+        address initialOwner,
+        address initialStrategyWhitelister,
+        uint256 initialPausedStatus
+    ) external;
+
     /**
      * @notice Deposits `amount` of `token` into the specified `strategy` and credits shares to the caller
      * @param strategy the strategy that handles `token`

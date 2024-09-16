@@ -127,6 +127,16 @@ contract StrategyManager is
         address staker,
         IStrategy strategy,
         uint256 shares
+    ) external onlyDelegationManager returns (uint256, uint256) {
+        return _addShares(staker, strategy, shares);
+    }
+
+    /// @inheritdoc IShareManager
+    function withdrawSharesAsTokens(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
+        uint256 shares
     ) external onlyDelegationManager nonReentrant returns (uint256, uint256) {
         return _addShares(staker, strategy, shares);
     }
@@ -274,7 +284,11 @@ contract StrategyManager is
      * @param depositSharesToRemove The amount of deposit shares to decrement
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
+<<<<<<< HEAD
      * Also returns the user's updated deposit shares after decrement.
+=======
+     * Also returns the user's udpated deposit shares after decrement.
+>>>>>>> f7413d90 (fix: delegate shares (#1045))
      */
     function _removeDepositShares(
         address staker,

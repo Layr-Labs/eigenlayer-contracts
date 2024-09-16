@@ -190,7 +190,6 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
      * Assumes that:
      * 1. WAD is max before slash
      */
-
     function _getExpectedSlashVals(
         uint256 wadToSlash,
         uint64 magBeforeSlash,
@@ -1383,7 +1382,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             maxMag: maxMagnitudeAfterSlash,
             encumberedMag: expectedEncumberedMagnitude
         });
-
         cheats.prank(defaultAVS);
         allocationManager.slashOperator(defaultAVS, slashingParams);
 
@@ -2279,7 +2277,6 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocationManager.setAllocationDelay(defaultOperator, firstDelay);
 
         allocationManager.modifyAllocations(defaultOperator, _newAllocateParams(defaultOperatorSet, half));
-
         // Validate storage - the `firstDelay` should not be applied yet
         _checkAllocationStorage({
             operator: defaultOperator,
@@ -3867,6 +3864,13 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
         allocationManager.createOperatorSets(avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
     }
 
+    function testRevert_createOperatorSets_NonexistentAVSMetadata(Randomness r) public rand(r) {
+        address avs = r.Address();
+        cheats.expectRevert(NonexistentAVSMetadata.selector);
+        cheats.prank(avs);
+        allocationManager.createOperatorSets(avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
+    }
+
     function testFuzz_createOperatorSets_Correctness(
         Randomness r
     ) public rand(r) {
@@ -4025,7 +4029,6 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             strategies: defaultStrategies,
             expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
         });
-
         // Check minimum slashable stake would not change even after the second allocation becomes effective
         // This is because the allocation is not effective yet & we're getting a MINIMUM
         _checkSlashableStake({
