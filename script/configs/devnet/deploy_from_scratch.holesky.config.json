@@ -20,7 +20,7 @@
   "strategyManager": {
      "init_paused_status": 0,
      "init_withdrawal_delay_blocks": 1,
-      "init_strategy_whitelister": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+      "init_strategy_whitelister": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597"
    },
   "eigenPod": {
     "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 1,
