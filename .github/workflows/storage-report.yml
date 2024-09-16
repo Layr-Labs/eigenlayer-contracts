@@ -1,0 +1,37 @@
+name: Check Storage Layout
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  check_storage:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: "Generate and prepare the contract artifacts for current branch"
+        run: |
+          bash bin/storage-report.sh
+
+      - name: Checkout main
+        env:
+          MAIN: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch origin $MAIN
+          git checkout $MAIN
+
+      - name: "Generate and prepare the contract artifacts for main branch"
+        run: |
+          bash bin/storage-report.sh
+
+      - name: Compare outputs
+        run: |
+          if ! diff --unified pr main; then
+            echo "::warning::Differences found between PR and main storage layouts"
+          fi

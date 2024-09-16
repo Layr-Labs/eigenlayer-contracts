@@ -1,0 +1,14 @@
+| Name                                        | Type                                                       | Slot | Offset | Bytes | Contract                                                             |
+|---------------------------------------------|------------------------------------------------------------|------|--------|-------|----------------------------------------------------------------------|
+| _DOMAIN_SEPARATOR                           | bytes32                                                    | 0    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| nonces                                      | mapping(address => uint256)                                | 1    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| strategyWhitelister                         | address                                                    | 2    | 0      | 20    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| __deprecated_withdrawalDelayBlocks          | uint256                                                    | 3    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| stakerStrategyShares                        | mapping(address => mapping(contract IStrategy => uint256)) | 4    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| stakerStrategyList                          | mapping(address => contract IStrategy[])                   | 5    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| __deprecated_withdrawalRootPending          | mapping(bytes32 => bool)                                   | 6    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| __deprecated_numWithdrawalsQueued           | mapping(address => uint256)                                | 7    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| strategyIsWhitelistedForDeposit             | mapping(contract IStrategy => bool)                        | 8    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| beaconChainETHSharesToDecrementOnWithdrawal | mapping(address => uint256)                                | 9    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| thirdPartyTransfersForbidden                | mapping(contract IStrategy => bool)                        | 10   | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| __gap                                       | uint256[39]                                                | 11   | 0      | 1248  | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |

@@ -1,0 +1,6 @@
+| Name                | Type                                                                                     | Slot | Offset | Bytes | Contract                                                       |
+|---------------------|------------------------------------------------------------------------------------------|------|--------|-------|----------------------------------------------------------------|
+| _DOMAIN_SEPARATOR   | bytes32                                                                                  | 0    | 0      | 32    | src/contracts/core/AVSDirectoryStorage.sol:AVSDirectoryStorage |
+| avsOperatorStatus   | mapping(address => mapping(address => enum IAVSDirectory.OperatorAVSRegistrationStatus)) | 1    | 0      | 32    | src/contracts/core/AVSDirectoryStorage.sol:AVSDirectoryStorage |
+| operatorSaltIsSpent | mapping(address => mapping(bytes32 => bool))                                             | 2    | 0      | 32    | src/contracts/core/AVSDirectoryStorage.sol:AVSDirectoryStorage |
+| __gap               | uint256[47]                                                                              | 3    | 0      | 1504  | src/contracts/core/AVSDirectoryStorage.sol:AVSDirectoryStorage |
