@@ -31,7 +31,7 @@ var (
 
 // StrategyFactoryStorageMetaData contains all meta data concerning the StrategyFactoryStorage contract.
 var StrategyFactoryStorageMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"deployNewStrategy\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"newStrategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deployedStrategies\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isBlacklisted\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeStrategiesFromWhitelist\",\"inputs\":[{\"name\":\"strategiesToRemoveFromWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setThirdPartyTransfersForbidden\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"value\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"whitelistStrategies\",\"inputs\":[{\"name\":\"strategiesToWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"thirdPartyTransfersForbiddenValues\",\"type\":\"bool[]\",\"internalType\":\"bool[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"StrategyBeaconModified\",\"inputs\":[{\"name\":\"previousBeacon\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIBeacon\"},{\"name\":\"newBeacon\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIBeacon\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategySetForToken\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TokenBlacklisted\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"deployNewStrategy\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"newStrategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deployedStrategies\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isBlacklisted\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeStrategiesFromWhitelist\",\"inputs\":[{\"name\":\"strategiesToRemoveFromWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"whitelistStrategies\",\"inputs\":[{\"name\":\"strategiesToWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"StrategyBeaconModified\",\"inputs\":[{\"name\":\"previousBeacon\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIBeacon\"},{\"name\":\"newBeacon\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIBeacon\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategySetForToken\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TokenBlacklisted\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AlreadyBlacklisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"BlacklistedToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StrategyAlreadyExists\",\"inputs\":[]}]",
 }
 
 // StrategyFactoryStorageABI is the input ABI used to generate the binding from.
@@ -315,46 +315,25 @@ func (_StrategyFactoryStorage *StrategyFactoryStorageTransactorSession) RemoveSt
 	return _StrategyFactoryStorage.Contract.RemoveStrategiesFromWhitelist(&_StrategyFactoryStorage.TransactOpts, strategiesToRemoveFromWhitelist)
 }
 
-// SetThirdPartyTransfersForbidden is a paid mutator transaction binding the contract method 0x4e5a4263.
+// WhitelistStrategies is a paid mutator transaction binding the contract method 0xb768ebc9.
 //
-// Solidity: function setThirdPartyTransfersForbidden(address strategy, bool value) returns()
-func (_StrategyFactoryStorage *StrategyFactoryStorageTransactor) SetThirdPartyTransfersForbidden(opts *bind.TransactOpts, strategy common.Address, value bool) (*types.Transaction, error) {
-	return _StrategyFactoryStorage.contract.Transact(opts, "setThirdPartyTransfersForbidden", strategy, value)
+// Solidity: function whitelistStrategies(address[] strategiesToWhitelist) returns()
+func (_StrategyFactoryStorage *StrategyFactoryStorageTransactor) WhitelistStrategies(opts *bind.TransactOpts, strategiesToWhitelist []common.Address) (*types.Transaction, error) {
+	return _StrategyFactoryStorage.contract.Transact(opts, "whitelistStrategies", strategiesToWhitelist)
 }
 
-// SetThirdPartyTransfersForbidden is a paid mutator transaction binding the contract method 0x4e5a4263.
+// WhitelistStrategies is a paid mutator transaction binding the contract method 0xb768ebc9.
 //
-// Solidity: function setThirdPartyTransfersForbidden(address strategy, bool value) returns()
-func (_StrategyFactoryStorage *StrategyFactoryStorageSession) SetThirdPartyTransfersForbidden(strategy common.Address, value bool) (*types.Transaction, error) {
-	return _StrategyFactoryStorage.Contract.SetThirdPartyTransfersForbidden(&_StrategyFactoryStorage.TransactOpts, strategy, value)
+// Solidity: function whitelistStrategies(address[] strategiesToWhitelist) returns()
+func (_StrategyFactoryStorage *StrategyFactoryStorageSession) WhitelistStrategies(strategiesToWhitelist []common.Address) (*types.Transaction, error) {
+	return _StrategyFactoryStorage.Contract.WhitelistStrategies(&_StrategyFactoryStorage.TransactOpts, strategiesToWhitelist)
 }
 
-// SetThirdPartyTransfersForbidden is a paid mutator transaction binding the contract method 0x4e5a4263.
+// WhitelistStrategies is a paid mutator transaction binding the contract method 0xb768ebc9.
 //
-// Solidity: function setThirdPartyTransfersForbidden(address strategy, bool value) returns()
-func (_StrategyFactoryStorage *StrategyFactoryStorageTransactorSession) SetThirdPartyTransfersForbidden(strategy common.Address, value bool) (*types.Transaction, error) {
-	return _StrategyFactoryStorage.Contract.SetThirdPartyTransfersForbidden(&_StrategyFactoryStorage.TransactOpts, strategy, value)
-}
-
-// WhitelistStrategies is a paid mutator transaction binding the contract method 0x697d54b4.
-//
-// Solidity: function whitelistStrategies(address[] strategiesToWhitelist, bool[] thirdPartyTransfersForbiddenValues) returns()
-func (_StrategyFactoryStorage *StrategyFactoryStorageTransactor) WhitelistStrategies(opts *bind.TransactOpts, strategiesToWhitelist []common.Address, thirdPartyTransfersForbiddenValues []bool) (*types.Transaction, error) {
-	return _StrategyFactoryStorage.contract.Transact(opts, "whitelistStrategies", strategiesToWhitelist, thirdPartyTransfersForbiddenValues)
-}
-
-// WhitelistStrategies is a paid mutator transaction binding the contract method 0x697d54b4.
-//
-// Solidity: function whitelistStrategies(address[] strategiesToWhitelist, bool[] thirdPartyTransfersForbiddenValues) returns()
-func (_StrategyFactoryStorage *StrategyFactoryStorageSession) WhitelistStrategies(strategiesToWhitelist []common.Address, thirdPartyTransfersForbiddenValues []bool) (*types.Transaction, error) {
-	return _StrategyFactoryStorage.Contract.WhitelistStrategies(&_StrategyFactoryStorage.TransactOpts, strategiesToWhitelist, thirdPartyTransfersForbiddenValues)
-}
-
-// WhitelistStrategies is a paid mutator transaction binding the contract method 0x697d54b4.
-//
-// Solidity: function whitelistStrategies(address[] strategiesToWhitelist, bool[] thirdPartyTransfersForbiddenValues) returns()
-func (_StrategyFactoryStorage *StrategyFactoryStorageTransactorSession) WhitelistStrategies(strategiesToWhitelist []common.Address, thirdPartyTransfersForbiddenValues []bool) (*types.Transaction, error) {
-	return _StrategyFactoryStorage.Contract.WhitelistStrategies(&_StrategyFactoryStorage.TransactOpts, strategiesToWhitelist, thirdPartyTransfersForbiddenValues)
+// Solidity: function whitelistStrategies(address[] strategiesToWhitelist) returns()
+func (_StrategyFactoryStorage *StrategyFactoryStorageTransactorSession) WhitelistStrategies(strategiesToWhitelist []common.Address) (*types.Transaction, error) {
+	return _StrategyFactoryStorage.Contract.WhitelistStrategies(&_StrategyFactoryStorage.TransactOpts, strategiesToWhitelist)
 }
 
 // StrategyFactoryStorageStrategyBeaconModifiedIterator is returned from FilterStrategyBeaconModified and is used to iterate over the raw logs and unpacked data for StrategyBeaconModified events raised by the StrategyFactoryStorage contract.
