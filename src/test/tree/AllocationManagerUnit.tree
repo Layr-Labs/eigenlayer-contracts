@@ -1,0 +1,86 @@
+.
+├── AllocationManager Tree (**** denotes that integration tests are needed to fully validate path)
+├── when setAllocationDelay is called by the operator
+│   ├── given that the caller is not an operator in the delegationManager
+│   │   └── it should revert
+│   ├── given that the delay is set to 0
+│   │   └── it should revert
+│   ├── given that a previous delay is set and has passed
+│   │   └── it should set the new delay to the previous delay
+│   └── given the caller provides a valid delay
+│       ├── given that a previous delay is set and has passed
+│       │   └── it should set the new delay to the previous delay delay
+│       ├── given that a previous delay is set and has not passed
+│       │   └── it should should overwrite the previous pending delay with the new delay
+│       └── it should set the pendingDelay, update the effectBlock, and emit an `AllocationDelaySetEvent`
+├── when setAllocationDelay is called by the delegationManager
+│   ├── given that the caller is not the delegationManager
+│   │   └── it should revert
+│   ├── given that the delay is set to 0
+│   │   └── it should revert
+│   ├── given that a previous delay is set and has passed
+│   │   └── it should set the new delay to the previous delay
+│   └── given the caller provides a valid delay
+│       ├── given that a previous delay is set and has passed
+│       │   └── it should set the new delay to the previous delay delay
+│       ├── given that a previous delay is set and has not passed
+│       │   └── it should should overwrite the previous pending delay with the new delay
+│       └── it should set the pendingDelay, update the effectBlock, and emit an `AllocationDelaySetEvent`
+├── when clearModificationQueue is called
+│   ├── given that the length of the strategies and numToClear are not equal
+│   │   └── it should revert
+│   ├── given that the operator is registered in the delegationManager
+│   │   └── it should revert
+│   ├── given that there are no modifications OR numToClear is 0
+│   │   └── no modifications should be cleared
+│   └── it should loop through the modification queue and the numToClear
+│       ├── given that the latest effect block has not been reached
+│       │   └── it should break the loop
+│       └── given that the latest effect block has been reached
+│           ├── it should update the magnitude info to the currentMagnitude, with a pendingDiff of 0 and effectBlock of 0
+│           ├── it should change the encumbered magnitude if the pendingDiff was less than 0
+│           ├── it should emit an EncumberedmagnitudeUpdated event
+│           ├── it should remove the modification from the queue
+│           └── it should continue to pop off the modification queue if the size is greater than 0 and numToClear is less than numCompleted
+├── given that modifyAllocations is called
+│   ├── given that the allocation delay is not set for the msg.sender
+│   │   └── it should revert
+│   └── it should loop through the list of allocations
+│       ├── given that the length of operator sets and magnitudes does not match
+│       │   └── it should revert
+│       ├── given that the operatorSets to allocate mags to do not exist in the AVSD
+│       │   └── it should revert
+│       ├── it should clear the modification queue for the given strategy for the type(uint16).max number of modifications
+│       ├── given that the maximum magnitude does not equal the expected maximum magnitude
+│       │   └── it should revert
+│       └── it should loop through the list of operator sets for the allocation
+│           ├── given that the pendingDiff is nonZero
+│           │   └── it should revert
+│           ├── given that that the magnitude delta is the same as the pendingDiff
+│           │   └── it should revert
+│           ├── given that the pendingDiff is less than 0 (this is a deallocation)
+│           │   └── it should update the effect block in memory to be the operator deallocation delay
+│           ├── given that the pendingDiff is greater than 0 (this is an allocation)
+│           │   ├── it should update the effect timestmap in memory to be the operator allocation delay
+│           │   └── it should increase the encumberedMagnitude in memory by the pendingDiff
+│           ├── it should push to the modification queue
+│           ├── it should update the magnitude info, encumbered magnitude, emit an event for encumbered magnitude
+│           └── it should emit an AllocationUpdated Event
+└── when slashOperator is called
+    ├── given that the  wads to slash is 0
+    │   └── it should revert
+    ├── given that the wads to slash is greater than WAD
+    │   └── it should revert
+    ├── given that the operator is not registered in the delegationManager
+    │   └── it should revert
+    ├── given that the operator is deregistered from AVS for the given block
+    │   └── it should revert
+    └── it should loop through all slashing params
+        ├── it should slash the current magnitude by wads to slash
+        ├── given that there is a pending deallocation
+        │   ├── it should slash the pending diff
+        │   └── it should emit an event for AllocationUpdated with the orginial deallocation's effect timestamp
+        ├── it should update the magnitude info, encumbered magnitude, emit an event for encumbered magnitude
+        ├── it should decrease the operator's max magnitude
+        ├── it should decrease the operators shares in the delegation manager
+        └── It should emit an AllocationUpdated event

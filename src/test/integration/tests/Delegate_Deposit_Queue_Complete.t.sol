@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
-
     function testFuzz_delegate_deposit_queue_completeAsShares(uint24 _random) public {
         // Configure the random parameters for the test
         _configRand({
@@ -32,12 +31,12 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
         // 3. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals();
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
@@ -71,12 +70,12 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
         // 3. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals();
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
-import "@openzeppelin-v4.9.0/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin-upgrades-v4.9.0/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
-import "@openzeppelin-upgrades-v4.9.0/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /// CONSTANTS & IMMUTABLES
@@ -32,7 +32,9 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /// @notice event emitted when the transfer restrictions disabled
     event TransferRestrictionsDisabled();
 
-    constructor(IERC20 _bEIGEN) {
+    constructor(
+        IERC20 _bEIGEN
+    ) {
         bEIGEN = _bEIGEN;
         _disableInitializers();
     }
@@ -121,7 +123,9 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /**
      * @notice This function allows bEIGEN holders to wrap their tokens into Eigen
      */
-    function wrap(uint256 amount) external {
+    function wrap(
+        uint256 amount
+    ) external {
         require(bEIGEN.transferFrom(msg.sender, address(this), amount), "Eigen.wrap: bEIGEN transfer failed");
         _mint(msg.sender, amount);
     }
@@ -129,7 +133,9 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /**
      * @notice This function allows Eigen holders to unwrap their tokens into bEIGEN
      */
-    function unwrap(uint256 amount) external {
+    function unwrap(
+        uint256 amount
+    ) external {
         _burn(msg.sender, amount);
         require(bEIGEN.transfer(msg.sender, amount), "Eigen.unwrap: bEIGEN transfer failed");
     }

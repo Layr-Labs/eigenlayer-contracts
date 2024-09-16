@@ -1,0 +1,27 @@
+.
+└── PermissionController (**** denotes that integration tests are needed to fully validate path)
+    ├── when setAdmin is called
+    │   ├── given that the current admin it not set
+    │   │   └── given that the caller is not the account
+    │   │       └── it should revert
+    │   ├── given that the current admin is set
+    │   │   └── given taht the msg.sender is not the current admin
+    │   │       └── it should revert
+    │   ├── given that the new admin is the zero address
+    │   │   └── it should revert
+    │   └── given that a valid caller sets a valid admin
+    │       └── it should update the permissions of the account & emit an AdminSet event
+    ├── when setAppointee is called
+    │   ├── given that the caller is not the admin
+    │   │   └── it should revert
+    │   ├── given that the appointee already has permissions
+    │   │   └── it should revert
+    │   └── given that proper permissions are set
+    │       └── it should emit a DelegateSet event, and update the `appointeePermissions` and `permissionAppointee` mappings for the account
+    └── when removeAppointee is called
+        ├── given that the caller is not the admin
+        │   └── it should revert
+        ├── given that the appointee does not have permissions
+        │   └── it should revert
+        └── given that proper permissions are set
+            └── it should emit a DelegateRemoved event, and update the `appointeePermissions` and `permissionAppointee` mappings for the account

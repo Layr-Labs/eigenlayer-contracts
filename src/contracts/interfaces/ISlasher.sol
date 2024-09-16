@@ -55,7 +55,9 @@ interface ISlasher {
      * @notice Gives the `contractAddress` permission to slash the funds of the caller.
      * @dev Typically, this function must be called prior to registering for a middleware.
      */
-    function optIntoSlashing(address contractAddress) external;
+    function optIntoSlashing(
+        address contractAddress
+    ) external;
 
     /**
      * @notice Used for 'slashing' a certain operator.
@@ -63,13 +65,17 @@ interface ISlasher {
      * @dev Technically the operator is 'frozen' (hence the name of this function), and then subject to slashing pending a decision by a human-in-the-loop.
      * @dev The operator must have previously given the caller (which should be a contract) the ability to slash them, through a call to `optIntoSlashing`.
      */
-    function freezeOperator(address toBeFrozen) external;
+    function freezeOperator(
+        address toBeFrozen
+    ) external;
 
     /**
      * @notice Removes the 'frozen' status from each of the `frozenAddresses`
      * @dev Callable only by the contract owner (i.e. governance).
      */
-    function resetFrozenStatus(address[] calldata frozenAddresses) external;
+    function resetFrozenStatus(
+        address[] calldata frozenAddresses
+    ) external;
 
     /**
      * @notice this function is a called by middlewares during an operator's registration to make sure the operator's stake at registration
@@ -121,7 +127,9 @@ interface ISlasher {
      * @return Returns 'true' if `staker` themselves has their status set to frozen, OR if the staker is delegated
      * to an operator who has their status set to frozen. Otherwise returns 'false'.
      */
-    function isFrozen(address staker) external view returns (bool);
+    function isFrozen(
+        address staker
+    ) external view returns (bool);
 
     /// @notice Returns true if `slashingContract` is currently allowed to slash `toBeSlashed`.
     function canSlash(address toBeSlashed, address slashingContract) external view returns (bool);
@@ -171,7 +179,9 @@ interface ISlasher {
     ) external view returns (MiddlewareTimes memory);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator].length`
-    function middlewareTimesLength(address operator) external view returns (uint256);
+    function middlewareTimesLength(
+        address operator
+    ) external view returns (uint256);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
     function getMiddlewareTimesIndexStalestUpdateBlock(address operator, uint32 index) external view returns (uint32);
@@ -180,7 +190,9 @@ interface ISlasher {
     function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns (uint32);
 
     /// @notice Getter function for fetching `_operatorToWhitelistedContractsByUpdate[operator].size`.
-    function operatorWhitelistedContractsLinkedListSize(address operator) external view returns (uint256);
+    function operatorWhitelistedContractsLinkedListSize(
+        address operator
+    ) external view returns (uint256);
 
     /// @notice Getter function for fetching a single node in the operator's linked list (`_operatorToWhitelistedContractsByUpdate[operator]`).
     function operatorWhitelistedContractsLinkedListEntry(

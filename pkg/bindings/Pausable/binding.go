@@ -31,34 +31,12 @@ var (
 
 // PausableMetaData contains all meta data concerning the Pausable contract.
 var PausableMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
-	Bin: "0x608060405234801561001057600080fd5b506107c2806100206000396000f3fe608060405234801561001057600080fd5b506004361061007d5760003560e01c80635ac86ab71161005b5780635ac86ab7146100b25780635c975abb146100e6578063886f1195146100f7578063fabc1cbc1461012257600080fd5b806310d67a2f14610082578063136439dd14610097578063595c6a67146100aa575b600080fd5b61009561009036600461065b565b610135565b005b6100956100a536600461067f565b6101ef565b61009561032e565b6100d16100c0366004610698565b6001805460ff9092161b9081161490565b60405190151581526020015b60405180910390f35b6001546040519081526020016100dd565b60005461010a906001600160a01b031681565b6040516001600160a01b0390911681526020016100dd565b61009561013036600461067f565b6103f5565b60008054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa158015610186573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101aa91906106bb565b6001600160a01b0316336001600160a01b0316146101e35760405162461bcd60e51b81526004016101da906106d8565b60405180910390fd5b6101ec8161054f565b50565b60005460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa158015610237573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061025b9190610722565b6102775760405162461bcd60e51b81526004016101da90610744565b600154818116146102f05760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e70617573653a20696e76616c696420617474656d70742060448201527f746f20756e70617573652066756e6374696f6e616c697479000000000000000060648201526084016101da565b600181905560405181815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d906020015b60405180910390a250565b60005460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa158015610376573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061039a9190610722565b6103b65760405162461bcd60e51b81526004016101da90610744565b600019600181905560405190815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d9060200160405180910390a2565b60008054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa158015610446573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061046a91906106bb565b6001600160a01b0316336001600160a01b03161461049a5760405162461bcd60e51b81526004016101da906106d8565b6001541981196001541916146105185760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e756e70617573653a20696e76616c696420617474656d7060448201527f7420746f2070617573652066756e6374696f6e616c697479000000000000000060648201526084016101da565b600181905560405181815233907f3582d1828e26bf56bd801502bc021ac0bc8afb57c826e4986b45593c8fad389c90602001610323565b6001600160a01b0381166105dd5760405162461bcd60e51b815260206004820152604960248201527f5061757361626c652e5f73657450617573657252656769737472793a206e657760448201527f50617573657252656769737472792063616e6e6f7420626520746865207a65726064820152686f206164647265737360b81b608482015260a4016101da565b600054604080516001600160a01b03928316815291831660208301527f6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6910160405180910390a1600080546001600160a01b0319166001600160a01b0392909216919091179055565b6001600160a01b03811681146101ec57600080fd5b60006020828403121561066d57600080fd5b813561067881610646565b9392505050565b60006020828403121561069157600080fd5b5035919050565b6000602082840312156106aa57600080fd5b813560ff8116811461067857600080fd5b6000602082840312156106cd57600080fd5b815161067881610646565b6020808252602a908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526939903ab73830bab9b2b960b11b606082015260800190565b60006020828403121561073457600080fd5b8151801515811461067857600080fd5b60208082526028908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526739903830bab9b2b960c11b60608201526080019056fea26469706673582212200cefa7b98a48ddd4249cd972ba7f65fa241dae8af3ea3b4a68835713de7065fc64736f6c634300080c0033",
+	ABI: "[{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CurrentlyPaused\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InputAddressZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidNewPausedStatus\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyPauser\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyUnpauser\",\"inputs\":[]}]",
 }
 
 // PausableABI is the input ABI used to generate the binding from.
 // Deprecated: Use PausableMetaData.ABI instead.
 var PausableABI = PausableMetaData.ABI
-
-// PausableBin is the compiled bytecode used for deploying new contracts.
-// Deprecated: Use PausableMetaData.Bin instead.
-var PausableBin = PausableMetaData.Bin
-
-// DeployPausable deploys a new Ethereum contract, binding an instance of Pausable to it.
-func DeployPausable(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *Pausable, error) {
-	parsed, err := PausableMetaData.GetAbi()
-	if err != nil {
-		return common.Address{}, nil, nil, err
-	}
-	if parsed == nil {
-		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
-	}
-
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(PausableBin), backend)
-	if err != nil {
-		return common.Address{}, nil, nil, err
-	}
-	return address, tx, &Pausable{PausableCaller: PausableCaller{contract: contract}, PausableTransactor: PausableTransactor{contract: contract}, PausableFilterer: PausableFilterer{contract: contract}}, nil
-}
 
 // Pausable is an auto generated Go binding around an Ethereum contract.
 type Pausable struct {
@@ -337,27 +315,6 @@ func (_Pausable *PausableTransactorSession) PauseAll() (*types.Transaction, erro
 	return _Pausable.Contract.PauseAll(&_Pausable.TransactOpts)
 }
 
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_Pausable *PausableTransactor) SetPauserRegistry(opts *bind.TransactOpts, newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _Pausable.contract.Transact(opts, "setPauserRegistry", newPauserRegistry)
-}
-
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_Pausable *PausableSession) SetPauserRegistry(newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _Pausable.Contract.SetPauserRegistry(&_Pausable.TransactOpts, newPauserRegistry)
-}
-
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_Pausable *PausableTransactorSession) SetPauserRegistry(newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _Pausable.Contract.SetPauserRegistry(&_Pausable.TransactOpts, newPauserRegistry)
-}
-
 // Unpause is a paid mutator transaction binding the contract method 0xfabc1cbc.
 //
 // Solidity: function unpause(uint256 newPausedStatus) returns()
@@ -518,141 +475,6 @@ func (_Pausable *PausableFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<-
 func (_Pausable *PausableFilterer) ParsePaused(log types.Log) (*PausablePaused, error) {
 	event := new(PausablePaused)
 	if err := _Pausable.contract.UnpackLog(event, "Paused", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// PausablePauserRegistrySetIterator is returned from FilterPauserRegistrySet and is used to iterate over the raw logs and unpacked data for PauserRegistrySet events raised by the Pausable contract.
-type PausablePauserRegistrySetIterator struct {
-	Event *PausablePauserRegistrySet // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *PausablePauserRegistrySetIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(PausablePauserRegistrySet)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(PausablePauserRegistrySet)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *PausablePauserRegistrySetIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *PausablePauserRegistrySetIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// PausablePauserRegistrySet represents a PauserRegistrySet event raised by the Pausable contract.
-type PausablePauserRegistrySet struct {
-	PauserRegistry    common.Address
-	NewPauserRegistry common.Address
-	Raw               types.Log // Blockchain specific contextual infos
-}
-
-// FilterPauserRegistrySet is a free log retrieval operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
-//
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_Pausable *PausableFilterer) FilterPauserRegistrySet(opts *bind.FilterOpts) (*PausablePauserRegistrySetIterator, error) {
-
-	logs, sub, err := _Pausable.contract.FilterLogs(opts, "PauserRegistrySet")
-	if err != nil {
-		return nil, err
-	}
-	return &PausablePauserRegistrySetIterator{contract: _Pausable.contract, event: "PauserRegistrySet", logs: logs, sub: sub}, nil
-}
-
-// WatchPauserRegistrySet is a free log subscription operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
-//
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_Pausable *PausableFilterer) WatchPauserRegistrySet(opts *bind.WatchOpts, sink chan<- *PausablePauserRegistrySet) (event.Subscription, error) {
-
-	logs, sub, err := _Pausable.contract.WatchLogs(opts, "PauserRegistrySet")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(PausablePauserRegistrySet)
-				if err := _Pausable.contract.UnpackLog(event, "PauserRegistrySet", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParsePauserRegistrySet is a log parse operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
-//
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_Pausable *PausableFilterer) ParsePauserRegistrySet(log types.Log) (*PausablePauserRegistrySet, error) {
-	event := new(PausablePauserRegistrySet)
-	if err := _Pausable.contract.UnpackLog(event, "PauserRegistrySet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
