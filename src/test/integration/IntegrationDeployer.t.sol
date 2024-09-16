@@ -46,8 +46,6 @@ uint8 constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
 
 abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     using StdStyle for *;
-    using ArrayLib for *;
-    using ArrayLib for IStrategy[];
 
     // Fork ids for specific fork tests
     bool isUpgraded;
@@ -263,9 +261,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
             )
         );
         //PermissionController
-        eigenLayerProxyAdmin.upgrade(
+        eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(permissionController))),
-            address(permissionControllerImplementation)
+            address(permissionControllerImplementation),
+            abi.encodeWithSelector(
+                PermissionController.initialize.selector
+            )
         );
         // Create base strategy implementation and deploy a few strategies
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);

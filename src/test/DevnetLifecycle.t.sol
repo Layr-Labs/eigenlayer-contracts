@@ -8,15 +8,22 @@ import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/AllocationManager.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
 
+<<<<<<< HEAD
 import "src/test/utils/ArrayLib.sol";
 
+=======
+>>>>>>> b0193bfe (feat: alm tests)
 // Test
 import "forge-std/Test.sol";
 
 /// @notice Tests deployed contracts as part of the public devnet
 /// Run with: forge test --mc Devnet_Lifecycle_Test --rpc-url $RPC_HOLESKY
+<<<<<<< HEAD
 contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
     using ArrayLib for *;
+=======
+contract Devnet_Lifecycle_Test is Test {
+>>>>>>> b0193bfe (feat: alm tests)
     
     // Contracts
     DelegationManager public delegationManager;
@@ -56,11 +63,23 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
     }
 
     function _getOperatorSetArray() internal view returns (uint32[] memory) {
+<<<<<<< HEAD
         return operatorSetId.toArrayU32();
     }
     
     function _getOperatorSetsArray() internal view returns (OperatorSet[] memory) {
         return  OperatorSet({avs: avs, id: operatorSetId}).toArray();
+=======
+        uint32[] memory operatorSets = new uint32[](1);
+        operatorSets[0] = operatorSetId;
+        return operatorSets;
+    }
+    
+    function _getOperatorSetsArray() internal view returns (OperatorSet[] memory) {
+        OperatorSet[] memory operatorSets = new OperatorSet[](1);
+        operatorSets[0] = OperatorSet({avs: avs, id: operatorSetId});
+        return operatorSets;
+>>>>>>> b0193bfe (feat: alm tests)
     }
 
     function test() public {
@@ -133,6 +152,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
 
     function _registerAVS() internal {
         cheats.startPrank(avs);
+<<<<<<< HEAD
 
        CreateSetParams memory createSetParams =CreateSetParams({
             operatorSetId: operatorSetId,
@@ -140,28 +160,69 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
         });
 
         allocationManager.createOperatorSets(avs, createSetParams.toArray());
+=======
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = wethStrategy;
+
+        IAllocationManagerTypes.CreateSetParams memory createSetParams = IAllocationManagerTypes.CreateSetParams({
+            operatorSetId: operatorSetId,
+            strategies: strategies
+        });
+
+        IAllocationManagerTypes.CreateSetParams[] memory array = new IAllocationManagerTypes.CreateSetParams[](1);
+        array[0] = createSetParams;
+
+        allocationManager.createOperatorSets(avs, array);
+>>>>>>> b0193bfe (feat: alm tests)
         cheats.stopPrank();
     }
 
     function _registerOperatorToAVS() public {
         cheats.prank(operator);
+<<<<<<< HEAD
         allocationManager.registerForOperatorSets(operator,RegisterParams(avs, operatorSetId.toArrayU32(), ""));
+=======
+        
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = operatorSetId;
+
+        allocationManager.registerForOperatorSets(operator, IAllocationManagerTypes.RegisterParams(avs, operatorSetIds, ""));
+
+>>>>>>> b0193bfe (feat: alm tests)
         assertEq(allocationManager.getMembers(OperatorSet(avs, operatorSetId))[0], operator);
     }
 
     function _setMagnitude() public {
+<<<<<<< HEAD
        AllocateParams[] memory allocations = new AllocateParams[](1);
         allocations[0] = AllocateParams({
             operatorSet: operatorSet,
             strategies: wethStrategy.toArray(),
             newMagnitudes: magnitudeToSet.toArrayU64()
+=======
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = wethStrategy;
+
+        uint64[] memory magnitudes = new uint64[](1);
+        magnitudes[0] = magnitudeToSet;
+
+        IAllocationManagerTypes.AllocateParams[] memory allocations = new IAllocationManagerTypes.AllocateParams[](1);
+        allocations[0] = IAllocationManagerTypes.AllocateParams({
+            operatorSet: operatorSet,
+            strategies: strategies,
+            newMagnitudes: magnitudes
+>>>>>>> b0193bfe (feat: alm tests)
         });
 
         cheats.prank(operator);
         allocationManager.modifyAllocations(operator, allocations);
 
         // Assert storage
+<<<<<<< HEAD
        Allocation memory info = allocationManager.getAllocation(operator, operatorSet, wethStrategy);
+=======
+        IAllocationManagerTypes.Allocation memory info = allocationManager.getAllocation(operator, operatorSet, wethStrategy);
+>>>>>>> b0193bfe (feat: alm tests)
         assertEq(info.currentMagnitude, 0);
         assertEq(info.pendingDiff, int128(uint128(magnitudeToSet)));
         assertEq(info.effectBlock, block.number + 1);
@@ -176,11 +237,20 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
 
     function _slashOperator() public {
         // Get slashing params
+<<<<<<< HEAD
        SlashingParams memory slashingParams = SlashingParams({
             operator: operator,
             operatorSetId: 1,
             strategies: wethStrategy.toArray(),
             wadsToSlash: 5e17.toArrayU256(),
+=======
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = wethStrategy;
+        IAllocationManagerTypes.SlashingParams memory slashingParams = IAllocationManagerTypes.SlashingParams({
+            operator: operator,
+            operatorSetId: 1,
+            wadToSlash: 5e17,
+>>>>>>> b0193bfe (feat: alm tests)
             description: "test"
         });
 
@@ -189,13 +259,22 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
         allocationManager.slashOperator(avs, slashingParams);
 
         // Assert storage
+<<<<<<< HEAD
        Allocation memory info = allocationManager.getAllocation(operator, operatorSet, wethStrategy);
+=======
+        IAllocationManagerTypes.Allocation memory info = allocationManager.getAllocation(operator, operatorSet, wethStrategy);
+>>>>>>> b0193bfe (feat: alm tests)
         assertEq(info.currentMagnitude, magnitudeToSet - 5e17);
     }
 
     function _withdrawStaker() public {
         // Generate queued withdrawal params
+<<<<<<< HEAD
         IStrategy[] memory strategies = wethStrategy.toArray();
+=======
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = wethStrategy;
+>>>>>>> b0193bfe (feat: alm tests)
         (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(staker, strategies);
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawals = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
         queuedWithdrawals[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
@@ -205,6 +284,11 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
         });
 
         // Generate withdrawal params
+<<<<<<< HEAD
+=======
+        uint256[] memory scaledShares = new uint256[](1);
+        scaledShares[0] = 100e18;
+>>>>>>> b0193bfe (feat: alm tests)
         IDelegationManagerTypes.Withdrawal memory withdrawal = IDelegationManagerTypes.Withdrawal({
             staker: staker,
             delegatedTo: operator,
@@ -212,7 +296,11 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
             startBlock: uint32(block.number),
             strategies: strategies,
+<<<<<<< HEAD
             scaledShares: 100e18.toArrayU256()
+=======
+            scaledShares: scaledShares
+>>>>>>> b0193bfe (feat: alm tests)
         });
         // bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
         // Generate complete withdrawal params

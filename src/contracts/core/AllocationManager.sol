@@ -59,7 +59,11 @@ contract AllocationManager is
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
+        // Check that the msg.sender can call - we don't use a modifier to avoid `stack too deep` errors
+        require(_checkCanCall(avs), InvalidCaller());
+        require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
+
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
         bool isOperatorSlashable = _isOperatorSlashable(params.operator, operatorSet);
@@ -123,6 +127,12 @@ contract AllocationManager is
 
             // 5. Update state
             _updateAllocationInfo(params.operator, operatorSet.key(), params.strategies[i], info, allocation);
+
+            // Emit an event for the updated allocation
+            emit AllocationUpdated(
+                params.operator, operatorSet, params.strategies[i], allocation.currentMagnitude, uint32(block.number)
+            );
+
             _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
 
             // 6. Decrease and burn operators shares in the DelegationManager
@@ -134,7 +144,7 @@ contract AllocationManager is
             });
         }
 
-        emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
+        emit OperatorSlashed(params.operator, operatorSet, strategiesSlashed, wadSlashed, params.description);
     }
 
     /// @inheritdoc IAllocationManager
@@ -201,6 +211,7 @@ contract AllocationManager is
 
                         allocation.currentMagnitude = params[i].newMagnitudes[j];
                         allocation.pendingDiff = 0;
+                        allocation.effectBlock = uint32(block.number);
                     }
                 } else if (allocation.pendingDiff > 0) {
                     // Allocation immediately consumes available magnitude, but the additional
@@ -213,6 +224,15 @@ contract AllocationManager is
 
                 // 5. Update state
                 _updateAllocationInfo(operator, operatorSet.key(), strategy, info, allocation);
+
+                // 6. Emit an event for the updated allocation
+                emit AllocationUpdated(
+                    operator,
+                    OperatorSetLib.decode(operatorSet.key()),
+                    strategy,
+                    _addInt128(allocation.currentMagnitude, allocation.pendingDiff),
+                    allocation.effectBlock
+                );
             }
         }
     }
@@ -292,7 +312,7 @@ contract AllocationManager is
     function setAllocationDelay(address operator, uint32 delay) external {
         if (msg.sender != address(delegation)) {
             require(_checkCanCall(operator), InvalidCaller());
-            require(delegation.isOperator(operator), OperatorNotRegistered());
+            require(delegation.isOperator(operator), InvalidOperator());
         }
         _setAllocationDelay(operator, delay);
     }
@@ -321,7 +341,6 @@ contract AllocationManager is
 
             // Add strategies to the operator set
             bytes32 operatorSetKey = operatorSet.key();
-
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 _operatorSetStrategies[operatorSetKey].add(address(params[i].strategies[j]));
                 emit StrategyAddedToOperatorSet(operatorSet, params[i].strategies[j]);
@@ -497,15 +516,18 @@ contract AllocationManager is
         StrategyInfo memory info,
         Allocation memory allocation
     ) internal {
-        // Update encumbered magnitude
-        encumberedMagnitude[operator][strategy] = info.encumberedMagnitude;
-        emit EncumberedMagnitudeUpdated(operator, strategy, info.encumberedMagnitude);
+        // Update encumbered magnitude if it has changed
+        // The mapping should NOT be updated when there is a deallocation on a delay
+        if (encumberedMagnitude[operator][strategy] != info.encumberedMagnitude) {
+            encumberedMagnitude[operator][strategy] = info.encumberedMagnitude;
+            emit EncumberedMagnitudeUpdated(operator, strategy, info.encumberedMagnitude);
+        }
 
         // Update allocation for this operator set from the strategy
+        // We emit an `AllocationUpdated` from the `modifyAllocations` and `slashOperator` functions.
+        // `clearDeallocationQueue` does not emit an `AllocationUpdated` event since it was
+        // emitted when the deallocation was queued
         allocations[operator][operatorSetKey][strategy] = allocation;
-        emit AllocationUpdated(
-            operator, OperatorSetLib.decode(operatorSetKey), strategy, allocation.currentMagnitude, uint32(block.number)
-        );
 
         // Note: these no-op if the sets already contain the added values (or do not contain removed ones)
         if (allocation.pendingDiff != 0) {
@@ -639,7 +661,7 @@ contract AllocationManager is
             Allocation memory allocation = allocations[operator][operatorSetKey][strategy];
 
             // If we've reached a pending deallocation that isn't completable yet,
-            // we can stop. Any subsequent modificaitons will also be uncompletable.
+            // we can stop. Any subsequent modifications will also be uncompletable.
             if (block.number < allocation.effectBlock) {
                 break;
             }

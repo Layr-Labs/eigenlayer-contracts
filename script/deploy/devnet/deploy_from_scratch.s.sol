@@ -318,9 +318,18 @@ contract DeployFromScratch is Script, Test {
             )
         );
 
+<<<<<<< HEAD
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(permissionController))),
             address(permissionControllerImplementation)
+=======
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(permissionController))),
+            address(permissionControllerImplementation),
+            abi.encodeWithSelector(
+                PermissionController.initialize.selector
+            )
+>>>>>>> b0193bfe (feat: alm tests)
         );
 
         // Deploy strategyFactory & base
@@ -403,8 +412,11 @@ contract DeployFromScratch is Script, Test {
         vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
         vm.serializeAddress(deployed_addresses, "allocationManager", address(allocationManager));
         vm.serializeAddress(deployed_addresses, "allocationManagerImplementation", address(allocationManagerImplementation));
+<<<<<<< HEAD
         vm.serializeAddress(deployed_addresses, "permissionController", address(permissionController));
         vm.serializeAddress(deployed_addresses, "permissionControllerImplementation", address(permissionControllerImplementation));
+=======
+>>>>>>> b0193bfe (feat: alm tests)
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
         vm.serializeAddress(
             deployed_addresses,

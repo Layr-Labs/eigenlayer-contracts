@@ -110,11 +110,8 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
         token.transfer(staker, amount);
 
-        uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, strategy);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
 
-        // needed for expecting an event with the right parameters
-        uint256 expectedDepositShares = amount;
 
         cheats.startPrank(staker);
         token.approve(address(strategyManager), amount);
@@ -122,12 +119,9 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit Deposit(staker, token, strategy, expectedDepositShares);
         uint256 shares = strategyManager.depositIntoStrategy(strategy, token, amount);
-
         cheats.stopPrank();
 
         uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, strategy);
-        uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
-
         assertEq(depositSharesAfter, depositSharesBefore + shares, "depositSharesAfter != depositSharesBefore + shares");
         if (depositSharesBefore == 0) {
             assertEq(
@@ -1495,7 +1489,6 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         strategyManager.burnShares(strategy, sharesToBurn);
         uint256 strategyBalanceAfter = token.balanceOf(address(strategy));
         uint256 burnAddressBalanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
-
         console.log(strategyBalanceAfter);
         console.log(strategyBalanceBefore);
         console.log(strategyBalanceBefore - sharesToBurn);
@@ -1538,13 +1531,6 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
 
         assertEq(burnAddressBalanceBefore, burnAddressBalanceAfter, "burnAddressBalanceBefore != burnAddressBalanceAfter");
         assertEq(strategyBalanceBefore, strategyBalanceAfter, "strategyBalanceBefore != strategyBalanceAfter");
-    }
-}
-
-contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitTests {
-    function testFuzz_SetStrategyWhitelister(
-        address newWhitelister
-    ) external filterFuzzedAddressInputs(newWhitelister) {
         address previousStrategyWhitelister = strategyManager.strategyWhitelister();
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit StrategyWhitelisterChanged(previousStrategyWhitelister, newWhitelister);

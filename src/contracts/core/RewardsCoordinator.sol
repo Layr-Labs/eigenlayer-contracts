@@ -426,6 +426,7 @@ contract RewardsCoordinator is
             block.timestamp - MAX_RETROACTIVE_LENGTH <= startTimestamp && GENESIS_REWARDS_TIMESTAMP <= startTimestamp,
             StartTimestampTooFarInPast()
         );
+        require(rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH, StartTimestampTooFarInFuture());
 
         // Require reward submission is for whitelisted strategy or beaconChainETHStrategy
         address currAddress = address(0);

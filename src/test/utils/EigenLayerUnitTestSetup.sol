@@ -18,13 +18,13 @@ import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
 import "src/test/mocks/EmptyContract.sol";
 
-import "src/test/utils/ArrayLib.sol";
+import "src/test/utils/SingleItemArrayLib.sol";
 import "src/test/utils/Random.sol";
 
-import "src/test/utils/ArrayLib.sol";
+import "src/test/utils/SingleItemArrayLib.sol";
 
 abstract contract EigenLayerUnitTestSetup is Test {
-    using ArrayLib for *;
+    using SingleItemArrayLib for *;
 
     uint256 internal constant MAX_PRIVATE_KEY = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140;
 

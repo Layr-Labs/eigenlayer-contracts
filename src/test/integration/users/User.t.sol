@@ -12,7 +12,7 @@ import "src/contracts/pods/EigenPod.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/utils/Logger.t.sol";
-import "src/test/utils/ArrayLib.sol";
+import "src/test/utils/SingleItemArrayLib.sol";
 
 struct Validator {
     uint40 index;
@@ -28,7 +28,11 @@ interface IUserDeployer {
 }
 
 contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
+<<<<<<< HEAD
     using ArrayLib for *;
+=======
+    using SingleItemArrayLib for *;
+>>>>>>> b0193bfe (feat: alm tests)
     using print for *;
 
     AllocationManager allocationManager;
