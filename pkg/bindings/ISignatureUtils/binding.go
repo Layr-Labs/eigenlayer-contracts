@@ -31,7 +31,7 @@ var (
 
 // ISignatureUtilsMetaData contains all meta data concerning the ISignatureUtils contract.
 var ISignatureUtilsMetaData = &bind.MetaData{
-	ABI: "[]",
+	ABI: "[{\"type\":\"error\",\"name\":\"InvalidSignature\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SignatureExpired\",\"inputs\":[]}]",
 }
 
 // ISignatureUtilsABI is the input ABI used to generate the binding from.

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
+import "../../contracts/interfaces/IPausable.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 
 contract PauserRegistryUnitTests is Test {
@@ -14,7 +15,7 @@ contract PauserRegistryUnitTests is Test {
     address public pauser = address(555);
     address public unpauser = address(999);
 
-    mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
+    mapping(address => bool) public isExcludedFuzzAddress;
 
     event PauserStatusChanged(address pauser, bool canPause);
 
@@ -66,7 +67,7 @@ contract PauserRegistryUnitTests is Test {
         cheats.assume(newPauser != address(0));
 
         cheats.startPrank(notUnpauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
         pauserRegistry.setIsPauser(newPauser, true);
         cheats.stopPrank();
     }
@@ -76,7 +77,7 @@ contract PauserRegistryUnitTests is Test {
         cheats.assume(newUnpauser != address(0));
 
         cheats.startPrank(notUnpauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
         pauserRegistry.setUnpauser(newUnpauser);
         cheats.stopPrank();
     }
@@ -85,7 +86,7 @@ contract PauserRegistryUnitTests is Test {
         address newPauser = address(0);
 
         cheats.startPrank(pauserRegistry.unpauser());
-        cheats.expectRevert(bytes("PauserRegistry._setPauser: zero address input"));
+        cheats.expectRevert(IPauserRegistry.InputAddressZero.selector);
         pauserRegistry.setIsPauser(newPauser, true);
         cheats.stopPrank();
     }
@@ -94,7 +95,7 @@ contract PauserRegistryUnitTests is Test {
         address newUnpauser = address(0);
 
         cheats.startPrank(pauserRegistry.unpauser());
-        cheats.expectRevert(bytes("PauserRegistry._setUnpauser: zero address input"));
+        cheats.expectRevert(IPauserRegistry.InputAddressZero.selector);
         pauserRegistry.setUnpauser(newUnpauser);
         cheats.stopPrank();
     }

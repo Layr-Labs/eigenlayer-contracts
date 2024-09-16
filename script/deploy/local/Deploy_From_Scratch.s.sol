@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -9,10 +9,11 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
 
 import "../../../src/contracts/core/StrategyManager.sol";
-import "../../../src/contracts/core/Slasher.sol";
 import "../../../src/contracts/core/DelegationManager.sol";
 import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
+import "../../../src/contracts/core/AllocationManager.sol";
+import "../../../src/contracts/permissions/PermissionController.sol";
 
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
@@ -31,7 +32,7 @@ import "forge-std/Test.sol";
 // source .env
 
 // # To deploy and verify our contract
-// RUST_LOG=forge,foundry=trace forge script script/deploy/local/Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/deploy_from_scratch.anvil.config.json
+// forge script script/deploy/local/Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/deploy_from_scratch.anvil.config.json
 contract DeployFromScratch is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
@@ -48,8 +49,6 @@ contract DeployFromScratch is Script, Test {
     // EigenLayer Contracts
     ProxyAdmin public eigenLayerProxyAdmin;
     PauserRegistry public eigenLayerPauserReg;
-    Slasher public slasher;
-    Slasher public slasherImplementation;
     DelegationManager public delegation;
     DelegationManager public delegationImplementation;
     StrategyManager public strategyManager;
@@ -63,6 +62,10 @@ contract DeployFromScratch is Script, Test {
     UpgradeableBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
+    AllocationManager public allocationManagerImplementation;
+    AllocationManager public allocationManager;
+    PermissionController public permissionController;
+    PermissionController public permissionControllerImplementation;
 
     EmptyContract public emptyContract;
 
@@ -81,10 +84,16 @@ contract DeployFromScratch is Script, Test {
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
-    uint256 SLASHER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_INIT_PAUSED_STATUS;
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint256 REWARDS_COORDINATOR_INIT_PAUSED_STATUS;
+
+    // DelegationManager
+    uint32 MIN_WITHDRAWAL_DELAY;
+
+    // AllocationManager
+    uint32 DEALLOCATION_DELAY;
+    uint32 ALLOCATION_CONFIGURATION_DELAY;
 
     // RewardsCoordinator
     uint32 REWARDS_COORDINATOR_MAX_REWARDS_DURATION;
@@ -97,6 +106,9 @@ contract DeployFromScratch is Script, Test {
     uint32 REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS;
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
+
+    // AllocationManager
+    uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
 
     // one week in blocks -- 50400
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
@@ -113,7 +125,6 @@ contract DeployFromScratch is Script, Test {
         // bytes memory parsedData = vm.parseJson(config_data);
 
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
-        SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".slasher.init_paused_status");
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
         DELEGATION_WITHDRAWAL_DELAY_BLOCKS = stdJson.readUint(config_data, ".delegation.init_withdrawal_delay_blocks");
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".eigenPodManager.init_paused_status");
@@ -155,6 +166,16 @@ contract DeployFromScratch is Script, Test {
 
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(
             stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks")
+        );
+
+        ALLOCATION_MANAGER_INIT_PAUSED_STATUS = uint32(
+            stdJson.readUint(config_data, ".allocationManager.init_paused_status")
+        );
+        DEALLOCATION_DELAY = uint32(
+            stdJson.readUint(config_data, ".allocationManager.DEALLOCATION_DELAY")
+        );
+        ALLOCATION_CONFIGURATION_DELAY = uint32(
+            stdJson.readUint(config_data, ".allocationManager.ALLOCATION_CONFIGURATION_DELAY")
         );
 
         // tokens to deploy strategies for
@@ -199,13 +220,16 @@ contract DeployFromScratch is Script, Test {
         avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slasher = Slasher(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
         rewardsCoordinator = RewardsCoordinator(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        allocationManager = AllocationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
@@ -221,38 +245,41 @@ contract DeployFromScratch is Script, Test {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
-        avsDirectoryImplementation = new AVSDirectory(delegation);
-        slasherImplementation = new Slasher(strategyManager, delegation);
+
+        delegationImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg);
+        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
-            strategyManager,
-            slasher,
-            delegation
+            delegation,
+            eigenLayerPauserReg
         );
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegation,
             strategyManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
             REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
             REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
         );
+        allocationManagerImplementation = new AllocationManager(delegation, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        permissionControllerImplementation = new PermissionController();
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
             IStrategy[] memory _strategies;
             uint256[] memory _withdrawalDelayBlocks;
             eigenLayerProxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(payable(address(delegation))),
+                ITransparentUpgradeableProxy(payable(address(delegation))),
                 address(delegationImplementation),
                 abi.encodeWithSelector(
                     DelegationManager.initialize.selector,
                     executorMultisig,
-                    eigenLayerPauserReg,
                     DELEGATION_INIT_PAUSED_STATUS,
                     DELEGATION_WITHDRAWAL_DELAY_BLOCKS,
                     _strategies,
@@ -261,48 +288,35 @@ contract DeployFromScratch is Script, Test {
             );
         }
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
                 executorMultisig,
                 operationsMultisig,
-                eigenLayerPauserReg,
                 STRATEGY_MANAGER_INIT_PAUSED_STATUS
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation),
-            abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                SLASHER_INIT_PAUSED_STATUS
-            )
-        );
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
             address(avsDirectoryImplementation),
-            abi.encodeWithSelector(AVSDirectory.initialize.selector, executorMultisig, eigenLayerPauserReg, 0)
+            abi.encodeWithSelector(AVSDirectory.initialize.selector, executorMultisig, 0)
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 executorMultisig,
-                eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
+            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
             address(rewardsCoordinatorImplementation),
             abi.encodeWithSelector(
                 RewardsCoordinator.initialize.selector,
                 executorMultisig,
-                eigenLayerPauserReg,
                 REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                 REWARDS_COORDINATOR_UPDATER,
                 REWARDS_COORDINATOR_ACTIVATION_DELAY,
@@ -310,8 +324,23 @@ contract DeployFromScratch is Script, Test {
             )
         );
 
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation),
+            abi.encodeWithSelector(
+                AllocationManager.initialize.selector,
+                executorMultisig,
+                ALLOCATION_MANAGER_INIT_PAUSED_STATUS
+            )
+        );
+
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(permissionController))),
+            address(permissionControllerImplementation)
+        );
+
         // deploy StrategyBaseTVLLimits contract implementation
-        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
+        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg);
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
             if (strategyConfigs[i].tokenAddress == address(0)) {
@@ -329,8 +358,7 @@ contract DeployFromScratch is Script, Test {
                                 StrategyBaseTVLLimits.initialize.selector,
                                 strategyConfigs[i].maxPerDeposit,
                                 strategyConfigs[i].maxDeposits,
-                                IERC20(strategyConfigs[i].tokenAddress),
-                                eigenLayerPauserReg
+                                IERC20(strategyConfigs[i].tokenAddress)
                             )
                         )
                     )
@@ -338,8 +366,10 @@ contract DeployFromScratch is Script, Test {
             );
         }
 
+        // Transfer ownership 
         eigenLayerProxyAdmin.transferOwnership(executorMultisig);
         eigenPodBeacon.transferOwnership(executorMultisig);
+
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
@@ -348,11 +378,15 @@ contract DeployFromScratch is Script, Test {
         _verifyContractsPointAtOneAnother(
             delegationImplementation,
             strategyManagerImplementation,
-            slasherImplementation,
             eigenPodManagerImplementation,
             rewardsCoordinatorImplementation
         );
-        _verifyContractsPointAtOneAnother(delegation, strategyManager, slasher, eigenPodManager, rewardsCoordinator);
+        _verifyContractsPointAtOneAnother(
+            delegation,
+            strategyManager,
+            eigenPodManager,
+            rewardsCoordinator
+        );
         _verifyImplementationsSetCorrectly();
         _verifyInitialOwners();
         _checkPauserInitializations();
@@ -377,12 +411,14 @@ contract DeployFromScratch is Script, Test {
         vm.serializeUint(deployed_addresses, "numStrategiesDeployed", 0); // for compatibility with other scripts
         vm.serializeAddress(deployed_addresses, "eigenLayerProxyAdmin", address(eigenLayerProxyAdmin));
         vm.serializeAddress(deployed_addresses, "eigenLayerPauserReg", address(eigenLayerPauserReg));
-        vm.serializeAddress(deployed_addresses, "slasher", address(slasher));
-        vm.serializeAddress(deployed_addresses, "slasherImplementation", address(slasherImplementation));
         vm.serializeAddress(deployed_addresses, "delegationManager", address(delegation));
         vm.serializeAddress(deployed_addresses, "delegationManagerImplementation", address(delegationImplementation));
         vm.serializeAddress(deployed_addresses, "avsDirectory", address(avsDirectory));
         vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
+        vm.serializeAddress(deployed_addresses, "allocationManager", address(allocationManager));
+        vm.serializeAddress(deployed_addresses, "allocationManagerImplementation", address(allocationManagerImplementation));
+        vm.serializeAddress(deployed_addresses, "permissionController", address(permissionController));
+        vm.serializeAddress(deployed_addresses, "permissionControllerImplementation", address(permissionControllerImplementation));
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
         vm.serializeAddress(
             deployed_addresses,
@@ -436,42 +472,24 @@ contract DeployFromScratch is Script, Test {
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
         // TODO: should output to different file depending on configFile passed to run()
         //       so that we don't override mainnet output by deploying to goerli for eg.
-        vm.writeJson(finalJson, "script/output/devnet/local_from_scratch_deployment_data.json");
-
-        // generate + write eigenpods to file
-        address podAddress = eigenPodManager.createPod();
-        string memory eigenpodStruct = "eigenpodStruct";
-        string memory json = vm.serializeAddress(eigenpodStruct, "podAddress", podAddress);
-        vm.writeJson(json, "script/output/eigenpods.json");
+        vm.writeJson(finalJson, "script/output/devnet/M2_from_scratch_deployment_data.json");
     }
 
     function _verifyContractsPointAtOneAnother(
         DelegationManager delegationContract,
         StrategyManager strategyManagerContract,
-        Slasher /*slasherContract*/,
         EigenPodManager eigenPodManagerContract,
         RewardsCoordinator rewardsCoordinatorContract
     ) internal view {
-        require(delegationContract.slasher() == slasher, "delegation: slasher address not set correctly");
         require(
             delegationContract.strategyManager() == strategyManager,
             "delegation: strategyManager address not set correctly"
         );
 
-        require(strategyManagerContract.slasher() == slasher, "strategyManager: slasher address not set correctly");
         require(
             strategyManagerContract.delegation() == delegation,
             "strategyManager: delegation address not set correctly"
         );
-        require(
-            strategyManagerContract.eigenPodManager() == eigenPodManager,
-            "strategyManager: eigenPodManager address not set correctly"
-        );
-
-        // removing slasher requirements because there is no slasher as part of m2-mainnet release
-        // require(slasherContract.strategyManager() == strategyManager, "slasher: strategyManager not set correctly");
-        // require(slasherContract.delegation() == delegation, "slasher: delegation not set correctly");
-
         require(
             eigenPodManagerContract.ethPOS() == ethPOSDeposit,
             " eigenPodManager: ethPOSDeposit contract address not set correctly"
@@ -479,14 +497,6 @@ contract DeployFromScratch is Script, Test {
         require(
             eigenPodManagerContract.eigenPodBeacon() == eigenPodBeacon,
             "eigenPodManager: eigenPodBeacon contract address not set correctly"
-        );
-        require(
-            eigenPodManagerContract.strategyManager() == strategyManager,
-            "eigenPodManager: strategyManager contract address not set correctly"
-        );
-        require(
-            eigenPodManagerContract.slasher() == slasher,
-            "eigenPodManager: slasher contract address not set correctly"
         );
 
         require(
@@ -502,38 +512,40 @@ contract DeployFromScratch is Script, Test {
 
     function _verifyImplementationsSetCorrectly() internal view {
         require(
-            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(delegation)))) ==
+            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(delegation)))) ==
                 address(delegationImplementation),
             "delegation: implementation set incorrectly"
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(strategyManager)))
+                ITransparentUpgradeableProxy(payable(address(strategyManager)))
             ) == address(strategyManagerImplementation),
             "strategyManager: implementation set incorrectly"
         );
         require(
-            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(slasher)))) ==
-                address(slasherImplementation),
-            "slasher: implementation set incorrectly"
-        );
-        require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(eigenPodManager)))
+                ITransparentUpgradeableProxy(payable(address(eigenPodManager)))
             ) == address(eigenPodManagerImplementation),
             "eigenPodManager: implementation set incorrectly"
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
+                ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
             ) == address(rewardsCoordinatorImplementation),
             "rewardsCoordinator: implementation set incorrectly"
+        );
+
+        require(
+            eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(allocationManager)))
+            ) == address(allocationManagerImplementation),
+            "allocationManager: implementation set incorrectly"
         );
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
             require(
                 eigenLayerProxyAdmin.getProxyImplementation(
-                    TransparentUpgradeableProxy(payable(address(deployedStrategyArray[i])))
+                    ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i])))
                 ) == address(baseStrategyImplementation),
                 "strategy: implementation set incorrectly"
             );
@@ -548,8 +560,6 @@ contract DeployFromScratch is Script, Test {
     function _verifyInitialOwners() internal view {
         require(strategyManager.owner() == executorMultisig, "strategyManager: owner not set correctly");
         require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
-        // removing slasher requirements because there is no slasher as part of m2-mainnet release
-        // require(slasher.owner() == executorMultisig, "slasher: owner not set correctly");
         require(eigenPodManager.owner() == executorMultisig, "eigenPodManager: owner not set correctly");
 
         require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");
@@ -562,8 +572,6 @@ contract DeployFromScratch is Script, Test {
             strategyManager.pauserRegistry() == eigenLayerPauserReg,
             "strategyManager: pauser registry not set correctly"
         );
-        // removing slasher requirements because there is no slasher as part of m2-mainnet release
-        // require(slasher.pauserRegistry() == eigenLayerPauserReg, "slasher: pauser registry not set correctly");
         require(
             eigenPodManager.pauserRegistry() == eigenLayerPauserReg,
             "eigenPodManager: pauser registry not set correctly"
@@ -592,19 +600,17 @@ contract DeployFromScratch is Script, Test {
         // // pause *nothing*
         // uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS = 0;
         // // pause *everything*
-        // uint256 SLASHER_INIT_PAUSED_STATUS = type(uint256).max;
         // // pause *everything*
         // uint256 DELEGATION_INIT_PAUSED_STATUS = type(uint256).max;
         // // pause *all of the proof-related functionality* (everything that can be paused other than creation of EigenPods)
         // uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS = (2**1) + (2**2) + (2**3) + (2**4); /* = 30 */
         // // pause *nothing*
         // require(strategyManager.paused() == 0, "strategyManager: init paused status set incorrectly");
-        // require(slasher.paused() == type(uint256).max, "slasher: init paused status set incorrectly");
         // require(delegation.paused() == type(uint256).max, "delegation: init paused status set incorrectly");
         // require(eigenPodManager.paused() == 30, "eigenPodManager: init paused status set incorrectly");
     }
 
-    function _verifyInitializationParams() internal {
+    function _verifyInitializationParams() internal view {
         // // one week in blocks -- 50400
         // uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
         // require(strategyManager.withdrawalDelayBlocks() == 7 days / 12 seconds,

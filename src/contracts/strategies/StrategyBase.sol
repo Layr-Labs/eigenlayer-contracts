@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
@@ -64,27 +64,28 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /// @notice Simply checks that the `msg.sender` is the `strategyManager`, which is an address stored immutably at construction.
     modifier onlyStrategyManager() {
-        require(msg.sender == address(strategyManager), "StrategyBase.onlyStrategyManager");
+        require(msg.sender == address(strategyManager), OnlyStrategyManager());
         _;
     }
 
     /// @notice Since this contract is designed to be initializable, the constructor simply sets `strategyManager`, the only immutable variable.
-    constructor(IStrategyManager _strategyManager) {
+    constructor(IStrategyManager _strategyManager, IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {
         strategyManager = _strategyManager;
         _disableInitializers();
     }
 
-    function initialize(IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) public virtual initializer {
-        _initializeStrategyBase(_underlyingToken, _pauserRegistry);
+    function initialize(
+        IERC20 _underlyingToken
+    ) public virtual initializer {
+        _initializeStrategyBase(_underlyingToken);
     }
 
     /// @notice Sets the `underlyingToken` and `pauserRegistry` for the strategy.
     function _initializeStrategyBase(
-        IERC20 _underlyingToken,
-        IPauserRegistry _pauserRegistry
+        IERC20 _underlyingToken
     ) internal onlyInitializing {
         underlyingToken = _underlyingToken;
-        _initializePauser(_pauserRegistry, UNPAUSE_ALL);
+        _setPausedStatus(_UNPAUSE_ALL);
         emit StrategyTokenSet(underlyingToken, IERC20Metadata(address(_underlyingToken)).decimals());
     }
 
@@ -123,12 +124,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         newShares = (amount * virtualShareAmount) / virtualPriorTokenBalance;
 
         // extra check for correctness / against edge case where share rate can be massively inflated as a 'griefing' sort of attack
-        require(newShares != 0, "StrategyBase.deposit: newShares cannot be zero");
+        require(newShares != 0, NewSharesZero());
 
         // update total share amount to account for deposit
         totalShares = (priorTotalShares + newShares);
-
-        require(totalShares <= MAX_TOTAL_SHARES, "StrategyBase.deposit: totalShares exceeds `MAX_TOTAL_SHARES`");
+        require(totalShares <= MAX_TOTAL_SHARES, TotalSharesExceedsMax());
 
         // emit exchange rate
         _emitExchangeRate(virtualTokenBalance, totalShares + SHARES_OFFSET);
@@ -155,11 +155,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         // copy `totalShares` value to memory, prior to any change
         uint256 priorTotalShares = totalShares;
-
-        require(
-            amountShares <= priorTotalShares,
-            "StrategyBase.withdraw: amountShares must be less than or equal to totalShares"
-        );
+        require(amountShares <= priorTotalShares, WithdrawalAmountExceedsTotalDeposits());
 
         /**
          * @notice calculation of amountToSend *mirrors* `sharesToUnderlying(amountShares)`, but is different since the `totalShares` has already
@@ -184,16 +180,23 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
      * @param token The token being deposited
      */
-    function _beforeDeposit(IERC20 token, uint256 /** amount **/) internal virtual {
-        require(token == underlyingToken, "StrategyBase.deposit: Can only deposit underlyingToken");
+    function _beforeDeposit(
+        IERC20 token,
+        uint256 // amount
+    ) internal virtual {
+        require(token == underlyingToken, OnlyUnderlyingToken());
     }
 
     /**
      * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
      * @param token The token being withdrawn
      */
-    function _beforeWithdrawal(address /** recipient **/, IERC20 token, uint256 /** amountShares **/) internal virtual {
-        require(token == underlyingToken, "StrategyBase.withdraw: Can only withdraw the strategy token");
+    function _beforeWithdrawal(
+        address, // recipient
+        IERC20 token,
+        uint256 // amountShares
+    ) internal virtual {
+        require(token == underlyingToken, OnlyUnderlyingToken());
     }
 
     /**
@@ -222,7 +225,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @return The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function sharesToUnderlyingView(uint256 amountShares) public view virtual override returns (uint256) {
+    function sharesToUnderlyingView(
+        uint256 amountShares
+    ) public view virtual override returns (uint256) {
         // account for virtual shares and balance
         uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
         uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
@@ -237,7 +242,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @return The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function sharesToUnderlying(uint256 amountShares) public view virtual override returns (uint256) {
+    function sharesToUnderlying(
+        uint256 amountShares
+    ) public view virtual override returns (uint256) {
         return sharesToUnderlyingView(amountShares);
     }
 
@@ -248,7 +255,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @return The amount of shares corresponding to the input `amountUnderlying`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function underlyingToSharesView(uint256 amountUnderlying) public view virtual returns (uint256) {
+    function underlyingToSharesView(
+        uint256 amountUnderlying
+    ) public view virtual returns (uint256) {
         // account for virtual shares and balance
         uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
         uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
@@ -263,7 +272,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @return The amount of shares corresponding to the input `amountUnderlying`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function underlyingToShares(uint256 amountUnderlying) external view virtual returns (uint256) {
+    function underlyingToShares(
+        uint256 amountUnderlying
+    ) external view virtual returns (uint256) {
         return underlyingToSharesView(amountUnderlying);
     }
 
@@ -271,7 +282,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
      * this strategy. In contrast to `userUnderlying`, this function guarantees no state modifications
      */
-    function userUnderlyingView(address user) external view virtual returns (uint256) {
+    function userUnderlyingView(
+        address user
+    ) external view virtual returns (uint256) {
         return sharesToUnderlyingView(shares(user));
     }
 
@@ -279,7 +292,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
      * this strategy. In contrast to `userUnderlyingView`, this function **may** make state modifications
      */
-    function userUnderlying(address user) external virtual returns (uint256) {
+    function userUnderlying(
+        address user
+    ) external virtual returns (uint256) {
         return sharesToUnderlying(shares(user));
     }
 
@@ -287,8 +302,10 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice convenience function for fetching the current total shares of `user` in this strategy, by
      * querying the `strategyManager` contract
      */
-    function shares(address user) public view virtual returns (uint256) {
-        return strategyManager.stakerStrategyShares(user, IStrategy(address(this)));
+    function shares(
+        address user
+    ) public view virtual returns (uint256) {
+        return strategyManager.stakerDepositShares(user, IStrategy(address(this)));
     }
 
     /// @notice Internal function used to fetch this contract's current balance of `underlyingToken`.
