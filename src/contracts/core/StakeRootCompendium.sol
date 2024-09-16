@@ -537,4 +537,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             )
         );
     }
+
+    // in case of charge problems
+    receive() external payable {}
 }
