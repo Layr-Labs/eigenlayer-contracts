@@ -10,6 +10,11 @@ struct OperatorSet {
 }
 
 interface IAVSDirectory is ISignatureUtils {
+    /// Temporary so we compile...
+    error InvalidAVS();
+    error InvalidOperator();
+    error InvalidOperatorSet();
+
     /// Operator Status
 
     /// @dev Thrown when an operator does not exist in the DelegationManager

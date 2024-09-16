@@ -482,13 +482,12 @@ contract RewardsCoordinator is
         uint32 maxRetroactiveLength,
         uint32 genesisRewardsTimestamp
     ) internal view {
-        require(rewardsSubmission.strategiesAndMultipliers.length > 0, InputArrayLengthZero());
-        require(rewardsSubmission.amount > 0, AmountIsZero());
-        require(rewardsSubmission.amount <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
-        require(rewardsSubmission.duration <= MAX_REWARDS_DURATION, DurationExceedsMax());
-        require(rewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0, InvalidDurationRemainder());
-        require(rewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0, InvalidStartTimestampRemainder());
-
+        require(strategiesAndMultipliers.length > 0, InputArrayLengthZero());
+        require(amount > 0, AmountIsZero());
+        require(amount <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
+        require(duration <= MAX_REWARDS_DURATION, DurationExceedsMax());
+        require(duration % CALCULATION_INTERVAL_SECONDS == 0, InvalidDurationRemainder());
+        require(startTimestamp % CALCULATION_INTERVAL_SECONDS == 0, InvalidStartTimestampRemainder());
         require(
             block.timestamp - maxRetroactiveLength <= startTimestamp && genesisRewardsTimestamp <= startTimestamp,
             StartTimestampTooFarInPast()

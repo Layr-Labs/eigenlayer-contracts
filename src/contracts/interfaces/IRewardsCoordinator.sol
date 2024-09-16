@@ -15,6 +15,10 @@ import "./IStrategy.sol";
  * a Merkle root against which Stakers & Operators can make claims.
  */
 interface IRewardsCoordinator {
+    /// Temporary so we compile...
+    error InvalidOperatorSet();
+    error CommissionBipsExceedsMax();
+
     /// @dev Thrown when msg.sender is not allowed to call a function
     error UnauthorizedCaller();
 

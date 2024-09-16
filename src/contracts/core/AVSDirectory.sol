@@ -153,7 +153,7 @@ contract AVSDirectory is
         // Assert that the AVS is an operator set AVS.
         require(isOperatorSetAVS[msg.sender], InvalidAVS());
         // Assert operator's signature `salt` has not already been spent.
-        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
+        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SignatureSaltSpent());
 
         // Assert that `operatorSignature.signature` is a valid signature for operator set registrations.
         EIP1271SignatureUtils.checkSignature_EIP1271(
@@ -196,7 +196,7 @@ contract AVSDirectory is
             // Assert operator's signature has not expired.
             require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
             // Assert operator's signature `salt` has not already been spent.
-            require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
+            require(!operatorSaltIsSpent[operator][operatorSignature.salt], SignatureSaltSpent());
 
             // Assert that `operatorSignature.signature` is a valid signature for operator set deregistrations.
             EIP1271SignatureUtils.checkSignature_EIP1271(
