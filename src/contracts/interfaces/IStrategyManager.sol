@@ -43,6 +43,27 @@ interface IStrategyManagerEvents {
 
     /// @notice Emitted when a strategy is removed from the approved list of strategies for deposit
     event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
+}
+
+/**
+ * @title Interface for the primary entrypoint for funds into EigenLayer.
+ * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ * @notice See the `StrategyManager` contract itself for implementation details.
+ */
+interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IShareManager {
+    /**
+     * @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
+     * and transfers contract ownership to the specified `initialOwner`.
+     * @param initialOwner Ownership of this contract is transferred to this address.
+     * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
+     * @param initialPausedStatus The initial value of `_paused` to set.
+     */
+    function initialize(
+        address initialOwner,
+        address initialStrategyWhitelister,
+        uint256 initialPausedStatus
+    ) external;
 
     /// @notice Emitted when an operator is slashed and shares to be burned are increased
     event BurnableSharesIncreased(IStrategy strategy, uint256 shares);

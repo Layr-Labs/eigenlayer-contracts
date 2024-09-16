@@ -131,7 +131,6 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         // 5. Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-
         // 6. Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {

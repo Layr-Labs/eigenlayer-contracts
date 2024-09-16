@@ -101,6 +101,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             operator.registerAsOperator();
             operator.depositIntoEigenlayer(strategies, tokenBalances);
+        }
 
             // Roll passed the allocation configuration delay
             rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY});
