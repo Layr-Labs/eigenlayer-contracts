@@ -99,13 +99,13 @@ interface IStakeRootCompendium {
      * @param operatorSetIndex the index of the operatorSet within the SRC's operatorSets list to calculate the operator set leaves for
      * @param startOperatorIndex the index of the first operator to get the leaves for
      * @param numOperators the number of operators to get the leaves for
-     * @return the operatorSet leaves
+     * @return the operatorSet, the operators, and the operator leaves
      */
     function getOperatorSetLeaves(
         uint256 operatorSetIndex,
         uint256 startOperatorIndex,
         uint256 numOperators
-    ) external view returns (OperatorLeaf[] memory);
+    ) external view returns (OperatorSet memory, address[] memory, OperatorLeaf[] memory);
 
     /**
      * @notice deposits funds for an operator set
