@@ -6,20 +6,19 @@ import "../../utils/Multisend.sol";
 import "script/utils/TimelockEncoding.sol";
 
 /**
- * @notice Script used for the first deployment of EigenLayer core contracts to Holesky
- * anvil --fork-url $MAINNET_RPC
  *
- * Holesky testnet: Deploy/Upgrade RewardsCoordinator
- * forge script script/deploy/holesky/v0.4.3-upgrade-rewardsCoordinator.s.sol --rpc-url $MAINNET_RPC --private-key $PRIVATE_KEY --broadcast -vvvv --verify --etherscan-api-key $ETHERSCAN_API_KEY
+ * Mainnet: Deploy/Upgrade RewardsCoordinator
+ * forge script script/deploy/mainnet/v0.4.3-upgrade-rewardsCoordinator.s.sol --rpc-url $MAINNET_RPC --private-key $PRIVATE_KEY --broadcast -vvvv --verify --etherscan-api-key $ETHERSCAN_API_KEY
  *
+ * Test: forge test --mc Upgrade_Mainnet_RewardsCoordinator --mt test_set_reward_for_all_submitter --rpc-url $MAINNET_RPC -vv
  */
 contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, TimelockEncoding {
 
     // CALLDATA FOR CALL TO TIMELOCK
-    // TUESDAY, SEPTEMBER 27 2024 19:00:00 GMT (3pm EST/12pm PST)
-    uint256 timelockEta = 1727463600;
+    // TUESDAY, SEPTEMBER 27 2024 22:00:00 GMT (6pm EST/3pm PST)
+    uint256 timelockEta = 1727474400;
 
-    uint256 dayToQueueAction = 1726599600;
+    uint256 dayToQueueAction = 1726610400;
 
     // Calldatas for upgrading RC
     bytes final_calldata_to_executor_multisig;
