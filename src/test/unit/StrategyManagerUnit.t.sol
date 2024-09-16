@@ -251,7 +251,6 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
     }
 
     function test_InitializedStorageProperly() public view {
-        assertTrue(strategyManager.domainSeparator() != bytes32(0), "sanity check");
         assertEq(strategyManager.owner(), initialOwner, "strategyManager.owner() != initialOwner");
         assertEq(
             strategyManager.strategyWhitelister(),
@@ -1422,7 +1421,6 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
     ) external filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != address(this));
         cheats.assume(staker != address(0));
-        cheats.assume(staker != address(dummyStrat));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesAmount);
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
@@ -1459,10 +1457,10 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
     }
 
     /**
-     * @notice deposits a single strategy and withdrawSharesAsTokens(). Tests that we revert when we
-     * burn more than expected
+     * @notice deposits a single strategy and withdrawSharesAsTokens() function reverts when sharesAmount is
+     * higher than depositAmount
      */
-    function testFuzz_RevertShareAmountTooHigh(
+    function testFuzz_ShareAmountTooHigh(
         address staker,
         uint256 depositAmount,
         uint256 sharesToBurn
@@ -1470,11 +1468,18 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         cheats.assume(staker != address(0));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesToBurn);
         IStrategy strategy = dummyStrat;
+        IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
 
+        uint256 strategyBalanceBefore = token.balanceOf(address(strategy));
+        uint256 burnAddressBalanceBefore = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert(IStrategyErrors.WithdrawalAmountExceedsTotalDeposits.selector);
         strategyManager.burnShares(strategy, sharesToBurn);
+        uint256 strategyBalanceAfter = token.balanceOf(address(strategy));
+        uint256 burnAddressBalanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
+
+        assertEq(burnAddressBalanceBefore, burnAddressBalanceAfter, "burnAddressBalanceBefore != burnAddressBalanceAfter");
+        assertEq(strategyBalanceBefore, strategyBalanceAfter, "strategyBalanceBefore != strategyBalanceAfter");
     }
 
     function testFuzz_SingleStrategyDeposited(
@@ -1513,7 +1518,7 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
     }
 
     /// @notice check that balances are unchanged with a reverting token but burnShares doesn't revert
-    function testFuzz_revertTryCatchWithRevertToken(
+    function testFuzz_tryCatchWithRevertToken(
         address staker,
         uint256 depositAmount,
         uint256 sharesToBurn
@@ -1528,9 +1533,15 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         cheats.etch(address(token), address(revertToken).code);
         ERC20_SetTransferReverting_Mock(address(token)).setTransfersRevert(true);
 
-        cheats.expectRevert("SafeERC20: low-level call failed");
+        uint256 strategyBalanceBefore = token.balanceOf(address(strategy));
+        uint256 burnAddressBalanceBefore = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
         cheats.prank(address(delegationManagerMock));
         strategyManager.burnShares(strategy, sharesToBurn);
+        uint256 strategyBalanceAfter = token.balanceOf(address(strategy));
+        uint256 burnAddressBalanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
+
+        assertEq(burnAddressBalanceBefore, burnAddressBalanceAfter, "burnAddressBalanceBefore != burnAddressBalanceAfter");
+        assertEq(strategyBalanceBefore, strategyBalanceAfter, "strategyBalanceBefore != strategyBalanceAfter");
     }
 }
 

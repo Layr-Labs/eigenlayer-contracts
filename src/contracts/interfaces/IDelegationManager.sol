@@ -51,8 +51,12 @@ interface IDelegationManagerErrors {
 
     /// @dev Thrown when attempting to withdraw before delay has elapsed.
     error WithdrawalDelayNotElapsed();
+    /// @dev Thrown when a withdraw amount larger than max is attempted.
+    error WithdrawalExceedsMax();
     /// @dev Thrown when withdrawer is not the current caller.
     error WithdrawerNotCaller();
+    /// @dev Thrown when `withdrawer` is not staker.
+    error WithdrawerNotStaker();
 }
 
 interface IDelegationManagerTypes {
@@ -88,44 +92,40 @@ interface IDelegationManagerTypes {
     }
 
     /**
-     * @dev A struct representing an existing queued withdrawal. After the withdrawal delay has elapsed, this withdrawal can be completed via `completeQueuedWithdrawal`.
-     * A `Withdrawal` is created by the `DelegationManager` when `queueWithdrawals` is called. The `withdrawalRoots` hashes returned by `queueWithdrawals` can be used
-     * to fetch the corresponding `Withdrawal` from storage (via `getQueuedWithdrawal`).
-     *
-     * @param staker The address that queued the withdrawal
-     * @param delegatedTo The address that the staker was delegated to at the time the withdrawal was queued. Used to determine if additional slashing occurred before
-     * this withdrawal became completeable.
-     * @param withdrawer The address that will call the contract to complete the withdrawal. Note that this will always equal `staker`; alternate withdrawers are not
-     * supported at this time.
-     * @param nonce The staker's `cumulativeWithdrawalsQueued` at time of queuing. Used to ensure withdrawals have unique hashes.
-     * @param startBlock The block number when the withdrawal was queued.
-     * @param strategies The strategies requested for withdrawal when the withdrawal was queued
-     * @param scaledShares The staker's deposit shares requested for withdrawal, scaled by the staker's `depositScalingFactor`. Upon completion, these will be
-     * scaled by the appropriate slashing factor as of the withdrawal's completable block. The result is what is actually withdrawable.
+     * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
+     * In functions that operate on existing queued withdrawals -- e.g. completeQueuedWithdrawal`, the data is resubmitted and the hash of the submitted
+     * data is computed by `calculateWithdrawalRoot` and checked against the stored hash in order to confirm the integrity of the submitted data.
      */
     struct Withdrawal {
+        // The address that originated the Withdrawal
         address staker;
+        // The address that the staker was delegated to at the time that the Withdrawal was created
         address delegatedTo;
+        // The address that can complete the Withdrawal + will receive funds when completing the withdrawal
         address withdrawer;
+        // Nonce used to guarantee that otherwise identical withdrawals have unique hashes
         uint256 nonce;
+        // Blocknumber when the Withdrawal was created.
         uint32 startBlock;
+        // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
+        // Array containing the amount of staker's scaledShares for withdrawal in each Strategy in the `strategies` array
+        // Note that these scaledShares need to be multiplied by the operator's maxMagnitude and beaconChainScalingFactor at completion to include
+        // slashing occurring during the queue withdrawal delay. This is because scaledShares = sharesToWithdraw / (maxMagnitude * beaconChainScalingFactor)
+        // at queue time. beaconChainScalingFactor is simply equal to 1 if the strategy is not the beaconChainStrategy.
+        // To account for slashing, we later multiply scaledShares * maxMagnitude * beaconChainScalingFactor at the earliest possible completion time
+        // to get the withdrawn shares after applying slashing during the delay period.
         uint256[] scaledShares;
     }
 
-    /**
-     * @param strategies The strategies to withdraw from
-     * @param depositShares For each strategy, the number of deposit shares to withdraw. Deposit shares can
-     * be queried via `getDepositedShares`.
-     * NOTE: The number of shares ultimately received when a withdrawal is completed may be lower depositShares
-     * if the staker or their delegated operator has experienced slashing.
-     * @param __deprecated_withdrawer This field is ignored. The only party that may complete a withdrawal
-     * is the staker that originally queued it. Alternate withdrawers are not supported.
-     */
     struct QueuedWithdrawalParams {
+        // Array of strategies that the QueuedWithdrawal contains
         IStrategy[] strategies;
+        // Array containing the amount of depositShares for withdrawal in each Strategy in the `strategies` array
+        // Note that the actual shares received on completing withdrawal may be less than the depositShares if slashing occurred
         uint256[] depositShares;
-        address __deprecated_withdrawer;
+        // The address of the withdrawer
+        address withdrawer;
     }
 }
 
@@ -228,10 +228,13 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     /**
      * @notice Caller delegates their stake to an operator.
      * @param operator The account (`msg.sender`) is delegating its assets to for use in serving applications built on EigenLayer.
-     * @param approverSignatureAndExpiry (optional) Verifies the operator approves of this delegation
-     * @param approverSalt (optional) A unique single use value tied to an individual signature.
-     * @dev The signature/salt are used ONLY if the operator has configured a delegationApprover.
-     * If they have not, these params can be left empty.
+     * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
+     * @param approverSalt A unique single use value tied to an individual signature.
+     * @dev The approverSignatureAndExpiry is used in the event that the operator's `delegationApprover` address is set to a non-zero value.
+     * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
+     * in this case to save on complexity + gas costs
+     * @dev If the staker delegating has shares in a strategy that the operator was slashed 100% for (the operator's maxMagnitude = 0),
+     * then delegation is blocked and will revert.
      */
     function delegateTo(
         address operator,
@@ -240,14 +243,14 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
-     * @notice Undelegates the staker from their operator and queues a withdrawal for all of their shares
-     * @param staker The account to be undelegated
-     * @return withdrawalRoots The roots of the newly queued withdrawals, if a withdrawal was queued. Returns
-     * an empty array if none was queued.
+     * @notice Undelegates the staker from the operator who they are delegated to.
+     * Queues withdrawals of all of the staker's withdrawable shares in the StrategyManager (to the staker) and/or EigenPodManager, if necessary.
+     * @param staker The account to be undelegated.
+     * @return withdrawalRoots The roots of the newly queued withdrawals, if a withdrawal was queued. Otherwise just bytes32(0).
      *
      * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
      * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
-     * @dev Reverts if the `staker` is not delegated to an operator
+     * @dev Reverts if the `staker` is already undelegated.
      */
     function undelegate(
         address staker
@@ -271,19 +274,33 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external returns (bytes32[] memory withdrawalRoots);
 
     /**
-     * @notice Allows a staker to queue a withdrawal of their deposit shares. The withdrawal can be
-     * completed after the MIN_WITHDRAWAL_DELAY_BLOCKS via either of the completeQueuedWithdrawal methods.
+     * @notice Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
+     * from the staker. If the staker is delegated, withdrawn shares/strategies are also removed from
+     * their operator.
      *
-     * While in the queue, these shares are removed from the staker's balance, as well as from their operator's
-     * delegated share balance (if applicable). Note that while in the queue, deposit shares are still subject
-     * to slashing. If any slashing has occurred, the shares received may be less than the queued deposit shares.
+     * All withdrawn shares/strategies are placed in a queue and can be withdrawn after a delay. Withdrawals
+     * are still subject to slashing during the delay period so the amount withdrawn on completion may actually be less
+     * than what was queued if slashing has occurred in that period.
      *
-     * @dev To view all the staker's strategies/deposit shares that can be queued for withdrawal, see `getDepositedShares`
-     * @dev To view the current coversion between a staker's deposit shares and withdrawable shares, see `getWithdrawableShares`
+     * @dev To view what the staker is able to queue withdraw, see `getWithdrawableShares()`
      */
     function queueWithdrawals(
         QueuedWithdrawalParams[] calldata params
     ) external returns (bytes32[] memory);
+
+    /**
+     * @notice Used to complete the all queued withdrawals.
+     * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
+     * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
+     * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
+     * @param numToComplete The number of withdrawals to complete. This must be less than or equal to the number of queued withdrawals.
+     * @dev See `completeQueuedWithdrawal` for relevant dev tags
+     */
+    function completeQueuedWithdrawals(
+        IERC20[][] calldata tokens,
+        bool[] calldata receiveAsTokens,
+        uint256 numToComplete
+    ) external;
 
     /**
      * @notice Used to complete the lastest queued withdrawal.
@@ -473,36 +490,10 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      */
     function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256);
 
-    /// @notice Returns the Withdrawal associated with a `withdrawalRoot`, if it exists. NOTE that
-    /// withdrawals queued before the slashing release can NOT be queried with this method.
-    function getQueuedWithdrawal(
-        bytes32 withdrawalRoot
-    ) external view returns (Withdrawal memory);
-
     /// @notice Returns a list of pending queued withdrawals for a `staker`, and the `shares` to be withdrawn.
     function getQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);
-
-    /// @notice Returns a list of queued withdrawal roots for the `staker`.
-    /// NOTE that this only returns withdrawals queued AFTER the slashing release.
-    function getQueuedWithdrawalRoots(
-        address staker
-    ) external view returns (bytes32[] memory);
-
-    /**
-     * @notice Converts shares for a set of strategies to deposit shares, likely in order to input into `queueWithdrawals`
-     * @param staker the staker to convert shares for
-     * @param strategies the strategies to convert shares for
-     * @param withdrawableShares the shares to convert
-     * @return the deposit shares
-     * @dev will be a few wei off due to rounding errors
-     */
-    function convertToDepositShares(
-        address staker,
-        IStrategy[] memory strategies,
-        uint256[] memory withdrawableShares
-    ) external view returns (uint256[] memory);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(
