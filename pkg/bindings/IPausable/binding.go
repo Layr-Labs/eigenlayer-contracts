@@ -31,7 +31,7 @@ var (
 
 // IPausableMetaData contains all meta data concerning the IPausable contract.
 var IPausableMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CurrentlyPaused\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InputAddressZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidNewPausedStatus\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyPauser\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyUnpauser\",\"inputs\":[]}]",
 }
 
 // IPausableABI is the input ABI used to generate the binding from.
@@ -315,27 +315,6 @@ func (_IPausable *IPausableTransactorSession) PauseAll() (*types.Transaction, er
 	return _IPausable.Contract.PauseAll(&_IPausable.TransactOpts)
 }
 
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_IPausable *IPausableTransactor) SetPauserRegistry(opts *bind.TransactOpts, newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _IPausable.contract.Transact(opts, "setPauserRegistry", newPauserRegistry)
-}
-
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_IPausable *IPausableSession) SetPauserRegistry(newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _IPausable.Contract.SetPauserRegistry(&_IPausable.TransactOpts, newPauserRegistry)
-}
-
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_IPausable *IPausableTransactorSession) SetPauserRegistry(newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _IPausable.Contract.SetPauserRegistry(&_IPausable.TransactOpts, newPauserRegistry)
-}
-
 // Unpause is a paid mutator transaction binding the contract method 0xfabc1cbc.
 //
 // Solidity: function unpause(uint256 newPausedStatus) returns()
@@ -496,141 +475,6 @@ func (_IPausable *IPausableFilterer) WatchPaused(opts *bind.WatchOpts, sink chan
 func (_IPausable *IPausableFilterer) ParsePaused(log types.Log) (*IPausablePaused, error) {
 	event := new(IPausablePaused)
 	if err := _IPausable.contract.UnpackLog(event, "Paused", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// IPausablePauserRegistrySetIterator is returned from FilterPauserRegistrySet and is used to iterate over the raw logs and unpacked data for PauserRegistrySet events raised by the IPausable contract.
-type IPausablePauserRegistrySetIterator struct {
-	Event *IPausablePauserRegistrySet // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *IPausablePauserRegistrySetIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(IPausablePauserRegistrySet)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(IPausablePauserRegistrySet)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *IPausablePauserRegistrySetIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *IPausablePauserRegistrySetIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// IPausablePauserRegistrySet represents a PauserRegistrySet event raised by the IPausable contract.
-type IPausablePauserRegistrySet struct {
-	PauserRegistry    common.Address
-	NewPauserRegistry common.Address
-	Raw               types.Log // Blockchain specific contextual infos
-}
-
-// FilterPauserRegistrySet is a free log retrieval operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
-//
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_IPausable *IPausableFilterer) FilterPauserRegistrySet(opts *bind.FilterOpts) (*IPausablePauserRegistrySetIterator, error) {
-
-	logs, sub, err := _IPausable.contract.FilterLogs(opts, "PauserRegistrySet")
-	if err != nil {
-		return nil, err
-	}
-	return &IPausablePauserRegistrySetIterator{contract: _IPausable.contract, event: "PauserRegistrySet", logs: logs, sub: sub}, nil
-}
-
-// WatchPauserRegistrySet is a free log subscription operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
-//
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_IPausable *IPausableFilterer) WatchPauserRegistrySet(opts *bind.WatchOpts, sink chan<- *IPausablePauserRegistrySet) (event.Subscription, error) {
-
-	logs, sub, err := _IPausable.contract.WatchLogs(opts, "PauserRegistrySet")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(IPausablePauserRegistrySet)
-				if err := _IPausable.contract.UnpackLog(event, "PauserRegistrySet", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParsePauserRegistrySet is a log parse operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
-//
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_IPausable *IPausableFilterer) ParsePauserRegistrySet(log types.Log) (*IPausablePauserRegistrySet, error) {
-	event := new(IPausablePauserRegistrySet)
-	if err := _IPausable.contract.UnpackLog(event, "PauserRegistrySet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

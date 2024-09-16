@@ -7,6 +7,9 @@ pragma solidity >=0.5.0;
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface ISignatureUtils {
+    error InvalidSignature();
+    error SignatureExpired();
+
     // @notice Struct that bundles together a signature and an expiration time for the signature. Used primarily for stack management.
     struct SignatureWithExpiry {
         // the signature itself, formatted as a single bytes object

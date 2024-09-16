@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
@@ -111,7 +111,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
-        cheats.expectRevert("EigenPod._verifyWithdrawalCredentials: validator must be inactive to prove withdrawal credentials");
+        cheats.expectRevert(IEigenPodErrors.CredentialsAlreadyVerified.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -132,7 +132,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
 
-        cheats.expectRevert("EigenPod._startCheckpoint: must finish previous checkpoint before starting another");
+        cheats.expectRevert(IEigenPodErrors.CheckpointAlreadyActive.selector);
         staker.startCheckpoint();
     }
 
@@ -157,7 +157,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.completeCheckpoint();
         check_CompleteCheckpoint_State(staker);
 
-        cheats.expectRevert("EigenPod._startCheckpoint: cannot checkpoint twice in one block");
+        cheats.expectRevert(IEigenPodErrors.CannotCheckpointTwiceInSingleBlock.selector);
         staker.startCheckpoint();
     }
 
@@ -227,7 +227,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.exitValidators(validators);
         beaconChain.advanceEpoch_NoRewards();
 
-        cheats.expectRevert("EigenPod._verifyWithdrawalCredentials: validator must not be exiting");
+        cheats.expectRevert(IEigenPodErrors.ValidatorIsExitingBeaconChain.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -312,7 +312,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         // Advance epoch, withdrawing slashed validators to pod
         beaconChain.advanceEpoch_NoRewards();
         
-        cheats.expectRevert("EigenPod._verifyWithdrawalCredentials: validator must not be exiting");
+        cheats.expectRevert(IEigenPodErrors.ValidatorIsExitingBeaconChain.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -341,7 +341,6 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.completeCheckpoint();
         check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
     }
-
 
     /// 1. Verify validators' withdrawal credentials
     /// 2. start a checkpoint
@@ -377,6 +376,41 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
 
         staker.completeCheckpoint();
         check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
+    }
+
+    /// 1. Verify validators' withdrawal credentials
+    /// 2. slash validators
+    /// 3. start a checkpoint 
+    /// 4. verify withdrawal credentials for another validator while checkpoint in progress
+    /// 5. complete a checkpoint
+    /// => Increase in shares between 1 and 4 should reflect the new validator, less the slashed amount
+    function test_VerifyWC_Slash_StartCP_VerifyWC_CompleteCP(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+        _upgradeEigenLayerContracts();
+
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
+
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        // Slash validators
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
+
+        // Start a checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
+
+        // Start a new validator & verify withdrawal credentials
+        cheats.deal(address(staker), 32 ether);
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
+        staker.verifyWithdrawalCredentials(newValidators);
+        check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);
+
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedBalanceGwei);
     }
 
     /*******************************************************************************
@@ -443,7 +477,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, 0);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithCLSlashing_State(staker, secondSlashedBalanceGwei);
+        check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, secondSlashedBalanceGwei);
     }
 
     /// 1. Verify validators' withdrawal credentials
@@ -692,7 +726,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, gweiSent);
 
         staker.completeCheckpoint();
-        // check that `pod.balance == withdrawableRestakedExecutionLayerGwei + remainderSent
+        // check that `pod.balance == restakedExecutionLayerGwei + remainderSent
         assert_PodBalance_Eq(staker, (gweiSent * GWEI_TO_WEI) + remainderSent, "pod balance should equal expected");
         check_CompleteCheckpoint_WithPodBalance_State(staker, gweiSent);
     }
@@ -720,7 +754,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, gweiSent);
 
         staker.completeCheckpoint();
-        // check that `pod.balance == withdrawableRestakedExecutionLayerGwei + remainderSent
+        // check that `pod.balance == restakedExecutionLayerGwei + remainderSent
         assert_PodBalance_Eq(staker, (gweiSent * GWEI_TO_WEI) + remainderSent, "pod balance should equal expected");
         check_CompleteCheckpoint_WithPodBalance_State(staker, gweiSent);
     }

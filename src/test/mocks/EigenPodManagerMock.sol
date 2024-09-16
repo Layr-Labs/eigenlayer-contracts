@@ -2,69 +2,76 @@
 pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
-import "../../contracts/interfaces/IEigenPodManager.sol";
+import "../../contracts/interfaces/IStrategy.sol";
 import "../../contracts/permissions/Pausable.sol";
 
+contract EigenPodManagerMock is Test, Pausable {
+    receive() external payable {}
+    fallback() external payable {}
 
-contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
-    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-    IBeacon public eigenPodBeacon;
-    IETHPOSDeposit public ethPOS;
+    mapping(address => int256) public podOwnerDepositShares;
 
-    mapping(address => int256) public podShares;
+    mapping(address => uint256) public podOwnerSharesWithdrawn;
 
-    constructor(IPauserRegistry _pauserRegistry) {
-        _initializePauser(_pauserRegistry, 0);
+    struct BeaconChainSlashingFactor {
+        bool isSet;
+        uint64 slashingFactor;
     }
 
-    function slasher() external view returns(ISlasher) {}
+    mapping(address => BeaconChainSlashingFactor) _beaconChainSlashingFactor;
 
-    function createPod() external returns(address) {}
-
-    function stake(bytes calldata /*pubkey*/, bytes calldata /*signature*/, bytes32 /*depositDataRoot*/) external payable {}
-
-    function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, int256 /*sharesDelta*/) external pure {}
-
-    function ownerToPod(address /*podOwner*/) external pure returns(IEigenPod) {
-        return IEigenPod(address(0));
-    }
-
-    function getPod(address podOwner) external pure returns(IEigenPod) {
-        return IEigenPod(podOwner);
-    }
-
-    function strategyManager() external pure returns(IStrategyManager) {
-        return IStrategyManager(address(0));
-    }
-    
-    function hasPod(address /*podOwner*/) external pure returns (bool) {
-        return false;
+    constructor(IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {
+        _setPausedStatus(0);
     }
 
     function podOwnerShares(address podOwner) external view returns (int256) {
-        return podShares[podOwner];
+        return podOwnerDepositShares[podOwner];
     }
+
+    function stakerDepositShares(address user, address) public view returns (uint256 depositShares) {
+        return podOwnerDepositShares[user] < 0 ? 0 : uint256(podOwnerDepositShares[user]);
+    } 
 
     function setPodOwnerShares(address podOwner, int256 shares) external {
-        podShares[podOwner] = shares;
+        podOwnerDepositShares[podOwner] = shares;
     }
 
-    function addShares(address /*podOwner*/, uint256 shares) external pure returns (uint256) {
-        // this is the "increase in delegateable tokens"
-        return (shares);
+    function addShares(
+        address podOwner,
+        IStrategy,
+        IERC20,
+        uint256 shares
+    ) external returns (uint256, uint256) {
+        uint256 existingDepositShares = uint256(podOwnerDepositShares[podOwner]);
+        podOwnerDepositShares[podOwner] += int256(shares);
+        return (existingDepositShares, shares);
     }
 
-    function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external {}
-
-    function removeShares(address podOwner, uint256 shares) external {}
-
-    function numPods() external view returns (uint256) {}
-
-    function updateStaleValidatorCount(address, int256) external {}
+    function removeDepositShares(
+        address podOwner, 
+        IStrategy, // strategy 
+        uint256 shares
+    ) external {
+        podOwnerDepositShares[podOwner] -= int256(shares);
+    }
 
     function denebForkTimestamp() external pure returns (uint64) {
         return type(uint64).max;
     }
 
-    function setDenebForkTimestamp(uint64 timestamp) external{}
+    function withdrawSharesAsTokens(address podOwner, address /** strategy */, address /** token */, uint256 shares) external {
+        podOwnerSharesWithdrawn[podOwner] += shares;
+    }
+
+    function setBeaconChainSlashingFactor(address staker, uint64 bcsf) external {
+        _beaconChainSlashingFactor[staker] = BeaconChainSlashingFactor({
+            isSet: true,
+            slashingFactor: bcsf
+        });
+    }
+
+    function beaconChainSlashingFactor(address staker) external view returns (uint64) {
+        BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[staker];
+        return bsf.isSet ? bsf.slashingFactor : WAD;
+    }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
@@ -8,7 +8,7 @@ import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
 import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
-import "src/test/integration/utils/PrintUtils.t.sol";
+import "src/test/utils/Logger.t.sol";
 
 struct ValidatorFieldsProof {
     bytes32[] validatorFields;
@@ -38,9 +38,9 @@ struct StaleBalanceProofs {
     BeaconChainProofs.ValidatorProof validatorProof;
 }
 
-contract BeaconChainMock is PrintUtils {
-
-    Vm cheats = Vm(VM_ADDRESS);
+contract BeaconChainMock is Logger {
+    using StdStyle for *;
+    using print for *;
 
     struct Validator {
         bool isDummy;
@@ -53,7 +53,6 @@ contract BeaconChainMock is PrintUtils {
     }
 
     /// @dev All withdrawals are processed with index == 0
-    uint constant GWEI_TO_WEI = 1e9;
     uint constant ZERO_NODES_LENGTH = 100;
 
     // Rewards given to each validator during epoch processing
@@ -155,7 +154,7 @@ contract BeaconChainMock is PrintUtils {
     function newValidator(
         bytes memory withdrawalCreds
     ) public payable returns (uint40) {
-        _logM("newValidator");
+        print.method("newValidator");
 
         uint balanceWei = msg.value;
 
@@ -191,7 +190,7 @@ contract BeaconChainMock is PrintUtils {
     ///
     /// TODO we may need to advance a slot here to maintain the properties we want in startCheckpoint
     function exitValidator(uint40 validatorIndex) public returns (uint64 exitedBalanceGwei) {
-        _logM("exitValidator");
+        print.method("exitValidator");
 
         // Update validator.exitEpoch
         Validator storage v = validators[validatorIndex];
@@ -211,7 +210,7 @@ contract BeaconChainMock is PrintUtils {
     }
 
     function slashValidators(uint40[] memory _validators) public returns (uint64 slashedBalanceGwei) {
-        _logM("slashValidators");
+        print.method("slashValidators");
 
         for (uint i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
@@ -254,11 +253,9 @@ contract BeaconChainMock is PrintUtils {
     /// - DOES generate consensus rewards for ALL non-exited validators
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch() public {
-        _logM("advanceEpoch");
-
+        print.method("advanceEpoch");
         _generateRewards();
         _withdrawExcess();
-
         _advanceEpoch();
     }
 
@@ -270,10 +267,8 @@ contract BeaconChainMock is PrintUtils {
     /// - does NOT generate consensus rewards
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch_NoRewards() public {
-        _logM("advanceEpoch_NoRewards");
-        
+        print.method("advanceEpoch_NoRewards");
         _withdrawExcess();
-
         _advanceEpoch();
     }
 
@@ -286,10 +281,8 @@ contract BeaconChainMock is PrintUtils {
     /// - does NOT withdraw in excess of 32 ETH
     /// - does NOT withdraw if validator is exited
     function advanceEpoch_NoWithdraw() public {
-        _logM("advanceEpoch_NoWithdraw");
-        
+        print.method("advanceEpoch_NoWithdraw");
         _generateRewards();
-
         _advanceEpoch();
     }
 
@@ -311,7 +304,7 @@ contract BeaconChainMock is PrintUtils {
             }
         }
 
-        _log("- generated rewards for num validators", totalRewarded);
+        console.log("   - Generated rewards for %s of %s validators.", totalRewarded, validators.length);
     }
 
     /// @dev Iterate over all validators. If the validator has > 32 ETH current balance
@@ -349,10 +342,12 @@ contract BeaconChainMock is PrintUtils {
         }
 
         if (totalExcessWei != 0)
-            _log("- withdrew excess balance", totalExcessWei);
+            console.log("- Withdrew excess balance:", totalExcessWei.asGwei());
     }
 
     function _advanceEpoch() public {
+        cheats.pauseTracing();
+
         // Update effective balances for each validator
         for (uint i = 0; i < validators.length; i++) {
             Validator storage v = validators[i];
@@ -367,20 +362,19 @@ contract BeaconChainMock is PrintUtils {
             v.effectiveBalanceGwei = balanceGwei;
         }
 
-        _log("- updated effective balances");
-
-        // Move forward one epoch
-        // _log("-- current time", block.timestamp);
-        _log("-- current epoch", currentEpoch());
+        // console.log("   Updated effective balances...".dim());
+        // console.log("       timestamp:", block.timestamp);
+        // console.log("       epoch:", currentEpoch());
 
         uint64 curEpoch = currentEpoch();
         cheats.warp(_nextEpochStartTimestamp(curEpoch));
         curTimestamp = uint64(block.timestamp);
 
-        // _log("-- new time", block.timestamp);
-        _log("- jumped to next epoch", currentEpoch());
-
-        _log("- building beacon state trees");
+        // console.log("   Jumping to next epoch...".dim());
+        // console.log("       timestamp:", block.timestamp);
+        // console.log("       epoch:", currentEpoch());
+                
+        // console.log("   Building beacon state trees...".dim());
 
         // Log total number of validators and number being processed for the first time
         if (validators.length > 0) {
@@ -389,7 +383,7 @@ contract BeaconChainMock is PrintUtils {
             // generate an empty root if we don't have any validators
             EIP_4788_ORACLE.setBlockRoot(curTimestamp, keccak256(""));
 
-            _log("-- no validators; added empty block root");
+            // console.log("-- no validators; added empty block root");
             return;
         }
         
@@ -399,7 +393,7 @@ contract BeaconChainMock is PrintUtils {
             treeHeight: BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1,
             tree: trees[curTimestamp].validatorTree
         });
-        // _log("-- validator container root", validatorsRoot);
+        // console.log("-- validator container root", validatorsRoot);
         
         // Build merkle tree for current balances
         bytes32 balanceContainerRoot = _buildMerkleTree({
@@ -407,7 +401,7 @@ contract BeaconChainMock is PrintUtils {
             treeHeight: BeaconChainProofs.BALANCE_TREE_HEIGHT + 1,
             tree: trees[curTimestamp].balancesTree
         });
-        // _log("-- balances container root", balanceContainerRoot);
+        // console.log("-- balances container root", balanceContainerRoot);
         
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = _buildMerkleTree({
@@ -415,7 +409,7 @@ contract BeaconChainMock is PrintUtils {
             treeHeight: BeaconChainProofs.BEACON_STATE_TREE_HEIGHT,
             tree: trees[curTimestamp].stateTree
         });
-        // _log("-- beacon state root", beaconStateRoot);
+        // console.log("-- beacon state root", beaconStateRoot);
 
         // Build merkle tree for BeaconBlock
         bytes32 beaconBlockRoot = _buildMerkleTree({
@@ -423,7 +417,9 @@ contract BeaconChainMock is PrintUtils {
             treeHeight: BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT,
             tree: trees[curTimestamp].blockTree
         });
-        _log("-- beacon block root", beaconBlockRoot);
+
+
+        // console.log("-- beacon block root", cheats.toString(beaconBlockRoot));
 
         // Push new block root to oracle
         EIP_4788_ORACLE.setBlockRoot(curTimestamp, beaconBlockRoot);
@@ -433,6 +429,8 @@ contract BeaconChainMock is PrintUtils {
         _genBalanceContainerProof(balanceContainerRoot);
         _genCredentialProofs();
         _genBalanceProofs();
+
+        cheats.resumeTracing();
     }
 
     /*******************************************************************************
@@ -440,6 +438,7 @@ contract BeaconChainMock is PrintUtils {
     *******************************************************************************/
 
     function _createValidator(bytes memory withdrawalCreds, uint64 balanceGwei) internal returns (uint40) {
+        cheats.pauseTracing();
         uint40 validatorIndex = uint40(validators.length);
 
         // HACK to make balance proofs work. Every 4 validators we create
@@ -480,6 +479,8 @@ contract BeaconChainMock is PrintUtils {
             exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
         }));
         _setCurrentBalance(validatorIndex, balanceGwei);
+
+        cheats.resumeTracing();
 
         return validatorIndex;
     }

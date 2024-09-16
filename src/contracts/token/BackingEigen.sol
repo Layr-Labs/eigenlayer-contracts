@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
-import "@openzeppelin-v4.9.0/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin-upgrades-v4.9.0/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
-import "@openzeppelin-upgrades-v4.9.0/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /// CONSTANTS & IMMUTABLES
@@ -31,7 +31,9 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     // @notice event emitted when the `isMinter` mapping is modified
     event IsMinterModified(address indexed minterAddress, bool newStatus);
 
-    constructor(IERC20 _EIGEN) {
+    constructor(
+        IERC20 _EIGEN
+    ) {
         EIGEN = _EIGEN;
         _disableInitializers();
     }
@@ -56,14 +58,18 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
      *
      * See {ERC20-_burn}.
      */
-    function burn(uint256 amount) public virtual {
+    function burn(
+        uint256 amount
+    ) public virtual {
         _burn(_msgSender(), amount);
     }
 
     /**
      * @notice An initializer function that sets initial values for the contract's state variables.
      */
-    function initialize(address initialOwner) public initializer {
+    function initialize(
+        address initialOwner
+    ) public initializer {
         __Ownable_init();
         __ERC20_init("Backing Eigen", "bEIGEN");
         _transferOwnership(initialOwner);
@@ -79,7 +85,7 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
 
         // Mint the entire supply of EIGEN - this is a one-time event that
         // ensures bEIGEN fully backs EIGEN.
-        _mint(address(EIGEN), 1673646668284660000000000000);
+        _mint(address(EIGEN), 1_673_646_668_284_660_000_000_000_000);
         emit Backed();
     }
 

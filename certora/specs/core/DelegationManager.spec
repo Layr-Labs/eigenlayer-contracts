@@ -78,7 +78,7 @@ in this case, the end state is that:
 isOperator(staker) == false,
 delegatedTo(staker) != staker && delegatedTo(staker) != 0,
 and isDelegated(staker) == true (redundant with above)
--only allowed when calling `delegateTo` or `delegateToBySignature`
+-only allowed when calling `delegateTo`
 
 2)
 FROM not delegated AND not registered as an operator
@@ -172,7 +172,7 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
     }
 }
 
-// verifies that an undelegated address can only delegate when calling `delegateTo`, `delegateToBySignature` or `registerAsOperator`
+// verifies that an undelegated address can only delegate when calling `delegateTo` or `registerAsOperator`
 rule canOnlyDelegateWithSpecificFunctions(address staker) {
     requireInvariant operatorsAlwaysDelegatedToSelf(staker);
     // assume the staker begins as undelegated
@@ -192,16 +192,6 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
         } else {
             assert (!isDelegated(staker), "staker delegated to inappropriate address?");
         }
-    } else if (f.selector == sig:delegateToBySignature(address, address, ISignatureUtils.SignatureWithExpiry, ISignatureUtils.SignatureWithExpiry, bytes32).selector) {
-        address toDelegateFrom;
-        address operator;
-        require(operator != 0);
-        ISignatureUtils.SignatureWithExpiry stakerSignatureAndExpiry;
-        ISignatureUtils.SignatureWithExpiry approverSignatureAndExpiry;
-        bytes32 salt;
-        delegateToBySignature(e, toDelegateFrom, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, salt);
-        // TODO: this check could be stricter! need to filter when the block timestamp is appropriate for expiry and signature is valid
-        assert (!isDelegated(staker) || delegatedTo(staker) == operator, "delegateToBySignature bug?");
     } else if (f.selector == sig:registerAsOperator(IDelegationManager.OperatorDetails, string).selector) {
         IDelegationManager.OperatorDetails operatorDetails;
         string metadataURI;
