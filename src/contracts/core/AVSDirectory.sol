@@ -284,13 +284,15 @@ contract AVSDirectory is
         require(!isOperatorSetAVS[msg.sender], InvalidAVS());
 
         // Assert that the `operator` is not actively registered to the AVS.
-        require(avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED, InvalidOperator());
-
+        require(
+            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
+            OperatorAlreadyRegistered()
+        );
         // Assert `operator` has not already spent `operatorSignature.salt`.
-        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
-
+        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SignatureSaltSpent());
+        
         // Assert `operator` is a registered operator.
-        require(delegation.isOperator(operator), OperatorNotRegistered());
+        require(delegation.isOperator(operator), OperatorDoesNotExist());
 
         // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
         EIP1271SignatureUtils.checkSignature_EIP1271({
@@ -326,9 +328,9 @@ contract AVSDirectory is
         address operator
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that operator is registered for the AVS.
-        require(avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, InvalidOperator());
-        // Assert that the AVS is not an operator set AVS.
-        require(!isOperatorSetAVS[msg.sender], InvalidAVS());
+        require(
+            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, OperatorNotRegistered()
+        );
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;

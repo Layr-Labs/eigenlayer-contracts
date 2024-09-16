@@ -61,12 +61,12 @@ contract RewardsCoordinator is
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     modifier onlyRewardsUpdater() {
-        require(msg.sender == rewardsUpdater, OnlyRewardsUpdater());
+        require(msg.sender == rewardsUpdater, UnauthorizedCaller());
         _;
     }
 
     modifier onlyRewardsForAllSubmitter() {
-        require(isRewardsForAllSubmitter[msg.sender], OnlyRewardsForAllSubmitter());
+        require(isRewardsForAllSubmitter[msg.sender], UnauthorizedCaller());
         _;
     }
 
@@ -308,8 +308,9 @@ contract RewardsCoordinator is
         if (claimer == address(0)) {
             claimer = earner;
         }
-        require(msg.sender == claimer, InvalidClaimer());
-        for (uint256 i = 0; i < claim.tokenIndices.length; ++i) {
+        require(msg.sender == claimer, UnauthorizedCaller());
+        
+        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
 
             uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
@@ -362,7 +363,7 @@ contract RewardsCoordinator is
         require(rootIndex < _distributionRoots.length, InvalidRootIndex());
         DistributionRoot storage root = _distributionRoots[rootIndex];
         require(!root.disabled, RootDisabled());
-        require(block.timestamp < root.activatedAt, RootActivated());
+        require(block.timestamp < root.activatedAt, RootAlreadyActivated());
         root.disabled = true;
         emit DistributionRootDisabled(rootIndex);
     }
@@ -481,14 +482,13 @@ contract RewardsCoordinator is
         uint32 maxRetroactiveLength,
         uint32 genesisRewardsTimestamp
     ) internal view {
-        require(strategiesAndMultipliers.length > 0, InputArrayLengthZero());
-        require(amount > 0, AmountZero());
-        require(amount <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
-        require(duration <= MAX_REWARDS_DURATION, DurationExceedsMax());
-        require(duration % CALCULATION_INTERVAL_SECONDS == 0, DurationNotMultipleOfCalculationIntervalSeconds());
-        require(
-            startTimestamp % CALCULATION_INTERVAL_SECONDS == 0, StartTimestampNotMultipleOfCalculationIntervalSeconds()
-        );
+        require(rewardsSubmission.strategiesAndMultipliers.length > 0, InputArrayLengthZero());
+        require(rewardsSubmission.amount > 0, AmountIsZero());
+        require(rewardsSubmission.amount <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
+        require(rewardsSubmission.duration <= MAX_REWARDS_DURATION, DurationExceedsMax());
+        require(rewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0, InvalidDurationRemainder());
+        require(rewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0, InvalidStartTimestampRemainder());
+
         require(
             block.timestamp - maxRetroactiveLength <= startTimestamp && genesisRewardsTimestamp <= startTimestamp,
             StartTimestampTooFarInPast()
@@ -501,7 +501,7 @@ contract RewardsCoordinator is
             IStrategy strategy = strategiesAndMultipliers[i].strategy;
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
-                InvalidStrategy()
+                StrategyNotWhitelisted()
             );
             require(currAddress < address(strategy), StrategiesNotInAscendingOrder());
             currAddress = address(strategy);

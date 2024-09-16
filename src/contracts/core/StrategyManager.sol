@@ -35,7 +35,7 @@ contract StrategyManager is
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
     modifier onlyStrategyWhitelister() {
-        require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
+        require(msg.sender == strategyWhitelister, UnauthorizedCaller());
         _;
     }
 
@@ -47,7 +47,7 @@ contract StrategyManager is
     }
 
     modifier onlyDelegationManager() {
-        require(msg.sender == address(delegation), OnlyDelegationManager());
+        require(msg.sender == address(delegation), UnauthorizedCaller());
         _;
     }
 
@@ -315,7 +315,7 @@ contract StrategyManager is
         //check that the user has sufficient shares
         uint256 userShares = stakerStrategyShares[staker][strategy];
 
-        require(shareAmount <= userShares, SharesAmountTooHigh());
+        require(shareAmount <= userShares, InsufficientShares());
         //unchecked arithmetic since we just checked this above
         unchecked {
             userShares = userShares - shareAmount;

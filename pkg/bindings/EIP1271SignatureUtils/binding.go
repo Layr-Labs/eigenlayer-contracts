@@ -31,8 +31,8 @@ var (
 
 // EIP1271SignatureUtilsMetaData contains all meta data concerning the EIP1271SignatureUtils contract.
 var EIP1271SignatureUtilsMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"error\",\"name\":\"InvalidSignatureEIP1271\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSignatureSigner\",\"inputs\":[]}]",
-	Bin: "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122086f0e45761e8a933effdbcd0e9023709b61ae6a3fa6d56225e4ca34aba053bdb64736f6c634300081b0033",
+	ABI: "[{\"type\":\"error\",\"name\":\"InvalidSignatureEIP1271\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSignatureEOA\",\"inputs\":[]}]",
+	Bin: "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220a27cdff4a9cf4e5da49114322ca7517a562e3d78193fe8b3dffb108e578d732664736f6c634300081b0033",
 }
 
 // EIP1271SignatureUtilsABI is the input ABI used to generate the binding from.

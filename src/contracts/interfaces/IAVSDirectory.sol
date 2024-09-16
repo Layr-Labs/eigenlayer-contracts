@@ -10,16 +10,19 @@ struct OperatorSet {
 }
 
 interface IAVSDirectory is ISignatureUtils {
-    /// @dev Thrown when an invalid AVS is provided.
-    error InvalidAVS();
-    /// @dev Thrown when an invalid operator is provided.
-    error InvalidOperator();
-    /// @dev Thrown when an invalid operator set is provided.
-    error InvalidOperatorSet();
-    /// @dev Thrown when `operator` is not a registered operator.
+    /// Operator Status
+
+    /// @dev Thrown when an operator does not exist in the DelegationManager
+    error OperatorDoesNotExist();
+    /// @dev Thrown when `operator` is not registered to the AVS.
     error OperatorNotRegistered();
+    /// @dev Thrown when `operator` is already registered to the AVS.
+    error OperatorAlreadyRegistered();
+
+    /// Signatures
+
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
-    error SaltSpent();
+    error SignatureSaltSpent();
     /// @dev Thrown when attempting to use an expired eip-712 signature.
     error SignatureExpired();
 
