@@ -67,6 +67,21 @@ contract AllocationManager is
     }
 
     /**
+     * @notice Called by the delagation manager to set delay when operators register.
+     * @param operator The operator to set the delay on behalf of.
+     * @param delay The allocation delay in seconds.
+     * @dev msg.sender is assumed to be the delegation manager.
+     */
+    function setAllocationDelay(
+        address operator,
+        uint32 delay
+    ) external {
+        require(msg.sender == address(delegation), OnlyDelegationManager());
+        _setAllocationDelay(operator, delay);
+    }
+
+
+    /**
      * @notice Called by operators to set their allocation delay.
      * @param delay the allocation delay in seconds
      * @dev msg.sender is assumed to be the operator
@@ -75,19 +90,7 @@ contract AllocationManager is
         uint32 delay
     ) external {
         require(delegation.isOperator(msg.sender), OperatorNotRegistered());
-
-        AllocationDelayInfo storage delayInfo = _allocationDelayInfo[msg.sender];
-
-        bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
-
-        if (pendingInEffect) {
-            delayInfo.delay = delayInfo.pendingDelay;
-        }
-
-        delayInfo.pendingDelay = delay;
-        delayInfo.pendingDelayEffectTimestamp = uint32(block.timestamp + ALLOCATION_DELAY_CONFIGURATION_DELAY);
-
-        emit AllocationDelaySet(msg.sender, delay);
+        _setAllocationDelay(msg.sender, delay);
     }
 
     /**
@@ -255,6 +258,29 @@ contract AllocationManager is
     ) external override {
         // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
         operatorSaltIsSpent[msg.sender][salt] = true;
+    }
+
+    /**
+     * @notice Helper for setting an operators allocation delay.
+     * @param operator The operator to set the delay on behalf of.
+     * @param delay The allocation delay in seconds.
+     */
+    function _setAllocationDelay(
+        address operator,
+        uint32 delay
+    ) internal {
+        AllocationDelayInfo storage delayInfo = _allocationDelayInfo[operator];
+
+        bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
+
+        if (pendingInEffect) {
+            delayInfo.delay = delayInfo.pendingDelay;
+        }
+
+        delayInfo.pendingDelay = delay;
+        delayInfo.pendingDelayEffectTimestamp = uint32(block.timestamp + ALLOCATION_DELAY_CONFIGURATION_DELAY);
+
+        emit AllocationDelaySet(operator, delay);
     }
 
     /**

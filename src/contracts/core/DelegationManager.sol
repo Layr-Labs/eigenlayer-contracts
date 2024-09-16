@@ -110,6 +110,7 @@ contract DelegationManager is
     /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
+     * @param allocationDelay The delay before allocations take effect.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      *
      * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
@@ -118,9 +119,15 @@ contract DelegationManager is
      */
     function registerAsOperator(
         OperatorDetails calldata registeringOperatorDetails,
+        uint32 allocationDelay,
         string calldata metadataURI
     ) external {
         require(!isDelegated(msg.sender), ActivelyDelegated());
+
+        if (allocationDelay != type(uint32).max) {
+            allocationManager.setAllocationDelay(msg.sender, allocationDelay);
+        }
+
         _setOperatorDetails(msg.sender, registeringOperatorDetails);
         SignatureWithExpiry memory emptySignatureAndExpiry;
         // delegate from the operator to themselves
