@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
@@ -26,51 +26,51 @@ contract ProofParsing is Test {
         proofConfigJson = vm.readFile(path);
     }
 
-    function getSlot() public returns(uint256) {
+    function getSlot() public view returns (uint256) {
         return stdJson.readUint(proofConfigJson, ".slot");
     }
 
-    function getValidatorIndex() public returns(uint256) {
+    function getValidatorIndex() public view returns (uint256) {
         return stdJson.readUint(proofConfigJson, ".validatorIndex");
     }
 
-    function getValidatorPubkeyHash() public returns(bytes32) {
+    function getValidatorPubkeyHash() public view returns (bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".ValidatorFields[0]");
     }
 
-    function getWithdrawalIndex() public returns(uint256) {
+    function getWithdrawalIndex() public view returns (uint256) {
         return stdJson.readUint(proofConfigJson, ".withdrawalIndex");
     }
 
-    function getBlockRootIndex() public returns(uint256) {
+    function getBlockRootIndex() public view returns (uint256) {
         return stdJson.readUint(proofConfigJson, ".blockHeaderRootIndex");
     }
 
-    function getHistoricalSummaryIndex() public returns(uint256) {
+    function getHistoricalSummaryIndex() public view returns (uint256) {
         return stdJson.readUint(proofConfigJson, ".historicalSummaryIndex");
     }
 
-    function getBeaconStateRoot() public returns(bytes32) {
+    function getBeaconStateRoot() public view returns (bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".beaconStateRoot");
     }
 
-    function getBlockRoot() public returns(bytes32) {
+    function getBlockRoot() public view returns (bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".blockHeaderRoot");
     }
 
-    function getSlotRoot() public returns(bytes32) {
+    function getSlotRoot() public view returns (bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".slotRoot");
     }
 
-    function getTimestampRoot() public returns(bytes32) {
+    function getTimestampRoot() public view returns (bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".timestampRoot");
     }
 
-    function getExecutionPayloadRoot() public returns(bytes32) {
+    function getExecutionPayloadRoot() public view returns (bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".executionPayloadRoot");
     }
 
-    function getLatestBlockRoot() public returns(bytes32) {
+    function getLatestBlockRoot() public view returns (bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".latestBlockHeaderRoot");
     }
     function getExecutionPayloadProof () public returns(bytes32[7] memory) {

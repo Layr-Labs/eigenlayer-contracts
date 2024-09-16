@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "src/contracts/core/RewardsCoordinator.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 
-import "src/test/events/IRewardsCoordinatorEvents.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/Reenterer.sol";
 import "src/test/mocks/ERC20Mock.sol";
@@ -17,7 +16,7 @@ import "src/test/mocks/ERC20Mock.sol";
  * Contracts tested: RewardsCoordinator
  * Contracts not mocked: StrategyBase, PauserRegistry
  */
-contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordinatorEvents {
+contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordinatorEvents, IRewardsCoordinatorErrors {
     // used for stack too deep
     struct FuzzAVSRewardsSubmission {
         address avs;
@@ -39,7 +38,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     IStrategy strategyMock3;
     StrategyBase strategyImplementation;
     uint256 mockTokenInitialSupply = 1e38 - 1;
-    IRewardsCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
+    StrategyAndMultiplier[] defaultStrategyAndMultipliers;
 
     // Config Variables
     /// @notice intervals(epochs) are 1 weeks
@@ -95,6 +94,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     address defaultAVS = address(1001);
     address defaultClaimer = address(1002);
     address rewardsForAllSubmitter = address(1003);
+    address defaultAppointee = address(1004);
 
     function setUp() public virtual override {
         // Setup
@@ -102,8 +102,11 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
 
         // Deploy RewardsCoordinator proxy and implementation
         rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegationManagerMock,
-            strategyManagerMock,
+            IDelegationManager(address(delegationManagerMock)),
+            IStrategyManager(address(strategyManagerMock)),
+            IAllocationManager(address(allocationManagerMock)),
+            pauserRegistry,
+            IPermissionController(address(permissionController)),
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
@@ -118,7 +121,6 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
                     abi.encodeWithSelector(
                         RewardsCoordinator.initialize.selector,
                         address(this), // initOwner
-                        pauserRegistry,
                         0, // 0 is initialPausedStatus
                         rewardsUpdater,
                         activationDelay,
@@ -133,13 +135,13 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         token2 = new ERC20PresetFixedSupply("jeo boden", "MOCK2", mockTokenInitialSupply, address(this));
         token3 = new ERC20PresetFixedSupply("pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this));
 
-        strategyImplementation = new StrategyBase(strategyManagerMock);
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
         strategyMock1 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, token1, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, token1)
                 )
             )
         );
@@ -148,7 +150,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, token2, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, token2)
                 )
             )
         );
@@ -157,7 +159,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, token3, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, token3)
                 )
             )
         );
@@ -172,21 +174,21 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         strategyManagerMock.setStrategyWhitelist(strategies[2], true);
 
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
+            StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
         );
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
+            StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
         );
         defaultStrategyAndMultipliers.push(
-            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
+            StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
         );
 
         rewardsCoordinator.setRewardsForAllSubmitter(rewardsForAllSubmitter, true);
         rewardsCoordinator.setRewardsUpdater(rewardsUpdater);
 
         // Exclude from fuzzed tests
-        addressIsExcludedFromFuzzedInputs[address(rewardsCoordinator)] = true;
-        addressIsExcludedFromFuzzedInputs[address(rewardsUpdater)] = true;
+        isExcludedFuzzAddress[address(rewardsCoordinator)] = true;
+        isExcludedFuzzAddress[address(rewardsUpdater)] = true;
 
         // Set the timestamp to some time after the genesis rewards timestamp
         cheats.warp(GENESIS_REWARDS_TIMESTAMP + 5 days);
@@ -215,11 +217,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
-    function _assertRewardsClaimedEvents(
-        bytes32 root,
-        IRewardsCoordinator.RewardsMerkleClaim memory claim,
-        address recipient
-    ) internal {
+    function _assertRewardsClaimedEvents(bytes32 root, RewardsMerkleClaim memory claim, address recipient) internal {
         address earner = claim.earnerLeaf.earner;
         address claimer = rewardsCoordinator.claimerFor(earner);
         if (claimer == address(0)) {
@@ -246,7 +244,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     /// @notice given address and array of reward tokens, return array of cumulativeClaimed amonts
     function _getCumulativeClaimed(
         address earner,
-        IRewardsCoordinator.RewardsMerkleClaim memory claim
+        RewardsMerkleClaim memory claim
     ) internal view returns (uint256[] memory) {
         uint256[] memory totalClaimed = new uint256[](claim.tokenLeaves.length);
 
@@ -259,7 +257,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
 
     /// @notice given a claim, return the new cumulativeEarnings for each token
     function _getCumulativeEarnings(
-        IRewardsCoordinator.RewardsMerkleClaim memory claim
+        RewardsMerkleClaim memory claim
     ) internal pure returns (uint256[] memory) {
         uint256[] memory earnings = new uint256[](claim.tokenLeaves.length);
 
@@ -272,7 +270,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
 
     function _getClaimTokenBalances(
         address earner,
-        IRewardsCoordinator.RewardsMerkleClaim memory claim
+        RewardsMerkleClaim memory claim
     ) internal view returns (uint256[] memory) {
         uint256[] memory balances = new uint256[](claim.tokenLeaves.length);
 
@@ -307,6 +305,64 @@ contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorU
         rewardsCoordinator.setClaimerFor(claimer);
         assertEq(claimer, rewardsCoordinator.claimerFor(earner), "claimerFor not set");
         cheats.stopPrank();
+    }
+
+    function test_setClaimerFor_UAM_revert_staker(address earner, address claimer) public filterFuzzedAddressInputs(earner) {
+        cheats.prank(earner);
+        cheats.expectRevert(InvalidEarner.selector);
+        rewardsCoordinator.setClaimerFor(earner, claimer);
+    }
+
+    function test_setClaimerFor_UAM_AVS() public {
+        address avs = address(1000);
+        address claimer = address(1001);
+
+        // Set AVS
+        allocationManagerMock.setAVSSetCount(avs, 1);
+
+        // Initialize UAM
+        cheats.prank(avs);
+        permissionController.setAppointee(
+            avs, 
+            defaultAppointee, 
+            address(rewardsCoordinator), 
+            bytes4(keccak256("setClaimerFor(address,address)"))
+        );
+
+        // Set claimer for AVS
+        cheats.startPrank(defaultAppointee);
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit ClaimerForSet(avs, rewardsCoordinator.claimerFor(avs), claimer);
+        rewardsCoordinator.setClaimerFor(avs, claimer);
+        cheats.stopPrank();
+
+        assertEq(claimer, rewardsCoordinator.claimerFor(avs), "claimerFor not set");
+    }
+
+    function test_setClaimerFor_UAM_Operator() public {
+        address operator = address(1000);
+        address claimer = address(1001);
+
+        // Set operator
+        delegationManagerMock.setIsOperator(operator, true);
+
+        // Initialize UAM
+        cheats.prank(operator);
+        permissionController.setAppointee(
+            operator, 
+            defaultAppointee, 
+            address(rewardsCoordinator), 
+            bytes4(keccak256("setClaimerFor(address,address)"))
+        );
+
+        // Set claimer for operator
+        cheats.startPrank(defaultAppointee);
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit ClaimerForSet(operator, rewardsCoordinator.claimerFor(operator), claimer);
+        rewardsCoordinator.setClaimerFor(operator, claimer);
+        cheats.stopPrank();
+
+        assertEq(claimer, rewardsCoordinator.claimerFor(operator), "claimerFor not set");
     }
 
     function testFuzz_setActivationDelay(uint32 activationDelay) public {
@@ -400,20 +456,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_AVS_SPLIT);
 
         cheats.prank(operator);
-        cheats.expectRevert("Pausable: index is paused");
-        rewardsCoordinator.setOperatorAVSSplit(operator, avs, split);
-    }
-
-    // Revert when operator is not caller
-    function testFuzz_Revert_WhenOperatorIsNotMsgSender(
-        address operator,
-        address avs,
-        uint16 split
-    ) public filterFuzzedAddressInputs(operator) {
-        cheats.assume(operator != address(0) && operator != address(this));
-        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
-
-        cheats.expectRevert("RewardsCoordinator.setOperatorAVSSplit: caller is not the operator");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         rewardsCoordinator.setOperatorAVSSplit(operator, avs, split);
     }
 
@@ -427,7 +470,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         split = uint16(bound(split, ONE_HUNDRED_IN_BIPS + 1, type(uint16).max));
 
         cheats.prank(operator);
-        cheats.expectRevert("RewardsCoordinator.setOperatorAVSSplit: split must be <= 10000 bips");
+        cheats.expectRevert(SplitExceedsMax.selector);
         rewardsCoordinator.setOperatorAVSSplit(operator, avs, split);
     }
 
@@ -444,6 +487,36 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorAVSSplitBipsSet(operator, operator, avs, activatedAt, oldSplit, split);
         cheats.prank(operator);
+        rewardsCoordinator.setOperatorAVSSplit(operator, avs, split);
+
+        assertEq(oldSplit, rewardsCoordinator.getOperatorAVSSplit(operator, avs), "Incorrect Operator split");
+        cheats.warp(activatedAt);
+        assertEq(split, rewardsCoordinator.getOperatorAVSSplit(operator, avs), "Incorrect Operator split");
+    }
+
+    function testFuzz_setOperatorAVSSplit_UAM(
+        address operator,
+        address avs,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+
+        // Set UAM
+        cheats.prank(operator);
+        permissionController.setAppointee(
+            operator, 
+            defaultAppointee, 
+            address(rewardsCoordinator), 
+            IRewardsCoordinator.setOperatorAVSSplit.selector
+        );
+
+        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
+        uint16 oldSplit = rewardsCoordinator.getOperatorAVSSplit(operator, avs);
+
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorAVSSplitBipsSet(defaultAppointee, operator, avs, activatedAt, oldSplit, split);
+        cheats.prank(defaultAppointee);
         rewardsCoordinator.setOperatorAVSSplit(operator, avs, split);
 
         assertEq(oldSplit, rewardsCoordinator.getOperatorAVSSplit(operator, avs), "Incorrect Operator split");
@@ -494,7 +567,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
 
         // Trying to set Second Split
         cheats.prank(operator);
-        cheats.expectRevert("RewardsCoordinator._setOperatorSplit: earlier split not activated yet");
+        cheats.expectRevert(PreviousSplitPending.selector);
         rewardsCoordinator.setOperatorAVSSplit(operator, avs, secondSplit);
     }
 
@@ -541,19 +614,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_PI_SPLIT);
 
         cheats.prank(operator);
-        cheats.expectRevert("Pausable: index is paused");
-        rewardsCoordinator.setOperatorPISplit(operator, split);
-    }
-
-    // Revert when operator is not caller
-    function testFuzz_Revert_WhenOperatorIsNotMsgSender(
-        address operator,
-        uint16 split
-    ) public filterFuzzedAddressInputs(operator) {
-        cheats.assume(operator != address(0) && operator != address(this));
-        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
-
-        cheats.expectRevert("RewardsCoordinator.setOperatorPISplit: caller is not the operator");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         rewardsCoordinator.setOperatorPISplit(operator, split);
     }
 
@@ -566,12 +627,13 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         split = uint16(bound(split, ONE_HUNDRED_IN_BIPS + 1, type(uint16).max));
 
         cheats.prank(operator);
-        cheats.expectRevert("RewardsCoordinator.setOperatorPISplit: split must be <= 10000 bips");
+        cheats.expectRevert(SplitExceedsMax.selector);
         rewardsCoordinator.setOperatorPISplit(operator, split);
     }
 
     function testFuzz_setOperatorPISplit(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
+
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         uint16 oldSplit = rewardsCoordinator.getOperatorPISplit(operator);
@@ -579,6 +641,32 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorPISplitBipsSet(operator, operator, activatedAt, oldSplit, split);
         cheats.prank(operator);
+        rewardsCoordinator.setOperatorPISplit(operator, split);
+
+        assertEq(oldSplit, rewardsCoordinator.getOperatorPISplit(operator), "Incorrect Operator split");
+        cheats.warp(activatedAt);
+        assertEq(split, rewardsCoordinator.getOperatorPISplit(operator), "Incorrect Operator split");
+    }
+
+    function testFuzz_setOperatorPISplit_UAM(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+
+        // Set UAM
+        cheats.prank(operator);
+        permissionController.setAppointee(
+            operator, 
+            defaultAppointee, 
+            address(rewardsCoordinator), 
+            IRewardsCoordinator.setOperatorPISplit.selector
+        );
+
+        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
+        uint16 oldSplit = rewardsCoordinator.getOperatorPISplit(operator);
+
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorPISplitBipsSet(defaultAppointee, operator, activatedAt, oldSplit, split);
+        cheats.prank(defaultAppointee);
         rewardsCoordinator.setOperatorPISplit(operator, split);
 
         assertEq(oldSplit, rewardsCoordinator.getOperatorPISplit(operator), "Incorrect Operator split");
@@ -627,7 +715,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
 
         // Trying to set Second Split
         cheats.prank(operator);
-        cheats.expectRevert("RewardsCoordinator._setOperatorSplit: earlier split not activated yet");
+        cheats.expectRevert(PreviousSplitPending.selector);
         rewardsCoordinator.setOperatorPISplit(operator, secondSplit);
     }
 
@@ -670,8 +758,8 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_AVS_REWARDS_SUBMISSION);
 
-        cheats.expectRevert("Pausable: index is paused");
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        RewardsSubmission[] memory rewardsSubmissions;
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -687,10 +775,8 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         _deployMockRewardTokens(address(this), 1);
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
             amount: amount,
@@ -733,11 +819,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        IRewardsCoordinator.StrategyAndMultiplier[] memory emptyStratsAndMultipliers;
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        StrategyAndMultiplier[] memory emptyStratsAndMultipliers;
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: emptyStratsAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -747,7 +831,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: no strategies set");
+        cheats.expectRevert(InputArrayLengthZero.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -773,10 +857,8 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -786,7 +868,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. Call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: amount too large");
+        cheats.expectRevert(AmountExceedsMax.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -811,14 +893,12 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        IRewardsCoordinator.StrategyAndMultiplier[]
-            memory dupStratsAndMultipliers = new IRewardsCoordinator.StrategyAndMultiplier[](2);
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        StrategyAndMultiplier[]
+            memory dupStratsAndMultipliers = new StrategyAndMultiplier[](2);
         dupStratsAndMultipliers[0] = defaultStrategyAndMultipliers[0];
         dupStratsAndMultipliers[1] = defaultStrategyAndMultipliers[0];
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: dupStratsAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -828,9 +908,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateCommonRewardsSubmission: strategies must be in ascending order to handle duplicates"
-        );
+        cheats.expectRevert(StrategiesNotInAscendingOrder.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -858,10 +936,8 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -871,9 +947,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateCommonRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
-        );
+        cheats.expectRevert(DurationExceedsMax.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -902,10 +976,8 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -915,9 +987,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateCommonRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
-        );
+        cheats.expectRevert(InvalidDurationRemainder.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -950,10 +1020,8 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -963,7 +1031,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: startTimestamp too far in the past");
+        cheats.expectRevert(StartTimestampTooFarInPast.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -990,10 +1058,8 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -1003,7 +1069,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the future");
+        cheats.expectRevert(StartTimestampTooFarInFuture.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -1032,11 +1098,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
         defaultStrategyAndMultipliers[0].strategy = IStrategy(address(999));
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -1046,7 +1110,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected event emitted
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: invalid strategy considered");
+        cheats.expectRevert(StrategyNotWhitelisted.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -1081,10 +1145,8 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -1138,9 +1200,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         cheats.assume(param.avs != address(0));
         cheats.prank(rewardsCoordinator.owner());
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            numSubmissions
-        );
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](numSubmissions);
         bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(param.avs);
         _deployMockRewardTokens(param.avs, numSubmissions);
@@ -1169,7 +1229,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
             param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create rewards submission input param
-            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator.RewardsSubmission({
+            RewardsSubmission memory rewardsSubmission = RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: rewardTokens[i],
                 amount: amounts[i],
@@ -1227,8 +1287,8 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_REWARDS_FOR_ALL_SUBMISSION);
 
-        cheats.expectRevert("Pausable: index is paused");
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        RewardsSubmission[] memory rewardsSubmissions;
         rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
     }
 
@@ -1243,10 +1303,8 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
 
         _deployMockRewardTokens(address(this), 1);
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
             amount: amount,
@@ -1270,8 +1328,8 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
     ) public filterFuzzedAddressInputs(invalidSubmitter) {
         cheats.assume(invalidSubmitter != rewardsForAllSubmitter);
 
-        cheats.expectRevert("RewardsCoordinator: caller is not a valid createRewardsForAllSubmission submitter");
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        cheats.expectRevert(UnauthorizedCaller.selector);
+        RewardsSubmission[] memory rewardsSubmissions;
         rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
     }
 
@@ -1309,10 +1367,8 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -1376,9 +1432,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
         cheats.prank(rewardsCoordinator.owner());
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            numSubmissions
-        );
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](numSubmissions);
         bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(rewardsForAllSubmitter);
         _deployMockRewardTokens(rewardsForAllSubmitter, numSubmissions);
@@ -1407,7 +1461,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
             param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create rewards submission input param
-            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator.RewardsSubmission({
+            RewardsSubmission memory rewardsSubmission = RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: rewardTokens[i],
                 amount: amounts[i],
@@ -1465,8 +1519,8 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS);
 
-        cheats.expectRevert("Pausable: index is paused");
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        RewardsSubmission[] memory rewardsSubmissions;
         rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
     }
 
@@ -1481,10 +1535,8 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
 
         _deployMockRewardTokens(address(this), 1);
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
             amount: amount,
@@ -1508,8 +1560,8 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
     ) public filterFuzzedAddressInputs(invalidSubmitter) {
         cheats.assume(invalidSubmitter != rewardsForAllSubmitter);
 
-        cheats.expectRevert("RewardsCoordinator: caller is not a valid createRewardsForAllSubmission submitter");
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        cheats.expectRevert(UnauthorizedCaller.selector);
+        RewardsSubmission[] memory rewardsSubmissions;
         rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
     }
 
@@ -1547,10 +1599,8 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            1
-        );
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             amount: amount,
@@ -1614,9 +1664,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
         cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
         cheats.prank(rewardsCoordinator.owner());
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-            numSubmissions
-        );
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](numSubmissions);
         bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(rewardsForAllSubmitter);
         _deployMockRewardTokens(rewardsForAllSubmitter, numSubmissions);
@@ -1645,7 +1693,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
             param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create rewards submission input param
-            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator.RewardsSubmission({
+            RewardsSubmission memory rewardsSubmission = RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: rewardTokens[i],
                 amount: amounts[i],
@@ -1708,7 +1756,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         uint256 duration;
     }
 
-    IRewardsCoordinator.OperatorReward[] defaultOperatorRewards;
+    OperatorReward[] defaultOperatorRewards;
 
     function setUp() public virtual override {
         RewardsCoordinatorUnitTests.setUp();
@@ -1719,9 +1767,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         operators[2] = makeAddr("operator3");
         operators = _sortAddressArrayAsc(operators);
 
-        defaultOperatorRewards.push(IRewardsCoordinator.OperatorReward(operators[0], 1e18));
-        defaultOperatorRewards.push(IRewardsCoordinator.OperatorReward(operators[1], 2e18));
-        defaultOperatorRewards.push(IRewardsCoordinator.OperatorReward(operators[2], 3e18));
+        defaultOperatorRewards.push(OperatorReward(operators[0], 1e18));
+        defaultOperatorRewards.push(OperatorReward(operators[1], 2e18));
+        defaultOperatorRewards.push(OperatorReward(operators[2], 3e18));
 
         // Set the timestamp to when Rewards v2 will realisticly go out (i.e 6 months)
         cheats.warp(GENESIS_REWARDS_TIMESTAMP + 168 days);
@@ -1743,7 +1791,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
     }
 
     function _getTotalRewardsAmount(
-        IRewardsCoordinator.OperatorReward[] memory operatorRewards
+        OperatorReward[] memory operatorRewards
     ) internal pure returns (uint256) {
         uint256 totalAmount = 0;
         for (uint256 i = 0; i < operatorRewards.length; ++i) {
@@ -1757,8 +1805,8 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION);
 
-        cheats.expectRevert("Pausable: index is paused");
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions;
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions;
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(
             address(this),
             operatorDirectedRewardsSubmissions
@@ -1783,9 +1831,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         Reenterer reenterer = new Reenterer();
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
             operatorRewards: defaultOperatorRewards,
@@ -1811,45 +1859,6 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         );
     }
 
-    // Revert when avs is not msg.sender
-    function testFuzz_Revert_WhenAVSIsNotMsgSender(
-        address avs,
-        uint256 startTimestamp,
-        uint256 duration
-    ) public filterFuzzedAddressInputs(avs) {
-        cheats.assume(avs != address(0) && avs != address(this));
-        cheats.prank(rewardsCoordinator.owner());
-
-        // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
-        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
-        startTimestamp = bound(
-            startTimestamp,
-            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                CALCULATION_INTERVAL_SECONDS -
-                1,
-            block.timestamp - duration - 1
-        );
-        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
-
-        // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
-            strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: rewardToken,
-            operatorRewards: defaultOperatorRewards,
-            startTimestamp: uint32(startTimestamp),
-            duration: uint32(duration),
-            description: ""
-        });
-
-        // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
-        cheats.expectRevert("RewardsCoordinator.createOperatorDirectedAVSRewardsSubmission: caller is not the AVS");
-        rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
-    }
-
     // Revert with 0 length strats and multipliers
     function testFuzz_Revert_WhenEmptyStratsAndMultipliers(
         address avs,
@@ -1873,10 +1882,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        IRewardsCoordinator.StrategyAndMultiplier[] memory emptyStratsAndMultipliers;
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        StrategyAndMultiplier[] memory emptyStratsAndMultipliers;
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: emptyStratsAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -1887,7 +1896,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: no strategies set");
+        cheats.expectRevert(InputArrayLengthZero.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -1914,10 +1923,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        IRewardsCoordinator.OperatorReward[] memory emptyOperatorRewards;
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        OperatorReward[] memory emptyOperatorRewards;
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: emptyOperatorRewards,
@@ -1928,7 +1937,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateOperatorDirectedRewardsSubmission: no operators rewarded");
+        cheats.expectRevert(InputArrayLengthZero.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -1955,10 +1964,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
         defaultOperatorRewards[0].operator = address(0);
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -1969,9 +1978,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operator cannot be 0 address"
-        );
+        cheats.expectRevert(InvalidAddressZero.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -1998,12 +2005,12 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        IRewardsCoordinator.OperatorReward[] memory dupOperatorRewards = new IRewardsCoordinator.OperatorReward[](2);
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        OperatorReward[] memory dupOperatorRewards = new OperatorReward[](2);
         dupOperatorRewards[0] = defaultOperatorRewards[0];
         dupOperatorRewards[1] = defaultOperatorRewards[0];
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: dupOperatorRewards,
@@ -2014,9 +2021,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operators must be in ascending order to handle duplicates"
-        );
+        cheats.expectRevert(OperatorsNotInAscendingOrder.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2043,10 +2048,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
         defaultOperatorRewards[0].amount = 0;
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -2057,9 +2062,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operator reward amount cannot be 0"
-        );
+        cheats.expectRevert(AmountIsZero.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2088,10 +2091,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
         defaultOperatorRewards[0].amount = amount;
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -2102,7 +2105,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateOperatorDirectedRewardsSubmission: total amount too large");
+        cheats.expectRevert(AmountExceedsMax.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2128,9 +2131,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -2141,9 +2144,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateCommonRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
-        );
+        cheats.expectRevert(DurationExceedsMax.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2170,9 +2171,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -2183,9 +2184,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateCommonRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
-        );
+        cheats.expectRevert(InvalidDurationRemainder.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2212,9 +2211,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         cheats.assume(startTimestamp % CALCULATION_INTERVAL_SECONDS != 0);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -2225,9 +2224,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateCommonRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
-        );
+        cheats.expectRevert(InvalidStartTimestampRemainder.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2250,9 +2247,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -2263,7 +2260,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: startTimestamp too far in the past");
+        cheats.expectRevert(StartTimestampTooFarInPast.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2288,9 +2285,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -2301,9 +2298,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operator-directed rewards submission is not retroactive"
-        );
+        cheats.expectRevert(SubmissionNotRetroactive.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2330,10 +2325,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
         defaultStrategyAndMultipliers[0].strategy = IStrategy(address(999));
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -2344,7 +2339,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: invalid strategy considered");
+        cheats.expectRevert(StrategyNotWhitelisted.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2371,13 +2366,13 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        IRewardsCoordinator.StrategyAndMultiplier[]
-            memory dupStratsAndMultipliers = new IRewardsCoordinator.StrategyAndMultiplier[](2);
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        StrategyAndMultiplier[]
+            memory dupStratsAndMultipliers = new StrategyAndMultiplier[](2);
         dupStratsAndMultipliers[0] = defaultStrategyAndMultipliers[0];
         dupStratsAndMultipliers[1] = defaultStrategyAndMultipliers[0];
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: dupStratsAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -2388,9 +2383,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateCommonRewardsSubmission: strategies must be in ascending order to handle duplicates"
-        );
+        cheats.expectRevert(StrategiesNotInAscendingOrder.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2423,9 +2416,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -2474,6 +2467,93 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
     }
 
     /**
+     * @notice Same test as above, uses UAM
+     * - correct event emitted
+     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balance before and after of avs and rewardsCoordinator
+     */
+    function testFuzz_createOperatorDirectedAVSRewardsSubmission_SingleSubmission_UAM(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        // Set UAM
+        cheats.prank(avs);
+        permissionController.setAppointee(
+            avs,
+            defaultAppointee,
+            address(rewardsCoordinator),
+            IRewardsCoordinator.createOperatorDirectedAVSRewardsSubmission.selector
+        );
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, defaultAppointee);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedAVSRewardsSubmission() with expected event emitted
+        uint256 submitterBalanceBefore = rewardToken.balanceOf(defaultAppointee);
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
+
+        cheats.startPrank(defaultAppointee);
+        uint256 amount = _getTotalRewardsAmount(defaultOperatorRewards);
+        rewardToken.approve(address(rewardsCoordinator), amount);
+        uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(avs);
+        bytes32 rewardsSubmissionHash = keccak256(
+            abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0])
+        );
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorDirectedAVSRewardsSubmissionCreated(
+            defaultAppointee,
+            avs,
+            rewardsSubmissionHash,
+            currSubmissionNonce,
+            operatorDirectedRewardsSubmissions[0]
+        );
+        rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
+        cheats.stopPrank();
+
+        assertTrue(
+            rewardsCoordinator.isOperatorDirectedAVSRewardsSubmissionHash(avs, rewardsSubmissionHash),
+            "rewards submission hash not submitted"
+        );
+        assertEq(currSubmissionNonce + 1, rewardsCoordinator.submissionNonce(avs), "submission nonce not incremented");
+        assertEq(
+            submitterBalanceBefore - amount,
+            rewardToken.balanceOf(defaultAppointee),
+            "Submitter balance not decremented by amount of rewards submission"
+        );
+        assertEq(
+            rewardsCoordinatorBalanceBefore + amount,
+            rewardToken.balanceOf(address(rewardsCoordinator)),
+            "RewardsCoordinator balance not incremented by amount of rewards submission"
+        );
+    }
+
+    /**
      * @notice test a multiple rewards submission asserting for the following
      * - correct event emitted
      * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
@@ -2488,8 +2568,8 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         cheats.assume(param.avs != address(0));
         cheats.prank(rewardsCoordinator.owner());
 
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](numSubmissions);
+        OperatorDirectedRewardsSubmission[]
+            memory rewardsSubmissions = new OperatorDirectedRewardsSubmission[](numSubmissions);
         bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(param.avs);
         _deployMockRewardTokens(param.avs, numSubmissions);
@@ -2528,7 +2608,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create rewards submission input param
-            IRewardsCoordinator.OperatorDirectedRewardsSubmission memory rewardsSubmission = IRewardsCoordinator
+            OperatorDirectedRewardsSubmission memory rewardsSubmission = IRewardsCoordinatorTypes
                 .OperatorDirectedRewardsSubmission({
                     strategiesAndMultipliers: defaultStrategyAndMultipliers,
                     token: rewardTokens[i],
@@ -2590,7 +2670,7 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
     ) public filterFuzzedAddressInputs(invalidRewardsUpdater) {
         cheats.prank(invalidRewardsUpdater);
 
-        cheats.expectRevert("RewardsCoordinator: caller is not the rewardsUpdater");
+        cheats.expectRevert(UnauthorizedCaller.selector);
         rewardsCoordinator.submitRoot(bytes32(0), 0);
     }
 
@@ -2598,7 +2678,7 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_ROOTS);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         rewardsCoordinator.submitRoot(bytes32(0), 0);
     }
 
@@ -2715,8 +2795,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
+        RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
         IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
@@ -2769,8 +2849,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
+        RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
         IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
@@ -2820,8 +2900,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
+        RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        RewardsMerkleClaim memory claim = claims[0];
 
         uint32 rootIndex = claim.rootIndex;
         IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
@@ -2871,8 +2951,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
+        RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        RewardsMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root
         {
@@ -3002,8 +3082,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
 
         cheats.startPrank(claimer);
         // rootIndex in claim is 0, which is disabled
-        IRewardsCoordinator.RewardsMerkleClaim memory claim;
-        cheats.expectRevert("RewardsCoordinator._checkClaim: root is disabled");
+        RewardsMerkleClaim memory claim;
+        cheats.expectRevert(RootDisabled.selector);
         rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
@@ -3025,8 +3105,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
+        RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        RewardsMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root
         {
@@ -3072,9 +3152,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             cheats.startPrank(claimer);
             assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
-            cheats.expectRevert(
-                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
-            );
+            cheats.expectRevert(EarningsNotGreaterThanClaimed.selector);
             rewardsCoordinator.processClaim(claim, claimer);
 
             cheats.stopPrank();
@@ -3098,8 +3176,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
+        RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
         IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
@@ -3114,10 +3192,10 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // Check claim is not valid from both checkClaim() and processClaim() throwing a revert
         cheats.startPrank(claimer);
 
-        cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid token claim proof");
+        cheats.expectRevert(InvalidClaimProof.selector);
         assertFalse(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
-        cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid token claim proof");
+        cheats.expectRevert(InvalidClaimProof.selector);
         rewardsCoordinator.processClaim(claim, claimer);
 
         cheats.stopPrank();
@@ -3141,8 +3219,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
+        RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
         IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
@@ -3156,10 +3234,10 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // Check claim is not valid from both checkClaim() and processClaim() throwing a revert
         cheats.startPrank(claimer);
 
-        cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
+        cheats.expectRevert(InvalidClaimProof.selector);
         assertFalse(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
-        cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
+        cheats.expectRevert(InvalidClaimProof.selector);
         rewardsCoordinator.processClaim(claim, claimer);
 
         cheats.stopPrank();
@@ -3182,8 +3260,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
+        RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
         IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
@@ -3201,7 +3279,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             .with_key(address(claim.tokenLeaves[0].token))
             .checked_write(type(uint256).max);
         cheats.startPrank(claimer);
-        cheats.expectRevert("RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed");
+        cheats.expectRevert(EarningsNotGreaterThanClaimed.selector);
         rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
@@ -3225,8 +3303,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
+        RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
         IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
@@ -3241,7 +3319,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         uint8 proofLength = uint8(claim.tokenTreeProofs[0].length);
         claim.tokenIndices[0] = claim.tokenIndices[0] | uint32(1 << (numShift + proofLength / 32));
         cheats.startPrank(claimer);
-        cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid tokenLeafIndex");
+        cheats.expectRevert(InvalidTokenLeafIndex.selector);
         rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
@@ -3265,8 +3343,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
+        RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
         IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
@@ -3281,7 +3359,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         uint8 proofLength = uint8(claim.earnerTreeProof.length);
         claim.earnerIndex = claim.earnerIndex | uint32(1 << (numShift + proofLength / 32));
         cheats.startPrank(claimer);
-        cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex");
+        cheats.expectRevert(InvalidEarnerLeafIndex.selector);
         rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
@@ -3305,8 +3383,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofsMaxEarnerAndLeafIndices();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
+        RewardsMerkleClaim[] memory claims = _parseAllProofsMaxEarnerAndLeafIndices();
+        RewardsMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
@@ -3371,8 +3449,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofsSingleTokenLeaf();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
+        RewardsMerkleClaim[] memory claims = _parseAllProofsSingleTokenLeaf();
+        RewardsMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
@@ -3429,8 +3507,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofsSingleEarnerLeaf();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
+        RewardsMerkleClaim[] memory claims = _parseAllProofsSingleEarnerLeaf();
+        RewardsMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
@@ -3476,7 +3554,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
     }
 
     /// @notice parse proofs from json file and submitRoot()
-    function _parseProofData(string memory filePath) internal returns (IRewardsCoordinator.RewardsMerkleClaim memory) {
+    function _parseProofData(string memory filePath) internal returns (RewardsMerkleClaim memory) {
         cheats.readFile(filePath);
 
         string memory claimProofData = cheats.readFile(filePath);
@@ -3491,7 +3569,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         uint256 numTokenLeaves = stdJson.readUint(claimProofData, ".TokenLeavesNum");
         uint256 numTokenTreeProofs = stdJson.readUint(claimProofData, ".TokenTreeProofsNum");
 
-        IRewardsCoordinator.TokenTreeMerkleLeaf[] memory tokenLeaves = new IRewardsCoordinator.TokenTreeMerkleLeaf[](
+        TokenTreeMerkleLeaf[] memory tokenLeaves = new TokenTreeMerkleLeaf[](
             numTokenLeaves
         );
         uint32[] memory tokenIndices = new uint32[](numTokenLeaves);
@@ -3502,7 +3580,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
 
             IERC20 token = IERC20(stdJson.readAddress(claimProofData, tokenKey));
             uint256 cumulativeEarnings = stdJson.readUint(claimProofData, amountKey);
-            tokenLeaves[i] = IRewardsCoordinator.TokenTreeMerkleLeaf({
+            tokenLeaves[i] = TokenTreeMerkleLeaf({
                 token: token,
                 cumulativeEarnings: cumulativeEarnings
             });
@@ -3528,11 +3606,11 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         cheats.prank(rewardsUpdater);
         rewardsCoordinator.submitRoot(merkleRoot, prevRootCalculationEndTimestamp);
 
-        IRewardsCoordinator.RewardsMerkleClaim memory newClaim = IRewardsCoordinator.RewardsMerkleClaim({
+        RewardsMerkleClaim memory newClaim = RewardsMerkleClaim({
             rootIndex: rootIndex,
             earnerIndex: earnerIndex,
             earnerTreeProof: earnerTreeProof,
-            earnerLeaf: IRewardsCoordinator.EarnerTreeMerkleLeaf({earner: earner, earnerTokenRoot: earnerTokenRoot}),
+            earnerLeaf: EarnerTreeMerkleLeaf({earner: earner, earnerTokenRoot: earnerTokenRoot}),
             tokenIndices: tokenIndices,
             tokenTreeProofs: tokenTreeProofs,
             tokenLeaves: tokenLeaves
@@ -3541,8 +3619,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         return newClaim;
     }
 
-    function _parseAllProofs() internal virtual returns (IRewardsCoordinator.RewardsMerkleClaim[] memory) {
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](3);
+    function _parseAllProofs() internal virtual returns (RewardsMerkleClaim[] memory) {
+        RewardsMerkleClaim[] memory claims = new RewardsMerkleClaim[](3);
 
         claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_Root1.json");
         claims[1] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_Root2.json");
@@ -3551,12 +3629,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         return claims;
     }
 
-    function _parseAllProofsMaxEarnerAndLeafIndices()
-        internal
-        virtual
-        returns (IRewardsCoordinator.RewardsMerkleClaim[] memory)
-    {
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](1);
+    function _parseAllProofsMaxEarnerAndLeafIndices() internal virtual returns (RewardsMerkleClaim[] memory) {
+        RewardsMerkleClaim[] memory claims = new RewardsMerkleClaim[](1);
 
         claims[0] = _parseProofData(
             "src/test/test-data/rewardsCoordinator/processClaimProofs_MaxEarnerAndLeafIndices.json"
@@ -3565,24 +3639,16 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         return claims;
     }
 
-    function _parseAllProofsSingleTokenLeaf()
-        internal
-        virtual
-        returns (IRewardsCoordinator.RewardsMerkleClaim[] memory)
-    {
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](1);
+    function _parseAllProofsSingleTokenLeaf() internal virtual returns (RewardsMerkleClaim[] memory) {
+        RewardsMerkleClaim[] memory claims = new RewardsMerkleClaim[](1);
 
         claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_SingleTokenLeaf.json");
 
         return claims;
     }
 
-    function _parseAllProofsSingleEarnerLeaf()
-        internal
-        virtual
-        returns (IRewardsCoordinator.RewardsMerkleClaim[] memory)
-    {
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](1);
+    function _parseAllProofsSingleEarnerLeaf() internal virtual returns (RewardsMerkleClaim[] memory) {
+        RewardsMerkleClaim[] memory claims = new RewardsMerkleClaim[](1);
 
         claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_SingleEarnerLeaf.json");
 

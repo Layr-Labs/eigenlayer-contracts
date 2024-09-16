@@ -16,6 +16,8 @@
     "compiler-version": "off",
     "custom-errors": "off",
     "no-global-import": "off",
-    "immutable-vars-naming": "off"
+    "immutable-vars-naming": "off",
+    "no-console": "off"
+
   }
 }
