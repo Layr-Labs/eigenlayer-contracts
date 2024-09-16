@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -183,7 +183,7 @@ contract EigenLayerDeployer is Operators {
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delegation))),
+            ITransparentUpgradeableProxy(payable(address(delegation))),
             address(delegationImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
@@ -196,7 +196,7 @@ contract EigenLayerDeployer is Operators {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
@@ -207,7 +207,7 @@ contract EigenLayerDeployer is Operators {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slasher))),
+            ITransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation),
             abi.encodeWithSelector(
                 Slasher.initialize.selector,
@@ -217,7 +217,7 @@ contract EigenLayerDeployer is Operators {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,

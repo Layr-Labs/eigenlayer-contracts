@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "./EigenLayerTestHelper.t.sol";
 import "../contracts/core/StrategyManagerStorage.sol";
@@ -18,7 +18,7 @@ contract StrategyTests is EigenLayerTestHelper {
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(invalidDepositor);
-        cheats.expectRevert(bytes("StrategyBase.onlyStrategyManager"));
+        cheats.expectRevert(IStrategy.UnauthorizedCaller.selector);
         wethStrat.deposit(underlyingToken, 1e18);
         cheats.stopPrank();
     }
@@ -34,7 +34,7 @@ contract StrategyTests is EigenLayerTestHelper {
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(invalidWithdrawer);
-        cheats.expectRevert(bytes("StrategyBase.onlyStrategyManager"));
+        cheats.expectRevert(IStrategy.UnauthorizedCaller.selector);
         wethStrat.withdraw(depositor, underlyingToken, 1e18);
         cheats.stopPrank();
     }
@@ -47,10 +47,7 @@ contract StrategyTests is EigenLayerTestHelper {
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(address(strategyManager));
-
-        cheats.expectRevert(
-            bytes("StrategyBase.withdraw: amountShares must be less than or equal to totalShares")
-        );
+        cheats.expectRevert(IStrategy.WithdrawalAmountExceedsTotalDeposits.selector);
         wethStrat.withdraw(depositor, underlyingToken, shares);
 
         cheats.stopPrank();

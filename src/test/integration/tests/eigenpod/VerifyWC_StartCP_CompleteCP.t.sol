@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
@@ -111,7 +111,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
-        cheats.expectRevert("EigenPod._verifyWithdrawalCredentials: validator must be inactive to prove withdrawal credentials");
+        cheats.expectRevert(IEigenPod.CredentialsAlreadyVerified.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -132,7 +132,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
 
-        cheats.expectRevert("EigenPod._startCheckpoint: must finish previous checkpoint before starting another");
+        cheats.expectRevert(IEigenPod.CheckpointAlreadyActive.selector);
         staker.startCheckpoint();
     }
 
@@ -157,7 +157,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.completeCheckpoint();
         check_CompleteCheckpoint_State(staker);
 
-        cheats.expectRevert("EigenPod._startCheckpoint: cannot checkpoint twice in one block");
+        cheats.expectRevert(IEigenPod.CannotCheckpointTwiceInSingleBlock.selector);
         staker.startCheckpoint();
     }
 
@@ -227,7 +227,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.exitValidators(validators);
         beaconChain.advanceEpoch_NoRewards();
 
-        cheats.expectRevert("EigenPod._verifyWithdrawalCredentials: validator must not be exiting");
+        cheats.expectRevert(IEigenPod.ValidatorIsExitingBeaconChain.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -312,7 +312,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         // Advance epoch, withdrawing slashed validators to pod
         beaconChain.advanceEpoch_NoRewards();
         
-        cheats.expectRevert("EigenPod._verifyWithdrawalCredentials: validator must not be exiting");
+        cheats.expectRevert(IEigenPod.ValidatorIsExitingBeaconChain.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -31,7 +31,9 @@ contract AVSDirectory is
      * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher,
      * and eigenpodManager contracts
      */
-    constructor(IDelegationManager _delegation) AVSDirectoryStorage(_delegation) {
+    constructor(
+        IDelegationManager _delegation
+    ) AVSDirectoryStorage(_delegation) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -61,22 +63,17 @@ contract AVSDirectory is
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        require(
-            operatorSignature.expiry >= block.timestamp,
-            "AVSDirectory.registerOperatorToAVS: operator signature expired"
-        );
+        // Assert `operatorSignature.expiry` has not elapsed.
+        require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
+        // Assert that the `operator` is not actively registered to the AVS.
         require(
             avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.registerOperatorToAVS: operator already registered"
+            OperatorAlreadyRegistered()
         );
-        require(
-            !operatorSaltIsSpent[operator][operatorSignature.salt],
-            "AVSDirectory.registerOperatorToAVS: salt already spent"
-        );
-        require(
-            delegation.isOperator(operator),
-            "AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet"
-        );
+        // Assert `operator` has not already spent `operatorSignature.salt`.
+        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SignatureSaltSpent());
+        // Assert `operator` is a registered operator.
+        require(delegation.isOperator(operator), OperatorDoesNotExist());
 
         // Calculate the digest hash
         bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
@@ -109,8 +106,7 @@ contract AVSDirectory is
         onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
     {
         require(
-            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
-            "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
+            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, OperatorNotRegistered()
         );
 
         // Set the operator as deregistered

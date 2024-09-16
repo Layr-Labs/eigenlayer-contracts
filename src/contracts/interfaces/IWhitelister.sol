@@ -11,9 +11,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 
 interface IWhitelister {
-    function whitelist(address operator) external;
+    function whitelist(
+        address operator
+    ) external;
 
-    function getStaker(address operator) external returns (address);
+    function getStaker(
+        address operator
+    ) external returns (address);
 
     function depositIntoStrategy(
         address staker,

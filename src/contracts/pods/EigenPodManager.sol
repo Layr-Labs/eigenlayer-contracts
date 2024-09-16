@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
@@ -28,15 +28,15 @@ contract EigenPodManager is
     EigenPodManagerStorage,
     ReentrancyGuardUpgradeable
 {
-    modifier onlyEigenPod(address podOwner) {
-        require(address(ownerToPod[podOwner]) == msg.sender, "EigenPodManager.onlyEigenPod: not a pod");
+    modifier onlyEigenPod(
+        address podOwner
+    ) {
+        require(address(ownerToPod[podOwner]) == msg.sender, UnauthorizedCaller());
         _;
     }
 
     modifier onlyDelegationManager() {
-        require(
-            msg.sender == address(delegationManager), "EigenPodManager.onlyDelegationManager: not the DelegationManager"
-        );
+        require(msg.sender == address(delegationManager), UnauthorizedCaller());
         _;
     }
 
@@ -65,7 +65,7 @@ contract EigenPodManager is
      * @dev Returns EigenPod address
      */
     function createPod() external onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (address) {
-        require(!hasPod(msg.sender), "EigenPodManager.createPod: Sender already has a pod");
+        require(!hasPod(msg.sender), EigenPodAlreadyExists());
         // deploy a pod if the sender doesn't have one already
         IEigenPod pod = _deployPod();
 
@@ -104,13 +104,8 @@ contract EigenPodManager is
         address podOwner,
         int256 sharesDelta
     ) external onlyEigenPod(podOwner) nonReentrant {
-        require(
-            podOwner != address(0), "EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address"
-        );
-        require(
-            sharesDelta % int256(GWEI_TO_WEI) == 0,
-            "EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount"
-        );
+        require(podOwner != address(0), InputAddressZero());
+        require(sharesDelta % int256(GWEI_TO_WEI) == 0, SharesNotMultipleOfGwei());
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
         int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
         podOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -150,13 +145,10 @@ contract EigenPodManager is
      * @dev The delegation manager validates that the podOwner is not address(0)
      */
     function removeShares(address podOwner, uint256 shares) external onlyDelegationManager {
-        require(int256(shares) >= 0, "EigenPodManager.removeShares: shares cannot be negative");
-        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.removeShares: shares must be a whole Gwei amount");
+        require(int256(shares) >= 0, SharesNegative());
+        require(shares % GWEI_TO_WEI == 0, SharesNotMultipleOfGwei());
         int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
-        require(
-            updatedPodOwnerShares >= 0,
-            "EigenPodManager.removeShares: cannot result in pod owner having negative shares"
-        );
+        require(updatedPodOwnerShares >= 0, SharesNegative());
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
         emit NewTotalShares(podOwner, updatedPodOwnerShares);
@@ -170,9 +162,9 @@ contract EigenPodManager is
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function addShares(address podOwner, uint256 shares) external onlyDelegationManager returns (uint256) {
-        require(podOwner != address(0), "EigenPodManager.addShares: podOwner cannot be zero address");
-        require(int256(shares) >= 0, "EigenPodManager.addShares: shares cannot be negative");
-        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.addShares: shares must be a whole Gwei amount");
+        require(podOwner != address(0), InputAddressZero());
+        require(int256(shares) >= 0, SharesNegative());
+        require(shares % GWEI_TO_WEI == 0, SharesNotMultipleOfGwei());
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
         int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
         podOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -200,10 +192,10 @@ contract EigenPodManager is
         address destination,
         uint256 shares
     ) external onlyDelegationManager {
-        require(podOwner != address(0), "EigenPodManager.withdrawSharesAsTokens: podOwner cannot be zero address");
-        require(destination != address(0), "EigenPodManager.withdrawSharesAsTokens: destination cannot be zero address");
-        require(int256(shares) >= 0, "EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");
-        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.withdrawSharesAsTokens: shares must be a whole Gwei amount");
+        require(podOwner != address(0), InputAddressZero());
+        require(destination != address(0), InputAddressZero());
+        require(int256(shares) >= 0, SharesNegative());
+        require(shares % GWEI_TO_WEI == 0, SharesNotMultipleOfGwei());
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
 
         // if there is an existing shares deficit, prioritize decreasing the deficit first
@@ -279,7 +271,9 @@ contract EigenPodManager is
 
     // VIEW FUNCTIONS
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
-    function getPod(address podOwner) public view returns (IEigenPod) {
+    function getPod(
+        address podOwner
+    ) public view returns (IEigenPod) {
         IEigenPod pod = ownerToPod[podOwner];
         // if pod does not exist already, calculate what its address *will be* once it is deployed
         if (address(pod) == address(0)) {
@@ -294,7 +288,9 @@ contract EigenPodManager is
     }
 
     /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
-    function hasPod(address podOwner) public view returns (bool) {
+    function hasPod(
+        address podOwner
+    ) public view returns (bool) {
         return address(ownerToPod[podOwner]) != address(0);
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 
@@ -176,10 +176,10 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         cheats.prank(pauser);
         avsDirectory.pause(2 ** PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         avsDirectory.registerOperatorToAVS(address(0), ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(""), 0, 0));
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         avsDirectory.deregisterOperatorFromAVS(address(0));
     }
 
@@ -222,7 +222,7 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
             _getOperatorSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet");
+        cheats.expectRevert(IAVSDirectory.OperatorDoesNotExist.selector);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
@@ -236,7 +236,7 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
             _getOperatorSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
 
-        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
+        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEOA.selector);
         cheats.prank(operator);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
@@ -248,7 +248,7 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         address operator = cheats.addr(delegationSignerPrivateKey);
         operatorSignature.expiry = bound(operatorSignature.expiry, 0, block.timestamp - 1);
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: operator signature expired");
+        cheats.expectRevert(IAVSDirectory.SignatureExpired.selector);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
@@ -265,7 +265,7 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         cheats.startPrank(defaultAVS);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: operator already registered");
+        cheats.expectRevert(IAVSDirectory.OperatorAlreadyRegistered.selector);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
         cheats.stopPrank();
     }
@@ -310,7 +310,7 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         cheats.prank(operator);
         avsDirectory.cancelSalt(salt);
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: salt already spent");
+        cheats.expectRevert(IAVSDirectory.SignatureSaltSpent.selector);
         cheats.prank(defaultAVS);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "./StrategyBase.sol";
 
@@ -24,7 +24,9 @@ contract StrategyBaseTVLLimits is StrategyBase {
     event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
 
     // solhint-disable-next-line no-empty-blocks
-    constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
+    constructor(
+        IStrategyManager _strategyManager
+    ) StrategyBase(_strategyManager) {}
 
     function initialize(
         uint256 _maxPerDeposit,
@@ -56,10 +58,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
     function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) internal {
         emit MaxPerDepositUpdated(maxPerDeposit, newMaxPerDeposit);
         emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
-        require(
-            newMaxPerDeposit <= newMaxTotalDeposits,
-            "StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits"
-        );
+        require(newMaxPerDeposit <= newMaxTotalDeposits, MaxPerDepositExceedsMax());
         maxPerDeposit = newMaxPerDeposit;
         maxTotalDeposits = newMaxTotalDeposits;
     }
@@ -77,8 +76,8 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * @param amount The amount of `token` being deposited
      */
     function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
-        require(amount <= maxPerDeposit, "StrategyBaseTVLLimits: max per deposit exceeded");
-        require(_tokenBalance() <= maxTotalDeposits, "StrategyBaseTVLLimits: max deposits exceeded");
+        require(amount <= maxPerDeposit, MaxPerDepositExceedsMax());
+        require(_tokenBalance() <= maxTotalDeposits, BalanceExceedsMaxTotalDeposits());
 
         super._beforeDeposit(token, amount);
     }

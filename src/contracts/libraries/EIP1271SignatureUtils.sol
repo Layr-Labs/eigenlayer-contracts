@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -11,6 +11,9 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 library EIP1271SignatureUtils {
+    error InvalidSignatureEIP1271();
+    error InvalidSignatureEOA();
+
     // bytes4(keccak256("isValidSignature(bytes32,bytes)")
     bytes4 internal constant EIP1271_MAGICVALUE = 0x1626ba7e;
 
@@ -29,13 +32,10 @@ library EIP1271SignatureUtils {
         if (Address.isContract(signer)) {
             require(
                 IERC1271(signer).isValidSignature(digestHash, signature) == EIP1271_MAGICVALUE,
-                "EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"
+                InvalidSignatureEIP1271()
             );
         } else {
-            require(
-                ECDSA.recover(digestHash, signature) == signer,
-                "EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"
-            );
+            require(ECDSA.recover(digestHash, signature) == signer, InvalidSignatureEOA());
         }
     }
 }

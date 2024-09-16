@@ -13,6 +13,64 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
 interface IEigenPod {
+    /// @dev Thrown when msg.sender is not allowed to call a function
+    error UnauthorizedCaller();
+    /// @dev Thrown when attempting an action that is currently paused.
+    error CurrentlyPaused();
+
+    /// Invalid Inputs
+
+    /// @dev Thrown when an address of zero is provided.
+    error InputAddressZero();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+    /// @dev Thrown when `validatorPubKey` length is not equal to 48-bytes.
+    error InvalidPubKeyLength();
+    /// @dev Thrown when provided timestamp is out of range.
+    error TimestampOutOfRange();
+
+    /// Checkpoints
+
+    /// @dev Thrown when no active checkpoints are found.
+    error NoActiveCheckpoint();
+    /// @dev Thrown if an uncompleted checkpoint exists.
+    error CheckpointAlreadyActive();
+    /// @dev Thrown if there's not a balance available to checkpoint.
+    error NoBalanceToCheckpoint();
+    /// @dev Thrown when attempting to create a checkpoint twice within a given block.
+    error CannotCheckpointTwiceInSingleBlock();
+
+    /// Withdrawing
+
+    /// @dev Thrown when amount exceeds `withdrawableRestakedExecutionLayerGwei`.
+    error InsufficientWithdrawableBalance();
+    /// @dev Thrown when provided `amountGwei` is not a multiple of gwei.
+    error AmountMustBeMultipleOfGwei();
+
+    /// Validator Status
+
+    /// @dev Thrown when a validator's withdrawal credentials have already been verified.
+    error CredentialsAlreadyVerified();
+    /// @dev Thrown if the provided proof is not valid for this EigenPod.
+    error WithdrawCredentialsNotForEigenPod();
+    /// @dev Thrown when a validator is not in the ACTIVE status in the pod.
+    error ValidatorNotActiveInPod();
+    /// @dev Thrown when validator is not active yet on the beacon chain.
+    error ValidatorInactiveOnBeaconChain();
+    /// @dev Thrown if a validator is exiting the beacon chain.
+    error ValidatorIsExitingBeaconChain();
+    /// @dev Thrown when a validator has not been slashed on the beacon chain.
+    error ValidatorNotSlashedOnBeaconChain();
+
+    /// Misc
+
+    /// @dev Thrown when an invalid block root is returned by the EIP-4788 oracle.
+    error InvalidEIP4788Response();
+    /// @dev Thrown when attempting to send an invalid amount to the beacon deposit contract.
+    error MsgValueNot32ETH();
+    /// @dev Thrown when provided `beaconTimestamp` is too far in the past.
+    error BeaconTimestampTooFarInPast();
+
     /**
      *
      *                                STRUCTS / ENUMS
@@ -89,7 +147,9 @@ interface IEigenPod {
      */
 
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
-    function initialize(address owner) external;
+    function initialize(
+        address owner
+    ) external;
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
@@ -115,7 +175,9 @@ interface IEigenPod {
      * @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
      * to prevent accidentally starting a checkpoint that will not increase their shares
      */
-    function startCheckpoint(bool revertIfNoBalance) external;
+    function startCheckpoint(
+        bool revertIfNoBalance
+    ) external;
 
     /**
      * @dev Progress the current checkpoint towards completion by submitting one or more validator
@@ -200,7 +262,9 @@ interface IEigenPod {
     /// only address that can call these methods.
     /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
     /// pod owner will be able to call `startCheckpoint` and `verifyWithdrawalCredentials`
-    function setProofSubmitter(address newProofSubmitter) external;
+    function setProofSubmitter(
+        address newProofSubmitter
+    ) external;
 
     /**
      *
@@ -224,16 +288,24 @@ interface IEigenPod {
     function podOwner() external view returns (address);
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
-    function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory);
+    function validatorPubkeyHashToInfo(
+        bytes32 validatorPubkeyHash
+    ) external view returns (ValidatorInfo memory);
 
     /// @notice Returns the validatorInfo struct for the provided pubkey
-    function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory);
+    function validatorPubkeyToInfo(
+        bytes calldata validatorPubkey
+    ) external view returns (ValidatorInfo memory);
 
     /// @notice This returns the status of a given validator
-    function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS);
+    function validatorStatus(
+        bytes32 pubkeyHash
+    ) external view returns (VALIDATOR_STATUS);
 
     /// @notice This returns the status of a given validator pubkey
-    function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS);
+    function validatorStatus(
+        bytes calldata validatorPubkey
+    ) external view returns (VALIDATOR_STATUS);
 
     /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
     function activeValidatorCount() external view returns (uint256);
@@ -275,11 +347,15 @@ interface IEigenPod {
     /// - The final partial withdrawal for an exited validator will be likely be included in this mapping.
     ///   i.e. if a validator was last checkpointed at 32.1 ETH before exiting, the next checkpoint will calculate their
     ///   "exited" amount to be 32.1 ETH rather than 32 ETH.
-    function checkpointBalanceExitedGwei(uint64) external view returns (uint64);
+    function checkpointBalanceExitedGwei(
+        uint64
+    ) external view returns (uint64);
 
     /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
     /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
     /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
     /// will revert.
-    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32);
+    function getParentBlockRoot(
+        uint64 timestamp
+    ) external view returns (bytes32);
 }

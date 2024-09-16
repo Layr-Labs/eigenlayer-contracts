@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../interfaces/ISlasher.sol";
 import "../interfaces/IDelegationManager.sol";
@@ -29,11 +29,17 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     function initialize(address, IPauserRegistry, uint256) external {}
 
-    function optIntoSlashing(address) external {}
+    function optIntoSlashing(
+        address
+    ) external {}
 
-    function freezeOperator(address) external {}
+    function freezeOperator(
+        address
+    ) external {}
 
-    function resetFrozenStatus(address[] calldata) external {}
+    function resetFrozenStatus(
+        address[] calldata
+    ) external {}
 
     function recordFirstStakeUpdate(address, uint32) external {}
 
@@ -45,7 +51,9 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     function delegation() external view returns (IDelegationManager) {}
 
-    function isFrozen(address) external view returns (bool) {}
+    function isFrozen(
+        address
+    ) external view returns (bool) {}
 
     function canSlash(address, address) external view returns (bool) {}
 
@@ -59,13 +67,17 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     function operatorToMiddlewareTimes(address, uint256) external view returns (MiddlewareTimes memory) {}
 
-    function middlewareTimesLength(address) external view returns (uint256) {}
+    function middlewareTimesLength(
+        address
+    ) external view returns (uint256) {}
 
     function getMiddlewareTimesIndexStalestUpdateBlock(address, uint32) external view returns (uint32) {}
 
     function getMiddlewareTimesIndexServeUntilBlock(address, uint32) external view returns (uint32) {}
 
-    function operatorWhitelistedContractsLinkedListSize(address) external view returns (uint256) {}
+    function operatorWhitelistedContractsLinkedListSize(
+        address
+    ) external view returns (uint256) {}
 
     function operatorWhitelistedContractsLinkedListEntry(
         address,

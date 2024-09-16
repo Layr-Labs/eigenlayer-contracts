@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
@@ -14,6 +14,65 @@ import "./IStrategy.sol";
  * a Merkle root against which Stakers & Operators can make claims.
  */
 interface IRewardsCoordinator {
+    /// @dev Thrown when msg.sender is not allowed to call a function
+    error UnauthorizedCaller();
+
+    /// Invalid Inputs
+
+    /// @dev Thrown when an invalid root is provided.
+    error InvalidRoot();
+    /// @dev Thrown when an invalid root index is provided.
+    error InvalidRootIndex();
+    /// @dev Thrown when input arrays length is zero.
+    error InputArrayLengthZero();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+    /// @dev Thrown when provided root is not for new calculated period.
+    error NewRootMustBeForNewCalculatedPeriod();
+    /// @dev Thrown when rewards end timestamp has not elapsed.
+    error RewardsEndTimestampNotElapsed();
+
+    /// Rewards Submissions
+
+    /// @dev Thrown when input `amount` is zero.
+    error AmountIsZero();
+    /// @dev Thrown when input `amount` exceeds maximum.
+    error AmountExceedsMax();
+    /// @dev Thrown when input `duration` exceeds maximum.
+    error DurationExceedsMax();
+    /// @dev Thrown when input `duration` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
+    error InvalidDurationRemainder();
+    /// @dev Thrown when `startTimestamp` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
+    error InvalidStartTimestampRemainder();
+    /// @dev Thrown when `startTimestamp` is too far in the future.
+    error StartTimestampTooFarInFuture();
+    /// @dev Thrown when `startTimestamp` is too far in the past.
+    error StartTimestampTooFarInPast();
+    /// @dev Thrown when an attempt to use a non-whitelisted strategy is made.
+    error StrategyNotWhitelisted();
+    /// @dev Thrown when `strategies` is not sorted in ascending order.
+    error StrategiesNotInAscendingOrder();
+
+    /// Claims
+
+    /// @dev Thrown when an invalid earner claim proof is provided.
+    error InvalidClaimProof();
+    /// @dev Thrown when an invalid token leaf index is provided.
+    error InvalidTokenLeafIndex();
+    /// @dev Thrown when an invalid earner leaf index is provided.
+    error InvalidEarnerLeafIndex();
+    /// @dev Thrown when cummulative earnings are not greater than cummulative claimed.
+    error EarningsNotGreaterThanClaimed();
+
+    /// Reward Root Checks
+
+    /// @dev Thrown if a root has already been disabled.
+    error RootDisabled();
+    /// @dev Thrown if a root has not been activated yet.
+    error RootNotActivated();
+    /// @dev Thrown if a root has already been activated.
+    error RootAlreadyActivated();
+
     /// STRUCTS ///
     /**
      * @notice A linear combination of strategies and multipliers for AVSs to weigh
@@ -207,7 +266,9 @@ interface IRewardsCoordinator {
     function activationDelay() external view returns (uint32);
 
     /// @notice Mapping: earner => the address of the entity who can call `processClaim` on behalf of the earner
-    function claimerFor(address earner) external view returns (address);
+    function claimerFor(
+        address earner
+    ) external view returns (address);
 
     /// @notice Mapping: claimer => token => total amount claimed
     function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
@@ -220,14 +281,20 @@ interface IRewardsCoordinator {
     function operatorCommissionBips(address operator, address avs) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
+    function calculateEarnerLeafHash(
+        EarnerTreeMerkleLeaf calldata leaf
+    ) external pure returns (bytes32);
 
     /// @notice returns the hash of the earner's token leaf
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
+    function calculateTokenLeafHash(
+        TokenTreeMerkleLeaf calldata leaf
+    ) external pure returns (bytes32);
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     /// but will revert if not valid
-    function checkClaim(RewardsMerkleClaim calldata claim) external view returns (bool);
+    function checkClaim(
+        RewardsMerkleClaim calldata claim
+    ) external view returns (bool);
 
     /// @notice The timestamp until which RewardsSubmissions have been calculated
     function currRewardsCalculationEndTimestamp() external view returns (uint32);
@@ -236,7 +303,9 @@ interface IRewardsCoordinator {
     function getDistributionRootsLength() external view returns (uint256);
 
     /// @notice returns the distributionRoot at the specified index
-    function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory);
+    function getDistributionRootAtIndex(
+        uint256 index
+    ) external view returns (DistributionRoot memory);
 
     /// @notice returns the current distributionRoot
     function getCurrentDistributionRoot() external view returns (DistributionRoot memory);
@@ -246,7 +315,9 @@ interface IRewardsCoordinator {
     function getCurrentClaimableDistributionRoot() external view returns (DistributionRoot memory);
 
     /// @notice loop through distribution roots from reverse and return index from hash
-    function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32);
+    function getRootIndexFromHash(
+        bytes32 rootHash
+    ) external view returns (uint32);
 
     /**
      *
@@ -265,7 +336,9 @@ interface IRewardsCoordinator {
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions) external;
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
 
     /**
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
@@ -273,7 +346,9 @@ interface IRewardsCoordinator {
      * a permissioned call based on isRewardsForAllSubmitter mapping.
      * @param rewardsSubmission The rewards submission being created
      */
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmission) external;
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmission
+    ) external;
 
     /**
      * @notice Creates a new rewards submission for all earners across all AVSs.
@@ -282,7 +357,9 @@ interface IRewardsCoordinator {
      * by the token hopper contract from the Eigen Foundation
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions) external;
+    function createRewardsForAllEarners(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
 
     /**
      * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
@@ -310,35 +387,45 @@ interface IRewardsCoordinator {
      * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
      * @param rootIndex The index of the root to be disabled
      */
-    function disableRoot(uint32 rootIndex) external;
+    function disableRoot(
+        uint32 rootIndex
+    ) external;
 
     /**
      * @notice Sets the address of the entity that can call `processClaim` on behalf of the earner (msg.sender)
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
      * @dev Only callable by the `earner`
      */
-    function setClaimerFor(address claimer) external;
+    function setClaimerFor(
+        address claimer
+    ) external;
 
     /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
      * @dev Only callable by the contract owner
      * @param _activationDelay The new value for activationDelay
      */
-    function setActivationDelay(uint32 _activationDelay) external;
+    function setActivationDelay(
+        uint32 _activationDelay
+    ) external;
 
     /**
      * @notice Sets the global commission for all operators across all avss
      * @param _globalCommissionBips The commission for all operators across all avss
      * @dev Only callable by the contract owner
      */
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external;
+    function setGlobalOperatorCommission(
+        uint16 _globalCommissionBips
+    ) external;
 
     /**
      * @notice Sets the permissioned `rewardsUpdater` address which can post new roots
      * @dev Only callable by the contract owner
      * @param _rewardsUpdater The address of the new rewardsUpdater
      */
-    function setRewardsUpdater(address _rewardsUpdater) external;
+    function setRewardsUpdater(
+        address _rewardsUpdater
+    ) external;
 
     /**
      * @notice Sets the permissioned `rewardsForAllSubmitter` address which can submit createRewardsForAllSubmission

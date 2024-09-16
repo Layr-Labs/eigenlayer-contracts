@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -71,7 +71,7 @@ contract Eigen_Token_Deploy is Script, Test {
 
         // upgrade and initialize proxies
         tokenProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(EIGEN))), 
+            ITransparentUpgradeableProxy(payable(address(EIGEN))), 
             address(EIGENImpl), 
             abi.encodeWithSelector(
                 Eigen.initialize.selector, 
@@ -85,7 +85,7 @@ contract Eigen_Token_Deploy is Script, Test {
         EIGEN.mint();
 
         tokenProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(bEIGEN))), 
+            ITransparentUpgradeableProxy(payable(address(bEIGEN))), 
             address(bEIGENImpl),
             abi.encodeWithSelector(
                 BackingEigen.initialize.selector,
@@ -106,8 +106,8 @@ contract Eigen_Token_Deploy is Script, Test {
         require(EIGEN.owner() == msg.sender, "Eigen_Token_Deploy: EIGEN owner mismatch");
         require(bEIGEN.owner() == msg.sender, "Eigen_Token_Deploy: bEIGEN owner mismatch");
 
-        require(tokenProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN)))) == address(EIGENImpl), "Eigen_Token_Deploy: EIGEN implementation mismatch");
-        require(tokenProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(bEIGEN)))) == address(bEIGENImpl), "Eigen_Token_Deploy: bEIGEN implementation mismatch");
+        require(tokenProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(EIGEN)))) == address(EIGENImpl), "Eigen_Token_Deploy: EIGEN implementation mismatch");
+        require(tokenProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(bEIGEN)))) == address(bEIGENImpl), "Eigen_Token_Deploy: bEIGEN implementation mismatch");
 
         require(tokenProxyAdmin.owner() == operationsMultisig, "Eigen_Token_Deploy: ProxyAdmin owner mismatch");
     }

@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../../utils/ExistingDeploymentParser.sol";
 import "../../utils/TimelockEncoding.sol";
 import "../../utils/Multisend.sol";
+
+import "../../../src/contracts/interfaces/IPausable.sol";
 
 /**
  * @notice Script used for the first deployment of EigenLayer core contracts to Holesky
@@ -86,27 +88,27 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         // First, upgrade the proxy contracts to point to the implementations
         // AVSDirectory
         // eigenLayerProxyAdmin.upgrade(
-        //     TransparentUpgradeableProxy(payable(address(avsDirectory))),
+        //     ITransparentUpgradeableProxy(payable(address(avsDirectory))),
         //     address(avsDirectoryImplementation)
         // );
         // DelegationManager
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delegationManager))),
+            ITransparentUpgradeableProxy(payable(address(delegationManager))),
             address(delegationManagerImplementation)
         );
         // StrategyManager
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation)
         );
         // Slasher
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(slasher))),
+            ITransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation)
         );
         // EigenPodManager
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
         );
 
@@ -139,7 +141,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             0,
             abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector, 
-                TransparentUpgradeableProxy(payable(address(delegationManager))), 
+                ITransparentUpgradeableProxy(payable(address(delegationManager))), 
                 delegationManagerImplementation
             )
         );
@@ -149,7 +151,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             0,
             abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector, 
-                TransparentUpgradeableProxy(payable(address(slasher))), 
+                ITransparentUpgradeableProxy(payable(address(slasher))), 
                 slasherImplementation
             )
         );
@@ -159,7 +161,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             0,
             abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector, 
-                TransparentUpgradeableProxy(payable(address(strategyManager))), 
+                ITransparentUpgradeableProxy(payable(address(strategyManager))), 
                 strategyManagerImplementation
             )
         );
@@ -169,7 +171,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         //     0,
         //     abi.encodeWithSelector(
         //         ProxyAdmin.upgrade.selector, 
-        //         TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))), 
+        //         ITransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))), 
         //         delayedWithdrawalRouterImplementation
         //     )
         // );
@@ -179,7 +181,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             0,
             abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector, 
-                TransparentUpgradeableProxy(payable(address(eigenPodManager))), 
+                ITransparentUpgradeableProxy(payable(address(eigenPodManager))), 
                 eigenPodManagerImplementation
             )
         );
@@ -292,7 +294,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         // this works because rETH has more than 1 ETH of its own token at its address :)
         IERC20(rETH).transfer(address(this), amount);
         IERC20(rETH).approve(address(strategyManager), amount);
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         strategyManager.depositIntoStrategy({
             strategy: IStrategy(rETH_Strategy),
             token: IERC20(rETH),

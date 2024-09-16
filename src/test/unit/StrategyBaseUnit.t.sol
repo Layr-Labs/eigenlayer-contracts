@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -77,7 +77,7 @@ contract StrategyBaseUnitTests is Test {
         uint256 amountToDeposit = 0;
 
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(bytes("StrategyBase.deposit: newShares cannot be zero"));
+        cheats.expectRevert(IStrategy.NewSharesZero.selector);
         strategy.deposit(underlyingToken, amountToDeposit);
         cheats.stopPrank();
     }
@@ -134,7 +134,7 @@ contract StrategyBaseUnitTests is Test {
         uint256 amountToDeposit = 1e18;
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         cheats.startPrank(address(strategyManager));
         strategy.deposit(underlyingToken, amountToDeposit);
         cheats.stopPrank();
@@ -147,7 +147,7 @@ contract StrategyBaseUnitTests is Test {
         uint256 amountToDeposit = 1e18;
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
-        cheats.expectRevert(bytes("StrategyBase.onlyStrategyManager"));
+        cheats.expectRevert(IStrategy.UnauthorizedCaller.selector);
         cheats.startPrank(caller);
         strategy.deposit(underlyingToken, amountToDeposit);
         cheats.stopPrank();
@@ -158,7 +158,7 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 amountToDeposit = 1e18;
 
-        cheats.expectRevert(bytes("StrategyBase.deposit: Can only deposit underlyingToken"));
+        cheats.expectRevert(IStrategy.OnlyUnderlyingToken.selector);
         cheats.startPrank(address(strategyManager));
         strategy.deposit(IERC20(notUnderlyingToken), amountToDeposit);
         cheats.stopPrank();
@@ -187,7 +187,7 @@ contract StrategyBaseUnitTests is Test {
 
         // Deposit
         cheats.prank(address(strategyManager));
-        cheats.expectRevert(bytes("StrategyBase.deposit: totalShares exceeds `MAX_TOTAL_SHARES`"));
+        cheats.expectRevert(IStrategy.TotalSharesExceedsMax.selector);
         strategy.deposit(underlyingToken, amountToDeposit);
     }
 
@@ -262,7 +262,7 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 amountToWithdraw = 1e18;
 
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         cheats.startPrank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, amountToWithdraw);
         cheats.stopPrank();
@@ -276,7 +276,7 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 amountToWithdraw = 1e18;
 
-        cheats.expectRevert(bytes("StrategyBase.onlyStrategyManager"));
+        cheats.expectRevert(IStrategy.UnauthorizedCaller.selector);
         cheats.startPrank(caller);
         strategy.withdraw(address(this), underlyingToken, amountToWithdraw);
         cheats.stopPrank();
@@ -287,7 +287,7 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 amountToWithdraw = 1e18;
 
-        cheats.expectRevert(bytes("StrategyBase.withdraw: Can only withdraw the strategy token"));
+        cheats.expectRevert(IStrategy.OnlyUnderlyingToken.selector);
         cheats.startPrank(address(strategyManager));
         strategy.withdraw(address(this), IERC20(notUnderlyingToken), amountToWithdraw);
         cheats.stopPrank();
@@ -302,7 +302,7 @@ contract StrategyBaseUnitTests is Test {
         // since we are checking strictly greater than in this test
         cheats.assume(sharesToWithdraw > totalSharesBefore);
 
-        cheats.expectRevert(bytes("StrategyBase.withdraw: amountShares must be less than or equal to totalShares"));
+        cheats.expectRevert(IStrategy.WithdrawalAmountExceedsTotalDeposits.selector);
         cheats.startPrank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
         cheats.stopPrank();
@@ -344,7 +344,7 @@ contract StrategyBaseUnitTests is Test {
 
     function testDeposit_ZeroAmount() public {
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(bytes("StrategyBase.deposit: newShares cannot be zero"));
+        cheats.expectRevert(IStrategy.NewSharesZero.selector);
         strategy.deposit(underlyingToken, 0);
         cheats.stopPrank();
     }
