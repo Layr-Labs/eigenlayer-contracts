@@ -43,3 +43,6 @@ all-in-docker:
 
 gha-docker:
 	docker run -v $(PWD):/build -w /build --rm -i ${CONTAINER_NAME}:latest bash -c "make gha"
+
+storage-report:
+	bash "bin/storage-report.sh" "docs/storage-report/"
