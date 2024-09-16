@@ -1,8 +1,10 @@
 name: Check Storage Layout
 on:
+  workflow_dispatch:
   pull_request:
+  push:
     branches:
-      - main
+      - "dev"
 jobs:
   check_storage:
     runs-on: "ubuntu-latest"
