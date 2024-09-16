@@ -1,4 +1,4 @@
-name: lint and check format
+name: Lint and Check Format
 on:
   workflow_dispatch:
   pull_request:
