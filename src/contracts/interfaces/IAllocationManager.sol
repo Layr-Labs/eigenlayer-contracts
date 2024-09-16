@@ -123,10 +123,7 @@ interface IAllocationManager is ISignatureUtils {
      * @param delay The allocation delay in seconds.
      * @dev msg.sender is assumed to be the delegation manager.
      */
-    function setAllocationDelay(
-        address operator,
-        uint32 delay
-    ) external;
+    function setAllocationDelay(address operator, uint32 delay) external;
 
     /**
      * @notice Called by operators to set their allocation delay.

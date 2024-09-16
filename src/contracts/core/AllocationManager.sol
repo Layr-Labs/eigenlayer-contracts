@@ -72,14 +72,10 @@ contract AllocationManager is
      * @param delay The allocation delay in seconds.
      * @dev msg.sender is assumed to be the delegation manager.
      */
-    function setAllocationDelay(
-        address operator,
-        uint32 delay
-    ) external {
+    function setAllocationDelay(address operator, uint32 delay) external {
         require(msg.sender == address(delegation), OnlyDelegationManager());
         _setAllocationDelay(operator, delay);
     }
-
 
     /**
      * @notice Called by operators to set their allocation delay.
@@ -265,10 +261,7 @@ contract AllocationManager is
      * @param operator The operator to set the delay on behalf of.
      * @param delay The allocation delay in seconds.
      */
-    function _setAllocationDelay(
-        address operator,
-        uint32 delay
-    ) internal {
+    function _setAllocationDelay(address operator, uint32 delay) internal {
         AllocationDelayInfo storage delayInfo = _allocationDelayInfo[operator];
 
         bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
