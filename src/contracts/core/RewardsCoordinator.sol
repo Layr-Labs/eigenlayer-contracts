@@ -235,6 +235,25 @@ contract RewardsCoordinator is
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
      * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
+     * @param claim The RewardsMerkleClaims to be processed.
+     * Contains the root index, earner, token leaves, and required proofs
+     * @param recipient The address recipient that receives the ERC20 rewards
+     * @dev only callable by the valid claimer, that is
+     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
+     * claimerFor[claim.earner] can claim the rewards.
+     */
+    function processClaim(
+        RewardsMerkleClaim calldata claim,
+        address recipient
+    ) external onlyWhenNotPaused(PAUSED_PROCESS_CLAIM) nonReentrant {
+        _processClaim(claim, recipient);
+    }
+
+    /**
+     * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
+     * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
+     * they can simply claim against the latest root and the contract will calculate the difference between
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
      * @param claims The array of RewardsMerkleClaims to be processed.
      * Contains the root index, earner, token leaves, and required proofs
      * @param recipient The address recipient that receives the ERC20 rewards
@@ -247,32 +266,7 @@ contract RewardsCoordinator is
         address recipient
     ) external onlyWhenNotPaused(PAUSED_PROCESS_CLAIM) nonReentrant {
         for (uint256 i; i < claims.length; ++i) {
-            RewardsMerkleClaim calldata claim = claims[i];
-            DistributionRoot memory root = _distributionRoots[claim.rootIndex];
-            _checkClaim(claim, root);
-            // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-            address earner = claim.earnerLeaf.earner;
-            address claimer = claimerFor[earner];
-            if (claimer == address(0)) {
-                claimer = earner;
-            }
-            require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
-            for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
-                TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
-
-                uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
-                require(
-                    tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
-                    "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
-                );
-
-                // Calculate amount to claim and update cumulativeClaimed
-                uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
-                cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
-
-                tokenLeaf.token.safeTransfer(recipient, claimAmount);
-                emit RewardsClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
-            }
+            _processClaim(claims[i], recipient);
         }
     }
 
@@ -526,6 +520,42 @@ contract RewardsCoordinator is
             }),
             "RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof"
         );
+    }
+
+    /**
+     * @notice Internal helper to process reward claims.
+     * @param claim The RewardsMerkleClaims to be processed.
+     * @param recipient The address recipient that receives the ERC20 rewards
+     */
+    function _processClaim(
+        RewardsMerkleClaim calldata claim,
+        address recipient
+    ) internal {
+        DistributionRoot memory root = _distributionRoots[claim.rootIndex];
+        _checkClaim(claim, root);
+        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
+        address earner = claim.earnerLeaf.earner;
+        address claimer = claimerFor[earner];
+        if (claimer == address(0)) {
+            claimer = earner;
+        }
+        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
+        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
+            TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
+
+            uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
+            require(
+                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
+                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
+            );
+
+            // Calculate amount to claim and update cumulativeClaimed
+            uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
+            cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
+
+            tokenLeaf.token.safeTransfer(recipient, claimAmount);
+            emit RewardsClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
+        }
     }
 
     function _setActivationDelay(uint32 _activationDelay) internal {
