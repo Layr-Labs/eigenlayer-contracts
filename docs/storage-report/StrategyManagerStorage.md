@@ -10,5 +10,5 @@
 | __deprecated_numWithdrawalsQueued           | mapping(address => uint256)                                | 7    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
 | strategyIsWhitelistedForDeposit             | mapping(contract IStrategy => bool)                        | 8    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
 | beaconChainETHSharesToDecrementOnWithdrawal | mapping(address => uint256)                                | 9    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
-| thirdPartyTransfersForbidden                | mapping(contract IStrategy => bool)                        | 10   | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| __deprecated_thirdPartyTransfersForbidden   | mapping(contract IStrategy => bool)                        | 10   | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
 | __gap                                       | uint256[39]                                                | 11   | 0      | 1248  | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
