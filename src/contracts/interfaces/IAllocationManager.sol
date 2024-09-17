@@ -242,14 +242,13 @@ interface IAllocationManager is ISignatureUtils {
      * @param operator the operator to get the pending deallocations for
      * @param strategy the strategy to get the pending deallocations for
      * @param operatorSets the operatorSets to get the pending deallocations for
-     * @return pendingMagnitudeDiff the pending difference in deallocations for each operatorSet
-     * @return timestamps the timestamps for each pending deallocation
+     * @return pendingMagnitudes the latest pending deallocation
      */
     function getPendingDeallocations(
         address operator,
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
-    ) external view returns (uint64[] memory, uint32[] memory);
+    ) external view returns (PendingFreeMagnitude[] memory);
 
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
