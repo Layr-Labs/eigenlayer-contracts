@@ -10,6 +10,8 @@ interface IAllocationManager is ISignatureUtils {
     error OperatorNotRegistered();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
+    /// @dev Thrown when call attempted from address that's not delegation manager.
+    error OnlyDelegationManager();
     /// @dev Thrown when an operator's allocation delay has yet to be set.
     error UninitializedAllocationDelay();
     /// @dev Thrown when provided `expectedTotalMagnitude` for a given allocation does not match `currentTotalMagnitude`.
@@ -18,8 +20,6 @@ interface IAllocationManager is ISignatureUtils {
     error InvalidOperatorSet();
     /// @dev Thrown when an invalid operator is provided.
     error InvalidOperator();
-    /// @dev Thrown when caller is not the delegation manager.
-    error OnlyDelegationManager();
     /// @dev Thrown when provided operator sets are not in ascending order.
     error OperatorSetsNotInAscendingOrder();
     /// @dev Thrown when an allocation is attempted for a given operator when they have pending allocations or deallocations.
@@ -118,19 +118,13 @@ interface IAllocationManager is ISignatureUtils {
      */
 
     /**
-     * @notice Called by the delagation manager to set delay when operators register.
-     * @param operator The operator to set the delay on behalf of.
-     * @param delay The allocation delay in seconds.
-     * @dev msg.sender is assumed to be the delegation manager.
-     */
-    function setAllocationDelay(address operator, uint32 delay) external;
-
-    /**
      * @notice Called by operators to set their allocation delay.
+     * @param operator address of the operator
      * @param delay the allocation delay in seconds
      * @dev msg.sender is assumed to be the operator
      */
     function setAllocationDelay(
+        address operator,
         uint32 delay
     ) external;
 
@@ -242,14 +236,13 @@ interface IAllocationManager is ISignatureUtils {
      * @param operator the operator to get the pending deallocations for
      * @param strategy the strategy to get the pending deallocations for
      * @param operatorSets the operatorSets to get the pending deallocations for
-     * @return pendingMagnitudeDiff the pending difference in deallocations for each operatorSet
-     * @return timestamps the timestamps for each pending deallocation
+     * @return pendingMagnitudes the latest pending deallocation
      */
     function getPendingDeallocations(
         address operator,
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
-    ) external view returns (uint64[] memory, uint32[] memory);
+    ) external view returns (PendingFreeMagnitude[] memory);
 
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days

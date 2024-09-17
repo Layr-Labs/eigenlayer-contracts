@@ -736,39 +736,28 @@ contract AllocationManager is
      * @param operator the operator to get the pending deallocations for
      * @param strategy the strategy to get the pending deallocations for
      * @param operatorSets the operatorSets to get the pending deallocations for
-     * @return pendingMagnitudeDiff the pending difference in deallocations for each operatorSet
-     * @return timestamps the timestamps for each pending deallocation
+     * @return pendingMagnitudes the latest pending deallocation
      */
     function getPendingDeallocations(
         address operator,
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
-    ) external view returns (uint64[] memory, uint32[] memory) {
-        uint64[] memory pendingMagnitudeDiff = new uint64[](operatorSets.length);
-        uint32[] memory timestamps = new uint32[](operatorSets.length);
+    ) external view returns (PendingFreeMagnitude[] memory) {
+        PendingFreeMagnitude[] memory pendingMagnitudes = new PendingFreeMagnitude[](operatorSets.length);
         for (uint256 i = 0; i < operatorSets.length; ++i) {
-            uint256[] memory indices =
+            uint256[] storage deallocationIndices =
                 _queuedDeallocationIndices[operator][strategy][_encodeOperatorSet(operatorSets[i])];
-            uint256 length = indices.length;
-            if (length == 0) {
-                // If there is no deallocations queued for this operator set
-                pendingMagnitudeDiff[i] = 0;
-                timestamps[i] = 0;
-            } else {
-                uint256 deallocationIndex = indices[length - 1];
-                PendingFreeMagnitude memory latestPendingMagnitude =
+            
+            if (deallocationIndices.length > 0) {
+                uint256 deallocationIndex = deallocationIndices[deallocationIndices.length - 1];
+                PendingFreeMagnitude storage latestPendingMagnitude =
                     _pendingFreeMagnitude[operator][strategy][deallocationIndex];
                 if (latestPendingMagnitude.completableTimestamp > block.timestamp) {
-                    pendingMagnitudeDiff[i] = latestPendingMagnitude.magnitudeDiff;
-                    timestamps[i] = latestPendingMagnitude.completableTimestamp;
-                } else {
-                    // There is no pending deallocation, so we set the pending magnitude and timestamp to 0
-                    pendingMagnitudeDiff[i] = 0;
-                    timestamps[i] = 0;
+                    pendingMagnitudes[i] = latestPendingMagnitude;
                 }
             }
         }
-        return (pendingMagnitudeDiff, timestamps);
+        return pendingMagnitudes;
     }
 
     // /**
