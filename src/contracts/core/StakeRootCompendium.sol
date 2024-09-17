@@ -100,7 +100,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         }
         uint256 numStrategiesAfter = operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
 
-        // make sure they have enough to pay for MIN_PROOFS_PREPAID
+        // make sure they have enough to pay for MIN_PREPAID_PROOFS
         require(
             depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance >= minDepositBalance(numStrategiesAfter),
             "StakeRootCompendium.addOrModifyStrategiesAndMultipliers: insufficient deposit balance"
@@ -184,14 +184,15 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         for (uint256 i = 0; i < operatorSetsToRemove.length; i++) {
             if (_isInStakeTree(operatorSetsToRemove[i])) {   
                 uint256 depositBalance = _updateDepositInfo(operatorSetsToRemove[i]);
-                // TODO note: this is vulnerable to frontrunning of deposits, but if we allow anyone to update deposit info's 
-                // withdrawals of deposit balance could be prevented because lastUpdatedTimestamp would be updated
-                require(depositBalance < MIN_BALANCE_THRESHOLD, "StakeRootCompendium.updateBalances: deposit balance is not below minimum");
-                _removeFromStakeTree(operatorSetsToRemove[i]);
-                penalty += depositBalance;
+                // remove from stake tree if their deposit balance is below the minimum
+                if (depositBalance < MIN_BALANCE_THRESHOLD) {
+                    _removeFromStakeTree(operatorSetsToRemove[i]);
+                    penalty += depositBalance;
+                }
             }
         }
         // todo use gas metering to make this call incentive neutral and simply refund any excess balance to AVS'?
+        // send the penalty to the caller
         (bool success, ) = payable(msg.sender).call{value: penalty}("");
         require(success, "StakeRootCompendium.updateBalances: eth transfer failed");
     }
@@ -276,13 +277,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// @inheritdoc IStakeRootCompendium
     function minDepositBalance(uint256 numStrategies) public view returns (uint256) {
-        return (numStrategies * chargePerStrategy + chargePerOperatorSet) * MIN_PROOFS_PREPAID;
+        return (numStrategies * chargePerStrategy + chargePerOperatorSet) * MIN_PREPAID_PROOFS;
     }
     
     /// @inheritdoc IStakeRootCompendium
     function canWithdrawDepositBalance(OperatorSet memory operatorSet) public view returns (bool) {
         // they must have paid for all of their prepaid proofs before withdrawing after a demand increase
-        return block.timestamp > depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp + MIN_PROOFS_PREPAID * proofIntervalSeconds;
+        return block.timestamp > depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp + MIN_PREPAID_PROOFS * proofIntervalSeconds;
     }
 
     /// @inheritdoc IStakeRootCompendium

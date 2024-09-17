@@ -26,7 +26,7 @@ interface IStakeRootCompendium {
         // the balance of the operatorSet (includes pending deductions)
         uint96 balance;
         // the timestamp of the operatorSets latest deposit or increase in number of strategies.
-        // withdrawals of deposit balance are bounded by paying for MIN_PROOFS_PREPAID proofs since 
+        // withdrawals of deposit balance are bounded by paying for MIN_PREPAID_PROOFS proofs since 
         // ones latest demand increase
         uint32 lastDemandIncreaseTimestamp; 
         // the cumulativeChargePerOperatorSet at the time of the lastest deduction from the deposit balance
