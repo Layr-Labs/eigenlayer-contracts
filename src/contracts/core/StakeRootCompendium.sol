@@ -304,6 +304,8 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     function _cumulativeCharges() internal view returns (uint32, uint96, uint96) {
         // calculate the total charge since the last update up until the latest calculation timestamp
+        // note that there may be no corresponding stakeRootSubmission for the latest calculation timestamp
+        // but if the calculationTimestamp is in the past, then it should be charged for, since proofs are being generated
         uint32 latestCalculationTimestamp = uint32(block.timestamp) - uint32(block.timestamp % proofIntervalSeconds);
         if (cumulativeChargeLastUpdatedTimestamp == latestCalculationTimestamp) {
             return (latestCalculationTimestamp, cumulativeChargePerOperatorSetLastUpdate, cumulativeChargePerStrategyLastUpdate);
