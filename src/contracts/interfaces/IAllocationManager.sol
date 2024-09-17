@@ -18,6 +18,8 @@ interface IAllocationManager is ISignatureUtils {
     error InvalidOperatorSet();
     /// @dev Thrown when an invalid operator is provided.
     error InvalidOperator();
+    /// @dev Thrown when caller is not the delegation manager.
+    error OnlyDelegationManager();
     /// @dev Thrown when provided operator sets are not in ascending order.
     error OperatorSetsNotInAscendingOrder();
     /// @dev Thrown when an allocation is attempted for a given operator when they have pending allocations or deallocations.
@@ -114,6 +116,14 @@ interface IAllocationManager is ISignatureUtils {
      *                         EXTERNAL FUNCTIONS
      *
      */
+
+    /**
+     * @notice Called by the delagation manager to set delay when operators register.
+     * @param operator The operator to set the delay on behalf of.
+     * @param delay The allocation delay in seconds.
+     * @dev msg.sender is assumed to be the delegation manager.
+     */
+    function setAllocationDelay(address operator, uint32 delay) external;
 
     /**
      * @notice Called by operators to set their allocation delay.

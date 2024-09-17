@@ -183,6 +183,7 @@ interface IDelegationManager is ISignatureUtils {
     /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
+     * @param allocationDelay The delay before allocations take effect.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      *
      * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
@@ -190,6 +191,7 @@ interface IDelegationManager is ISignatureUtils {
      */
     function registerAsOperator(
         OperatorDetails calldata registeringOperatorDetails,
+        uint32 allocationDelay,
         string calldata metadataURI
     ) external;
 

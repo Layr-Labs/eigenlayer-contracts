@@ -23,6 +23,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function registerAsOperator(
         OperatorDetails calldata /*registeringOperatorDetails*/,
+        uint32,
         string calldata /*metadataURI*/
     ) external pure {}
 
