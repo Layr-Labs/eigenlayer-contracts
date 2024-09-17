@@ -23,8 +23,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      */
     bytes32 internal _DOMAIN_SEPARATOR;
 
-    uint256 public _TEST_CI;
-
     /// @notice Mapping: AVS => operator => enum of operator status to the AVS
     mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 
