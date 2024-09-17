@@ -88,8 +88,8 @@ contract Longtail_Upgrade_Preprod is ExistingDeploymentParser {
     function _sanityChecks() internal {
         // Sanity checks
 
-        require(eigenLayerProxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(strategyFactory)))) == address(eigenLayerProxyAdmin), "proxy admin not set correctly");
-        require(eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(strategyFactory)))) == address(strategyFactoryImplementation), "proxy impl not set correctly");
+        require(eigenLayerProxyAdmin.getProxyAdmin(ITransparentUpgradeableProxy(payable(address(strategyFactory)))) == address(eigenLayerProxyAdmin), "proxy admin not set correctly");
+        require(eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(strategyFactory)))) == address(strategyFactoryImplementation), "proxy impl not set correctly");
 
         require(strategyFactory.owner() == initOwner, "owner not set correctly");
         require(strategyFactory.pauserRegistry() == eigenLayerPauserReg, "pauser not set correctly");
