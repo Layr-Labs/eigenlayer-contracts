@@ -231,7 +231,6 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     /// @inheritdoc IStakeRootCompendium
     function confirmStakeRoot(uint32 index, bytes32 stakeRoot) external {
         require(msg.sender == rootConfirmer, "StakeRootCompendium.confirmStakeRoot: only rootConfirmer can confirm");
-        require(stakeRootSubmissions[index].stakeRoot != bytes32(0), "StakeRootCompendium.confirmStakeRoot: timestamp not posted");
         require(stakeRootSubmissions[index].stakeRoot == stakeRoot, "StakeRootCompendium.confirmStakeRoot: stake root does not match");
         require(!stakeRootSubmissions[index].confirmed, "StakeRootCompendium.confirmStakeRoot: timestamp already confirmed");
         stakeRootSubmissions[index].confirmed = true;
