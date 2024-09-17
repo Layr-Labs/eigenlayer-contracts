@@ -62,7 +62,7 @@ type OperatorSet struct {
 
 // StakeRootCompendiumStorageMetaData contains all meta data concerning the StakeRootCompendiumStorage contract.
 var StakeRootCompendiumStorageMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"MAX_TOTAL_CHARGE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MIN_BALANCE_THRESHOLD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MIN_PROOFS_PREPAID\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"REMOVED_INDEX\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"addOrModifyStrategiesAndMultipliers\",\"inputs\":[{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIStakeRootCompendium.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"allocationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAllocationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"avsDirectory\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAVSDirectory\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"canWithdrawDepositBalance\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"chargePerOperatorSet\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"chargePerStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"confirmStakeRoot\",\"inputs\":[{\"name\":\"calculationTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"stakeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"depositInfos\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"balance\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"lastDemandIncreaseTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"totalChargePerOperatorSetLastPaid\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"totalChargePerStrategyLastPaid\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDepositBalance\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"balance\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumOperatorSets\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumStakeRootSubmissions\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorSetLeaves\",\"inputs\":[{\"name\":\"operatorSetIndex\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startOperatorIndex\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIStakeRootCompendium.OperatorLeaf[]\",\"components\":[{\"name\":\"delegatedStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"slashableStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"extraData\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorSetRoot\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operators\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"operatorLeaves\",\"type\":\"tuple[]\",\"internalType\":\"structIStakeRootCompendium.OperatorLeaf[]\",\"components\":[{\"name\":\"delegatedStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"slashableStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"extraData\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getStakeRoot\",\"inputs\":[{\"name\":\"operatorSetsInStakeTree\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorSetRoots\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getStakeRootSubmission\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIStakeRootCompendium.StakeRootSubmission\",\"components\":[{\"name\":\"stakeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"calculationTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"confirmed\",\"type\":\"bool\",\"internalType\":\"bool\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getStakes\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"delegatedStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"slashableStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"imageId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"minDepositBalance\",\"inputs\":[{\"name\":\"numStrategies\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSets\",\"inputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"proofIntervalSeconds\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeOperatorSetsFromStakeTree\",\"inputs\":[{\"name\":\"operatorSetsToRemove\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeStrategiesAndMultipliers\",\"inputs\":[{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"rootConfirmer\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setOperatorExtraData\",\"inputs\":[{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"extraData\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorSetExtraData\",\"inputs\":[{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"extraData\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stakeRootSubmissions\",\"inputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"stakeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"calculationTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"confirmed\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalChargeLastUpdatedTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalChargePerOperatorSetLastUpdate\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalChargePerStrategyLastUpdate\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalStrategies\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyStakeRoot\",\"inputs\":[{\"name\":\"_calculationTimestamp\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_stakeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"_chargeRecipient\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_indexChargePerProof\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_proof\",\"type\":\"tuple\",\"internalType\":\"structIStakeRootCompendium.Proof\",\"components\":[{\"name\":\"x\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"ImageIdSet\",\"inputs\":[{\"name\":\"newImageId\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SnarkProofVerified\",\"inputs\":[{\"name\":\"journal\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"seal\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"VerifierSet\",\"inputs\":[{\"name\":\"newVerifier\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"MIN_BALANCE_THRESHOLD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MIN_PROOFS_PREPAID\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"REMOVED_INDEX\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"addOrModifyStrategiesAndMultipliers\",\"inputs\":[{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIStakeRootCompendium.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"allocationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAllocationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"avsDirectory\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAVSDirectory\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"canWithdrawDepositBalance\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"chargePerOperatorSet\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"chargePerStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"confirmStakeRoot\",\"inputs\":[{\"name\":\"calculationTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"stakeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"cumulativeChargeLastUpdatedTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"cumulativeChargePerOperatorSetLastUpdate\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"cumulativeChargePerStrategyLastUpdate\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"depositInfos\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"balance\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"lastDemandIncreaseTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"cumulativeChargePerOperatorSetLastPaid\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"cumulativeChargePerStrategyLastPaid\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDepositBalance\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"balance\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumOperatorSets\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumStakeRootSubmissions\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorSetLeaves\",\"inputs\":[{\"name\":\"operatorSetIndex\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startOperatorIndex\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIStakeRootCompendium.OperatorLeaf[]\",\"components\":[{\"name\":\"delegatedStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"slashableStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"extraData\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorSetRoot\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operators\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"operatorLeaves\",\"type\":\"tuple[]\",\"internalType\":\"structIStakeRootCompendium.OperatorLeaf[]\",\"components\":[{\"name\":\"delegatedStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"slashableStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"extraData\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getStakeRoot\",\"inputs\":[{\"name\":\"operatorSetsInStakeTree\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorSetRoots\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getStakeRootSubmission\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIStakeRootCompendium.StakeRootSubmission\",\"components\":[{\"name\":\"stakeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"calculationTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"confirmed\",\"type\":\"bool\",\"internalType\":\"bool\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getStakes\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"delegatedStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"slashableStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"imageId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"maxTotalCharge\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"minDepositBalance\",\"inputs\":[{\"name\":\"numStrategies\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSets\",\"inputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"proofIntervalSeconds\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeOperatorSetsFromStakeTree\",\"inputs\":[{\"name\":\"operatorSetsToRemove\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeStrategiesAndMultipliers\",\"inputs\":[{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"rootConfirmer\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setOperatorExtraData\",\"inputs\":[{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"extraData\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorSetExtraData\",\"inputs\":[{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"extraData\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stakeRootSubmissions\",\"inputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"stakeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"calculationTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"confirmed\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalStrategies\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyStakeRoot\",\"inputs\":[{\"name\":\"_calculationTimestamp\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_stakeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"_chargeRecipient\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_indexChargePerProof\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_proof\",\"type\":\"tuple\",\"internalType\":\"structIStakeRootCompendium.Proof\",\"components\":[{\"name\":\"x\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"ImageIdSet\",\"inputs\":[{\"name\":\"newImageId\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SnarkProofVerified\",\"inputs\":[{\"name\":\"journal\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"seal\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"VerifierSet\",\"inputs\":[{\"name\":\"newVerifier\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false}]",
 }
 
 // StakeRootCompendiumStorageABI is the input ABI used to generate the binding from.
@@ -209,37 +209,6 @@ func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageTransactorRaw) Tran
 // Transact invokes the (paid) contract method with params as input values.
 func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _StakeRootCompendiumStorage.Contract.contract.Transact(opts, method, params...)
-}
-
-// MAXTOTALCHARGE is a free data retrieval call binding the contract method 0x3264c71b.
-//
-// Solidity: function MAX_TOTAL_CHARGE() view returns(uint256)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) MAXTOTALCHARGE(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _StakeRootCompendiumStorage.contract.Call(opts, &out, "MAX_TOTAL_CHARGE")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// MAXTOTALCHARGE is a free data retrieval call binding the contract method 0x3264c71b.
-//
-// Solidity: function MAX_TOTAL_CHARGE() view returns(uint256)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageSession) MAXTOTALCHARGE() (*big.Int, error) {
-	return _StakeRootCompendiumStorage.Contract.MAXTOTALCHARGE(&_StakeRootCompendiumStorage.CallOpts)
-}
-
-// MAXTOTALCHARGE is a free data retrieval call binding the contract method 0x3264c71b.
-//
-// Solidity: function MAX_TOTAL_CHARGE() view returns(uint256)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) MAXTOTALCHARGE() (*big.Int, error) {
-	return _StakeRootCompendiumStorage.Contract.MAXTOTALCHARGE(&_StakeRootCompendiumStorage.CallOpts)
 }
 
 // MINBALANCETHRESHOLD is a free data retrieval call binding the contract method 0xc442daee.
@@ -490,6 +459,99 @@ func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) Char
 	return _StakeRootCompendiumStorage.Contract.ChargePerStrategy(&_StakeRootCompendiumStorage.CallOpts)
 }
 
+// CumulativeChargeLastUpdatedTimestamp is a free data retrieval call binding the contract method 0xfedf52db.
+//
+// Solidity: function cumulativeChargeLastUpdatedTimestamp() view returns(uint32)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) CumulativeChargeLastUpdatedTimestamp(opts *bind.CallOpts) (uint32, error) {
+	var out []interface{}
+	err := _StakeRootCompendiumStorage.contract.Call(opts, &out, "cumulativeChargeLastUpdatedTimestamp")
+
+	if err != nil {
+		return *new(uint32), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
+
+	return out0, err
+
+}
+
+// CumulativeChargeLastUpdatedTimestamp is a free data retrieval call binding the contract method 0xfedf52db.
+//
+// Solidity: function cumulativeChargeLastUpdatedTimestamp() view returns(uint32)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageSession) CumulativeChargeLastUpdatedTimestamp() (uint32, error) {
+	return _StakeRootCompendiumStorage.Contract.CumulativeChargeLastUpdatedTimestamp(&_StakeRootCompendiumStorage.CallOpts)
+}
+
+// CumulativeChargeLastUpdatedTimestamp is a free data retrieval call binding the contract method 0xfedf52db.
+//
+// Solidity: function cumulativeChargeLastUpdatedTimestamp() view returns(uint32)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) CumulativeChargeLastUpdatedTimestamp() (uint32, error) {
+	return _StakeRootCompendiumStorage.Contract.CumulativeChargeLastUpdatedTimestamp(&_StakeRootCompendiumStorage.CallOpts)
+}
+
+// CumulativeChargePerOperatorSetLastUpdate is a free data retrieval call binding the contract method 0x724a939f.
+//
+// Solidity: function cumulativeChargePerOperatorSetLastUpdate() view returns(uint96)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) CumulativeChargePerOperatorSetLastUpdate(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _StakeRootCompendiumStorage.contract.Call(opts, &out, "cumulativeChargePerOperatorSetLastUpdate")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// CumulativeChargePerOperatorSetLastUpdate is a free data retrieval call binding the contract method 0x724a939f.
+//
+// Solidity: function cumulativeChargePerOperatorSetLastUpdate() view returns(uint96)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageSession) CumulativeChargePerOperatorSetLastUpdate() (*big.Int, error) {
+	return _StakeRootCompendiumStorage.Contract.CumulativeChargePerOperatorSetLastUpdate(&_StakeRootCompendiumStorage.CallOpts)
+}
+
+// CumulativeChargePerOperatorSetLastUpdate is a free data retrieval call binding the contract method 0x724a939f.
+//
+// Solidity: function cumulativeChargePerOperatorSetLastUpdate() view returns(uint96)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) CumulativeChargePerOperatorSetLastUpdate() (*big.Int, error) {
+	return _StakeRootCompendiumStorage.Contract.CumulativeChargePerOperatorSetLastUpdate(&_StakeRootCompendiumStorage.CallOpts)
+}
+
+// CumulativeChargePerStrategyLastUpdate is a free data retrieval call binding the contract method 0x7b662609.
+//
+// Solidity: function cumulativeChargePerStrategyLastUpdate() view returns(uint96)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) CumulativeChargePerStrategyLastUpdate(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _StakeRootCompendiumStorage.contract.Call(opts, &out, "cumulativeChargePerStrategyLastUpdate")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// CumulativeChargePerStrategyLastUpdate is a free data retrieval call binding the contract method 0x7b662609.
+//
+// Solidity: function cumulativeChargePerStrategyLastUpdate() view returns(uint96)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageSession) CumulativeChargePerStrategyLastUpdate() (*big.Int, error) {
+	return _StakeRootCompendiumStorage.Contract.CumulativeChargePerStrategyLastUpdate(&_StakeRootCompendiumStorage.CallOpts)
+}
+
+// CumulativeChargePerStrategyLastUpdate is a free data retrieval call binding the contract method 0x7b662609.
+//
+// Solidity: function cumulativeChargePerStrategyLastUpdate() view returns(uint96)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) CumulativeChargePerStrategyLastUpdate() (*big.Int, error) {
+	return _StakeRootCompendiumStorage.Contract.CumulativeChargePerStrategyLastUpdate(&_StakeRootCompendiumStorage.CallOpts)
+}
+
 // DelegationManager is a free data retrieval call binding the contract method 0xea4d3c9b.
 //
 // Solidity: function delegationManager() view returns(address)
@@ -523,21 +585,21 @@ func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) Dele
 
 // DepositInfos is a free data retrieval call binding the contract method 0xbb1bb891.
 //
-// Solidity: function depositInfos(address , uint32 ) view returns(uint96 balance, uint32 lastDemandIncreaseTimestamp, uint96 totalChargePerOperatorSetLastPaid, uint96 totalChargePerStrategyLastPaid)
+// Solidity: function depositInfos(address , uint32 ) view returns(uint96 balance, uint32 lastDemandIncreaseTimestamp, uint96 cumulativeChargePerOperatorSetLastPaid, uint96 cumulativeChargePerStrategyLastPaid)
 func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) DepositInfos(opts *bind.CallOpts, arg0 common.Address, arg1 uint32) (struct {
-	Balance                           *big.Int
-	LastDemandIncreaseTimestamp       uint32
-	TotalChargePerOperatorSetLastPaid *big.Int
-	TotalChargePerStrategyLastPaid    *big.Int
+	Balance                                *big.Int
+	LastDemandIncreaseTimestamp            uint32
+	CumulativeChargePerOperatorSetLastPaid *big.Int
+	CumulativeChargePerStrategyLastPaid    *big.Int
 }, error) {
 	var out []interface{}
 	err := _StakeRootCompendiumStorage.contract.Call(opts, &out, "depositInfos", arg0, arg1)
 
 	outstruct := new(struct {
-		Balance                           *big.Int
-		LastDemandIncreaseTimestamp       uint32
-		TotalChargePerOperatorSetLastPaid *big.Int
-		TotalChargePerStrategyLastPaid    *big.Int
+		Balance                                *big.Int
+		LastDemandIncreaseTimestamp            uint32
+		CumulativeChargePerOperatorSetLastPaid *big.Int
+		CumulativeChargePerStrategyLastPaid    *big.Int
 	})
 	if err != nil {
 		return *outstruct, err
@@ -545,8 +607,8 @@ func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) DepositInfo
 
 	outstruct.Balance = *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 	outstruct.LastDemandIncreaseTimestamp = *abi.ConvertType(out[1], new(uint32)).(*uint32)
-	outstruct.TotalChargePerOperatorSetLastPaid = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
-	outstruct.TotalChargePerStrategyLastPaid = *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
+	outstruct.CumulativeChargePerOperatorSetLastPaid = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
+	outstruct.CumulativeChargePerStrategyLastPaid = *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
 
 	return *outstruct, err
 
@@ -554,24 +616,24 @@ func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) DepositInfo
 
 // DepositInfos is a free data retrieval call binding the contract method 0xbb1bb891.
 //
-// Solidity: function depositInfos(address , uint32 ) view returns(uint96 balance, uint32 lastDemandIncreaseTimestamp, uint96 totalChargePerOperatorSetLastPaid, uint96 totalChargePerStrategyLastPaid)
+// Solidity: function depositInfos(address , uint32 ) view returns(uint96 balance, uint32 lastDemandIncreaseTimestamp, uint96 cumulativeChargePerOperatorSetLastPaid, uint96 cumulativeChargePerStrategyLastPaid)
 func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageSession) DepositInfos(arg0 common.Address, arg1 uint32) (struct {
-	Balance                           *big.Int
-	LastDemandIncreaseTimestamp       uint32
-	TotalChargePerOperatorSetLastPaid *big.Int
-	TotalChargePerStrategyLastPaid    *big.Int
+	Balance                                *big.Int
+	LastDemandIncreaseTimestamp            uint32
+	CumulativeChargePerOperatorSetLastPaid *big.Int
+	CumulativeChargePerStrategyLastPaid    *big.Int
 }, error) {
 	return _StakeRootCompendiumStorage.Contract.DepositInfos(&_StakeRootCompendiumStorage.CallOpts, arg0, arg1)
 }
 
 // DepositInfos is a free data retrieval call binding the contract method 0xbb1bb891.
 //
-// Solidity: function depositInfos(address , uint32 ) view returns(uint96 balance, uint32 lastDemandIncreaseTimestamp, uint96 totalChargePerOperatorSetLastPaid, uint96 totalChargePerStrategyLastPaid)
+// Solidity: function depositInfos(address , uint32 ) view returns(uint96 balance, uint32 lastDemandIncreaseTimestamp, uint96 cumulativeChargePerOperatorSetLastPaid, uint96 cumulativeChargePerStrategyLastPaid)
 func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) DepositInfos(arg0 common.Address, arg1 uint32) (struct {
-	Balance                           *big.Int
-	LastDemandIncreaseTimestamp       uint32
-	TotalChargePerOperatorSetLastPaid *big.Int
-	TotalChargePerStrategyLastPaid    *big.Int
+	Balance                                *big.Int
+	LastDemandIncreaseTimestamp            uint32
+	CumulativeChargePerOperatorSetLastPaid *big.Int
+	CumulativeChargePerStrategyLastPaid    *big.Int
 }, error) {
 	return _StakeRootCompendiumStorage.Contract.DepositInfos(&_StakeRootCompendiumStorage.CallOpts, arg0, arg1)
 }
@@ -871,6 +933,37 @@ func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) Imag
 	return _StakeRootCompendiumStorage.Contract.ImageId(&_StakeRootCompendiumStorage.CallOpts)
 }
 
+// MaxTotalCharge is a free data retrieval call binding the contract method 0xfa8c1420.
+//
+// Solidity: function maxTotalCharge() view returns(uint256)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) MaxTotalCharge(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _StakeRootCompendiumStorage.contract.Call(opts, &out, "maxTotalCharge")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// MaxTotalCharge is a free data retrieval call binding the contract method 0xfa8c1420.
+//
+// Solidity: function maxTotalCharge() view returns(uint256)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageSession) MaxTotalCharge() (*big.Int, error) {
+	return _StakeRootCompendiumStorage.Contract.MaxTotalCharge(&_StakeRootCompendiumStorage.CallOpts)
+}
+
+// MaxTotalCharge is a free data retrieval call binding the contract method 0xfa8c1420.
+//
+// Solidity: function maxTotalCharge() view returns(uint256)
+func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) MaxTotalCharge() (*big.Int, error) {
+	return _StakeRootCompendiumStorage.Contract.MaxTotalCharge(&_StakeRootCompendiumStorage.CallOpts)
+}
+
 // MinDepositBalance is a free data retrieval call binding the contract method 0xca7bfc9d.
 //
 // Solidity: function minDepositBalance(uint256 numStrategies) view returns(uint256)
@@ -1088,99 +1181,6 @@ func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) Stak
 	Confirmed            bool
 }, error) {
 	return _StakeRootCompendiumStorage.Contract.StakeRootSubmissions(&_StakeRootCompendiumStorage.CallOpts, arg0)
-}
-
-// TotalChargeLastUpdatedTimestamp is a free data retrieval call binding the contract method 0xcca56019.
-//
-// Solidity: function totalChargeLastUpdatedTimestamp() view returns(uint32)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) TotalChargeLastUpdatedTimestamp(opts *bind.CallOpts) (uint32, error) {
-	var out []interface{}
-	err := _StakeRootCompendiumStorage.contract.Call(opts, &out, "totalChargeLastUpdatedTimestamp")
-
-	if err != nil {
-		return *new(uint32), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
-
-	return out0, err
-
-}
-
-// TotalChargeLastUpdatedTimestamp is a free data retrieval call binding the contract method 0xcca56019.
-//
-// Solidity: function totalChargeLastUpdatedTimestamp() view returns(uint32)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageSession) TotalChargeLastUpdatedTimestamp() (uint32, error) {
-	return _StakeRootCompendiumStorage.Contract.TotalChargeLastUpdatedTimestamp(&_StakeRootCompendiumStorage.CallOpts)
-}
-
-// TotalChargeLastUpdatedTimestamp is a free data retrieval call binding the contract method 0xcca56019.
-//
-// Solidity: function totalChargeLastUpdatedTimestamp() view returns(uint32)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) TotalChargeLastUpdatedTimestamp() (uint32, error) {
-	return _StakeRootCompendiumStorage.Contract.TotalChargeLastUpdatedTimestamp(&_StakeRootCompendiumStorage.CallOpts)
-}
-
-// TotalChargePerOperatorSetLastUpdate is a free data retrieval call binding the contract method 0x5d466205.
-//
-// Solidity: function totalChargePerOperatorSetLastUpdate() view returns(uint96)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) TotalChargePerOperatorSetLastUpdate(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _StakeRootCompendiumStorage.contract.Call(opts, &out, "totalChargePerOperatorSetLastUpdate")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// TotalChargePerOperatorSetLastUpdate is a free data retrieval call binding the contract method 0x5d466205.
-//
-// Solidity: function totalChargePerOperatorSetLastUpdate() view returns(uint96)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageSession) TotalChargePerOperatorSetLastUpdate() (*big.Int, error) {
-	return _StakeRootCompendiumStorage.Contract.TotalChargePerOperatorSetLastUpdate(&_StakeRootCompendiumStorage.CallOpts)
-}
-
-// TotalChargePerOperatorSetLastUpdate is a free data retrieval call binding the contract method 0x5d466205.
-//
-// Solidity: function totalChargePerOperatorSetLastUpdate() view returns(uint96)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) TotalChargePerOperatorSetLastUpdate() (*big.Int, error) {
-	return _StakeRootCompendiumStorage.Contract.TotalChargePerOperatorSetLastUpdate(&_StakeRootCompendiumStorage.CallOpts)
-}
-
-// TotalChargePerStrategyLastUpdate is a free data retrieval call binding the contract method 0x016769e0.
-//
-// Solidity: function totalChargePerStrategyLastUpdate() view returns(uint96)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCaller) TotalChargePerStrategyLastUpdate(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _StakeRootCompendiumStorage.contract.Call(opts, &out, "totalChargePerStrategyLastUpdate")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// TotalChargePerStrategyLastUpdate is a free data retrieval call binding the contract method 0x016769e0.
-//
-// Solidity: function totalChargePerStrategyLastUpdate() view returns(uint96)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageSession) TotalChargePerStrategyLastUpdate() (*big.Int, error) {
-	return _StakeRootCompendiumStorage.Contract.TotalChargePerStrategyLastUpdate(&_StakeRootCompendiumStorage.CallOpts)
-}
-
-// TotalChargePerStrategyLastUpdate is a free data retrieval call binding the contract method 0x016769e0.
-//
-// Solidity: function totalChargePerStrategyLastUpdate() view returns(uint96)
-func (_StakeRootCompendiumStorage *StakeRootCompendiumStorageCallerSession) TotalChargePerStrategyLastUpdate() (*big.Int, error) {
-	return _StakeRootCompendiumStorage.Contract.TotalChargePerStrategyLastUpdate(&_StakeRootCompendiumStorage.CallOpts)
 }
 
 // TotalStrategies is a free data retrieval call binding the contract method 0xf96d7b80.
