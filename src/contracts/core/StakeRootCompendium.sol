@@ -73,12 +73,8 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         StrategyAndMultiplier[] calldata strategiesAndMultipliers
     ) external {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
-        bool isInStakeTree = _isInStakeTree(operatorSet);
-
-        if (isInStakeTree) {
-            // update the deposit balance for the operator set whenever number of strategies is changed
-            _updateDepositInfo(operatorSet);
-        }
+        // update the deposit balance for the operator set whenever number of strategies is changed
+        _updateDepositInfo(operatorSet);
 
         uint256 numStrategiesBefore = operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
         // set the strategies and multipliers for the operator set
@@ -90,42 +86,34 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         }
         uint256 numStrategiesAfter = operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
 
-        if (isInStakeTree) {
         // make sure they have enough to pay for MIN_PREPAID_PROOFS
-            require(
-                depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance >= minDepositBalance(numStrategiesAfter),
-                "StakeRootCompendium.addOrModifyStrategiesAndMultipliers: insufficient deposit balance"
-            );
-            // note that they've shown increased demand for proofs
-            depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp = uint32(block.timestamp);
+        require(
+            depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance >= minDepositBalance(numStrategiesAfter),
+            "StakeRootCompendium.addOrModifyStrategiesAndMultipliers: insufficient deposit balance"
+        );
+        // note that they've shown increased demand for proofs
+        depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp = uint32(block.timestamp);
 
-            // only adding new strategies to count
-            _updateTotalStrategies(numStrategiesBefore, numStrategiesAfter);
-        }
+        // only adding new strategies to count
+        _updateTotalStrategies(numStrategiesBefore, numStrategiesAfter);
     }
 
     /// @inheritdoc IStakeRootCompendium
     function removeStrategiesAndMultipliers(uint32 operatorSetId, IStrategy[] calldata strategies) external {
-        // update the deposit balance for the operator set whenever number of strategies is changed
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
-        bool isInStakeTree = _isInStakeTree(operatorSet);
+        // update the deposit balance for the operator set whenever number of strategies is changed
+        _updateDepositInfo(operatorSet);
 
-        if (isInStakeTree) {
-            // update the deposit balance for the operator set whenever number of strategies is changed
-            _updateDepositInfo(operatorSet);
-        }
         // note below either all strategies are removed or none are removed and transaction reverts
-        uint256 numStrategiesBefore = operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length();
+        uint256 numStrategiesBefore = operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSetId].length();
         for (uint256 i = 0; i < strategies.length; i++) {
             require(
-                operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].remove(address(strategies[i])),
+                operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSetId].remove(address(strategies[i])),
                 "StakeRootCompendium.removeStrategiesAndMultipliers: strategy not found"
             );
         }
 
-        if (isInStakeTree) {
-            _updateTotalStrategies(numStrategiesBefore, numStrategiesBefore - strategies.length);
-        }
+        _updateTotalStrategies(numStrategiesBefore, numStrategiesBefore - strategies.length);
     }
 
     /// @inheritdoc IStakeRootCompendium
