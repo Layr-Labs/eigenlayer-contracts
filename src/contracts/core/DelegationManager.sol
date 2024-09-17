@@ -123,11 +123,7 @@ contract DelegationManager is
         string calldata metadataURI
     ) external {
         require(!isDelegated(msg.sender), ActivelyDelegated());
-
-        if (allocationDelay != type(uint32).max) {
-            allocationManager.setAllocationDelay(msg.sender, allocationDelay);
-        }
-
+        allocationManager.setAllocationDelay(msg.sender, allocationDelay);
         _setOperatorDetails(msg.sender, registeringOperatorDetails);
         SignatureWithExpiry memory emptySignatureAndExpiry;
         // delegate from the operator to themselves
