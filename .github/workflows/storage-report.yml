@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
@@ -34,6 +35,9 @@ jobs:
 
       - name: Compare outputs
         run: |
-          if ! diff --unified pr target; then
-            echo "::warning::Differences found between PR and target branch storage layouts"
+          if diff --unified pr target; then
+            echo "No differences found"
+          else
+            echo "::error::Differences found between PR and target branch storage layouts"
+            exit 1
           fi
