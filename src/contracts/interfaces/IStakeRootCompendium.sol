@@ -58,6 +58,9 @@ interface IStakeRootCompendium {
      */
     function getStakeRootSubmission(uint32 index) external view returns (StakeRootSubmission memory);
 
+    /// @notice the number of stake root submissions
+    function getNumStakeRootSubmissions() external view returns (uint256);
+
     /**
      * @notice returns the delegated and slashable stakes for an operator in an operatorSet
      * @param operatorSet the operatorSet to get the stakes for

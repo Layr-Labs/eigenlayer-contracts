@@ -276,6 +276,11 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     }
 
     /// @inheritdoc IStakeRootCompendium
+    function getNumStakeRootSubmissions() external view returns (uint256) {
+        return stakeRootSubmissions.length;
+    }
+
+    /// @inheritdoc IStakeRootCompendium
     function getStakeRootSubmission(uint32 index) external view returns (StakeRootSubmission memory) {
         return stakeRootSubmissions[index];
     }
