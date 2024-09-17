@@ -195,7 +195,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     ) internal filterFuzzedAddressInputs(operator) {
         _filterOperatorDetails(operator, operatorDetails);
         cheats.prank(operator);
-        delegationManager.registerAsOperator(operatorDetails, metadataURI);
+        delegationManager.registerAsOperator(operatorDetails, 0, metadataURI);
     }
 
     function _filterOperatorDetails(

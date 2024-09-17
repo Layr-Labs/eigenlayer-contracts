@@ -85,7 +85,7 @@ contract User is PrintUtils {
             stakerOptOutWindowBlocks: 0
         });
 
-        delegationManager.registerAsOperator(details, "metadata");
+        delegationManager.registerAsOperator(details, 0, "metadata");
     }
 
     /// @dev Delegate to the operator without a signature
