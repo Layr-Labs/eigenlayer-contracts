@@ -41,6 +41,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// OPERATORSET CONFIGURATION
 
+    /// @inheritdoc IStakeRootCompendium
     function deposit(OperatorSet calldata operatorSet) external payable {
         if (!_isInStakeTree(operatorSet)) {
             (,uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) = _totalCharge();
