@@ -29,20 +29,14 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
         maxTotalCharge = _maxTotalCharge;
         proofIntervalSeconds = _proofIntervalSeconds;
-        setChargePerProof(_chargePerOperatorSet, _chargePerStrategy);
+        chargePerOperatorSet = _chargePerOperatorSet;
+        chargePerStrategy = _chargePerStrategy;
 
         stakeRootSubmissions.push(StakeRootSubmission({
             calculationTimestamp: 0,
             stakeRoot: bytes32(0),
             confirmed: false
         }));
-
-        // note verifier and imageId are immutable and set by implementation contract
-        // since proof verification is in the hot path, this is a gas optimization to avoid calling the storage contract for verifier and imageId
-        // however the new impl does not have access to the immutable variables of the last impl so we can't reference the old verifier and imageId
-        // instead we emit the new verifier and imageId here
-        emit VerifierSet(verifier);
-        emit ImageIdSet(imageId);
     }
 
     /// OPERATORSET CONFIGURATION
@@ -248,18 +242,21 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// SET FUNCTIONS
 
-    function setMaxTotalCharge(uint96 _maxTotalCharge) public onlyOwner {
+    /// @inheritdoc IStakeRootCompendium
+    function setMaxTotalCharge(uint96 _maxTotalCharge) external onlyOwner {
         maxTotalCharge = _maxTotalCharge;
     }
 
-    function setChargePerProof(uint96 _chargePerStrategy, uint96 _chargePerOperatorSet) public onlyOwner  {
+    /// @inheritdoc IStakeRootCompendium
+    function setChargePerProof(uint96 _chargePerStrategy, uint96 _chargePerOperatorSet) external onlyOwner  {
         _updateTotalCharge();
         chargePerStrategy = _chargePerStrategy;
         chargePerOperatorSet = _chargePerOperatorSet;
         _updateChargePerProof();
     }
 
-    function setProofIntervalSeconds(uint32 proofIntervalSeconds) public onlyOwner  {
+    /// @inheritdoc IStakeRootCompendium
+    function setProofIntervalSeconds(uint32 proofIntervalSeconds) external onlyOwner  {
         _updateTotalCharge();
         uint32 latestSubmittedCalculationTimestamp = stakeRootSubmissions[stakeRootSubmissions.length - 1].calculationTimestamp;
         require(
@@ -269,63 +266,11 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         proofIntervalSeconds = proofIntervalSeconds;
     }
 
+    /// @inheritdoc IStakeRootCompendium
     function setRootConfirmer(address _rootConfirmer) public onlyOwner {
         rootConfirmer = _rootConfirmer;
     }
 
-    /// VIEW FUNCTIONS
-
-    /// @inheritdoc IStakeRootCompendium
-    function minDepositBalance(uint256 numStrategies) public view returns (uint256) {
-        return (numStrategies * chargePerStrategy + chargePerOperatorSet) * MIN_PREPAID_PROOFS;
-    }
-    
-    /// @inheritdoc IStakeRootCompendium
-    function canWithdrawDepositBalance(OperatorSet memory operatorSet) public view returns (bool) {
-        // they must have paid for all of their prepaid proofs before withdrawing after a demand increase
-        return block.timestamp > depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp + MIN_PREPAID_PROOFS * proofIntervalSeconds;
-    }
-
-    /// @inheritdoc IStakeRootCompendium
-    function getNumStakeRootSubmissions() external view returns (uint256) {
-        return stakeRootSubmissions.length;
-    }
-
-    /// @inheritdoc IStakeRootCompendium
-    function getStakeRootSubmission(uint32 index) external view returns (StakeRootSubmission memory) {
-        return stakeRootSubmissions[index];
-    }
-
-    /// @inheritdoc IStakeRootCompendium
-    function getNumOperatorSets() external view returns (uint256) {
-        return operatorSets.length;
-    }
-
-    /// @inheritdoc IStakeRootCompendium
-    function getStakes(OperatorSet calldata operatorSet, address operator)
-        external
-        view
-        returns (uint256 delegatedStake, uint256 slashableStake)
-    {
-        (IStrategy[] memory strategies, uint256[] memory multipliers) = _getStrategiesAndMultipliers(operatorSet);
-        return _getStakes(operatorSet, strategies, multipliers, operator);
-    }
-
-    /// @inheritdoc IStakeRootCompendium
-    function getDepositBalance(OperatorSet memory operatorSet)
-        external
-        view
-        returns (uint256 balance)
-    {
-        DepositInfo memory depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
-        (,uint96 cumulativeChargePerOperatorSet, uint96 cumulativeChargePerStrategy) = _totalCharge();
-        uint256 pendingCharge =
-            uint256(cumulativeChargePerOperatorSet - depositInfo.cumulativeChargePerOperatorSetLastPaid) +
-            uint256(cumulativeChargePerStrategy - depositInfo.cumulativeChargePerStrategyLastPaid) * 
-            operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
-
-        return depositInfo.balance > pendingCharge ? depositInfo.balance - pendingCharge : 0;
-    }
     /// INTERNAL FUNCTIONS
 
     function _removeFromStakeTree(OperatorSet memory operatorSet) internal {
@@ -447,6 +392,62 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function _isInStakeTree(OperatorSet memory operatorSet) internal view returns (bool) {
         (bool exists,,uint224 index) = operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].latestSnapshot();
         return exists && index != REMOVED_INDEX;
+    }
+    
+    // VIEW FUNCTIONS
+
+    /// VIEW FUNCTIONS
+
+    /// @inheritdoc IStakeRootCompendium
+    function minDepositBalance(uint256 numStrategies) public view returns (uint256) {
+        return (numStrategies * chargePerStrategy + chargePerOperatorSet) * MIN_PREPAID_PROOFS;
+    }
+    
+    /// @inheritdoc IStakeRootCompendium
+    function canWithdrawDepositBalance(OperatorSet memory operatorSet) public view returns (bool) {
+        // they must have paid for all of their prepaid proofs before withdrawing after a demand increase
+        return block.timestamp > depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp + MIN_PREPAID_PROOFS * proofIntervalSeconds;
+    }
+
+    /// @inheritdoc IStakeRootCompendium
+    function getNumStakeRootSubmissions() external view returns (uint256) {
+        return stakeRootSubmissions.length;
+    }
+
+    /// @inheritdoc IStakeRootCompendium
+    function getStakeRootSubmission(uint32 index) external view returns (StakeRootSubmission memory) {
+        return stakeRootSubmissions[index];
+    }
+
+    /// @inheritdoc IStakeRootCompendium
+    function getNumOperatorSets() external view returns (uint256) {
+        return operatorSets.length;
+    }
+
+    /// @inheritdoc IStakeRootCompendium
+    function getStakes(OperatorSet calldata operatorSet, address operator)
+        external
+        view
+        returns (uint256 delegatedStake, uint256 slashableStake)
+    {
+        (IStrategy[] memory strategies, uint256[] memory multipliers) = _getStrategiesAndMultipliers(operatorSet);
+        return _getStakes(operatorSet, strategies, multipliers, operator);
+    }
+
+    /// @inheritdoc IStakeRootCompendium
+    function getDepositBalance(OperatorSet memory operatorSet)
+        external
+        view
+        returns (uint256 balance)
+    {
+        DepositInfo memory depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
+        (,uint96 cumulativeChargePerOperatorSet, uint96 cumulativeChargePerStrategy) = _totalCharge();
+        uint256 pendingCharge =
+            uint256(cumulativeChargePerOperatorSet - depositInfo.cumulativeChargePerOperatorSetLastPaid) +
+            uint256(cumulativeChargePerStrategy - depositInfo.cumulativeChargePerStrategyLastPaid) * 
+            operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
+
+        return depositInfo.balance > pendingCharge ? depositInfo.balance - pendingCharge : 0;
     }
 
     // STAKE ROOT CALCULATION

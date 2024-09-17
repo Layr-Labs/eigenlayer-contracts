@@ -216,4 +216,34 @@ interface IStakeRootCompendium {
         external
         view
         returns (uint256 balance);
+
+    /**
+     * @notice set the maximum total charge for a stakeRoot proof
+     * @param _maxTotalCharge the maximum total charge for a stakeRoot proof
+     * @dev only callable by owner
+     * @dev used to limit offchain computation
+     */
+    function setMaxTotalCharge(uint96 _maxTotalCharge) external;
+
+    /**
+     * @notice set the charges per proof going forward from the time of calling
+     * @param _chargePerStrategy the charge per strategy per operatorSet per proof
+     * @param _chargePerOperatorSet the flat charge per operatorSet per proof
+     * @dev only callable by owner
+     */
+    function setChargePerProof(uint96 _chargePerStrategy, uint96 _chargePerOperatorSet) external;
+
+    /**
+     * @notice set the proof interval in seconds
+     * @param proofIntervalSeconds the interval in seconds at which proofs can be posted
+     * @dev only callable by owner
+     */
+    function setProofIntervalSeconds(uint32 proofIntervalSeconds) external;
+
+    /**
+     * @notice set the confirmer of roots
+     * @param _rootConfirmer the address allowed to confirm roots
+     * @dev only callable by owner
+     */
+    function setRootConfirmer(address _rootConfirmer) external;
 }

@@ -96,6 +96,10 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
         allocationManager = _allocationManager;
         MIN_BALANCE_THRESHOLD = _minBalanceThreshold;
         MIN_PREPAID_PROOFS = _minPrepaidProofs;
+
+        // note verifier and imageId are immutable and set by implementation contract
+        // since proof verification is in the hot path, this is a gas optimization to avoid calling the storage contract for verifier and imageId
+        // however the new impl does not have access to the immutable variables of the last impl so we can't reference the old verifier and imageId
         verifier = _verifier;
         imageId = _imageId;
     }
