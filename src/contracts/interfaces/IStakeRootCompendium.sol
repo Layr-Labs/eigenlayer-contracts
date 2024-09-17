@@ -29,12 +29,12 @@ interface IStakeRootCompendium {
         // withdrawals of deposit balance are bounded by paying for MIN_PROOFS_PREPAID proofs since 
         // ones latest demand increase
         uint32 lastDemandIncreaseTimestamp; 
-        // the totalChargePerOperatorSet at the time of the lastest deduction from the deposit balance
+        // the cumulativeChargePerOperatorSet at the time of the lastest deduction from the deposit balance
         // used in making further deductions
-        uint96 totalChargePerOperatorSetLastPaid;
-        // the totalChargePerStrategy at the time of the lastest deduction from the deposit balance
+        uint96 cumulativeChargePerOperatorSetLastPaid;
+        // the cumulativeChargePerStrategy at the time of the lastest deduction from the deposit balance
         // used in making further deductions
-        uint96 totalChargePerStrategyLastPaid;
+        uint96 cumulativeChargePerStrategyLastPaid;
     }
 
     struct StakeRootSubmission {

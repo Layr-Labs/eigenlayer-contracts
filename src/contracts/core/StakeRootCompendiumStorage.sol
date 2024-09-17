@@ -24,9 +24,6 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice the allocation manager contract
     IAllocationManager public immutable allocationManager;
 
-    /// @notice the maximum total charge for a proof
-    uint256 immutable public MAX_TOTAL_CHARGE;
-
     /// @notice the minimum balance that must be maintained for an operatorSet
     /// @dev this balance compensates gas costs to deregister an operatorSet
     uint256 immutable public MIN_BALANCE_THRESHOLD;
@@ -53,11 +50,14 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice the constant charge per proof
     uint96 public chargePerStrategy;
 
-    uint32 public totalChargeLastUpdatedTimestamp;
-    /// @notice the total constant charge per proof since deployment
-    uint96 public totalChargePerOperatorSetLastUpdate;
-    /// @notice the total linear charge per proof since deployment
-    uint96 public totalChargePerStrategyLastUpdate;
+    /// @notice the max total charge for a stakeRoot proof. used to bound computation offchain
+    uint256 public maxTotalCharge;
+    /// @notice the last time the cumulative charges were updated
+    uint32 public cumulativeChargeLastUpdatedTimestamp;
+    /// @notice the cumulative constant charge per operator set since deployment
+    uint96 public cumulativeChargePerOperatorSetLastUpdate;
+    /// @notice the cumulative linear charge per strategy per operatorSet since deployment
+    uint96 public cumulativeChargePerStrategyLastUpdate;
     /// @notice deposit balance to be deducted for operatorSets
     mapping(address => mapping(uint32 => DepositInfo)) public depositInfos;
 
@@ -94,7 +94,6 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
         delegationManager = _delegationManager;
         avsDirectory = _avsDirectory;
         allocationManager = _allocationManager;
-        MAX_TOTAL_CHARGE = _maxTotalCharge;
         MIN_BALANCE_THRESHOLD = _minBalanceThreshold;
         MIN_PROOFS_PREPAID = _minProofsPrepaid;
         verifier = _verifier;
