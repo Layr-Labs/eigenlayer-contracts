@@ -147,6 +147,15 @@ interface IStakeRootCompendium {
     function removeStrategiesAndMultipliers(uint32 operatorSetId, IStrategy[] calldata strategies) external;
 
     /**
+     * @notice Withdraws an amount from the operator set's deposit balance
+     * @param operatorSetId The ID of the operator set to withdraw from
+     * @param amount The amount to withdraw
+     * @return The amount actually withdrawn
+     * @dev If the operator set's deposit balance is less than the minimum deposit balance, the operator set is removed and any excess amount is returned
+     */
+    function withdraw(uint32 operatorSetId, uint256 amount) external payable returns (uint256);
+
+    /**
      * @notice called by an AVS to add extraData to an operatorSet to be added to right subtree of the operatorSetTree
      * @param operatorSetId the id of the operatorSet to set the extraData for
      * @param extraData the extraData

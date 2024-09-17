@@ -142,11 +142,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         operatorExtraDatas[msg.sender][operatorSetId][operator] = extraData;
     }
 
-    /// @notice Withdraws an amount from the operator set's deposit balance
-    /// @dev If the operator set's deposit balance is less than the minimum deposit balance, the operator set is removed and any excess amount is returned
-    /// @param operatorSetId The ID of the operator set to withdraw from
-    /// @param amount The amount to withdraw
-    /// @return The amount actually withdrawn
+    /// @inheritdoc IStakeRootCompendium
     function withdraw(uint32 operatorSetId, uint256 amount) external payable returns (uint256) {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
         require(
