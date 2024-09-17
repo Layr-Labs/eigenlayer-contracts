@@ -23,17 +23,24 @@ interface IStakeRootCompendium {
     }
 
     struct DepositInfo {
+        // the balance of the operatorSet (includes pending deductions)
         uint96 balance;
-        uint32 lastDemandIncreaseTimestamp; // the timestamp of the operatorSets latest deposit or increase in number of strategies
-        uint32 lastUpdatedTimestamp;
+        // the timestamp of the operatorSets latest deposit or increase in number of strategies.
+        // withdrawals of deposit balance are bounded by paying for MIN_PROOFS_PREPAID proofs since 
+        // ones latest demand increase
+        uint32 lastDemandIncreaseTimestamp; 
+        // the totalChargePerOperatorSet at the time of the lastest deduction from the deposit balance
+        // used in making further deductions
         uint96 totalChargePerOperatorSetLastPaid;
+        // the totalChargePerStrategy at the time of the lastest deduction from the deposit balance
+        // used in making further deductions
         uint96 totalChargePerStrategyLastPaid;
     }
 
     struct StakeRootSubmission {
         bytes32 stakeRoot;
-        uint32 calculationTimestamp;
-        bool confirmed; // whether the submission was posted without proof by governance
+        uint32 calculationTimestamp; // the timestamp of the state the stakeRoot was calculated against
+        bool confirmed; // whether the rootConfimer has confirmed the root
     }
 
     event SnarkProofVerified(bytes journal, bytes seal);

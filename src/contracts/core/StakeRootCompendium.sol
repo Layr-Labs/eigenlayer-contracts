@@ -52,7 +52,6 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             depositInfos[operatorSet.avs][operatorSet.operatorSetId] = DepositInfo({
                 balance: 0, // balance will be updated outer context
                 lastDemandIncreaseTimestamp: uint32(block.timestamp),
-                lastUpdatedTimestamp: uint32(block.timestamp),
                 totalChargePerOperatorSetLastPaid: uint96(totalChargePerOperatorSet),
                 totalChargePerStrategyLastPaid: uint96(totalChargePerStrategy)
             });
@@ -396,7 +395,6 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         depositInfos[operatorSet.avs][operatorSet.operatorSetId] = DepositInfo({
             balance: uint96(balance),
             lastDemandIncreaseTimestamp: depositInfo.lastDemandIncreaseTimestamp,
-            lastUpdatedTimestamp: uint32(block.timestamp),
             totalChargePerOperatorSetLastPaid: uint96(totalChargePerOperatorSet),
             totalChargePerStrategyLastPaid: uint96(totalChargePerStrategy)
         });
