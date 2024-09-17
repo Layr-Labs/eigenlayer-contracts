@@ -406,7 +406,7 @@ contract AllocationManager is
             PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][index];
 
             // If completableTimestamp is greater than completeUntilTimestamp, break
-            if (pendingFreeMagnitude.completableTimestamp < uint32(block.timestamp)) {
+            if (pendingFreeMagnitude.completableTimestamp > uint32(block.timestamp)) {
                 ++numQueuedDeallocations;
             } else {
                 break;
