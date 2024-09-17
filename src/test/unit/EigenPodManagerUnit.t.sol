@@ -453,7 +453,7 @@ contract EigenPodManagerUnitTests_ShareAdjustmentCalculationTests is EigenPodMan
             slasherMock,
             delegationManagerMock
         );
-        eigenLayerProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
+        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
 
     function testFuzz_shareAdjustment_negativeToNegative(int256 sharesBefore, int256 sharesAfter) public {

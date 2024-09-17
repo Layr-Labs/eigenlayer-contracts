@@ -376,7 +376,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delegation))),
+            ITransparentUpgradeableProxy(payable(address(delegation))),
             address(delegationImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
@@ -389,7 +389,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
@@ -400,7 +400,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slasher))),
+            ITransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation),
             abi.encodeWithSelector(
                 Slasher.initialize.selector,
@@ -410,7 +410,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,

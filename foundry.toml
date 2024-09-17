@@ -6,6 +6,12 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 gas_reports = ["*"]
 # ignore upgrade testing in scripts by default
 no_match_test = "queueUpgrade"
+remappings = [
+    "@openzeppelin/=lib/openzeppelin-contracts-v4.9.0/",
+    "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable-v4.9.0/",
+    "ds-test/=lib/ds-test/src/",
+    "forge-std/=lib/forge-std/src/"
+]
 
 # A list of ignored solc error codes
 
