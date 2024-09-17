@@ -750,17 +750,23 @@ contract AllocationManager is
             uint256[] memory indices =
                 _queuedDeallocationIndices[operator][strategy][_encodeOperatorSet(operatorSets[i])];
             uint256 length = indices.length;
-            uint256 deallocationIndex = indices[length - 1];
-            PendingFreeMagnitude memory latestPendingMagnitude =
-                _pendingFreeMagnitude[operator][strategy][deallocationIndex];
-            if (latestPendingMagnitude.completableTimestamp > block.timestamp) {
-                pendingMagnitudeDiff[i] = latestPendingMagnitude.magnitudeDiff;
-                timestamps[i] = latestPendingMagnitude.completableTimestamp;
-            } else {
-                // There is no pending deallocation, so we set the pending magnitude and timestamp to 0
+            if (length == 0) {
+                // If there is no deallocations queued for this operator set
                 pendingMagnitudeDiff[i] = 0;
                 timestamps[i] = 0;
-            }
+            } else {
+                uint256 deallocationIndex = indices[length - 1];
+                PendingFreeMagnitude memory latestPendingMagnitude =
+                    _pendingFreeMagnitude[operator][strategy][deallocationIndex];
+                if (latestPendingMagnitude.completableTimestamp > block.timestamp) {
+                    pendingMagnitudeDiff[i] = latestPendingMagnitude.magnitudeDiff;
+                    timestamps[i] = latestPendingMagnitude.completableTimestamp;
+                } else {
+                    // There is no pending deallocation, so we set the pending magnitude and timestamp to 0
+                    pendingMagnitudeDiff[i] = 0;
+                    timestamps[i] = 0;
+                }
+            }     
         }
         return (pendingMagnitudeDiff, timestamps);
     }
