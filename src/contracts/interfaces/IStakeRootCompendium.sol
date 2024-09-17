@@ -23,16 +23,24 @@ interface IStakeRootCompendium {
     }
 
     struct DepositInfo {
+        // the balance of the operatorSet (includes pending deductions)
         uint96 balance;
-        uint32 lastUpdatedTimestamp;
-        uint96 totalChargePerOperatorSetLastPaid;
-        uint96 totalChargePerStrategyLastPaid;
+        // the timestamp of the operatorSets latest deposit or increase in number of strategies.
+        // withdrawals of deposit balance are bounded by paying for MIN_PREPAID_PROOFS proofs since 
+        // ones latest demand increase
+        uint32 lastDemandIncreaseTimestamp; 
+        // the cumulativeChargePerOperatorSet at the time of the lastest deduction from the deposit balance
+        // used in making further deductions
+        uint96 cumulativeChargePerOperatorSetLastPaid;
+        // the cumulativeChargePerStrategy at the time of the lastest deduction from the deposit balance
+        // used in making further deductions
+        uint96 cumulativeChargePerStrategyLastPaid;
     }
 
     struct StakeRootSubmission {
         bytes32 stakeRoot;
-        uint32 calculationTimestamp;
-        bool confirmed; // whether the submission was posted without proof by governance
+        uint32 calculationTimestamp; // the timestamp of the state the stakeRoot was calculated against
+        bool confirmed; // whether the rootConfimer has confirmed the root
     }
 
     event SnarkProofVerified(bytes journal, bytes seal);
@@ -208,4 +216,34 @@ interface IStakeRootCompendium {
         external
         view
         returns (uint256 balance);
+
+    /**
+     * @notice set the maximum total charge for a stakeRoot proof
+     * @param _maxTotalCharge the maximum total charge for a stakeRoot proof
+     * @dev only callable by owner
+     * @dev used to limit offchain computation
+     */
+    function setMaxTotalCharge(uint96 _maxTotalCharge) external;
+
+    /**
+     * @notice set the charges per proof going forward from the time of calling
+     * @param _chargePerStrategy the charge per strategy per operatorSet per proof
+     * @param _chargePerOperatorSet the flat charge per operatorSet per proof
+     * @dev only callable by owner
+     */
+    function setChargePerProof(uint96 _chargePerStrategy, uint96 _chargePerOperatorSet) external;
+
+    /**
+     * @notice set the proof interval in seconds
+     * @param proofIntervalSeconds the interval in seconds at which proofs can be posted
+     * @dev only callable by owner
+     */
+    function setProofIntervalSeconds(uint32 proofIntervalSeconds) external;
+
+    /**
+     * @notice set the confirmer of roots
+     * @param _rootConfirmer the address allowed to confirm roots
+     * @dev only callable by owner
+     */
+    function setRootConfirmer(address _rootConfirmer) external;
 }

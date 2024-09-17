@@ -24,9 +24,6 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice the allocation manager contract
     IAllocationManager public immutable allocationManager;
 
-    /// @notice the maximum total charge for a proof
-    uint256 immutable public MAX_TOTAL_CHARGE;
-
     /// @notice the minimum balance that must be maintained for an operatorSet
     /// @dev this balance compensates gas costs to deregister an operatorSet
     uint256 immutable public MIN_BALANCE_THRESHOLD;
@@ -37,7 +34,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice the minimum number of proofs that an operatorSet's deposit balance needs to cover and 
     /// the number of proofs they must pay for since their latest reconfiguration
     /// @dev this prevents de-registering an operatorSet immediately after reconfiguring
-    uint256 immutable public MIN_PROOFS_DURATION;
+    uint256 immutable public MIN_PREPAID_PROOFS;
 
     /// @notice the verifier contract that will be used to verify snark proofs
     address public immutable verifier;
@@ -53,11 +50,14 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice the constant charge per proof
     uint96 public chargePerStrategy;
 
-    uint32 public totalChargeLastUpdatedTimestamp;
-    /// @notice the total constant charge per proof since deployment
-    uint96 public totalChargePerOperatorSetLastUpdate;
-    /// @notice the total linear charge per proof since deployment
-    uint96 public totalChargePerStrategyLastUpdate;
+    /// @notice the max total charge for a stakeRoot proof. used to bound computation offchain
+    uint96 public maxTotalCharge;
+    /// @notice the last time the cumulative charges were updated
+    uint32 public cumulativeChargeLastUpdatedTimestamp;
+    /// @notice the cumulative constant charge per operator set since deployment
+    uint96 public cumulativeChargePerOperatorSetLastUpdate;
+    /// @notice the cumulative linear charge per strategy per operatorSet since deployment
+    uint96 public cumulativeChargePerStrategyLastUpdate;
     /// @notice deposit balance to be deducted for operatorSets
     mapping(address => mapping(uint32 => DepositInfo)) public depositInfos;
 
@@ -69,7 +69,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice the total number of strategies among all operator sets (with duplicates)
     uint256 public totalStrategies;
     /// @notice the total charge for a proofs at a certain time depending on the number of strategies
-    Snapshots.History internal chargePerProofHistory;
+    Snapshots.History internal totalChargeHistory;
 
     /// @notice the strategies and multipliers for each operator set
     mapping(address => mapping(uint32 => EnumerableMap.AddressToUintMap)) internal operatorSetToStrategyAndMultipliers;
@@ -87,16 +87,19 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
         IAllocationManager _allocationManager,
         uint256 _maxTotalCharge,
         uint256 _minBalanceThreshold,
-        uint256 _minProofsDuration,
+        uint256 _minPrepaidProofs,
         address _verifier,
         bytes32 _imageId
     ) {
         delegationManager = _delegationManager;
         avsDirectory = _avsDirectory;
         allocationManager = _allocationManager;
-        MAX_TOTAL_CHARGE = _maxTotalCharge;
         MIN_BALANCE_THRESHOLD = _minBalanceThreshold;
-        MIN_PROOFS_DURATION = _minProofsDuration;
+        MIN_PREPAID_PROOFS = _minPrepaidProofs;
+
+        // note verifier and imageId are immutable and set by implementation contract
+        // since proof verification is in the hot path, this is a gas optimization to avoid calling the storage contract for verifier and imageId
+        // however the new impl does not have access to the immutable variables of the last impl so we can't reference the old verifier and imageId
         verifier = _verifier;
         imageId = _imageId;
     }
