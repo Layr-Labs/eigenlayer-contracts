@@ -766,7 +766,7 @@ contract AllocationManager is
                     pendingMagnitudeDiff[i] = 0;
                     timestamps[i] = 0;
                 }
-            }     
+            }
         }
         return (pendingMagnitudeDiff, timestamps);
     }
