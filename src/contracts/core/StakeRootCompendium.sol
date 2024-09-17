@@ -44,7 +44,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     /// @inheritdoc IStakeRootCompendium
     function deposit(OperatorSet calldata operatorSet) external payable {
         if (!_isInStakeTree(operatorSet)) {
-            (,uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) = _totalCharge();
+            (,uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) = _cumulativeCharges();
             depositInfos[operatorSet.avs][operatorSet.operatorSetId] = DepositInfo({
                 balance: 0, // balance will be updated outer context
                 lastDemandIncreaseTimestamp: uint32(block.timestamp),
@@ -209,11 +209,11 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             "StakeRootCompendium._postStakeRoot: timestamp already posted"
         );
         // credit the charge recipient
-        Snapshots.Snapshot memory _snapshot = chargePerProofHistory._snapshots[indexChargePerProof];
+        Snapshots.Snapshot memory _snapshot = totalChargeHistory._snapshots[indexChargePerProof];
         require(_snapshot._key <= calculationTimestamp, "StakeRootCompendium._postStakeRoot: timestamp of indexChargePerProof is greater than the calculationTimestamp");
         require(
-            chargePerProofHistory.length() == indexChargePerProof + 1 
-            || uint256(chargePerProofHistory._snapshots[indexChargePerProof + 1]._key) > calculationTimestamp, 
+            totalChargeHistory.length() == indexChargePerProof + 1 
+            || uint256(totalChargeHistory._snapshots[indexChargePerProof + 1]._key) > calculationTimestamp, 
             "StakeRootCompendium._postStakeRoot: indexChargePerProof is not valid"
         );
         stakeRootSubmissions.push(StakeRootSubmission({
@@ -245,6 +245,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// @inheritdoc IStakeRootCompendium
     function setMaxTotalCharge(uint96 _maxTotalCharge) external onlyOwner {
+        require(_maxTotalCharge >= totalChargeHistory.latest(), "StakeRootCompendium.setMaxTotalCharge: max total charge must be greater the current totalCharge");
         maxTotalCharge = _maxTotalCharge;
     }
 
@@ -253,12 +254,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         _updateTotalCharge();
         chargePerStrategy = _chargePerStrategy;
         chargePerOperatorSet = _chargePerOperatorSet;
-        _updateChargePerProof();
+        _updateTotalCharge();
     }
 
     /// @inheritdoc IStakeRootCompendium
     function setProofIntervalSeconds(uint32 proofIntervalSeconds) external onlyOwner  {
         _updateTotalCharge();
+        // we must not interrupt pending proof calculations by rugging the outstanding calculationTimestamps
         uint32 latestSubmittedCalculationTimestamp = stakeRootSubmissions[stakeRootSubmissions.length - 1].calculationTimestamp;
         require(
             latestSubmittedCalculationTimestamp == cumulativeChargeLastUpdatedTimestamp,
@@ -292,20 +294,20 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     function _updateTotalStrategies(uint256 _countStrategiesBefore, uint256 _countStrategiesAfter) internal {
         totalStrategies = totalStrategies - _countStrategiesBefore + _countStrategiesAfter;
-        _updateChargePerProof();
+        _updateTotalCharge();
     }
 
-    function _updateChargePerProof() internal {
+    function _updateTotalCharge() internal {
         // note if totalStrategies is 0, the charge per proof will be 0, and provers should not post a proof
-        uint256 chargePerProof = operatorSets.length * chargePerOperatorSet + totalStrategies * chargePerStrategy;
-        require(chargePerProof <= maxTotalCharge, "StakeRootCompendium._updateChargePerProof: charge per proof exceeds max total charge");
-        chargePerProofHistory.push(
+        uint256 totalCharge = operatorSets.length * chargePerOperatorSet + totalStrategies * chargePerStrategy;
+        require(totalCharge <= maxTotalCharge, "StakeRootCompendium._updateChargePerProof: charge per proof exceeds max total charge");
+        totalChargeHistory.push(
             uint32(block.timestamp), 
-            uint224(chargePerProof)
+            uint224(totalCharge)
         );
     }
 
-    function _totalCharge() internal view returns (uint32, uint96, uint96) {
+    function _cumulativeCharges() internal view returns (uint32, uint96, uint96) {
         // calculate the total charge since the last update up until the latest calculation timestamp
         uint32 latestCalculationTimestamp = uint32(block.timestamp) - uint32(block.timestamp % proofIntervalSeconds);
         if (cumulativeChargeLastUpdatedTimestamp == latestCalculationTimestamp) {
@@ -319,8 +321,8 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         );
     }
 
-    function _updateTotalCharge() internal {
-        (uint32 latestCalculationTimestamp, uint96 cumulativeChargePerOperatorSet, uint96 cumulativeChargePerStrategy) = _totalCharge();
+    function _updateCumulativeCharge() internal {
+        (uint32 latestCalculationTimestamp, uint96 cumulativeChargePerOperatorSet, uint96 cumulativeChargePerStrategy) = _cumulativeCharges();
         cumulativeChargeLastUpdatedTimestamp = latestCalculationTimestamp;
         cumulativeChargePerOperatorSetLastUpdate = cumulativeChargePerOperatorSet;
         cumulativeChargePerStrategyLastUpdate = cumulativeChargePerStrategy;
@@ -330,7 +332,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function _updateDepositInfo(OperatorSet memory operatorSet) internal returns (uint256) {
         require(_isInStakeTree(operatorSet), "StakeRootCompendium._updateDepositInfo: operatorSet is not in stakeTree");
 
-        (,uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) = _totalCharge();
+        (,uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) = _cumulativeCharges();
         DepositInfo memory depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
 
         // subtract new total charge from last paid total charge
@@ -442,7 +444,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         returns (uint256 balance)
     {
         DepositInfo memory depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
-        (,uint96 cumulativeChargePerOperatorSet, uint96 cumulativeChargePerStrategy) = _totalCharge();
+        (,uint96 cumulativeChargePerOperatorSet, uint96 cumulativeChargePerStrategy) = _cumulativeCharges();
         uint256 pendingCharge =
             uint256(cumulativeChargePerOperatorSet - depositInfo.cumulativeChargePerOperatorSetLastPaid) +
             uint256(cumulativeChargePerStrategy - depositInfo.cumulativeChargePerStrategyLastPaid) * 

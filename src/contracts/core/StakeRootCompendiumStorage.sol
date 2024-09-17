@@ -69,7 +69,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice the total number of strategies among all operator sets (with duplicates)
     uint256 public totalStrategies;
     /// @notice the total charge for a proofs at a certain time depending on the number of strategies
-    Snapshots.History internal chargePerProofHistory;
+    Snapshots.History internal totalChargeHistory;
 
     /// @notice the strategies and multipliers for each operator set
     mapping(address => mapping(uint32 => EnumerableMap.AddressToUintMap)) internal operatorSetToStrategyAndMultipliers;
