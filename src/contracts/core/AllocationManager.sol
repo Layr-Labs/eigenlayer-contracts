@@ -4,6 +4,8 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
@@ -17,6 +19,8 @@ contract AllocationManager is
     AllocationManagerStorage,
     ReentrancyGuardUpgradeable
 {
+    using Math for *;
+    using SafeCast for *;
     using Snapshots for Snapshots.History;
 
     /// @dev BIPS factor for slashable bips
@@ -199,7 +203,7 @@ contract AllocationManager is
                 // slash nonzero current magnitude
                 if (currentMagnitude != 0) {
                     /// TODO: add wrapping library for rounding up for slashing accounting
-                    slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
+                    slashedMagnitude = bipsToSlash.mulDiv(currentMagnitude, BIPS_FACTOR).toUint64();
 
                     _magnitudeUpdate[operator][strategies[i]][operatorSetKey].decrementAtAndFutureSnapshots({
                         key: uint32(block.timestamp),
@@ -230,8 +234,7 @@ contract AllocationManager is
                     }
 
                     // pending deallocation is still within slashable window, slash magnitudeDiff and add to slashedMagnitude
-                    uint64 slashedAmount =
-                        uint64(uint256(bipsToSlash) * uint256(pendingFreeMagnitude.magnitudeDiff) / BIPS_FACTOR);
+                    uint64 slashedAmount = bipsToSlash.mulDiv(pendingFreeMagnitude.magnitudeDiff, BIPS_FACTOR).toUint64();
                     pendingFreeMagnitude.magnitudeDiff -= slashedAmount;
                     slashedMagnitude += slashedAmount;
                 }
@@ -556,7 +559,7 @@ contract AllocationManager is
             currentMagnitude = uint64(_magnitudeUpdate[operator][strategy][operatorSetKey].upperLookup(timestamp));
         }
 
-        return uint16(currentMagnitude * 1e6 / totalMagnitude);
+        return currentMagnitude.mulDiv(1e6, totalMagnitude).toUint16();
     }
 
     /**
