@@ -52,16 +52,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
                 cumulativeChargePerStrategyLastPaid: uint96(cumulativeChargePerStrategy)
             });
 
-            // empty their strategies and multipliers if they were force removed before
-            address[] memory keys = new address[](operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length());
-            for (uint256 i = 0; i < keys.length; i++) {
-                (address key,) = operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].at(i);
-                keys[i] = key;
-            }
-            for (uint256 i = 0; i < keys.length; i++) {
-                operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].remove(keys[i]);
-            }
-
+            _updateTotalStrategies(0, operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length());
             operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].push(uint32(block.timestamp), uint224(operatorSets.length)); 
             operatorSets.push(operatorSet);
         }
@@ -82,8 +73,12 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         StrategyAndMultiplier[] calldata strategiesAndMultipliers
     ) external {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
-        // update the deposit balance for the operator set whenever number of strategies is changed
-        _updateDepositInfo(operatorSet);
+        bool isInStakeTree = _isInStakeTree(operatorSet);
+
+        if (isInStakeTree) {
+            // update the deposit balance for the operator set whenever number of strategies is changed
+            _updateDepositInfo(operatorSet);
+        }
 
         uint256 numStrategiesBefore = operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
         // set the strategies and multipliers for the operator set
@@ -95,24 +90,30 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         }
         uint256 numStrategiesAfter = operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
 
+        if (isInStakeTree) {
         // make sure they have enough to pay for MIN_PREPAID_PROOFS
-        require(
-            depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance >= minDepositBalance(numStrategiesAfter),
-            "StakeRootCompendium.addOrModifyStrategiesAndMultipliers: insufficient deposit balance"
-        );
-        // note that they've shown increased demand for proofs
-        depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp = uint32(block.timestamp);
+            require(
+                depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance >= minDepositBalance(numStrategiesAfter),
+                "StakeRootCompendium.addOrModifyStrategiesAndMultipliers: insufficient deposit balance"
+            );
+            // note that they've shown increased demand for proofs
+            depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp = uint32(block.timestamp);
 
-        // only adding new strategies to count
-        _updateTotalStrategies(numStrategiesBefore, numStrategiesAfter);
+            // only adding new strategies to count
+            _updateTotalStrategies(numStrategiesBefore, numStrategiesAfter);
+        }
     }
 
     /// @inheritdoc IStakeRootCompendium
     function removeStrategiesAndMultipliers(uint32 operatorSetId, IStrategy[] calldata strategies) external {
         // update the deposit balance for the operator set whenever number of strategies is changed
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
-        _updateDepositInfo(operatorSet);
+        bool isInStakeTree = _isInStakeTree(operatorSet);
 
+        if (isInStakeTree) {
+            // update the deposit balance for the operator set whenever number of strategies is changed
+            _updateDepositInfo(operatorSet);
+        }
         // note below either all strategies are removed or none are removed and transaction reverts
         uint256 numStrategiesBefore = operatorSetToStrategyAndMultipliers[msg.sender][operatorSetId].length();
         for (uint256 i = 0; i < strategies.length; i++) {
@@ -121,7 +122,10 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
                 "StakeRootCompendium.removeStrategiesAndMultipliers: strategy not found"
             );
         }
-        _updateTotalStrategies(numStrategiesBefore, numStrategiesBefore - strategies.length);
+
+        if (isInStakeTree) {
+            _updateTotalStrategies(numStrategiesBefore, numStrategiesBefore - strategies.length);
+        }
     }
 
     /// @inheritdoc IStakeRootCompendium
@@ -182,8 +186,8 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
                 }
             }
         }
-        // todo use gas metering to make this call incentive neutral and simply refund any excess balance to AVS'?
-        // send the penalty to the caller
+        // note this reward is subject to a race condition where anyone can claim the penalty if they submit their transaction first
+        // it is the caller's responsibility to use private mempool to protect themselves from reverted transactions
         (bool success, ) = payable(msg.sender).call{value: penalty}("");
         require(success, "StakeRootCompendium.updateBalances: eth transfer failed");
     }
