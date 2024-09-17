@@ -24,6 +24,7 @@ interface IStakeRootCompendium {
 
     struct DepositInfo {
         uint96 balance;
+        uint32 lastDemandIncreaseTimestamp; // the timestamp of the operatorSets latest deposit or increase in number of strategies
         uint32 lastUpdatedTimestamp;
         uint96 totalChargePerOperatorSetLastPaid;
         uint96 totalChargePerStrategyLastPaid;

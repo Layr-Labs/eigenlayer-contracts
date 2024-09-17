@@ -37,7 +37,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice the minimum number of proofs that an operatorSet's deposit balance needs to cover and 
     /// the number of proofs they must pay for since their latest reconfiguration
     /// @dev this prevents de-registering an operatorSet immediately after reconfiguring
-    uint256 immutable public MIN_PROOFS_DURATION;
+    uint256 immutable public MIN_PROOFS_PREPAID;
 
     /// @notice the verifier contract that will be used to verify snark proofs
     address public immutable verifier;
@@ -87,7 +87,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
         IAllocationManager _allocationManager,
         uint256 _maxTotalCharge,
         uint256 _minBalanceThreshold,
-        uint256 _minProofsDuration,
+        uint256 _minProofsPrepaid,
         address _verifier,
         bytes32 _imageId
     ) {
@@ -96,7 +96,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
         allocationManager = _allocationManager;
         MAX_TOTAL_CHARGE = _maxTotalCharge;
         MIN_BALANCE_THRESHOLD = _minBalanceThreshold;
-        MIN_PROOFS_DURATION = _minProofsDuration;
+        MIN_PROOFS_PREPAID = _minProofsPrepaid;
         verifier = _verifier;
         imageId = _imageId;
     }

@@ -51,6 +51,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             (,uint256 totalChargePerOperatorSet, uint256 totalChargePerStrategy) = _totalCharge();
             depositInfos[operatorSet.avs][operatorSet.operatorSetId] = DepositInfo({
                 balance: 0, // balance will be updated outer context
+                lastDemandIncreaseTimestamp: uint32(block.timestamp),
                 lastUpdatedTimestamp: uint32(block.timestamp),
                 totalChargePerOperatorSetLastPaid: uint96(totalChargePerOperatorSet),
                 totalChargePerStrategyLastPaid: uint96(totalChargePerStrategy)
@@ -70,7 +71,9 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             operatorSets.push(operatorSet);
         }
         depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance += uint96(msg.value);
-        // make sure they have enough to pay for MIN_PROOFS_DURATION
+        // note that they've shown increased demand for proofs
+        depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp = uint32(block.timestamp);
+        // make sure they have enough to pay for MIN_PROOFS_PREPAID
         require(
             depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance >= 
             minDepositBalance(operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length()),
@@ -97,11 +100,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         }
         uint256 numStrategiesAfter = operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
 
-        // make sure they have enough to pay for MIN_PROOFS_DURATION
+        // make sure they have enough to pay for MIN_PROOFS_PREPAID
         require(
             depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance >= minDepositBalance(numStrategiesAfter),
             "StakeRootCompendium.addOrModifyStrategiesAndMultipliers: insufficient deposit balance"
         );
+        // note that they've shown increased demand for proofs
+        depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp = uint32(block.timestamp);
 
         // only adding new strategies to count
         _updateTotalStrategies(numStrategiesBefore, numStrategiesAfter);
@@ -267,12 +272,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// @inheritdoc IStakeRootCompendium
     function minDepositBalance(uint256 numStrategies) public view returns (uint256) {
-        return (numStrategies * chargePerStrategy + chargePerOperatorSet) * MIN_PROOFS_DURATION;
+        return (numStrategies * chargePerStrategy + chargePerOperatorSet) * MIN_PROOFS_PREPAID;
     }
     
     /// @inheritdoc IStakeRootCompendium
     function canWithdrawDepositBalance(OperatorSet memory operatorSet) public view returns (bool) {
-        return block.timestamp > depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastUpdatedTimestamp + MIN_PROOFS_DURATION * proofIntervalSeconds;
+        // they must have paid for all of their prepaid proofs before withdrawing after a demand increase
+        return block.timestamp > depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp + MIN_PROOFS_PREPAID * proofIntervalSeconds;
     }
 
     /// @inheritdoc IStakeRootCompendium
@@ -389,6 +395,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
         depositInfos[operatorSet.avs][operatorSet.operatorSetId] = DepositInfo({
             balance: uint96(balance),
+            lastDemandIncreaseTimestamp: depositInfo.lastDemandIncreaseTimestamp,
             lastUpdatedTimestamp: uint32(block.timestamp),
             totalChargePerOperatorSetLastPaid: uint96(totalChargePerOperatorSet),
             totalChargePerStrategyLastPaid: uint96(totalChargePerStrategy)
