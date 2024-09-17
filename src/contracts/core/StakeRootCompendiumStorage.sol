@@ -51,7 +51,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     uint96 public chargePerStrategy;
 
     /// @notice the max total charge for a stakeRoot proof. used to bound computation offchain
-    uint256 public maxTotalCharge;
+    uint96 public maxTotalCharge;
     /// @notice the last time the cumulative charges were updated
     uint32 public cumulativeChargeLastUpdatedTimestamp;
     /// @notice the cumulative constant charge per operator set since deployment
