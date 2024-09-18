@@ -451,7 +451,7 @@ contract AllocationManager is
             PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][nextIndex];
             // pendingFreeMagnitude is ordered by completableTimestamp. If we reach one that is not completable yet, then break
             // loop until completableTimestamp is < block.timestamp
-            if (pendingFreeMagnitude.completableTimestamp < uint32(block.timestamp)) {
+            if (uint32(block.timestamp) < pendingFreeMagnitude.completableTimestamp) {
                 break;
             }
 
@@ -460,7 +460,7 @@ contract AllocationManager is
             ++nextIndex;
             ++completed;
         }
-        return (freeMagnitudeToAdd, nextIndex);
+        return (freeMagnitudeToAdd, completed);
     }
 
     /**
