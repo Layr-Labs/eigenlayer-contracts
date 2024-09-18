@@ -49,9 +49,9 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice the total charge for a proofs at a certain time depending on the number of strategies
     Snapshots.History internal totalChargeHistory;
     /// @dev Contains cumulative charges for operator sets, strategies, and max total charge.
-    StakerootCharges public stakerootCharges;
+    ChargeParams public chargeParams;
     /// @dev Contains info about cumulative charges.
-    StakerootCumulativeCharges public stakerootCumulativeCharges;
+    CumulativeChargeParams public cumulativeChargeParams;
     /// @notice deposit balance to be deducted for operatorSets
     mapping(address => mapping(uint32 => DepositInfo)) public depositInfos;
     /// @notice the extraData for each operatorSet

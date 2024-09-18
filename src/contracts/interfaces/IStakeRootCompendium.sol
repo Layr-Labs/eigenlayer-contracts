@@ -33,7 +33,7 @@ interface IStakeRootCompendium {
     /// @param chargePerOperatorSet The linear charge per proof in the number of strategies.
     /// @param chargePerStrategy The constant charge per proof.
     /// @param The max total charge for a stakeroot proof, used to bound computation offchain.
-    struct StakerootCharges {
+    struct ChargeParams {
         uint96 chargePerOperatorSet;
         uint96 chargePerStrategy;
         uint96 maxTotalCharge;
@@ -44,7 +44,7 @@ interface IStakeRootCompendium {
     /// @param chargePerStrategy The cumulative linear charge per strategy per operator set since deployment.
     /// @param lastUpdateTimestamp The last time cumulative charges were updated.
     /// @param proofIntervalSeconds The interval in seconds at which proofs can be posted.
-    struct StakerootCumulativeCharges {
+    struct CumulativeChargeParams {
         uint96 chargePerOperatorSet;
         uint96 chargePerStrategy;
         uint32 lastUpdateTimestamp;
