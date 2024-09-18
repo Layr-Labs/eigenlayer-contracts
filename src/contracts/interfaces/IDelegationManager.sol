@@ -398,6 +398,12 @@ interface IDelegationManager is ISignatureUtils {
         IStrategy[] memory strategies
     ) external view returns (uint256[] memory);
 
+    /// @notice Given array of strategies, returns array of scaled shares for the operator
+    function getOperatorScaledShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory);
+
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
      */

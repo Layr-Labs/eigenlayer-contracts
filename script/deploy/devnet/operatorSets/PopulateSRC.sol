@@ -25,8 +25,9 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
             _allocationManager: allocationManager,
+            _maxTotalCharge: 100 ether,
             _minBalanceThreshold: 0 ether,
-            _minPrepaidProofs: 20,
+            _minProofsDuration: 20,
             _verifier: address(0),
             _imageId: bytes32(0)
         });
@@ -37,17 +38,14 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
                 StakeRootCompendium.initialize.selector,
                 msg.sender,
                 msg.sender,
-                uint32(1 minutes),
-                IStakeRootCompendium.ChargeParams({
-                    chargePerOperatorSet: uint96(100 ether),
-                    chargePerStrategy: uint96(0),
-                    maxChargePerProof: uint96(0)
-                })
+                1 minutes,
+                0,
+                0
             )
         )));
         vm.stopBroadcast();
         emit log_named_address("allocationManager", address(allocationManager));
-        emit log_named_address("StakeRootCompendium", address(stakeRootCompendium));
+        emit log_named_address("stakeRootCompendium", address(stakeRootCompendium));
 
         address[] memory allStrategies = _parseDeployedStrategies(strategyFile);
 
@@ -115,7 +113,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             }
 
             string memory parent_object = "success";
-            vm.serializeAddress(parent_object, "StakeRootCompendium", address(stakeRootCompendium));
+            vm.serializeAddress(parent_object, "stakeRootCompendium", address(stakeRootCompendium));
             vm.serializeAddress(parent_object, "avs", address(avs));
             vm.serializeAddress(parent_object, "operators", operators[i]);
             vm.serializeAddress(parent_object, "strategies", strategyAddresses);
@@ -127,12 +125,12 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
 contract AVS {
     IAVSDirectory avsDirectory;
-    IStakeRootCompendium StakeRootCompendium;
+    IStakeRootCompendium stakeRootCompendium;
 
     // creates an operator set for each list of strategies
-    constructor(IAVSDirectory _avsDirectory, IStakeRootCompendium _StakeRootCompendium) {
+    constructor(IAVSDirectory _avsDirectory, IStakeRootCompendium _stakeRootCompendium) {
         avsDirectory = _avsDirectory;
-        StakeRootCompendium = _StakeRootCompendium;
+        stakeRootCompendium = _stakeRootCompendium;
         avsDirectory.becomeOperatorSetAVS();
     }
 
@@ -143,7 +141,7 @@ contract AVS {
         if(!avsDirectory.isOperatorSet(address(this), operatorSetId)) {
             avsDirectory.createOperatorSets(operatorSetIdsToCreate);
 
-            StakeRootCompendium.deposit{value: 2 * StakeRootCompendium.MIN_BALANCE_THRESHOLD()}(OperatorSet({
+            stakeRootCompendium.deposit{value: 2 * stakeRootCompendium.MIN_BALANCE_THRESHOLD()}(OperatorSet({
                 avs: address(this),
                 operatorSetId: operatorSetId
             }));
@@ -170,10 +168,10 @@ contract AVS {
                 multiplier: 1 ether
             });
         }
-        StakeRootCompendium.addOrModifyStrategiesAndMultipliers(operatorSetId, strategiesAndMultipliers); 
-        StakeRootCompendium.setOperatorSetExtraData(operatorSetId, keccak256(abi.encodePacked(operatorSetId)));
+        stakeRootCompendium.addOrModifyStrategiesAndMultipliers(operatorSetId, strategiesAndMultipliers); 
+        stakeRootCompendium.setOperatorSetExtraData(operatorSetId, keccak256(abi.encodePacked(operatorSetId)));
         for (uint256 i = 0; i < operators.length; ++i) {
-            StakeRootCompendium.setOperatorExtraData(operatorSetId, operators[i], keccak256(abi.encodePacked(operators[i])));
+            stakeRootCompendium.setOperatorExtraData(operatorSetId, operators[i], keccak256(abi.encodePacked(operators[i])));
         }
     }
 
@@ -209,7 +207,7 @@ contract OperatorFactory is Test {
     }
 
     function allocateForOperators(IStrategy strategy, OperatorSet calldata operatorSet, address[] memory operators, uint64 magnitudeForOperators) public {
-        uint64 expectedTotalMagnitude = WAD;
+        uint64 expectedTotalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
 
         OperatorSet[] memory operatorSets = new OperatorSet[](1);
         operatorSets[0] = operatorSet;
