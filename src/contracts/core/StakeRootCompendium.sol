@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "./StakeRootCompendiumStorage.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "../libraries/Snapshots.sol";
+import "../interfaces/IStrategy.sol";
+import "../libraries/Merkle.sol";
+import "./StakeRootCompendiumStorage.sol";
 
 contract StakeRootCompendium is StakeRootCompendiumStorage {
     using Snapshots for Snapshots.History;
