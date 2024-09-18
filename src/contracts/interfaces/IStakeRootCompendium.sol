@@ -40,6 +40,7 @@ interface IStakeRootCompendium {
     struct StakeRootSubmission {
         bytes32 stakeRoot;
         uint32 calculationTimestamp; // the timestamp of the state the stakeRoot was calculated against
+        uint32 submissionTimestamp; // the timestamp of the submission
         bool confirmed; // whether the rootConfimer has confirmed the root
     }
 
@@ -96,12 +97,11 @@ interface IStakeRootCompendium {
     /**
      * @notice Returns the operatorSet root for the given operatorSet with the given witnesses
      * @param operatorSet the operatorSet to calculate the operator set root for
-     * @param operators the operators in the operatorSet
      * @param operatorLeaves the operator leaves in the operatorSet
+     * @dev leaves must be sorted by extraData
      */
     function getOperatorSetRoot(
         OperatorSet calldata operatorSet,
-        address[] calldata operators,
         OperatorLeaf[] calldata operatorLeaves
     ) external view returns (bytes32);
 
