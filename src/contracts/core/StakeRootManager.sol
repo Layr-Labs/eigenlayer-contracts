@@ -63,30 +63,32 @@ contract StakeRootManager is StakeRootManagerStorage {
     function deposit(
         OperatorSet calldata operatorSet
     ) external payable {
+        DepositInfo storage depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
         if (!_isInStakeTree(operatorSet)) {
             (, uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) =
                 _calculateCumulativeCharges(stakerootCharges, stakerootCumulativeCharges);
-            depositInfos[operatorSet.avs][operatorSet.operatorSetId] = DepositInfo({
-                balance: 0, // balance will be updated outer context
-                lastDemandIncreaseTimestamp: uint32(block.timestamp),
-                cumulativeChargePerOperatorSetLastPaid: uint96(cumulativeChargePerOperatorSet),
-                cumulativeChargePerStrategyLastPaid: uint96(cumulativeChargePerStrategy)
-            });
+
+            depositInfo.lastDemandIncreaseTimestamp = uint32(block.timestamp);
+            depositInfo.cumulativeChargePerOperatorSetLastPaid = uint96(cumulativeChargePerOperatorSet);
+            depositInfo.cumulativeChargePerStrategyLastPaid = uint96(cumulativeChargePerStrategy);
 
             _updateTotalStrategies(
                 0, operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length()
             );
+
             operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].push(
                 uint32(block.timestamp), uint224(operatorSets.length)
             );
+
             operatorSets.push(operatorSet);
         }
-        depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance += uint96(msg.value);
+
+        depositInfo.balance += uint96(msg.value);
         // note that they've shown increased demand for proofs
-        depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp = uint32(block.timestamp);
+        depositInfo.lastDemandIncreaseTimestamp = uint32(block.timestamp);
         // make sure they have enough to pay for MIN_PROOFS_PREPAID
         require(
-            depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance
+            depositInfo.balance
                 >= minDepositBalance(
                     operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length()
                 ),
@@ -114,13 +116,12 @@ contract StakeRootManager is StakeRootManagerStorage {
         uint256 numStrategiesAfter =
             operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
 
+        DepositInfo storage depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
+
         // make sure they have enough to pay for MIN_PREPAID_PROOFS
-        require(
-            depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance >= minDepositBalance(numStrategiesAfter),
-            InsufficientDepositBalance()
-        );
+        require(depositInfo.balance >= minDepositBalance(numStrategiesAfter), InsufficientDepositBalance());
         // note that they've shown increased demand for proofs
-        depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp = uint32(block.timestamp);
+        depositInfo.lastDemandIncreaseTimestamp = uint32(block.timestamp);
 
         // only adding new strategies to count
         _updateTotalStrategies(numStrategiesBefore, numStrategiesAfter);
@@ -383,12 +384,12 @@ contract StakeRootManager is StakeRootManagerStorage {
     // updates the deposit balance for the operator set and returns the penalty if the operator set has fallen below the minimum deposit balance
     function _updateDepositInfo(
         OperatorSet memory operatorSet
-    ) internal returns (uint256) {
+    ) internal returns (uint256 balance) {
         require(_isInStakeTree(operatorSet), StakeTreeMustIncludeOperatorSet());
 
         (, uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) =
             _calculateCumulativeCharges(stakerootCharges, stakerootCumulativeCharges);
-        DepositInfo memory depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
+        DepositInfo storage depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
 
         // subtract new total charge from last paid total charge
         uint256 pendingCharge = cumulativeChargePerOperatorSet - depositInfo.cumulativeChargePerOperatorSetLastPaid
@@ -397,16 +398,11 @@ contract StakeRootManager is StakeRootManagerStorage {
                     * operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length()
             );
 
-        uint256 balance = depositInfo.balance > pendingCharge ? depositInfo.balance - pendingCharge : 0;
+        balance = depositInfo.balance > pendingCharge ? depositInfo.balance - pendingCharge : 0;
 
-        depositInfos[operatorSet.avs][operatorSet.operatorSetId] = DepositInfo({
-            balance: uint96(balance),
-            lastDemandIncreaseTimestamp: depositInfo.lastDemandIncreaseTimestamp,
-            cumulativeChargePerOperatorSetLastPaid: uint96(cumulativeChargePerOperatorSet),
-            cumulativeChargePerStrategyLastPaid: uint96(cumulativeChargePerStrategy)
-        });
-
-        return balance;
+        depositInfo.balance = uint96(balance);
+        depositInfo.cumulativeChargePerOperatorSetLastPaid = uint96(cumulativeChargePerOperatorSet);
+        depositInfo.cumulativeChargePerOperatorSetLastPaid = uint96(cumulativeChargePerStrategy);
     }
 
     function _getStrategiesAndMultipliers(
