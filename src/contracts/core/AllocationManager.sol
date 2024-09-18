@@ -356,14 +356,22 @@ contract AllocationManager is
                 // Note: MAX_PENDING_UPDATES == 1, so we do not have to decrement any allocations
 
                 // 1. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
-                uint256 index = _pendingFreeMagnitude[operator][allocation.strategy].length;
+                uint64 magnitudeToDeallocate = uint64(currentMagnitude) - allocation.magnitudes[i];
+                _queuedDeallocationIndices[operator][allocation.strategy][operatorSetKey].push(
+                    _pendingFreeMagnitude[operator][allocation.strategy].length
+                );
                 _pendingFreeMagnitude[operator][allocation.strategy].push(
                     PendingFreeMagnitude({
-                        magnitudeDiff: uint64(currentMagnitude) - allocation.magnitudes[i],
+                        magnitudeDiff: magnitudeToDeallocate,
                         completableTimestamp: deallocationCompletableTimestamp
                     })
                 );
-                _queuedDeallocationIndices[operator][allocation.strategy][operatorSetKey].push(index);
+
+                // 2. decrement allocated magnitude
+                _magnitudeUpdate[operator][allocation.strategy][operatorSetKey].decrementAtAndFutureSnapshots({
+                    key: uint32(block.timestamp),
+                    decrementValue: magnitudeToDeallocate
+                });
             } else if (allocation.magnitudes[i] > uint64(currentMagnitude)) {
                 // Newly configured magnitude is greater than current value.
                 // Therefore we handle this as an allocation
