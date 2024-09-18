@@ -14,12 +14,11 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         IDelegationManager _delegationManager,
         IAVSDirectory _avsDirectory,
         IAllocationManager _allocationManager,
-        uint256 _maxTotalCharge,
         uint256 _minBalanceThreshold,
-        uint256 _minProofsDuration,
+        uint256 _minPrepaidProofs,
         address _verifier,
         bytes32 _imageId    
-    ) StakeRootCompendiumStorage(_delegationManager, _avsDirectory, _allocationManager, _maxTotalCharge, _minBalanceThreshold, _minProofsDuration, _verifier, _imageId) {}
+    ) StakeRootCompendiumStorage(_delegationManager, _avsDirectory, _allocationManager, _minBalanceThreshold, _minPrepaidProofs, _verifier, _imageId) {}
 
     function initialize(address _owner, address _rootConfirmer, uint32 _proofIntervalSeconds, uint96 _maxTotalCharge, uint96 _chargePerStrategy, uint96 _chargePerOperatorSet) public initializer {
         __Ownable_init();
