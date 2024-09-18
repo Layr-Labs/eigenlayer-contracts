@@ -25,9 +25,8 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
             _allocationManager: allocationManager,
-            _maxTotalCharge: 100 ether,
             _minBalanceThreshold: 0 ether,
-            _minProofsDuration: 20,
+            _minPrepaidProofs: 20,
             _verifier: address(0),
             _imageId: bytes32(0)
         });
@@ -39,6 +38,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
                 msg.sender,
                 msg.sender,
                 1 minutes,
+                100 ether,
                 0,
                 0
             )

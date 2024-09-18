@@ -85,7 +85,6 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
         IDelegationManager _delegationManager,
         IAVSDirectory _avsDirectory,
         IAllocationManager _allocationManager,
-        uint256 _maxTotalCharge,
         uint256 _minBalanceThreshold,
         uint256 _minPrepaidProofs,
         address _verifier,
