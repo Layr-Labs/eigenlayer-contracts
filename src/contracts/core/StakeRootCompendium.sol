@@ -33,6 +33,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
         stakeRootSubmissions.push(StakeRootSubmission({
             calculationTimestamp: 0,
+            submissionTimestamp: uint32(block.timestamp),
             stakeRoot: bytes32(0),
             confirmed: false
         }));
@@ -205,6 +206,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         );
         stakeRootSubmissions.push(StakeRootSubmission({
             calculationTimestamp: uint32(calculationTimestamp),
+            submissionTimestamp: uint32(block.timestamp),
             stakeRoot: stakeRoot,
             confirmed: false
         }));
@@ -500,7 +502,6 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     /// @inheritdoc IStakeRootCompendium
     function getOperatorSetRoot(
         OperatorSet calldata operatorSet,
-        address[] calldata operators,
         OperatorLeaf[] calldata operatorLeaves
     ) external view returns (bytes32) {
         require(
@@ -514,11 +515,11 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
         uint256 totalDelegatedStake;
         uint256 totalSlashableStake;
-        address prevOperator;
+        bytes32 prevExtraData;
         bytes32[] memory operatorLeavesHashes = new bytes32[](operatorLeaves.length);
         for (uint256 i = 0; i < operatorLeaves.length; i++) {
-            require(uint160(prevOperator) < uint160(operators[i]), "AVSSyncTree.getOperatorSetRoot: operators not sorted");
-            prevOperator = operators[i];
+            require(uint256(prevExtraData) < uint256(operatorLeaves[i].extraData), "StakeRootCompendium.getOperatorSetRoot: extraData not sorted");
+            prevExtraData = operatorLeaves[i].extraData;
 
             operatorLeavesHashes[i] = keccak256(
                 abi.encodePacked(
