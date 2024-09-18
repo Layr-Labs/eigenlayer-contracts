@@ -47,7 +47,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice list of operator sets that have been configured to be in the StakeTree
     OperatorSet[] public operatorSets;
     /// @notice the total charge for a proofs at a certain time depending on the number of strategies
-    Snapshots.History internal totalChargeHistory;
+    Snapshots.History internal chargePerProof;
     /// @dev Contains cumulative charges for operator sets, strategies, and max total charge.
     ChargeParams public chargeParams;
     /// @dev Contains info about cumulative charges.

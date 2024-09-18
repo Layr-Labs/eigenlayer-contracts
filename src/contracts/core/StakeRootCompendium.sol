@@ -35,7 +35,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         address _owner,
         address _rootConfirmer,
         uint32 _proofIntervalSeconds,
-        uint96 _maxTotalCharge,
+        uint96 _maxChargePerProof,
         uint96 _chargePerStrategy,
         uint96 _chargePerOperatorSet
     ) public initializer {
@@ -47,7 +47,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         chargeParams = ChargeParams({
             chargePerOperatorSet: _chargePerOperatorSet,
             chargePerStrategy: _chargePerStrategy,
-            maxTotalCharge: _maxTotalCharge
+            maxChargePerProof: _maxChargePerProof
         });
 
         cumulativeChargeParams.proofIntervalSeconds = _proofIntervalSeconds;
@@ -66,7 +66,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         DepositInfo storage depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
         if (!_isInStakeTree(operatorSet)) {
             (, uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) =
-                _calculateCumulativeCharges(chargeParams, cumulativeChargeParams);
+                _calculateCumulativeCharges();
 
             depositInfo.lastDemandIncreaseTimestamp = uint32(block.timestamp);
             depositInfo.cumulativeChargePerOperatorSetLastPaid = uint96(cumulativeChargePerOperatorSet);
@@ -226,13 +226,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             TimestampAlreadyPosted()
         );
         // credit the charge recipient
-        Snapshots.Snapshot memory _snapshot = totalChargeHistory._snapshots[indexChargePerProof];
+        Snapshots.Snapshot memory _snapshot = chargePerProof._snapshots[indexChargePerProof];
         require(
             _snapshot._key <= calculationTimestamp, TimestampOfIndexChargePerProofIsGreaterThanCalculationTimestamp()
         );
         require(
-            totalChargeHistory.length() == indexChargePerProof + 1
-                || uint256(totalChargeHistory._snapshots[indexChargePerProof + 1]._key) > calculationTimestamp,
+            chargePerProof.length() == indexChargePerProof + 1
+                || uint256(chargePerProof._snapshots[indexChargePerProof + 1]._key) > calculationTimestamp,
             IndexChargePerProofNotValid()
         );
         stakeRootSubmissions.push(
@@ -262,35 +262,33 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     /// SET FUNCTIONS
 
     /// @inheritdoc IStakeRootCompendium
-    function setMaxTotalCharge(
-        uint96 _maxTotalCharge
+    function setMaxChargePerProof(
+        uint96 _maxChargePerProof
     ) external onlyOwner {
-        require(_maxTotalCharge >= totalChargeHistory.latest(), MaxTotalChargeMustBeGreaterThanTheCurrentTotalCharge());
-        chargeParams.maxTotalCharge = _maxTotalCharge;
+        require(_maxChargePerProof >= chargePerProof.latest(), MaxTotalChargeMustBeGreaterThanTheCurrentTotalCharge());
+        chargeParams.maxChargePerProof = _maxChargePerProof;
     }
 
     /// @inheritdoc IStakeRootCompendium
     function setChargePerProof(uint96 _chargePerStrategy, uint96 _chargePerOperatorSet) external onlyOwner {
-        ChargeParams storage charges = chargeParams;
-        _updateTotalCharge(charges);
-        charges.chargePerStrategy = _chargePerStrategy;
-        charges.chargePerOperatorSet = _chargePerOperatorSet;
-        _updateTotalCharge(charges);
+        _updateCumulativeCharge();
+        chargeParams.chargePerStrategy = _chargePerStrategy;
+        chargeParams.chargePerOperatorSet = _chargePerOperatorSet;
+        _updateChargePerProof();
     }
 
     /// @inheritdoc IStakeRootCompendium
     function setProofIntervalSeconds(
         uint32 proofIntervalSeconds
     ) external onlyOwner {
-        CumulativeChargeParams storage cumulativeCharges = cumulativeChargeParams;
-        _updateTotalCharge(chargeParams);
+        _updateCumulativeCharge();
         // we must not interrupt pending proof calculations by rugging the outstanding calculationTimestamps
         require(
             stakeRootSubmissions[stakeRootSubmissions.length - 1].calculationTimestamp
-                == cumulativeCharges.lastUpdateTimestamp,
+                == cumulativeChargeParams.lastUpdateTimestamp,
             NoProofsThatHaveBeenChargedButNotSubmitted()
         );
-        cumulativeCharges.proofIntervalSeconds = proofIntervalSeconds;
+        cumulativeChargeParams.proofIntervalSeconds = proofIntervalSeconds;
     }
 
     /// @inheritdoc IStakeRootCompendium
@@ -326,48 +324,43 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     function _updateTotalStrategies(uint256 _countStrategiesBefore, uint256 _countStrategiesAfter) internal {
         totalStrategies = totalStrategies - _countStrategiesBefore + _countStrategiesAfter;
-        _updateTotalCharge(chargeParams);
+        _updateChargePerProof();
     }
 
-    function _updateTotalCharge(
-        ChargeParams memory charges
-    ) internal {
+    function _updateChargePerProof() internal {
         // note if totalStrategies is 0, the charge per proof will be 0, and provers should not post a proof
-        uint256 totalCharge =
-            operatorSets.length * charges.chargePerOperatorSet + totalStrategies * charges.chargePerStrategy;
-        require(totalCharge <= charges.maxTotalCharge, ChargePerProofExceedsMaxTotalCharge());
-        totalChargeHistory.push(uint32(block.timestamp), uint224(totalCharge));
+        uint256 _chargePerProof =
+            operatorSets.length * chargeParams.chargePerOperatorSet + totalStrategies * chargeParams.chargePerStrategy;
+        require(_chargePerProof <= chargeParams.maxChargePerProof, ChargePerProofExceedsMax());
+        chargePerProof.push(uint32(block.timestamp), uint224(_chargePerProof));
     }
 
-    function _calculateCumulativeCharges(
-        ChargeParams memory charges,
-        CumulativeChargeParams memory cumulativeCharges
-    ) internal view returns (uint32, uint96, uint96) {
+    function _calculateCumulativeCharges() internal view returns (uint32, uint96, uint96) {
         // calculate the total charge since the last update up until the latest calculation timestamp
         // note that there may be no corresponding stakeRootSubmission for the latest calculation timestamp
         // but if the calculationTimestamp is in the past, then it should be charged for, since proofs are being generated
         uint32 latestCalculationTimestamp =
-            uint32(block.timestamp) - uint32(block.timestamp % cumulativeCharges.proofIntervalSeconds);
+            uint32(block.timestamp) - uint32(block.timestamp % cumulativeChargeParams.proofIntervalSeconds);
 
-        if (cumulativeCharges.lastUpdateTimestamp == latestCalculationTimestamp) {
+        if (cumulativeChargeParams.lastUpdateTimestamp == latestCalculationTimestamp) {
             return (
-                latestCalculationTimestamp, cumulativeCharges.chargePerOperatorSet, cumulativeCharges.chargePerStrategy
+                latestCalculationTimestamp, cumulativeChargeParams.chargePerOperatorSet, cumulativeChargeParams.chargePerStrategy
             );
         }
 
-        uint256 numProofs = (latestCalculationTimestamp - cumulativeCharges.lastUpdateTimestamp)
-            / cumulativeCharges.proofIntervalSeconds;
+        uint256 numProofs = (latestCalculationTimestamp - cumulativeChargeParams.lastUpdateTimestamp)
+            / cumulativeChargeParams.proofIntervalSeconds;
 
         return (
             latestCalculationTimestamp,
-            uint96(cumulativeCharges.chargePerOperatorSet + charges.chargePerOperatorSet * numProofs),
-            uint96(cumulativeCharges.chargePerStrategy + charges.chargePerStrategy * numProofs)
+            uint96(cumulativeChargeParams.chargePerOperatorSet + chargeParams.chargePerOperatorSet * numProofs),
+            uint96(cumulativeChargeParams.chargePerStrategy + chargeParams.chargePerStrategy * numProofs)
         );
     }
 
     function _updateCumulativeCharge() internal {
         (uint32 lastUpdateTimestamp, uint96 cumulativeChargePerOperatorSet, uint96 cumulativeChargePerStrategy) =
-            _calculateCumulativeCharges(chargeParams, cumulativeChargeParams);
+            _calculateCumulativeCharges();
 
         cumulativeChargeParams = CumulativeChargeParams({
             chargePerOperatorSet: cumulativeChargePerOperatorSet,
@@ -384,7 +377,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         require(_isInStakeTree(operatorSet), StakeTreeMustIncludeOperatorSet());
 
         (, uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) =
-            _calculateCumulativeCharges(chargeParams, cumulativeChargeParams);
+            _calculateCumulativeCharges();
         DepositInfo storage depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
 
         // subtract new total charge from last paid total charge
@@ -500,7 +493,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     ) external view returns (uint256 balance) {
         DepositInfo memory depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
         (, uint96 cumulativeChargePerOperatorSet, uint96 cumulativeChargePerStrategy) =
-            _calculateCumulativeCharges(chargeParams, cumulativeChargeParams);
+            _calculateCumulativeCharges();
         uint256 pendingCharge = uint256(
             cumulativeChargePerOperatorSet - depositInfo.cumulativeChargePerOperatorSetLastPaid
         )
@@ -519,7 +512,6 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// @inheritdoc IStakeRootCompendium
     function getStakeRoot(
-        address avs,
         uint32[] calldata operatorSetIdsInStakeTree,
         bytes32[] calldata operatorSetRoots
     ) external view returns (bytes32) {
@@ -609,13 +601,8 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     }
 
     function safeTransferETH(address to, uint256 amount) internal {
-        /// @solidity memory-safe-assembly
-        assembly {
-            if iszero(call(gas(), to, amount, codesize(), 0x00, codesize(), 0x00)) {
-                mstore(0x00, 0xb12d13eb) // `ETHTransferFailed()`.
-                revert(0x1c, 0x04)
-            }
-        }
+        (bool success, ) = to.call{value: amount}("");
+        require(success, EthTransferFailed());
     }
 
     // in case of charge problems
