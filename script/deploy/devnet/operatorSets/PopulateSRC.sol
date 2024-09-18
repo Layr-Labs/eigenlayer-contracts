@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "../../../../src/contracts/core/StakeRootCompendium.sol";
+import "../../../../src/contracts/core/StakeRootManager.sol";
 import "../../../utils/ExistingDeploymentParser.sol";
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
@@ -21,7 +21,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
         vm.startBroadcast();
         uint32 proofInterval = 1 hours;
-        IStakeRootCompendium stakeRootCompendiumImplementation =  new StakeRootCompendium({
+        IStakeRootManager stakeRootManagerImplementation =  new StakeRootManager({
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
             _allocationManager: allocationManager,
@@ -30,11 +30,11 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             _verifier: address(0),
             _imageId: bytes32(0)
         });
-        StakeRootCompendium stakeRootCompendium = StakeRootCompendium(payable(new TransparentUpgradeableProxy(
-            address(stakeRootCompendiumImplementation),
+        StakeRootManager stakeRootManager = StakeRootManager(payable(new TransparentUpgradeableProxy(
+            address(stakeRootManagerImplementation),
             proxyAdmin,
             abi.encodeWithSelector(
-                StakeRootCompendium.initialize.selector,
+                StakeRootManager.initialize.selector,
                 msg.sender,
                 msg.sender,
                 1 minutes,
@@ -45,7 +45,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
         )));
         vm.stopBroadcast();
         emit log_named_address("allocationManager", address(allocationManager));
-        emit log_named_address("stakeRootCompendium", address(stakeRootCompendium));
+        emit log_named_address("stakeRootManager", address(stakeRootManager));
 
         address[] memory allStrategies = _parseDeployedStrategies(strategyFile);
 
@@ -84,8 +84,8 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
         uint64 magnitudeForOperators = 0.1 ether;
         vm.startBroadcast();
-        AVS avs = new AVS(avsDirectory, stakeRootCompendium);
-        payable(address(avs)).transfer(2 * stakeRootCompendium.MIN_BALANCE_THRESHOLD() * strategies.length);
+        AVS avs = new AVS(avsDirectory, stakeRootManager);
+        payable(address(avs)).transfer(2 * stakeRootManager.MIN_BALANCE_THRESHOLD() * strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
             avs.createOperatorSetAndRegisterOperators(uint32(i), strategies[i], operators[i]);
@@ -113,7 +113,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             }
 
             string memory parent_object = "success";
-            vm.serializeAddress(parent_object, "stakeRootCompendium", address(stakeRootCompendium));
+            vm.serializeAddress(parent_object, "stakeRootManager", address(stakeRootManager));
             vm.serializeAddress(parent_object, "avs", address(avs));
             vm.serializeAddress(parent_object, "operators", operators[i]);
             vm.serializeAddress(parent_object, "strategies", strategyAddresses);
@@ -125,12 +125,12 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
 contract AVS {
     IAVSDirectory avsDirectory;
-    IStakeRootCompendium stakeRootCompendium;
+    IStakeRootManager stakeRootManager;
 
     // creates an operator set for each list of strategies
-    constructor(IAVSDirectory _avsDirectory, IStakeRootCompendium _stakeRootCompendium) {
+    constructor(IAVSDirectory _avsDirectory, IStakeRootManager _stakeRootManager) {
         avsDirectory = _avsDirectory;
-        stakeRootCompendium = _stakeRootCompendium;
+        stakeRootManager = _stakeRootManager;
         avsDirectory.becomeOperatorSetAVS();
     }
 
@@ -141,7 +141,7 @@ contract AVS {
         if(!avsDirectory.isOperatorSet(address(this), operatorSetId)) {
             avsDirectory.createOperatorSets(operatorSetIdsToCreate);
 
-            stakeRootCompendium.deposit{value: 2 * stakeRootCompendium.MIN_BALANCE_THRESHOLD()}(OperatorSet({
+            stakeRootManager.deposit{value: 2 * stakeRootManager.MIN_BALANCE_THRESHOLD()}(OperatorSet({
                 avs: address(this),
                 operatorSetId: operatorSetId
             }));
@@ -161,17 +161,17 @@ contract AVS {
         }
 
         // loop through strategies in batches of NUM_STRATS_PER_OPERATOR for each operator set
-        IStakeRootCompendium.StrategyAndMultiplier[] memory strategiesAndMultipliers = new IStakeRootCompendium.StrategyAndMultiplier[](strategies.length);
+        IStakeRootManager.StrategyAndMultiplier[] memory strategiesAndMultipliers = new IStakeRootManager.StrategyAndMultiplier[](strategies.length);
         for (uint256 i = 0; i < strategiesAndMultipliers.length; ++i) {
-            strategiesAndMultipliers[i] = IStakeRootCompendium.StrategyAndMultiplier({
+            strategiesAndMultipliers[i] = IStakeRootManager.StrategyAndMultiplier({
                 strategy: strategies[i],
                 multiplier: 1 ether
             });
         }
-        stakeRootCompendium.addOrModifyStrategiesAndMultipliers(operatorSetId, strategiesAndMultipliers); 
-        stakeRootCompendium.setOperatorSetExtraData(operatorSetId, keccak256(abi.encodePacked(operatorSetId)));
+        stakeRootManager.addOrModifyStrategiesAndMultipliers(operatorSetId, strategiesAndMultipliers); 
+        stakeRootManager.setOperatorSetExtraData(operatorSetId, keccak256(abi.encodePacked(operatorSetId)));
         for (uint256 i = 0; i < operators.length; ++i) {
-            stakeRootCompendium.setOperatorExtraData(operatorSetId, operators[i], keccak256(abi.encodePacked(operators[i])));
+            stakeRootManager.setOperatorExtraData(operatorSetId, operators[i], keccak256(abi.encodePacked(operators[i])));
         }
     }
 

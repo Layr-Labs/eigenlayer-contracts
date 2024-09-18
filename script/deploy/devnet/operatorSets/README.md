@@ -23,7 +23,7 @@ forge script script/deploy/devnet/operatorSets/DeployStrategies.s.sol:DeployStra
 
 Stop the anvil chain and retain the state
 
-## Step 2: Populate the AVSDirectory and StakeRootCompendium
+## Step 2: Populate the AVSDirectory and StakeRootManager
 
 Start the anvil chain with the state
 

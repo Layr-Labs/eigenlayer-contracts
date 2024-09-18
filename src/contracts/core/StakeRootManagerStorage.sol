@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAllocationManager.sol";
-import "../interfaces/IStakeRootCompendium.sol";
+import "../interfaces/IStakeRootManager.sol";
 import "../libraries/Snapshots.sol";
 
-abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpgradeable {
+abstract contract StakeRootManagerStorage is IStakeRootManager, OwnableUpgradeable {
     using Snapshots for Snapshots.History;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -64,7 +64,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     mapping(address => mapping(uint32 => EnumerableMap.AddressToUintMap)) internal operatorSetToStrategyAndMultipliers;
 
     /// @notice the stake root submissions
-    IStakeRootCompendium.StakeRootSubmission[] public stakeRootSubmissions;
+    IStakeRootManager.StakeRootSubmission[] public stakeRootSubmissions;
 
     constructor(
         IDelegationManager _delegationManager,
