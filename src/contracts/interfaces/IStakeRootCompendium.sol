@@ -6,6 +6,28 @@ import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IStrategy.sol";
 
 interface IStakeRootCompendium {
+    /// @dev Struct containing charges for operator sets, strategies, and max total charge.
+    /// @param chargePerOperatorSet The linear charge per proof in the number of strategies.
+    /// @param chargePerStrategy The constant charge per proof.
+    /// @param The max total charge for a stakeroot proof, used to bound computation offchain.
+    struct StakerootCharges {
+        uint96 chargePerOperatorSet;
+        uint96 chargePerStrategy;
+        uint96 maxTotalCharge;
+    }
+
+    /// @dev Struct containing info about cumulative charges.
+    /// @param chargePerOperatorSet The cumulative constant charge per operator set since deployment.
+    /// @param chargePerStrategy The cumulative linear charge per strategy per operator set since deployment.
+    /// @param lastUpdateTimestamp The last time cumulative charges were updated.
+    /// @param proofIntervalSeconds The interval in seconds at which proofs can be posted.
+    struct StakerootCumulativeCharges {
+        uint96 chargePerOperatorSet;
+        uint96 chargePerStrategy;
+        uint32 lastUpdateTimestamp;
+        uint32 proofIntervalSeconds;
+    }
+
     struct StrategyAndMultiplier {
         IStrategy strategy;
         uint96 multiplier;
@@ -57,9 +79,6 @@ interface IStakeRootCompendium {
 
     /// @notice the number of operator sets in the StakeTree
     function getNumOperatorSets() external view returns (uint256);
-
-    /// @notice the interval at which proofs can be posted, to not overcharge the operatorSets
-    function proofIntervalSeconds() external view returns (uint32);
 
     /**
      * @notice returns the stake root submission at the given index
