@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAllocationManager.sol";
-import "../interfaces/IStrategy.sol";
 import "../interfaces/IStakeRootCompendium.sol";
-import "../libraries/Merkle.sol";
-
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../libraries/Snapshots.sol";
 
 abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpgradeable {
