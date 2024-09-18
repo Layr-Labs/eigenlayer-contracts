@@ -22,7 +22,7 @@ interface IStakeRootCompendium {
     error TimestampAlreadyConfirmed();
     error MaxTotalChargeMustBeGreaterThanTheCurrentTotalCharge();
     error NoProofsThatHaveBeenChargedButNotSubmitted();
-    error ChargePerProofExceedsMaxTotalCharge();
+    error ChargePerProofExceedsMax();
     error InputArrayLengthMismatch();
     error InputCorrelatedVariableMismatch();
     error OutOfBounds();
@@ -36,7 +36,7 @@ interface IStakeRootCompendium {
     struct ChargeParams {
         uint96 chargePerOperatorSet;
         uint96 chargePerStrategy;
-        uint96 maxTotalCharge;
+        uint96 maxChargePerProof;
     }
 
     /// @dev Struct containing info about cumulative charges.
@@ -134,7 +134,6 @@ interface IStakeRootCompendium {
      * @dev operatorSetRoots must be ordered by the operatorSet index at the time of call
      */
     function getStakeRoot(
-        address avs,
         uint32[] calldata operatorSetIdsInStakeTree,
         bytes32[] calldata operatorSetRoots
     ) external view returns (bytes32);
@@ -282,13 +281,13 @@ interface IStakeRootCompendium {
     ) external view returns (uint256 balance);
 
     /**
-     * @notice set the maximum total charge for a stakeRoot proof
-     * @param _maxTotalCharge the maximum total charge for a stakeRoot proof
+     * @notice set the maximum charge for a stakeRoot proof
+     * @param _maxChargePerProof the maximum charge for a stakeRoot proof
      * @dev only callable by owner
      * @dev used to limit offchain computation
      */
-    function setMaxTotalCharge(
-        uint96 _maxTotalCharge
+    function setMaxChargePerProof(
+        uint96 _maxChargePerProof
     ) external;
 
     /**
