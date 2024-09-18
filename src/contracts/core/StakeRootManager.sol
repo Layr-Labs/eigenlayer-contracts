@@ -179,8 +179,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         // debt the withdraw amount
         depositInfos[msg.sender][operatorSetId].balance -= uint96(amount);
 
-        (bool success,) = payable(msg.sender).call{value: amount}("");
-        require(success, EthTransferFailed());
+        safeTransferETH(msg.sender, amount);
 
         return amount;
     }
@@ -204,8 +203,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         }
         // note this reward is subject to a race condition where anyone can claim the penalty if they submit their transaction first
         // it is the caller's responsibility to use private mempool to protect themselves from reverted transactions
-        (bool success,) = payable(msg.sender).call{value: penalty}("");
-        require(success, EthTransferFailed());
+        safeTransferETH(msg.sender, penalty);
     }
 
     /// POSTING ROOTS AND BLACKLISTING
@@ -245,9 +243,7 @@ contract StakeRootManager is StakeRootManagerStorage {
             })
         );
 
-        (bool success,) = payable(chargeRecipient).call{value: _snapshot._value}("");
-        require(success, EthTransferFailed());
-
+        safeTransferETH(chargeRecipient, _snapshot._value);
         // interactions
 
         // note verify will be an external call, so adding to the end to apply the check, effect, interaction pattern to avoid reentrancy
@@ -605,6 +601,16 @@ contract StakeRootManager is StakeRootManagerStorage {
                 )
             )
         );
+    }
+
+    function safeTransferETH(address to, uint256 amount) internal {
+        /// @solidity memory-safe-assembly
+        assembly {
+            if iszero(call(gas(), to, amount, codesize(), 0x00, codesize(), 0x00)) {
+                mstore(0x00, 0xb12d13eb) // `ETHTransferFailed()`.
+                revert(0x1c, 0x04)
+            }
+        }
     }
 
     // in case of charge problems
