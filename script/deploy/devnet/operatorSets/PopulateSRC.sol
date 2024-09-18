@@ -2,6 +2,8 @@
 pragma solidity ^0.8.12;
 
 import "../../../../src/contracts/core/StakeRootCompendium.sol";
+import {IRiscZeroVerifier} from "@risc0/IRiscZeroVerifier.sol";
+
 import "../../../utils/ExistingDeploymentParser.sol";
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
@@ -27,7 +29,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             _allocationManager: allocationManager,
             _minBalanceThreshold: 0 ether,
             _minPrepaidProofs: 20,
-            _verifier: address(0),
+            _verifier: IRiscZeroVerifier(address(0)),
             _imageId: bytes32(0)
         });
         StakeRootCompendium stakeRootCompendium = StakeRootCompendium(payable(new TransparentUpgradeableProxy(

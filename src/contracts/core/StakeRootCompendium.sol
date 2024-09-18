@@ -2,7 +2,6 @@
 pragma solidity ^0.8.12;
 
 import "./StakeRootCompendiumStorage.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../libraries/Snapshots.sol";
 
 contract StakeRootCompendium is StakeRootCompendiumStorage {
@@ -16,7 +15,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         IAllocationManager _allocationManager,
         uint256 _minBalanceThreshold,
         uint256 _minPrepaidProofs,
-        address _verifier,
+        IRiscZeroVerifier _verifier,
         bytes32 _imageId    
     ) StakeRootCompendiumStorage(_delegationManager, _avsDirectory, _allocationManager, _minBalanceThreshold, _minPrepaidProofs, _verifier, _imageId) {}
 
@@ -26,8 +25,8 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
         rootConfirmer = _rootConfirmer;
 
-        maxTotalCharge = _maxTotalCharge;
         proofIntervalSeconds = _proofIntervalSeconds;
+        maxTotalCharge = _maxTotalCharge;
         chargePerOperatorSet = _chargePerOperatorSet;
         chargePerStrategy = _chargePerStrategy;
 
@@ -187,7 +186,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         bytes32 stakeRoot,
         address chargeRecipient,
         uint256 indexChargePerProof,
-        Proof calldata _proof
+        bytes calldata seal
     ) external {
         require(calculationTimestamp % proofIntervalSeconds == 0, "StakeRootCompendium._postStakeRoot: timestamp must be a multiple of proofInterval");
         // no length check here is ok because the initializer adds a default submission
@@ -209,14 +208,18 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             confirmed: false
         }));
         
+        // note external call to verify is intentionally last to mitigate reentrancy
+
+        // TODO: prevent race incentives and public mempool sniping, eg embed chargeRecipient in the proof
+        // Construct the expected journal data. Verify will fail if journal does not match.
+        // https://github.com/risc0/risc0-foundry-template/blob/e296def1a60c92eeb9333fdfa19007e62286dc18/contracts/EvenNumber.sol#L48
+        bytes memory journal = abi.encode(stakeRoot);
+        // reverts on failure
+        verifier.verify(seal, imageId, sha256(journal));
+
+        // pay the charge recipient
         (bool success, ) = payable(chargeRecipient).call{value: _snapshot._value}("");
         require(success, "StakeRootCompendium.withdrawForChargeRecipient: eth transfer failed");   
-
-        // interactions
-
-        // note verify will be an external call, so adding to the end to apply the check, effect, interaction pattern to avoid reentrancy
-        // TODO: verify proof
-        // TODO: prevent race incentives and public mempool sniping, eg embed chargeRecipient in the proof
     }
 
     /// @inheritdoc IStakeRootCompendium

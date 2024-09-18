@@ -10,6 +10,7 @@ import "../libraries/Merkle.sol";
 
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import {IRiscZeroVerifier} from "@risc0/IRiscZeroVerifier.sol";
 import "../libraries/Snapshots.sol";
 
 abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpgradeable {
@@ -37,7 +38,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     uint256 immutable public MIN_PREPAID_PROOFS;
 
     /// @notice the verifier contract that will be used to verify snark proofs
-    address public immutable verifier;
+    IRiscZeroVerifier public immutable verifier;
     /// @notice the id of the program being verified when roots are posted
     bytes32 public immutable imageId;
 
@@ -87,7 +88,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
         IAllocationManager _allocationManager,
         uint256 _minBalanceThreshold,
         uint256 _minPrepaidProofs,
-        address _verifier,
+        IRiscZeroVerifier _verifier,
         bytes32 _imageId
     ) {
         delegationManager = _delegationManager;
@@ -95,7 +96,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
         allocationManager = _allocationManager;
         MIN_BALANCE_THRESHOLD = _minBalanceThreshold;
         MIN_PREPAID_PROOFS = _minPrepaidProofs;
-
+        
         // note verifier and imageId are immutable and set by implementation contract
         // since proof verification is in the hot path, this is a gas optimization to avoid calling the storage contract for verifier and imageId
         // however the new impl does not have access to the immutable variables of the last impl so we can't reference the old verifier and imageId

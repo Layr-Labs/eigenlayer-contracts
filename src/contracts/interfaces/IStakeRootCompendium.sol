@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IStrategy.sol";
+import {IRiscZeroVerifier} from "@risc0/IRiscZeroVerifier.sol";
 
 interface IStakeRootCompendium {
     struct StrategyAndMultiplier {
