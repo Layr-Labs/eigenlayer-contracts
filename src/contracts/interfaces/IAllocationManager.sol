@@ -291,6 +291,19 @@ interface IAllocationManager is ISignatureUtils {
     ) external view returns (uint64[] memory);
 
     /**
+     * @param operator the operator to get the total and allocated magnitudes for
+     * @param operatorSet the operatorSet to get the total and allocated magnitudes for
+     * @param strategies the strategies to get the total and allocated magnitudes for
+     *
+     * @return the list of total magnitudes for each strategy and the list of allocated magnitudes for each strategy
+     */
+    function getTotalAndAllocatedMagnitudes(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory, uint64[] memory);
+
+    /**
      * @notice Returns the current total magnitude of an operator for a given strategy
      * @param operator the operator to get the total magnitude for
      * @param strategy the strategy to get the total magnitude for
