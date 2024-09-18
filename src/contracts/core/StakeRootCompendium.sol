@@ -4,9 +4,9 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../interfaces/IStrategy.sol";
 import "../libraries/Merkle.sol";
-import "./StakeRootManagerStorage.sol";
+import "./StakeRootCompendiumStorage.sol";
 
-contract StakeRootManager is StakeRootManagerStorage {
+contract StakeRootCompendium is StakeRootCompendiumStorage {
     using Snapshots for Snapshots.History;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -20,7 +20,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         address _verifier,
         bytes32 _imageId
     )
-        StakeRootManagerStorage(
+        StakeRootCompendiumStorage(
             _delegationManager,
             _avsDirectory,
             _allocationManager,
@@ -62,7 +62,7 @@ contract StakeRootManager is StakeRootManagerStorage {
 
     /// OPERATORSET CONFIGURATION
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function deposit(
         OperatorSet calldata operatorSet
     ) external payable {
@@ -99,7 +99,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         );
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function addOrModifyStrategiesAndMultipliers(
         uint32 operatorSetId,
         StrategyAndMultiplier[] calldata strategiesAndMultipliers
@@ -130,7 +130,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         _updateTotalStrategies(numStrategiesBefore, numStrategiesAfter);
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function removeStrategiesAndMultipliers(uint32 operatorSetId, IStrategy[] calldata strategies) external {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
         // update the deposit balance for the operator set whenever number of strategies is changed
@@ -148,7 +148,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         _updateTotalStrategies(numStrategiesBefore, numStrategiesBefore - strategies.length);
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function setOperatorSetExtraData(uint32 operatorSetId, bytes32 extraData) external {
         require(
             _isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
@@ -157,7 +157,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         operatorSetExtraDatas[msg.sender][operatorSetId] = extraData;
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function setOperatorExtraData(uint32 operatorSetId, address operator, bytes32 extraData) external {
         require(
             _isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
@@ -166,7 +166,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         operatorExtraDatas[msg.sender][operatorSetId][operator] = extraData;
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function withdraw(uint32 operatorSetId, uint256 amount) external payable returns (uint256) {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
         require(canWithdrawDepositBalance(operatorSet), OperatorSetNotOldEnough());
@@ -189,7 +189,7 @@ contract StakeRootManager is StakeRootManagerStorage {
 
     /// CHARGE MANAGEMENT
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function removeOperatorSetsFromStakeTree(
         OperatorSet[] calldata operatorSetsToRemove
     ) external {
@@ -211,7 +211,7 @@ contract StakeRootManager is StakeRootManagerStorage {
 
     /// POSTING ROOTS AND BLACKLISTING
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function verifyStakeRoot(
         uint256 calculationTimestamp,
         bytes32 stakeRoot,
@@ -257,7 +257,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         // TODO: prevent race incentives and public mempool sniping, eg embed chargeRecipient in the proof
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function confirmStakeRoot(uint32 index, bytes32 stakeRoot) external {
         require(msg.sender == rootConfirmer, OnlyRootConfirmerCanConfirm());
         require(stakeRootSubmissions[index].stakeRoot == stakeRoot, StakeRootDoesNotMatch());
@@ -267,7 +267,7 @@ contract StakeRootManager is StakeRootManagerStorage {
 
     /// SET FUNCTIONS
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function setMaxTotalCharge(
         uint96 _maxTotalCharge
     ) external onlyOwner {
@@ -275,7 +275,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         stakerootCharges.maxTotalCharge = _maxTotalCharge;
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function setChargePerProof(uint96 _chargePerStrategy, uint96 _chargePerOperatorSet) external onlyOwner {
         StakerootCharges storage charges = stakerootCharges;
         _updateTotalCharge(charges);
@@ -284,7 +284,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         _updateTotalCharge(charges);
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function setProofIntervalSeconds(
         uint32 proofIntervalSeconds
     ) external onlyOwner {
@@ -299,7 +299,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         cumulativeCharges.proofIntervalSeconds = proofIntervalSeconds;
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function setRootConfirmer(
         address _rootConfirmer
     ) public onlyOwner {
@@ -456,7 +456,7 @@ contract StakeRootManager is StakeRootManagerStorage {
 
     /// VIEW FUNCTIONS
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function minDepositBalance(
         uint256 numStrategies
     ) public view returns (uint256) {
@@ -464,7 +464,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         return (numStrategies * charges.chargePerStrategy + charges.chargePerOperatorSet) * MIN_PREPAID_PROOFS;
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function canWithdrawDepositBalance(
         OperatorSet memory operatorSet
     ) public view returns (bool) {
@@ -474,24 +474,24 @@ contract StakeRootManager is StakeRootManagerStorage {
                 + MIN_PREPAID_PROOFS * stakerootCumulativeCharges.proofIntervalSeconds;
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function getNumStakeRootSubmissions() external view returns (uint256) {
         return stakeRootSubmissions.length;
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function getStakeRootSubmission(
         uint32 index
     ) external view returns (StakeRootSubmission memory) {
         return stakeRootSubmissions[index];
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function getNumOperatorSets() external view returns (uint256) {
         return operatorSets.length;
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function getStakes(
         OperatorSet calldata operatorSet,
         address operator
@@ -500,7 +500,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         return _getStakes(operatorSet, strategies, multipliers, operator);
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function getDepositBalance(
         OperatorSet memory operatorSet
     ) external view returns (uint256 balance) {
@@ -518,7 +518,7 @@ contract StakeRootManager is StakeRootManagerStorage {
 
     // STAKE ROOT CALCULATION
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function getStakeRoot(
         address avs,
         uint32[] calldata operatorSetIdsInStakeTree,
@@ -536,7 +536,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         return Merkle.merkleizeKeccak256(operatorSetRoots);
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function getOperatorSetLeaves(
         uint256 operatorSetIndex,
         uint256 startOperatorIndex,
@@ -563,7 +563,7 @@ contract StakeRootManager is StakeRootManagerStorage {
         return (operatorSet, operators, operatorLeaves);
     }
 
-    /// @inheritdoc IStakeRootManager
+    /// @inheritdoc IStakeRootCompendium
     function getOperatorSetRoot(
         OperatorSet calldata operatorSet,
         OperatorLeaf[] calldata operatorLeaves

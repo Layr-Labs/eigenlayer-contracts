@@ -5,7 +5,7 @@ import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IStrategy.sol";
 
-interface IStakeRootManager {
+interface IStakeRootCompendium {
     // TODO: Rename these...
     error NonexistentOperatorSet();
     error NonexistentStrategy();
