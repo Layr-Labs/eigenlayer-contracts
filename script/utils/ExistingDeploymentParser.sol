@@ -181,6 +181,12 @@ contract ExistingDeploymentParser is Script, Test {
         avsDirectoryImplementation = AVSDirectory(
             stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectoryImplementation")
         );
+        allocationManager = AllocationManager(
+            stdJson.readAddress(existingDeploymentData, ".addresses.allocationManager")
+        );
+        allocationManagerImplementation = AllocationManager(
+            stdJson.readAddress(existingDeploymentData, ".addresses.allocationManagerImplementation")
+        );
         rewardsCoordinator = RewardsCoordinator(
             stdJson.readAddress(existingDeploymentData, ".addresses.rewardsCoordinator")
         );
@@ -347,6 +353,15 @@ contract ExistingDeploymentParser is Script, Test {
         ETHPOSDepositAddress = stdJson.readAddress(initialDeploymentData, ".ethPOSDepositAddress");
 
         logInitialDeploymentParams();
+    }
+
+    function _parseDeployedStrategies(string memory existingStrategyDeploymentInfoPath) internal returns (address[] memory strategyAddresses) {
+        uint256 currentChainId = block.chainid;
+
+        // READ JSON CONFIG DATA
+        string memory existingDeploymentData = vm.readFile(existingStrategyDeploymentInfoPath);
+        strategyAddresses = stdJson.readAddressArray(existingDeploymentData, ".strategies");
+        return strategyAddresses;
     }
 
     /// @notice Ensure contracts point at each other correctly via constructors
@@ -708,6 +723,8 @@ contract ExistingDeploymentParser is Script, Test {
         vm.serializeAddress(deployed_addresses, "slasherImplementation", address(slasherImplementation));
         vm.serializeAddress(deployed_addresses, "avsDirectory", address(avsDirectory));
         vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
+        vm.serializeAddress(deployed_addresses, "allocationManager", address(allocationManager));
+        vm.serializeAddress(deployed_addresses, "allocationManagerImplementation", address(allocationManagerImplementation));
         vm.serializeAddress(deployed_addresses, "delegationManager", address(delegationManager));
         vm.serializeAddress(
             deployed_addresses,
@@ -736,11 +753,14 @@ contract ExistingDeploymentParser is Script, Test {
         vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
         vm.serializeAddress(deployed_addresses, "baseStrategyImplementation", address(baseStrategyImplementation));
         vm.serializeAddress(deployed_addresses, "emptyContract", address(emptyContract));
+        vm.serializeUint(deployed_addresses, "numStrategiesDeployed", numStrategiesDeployed);
         string memory deployed_addresses_output = vm.serializeString(
             deployed_addresses,
             "strategies",
             deployed_strategies_output
         );
+        string memory token = '{"tokenProxyAdmin": "0x0000000000000000000000000000000000000000", "EIGEN": "0x0000000000000000000000000000000000000000","bEIGEN": "0x0000000000000000000000000000000000000000","EIGENImpl": "0x0000000000000000000000000000000000000000","bEIGENImpl": "0x0000000000000000000000000000000000000000","eigenStrategy": "0x0000000000000000000000000000000000000000","eigenStrategyImpl": "0x0000000000000000000000000000000000000000"}';
+        deployed_addresses_output = vm.serializeString(deployed_addresses, "token", token);
 
         string memory parameters = "parameters";
         vm.serializeAddress(parameters, "executorMultisig", executorMultisig);
@@ -757,6 +777,7 @@ contract ExistingDeploymentParser is Script, Test {
         // serialize all the data
         vm.serializeString(parent_object, deployed_addresses, deployed_addresses_output);
         vm.serializeString(parent_object, chain_info, chain_info_output);
+        vm.serializeString(parent_object, "lastUpdated", "N/A");
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
 
         vm.writeJson(finalJson, outputPath);

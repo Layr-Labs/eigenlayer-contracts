@@ -1,41 +1,52 @@
 {
   "maintainer": "samlaf@eigenlabs.org",
+  "lastUpdated": "todo",
+  "chainInfo": {
+    "chainId": 17000
+  },
   "multisig_addresses": {
-       "operationsMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
-       "communityMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
-       "pauserMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
-       "executorMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
-       "timelock": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479"
+       "operationsMultisig": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597",
+       "communityMultisig": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597",
+       "pauserMultisig": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597",
+       "executorMultisig": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597",
+       "timelock": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597"
   },
-  "strategies": [
-       {
-            "token_address": "0x0000000000000000000000000000000000000000",
-            "token_symbol": "WETH",
-            "max_per_deposit": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
-            "max_deposits": 115792089237316195423570985008687907853269984665640564039457584007913129639935
-          }
-  ],
+  "strategies": {
+    "numStrategies": 0,
+    "MAX_PER_DEPOSIT": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
+    "MAX_TOTAL_DEPOSITS": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
+    "strategiesToDeploy": []
+  },
   "strategyManager": {
-       "init_paused_status": 0,
-       "init_withdrawal_delay_blocks": 1
-  },
+     "init_paused_status": 0,
+     "init_withdrawal_delay_blocks": 1,
+      "init_strategy_whitelister": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597"
+   },
   "eigenPod": {
-       "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 1,
-       "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR": "32000000000"
+    "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 1,
+    "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR": "32000000000",
+    "GENESIS_TIME": 0
   },
   "eigenPodManager": {
-       "init_paused_status": 30
+    "init_paused_status": 30
   },
   "delayedWithdrawalRouter": {
-       "init_paused_status": 0,
-       "init_withdrawal_delay_blocks": 1
+    "init_paused_status": 0,
+    "init_withdrawal_delay_blocks": 1
   },
   "slasher": {
-       "init_paused_status": 0
+    "init_paused_status": 0
   },
-  "delegation": {
-       "init_paused_status": 0,
-       "init_withdrawal_delay_blocks": 1
+  "delegationManager": {
+     "init_minWithdrawalDelayBlocks": 1,
+    "init_paused_status": 0,
+    "init_withdrawal_delay_blocks": 1
+  },
+  "avsDirectory": {
+    "init_paused_status": 0
+  },
+  "allocationManager": {
+    "init_paused_status": 0
   },
   "rewardsCoordinator": {
        "init_paused_status": 0,
@@ -44,7 +55,7 @@
        "MAX_RETROACTIVE_LENGTH": 7776000,
        "MAX_FUTURE_LENGTH": 2592000,
        "GENESIS_REWARDS_TIMESTAMP": 1710979200,
-       "rewards_updater_address": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
+       "rewards_updater_address": "0x1981d656d61D6be37f50fD78f6Fd7627Fd2ae597",
        "activation_delay": 7200,
        "calculation_interval_seconds": 604800,
        "global_operator_commission_bips": 1000,

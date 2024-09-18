@@ -435,6 +435,33 @@ contract AllocationManager is
         return uint64(totalMagnitude);
     }
 
+    /// @dev gets the latest total magnitude 
+    function _getLatestTotalMagnitudeView(address operator, IStrategy strategy) internal view returns (uint64) {
+        (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
+        if (!exists) {
+            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+        }
+
+        return uint64(totalMagnitude);
+    }
+
+    function _getTotalAndAllocatedMagnitude(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy strategy
+    ) internal view returns (uint64, uint64) {
+        uint64 totalMagnitude = _getLatestTotalMagnitudeView(operator, strategy);
+
+        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        uint64 currentMagnitude = uint64(
+                _magnitudeUpdate[operator][strategy][operatorSetKey].upperLookupLinear(
+                    uint32(block.timestamp)
+                )
+            );
+
+        return (totalMagnitude, currentMagnitude);
+    }
+
     /// @dev gets the pending free magnitude available to add by completing numToComplete pending deallocations
     /// and returns the next index to start from if completed.
     function _getPendingFreeMagnitude(
@@ -697,6 +724,26 @@ contract AllocationManager is
         }
 
         return totalMagnitude;
+    }
+
+    /**
+     * @param operator the operator to get the total and allocated magnitudes for
+     * @param operatorSet the operatorSet to get the total and allocated magnitudes for
+     * @param strategies the strategies to get the total and allocated magnitudes for
+     *
+     * @return the list of total magnitudes for each strategy and the list of allocated magnitudes for each strategy
+     */
+    function getTotalAndAllocatedMagnitudes(
+        address operator,
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory, uint64[] memory) {
+        uint64[] memory totalMagnitude = new uint64[](strategies.length);
+        uint64[] memory allocatedMagnitude = new uint64[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            (totalMagnitude[i], allocatedMagnitude[i]) = _getTotalAndAllocatedMagnitude(operator, operatorSet, strategies[i]);
+        }
+        return (totalMagnitude, allocatedMagnitude);
     }
 
     /**
