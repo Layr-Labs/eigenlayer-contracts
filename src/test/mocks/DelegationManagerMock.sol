@@ -19,6 +19,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
         operatorShares[operator][strategy] = shares;
     }
 
+    function getOperatorScaledShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory) {}
+
     mapping (address => address) public delegatedTo;
 
     function registerAsOperator(

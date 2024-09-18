@@ -873,6 +873,18 @@ contract DelegationManager is
         return SlashingLib.descaleShares(operatorScaledShares[operator][strategy], totalMagnitude);
     }
 
+    /// @notice Given array of strategies, returns array of scaled shares for the operator
+    function getOperatorScaledShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory) {
+        uint256[] memory scaledShares = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            scaledShares[i] = operatorScaledShares[operator][strategies[i]];
+        }
+        return scaledShares;
+    }
+
     /**
      * @notice Given a staker and scaled shares amounts of deposits, return the shares calculated if
      * the staker were to withdraw. This value depends on which operator the staker is delegated to.

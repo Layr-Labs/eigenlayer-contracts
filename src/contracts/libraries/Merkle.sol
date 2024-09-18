@@ -18,8 +18,6 @@ pragma solidity ^0.8.0;
  * against this attack out of the box.
  */
 library Merkle {
-    error ProofLengthNotMultipleOf32();
-
     /**
      * @dev Returns the rebuilt hash obtained by traversing a Merkle tree up
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
@@ -53,7 +51,7 @@ library Merkle {
         bytes32 leaf,
         uint256 index
     ) internal pure returns (bytes32) {
-        require(proof.length % 32 == 0, ProofLengthNotMultipleOf32());
+        require(proof.length % 32 == 0, "Merkle.processInclusionProofKeccak: proof length should be a multiple of 32");
         bytes32 computedHash = leaf;
         for (uint256 i = 32; i <= proof.length; i += 32) {
             if (index % 2 == 0) {
@@ -109,7 +107,10 @@ library Merkle {
         bytes32 leaf,
         uint256 index
     ) internal view returns (bytes32) {
-        require(proof.length != 0 && proof.length % 32 == 0, ProofLengthNotMultipleOf32());
+        require(
+            proof.length != 0 && proof.length % 32 == 0,
+            "Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32"
+        );
         bytes32[1] memory computedHash = [leaf];
         for (uint256 i = 32; i <= proof.length; i += 32) {
             if (index % 2 == 0) {
@@ -139,9 +140,7 @@ library Merkle {
      *  @return The computed Merkle root of the tree.
      *  @dev A pre-condition to this function is that leaves.length is a power of two.  If not, the function will merkleize the inputs incorrectly.
      */
-    function merkleizeSha256(
-        bytes32[] memory leaves
-    ) internal pure returns (bytes32) {
+    function merkleizeSha256(bytes32[] memory leaves) internal pure returns (bytes32) {
         //there are half as many nodes in the layer above the leaves
         uint256 numNodesInLayer = leaves.length / 2;
         //create a layer to store the internal nodes
@@ -157,6 +156,47 @@ library Merkle {
             //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
             for (uint256 i = 0; i < numNodesInLayer; i++) {
                 layer[i] = sha256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
+            }
+            //the next layer above has half as many nodes
+            numNodesInLayer /= 2;
+        }
+        //the first node in the layer is the root
+        return layer[0];
+    }
+
+    /**
+     * @notice this function returns the merkle root of a tree created from a set of leaves using keccak256 as its hash function
+     *  @param leaves the leaves of the merkle tree
+     *  @return The computed Merkle root of the tree.
+     *  @dev This pads to the next power of 2. very inefficient! just for POC
+     */
+    function merkleizeKeccak256(bytes32[] memory leaves) internal pure returns (bytes32) {
+        uint256 paddedLength = 2;
+        while(paddedLength < leaves.length) {
+            paddedLength <<= 1;
+        }
+
+        bytes32[] memory paddedLeaves = new bytes32[](paddedLength);
+        for (uint256 i = 0; i < leaves.length; i++) {
+            paddedLeaves[i] = leaves[i];
+        }
+        leaves = paddedLeaves;
+
+        //there are half as many nodes in the layer above the leaves
+        uint256 numNodesInLayer = leaves.length / 2;
+        //create a layer to store the internal nodes
+        bytes32[] memory layer = new bytes32[](numNodesInLayer);
+        //fill the layer with the pairwise hashes of the leaves
+        for (uint256 i = 0; i < numNodesInLayer; i++) {
+            layer[i] = keccak256(abi.encodePacked(leaves[2 * i], leaves[2 * i + 1]));
+        }
+        //the next layer above has half as many nodes
+        numNodesInLayer /= 2;
+        //while we haven't computed the root
+        while (numNodesInLayer != 0) {
+            //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
+            for (uint256 i = 0; i < numNodesInLayer; i++) {
+                layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
             //the next layer above has half as many nodes
             numNodesInLayer /= 2;
