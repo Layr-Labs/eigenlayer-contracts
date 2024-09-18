@@ -510,6 +510,11 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         return depositInfo.balance > pendingCharge ? depositInfo.balance - pendingCharge : 0;
     }
 
+    /// @inheritdoc IStakeRootCompendium
+    function proofIntervalSeconds() external view returns (uint32) {
+        return cumulativeChargeParams.proofIntervalSeconds;
+    }
+
     // STAKE ROOT CALCULATION
 
     /// @inheritdoc IStakeRootCompendium

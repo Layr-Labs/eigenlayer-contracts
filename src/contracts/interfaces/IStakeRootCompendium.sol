@@ -163,6 +163,9 @@ interface IStakeRootCompendium {
         uint256 numOperators
     ) external view returns (OperatorSet memory, address[] memory, OperatorLeaf[] memory);
 
+    /// @notice Returns the interval at which proofs can be posted, to not overcharge the operatorSets.
+    function proofIntervalSeconds() external view returns (uint32);
+
     /**
      * @notice deposits funds for an operator set
      * @param operatorSet the operator set to deposit for
