@@ -26,15 +26,15 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
 
     /// @notice the minimum balance that must be maintained for an operatorSet
     /// @dev this balance compensates gas costs to deregister an operatorSet
-    uint256 immutable public MIN_BALANCE_THRESHOLD;
+    uint256 public immutable MIN_BALANCE_THRESHOLD;
 
     /// @notice the placeholder index used for operator sets that are removed from the StakeTree
     uint32 public constant REMOVED_INDEX = type(uint32).max;
 
-    /// @notice the minimum number of proofs that an operatorSet's deposit balance needs to cover and 
+    /// @notice the minimum number of proofs that an operatorSet's deposit balance needs to cover and
     /// the number of proofs they must pay for since their latest reconfiguration
     /// @dev this prevents de-registering an operatorSet immediately after reconfiguring
-    uint256 immutable public MIN_PREPAID_PROOFS;
+    uint256 public immutable MIN_PREPAID_PROOFS;
 
     /// @notice the verifier contract that will be used to verify snark proofs
     address public immutable verifier;
@@ -65,7 +65,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     mapping(address => mapping(uint32 => Snapshots.History)) internal operatorSetToIndex;
     /// @notice list of operator sets that have been configured to be in the StakeTree
     OperatorSet[] public operatorSets;
-    
+
     /// @notice the total number of strategies among all operator sets (with duplicates)
     uint256 public totalStrategies;
     /// @notice the total charge for a proofs at a certain time depending on the number of strategies
@@ -80,7 +80,7 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
 
     /// @notice the stake root submissions
     IStakeRootCompendium.StakeRootSubmission[] public stakeRootSubmissions;
-    
+
     constructor(
         IDelegationManager _delegationManager,
         IAVSDirectory _avsDirectory,

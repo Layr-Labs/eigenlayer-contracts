@@ -26,9 +26,9 @@ interface IStakeRootCompendium {
         // the balance of the operatorSet (includes pending deductions)
         uint96 balance;
         // the timestamp of the operatorSets latest deposit or increase in number of strategies.
-        // withdrawals of deposit balance are bounded by paying for MIN_PREPAID_PROOFS proofs since 
+        // withdrawals of deposit balance are bounded by paying for MIN_PREPAID_PROOFS proofs since
         // ones latest demand increase
-        uint32 lastDemandIncreaseTimestamp; 
+        uint32 lastDemandIncreaseTimestamp;
         // the cumulativeChargePerOperatorSet at the time of the lastest deduction from the deposit balance
         // used in making further deductions
         uint96 cumulativeChargePerOperatorSetLastPaid;
@@ -65,7 +65,9 @@ interface IStakeRootCompendium {
      * @notice returns the stake root submission at the given index
      * @param index the index of the stake root submission
      */
-    function getStakeRootSubmission(uint32 index) external view returns (StakeRootSubmission memory);
+    function getStakeRootSubmission(
+        uint32 index
+    ) external view returns (StakeRootSubmission memory);
 
     /// @notice the number of stake root submissions
     function getNumStakeRootSubmissions() external view returns (uint256);
@@ -77,10 +79,10 @@ interface IStakeRootCompendium {
      * @return delegatedStake the delegated stake for the operator
      * @return slashableStake the slashable stake for the operator
      */
-    function getStakes(OperatorSet calldata operatorSet, address operator)
-        external
-        view
-        returns (uint256 delegatedStake, uint256 slashableStake);
+    function getStakes(
+        OperatorSet calldata operatorSet,
+        address operator
+    ) external view returns (uint256 delegatedStake, uint256 slashableStake);
 
     /**
      * @notice called offchain with the operatorSet roots ordered by the operatorSet index at the timestamp to calculate the stake root
@@ -125,7 +127,9 @@ interface IStakeRootCompendium {
      * @dev the operator set must have a minimum balance of 2 * MIN_DEPOSIT_BALANCE to disallow joining with minimal cost after removal
      * @dev permissionless to deposit
      */
-    function deposit(OperatorSet calldata operatorSet) external payable;
+    function deposit(
+        OperatorSet calldata operatorSet
+    ) external payable;
 
     /**
      * @notice called by an AVS to add strategies and multipliers or modify multipliers used to determine stakes for stake roots
@@ -176,7 +180,9 @@ interface IStakeRootCompendium {
      * @param operatorSetsToRemove the operatorSets to update the deposit balance infos for
      * @dev sends the caller the leftover after charging if the balance is below the minimum
      */
-    function removeOperatorSetsFromStakeTree(OperatorSet[] calldata operatorSetsToRemove) external;
+    function removeOperatorSetsFromStakeTree(
+        OperatorSet[] calldata operatorSetsToRemove
+    ) external;
 
     /**
      * @notice called by the claimer to claim a stake root
@@ -208,23 +214,26 @@ interface IStakeRootCompendium {
      * @return the minimum deposit balance required for the operatorSet, which is just enough to pay for a certain number of proofs
      * @dev this is enforced upon deposits and additions or modifications of strategies and multipliers
      */
-    function minDepositBalance(uint256 numStrategies) external view returns (uint256);
+    function minDepositBalance(
+        uint256 numStrategies
+    ) external view returns (uint256);
 
     /**
      * @param operatorSet the operatorSet to check withdrawability for
      * @return whether or not the operatorSet can withdraw any of their deposit balance
      */
-    function canWithdrawDepositBalance(OperatorSet memory operatorSet) external view returns (bool);
+    function canWithdrawDepositBalance(
+        OperatorSet memory operatorSet
+    ) external view returns (bool);
 
     /**
      * @notice get the deposit balance for the operator set
      * @param operatorSet the operator set to get the deposit balance for
      * @return balance the deposit balance for the operator set
      */
-    function getDepositBalance(OperatorSet memory operatorSet)
-        external
-        view
-        returns (uint256 balance);
+    function getDepositBalance(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256 balance);
 
     /**
      * @notice set the maximum total charge for a stakeRoot proof
@@ -232,7 +241,9 @@ interface IStakeRootCompendium {
      * @dev only callable by owner
      * @dev used to limit offchain computation
      */
-    function setMaxTotalCharge(uint96 _maxTotalCharge) external;
+    function setMaxTotalCharge(
+        uint96 _maxTotalCharge
+    ) external;
 
     /**
      * @notice set the charges per proof going forward from the time of calling
@@ -247,12 +258,16 @@ interface IStakeRootCompendium {
      * @param proofIntervalSeconds the interval in seconds at which proofs can be posted
      * @dev only callable by owner
      */
-    function setProofIntervalSeconds(uint32 proofIntervalSeconds) external;
+    function setProofIntervalSeconds(
+        uint32 proofIntervalSeconds
+    ) external;
 
     /**
      * @notice set the confirmer of roots
      * @param _rootConfirmer the address allowed to confirm roots
      * @dev only callable by owner
      */
-    function setRootConfirmer(address _rootConfirmer) external;
+    function setRootConfirmer(
+        address _rootConfirmer
+    ) external;
 }
