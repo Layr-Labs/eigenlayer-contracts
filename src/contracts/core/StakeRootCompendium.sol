@@ -90,7 +90,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
                 >= minDepositBalance(
                     operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length()
                 ),
-            "StakeRootCompendium.addOrModifyStrategiesAndMultipliers: insufficient deposit balance"
+            InsufficientDepositBalance()
         );
     }
 
@@ -117,7 +117,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         // make sure they have enough to pay for MIN_PREPAID_PROOFS
         require(
             depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance >= minDepositBalance(numStrategiesAfter),
-            "StakeRootCompendium.addOrModifyStrategiesAndMultipliers: insufficient deposit balance"
+            InsufficientDepositBalance()
         );
         // note that they've shown increased demand for proofs
         depositInfos[operatorSet.avs][operatorSet.operatorSetId].lastDemandIncreaseTimestamp = uint32(block.timestamp);
@@ -137,7 +137,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         for (uint256 i = 0; i < strategies.length; i++) {
             require(
                 operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSetId].remove(address(strategies[i])),
-                "StakeRootCompendium.removeStrategiesAndMultipliers: strategy not found"
+                NonexistentStrategy()
             );
         }
 
@@ -148,7 +148,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function setOperatorSetExtraData(uint32 operatorSetId, bytes32 extraData) external {
         require(
             _isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
-            "StakeRootCompendium.setOperatorSetExtraData: operatorSet is not in stakeTree"
+            StakeTreeMustIncludeOperatorSet()
         );
         operatorSetExtraDatas[msg.sender][operatorSetId] = extraData;
     }
@@ -157,7 +157,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function setOperatorExtraData(uint32 operatorSetId, address operator, bytes32 extraData) external {
         require(
             _isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
-            "StakeRootCompendium.setOperatorExtraData: operatorSet is not in stakeTree"
+            StakeTreeMustIncludeOperatorSet()
         );
         operatorExtraDatas[msg.sender][operatorSetId][operator] = extraData;
     }
@@ -165,10 +165,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     /// @inheritdoc IStakeRootCompendium
     function withdraw(uint32 operatorSetId, uint256 amount) external payable returns (uint256) {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
-        require(
-            canWithdrawDepositBalance(operatorSet),
-            "StakeRootCompendium.withdrawForOperatorSet: operator set is not old enough"
-        );
+        require(canWithdrawDepositBalance(operatorSet), OperatorSetNotOldEnough());
 
         // debt any pending charge
         uint256 balance = _updateDepositInfo(operatorSet);
@@ -182,7 +179,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         depositInfos[msg.sender][operatorSetId].balance -= uint96(amount);
 
         (bool success,) = payable(msg.sender).call{value: amount}("");
-        require(success, "StakeRootCompendium.withdrawForOperatorSet: eth transfer failed");
+        require(success, EthTransferFailed());
 
         return amount;
     }
@@ -207,7 +204,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         // note this reward is subject to a race condition where anyone can claim the penalty if they submit their transaction first
         // it is the caller's responsibility to use private mempool to protect themselves from reverted transactions
         (bool success,) = payable(msg.sender).call{value: penalty}("");
-        require(success, "StakeRootCompendium.updateBalances: eth transfer failed");
+        require(success, EthTransferFailed());
     }
 
     /// POSTING ROOTS AND BLACKLISTING
@@ -222,23 +219,22 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     ) external {
         require(
             calculationTimestamp % stakerootCumulativeCharges.proofIntervalSeconds == 0,
-            "StakeRootCompendium._postStakeRoot: timestamp must be a multiple of proofInterval"
+            TimestampNotMultipleOfProofInterval()
         );
         // no length check here is ok because the initializer adds a default submission
         require(
             stakeRootSubmissions[stakeRootSubmissions.length - 1].calculationTimestamp != calculationTimestamp,
-            "StakeRootCompendium._postStakeRoot: timestamp already posted"
+            TimestampAlreadyPosted()
         );
         // credit the charge recipient
         Snapshots.Snapshot memory _snapshot = totalChargeHistory._snapshots[indexChargePerProof];
         require(
-            _snapshot._key <= calculationTimestamp,
-            "StakeRootCompendium._postStakeRoot: timestamp of indexChargePerProof is greater than the calculationTimestamp"
+            _snapshot._key <= calculationTimestamp, TimestampOfIndexChargePerProofIsGreaterThanCalculationTimestamp()
         );
         require(
             totalChargeHistory.length() == indexChargePerProof + 1
                 || uint256(totalChargeHistory._snapshots[indexChargePerProof + 1]._key) > calculationTimestamp,
-            "StakeRootCompendium._postStakeRoot: indexChargePerProof is not valid"
+            IndexChargePerProofNotValid()
         );
         stakeRootSubmissions.push(
             StakeRootSubmission({
@@ -249,7 +245,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         );
 
         (bool success,) = payable(chargeRecipient).call{value: _snapshot._value}("");
-        require(success, "StakeRootCompendium.withdrawForChargeRecipient: eth transfer failed");
+        require(success, EthTransferFailed());
 
         // interactions
 
@@ -260,14 +256,9 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// @inheritdoc IStakeRootCompendium
     function confirmStakeRoot(uint32 index, bytes32 stakeRoot) external {
-        require(msg.sender == rootConfirmer, "StakeRootCompendium.confirmStakeRoot: only rootConfirmer can confirm");
-        require(
-            stakeRootSubmissions[index].stakeRoot == stakeRoot,
-            "StakeRootCompendium.confirmStakeRoot: stake root does not match"
-        );
-        require(
-            !stakeRootSubmissions[index].confirmed, "StakeRootCompendium.confirmStakeRoot: timestamp already confirmed"
-        );
+        require(msg.sender == rootConfirmer, OnlyRootConfirmerCanConfirm());
+        require(stakeRootSubmissions[index].stakeRoot == stakeRoot, StakeRootDoesNotMatch());
+        require(!stakeRootSubmissions[index].confirmed, TimestampAlreadyConfirmed());
         stakeRootSubmissions[index].confirmed = true;
     }
 
@@ -277,10 +268,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function setMaxTotalCharge(
         uint96 _maxTotalCharge
     ) external onlyOwner {
-        require(
-            _maxTotalCharge >= totalChargeHistory.latest(),
-            "StakeRootCompendium.setMaxTotalCharge: max total charge must be greater the current totalCharge"
-        );
+        require(_maxTotalCharge >= totalChargeHistory.latest(), MaxTotalChargeMustBeGreaterThanTheCurrentTotalCharge());
         maxTotalCharge = _maxTotalCharge;
     }
 
@@ -302,7 +290,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         require(
             stakeRootSubmissions[stakeRootSubmissions.length - 1].calculationTimestamp
                 == cumulativeCharges.lastUpdateTimestamp,
-            "StakeRootCompendium.setProofIntervalSeconds: no proofs that have been charged but have not been submitteed"
+            NoProofsThatHaveBeenChargedButNotSubmitted()
         );
         cumulativeCharges.proofIntervalSeconds = proofIntervalSeconds;
     }
@@ -346,10 +334,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function _updateTotalCharge() internal {
         // note if totalStrategies is 0, the charge per proof will be 0, and provers should not post a proof
         uint256 totalCharge = operatorSets.length * chargePerOperatorSet + totalStrategies * chargePerStrategy;
-        require(
-            totalCharge <= maxTotalCharge,
-            "StakeRootCompendium._updateChargePerProof: charge per proof exceeds max total charge"
-        );
+        require(totalCharge <= maxTotalCharge, ChargePerProofExceedsMaxTotalCharge());
         totalChargeHistory.push(uint32(block.timestamp), uint224(totalCharge));
     }
 
@@ -395,7 +380,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function _updateDepositInfo(
         OperatorSet memory operatorSet
     ) internal returns (uint256) {
-        require(_isInStakeTree(operatorSet), "StakeRootCompendium._updateDepositInfo: operatorSet is not in stakeTree");
+        require(_isInStakeTree(operatorSet), StakeTreeMustIncludeOperatorSet());
 
         (, uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) =
             _calculateCumulativeCharges(stakerootCharges, stakerootCumulativeCharges);
@@ -535,22 +520,16 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         OperatorSet[] calldata operatorSetsInStakeTree,
         bytes32[] calldata operatorSetRoots
     ) external view returns (bytes32) {
-        require(
-            operatorSets.length == operatorSetsInStakeTree.length,
-            "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree length mismatch"
-        );
-        require(
-            operatorSetsInStakeTree.length == operatorSetRoots.length,
-            "StakeRootCompendium.getStakeRoot: operatorSetsInStakeTree vs. operatorSetRoots mismatch"
-        );
+        // TODO: This fn should revert if mismatched parameters are passed in due to out of bounds
+        // array access, see if these checks can be removed.
+        require(operatorSets.length == operatorSetsInStakeTree.length, InputArrayLengthMismatch());
+        require(operatorSetsInStakeTree.length == operatorSetRoots.length, InputArrayLengthMismatch());
         for (uint256 i = 0; i < operatorSetsInStakeTree.length; i++) {
-            require(
-                operatorSets[i].avs == operatorSetsInStakeTree[i].avs,
-                "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree avs mismatch"
-            );
+            /// TODO: Should take in an array of operatorSetIds instead, and a constant avs.
+            require(operatorSets[i].avs == operatorSetsInStakeTree[i].avs, InputCorrelatedVariableMismatch());
             require(
                 operatorSets[i].operatorSetId == operatorSetsInStakeTree[i].operatorSetId,
-                "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree operatorSetId mismatch"
+                InputCorrelatedVariableMismatch()
             );
         }
         return Merkle.merkleizeKeccak256(operatorSetRoots);
@@ -562,10 +541,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint256 startOperatorIndex,
         uint256 numOperators
     ) external view returns (OperatorSet memory, address[] memory, OperatorLeaf[] memory) {
-        require(
-            operatorSetIndex < operatorSets.length,
-            "StakeRootCompendium.getOperatorSetLeaves: operator set index out of bounds"
-        );
+        require(operatorSetIndex < operatorSets.length, OutOfBounds());
         OperatorSet memory operatorSet = operatorSets[operatorSetIndex];
         address[] memory operators =
             avsDirectory.getOperatorsInOperatorSet(operatorSet, startOperatorIndex, numOperators);
@@ -592,13 +568,9 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         address[] calldata operators,
         OperatorLeaf[] calldata operatorLeaves
     ) external view returns (bytes32) {
+        require(avsDirectory.isOperatorSet(operatorSet.avs, operatorSet.operatorSetId), OperatorSetMustExist());
         require(
-            avsDirectory.isOperatorSet(operatorSet.avs, operatorSet.operatorSetId),
-            "StakeRootCompendium.getOperatorSetRoot: operator set does not exist"
-        );
-        require(
-            operatorLeaves.length == avsDirectory.getNumOperatorsInOperatorSet(operatorSet),
-            "AVSSyncTree.getOperatorSetRoot: operator set size mismatch"
+            operatorLeaves.length == avsDirectory.getNumOperatorsInOperatorSet(operatorSet), OperatorSetSizeMismatch()
         );
 
         uint256 totalDelegatedStake;

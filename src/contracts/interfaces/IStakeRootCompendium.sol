@@ -6,6 +6,29 @@ import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IStrategy.sol";
 
 interface IStakeRootCompendium {
+    // TODO: Rename these...
+    error NonexistentOperatorSet();
+    error NonexistentStrategy();
+    error InsufficientDepositBalance();
+    error StakeTreeMustIncludeOperatorSet();
+    error OperatorSetNotOldEnough();
+    error EthTransferFailed();
+    error TimestampNotMultipleOfProofInterval();
+    error TimestampAlreadyPosted();
+    error TimestampOfIndexChargePerProofIsGreaterThanCalculationTimestamp();
+    error IndexChargePerProofNotValid();
+    error OnlyRootConfirmerCanConfirm();
+    error StakeRootDoesNotMatch();
+    error TimestampAlreadyConfirmed();
+    error MaxTotalChargeMustBeGreaterThanTheCurrentTotalCharge();
+    error NoProofsThatHaveBeenChargedButNotSubmitted();
+    error ChargePerProofExceedsMaxTotalCharge();
+    error InputArrayLengthMismatch();
+    error InputCorrelatedVariableMismatch();
+    error OutOfBounds();
+    error OperatorSetMustExist();
+    error OperatorSetSizeMismatch();
+
     /// @dev Struct containing charges for operator sets, strategies, and max total charge.
     /// @param chargePerOperatorSet The linear charge per proof in the number of strategies.
     /// @param chargePerStrategy The constant charge per proof.
