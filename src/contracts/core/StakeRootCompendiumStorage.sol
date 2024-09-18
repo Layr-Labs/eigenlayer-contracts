@@ -44,13 +44,6 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice the address allowed to confirm roots
     address public rootConfirmer;
 
-    /// @notice the linear charge per proof in the number of strategies
-    uint96 public chargePerOperatorSet;
-    /// @notice the constant charge per proof
-    uint96 public chargePerStrategy;
-    /// @notice the max total charge for a stakeRoot proof. used to bound computation offchain
-    uint96 public maxTotalCharge;
-
     /// @notice list of operator sets that have been configured to be in the StakeTree
     OperatorSet[] public operatorSets;
     /// @notice the total charge for a proofs at a certain time depending on the number of strategies

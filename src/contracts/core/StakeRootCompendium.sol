@@ -271,15 +271,16 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint96 _maxTotalCharge
     ) external onlyOwner {
         require(_maxTotalCharge >= totalChargeHistory.latest(), MaxTotalChargeMustBeGreaterThanTheCurrentTotalCharge());
-        maxTotalCharge = _maxTotalCharge;
+        stakerootCharges.maxTotalCharge = _maxTotalCharge;
     }
 
     /// @inheritdoc IStakeRootCompendium
     function setChargePerProof(uint96 _chargePerStrategy, uint96 _chargePerOperatorSet) external onlyOwner {
-        _updateTotalCharge();
-        chargePerStrategy = _chargePerStrategy;
-        chargePerOperatorSet = _chargePerOperatorSet;
-        _updateTotalCharge();
+        StakerootCharges storage charges = stakerootCharges;
+        _updateTotalCharge(charges);
+        charges.chargePerStrategy = _chargePerStrategy;
+        charges.chargePerOperatorSet = _chargePerOperatorSet;
+        _updateTotalCharge(charges);
     }
 
     /// @inheritdoc IStakeRootCompendium
@@ -287,7 +288,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint32 proofIntervalSeconds
     ) external onlyOwner {
         StakerootCumulativeCharges storage cumulativeCharges = stakerootCumulativeCharges;
-        _updateTotalCharge();
+        _updateTotalCharge(stakerootCharges);
         // we must not interrupt pending proof calculations by rugging the outstanding calculationTimestamps
         require(
             stakeRootSubmissions[stakeRootSubmissions.length - 1].calculationTimestamp
@@ -330,13 +331,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     function _updateTotalStrategies(uint256 _countStrategiesBefore, uint256 _countStrategiesAfter) internal {
         totalStrategies = totalStrategies - _countStrategiesBefore + _countStrategiesAfter;
-        _updateTotalCharge();
+        _updateTotalCharge(stakerootCharges);
     }
 
-    function _updateTotalCharge() internal {
+    function _updateTotalCharge(StakerootCharges memory charges) internal {
         // note if totalStrategies is 0, the charge per proof will be 0, and provers should not post a proof
-        uint256 totalCharge = operatorSets.length * chargePerOperatorSet + totalStrategies * chargePerStrategy;
-        require(totalCharge <= maxTotalCharge, ChargePerProofExceedsMaxTotalCharge());
+        uint256 totalCharge = operatorSets.length * charges.chargePerOperatorSet + totalStrategies * charges.chargePerStrategy;
+        require(totalCharge <= charges.maxTotalCharge, ChargePerProofExceedsMaxTotalCharge());
         totalChargeHistory.push(uint32(block.timestamp), uint224(totalCharge));
     }
 
@@ -460,7 +461,8 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function minDepositBalance(
         uint256 numStrategies
     ) public view returns (uint256) {
-        return (numStrategies * chargePerStrategy + chargePerOperatorSet) * MIN_PREPAID_PROOFS;
+        StakerootCharges memory charges = stakerootCharges;
+        return (numStrategies * charges.chargePerStrategy + charges.chargePerOperatorSet) * MIN_PREPAID_PROOFS;
     }
 
     /// @inheritdoc IStakeRootCompendium
@@ -519,21 +521,22 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// @inheritdoc IStakeRootCompendium
     function getStakeRoot(
-        OperatorSet[] calldata operatorSetsInStakeTree,
+        address avs,
+        uint32[] calldata operatorSetIdsInStakeTree,
         bytes32[] calldata operatorSetRoots
     ) external view returns (bytes32) {
         // TODO: This fn should revert if mismatched parameters are passed in due to out of bounds
         // array access, see if these checks can be removed.
-        require(operatorSets.length == operatorSetsInStakeTree.length, InputArrayLengthMismatch());
-        require(operatorSetsInStakeTree.length == operatorSetRoots.length, InputArrayLengthMismatch());
-        for (uint256 i = 0; i < operatorSetsInStakeTree.length; i++) {
-            /// TODO: Should take in an array of operatorSetIds instead, and a constant avs.
-            require(operatorSets[i].avs == operatorSetsInStakeTree[i].avs, InputCorrelatedVariableMismatch());
+        require(operatorSets.length == operatorSetIdsInStakeTree.length, InputArrayLengthMismatch());
+        require(operatorSetIdsInStakeTree.length == operatorSetRoots.length, InputArrayLengthMismatch());
+        
+        for (uint256 i = 0; i < operatorSetIdsInStakeTree.length; i++) {            
             require(
-                operatorSets[i].operatorSetId == operatorSetsInStakeTree[i].operatorSetId,
+                operatorSets[i].operatorSetId == operatorSetIdsInStakeTree[i],
                 InputCorrelatedVariableMismatch()
             );
         }
+        
         return Merkle.merkleizeKeccak256(operatorSetRoots);
     }
 
