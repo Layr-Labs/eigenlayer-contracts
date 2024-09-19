@@ -100,16 +100,17 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         // update the deposit balance for the operator set whenever number of strategies is changed
         _updateDepositInfo(operatorSet);
 
-        uint256 numStrategiesBefore =
-            operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
+        EnumerableMap.AddressToUintMap storage strategiesAndMultipliers =
+            operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId];
+
+        uint256 numStrategiesBefore = strategiesAndMultipliers.length();
         // set the strategies and multipliers for the operator set
         for (uint256 i = 0; i < strategiesAndMultipliers.length; i++) {
-            operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].set(
+            strategiesAndMultipliers.set(
                 address(strategiesAndMultipliers[i].strategy), uint256(strategiesAndMultipliers[i].multiplier)
             );
         }
-        uint256 numStrategiesAfter =
-            operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length();
+        uint256 numStrategiesAfter = strategiesAndMultipliers.length();
 
         DepositInfo storage depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
 
@@ -128,13 +129,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         // update the deposit balance for the operator set whenever number of strategies is changed
         _updateDepositInfo(operatorSet);
 
+        EnumerableMap.AddressToUintMap storage strategiesAndMultipliers =
+            operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSetId];
+
         // note below either all strategies are removed or none are removed and transaction reverts
-        uint256 numStrategiesBefore = operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSetId].length();
+        uint256 numStrategiesBefore = strategiesAndMultipliers.length();
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(
-                operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSetId].remove(address(strategies[i])),
-                NonexistentStrategy()
-            );
+            require(strategiesAndMultipliers.remove(address(strategies[i])), NonexistentStrategy());
         }
 
         _updateTotalStrategies(numStrategiesBefore, numStrategiesBefore - strategies.length);
@@ -142,19 +143,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// @inheritdoc IStakeRootCompendium
     function setOperatorSetExtraData(uint32 operatorSetId, bytes32 extraData) external {
-        require(
-            _isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
-            NotInStakeTree()
-        );
+        require(_isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})), NotInStakeTree());
         operatorSetExtraDatas[msg.sender][operatorSetId] = extraData;
     }
 
     /// @inheritdoc IStakeRootCompendium
     function setOperatorExtraData(uint32 operatorSetId, address operator, bytes32 extraData) external {
-        require(
-            _isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
-            NotInStakeTree()
-        );
+        require(_isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})), NotInStakeTree());
         operatorExtraDatas[msg.sender][operatorSetId][operator] = extraData;
     }
 
@@ -250,9 +245,10 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     /// @inheritdoc IStakeRootCompendium
     function confirmStakeRoot(uint32 index, bytes32 stakeRoot) external {
         require(msg.sender == rootConfirmer, OnlyRootConfirmerCanConfirm());
-        require(stakeRootSubmissions[index].stakeRoot == stakeRoot, StakeRootDoesNotMatch());
-        require(!stakeRootSubmissions[index].confirmed, TimestampAlreadyConfirmed());
-        stakeRootSubmissions[index].confirmed = true;
+        IStakeRootCompendium.StakeRootSubmission storage stakeRootSubmission = stakeRootSubmissions[index];
+        require(stakeRootSubmission.stakeRoot == stakeRoot, StakeRootDoesNotMatch());
+        require(stakeRootSubmission.confirmed, TimestampAlreadyConfirmed());
+        stakeRootSubmission.confirmed = true;
     }
 
     /// SET FUNCTIONS
@@ -268,8 +264,9 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     /// @inheritdoc IStakeRootCompendium
     function setChargePerProof(uint96 _chargePerStrategy, uint96 _chargePerOperatorSet) external onlyOwner {
         _updateCumulativeCharge();
-        chargeParams.chargePerStrategy = _chargePerStrategy;
-        chargeParams.chargePerOperatorSet = _chargePerOperatorSet;
+        ChargeParams storage params = chargeParams;
+        params.chargePerStrategy = _chargePerStrategy;
+        params.chargePerOperatorSet = _chargePerOperatorSet;
         _updateChargePerProof();
     }
 
@@ -300,7 +297,8 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         OperatorSet memory operatorSet
     ) internal {
         OperatorSet memory substituteOperatorSet = operatorSets[operatorSets.length - 1];
-        uint224 operatorSetIndex = operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].latest();
+        Snapshots.History storage snapshotHistory = operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId];
+        uint224 operatorSetIndex = snapshotHistory.latest();
         operatorSets[operatorSetIndex] = substituteOperatorSet;
         operatorSets.pop();
 
@@ -309,7 +307,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         operatorSetToIndex[substituteOperatorSet.avs][substituteOperatorSet.operatorSetId].push(
             uint32(block.timestamp), operatorSetIndex
         );
-        operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].push(uint32(block.timestamp), REMOVED_INDEX);
+        snapshotHistory.push(uint32(block.timestamp), REMOVED_INDEX);
 
         depositInfos[operatorSet.avs][operatorSet.operatorSetId].balance = 0;
 
@@ -340,7 +338,9 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
         if (cumulativeChargeParams.lastUpdateTimestamp == latestCalculationTimestamp) {
             return (
-                latestCalculationTimestamp, cumulativeChargeParams.chargePerOperatorSet, cumulativeChargeParams.chargePerStrategy
+                latestCalculationTimestamp,
+                cumulativeChargeParams.chargePerOperatorSet,
+                cumulativeChargeParams.chargePerStrategy
             );
         }
 
@@ -372,8 +372,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     ) internal returns (uint256 balance) {
         require(_isInStakeTree(operatorSet), NotInStakeTree());
 
-        (, uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) =
-            _calculateCumulativeCharges();
+        (, uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) = _calculateCumulativeCharges();
         DepositInfo storage depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
 
         // subtract new total charge from last paid total charge
@@ -488,8 +487,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         OperatorSet memory operatorSet
     ) external view returns (uint256 balance) {
         DepositInfo memory depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
-        (, uint96 cumulativeChargePerOperatorSet, uint96 cumulativeChargePerStrategy) =
-            _calculateCumulativeCharges();
+        (, uint96 cumulativeChargePerOperatorSet, uint96 cumulativeChargePerStrategy) = _calculateCumulativeCharges();
         uint256 pendingCharge = uint256(
             cumulativeChargePerOperatorSet - depositInfo.cumulativeChargePerOperatorSetLastPaid
         )
@@ -529,7 +527,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint256 startOperatorIndex,
         uint256 numOperators
     ) external view returns (OperatorSet memory, address[] memory, OperatorLeaf[] memory) {
-        require(operatorSetIndex < operatorSets.length, OutOfBounds());
+        require(operatorSetIndex < operatorSets.length, OperatorSetIndexOutOfBounds());
         OperatorSet memory operatorSet = operatorSets[operatorSetIndex];
         address[] memory operators =
             avsDirectory.getOperatorsInOperatorSet(operatorSet, startOperatorIndex, numOperators);
@@ -594,7 +592,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     }
 
     function _safeTransferETH(address to, uint256 amount) internal {
-        (bool success, ) = to.call{value: amount}("");
+        (bool success,) = to.call{value: amount}("");
         require(success, EthTransferFailed());
     }
 

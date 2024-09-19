@@ -25,7 +25,7 @@ interface IStakeRootCompendium {
     error ChargePerProofExceedsMax();
     error InputArrayLengthMismatch();
     error InputCorrelatedVariableMismatch();
-    error OutOfBounds();
+    error OperatorSetIndexOutOfBounds();
     error OperatorSetMustExist();
     error OperatorSetSizeMismatch();
 
@@ -47,6 +47,7 @@ interface IStakeRootCompendium {
      * @param lastUpdateTimestamp The last time cumulative charges were updated.
      * @param proofIntervalSeconds The interval in seconds at which proofs can be posted.
      */
+
     struct CumulativeChargeParams {
         uint96 chargePerOperatorSet;
         uint96 chargePerStrategy;
