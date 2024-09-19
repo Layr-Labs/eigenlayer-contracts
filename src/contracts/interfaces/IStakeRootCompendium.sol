@@ -133,13 +133,13 @@ interface IStakeRootCompendium {
 
     /**
      * @notice called offchain with the operatorSet roots ordered by the operatorSet index at the timestamp to calculate the stake root
-     * @param operatorSetIdsInStakeTree the operatorSets ids that each of the operatorSetRoots correspond to. must be the same as operatorSets storage var at the time of call
+     * @param operatorSetsInStakeTree the operatorSets ids that each of the operatorSetRoots correspond to. must be the same as operatorSets storage var at the time of call
      * @param operatorSetRoots the ordered operatorSet roots (not verified)
      * @dev operatorSetsInStakeTree must be the same as operatorSets storage var at the time of call
      * @dev operatorSetRoots must be ordered by the operatorSet index at the time of call
      */
     function getStakeRoot(
-        uint32[] calldata operatorSetIdsInStakeTree,
+        OperatorSet[] calldata operatorSetsInStakeTree,
         bytes32[] calldata operatorSetRoots
     ) external view returns (bytes32);
 
