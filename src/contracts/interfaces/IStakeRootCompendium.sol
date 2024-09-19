@@ -28,6 +28,7 @@ interface IStakeRootCompendium {
     error OperatorSetIndexOutOfBounds();
     error OperatorSetMustExist();
     error OperatorSetSizeMismatch();
+    error ExtraDataNotSorted();
 
     /**
      * @dev Struct containing charges for operator sets, strategies, and max total charge.

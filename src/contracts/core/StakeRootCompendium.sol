@@ -252,7 +252,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         );
 
         Snapshots.Snapshot memory _snapshot = chargePerProof._snapshots[indexChargePerProof];
-        
+
         // TODO: Error name needs modified, and a comment better explaining this check.
         require(
             _snapshot._key <= calculationTimestamp, TimestampOfIndexChargePerProofIsGreaterThanCalculationTimestamp()
@@ -275,7 +275,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             })
         );
 
-        // TODO: Error name needs modified, and a comment better explaining _snapshot._value's relation to the transfer.
+        // TODO: Comment better explaining _snapshot._value's relation to the transfer.
         _safeTransferETH(chargeRecipient, _snapshot._value);
 
         // TODO: verify proof
@@ -570,22 +570,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         OperatorSet[] calldata operatorSetsInStakeTree,
         bytes32[] calldata operatorSetRoots
     ) external view returns (bytes32) {
-        require(
-            operatorSets.length == operatorSetsInStakeTree.length,
-            "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree length mismatch"
-        );
-        require(
-            operatorSetsInStakeTree.length == operatorSetRoots.length,
-            "StakeRootCompendium.getStakeRoot: operatorSetsInStakeTree vs. operatorSetRoots mismatch"
-        );
+        require(operatorSets.length == operatorSetsInStakeTree.length, OperatorSetSizeMismatch());
+        require(operatorSetsInStakeTree.length == operatorSetRoots.length, InputArrayLengthMismatch());
         for (uint256 i = 0; i < operatorSetsInStakeTree.length; ++i) {
-            require(
-                operatorSets[i].avs == operatorSetsInStakeTree[i].avs,
-                "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree avs mismatch"
-            );
+            require(operatorSets[i].avs == operatorSetsInStakeTree[i].avs, InputCorrelatedVariableMismatch());
             require(
                 operatorSets[i].operatorSetId == operatorSetsInStakeTree[i].operatorSetId,
-                "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree operatorSetId mismatch"
+                InputCorrelatedVariableMismatch()
             );
         }
         return Merkle.merkleizeKeccak256(operatorSetRoots);
@@ -596,11 +587,8 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint256 operatorSetIndex,
         uint256 startOperatorIndex,
         uint256 numOperators
-    ) external view returns (OperatorLeaf[] memory) {
-        require(
-            operatorSetIndex < operatorSets.length,
-            "StakeRootCompendium.getOperatorSetLeaves: operator set index out of bounds"
-        );
+    ) external view returns (OperatorSet memory, address[] memory, OperatorLeaf[] memory) {
+        require(operatorSetIndex < operatorSets.length, OperatorSetIndexOutOfBounds());
         OperatorSet memory operatorSet = operatorSets[operatorSetIndex];
         address[] memory operators =
             avsDirectory.getOperatorsInOperatorSet(operatorSet, startOperatorIndex, numOperators);
@@ -627,24 +615,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         OperatorLeaf[] calldata operatorLeaves
     ) external view returns (bytes32) {
         OperatorSet memory operatorSet = operatorSets[operatorSetIndex];
+        require(avsDirectory.isOperatorSet(operatorSet.avs, operatorSet.operatorSetId), OperatorSetMustExist());
         require(
-            avsDirectory.isOperatorSet(operatorSet.avs, operatorSet.operatorSetId),
-            "StakeRootCompendium.getOperatorSetRoot: operator set does not exist"
+            operatorLeaves.length == avsDirectory.getNumOperatorsInOperatorSet(operatorSet), InputArrayLengthMismatch()
         );
-        require(
-            operatorLeaves.length == avsDirectory.getNumOperatorsInOperatorSet(operatorSet),
-            "AVSSyncTree.getOperatorSetRoot: operator set size mismatch"
-        );
-
         uint256 totalDelegatedStake;
-        uint256 totalSlashableStake;
-        bytes32 prevExtraData;
-        bytes32[] memory operatorLeavesHashes = new bytes32[](operatorLeaves.length);
         for (uint256 i = 0; i < operatorLeaves.length; ++i) {
-            require(
-                uint256(prevExtraData) < uint256(operatorLeaves[i].extraData),
-                "StakeRootCompendium.getOperatorSetRoot: extraData not sorted"
-            );
+            require(uint256(prevExtraData) < uint256(operatorLeaves[i].extraData), ExtraDataNotSorted());
             prevExtraData = operatorLeaves[i].extraData;
 
             operatorLeavesHashes[i] = keccak256(
