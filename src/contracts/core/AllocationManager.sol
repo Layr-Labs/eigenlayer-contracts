@@ -314,17 +314,12 @@ contract AllocationManager is
 
         // OperatorSet[] calldata opSets = allocation.operatorSets;
 
-        bytes32 prevOperatorSet = bytes32(0);
-
         for (uint256 i = 0; i < allocation.operatorSets.length; ++i) {
             require(
                 avsDirectory.isOperatorSet(allocation.operatorSets[i].avs, allocation.operatorSets[i].operatorSetId),
                 InvalidOperatorSet()
             );
-            // use encoding of operatorSet to ensure ordering and also used to use OperatorSet struct as key in mappings
             bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[i]);
-            require(prevOperatorSet < operatorSetKey, OperatorSetsNotInAscendingOrder());
-            prevOperatorSet = operatorSetKey;
 
             // Read current magnitude allocation including its respective array index and length.
             // We'll use these values later to check the number of pending allocations/deallocations.
