@@ -564,11 +564,7 @@ contract DelegationManager is
 
         // read delegated operator's totalMagnitudes at time of withdrawal to scale shares again if any slashing has occurred
         // during withdrawal delay period
-        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudesAtTimestamp({
-            operator: withdrawal.delegatedTo,
-            strategies: withdrawal.strategies,
-            timestamp: withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY
-        });
+        uint64[] memory totalMagnitudes;
 
         if (withdrawal.startTimestamp < LEGACY_WITHDRAWALS_TIMESTAMP) {
             // this is a legacy M2 withdrawal using blocknumbers. We use the LEGACY_WITHDRAWALS_TIMESTAMP to check
@@ -578,9 +574,20 @@ contract DelegationManager is
                 withdrawal.startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number,
                 WithdrawalDelayNotElapsed()
             );
+
+            totalMagnitudes = new uint64[](withdrawal.strategies.length);
+            for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
+                totalMagnitudes[i] = SlashingLib.PRECISION_FACTOR;
+            }
         } else {
             // this is a post Slashing release withdrawal using timestamps
             require(withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY <= block.timestamp, WithdrawalDelayNotElapsed());
+
+            totalMagnitudes = allocationManager.getTotalMagnitudesAtTimestamp({
+                operator: withdrawal.delegatedTo,
+                strategies: withdrawal.strategies,
+                timestamp: withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY
+            });   
         }
 
         for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
