@@ -290,7 +290,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         // Assert the stake root matches the stake root submission.
         require(stakeRootSubmission.stakeRoot == stakeRoot, StakeRootDoesNotMatch());
         // Assert the stake root has not already been confirmed.
-        require(stakeRootSubmission.confirmed, TimestampAlreadyConfirmed());
+        require(!stakeRootSubmission.confirmed, TimestampAlreadyConfirmed());
         // Confirm the stake root.
         stakeRootSubmission.confirmed = true;
     }
