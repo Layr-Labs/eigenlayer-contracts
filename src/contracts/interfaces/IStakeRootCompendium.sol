@@ -6,6 +6,56 @@ import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IStrategy.sol";
 
 interface IStakeRootCompendium {
+    // TODO: Rename these...
+    error NonexistentOperatorSet();
+    error NonexistentStrategy();
+    error InsufficientDepositBalance();
+    error NotInStakeTree();
+    error OperatorSetNotOldEnough();
+    error EthTransferFailed();
+    error TimestampNotMultipleOfProofInterval();
+    error TimestampAlreadyPosted();
+    error TimestampOfIndexChargePerProofIsGreaterThanCalculationTimestamp();
+    error IndexChargePerProofNotValid();
+    error OnlyRootConfirmerCanConfirm();
+    error StakeRootDoesNotMatch();
+    error TimestampAlreadyConfirmed();
+    error MaxTotalChargeMustBeGreaterThanTheCurrentTotalCharge();
+    error NoProofsThatHaveBeenChargedButNotSubmitted();
+    error ChargePerProofExceedsMax();
+    error InputArrayLengthMismatch();
+    error InputCorrelatedVariableMismatch();
+    error OperatorSetIndexOutOfBounds();
+    error OperatorSetMustExist();
+    error OperatorSetSizeMismatch();
+
+    /**
+     * @dev Struct containing charges for operator sets, strategies, and max total charge.
+     * @param chargePerOperatorSet The linear charge per proof in the number of strategies.
+     * @param chargePerStrategy The constant charge per proof.
+     * @param The max total charge for a stakeroot proof, used to bound computation offchain.
+     */
+    struct ChargeParams {
+        uint96 chargePerOperatorSet;
+        uint96 chargePerStrategy;
+        uint96 maxChargePerProof;
+    }
+    
+    /**
+     * @dev Struct containing info about cumulative charges.
+     * @param chargePerOperatorSet The cumulative constant charge per operator set since deployment.
+     * @param chargePerStrategy The cumulative linear charge per strategy per operator set since deployment.
+     * @param lastUpdateTimestamp The last time cumulative charges were updated.
+     * @param proofIntervalSeconds The interval in seconds at which proofs can be posted.
+     */
+
+    struct CumulativeChargeParams {
+        uint96 chargePerOperatorSet;
+        uint96 chargePerStrategy;
+        uint32 lastUpdateTimestamp;
+        uint32 proofIntervalSeconds;
+    }
+
     struct StrategyAndMultiplier {
         IStrategy strategy;
         uint96 multiplier;
@@ -26,9 +76,9 @@ interface IStakeRootCompendium {
         // the balance of the operatorSet (includes pending deductions)
         uint96 balance;
         // the timestamp of the operatorSets latest deposit or increase in number of strategies.
-        // withdrawals of deposit balance are bounded by paying for MIN_PREPAID_PROOFS proofs since 
+        // withdrawals of deposit balance are bounded by paying for MIN_PREPAID_PROOFS proofs since
         // ones latest demand increase
-        uint32 lastDemandIncreaseTimestamp; 
+        uint32 lastDemandIncreaseTimestamp;
         // the cumulativeChargePerOperatorSet at the time of the lastest deduction from the deposit balance
         // used in making further deductions
         uint96 cumulativeChargePerOperatorSetLastPaid;
@@ -58,14 +108,13 @@ interface IStakeRootCompendium {
     /// @notice the number of operator sets in the StakeTree
     function getNumOperatorSets() external view returns (uint256);
 
-    /// @notice the interval at which proofs can be posted, to not overcharge the operatorSets
-    function proofIntervalSeconds() external view returns (uint32);
-
     /**
      * @notice returns the stake root submission at the given index
      * @param index the index of the stake root submission
      */
-    function getStakeRootSubmission(uint32 index) external view returns (StakeRootSubmission memory);
+    function getStakeRootSubmission(
+        uint32 index
+    ) external view returns (StakeRootSubmission memory);
 
     /// @notice the number of stake root submissions
     function getNumStakeRootSubmissions() external view returns (uint256);
@@ -77,14 +126,14 @@ interface IStakeRootCompendium {
      * @return delegatedStake the delegated stake for the operator
      * @return slashableStake the slashable stake for the operator
      */
-    function getStakes(OperatorSet calldata operatorSet, address operator)
-        external
-        view
-        returns (uint256 delegatedStake, uint256 slashableStake);
+    function getStakes(
+        OperatorSet calldata operatorSet,
+        address operator
+    ) external view returns (uint256 delegatedStake, uint256 slashableStake);
 
     /**
      * @notice called offchain with the operatorSet roots ordered by the operatorSet index at the timestamp to calculate the stake root
-     * @param operatorSetsInStakeTree the operatorSets that each of the operatorSetRoots correspond to. must be the same as operatorSets storage var at the time of call
+     * @param operatorSetsInStakeTree the operatorSets ids that each of the operatorSetRoots correspond to. must be the same as operatorSets storage var at the time of call
      * @param operatorSetRoots the ordered operatorSet roots (not verified)
      * @dev operatorSetsInStakeTree must be the same as operatorSets storage var at the time of call
      * @dev operatorSetRoots must be ordered by the operatorSet index at the time of call
@@ -118,6 +167,9 @@ interface IStakeRootCompendium {
         uint256 numOperators
     ) external view returns (OperatorSet memory, address[] memory, OperatorLeaf[] memory);
 
+    /// @notice Returns the interval at which proofs can be posted, to not overcharge the operatorSets.
+    function proofIntervalSeconds() external view returns (uint32);
+
     /**
      * @notice deposits funds for an operator set
      * @param operatorSet the operator set to deposit for
@@ -125,7 +177,9 @@ interface IStakeRootCompendium {
      * @dev the operator set must have a minimum balance of 2 * MIN_DEPOSIT_BALANCE to disallow joining with minimal cost after removal
      * @dev permissionless to deposit
      */
-    function deposit(OperatorSet calldata operatorSet) external payable;
+    function deposit(
+        OperatorSet calldata operatorSet
+    ) external payable;
 
     /**
      * @notice called by an AVS to add strategies and multipliers or modify multipliers used to determine stakes for stake roots
@@ -176,7 +230,9 @@ interface IStakeRootCompendium {
      * @param operatorSetsToRemove the operatorSets to update the deposit balance infos for
      * @dev sends the caller the leftover after charging if the balance is below the minimum
      */
-    function removeOperatorSetsFromStakeTree(OperatorSet[] calldata operatorSetsToRemove) external;
+    function removeOperatorSetsFromStakeTree(
+        OperatorSet[] calldata operatorSetsToRemove
+    ) external;
 
     /**
      * @notice called by the claimer to claim a stake root
@@ -208,31 +264,36 @@ interface IStakeRootCompendium {
      * @return the minimum deposit balance required for the operatorSet, which is just enough to pay for a certain number of proofs
      * @dev this is enforced upon deposits and additions or modifications of strategies and multipliers
      */
-    function minDepositBalance(uint256 numStrategies) external view returns (uint256);
+    function minDepositBalance(
+        uint256 numStrategies
+    ) external view returns (uint256);
 
     /**
      * @param operatorSet the operatorSet to check withdrawability for
      * @return whether or not the operatorSet can withdraw any of their deposit balance
      */
-    function canWithdrawDepositBalance(OperatorSet memory operatorSet) external view returns (bool);
+    function canWithdrawDepositBalance(
+        OperatorSet memory operatorSet
+    ) external view returns (bool);
 
     /**
      * @notice get the deposit balance for the operator set
      * @param operatorSet the operator set to get the deposit balance for
      * @return balance the deposit balance for the operator set
      */
-    function getDepositBalance(OperatorSet memory operatorSet)
-        external
-        view
-        returns (uint256 balance);
+    function getDepositBalance(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256 balance);
 
     /**
-     * @notice set the maximum total charge for a stakeRoot proof
-     * @param _maxTotalCharge the maximum total charge for a stakeRoot proof
+     * @notice set the maximum charge for a stakeRoot proof
+     * @param _maxChargePerProof the maximum charge for a stakeRoot proof
      * @dev only callable by owner
      * @dev used to limit offchain computation
      */
-    function setMaxTotalCharge(uint96 _maxTotalCharge) external;
+    function setMaxChargePerProof(
+        uint96 _maxChargePerProof
+    ) external;
 
     /**
      * @notice set the charges per proof going forward from the time of calling
@@ -244,15 +305,19 @@ interface IStakeRootCompendium {
 
     /**
      * @notice set the proof interval in seconds
-     * @param proofIntervalSeconds the interval in seconds at which proofs can be posted
+     * @param _proofIntervalSeconds the interval in seconds at which proofs can be posted
      * @dev only callable by owner
      */
-    function setProofIntervalSeconds(uint32 proofIntervalSeconds) external;
+    function setProofIntervalSeconds(
+        uint32 _proofIntervalSeconds
+    ) external;
 
     /**
      * @notice set the confirmer of roots
      * @param _rootConfirmer the address allowed to confirm roots
      * @dev only callable by owner
      */
-    function setRootConfirmer(address _rootConfirmer) external;
+    function setRootConfirmer(
+        address _rootConfirmer
+    ) external;
 }

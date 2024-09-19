@@ -37,15 +37,17 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
                 StakeRootCompendium.initialize.selector,
                 msg.sender,
                 msg.sender,
-                1 minutes,
-                100 ether,
-                0,
-                0
+                uint32(1 minutes),
+                IStakeRootCompendium.ChargeParams({
+                    chargePerOperatorSet: uint96(100 ether),
+                    chargePerStrategy: uint96(0),
+                    maxChargePerProof: uint96(0)
+                })
             )
         )));
         vm.stopBroadcast();
         emit log_named_address("allocationManager", address(allocationManager));
-        emit log_named_address("stakeRootCompendium", address(stakeRootCompendium));
+        emit log_named_address("StakeRootCompendium", address(stakeRootCompendium));
 
         address[] memory allStrategies = _parseDeployedStrategies(strategyFile);
 
@@ -113,7 +115,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             }
 
             string memory parent_object = "success";
-            vm.serializeAddress(parent_object, "stakeRootCompendium", address(stakeRootCompendium));
+            vm.serializeAddress(parent_object, "StakeRootCompendium", address(stakeRootCompendium));
             vm.serializeAddress(parent_object, "avs", address(avs));
             vm.serializeAddress(parent_object, "operators", operators[i]);
             vm.serializeAddress(parent_object, "strategies", strategyAddresses);
@@ -125,12 +127,12 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
 contract AVS {
     IAVSDirectory avsDirectory;
-    IStakeRootCompendium stakeRootCompendium;
+    IStakeRootCompendium StakeRootCompendium;
 
     // creates an operator set for each list of strategies
-    constructor(IAVSDirectory _avsDirectory, IStakeRootCompendium _stakeRootCompendium) {
+    constructor(IAVSDirectory _avsDirectory, IStakeRootCompendium _StakeRootCompendium) {
         avsDirectory = _avsDirectory;
-        stakeRootCompendium = _stakeRootCompendium;
+        StakeRootCompendium = _StakeRootCompendium;
         avsDirectory.becomeOperatorSetAVS();
     }
 
@@ -141,7 +143,7 @@ contract AVS {
         if(!avsDirectory.isOperatorSet(address(this), operatorSetId)) {
             avsDirectory.createOperatorSets(operatorSetIdsToCreate);
 
-            stakeRootCompendium.deposit{value: 2 * stakeRootCompendium.MIN_BALANCE_THRESHOLD()}(OperatorSet({
+            StakeRootCompendium.deposit{value: 2 * StakeRootCompendium.MIN_BALANCE_THRESHOLD()}(OperatorSet({
                 avs: address(this),
                 operatorSetId: operatorSetId
             }));
@@ -168,10 +170,10 @@ contract AVS {
                 multiplier: 1 ether
             });
         }
-        stakeRootCompendium.addOrModifyStrategiesAndMultipliers(operatorSetId, strategiesAndMultipliers); 
-        stakeRootCompendium.setOperatorSetExtraData(operatorSetId, keccak256(abi.encodePacked(operatorSetId)));
+        StakeRootCompendium.addOrModifyStrategiesAndMultipliers(operatorSetId, strategiesAndMultipliers); 
+        StakeRootCompendium.setOperatorSetExtraData(operatorSetId, keccak256(abi.encodePacked(operatorSetId)));
         for (uint256 i = 0; i < operators.length; ++i) {
-            stakeRootCompendium.setOperatorExtraData(operatorSetId, operators[i], keccak256(abi.encodePacked(operators[i])));
+            StakeRootCompendium.setOperatorExtraData(operatorSetId, operators[i], keccak256(abi.encodePacked(operators[i])));
         }
     }
 
