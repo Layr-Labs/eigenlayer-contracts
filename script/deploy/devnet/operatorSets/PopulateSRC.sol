@@ -21,7 +21,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
         vm.startBroadcast();
         uint32 proofInterval = 1 hours;
-        IStakeRootCompendium StakeRootCompendiumImplementation =  new StakeRootCompendium({
+        IStakeRootCompendium stakeRootCompendiumImplementation =  new StakeRootCompendium({
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
             _allocationManager: allocationManager,
@@ -31,7 +31,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             _imageId: bytes32(0)
         });
         StakeRootCompendium StakeRootCompendium = StakeRootCompendium(payable(new TransparentUpgradeableProxy(
-            address(StakeRootCompendiumImplementation),
+            address(stakeRootCompendiumImplementation),
             proxyAdmin,
             abi.encodeWithSelector(
                 StakeRootCompendium.initialize.selector,

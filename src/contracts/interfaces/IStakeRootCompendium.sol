@@ -10,7 +10,7 @@ interface IStakeRootCompendium {
     error NonexistentOperatorSet();
     error NonexistentStrategy();
     error InsufficientDepositBalance();
-    error StakeTreeMustIncludeOperatorSet();
+    error NotInStakeTree();
     error OperatorSetNotOldEnough();
     error EthTransferFailed();
     error TimestampNotMultipleOfProofInterval();
@@ -29,21 +29,24 @@ interface IStakeRootCompendium {
     error OperatorSetMustExist();
     error OperatorSetSizeMismatch();
 
-    /// @dev Struct containing charges for operator sets, strategies, and max total charge.
-    /// @param chargePerOperatorSet The linear charge per proof in the number of strategies.
-    /// @param chargePerStrategy The constant charge per proof.
-    /// @param The max total charge for a stakeroot proof, used to bound computation offchain.
+    /**
+     * @dev Struct containing charges for operator sets, strategies, and max total charge.
+     * @param chargePerOperatorSet The linear charge per proof in the number of strategies.
+     * @param chargePerStrategy The constant charge per proof.
+     * @param The max total charge for a stakeroot proof, used to bound computation offchain.
+     */
     struct ChargeParams {
         uint96 chargePerOperatorSet;
         uint96 chargePerStrategy;
         uint96 maxChargePerProof;
     }
-
-    /// @dev Struct containing info about cumulative charges.
-    /// @param chargePerOperatorSet The cumulative constant charge per operator set since deployment.
-    /// @param chargePerStrategy The cumulative linear charge per strategy per operator set since deployment.
-    /// @param lastUpdateTimestamp The last time cumulative charges were updated.
-    /// @param proofIntervalSeconds The interval in seconds at which proofs can be posted.
+    /**
+     * @dev Struct containing info about cumulative charges.
+     * @param chargePerOperatorSet The cumulative constant charge per operator set since deployment.
+     * @param chargePerStrategy The cumulative linear charge per strategy per operator set since deployment.
+     * @param lastUpdateTimestamp The last time cumulative charges were updated.
+     * @param proofIntervalSeconds The interval in seconds at which proofs can be posted.
+     */
     struct CumulativeChargeParams {
         uint96 chargePerOperatorSet;
         uint96 chargePerStrategy;
@@ -300,11 +303,11 @@ interface IStakeRootCompendium {
 
     /**
      * @notice set the proof interval in seconds
-     * @param proofIntervalSeconds the interval in seconds at which proofs can be posted
+     * @param _proofIntervalSeconds the interval in seconds at which proofs can be posted
      * @dev only callable by owner
      */
     function setProofIntervalSeconds(
-        uint32 proofIntervalSeconds
+        uint32 _proofIntervalSeconds
     ) external;
 
     /**

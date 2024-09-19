@@ -35,21 +35,13 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         address _owner,
         address _rootConfirmer,
         uint32 _proofIntervalSeconds,
-        uint96 _maxChargePerProof,
-        uint96 _chargePerStrategy,
-        uint96 _chargePerOperatorSet
+        ChargeParams memory _chargeParams
     ) public initializer {
         __Ownable_init();
         _transferOwnership(_owner);
 
         rootConfirmer = _rootConfirmer;
-
-        chargeParams = ChargeParams({
-            chargePerOperatorSet: _chargePerOperatorSet,
-            chargePerStrategy: _chargePerStrategy,
-            maxChargePerProof: _maxChargePerProof
-        });
-
+        chargeParams = _chargeParams;
         cumulativeChargeParams.proofIntervalSeconds = _proofIntervalSeconds;
 
         stakeRootSubmissions.push(StakeRootSubmission({
@@ -152,7 +144,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function setOperatorSetExtraData(uint32 operatorSetId, bytes32 extraData) external {
         require(
             _isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
-            StakeTreeMustIncludeOperatorSet()
+            NotInStakeTree()
         );
         operatorSetExtraDatas[msg.sender][operatorSetId] = extraData;
     }
@@ -161,7 +153,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function setOperatorExtraData(uint32 operatorSetId, address operator, bytes32 extraData) external {
         require(
             _isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})),
-            StakeTreeMustIncludeOperatorSet()
+            NotInStakeTree()
         );
         operatorExtraDatas[msg.sender][operatorSetId][operator] = extraData;
     }
@@ -182,7 +174,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         // debt the withdraw amount
         depositInfos[msg.sender][operatorSetId].balance -= uint96(amount);
 
-        safeTransferETH(msg.sender, amount);
+        _safeTransferETH(msg.sender, amount);
 
         return amount;
     }
@@ -206,7 +198,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         }
         // note this reward is subject to a race condition where anyone can claim the penalty if they submit their transaction first
         // it is the caller's responsibility to use private mempool to protect themselves from reverted transactions
-        safeTransferETH(msg.sender, penalty);
+        _safeTransferETH(msg.sender, penalty);
     }
 
     /// POSTING ROOTS AND BLACKLISTING
@@ -247,9 +239,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             })
         );
 
-        safeTransferETH(chargeRecipient, _snapshot._value);
-
-
+        _safeTransferETH(chargeRecipient, _snapshot._value);
         // interactions
 
         // note verify will be an external call, so adding to the end to apply the check, effect, interaction pattern to avoid reentrancy
@@ -285,7 +275,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// @inheritdoc IStakeRootCompendium
     function setProofIntervalSeconds(
-        uint32 proofIntervalSeconds
+        uint32 _proofIntervalSeconds
     ) external onlyOwner {
         _updateCumulativeCharge();
         // we must not interrupt pending proof calculations by rugging the outstanding calculationTimestamps
@@ -294,7 +284,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
                 == cumulativeChargeParams.lastUpdateTimestamp,
             NoProofsThatHaveBeenChargedButNotSubmitted()
         );
-        cumulativeChargeParams.proofIntervalSeconds = proofIntervalSeconds;
+        cumulativeChargeParams.proofIntervalSeconds = _proofIntervalSeconds;
     }
 
     /// @inheritdoc IStakeRootCompendium
@@ -380,7 +370,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function _updateDepositInfo(
         OperatorSet memory operatorSet
     ) internal returns (uint256 balance) {
-        require(_isInStakeTree(operatorSet), StakeTreeMustIncludeOperatorSet());
+        require(_isInStakeTree(operatorSet), NotInStakeTree());
 
         (, uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) =
             _calculateCumulativeCharges();
@@ -603,7 +593,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         );
     }
 
-    function safeTransferETH(address to, uint256 amount) internal {
+    function _safeTransferETH(address to, uint256 amount) internal {
         (bool success, ) = to.call{value: amount}("");
         require(success, EthTransferFailed());
     }
