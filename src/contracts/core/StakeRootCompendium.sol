@@ -105,7 +105,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
         uint256 numStrategiesBefore = strategiesAndMultipliers.length();
         // set the strategies and multipliers for the operator set
-        for (uint256 i = 0; i < _strategiesAndMultipliers.length; i++) {
+        for (uint256 i = 0; i < _strategiesAndMultipliers.length; ++i) {
             strategiesAndMultipliers.set(
                 address(_strategiesAndMultipliers[i].strategy), uint256(_strategiesAndMultipliers[i].multiplier)
             );
@@ -134,7 +134,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
         // note below either all strategies are removed or none are removed and transaction reverts
         uint256 numStrategiesBefore = strategiesAndMultipliers.length();
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i = 0; i < strategies.length; ++i) {
             require(strategiesAndMultipliers.remove(address(strategies[i])), NonexistentStrategy());
         }
 
@@ -181,7 +181,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         OperatorSet[] calldata operatorSetsToRemove
     ) external {
         uint256 penalty = 0;
-        for (uint256 i = 0; i < operatorSetsToRemove.length; i++) {
+        for (uint256 i = 0; i < operatorSetsToRemove.length; ++i) {
             if (_isInStakeTree(operatorSetsToRemove[i])) {
                 uint256 depositBalance = _updateDepositInfo(operatorSetsToRemove[i]);
                 // remove from stake tree if their deposit balance is below the minimum
@@ -395,7 +395,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         IStrategy[] memory strategies =
             new IStrategy[](operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length());
         uint256[] memory multipliers = new uint256[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i = 0; i < strategies.length; ++i) {
             (address strategy, uint256 multiplier) =
                 operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].at(i);
             strategies[i] = IStrategy(strategy);
@@ -419,7 +419,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             (uint64[] memory totalMagnitudes, uint64[] memory allocatedMagnitudes) =
                 allocationManager.getTotalAndAllocatedMagnitudes(operator, operatorSet, strategies);
 
-            for (uint256 i = 0; i < strategies.length; i++) {
+            for (uint256 i = 0; i < strategies.length; ++i) {
                 delegatedStake += delegatedShares[i] * totalMagnitudes[i] / 1 ether * multipliers[i];
                 slashableStake += delegatedShares[i] * allocatedMagnitudes[i] / 1 ether * multipliers[i];
             }
@@ -526,7 +526,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             operatorSetsInStakeTree.length == operatorSetRoots.length,
             "StakeRootCompendium.getStakeRoot: operatorSetsInStakeTree vs. operatorSetRoots mismatch"
         );
-        for (uint256 i = 0; i < operatorSetsInStakeTree.length; i++) {
+        for (uint256 i = 0; i < operatorSetsInStakeTree.length; ++i) {
             require(
                 operatorSets[i].avs == operatorSetsInStakeTree[i].avs,
                 "StakeRootCompendium.getStakeRoot: operatorSets vs. operatorSetsInStakeTree avs mismatch"
@@ -554,7 +554,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         (IStrategy[] memory strategies, uint256[] memory multipliers) = _getStrategiesAndMultipliers(operatorSet);
 
         OperatorLeaf[] memory operatorLeaves = new OperatorLeaf[](operators.length);
-        for (uint256 i = 0; i < operatorLeaves.length; i++) {
+        for (uint256 i = 0; i < operatorLeaves.length; ++i) {
             // calculate the weighted sum of the operator's shares for the strategies given the multipliers
             (uint256 delegatedStake, uint256 slashableStake) = _getStakes(operatorSet, strategies, multipliers, operators[i]);
 
@@ -586,7 +586,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint256 totalSlashableStake;
         bytes32 prevExtraData;
         bytes32[] memory operatorLeavesHashes = new bytes32[](operatorLeaves.length);
-        for (uint256 i = 0; i < operatorLeaves.length; i++) {
+        for (uint256 i = 0; i < operatorLeaves.length; ++i) {
             require(uint256(prevExtraData) < uint256(operatorLeaves[i].extraData), "StakeRootCompendium.getOperatorSetRoot: extraData not sorted");
             prevExtraData = operatorLeaves[i].extraData;
 
