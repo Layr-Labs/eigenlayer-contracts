@@ -30,22 +30,24 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             _verifier: address(0),
             _imageId: bytes32(0)
         });
-        StakeRootCompendium StakeRootCompendium = StakeRootCompendium(payable(new TransparentUpgradeableProxy(
+        StakeRootCompendium stakeRootCompendium = StakeRootCompendium(payable(new TransparentUpgradeableProxy(
             address(stakeRootCompendiumImplementation),
             proxyAdmin,
             abi.encodeWithSelector(
                 StakeRootCompendium.initialize.selector,
                 msg.sender,
                 msg.sender,
-                1 minutes,
-                100 ether,
-                0,
-                0
+                uint32(1 minutes),
+                IStakeRootCompendium.ChargeParams({
+                    chargePerOperatorSet: uint96(100 ether),
+                    chargePerStrategy: uint96(0),
+                    maxChargePerProof: uint96(0)
+                })
             )
         )));
         vm.stopBroadcast();
         emit log_named_address("allocationManager", address(allocationManager));
-        emit log_named_address("StakeRootCompendium", address(StakeRootCompendium));
+        emit log_named_address("StakeRootCompendium", address(stakeRootCompendium));
 
         address[] memory allStrategies = _parseDeployedStrategies(strategyFile);
 
@@ -84,8 +86,8 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
 
         uint64 magnitudeForOperators = 0.1 ether;
         vm.startBroadcast();
-        AVS avs = new AVS(avsDirectory, StakeRootCompendium);
-        payable(address(avs)).transfer(2 * StakeRootCompendium.MIN_BALANCE_THRESHOLD() * strategies.length);
+        AVS avs = new AVS(avsDirectory, stakeRootCompendium);
+        payable(address(avs)).transfer(2 * stakeRootCompendium.MIN_BALANCE_THRESHOLD() * strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
             avs.createOperatorSetAndRegisterOperators(uint32(i), strategies[i], operators[i]);
@@ -113,7 +115,7 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             }
 
             string memory parent_object = "success";
-            vm.serializeAddress(parent_object, "StakeRootCompendium", address(StakeRootCompendium));
+            vm.serializeAddress(parent_object, "StakeRootCompendium", address(stakeRootCompendium));
             vm.serializeAddress(parent_object, "avs", address(avs));
             vm.serializeAddress(parent_object, "operators", operators[i]);
             vm.serializeAddress(parent_object, "strategies", strategyAddresses);

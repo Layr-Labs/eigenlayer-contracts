@@ -94,7 +94,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     /// @inheritdoc IStakeRootCompendium
     function addOrModifyStrategiesAndMultipliers(
         uint32 operatorSetId,
-        StrategyAndMultiplier[] calldata addedorModifiedStrategiesAndMultipliers
+        StrategyAndMultiplier[] calldata _strategiesAndMultipliers
     ) external {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
         // update the deposit balance for the operator set whenever number of strategies is changed
@@ -105,10 +105,9 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
         uint256 numStrategiesBefore = strategiesAndMultipliers.length();
         // set the strategies and multipliers for the operator set
-        for (uint256 i = 0; i < addedorModifiedStrategiesAndMultipliers.length; i++) {
+        for (uint256 i = 0; i < _strategiesAndMultipliers.length; i++) {
             strategiesAndMultipliers.set(
-                address(addedorModifiedStrategiesAndMultipliers[i].strategy),
-                uint256(addedorModifiedStrategiesAndMultipliers[i].multiplier)
+                address(_strategiesAndMultipliers[i].strategy), uint256(_strategiesAndMultipliers[i].multiplier)
             );
         }
         uint256 numStrategiesAfter = strategiesAndMultipliers.length();

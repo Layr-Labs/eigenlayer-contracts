@@ -40,6 +40,7 @@ interface IStakeRootCompendium {
         uint96 chargePerStrategy;
         uint96 maxChargePerProof;
     }
+    
     /**
      * @dev Struct containing info about cumulative charges.
      * @param chargePerOperatorSet The cumulative constant charge per operator set since deployment.
