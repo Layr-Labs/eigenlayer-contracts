@@ -590,13 +590,9 @@ contract AllocationManager is
      * that could be completed at the same time. This is the sum of freeMagnitude and the sum of all pending completable deallocations.
      * @param operator the operator to get the allocatable magnitude for
      * @param strategy the strategy to get the allocatable magnitude for
-     * @param numToComplete the number of pending free magnitudes deallocations to complete
      */
-    function getAllocatableMagnitude(
-        address operator,
-        IStrategy strategy,
-        uint16 numToComplete
-    ) external view returns (uint64) {
+    function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+        uint16 numToComplete = type(uint16).max;
         OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][strategy];
         (uint64 freeMagnitudeToAdd,) =
             _getPendingFreeMagnitude(operator, strategy, numToComplete, info.nextPendingFreeMagnitudeIndex);
