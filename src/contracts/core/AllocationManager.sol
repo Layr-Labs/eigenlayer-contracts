@@ -319,6 +319,8 @@ contract AllocationManager is
                 avsDirectory.isOperatorSet(allocation.operatorSets[i].avs, allocation.operatorSets[i].operatorSetId),
                 InvalidOperatorSet()
             );
+
+            // use encoding of operatorSet as key in mappings
             bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[i]);
 
             // Read current magnitude allocation including its respective array index and length.
