@@ -44,12 +44,14 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         chargeParams = _chargeParams;
         cumulativeChargeParams.proofIntervalSeconds = _proofIntervalSeconds;
 
-        stakeRootSubmissions.push(StakeRootSubmission({
-            calculationTimestamp: 0,
-            submissionTimestamp: uint32(block.timestamp),
-            stakeRoot: bytes32(0),
-            confirmed: false
-        }));
+        stakeRootSubmissions.push(
+            StakeRootSubmission({
+                calculationTimestamp: 0,
+                submissionTimestamp: uint32(block.timestamp),
+                stakeRoot: bytes32(0),
+                confirmed: false
+            })
+        );
     }
 
     /// OPERATORSET CONFIGURATION
@@ -59,29 +61,39 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         OperatorSet calldata operatorSet
     ) external payable {
         DepositInfo storage depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
+
+        // If the operator set is not in the stake tree, add it.
         if (!_isInStakeTree(operatorSet)) {
+            // Compute updated cumulative charges.
             (, uint256 cumulativeChargePerOperatorSet, uint256 cumulativeChargePerStrategy) =
                 _calculateCumulativeCharges();
 
+            // Update the deposit info for the given operator set.
             depositInfo.lastDemandIncreaseTimestamp = uint32(block.timestamp);
             depositInfo.cumulativeChargePerOperatorSetLastPaid = uint96(cumulativeChargePerOperatorSet);
             depositInfo.cumulativeChargePerStrategyLastPaid = uint96(cumulativeChargePerStrategy);
 
+            // Update the total amount of strategies.
             _updateTotalStrategies(
                 0, operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId].length()
             );
 
+            // TODO: What is this variables overall purpose? Maybe explain the why?
             operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].push(
                 uint32(block.timestamp), uint224(operatorSets.length)
             );
 
+            // Add operator set to the list of operator sets contained within the stake tree.
             operatorSets.push(operatorSet);
         }
 
+        // Increase the operator set's deposit balance by call value.
         depositInfo.balance += uint96(msg.value);
-        // note that they've shown increased demand for proofs
+
+        // Update the last demand increase timestamp to now.
         depositInfo.lastDemandIncreaseTimestamp = uint32(block.timestamp);
-        // make sure they have enough to pay for MIN_PROOFS_PREPAID
+
+        // Assert that the operator set's deposit balance is greater than the minimum deposit balance.
         require(
             depositInfo.balance
                 >= minDepositBalance(
@@ -97,78 +109,96 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         StrategyAndMultiplier[] calldata _strategiesAndMultipliers
     ) external {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
-        // update the deposit balance for the operator set whenever number of strategies is changed
+
+        // Update the deposit info for the given operator set.
         _updateDepositInfo(operatorSet);
 
         EnumerableMap.AddressToUintMap storage strategiesAndMultipliers =
             operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSet.operatorSetId];
 
+        // Get the number of strategies before the update.
         uint256 numStrategiesBefore = strategiesAndMultipliers.length();
-        // set the strategies and multipliers for the operator set
+
+        // Add or modify the strategies and multipliers.
         for (uint256 i = 0; i < _strategiesAndMultipliers.length; ++i) {
             strategiesAndMultipliers.set(
                 address(_strategiesAndMultipliers[i].strategy), uint256(_strategiesAndMultipliers[i].multiplier)
             );
         }
+
+        // Get the number of strategies after the update.
         uint256 numStrategiesAfter = strategiesAndMultipliers.length();
 
         DepositInfo storage depositInfo = depositInfos[operatorSet.avs][operatorSet.operatorSetId];
 
-        // make sure they have enough to pay for MIN_PREPAID_PROOFS
+        // Assert that the operator set's balance is greater than the minimum deposit balance.
         require(depositInfo.balance >= minDepositBalance(numStrategiesAfter), InsufficientDepositBalance());
-        // note that they've shown increased demand for proofs
+
+        // Update the last demand increase timestamp to now.
         depositInfo.lastDemandIncreaseTimestamp = uint32(block.timestamp);
 
-        // only adding new strategies to count
+        // Update the total number of strategies.
         _updateTotalStrategies(numStrategiesBefore, numStrategiesAfter);
     }
 
     /// @inheritdoc IStakeRootCompendium
     function removeStrategiesAndMultipliers(uint32 operatorSetId, IStrategy[] calldata strategies) external {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
-        // update the deposit balance for the operator set whenever number of strategies is changed
+
+        // Update the deposit info for the given operator set.
         _updateDepositInfo(operatorSet);
 
         EnumerableMap.AddressToUintMap storage strategiesAndMultipliers =
             operatorSetToStrategyAndMultipliers[operatorSet.avs][operatorSetId];
 
-        // note below either all strategies are removed or none are removed and transaction reverts
-        uint256 numStrategiesBefore = strategiesAndMultipliers.length();
+        // Remove the strategies and multipliers.
         for (uint256 i = 0; i < strategies.length; ++i) {
+            // Assert the strategy exists, and remove it.
             require(strategiesAndMultipliers.remove(address(strategies[i])), NonexistentStrategy());
         }
 
+        // Get the number of strategies before the update.
+        uint256 numStrategiesBefore = strategiesAndMultipliers.length();
+
+        // Update the total number of strategies.
         _updateTotalStrategies(numStrategiesBefore, numStrategiesBefore - strategies.length);
     }
 
     /// @inheritdoc IStakeRootCompendium
     function setOperatorSetExtraData(uint32 operatorSetId, bytes32 extraData) external {
+        // Assert that the operator set is in the stake tree.
         require(_isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})), NotInStakeTree());
+
+        // Update the operator set's extra data.
         operatorSetExtraDatas[msg.sender][operatorSetId] = extraData;
     }
 
     /// @inheritdoc IStakeRootCompendium
     function setOperatorExtraData(uint32 operatorSetId, address operator, bytes32 extraData) external {
+        // Assert that the operator set is in the stake tree.
         require(_isInStakeTree(OperatorSet({avs: msg.sender, operatorSetId: operatorSetId})), NotInStakeTree());
+
+        // Update the operator's extra data.
         operatorExtraDatas[msg.sender][operatorSetId][operator] = extraData;
     }
 
     /// @inheritdoc IStakeRootCompendium
-    function withdraw(uint32 operatorSetId, uint256 amount) external payable returns (uint256) {
+    function withdraw(uint32 operatorSetId, uint256 amount) public payable returns (uint256) {
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
+        // Assert that the operator set is old enough to withdraw.
         require(canWithdrawDepositBalance(operatorSet), OperatorSetNotOldEnough());
-
-        // debt any pending charge
+        // Update the deposit info for the given operator set.
         uint256 balance = _updateDepositInfo(operatorSet);
+        // If the balance is less than the minimum balance threshold withdraw entire balance.
         if (balance < MIN_BALANCE_THRESHOLD + amount) {
-            // withdraw all to avoid deposit balance dropping below minimum
+            // Withdraw the entire balance to avoid deposit balance dropping below minimum.
             amount = balance;
-            // remove from stake tree if applicable
+            // Remove from the stake tree, if applicable.
             _removeFromStakeTree(operatorSet);
         }
-        // debt the withdraw amount
+        // Decrease the operator set's balance by the amount withdrawn.
         depositInfos[msg.sender][operatorSetId].balance -= uint96(amount);
-
+        // Transfer the amount to the caller.
         _safeTransferETH(msg.sender, amount);
 
         return amount;
@@ -180,19 +210,23 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function removeOperatorSetsFromStakeTree(
         OperatorSet[] calldata operatorSetsToRemove
     ) external {
-        uint256 penalty = 0;
+        // Track the sum of the balances of the operator sets that are removed from the stake tree.
+        uint256 penalty;
+        // Iterate over the operator sets to remove.
         for (uint256 i = 0; i < operatorSetsToRemove.length; ++i) {
+            // If the operator set is in the stake tree, update the deposit info.
             if (_isInStakeTree(operatorSetsToRemove[i])) {
+                // Update the deposit info for the given operator set.
                 uint256 depositBalance = _updateDepositInfo(operatorSetsToRemove[i]);
-                // remove from stake tree if their deposit balance is below the minimum
+                // If the deposit balance is less than the minimum balance threshold, remove from the stake tree.
                 if (depositBalance < MIN_BALANCE_THRESHOLD) {
                     _removeFromStakeTree(operatorSetsToRemove[i]);
                     penalty += depositBalance;
                 }
             }
         }
-        // note this reward is subject to a race condition where anyone can claim the penalty if they submit their transaction first
-        // it is the caller's responsibility to use private mempool to protect themselves from reverted transactions
+        // Note: This reward can be claimed by anyone who submits first.
+        // Use a private mempool to avoid failed/hanging transactions.
         _safeTransferETH(msg.sender, penalty);
     }
 
@@ -206,25 +240,32 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint256 indexChargePerProof,
         Proof calldata _proof
     ) external {
+        // Assert that `calculationTimestamp` is a multiple of the proof interval.
         require(
             calculationTimestamp % cumulativeChargeParams.proofIntervalSeconds == 0,
             TimestampNotMultipleOfProofInterval()
         );
-        // no length check here is ok because the initializer adds a default submission
+        // Assert that the stake root has not already been posted.
         require(
             stakeRootSubmissions[stakeRootSubmissions.length - 1].calculationTimestamp != calculationTimestamp,
             TimestampAlreadyPosted()
         );
-        // credit the charge recipient
+
         Snapshots.Snapshot memory _snapshot = chargePerProof._snapshots[indexChargePerProof];
+        
+        // TODO: Error name needs modified, and a comment better explaining this check.
         require(
             _snapshot._key <= calculationTimestamp, TimestampOfIndexChargePerProofIsGreaterThanCalculationTimestamp()
         );
+
+        // TODO: Error name needs modified, and a comment better explaining this check.
         require(
             chargePerProof.length() == indexChargePerProof + 1
                 || uint256(chargePerProof._snapshots[indexChargePerProof + 1]._key) > calculationTimestamp,
             IndexChargePerProofNotValid()
         );
+
+        // Push the new stake root submission.
         stakeRootSubmissions.push(
             StakeRootSubmission({
                 calculationTimestamp: uint32(calculationTimestamp),
@@ -234,20 +275,23 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             })
         );
 
+        // TODO: Error name needs modified, and a comment better explaining _snapshot._value's relation to the transfer.
         _safeTransferETH(chargeRecipient, _snapshot._value);
-        // interactions
 
-        // note verify will be an external call, so adding to the end to apply the check, effect, interaction pattern to avoid reentrancy
         // TODO: verify proof
         // TODO: prevent race incentives and public mempool sniping, eg embed chargeRecipient in the proof
     }
 
     /// @inheritdoc IStakeRootCompendium
     function confirmStakeRoot(uint32 index, bytes32 stakeRoot) external {
+        // Assert the caller is the root confirmer.
         require(msg.sender == rootConfirmer, OnlyRootConfirmerCanConfirm());
         IStakeRootCompendium.StakeRootSubmission storage stakeRootSubmission = stakeRootSubmissions[index];
+        // Assert the stake root matches the stake root submission.
         require(stakeRootSubmission.stakeRoot == stakeRoot, StakeRootDoesNotMatch());
+        // Assert the stake root has not already been confirmed.
         require(stakeRootSubmission.confirmed, TimestampAlreadyConfirmed());
+        // Confirm the stake root.
         stakeRootSubmission.confirmed = true;
     }
 
@@ -257,16 +301,21 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function setMaxChargePerProof(
         uint96 _maxChargePerProof
     ) external onlyOwner {
+        // Assert that the new max charge per proof is greater than the current max charge per proof.
         require(_maxChargePerProof >= chargePerProof.latest(), MaxTotalChargeMustBeGreaterThanTheCurrentTotalCharge());
+        // Update the max charge per proof.
         chargeParams.maxChargePerProof = _maxChargePerProof;
     }
 
     /// @inheritdoc IStakeRootCompendium
     function setChargePerProof(uint96 _chargePerStrategy, uint96 _chargePerOperatorSet) external onlyOwner {
+        // Update cumulative charge params.
         _updateCumulativeCharge();
+        // Update charge params.
         ChargeParams storage params = chargeParams;
         params.chargePerStrategy = _chargePerStrategy;
         params.chargePerOperatorSet = _chargePerOperatorSet;
+        // Update charge per proof.
         _updateChargePerProof();
     }
 
@@ -274,13 +323,16 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     function setProofIntervalSeconds(
         uint32 _proofIntervalSeconds
     ) external onlyOwner {
+        // Update cumulative charge params.
         _updateCumulativeCharge();
-        // we must not interrupt pending proof calculations by rugging the outstanding calculationTimestamps
+        // Assert that the last calculation timestamp is the same as the last update timestamp.
+        // TODO: Better comment explaing the "why' for this check.
         require(
             stakeRootSubmissions[stakeRootSubmissions.length - 1].calculationTimestamp
                 == cumulativeChargeParams.lastUpdateTimestamp,
             NoProofsThatHaveBeenChargedButNotSubmitted()
         );
+        // Update proof interval seconds.
         cumulativeChargeParams.proofIntervalSeconds = _proofIntervalSeconds;
     }
 
@@ -550,13 +602,15 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             "StakeRootCompendium.getOperatorSetLeaves: operator set index out of bounds"
         );
         OperatorSet memory operatorSet = operatorSets[operatorSetIndex];
-        address[] memory operators = avsDirectory.getOperatorsInOperatorSet(operatorSet, startOperatorIndex, numOperators);
+        address[] memory operators =
+            avsDirectory.getOperatorsInOperatorSet(operatorSet, startOperatorIndex, numOperators);
         (IStrategy[] memory strategies, uint256[] memory multipliers) = _getStrategiesAndMultipliers(operatorSet);
 
         OperatorLeaf[] memory operatorLeaves = new OperatorLeaf[](operators.length);
         for (uint256 i = 0; i < operatorLeaves.length; ++i) {
             // calculate the weighted sum of the operator's shares for the strategies given the multipliers
-            (uint256 delegatedStake, uint256 slashableStake) = _getStakes(operatorSet, strategies, multipliers, operators[i]);
+            (uint256 delegatedStake, uint256 slashableStake) =
+                _getStakes(operatorSet, strategies, multipliers, operators[i]);
 
             operatorLeaves[i] = OperatorLeaf({
                 delegatedStake: delegatedStake,
@@ -587,14 +641,15 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         bytes32 prevExtraData;
         bytes32[] memory operatorLeavesHashes = new bytes32[](operatorLeaves.length);
         for (uint256 i = 0; i < operatorLeaves.length; ++i) {
-            require(uint256(prevExtraData) < uint256(operatorLeaves[i].extraData), "StakeRootCompendium.getOperatorSetRoot: extraData not sorted");
+            require(
+                uint256(prevExtraData) < uint256(operatorLeaves[i].extraData),
+                "StakeRootCompendium.getOperatorSetRoot: extraData not sorted"
+            );
             prevExtraData = operatorLeaves[i].extraData;
 
             operatorLeavesHashes[i] = keccak256(
                 abi.encodePacked(
-                    operatorLeaves[i].delegatedStake,
-                    operatorLeaves[i].slashableStake,
-                    operatorLeaves[i].extraData
+                    operatorLeaves[i].delegatedStake, operatorLeaves[i].slashableStake, operatorLeaves[i].extraData
                 )
             );
 
@@ -608,8 +663,8 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
                 operatorTreeRoot,
                 keccak256(
                     abi.encodePacked(
-                        totalDelegatedStake, 
-                        totalSlashableStake, 
+                        totalDelegatedStake,
+                        totalSlashableStake,
                         operatorSetExtraDatas[operatorSet.avs][operatorSet.operatorSetId]
                     )
                 )

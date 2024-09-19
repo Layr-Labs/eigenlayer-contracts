@@ -40,7 +40,7 @@ interface IStakeRootCompendium {
         uint96 chargePerStrategy;
         uint96 maxChargePerProof;
     }
-    
+
     /**
      * @dev Struct containing info about cumulative charges.
      * @param chargePerOperatorSet The cumulative constant charge per operator set since deployment.
@@ -48,7 +48,6 @@ interface IStakeRootCompendium {
      * @param lastUpdateTimestamp The last time cumulative charges were updated.
      * @param proofIntervalSeconds The interval in seconds at which proofs can be posted.
      */
-
     struct CumulativeChargeParams {
         uint96 chargePerOperatorSet;
         uint96 chargePerStrategy;
