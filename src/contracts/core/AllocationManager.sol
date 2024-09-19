@@ -423,7 +423,7 @@ contract AllocationManager is
         return uint64(totalMagnitude);
     }
 
-    /// @dev gets the latest total magnitude 
+    /// @dev gets the latest total magnitude
     function _getLatestTotalMagnitudeView(address operator, IStrategy strategy) internal view returns (uint64) {
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
@@ -441,11 +441,8 @@ contract AllocationManager is
         uint64 totalMagnitude = _getLatestTotalMagnitudeView(operator, strategy);
 
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
-        uint64 currentMagnitude = uint64(
-                _magnitudeUpdate[operator][strategy][operatorSetKey].upperLookupLinear(
-                    uint32(block.timestamp)
-                )
-            );
+        uint64 currentMagnitude =
+            uint64(_magnitudeUpdate[operator][strategy][operatorSetKey].upperLookupLinear(uint32(block.timestamp)));
 
         return (totalMagnitude, currentMagnitude);
     }
@@ -652,7 +649,8 @@ contract AllocationManager is
         uint64[] memory totalMagnitude = new uint64[](strategies.length);
         uint64[] memory allocatedMagnitude = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            (totalMagnitude[i], allocatedMagnitude[i]) = _getTotalAndAllocatedMagnitude(operator, operatorSet, strategies[i]);
+            (totalMagnitude[i], allocatedMagnitude[i]) =
+                _getTotalAndAllocatedMagnitude(operator, operatorSet, strategies[i]);
         }
         return (totalMagnitude, allocatedMagnitude);
     }
