@@ -35,7 +35,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         address _owner,
         address _rootConfirmer,
         uint32 _proofIntervalSeconds,
-        ChargeParams memory _chargeParams
+        ChargeParams calldata _chargeParams
     ) public initializer {
         __Ownable_init();
         _transferOwnership(_owner);
