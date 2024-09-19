@@ -262,6 +262,8 @@ contract AllocationManager is
      * @param delay The allocation delay in seconds.
      */
     function _setAllocationDelay(address operator, uint32 delay) internal {
+        require(delay != 0, InvalidDelay());
+
         AllocationDelayInfo storage delayInfo = _allocationDelayInfo[operator];
 
         bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
@@ -474,7 +476,7 @@ contract AllocationManager is
 
         bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
 
-        isSet = delayInfo.pendingDelayEffectTimestamp != 0;
+        isSet = delayInfo.delay != 0 || pendingInEffect;
 
         if (pendingInEffect) return (isSet, delayInfo.pendingDelay);
 
