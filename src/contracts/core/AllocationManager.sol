@@ -592,10 +592,13 @@ contract AllocationManager is
      * @param strategy the strategy to get the allocatable magnitude for
      */
     function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
-        uint16 numToComplete = type(uint16).max;
         OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][strategy];
-        (uint64 freeMagnitudeToAdd,) =
-            _getPendingFreeMagnitude(operator, strategy, numToComplete, info.nextPendingFreeMagnitudeIndex);
+        (uint64 freeMagnitudeToAdd,) = _getPendingFreeMagnitude({
+            operator: operator,
+            strategy: strategy,
+            numToComplete: type(uint16).max,
+            nextIndex: info.nextPendingFreeMagnitudeIndex
+        });
         return info.freeMagnitude + freeMagnitudeToAdd;
     }
 
