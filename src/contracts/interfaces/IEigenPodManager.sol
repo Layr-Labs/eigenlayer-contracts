@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "./IETHPOSDeposit.sol";
 import "./IStrategyManager.sol";
 import "./IEigenPod.sol";
+import "./IShareManager.sol";
 import "./IPausable.sol";
 import "./ISlasher.sol";
 import "./IStrategy.sol";
@@ -14,7 +15,7 @@ import "./IStrategy.sol";
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-interface IEigenPodManager is IPausable {
+interface IEigenPodManager is IShareManager, IPausable {
     /// @dev Thrown when caller is not a EigenPod.
     error OnlyEigenPod();
     /// @dev Thrown when caller is not DelegationManager.
@@ -25,6 +26,8 @@ interface IEigenPodManager is IPausable {
     error SharesNotMultipleOfGwei();
     /// @dev Thrown when shares would result in a negative integer.
     error SharesNegative();
+    /// @dev Thrown when the strategy is not the beaconChainETH strategy.
+    error InvalidStrategy();
 
     /// @notice Emitted to notify the deployment of an EigenPod
     event PodDeployed(address indexed eigenPod, address indexed podOwner);
@@ -118,34 +121,4 @@ interface IEigenPodManager is IPausable {
 
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
-
-    /**
-     * @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue.
-     * Simply decreases the `podOwner`'s shares by `shares`, down to a minimum of zero.
-     * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
-     * result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
-     * shares from the operator to whom the staker is delegated.
-     * @dev Reverts if `shares` is not a whole Gwei amount
-     */
-    function removeShares(address podOwner, uint256 shares) external;
-
-    /**
-     * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
-     * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
-     * @dev Returns the number of shares added to `podOwnerShares[podOwner]` above zero, which will be less than the `shares` input
-     * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero).
-     * Also returns existingPodShares prior to adding shares, this is returned as 0 if the existing podOwnerShares is negative
-     * @dev Reverts if `shares` is not a whole Gwei amount
-     */
-    function addShares(
-        address podOwner,
-        uint256 shares
-    ) external returns (uint256 increaseInDelegateableShares, uint256 existingPodShares);
-
-    /**
-     * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
-     * @dev Prioritizes decreasing the podOwner's share deficit, if they have one
-     * @dev Reverts if `shares` is not a whole Gwei amount
-     */
-    function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
 }

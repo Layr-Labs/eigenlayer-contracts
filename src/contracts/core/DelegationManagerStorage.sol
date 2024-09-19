@@ -40,15 +40,17 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice The AVSDirectory contract for EigenLayer
     IAVSDirectory public immutable avsDirectory;
+    
+    // TODO: Switch these to ShareManagers, but this breaks a lot of tests
 
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
 
-    /// @notice The Slasher contract for EigenLayer
-    ISlasher public immutable slasher;
-
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
+
+    /// @notice The Slasher contract for EigenLayer
+    ISlasher public immutable slasher;
 
     /// @notice The AllocationManager contract for EigenLayer
     IAllocationManager public immutable allocationManager;

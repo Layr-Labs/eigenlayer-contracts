@@ -560,22 +560,7 @@ contract DelegationManager is
         require(tokens.length == withdrawal.strategies.length, InputArrayLengthMismatch());
         require(msg.sender == withdrawal.withdrawer, WithdrawerNotCaller());
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
-        bool isLegacyWithdrawal = false;
-
         require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
-        if (withdrawal.startTimestamp < LEGACY_WITHDRAWALS_TIMESTAMP) {
-            // this is a legacy M2 withdrawal using blocknumbers. We use the LEGACY_WITHDRAWALS_TIMESTAMP to check
-            // if the withdrawal is a legacy withdrawal or not. It would take up to 600+ years for the blocknumber
-            // to reach the LEGACY_WITHDRAWALS_TIMESTAMP, so this is a safe check.
-            require(
-                withdrawal.startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number,
-                WithdrawalDelayNotElapsed()
-            );
-            isLegacyWithdrawal = true;
-        } else {
-            // this is a post Slashing release withdrawal using timestamps
-            require(withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY <= block.timestamp, WithdrawalDelayNotElapsed());
-        }
 
         // read delegated operator's totalMagnitudes at time of withdrawal to scale shares again if any slashing has occurred
         // during withdrawal delay period
@@ -585,50 +570,41 @@ contract DelegationManager is
             timestamp: withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY
         });
 
-        for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
-            uint256 sharesToWithdraw;
-            if (isLegacyWithdrawal) {
-                // This is a legacy M2 withdrawal. There is no slashing applied to the withdrawn shares.
-                sharesToWithdraw = withdrawal.scaledShares[i];
-            } else {
-                // Take already scaled staker shares and scale again according to current operator totalMagnitude
-                // This is because the totalMagnitude may have changed since withdrawal was queued and the staker shares
-                // are still susceptible to slashing
-                sharesToWithdraw =
-                    SlashingLib.calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
-            }
+        if (withdrawal.startTimestamp < LEGACY_WITHDRAWALS_TIMESTAMP) {
+            // this is a legacy M2 withdrawal using blocknumbers. We use the LEGACY_WITHDRAWALS_TIMESTAMP to check
+            // if the withdrawal is a legacy withdrawal or not. It would take up to 600+ years for the blocknumber
+            // to reach the LEGACY_WITHDRAWALS_TIMESTAMP, so this is a safe check.
+            require(
+                withdrawal.startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number,
+                WithdrawalDelayNotElapsed()
+            );
+        } else {
+            // this is a post Slashing release withdrawal using timestamps
+            require(withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY <= block.timestamp, WithdrawalDelayNotElapsed());
+        }
 
+        for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
+            IShareManager shareManager = _getShareManager(withdrawal.strategies[i]);
+            uint256 sharesToWithdraw = SlashingLib.calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
             if (receiveAsTokens) {
                 // withdraws the underlying token of the strategy to the staker
 
                 // Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares,
                 // then a call is ultimately forwarded to the `staker`s EigenPod; otherwise a call is ultimately forwarded
                 // to the `strategy` with info on the `token`.
-                if (withdrawal.strategies[i] == beaconChainETHStrategy) {
-                    eigenPodManager.withdrawSharesAsTokens({
-                        podOwner: withdrawal.staker,
-                        destination: msg.sender,
-                        shares: sharesToWithdraw
-                    });
-                } else {
-                    strategyManager.withdrawSharesAsTokens({
-                        recipient: msg.sender,
-                        strategy: withdrawal.strategies[i],
-                        shares: sharesToWithdraw,
-                        token: tokens[i]
-                    });
-                }
+                shareManager.withdrawSharesAsTokens({
+                    recipient: withdrawal.staker,
+                    strategy: withdrawal.strategies[i],
+                    shares: sharesToWithdraw,
+                    token: tokens[i]
+                });
             } else {
                 // adds the withdrawable shares back to the stakers account
 
                 // Award shares back in StrategyManager/EigenPodManager.
-                if (withdrawal.strategies[i] == beaconChainETHStrategy) {
-                    // Award shares back in EigenPodManager.
-                    // big fukn TODO: refactor EPM to increaseDelegatedShares if applicable. this is completely broken as is
-                    eigenPodManager.addShares({podOwner: withdrawal.staker, shares: sharesToWithdraw});
-                } else {
-                    strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], sharesToWithdraw);
-                }
+
+                // big fukn TODO: refactor EPM to increaseDelegatedShares if applicable. this is completely broken as is
+                strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], sharesToWithdraw);
             }
         }
 
@@ -704,16 +680,12 @@ contract DelegationManager is
         // Remove shares from staker and operator
         // Each of these operations fail if we attempt to remove more shares than exist
         for (uint256 i = 0; i < strategies.length; ++i) {
+            IShareManager shareManager = _getShareManager(strategies[i]);
+
             // check sharesToWithdraw is valid
             // TODO maybe have a getter to get totalShares for all strategies, like getDelegatableShares
             // but for inputted strategies
-            uint256 totalShares;
-            if (strategies[i] == beaconChainETHStrategy) {
-                int256 podShares = eigenPodManager.podOwnerShares(staker);
-                totalShares = podShares <= 0 ? 0 : uint256(podShares);
-            } else {
-                totalShares = strategyManager.stakerStrategyShares(staker, strategies[i]);
-            }
+            uint256 totalShares = shareManager.stakerStrategyShares(staker, strategies[i]);
             uint256 stakerScalingFactor = _getStakerScalingFactor(staker, strategies[i]);
             require(
                 sharesToWithdraw[i]
@@ -745,20 +717,11 @@ contract DelegationManager is
                     totalMagnitude: totalMagnitudes[i]
                 });
             }
-
+            
             // Remove active shares from EigenPodManager/StrategyManager
-            if (strategies[i] == beaconChainETHStrategy) {
-                /**
-                 * This call will revert if it would reduce the Staker's virtual beacon chain ETH shares below zero.
-                 * This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
-                 * shares from the operator to whom the staker is delegated.
-                 * It will also revert if the share amount being withdrawn is not a whole Gwei amount.
-                 */
-                eigenPodManager.removeShares(staker, sharesToDecrement);
-            } else {
-                // this call will revert if `scaledShares[i]` exceeds the Staker's current shares in `strategies[i]`
-                strategyManager.removeShares(staker, strategies[i], sharesToDecrement);
-            }
+            // EigenPodManager: this call will revert if it would reduce the Staker's virtual beacon chain ETH shares below zero
+            // StrategyManager: this call will revert if `scaledShares[i]` exceeds the Staker's current shares in `strategies[i]`
+            shareManager.removeShares(staker, strategies[i], sharesToDecrement);
         }
 
         // Create queue entry and increment withdrawal nonce
@@ -799,6 +762,10 @@ contract DelegationManager is
             currStakerScalingFactor = SlashingLib.PRECISION_FACTOR;
         }
         return currStakerScalingFactor;
+    }
+
+    function _getShareManager(IStrategy strategy) internal view returns (IShareManager) {
+        return strategy == beaconChainETHStrategy ? IShareManager(address(eigenPodManager)) : IShareManager(address(strategyManager));
     }
 
     /**
@@ -885,13 +852,9 @@ contract DelegationManager is
     ) external view returns (uint256[] memory shares) {
         address operator = delegatedTo[staker];
         for (uint256 i = 0; i < strategies.length; ++i) {
+            IShareManager shareManager = _getShareManager(strategies[i]);
             // 1. read strategy shares
-            if (strategies[i] == beaconChainETHStrategy) {
-                int256 podShares = eigenPodManager.podOwnerShares(staker);
-                shares[i] = podShares <= 0 ? 0 : uint256(podShares);
-            } else {
-                shares[i] = strategyManager.stakerStrategyShares(staker, strategies[i]);
-            }
+            shares[i] = shareManager.stakerStrategyShares(staker, strategies[i]);
 
             // 2. if the staker is delegated, actual withdrawable shares can be different from what is stored
             // in the StrategyManager/EigenPodManager because they could have been slashed
