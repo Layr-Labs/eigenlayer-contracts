@@ -42,7 +42,9 @@ uint32 constant DEALLOCATION_DELAY = 17.5 days;
  */
 
 type Shares is uint256;
+
 type StakeShares is uint256;
+
 type DepositShares is uint256;
 
 using SlashingLib for Shares global;

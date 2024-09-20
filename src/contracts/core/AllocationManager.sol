@@ -645,8 +645,7 @@ contract AllocationManager is
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            (uint224 value, uint256 pos) =
-                _totalMagnitudeUpdate[operator][strategies[i]].upperLookupWithPos(timestamp);
+            (uint224 value, uint256 pos) = _totalMagnitudeUpdate[operator][strategies[i]].upperLookupWithPos(timestamp);
             // if there is no existing total magnitude snapshot
             if (value == 0 && pos == 0) {
                 totalMagnitudes[i] = WAD;

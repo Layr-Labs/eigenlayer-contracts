@@ -390,8 +390,8 @@ contract DelegationManager is
 
             // add deposit shares to operator's stake shares and update the staker's depositScalingFactor
             _increaseOperatorStakeSharesAndScalingFactor({
-                operator: operator, 
-                staker: staker, 
+                operator: operator,
+                staker: staker,
                 strategy: strategy,
                 existingDepositShares: DepositShares.wrap(existingDepositShares),
                 addedShares: Shares.wrap(addedShares),
@@ -581,7 +581,7 @@ contract DelegationManager is
      * @param operator The operator to increase the delegated stakeShares for
      * @param staker The staker to increase the depositScalingFactor for
      * @param strategy The strategy to increase the delegated stakeShares and the depositScalingFactor for
-     * @param existingDepositShares The number of deposit shares the staker already has in the strategy. 
+     * @param existingDepositShares The number of deposit shares the staker already has in the strategy.
      * @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
      * @param totalMagnitude The current total magnitude of the operator for the strategy
      */
@@ -594,9 +594,9 @@ contract DelegationManager is
         uint64 totalMagnitude
     ) internal {
         _updateDepositScalingFactor({
-            staker: staker, 
-            strategy: strategy, 
-            existingDepositShares: existingDepositShares, 
+            staker: staker,
+            strategy: strategy,
+            existingDepositShares: existingDepositShares,
             addedShares: addedShares,
             totalMagnitude: totalMagnitude
         });
@@ -652,16 +652,14 @@ contract DelegationManager is
 
             // stakeShares for staker to place into queueWithdrawal
             stakeSharesToWithdraw[i] = Shares.wrap(sharesToWithdraw[i]).toStakeShares(totalMagnitudes[i]);
-            DepositShares depositSharesToWithdraw = stakeSharesToWithdraw[i].toDepositShares(depositScalingFactors[staker][strategies[i]]);
+            DepositShares depositSharesToWithdraw =
+                stakeSharesToWithdraw[i].toDepositShares(depositScalingFactors[staker][strategies[i]]);
 
             // TODO: maybe have a getter to get shares for all strategies, like getDelegatableShares
             // check sharesToWithdraw is valid
             // but for inputted strategies
             uint256 depositShares = shareManager.stakerStrategyShares(staker, strategies[i]);
-            require(
-                DepositShares.unwrap(depositSharesToWithdraw) <= depositShares,
-                WithdrawalExeedsMax()
-            );
+            require(DepositShares.unwrap(depositSharesToWithdraw) <= depositShares, WithdrawalExeedsMax());
 
             // Similar to `isDelegated` logic
             if (operator != address(0)) {
@@ -708,12 +706,9 @@ contract DelegationManager is
         uint32 startTimestamp
     ) internal view returns (uint32 completableTimestamp) {
         if (startTimestamp < LEGACY_WITHDRAWALS_TIMESTAMP) {
-            // this is a legacy M2 withdrawal using blocknumbers. 
+            // this is a legacy M2 withdrawal using blocknumbers.
             // It would take up to 600+ years for the blocknumber to reach the LEGACY_WITHDRAWALS_TIMESTAMP, so this is a safe check.
-            require(
-                startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number,
-                WithdrawalDelayNotElapsed()
-            );
+            require(startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number, WithdrawalDelayNotElapsed());
             // sourcing the magnitudes from time=0, will always give us WAD, which doesn't factor in slashing
             completableTimestamp = 0;
         } else {
@@ -727,7 +722,7 @@ contract DelegationManager is
     /**
      *
      *                              SHARES CONVERSION FUNCTIONS
-     *  
+     *
      */
 
     /**
@@ -750,31 +745,26 @@ contract DelegationManager is
             newDepositScalingFactor = WAD / totalMagnitude;
         } else {
             // TODO: OVERFLOWS: switch to muldiv everywhere
-            // since 
-            // 
+            // since
+            //
             // newShares
             //      = existingShares + addedShares
             //      = _convertDepositSharesToShares(staker, strategy, existingDepositShares, totalMagnitude) + addedShares
-            // 
+            //
             // and it also is
-            // 
+            //
             // newShares
             //     = _convertDepositSharesToShares(staker, strategy, newDepositShares, totalMagnitude)
             //     = newDepositShares * newDepositScalingFactor / WAD * totalMagnitude / WAD
             //     = (existingDepositShares + addedShares) * newDepositScalingFactor / WAD * totalMagnitude / WAD
-            // 
-            // we can solve for 
             //
-            uint256 existingShares = Shares.unwrap(existingDepositShares.toStakeShares(depositScalingFactors[staker][strategy]).toShares(totalMagnitude));
-            newDepositScalingFactor = 
-                (
-                    existingShares
-                    + Shares.unwrap(addedShares)
-                ) 
-                * WAD
-                / (DepositShares.unwrap(existingDepositShares) + Shares.unwrap(addedShares))
-                * WAD
-                / totalMagnitude;
+            // we can solve for
+            //
+            uint256 existingShares = Shares.unwrap(
+                existingDepositShares.toStakeShares(depositScalingFactors[staker][strategy]).toShares(totalMagnitude)
+            );
+            newDepositScalingFactor = (existingShares + Shares.unwrap(addedShares)) * WAD
+                / (DepositShares.unwrap(existingDepositShares) + Shares.unwrap(addedShares)) * WAD / totalMagnitude;
         }
 
         // update the staker's depositScalingFactor
@@ -792,8 +782,12 @@ contract DelegationManager is
         return currDepositScalingFactor;
     }
 
-    function _getShareManager(IStrategy strategy) internal view returns (IShareManager) {
-        return strategy == beaconChainETHStrategy ? IShareManager(address(eigenPodManager)) : IShareManager(address(strategyManager));
+    function _getShareManager(
+        IStrategy strategy
+    ) internal view returns (IShareManager) {
+        return strategy == beaconChainETHStrategy
+            ? IShareManager(address(eigenPodManager))
+            : IShareManager(address(strategyManager));
     }
 
     /**
@@ -869,7 +863,7 @@ contract DelegationManager is
     }
 
     /**
-     * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal. 
+     * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal.
      * This value depends on which operator the staker is delegated to.
      * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
      * to each strategy's underlying shares to token ratio).
@@ -889,7 +883,11 @@ contract DelegationManager is
             // in the StrategyManager/EigenPodManager because they could have been slashed
             if (operator != address(0)) {
                 uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategies[i]);
-                shares[i] = Shares.unwrap(DepositShares.wrap(shares[i]).toStakeShares(depositScalingFactors[staker][strategies[i]]).toShares(totalMagnitude));
+                shares[i] = Shares.unwrap(
+                    DepositShares.wrap(shares[i]).toStakeShares(depositScalingFactors[staker][strategies[i]]).toShares(
+                        totalMagnitude
+                    )
+                );
             }
         }
         return shares;
