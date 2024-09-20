@@ -144,13 +144,13 @@ interface IStakeRootCompendium {
     ) external view returns (bytes32);
 
     /**
-     * @notice Returns the operatorSet root for the given operatorSet with the given witnesses
-     * @param operatorSet the operatorSet to calculate the operator set root for
+     * @notice Returns the operatorSet root for the given operatorSetIndex with the given witnesses
+     * @param operatorSetIndex the operatorSetIndex to get the operatorSet root for
      * @param operatorLeaves the operator leaves in the operatorSet
      * @dev leaves must be sorted by extraData
      */
     function getOperatorSetRoot(
-        OperatorSet calldata operatorSet,
+        uint32 operatorSetIndex,
         OperatorLeaf[] calldata operatorLeaves
     ) external view returns (bytes32);
 
@@ -159,13 +159,13 @@ interface IStakeRootCompendium {
      * @param operatorSetIndex the index of the operatorSet within the SRC's operatorSets list to calculate the operator set leaves for
      * @param startOperatorIndex the index of the first operator to get the leaves for
      * @param numOperators the number of operators to get the leaves for
-     * @return the operatorSet, the operators, and the operator leaves
+     * @return the operators, and the operator leaves
      */
     function getOperatorSetLeaves(
         uint256 operatorSetIndex,
         uint256 startOperatorIndex,
         uint256 numOperators
-    ) external view returns (OperatorSet memory, address[] memory, OperatorLeaf[] memory);
+    ) external view returns (address[] memory, OperatorLeaf[] memory);
 
     /// @notice Returns the interval at which proofs can be posted, to not overcharge the operatorSets.
     function proofIntervalSeconds() external view returns (uint32);
