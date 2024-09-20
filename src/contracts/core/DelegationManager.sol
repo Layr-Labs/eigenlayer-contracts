@@ -774,17 +774,6 @@ contract DelegationManager is
         depositScalingFactors[staker][strategy] = newDepositScalingFactor;
     }
 
-    /**
-     * @notice depositScalingFactor should be initialized and lower bounded to 1e18
-     */
-    function _depositScalingFactor(address staker, IStrategy strategy) internal view returns (uint256) {
-        uint256 currDepositScalingFactor = depositScalingFactors[staker][strategy];
-        if (currDepositScalingFactor == 0) {
-            currDepositScalingFactor = WAD;
-        }
-        return currDepositScalingFactor;
-    }
-
     function _getShareManager(
         IStrategy strategy
     ) internal view returns (IShareManager) {
