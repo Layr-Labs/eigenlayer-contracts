@@ -79,10 +79,6 @@ library SlashingLib {
         return Shares.wrap(DelegatedShares.unwrap(delegatedShares).mulWad(magnitude));
     }
 
-    function toPrincipalShares(Shares shares, uint256 magnitude) internal pure returns (DelegatedShares) {
-        return DelegatedShares.wrap(Shares.unwrap(shares).divWad(magnitude));
-    }
-
     function toDelegatedShares(Shares shares, uint256 magnitude) internal pure returns (DelegatedShares) {
         return DelegatedShares.wrap(Shares.unwrap(shares).divWad(magnitude));
     }
