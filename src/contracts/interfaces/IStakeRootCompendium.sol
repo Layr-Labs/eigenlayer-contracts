@@ -159,13 +159,13 @@ interface IStakeRootCompendium {
      * @param operatorSetIndex the index of the operatorSet within the SRC's operatorSets list to calculate the operator set leaves for
      * @param startOperatorIndex the index of the first operator to get the leaves for
      * @param numOperators the number of operators to get the leaves for
-     * @return the operators, and the operator leaves
+     * @return the operator leaves
      */
     function getOperatorSetLeaves(
         uint256 operatorSetIndex,
         uint256 startOperatorIndex,
         uint256 numOperators
-    ) external view returns (address[] memory, OperatorLeaf[] memory);
+    ) external view returns (OperatorLeaf[] memory);
 
     /// @notice Returns the interval at which proofs can be posted, to not overcharge the operatorSets.
     function proofIntervalSeconds() external view returns (uint32);
