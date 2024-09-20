@@ -652,8 +652,9 @@ contract DelegationManager is
 
             // delegatedShares for staker to place into queueWithdrawal
             delegatedSharesToWithdraw[i] = Shares.wrap(sharesToWithdraw[i]).toDelegatedShares(totalMagnitudes[i]);
-            uint256 principalSharesToWithdraw =
-                PrincipalShares.unwrap(delegatedSharesToWithdraw[i].toPrincipalShares(depositScalingFactors[staker][strategies[i]]));
+            uint256 principalSharesToWithdraw = PrincipalShares.unwrap(
+                delegatedSharesToWithdraw[i].toPrincipalShares(depositScalingFactors[staker][strategies[i]])
+            );
 
             // TODO: maybe have a getter to get shares for all strategies, like getDelegatableShares
             // check sharesToWithdraw is valid
@@ -761,7 +762,9 @@ contract DelegationManager is
             // we can solve for
             //
             uint256 existingShares = Shares.unwrap(
-                existingPrincipalShares.toDelegatedShares(depositScalingFactors[staker][strategy]).toShares(totalMagnitude)
+                existingPrincipalShares.toDelegatedShares(depositScalingFactors[staker][strategy]).toShares(
+                    totalMagnitude
+                )
             );
             newDepositScalingFactor = (existingShares + Shares.unwrap(addedShares)) * WAD
                 / (PrincipalShares.unwrap(existingPrincipalShares) + Shares.unwrap(addedShares)) * WAD / totalMagnitude;
@@ -859,9 +862,7 @@ contract DelegationManager is
     /// @notice a legacy function that returns the total delegated shares for an operator and strategy
     function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
         uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
-        return Shares.unwrap(
-            DelegatedShares.wrap(operatorDelegatedShares[operator][strategy]).toShares(totalMagnitude)
-        );
+        return Shares.unwrap(DelegatedShares.wrap(operatorDelegatedShares[operator][strategy]).toShares(totalMagnitude));
     }
 
     /**
@@ -886,8 +887,7 @@ contract DelegationManager is
             if (operator != address(0)) {
                 uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategies[i]);
                 shares[i] = Shares.unwrap(
-                    PrincipalShares.wrap(shares[i])
-                        .toDelegatedShares(depositScalingFactors[staker][strategies[i]])
+                    PrincipalShares.wrap(shares[i]).toDelegatedShares(depositScalingFactors[staker][strategies[i]])
                         .toShares(totalMagnitude)
                 );
             }
