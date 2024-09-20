@@ -64,6 +64,10 @@ contract StrategyManagerMock is
         external
         returns (uint256 shares) {}
 
+    function getStakerStrategyList(
+        address staker
+    ) external view returns (IStrategy[] memory) {}
+
     /**
      * @notice mocks the return value of getDeposits
      * @param staker staker whose deposits are being mocked

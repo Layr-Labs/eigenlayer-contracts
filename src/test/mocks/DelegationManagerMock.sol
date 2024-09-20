@@ -10,6 +10,9 @@ contract DelegationManagerMock is IDelegationManager, Test {
     mapping(address => bool) public isOperator;
     mapping(address => mapping(IStrategy => uint256)) public operatorShares;
 
+
+    function operatorStakeShares(address operator, IStrategy strategy) external view returns (uint256) {}
+
     function setIsOperator(address operator, bool _isOperatorReturnValue) external {
         isOperator[operator] = _isOperatorReturnValue;
     }
