@@ -130,7 +130,7 @@ contract EigenPodManager is
                     staker: podOwner,
                     strategy: beaconChainETHStrategy,
                     // existing shares from standpoint of the DelegationManager
-                    existingDepositShares: currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares),
+                    existingPrincipalShares: currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares),
                     addedShares: uint256(changeInDelegatableShares)
                 });
             }

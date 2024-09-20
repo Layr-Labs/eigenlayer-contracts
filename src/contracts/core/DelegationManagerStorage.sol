@@ -56,15 +56,15 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     IAllocationManager public immutable allocationManager;
 
     /**
-     * @notice returns the total number of stakeShares (i.e. shares divided by the `operator`'s
+     * @notice returns the total number of delegatedShares (i.e. shares divided by the `operator`'s
      * totalMagnitude) in `strategy` that are delegated to `operator`.
-     * @notice Mapping: operator => strategy => total number of stakeShares in the strategy delegated to the operator.
+     * @notice Mapping: operator => strategy => total number of delegatedShares in the strategy delegated to the operator.
      * @dev By design, the following invariant should hold for each Strategy:
-     * (operator's stakeShares in delegation manager) = sum (stakeShares above zero of all stakers delegated to operator)
-     * = sum (delegateable stakeShares of all stakers delegated to the operator)
+     * (operator's delegatedShares in delegation manager) = sum (delegatedShares above zero of all stakers delegated to operator)
+     * = sum (delegateable delegatedShares of all stakers delegated to the operator)
      * @dev FKA `operatorShares`
      */
-    mapping(address => mapping(IStrategy => uint256)) public operatorStakeShares;
+    mapping(address => mapping(IStrategy => uint256)) public operatorDelegatedShares;
 
     /**
      * @notice Mapping: operator => OperatorDetails struct
