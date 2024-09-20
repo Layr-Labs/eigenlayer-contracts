@@ -78,7 +78,7 @@ contract MainnetPEPEDeploy is ExistingDeploymentParser {
         vm.stopPrank();
     }
 
-    function _testDeploy() internal {
+    function _testDeploy() internal view {
         require(eigenPodImplementation.activeValidatorCount() == 0, "unable to fetch activeValidatorCount");
     }
 }
