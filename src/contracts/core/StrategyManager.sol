@@ -381,6 +381,12 @@ contract StrategyManager is
         return (stakerStrategyList[staker], shares);
     }
 
+    function getStakerStrategyList(
+        address staker
+    ) external view returns (IStrategy[] memory) {
+        return stakerStrategyList[staker];
+    }
+
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
     function stakerStrategyListLength(
         address staker

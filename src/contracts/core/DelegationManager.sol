@@ -874,13 +874,14 @@ contract DelegationManager is
      * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
      * to each strategy's underlying shares to token ratio).
      */
-    function getWithdrawableStakerShares(
+    function getDelegatableShares(
         address staker,
-        IStrategy[] calldata strategies
-    ) external view returns (uint256[] memory shares) {
+        IStrategy[] memory strategies
+    ) public view returns (uint256[] memory shares) {
         address operator = delegatedTo[staker];
         for (uint256 i = 0; i < strategies.length; ++i) {
             IShareManager shareManager = _getShareManager(strategies[i]);
+            // TODO: batch call for strategyManager shares?
             // 1. read strategy deposit shares
             shares[i] = shareManager.stakerStrategyShares(staker, strategies[i]);
 
@@ -896,49 +897,28 @@ contract DelegationManager is
 
     /**
      * @notice Returns the number of actively-delegatable shares a staker has across all strategies.
-     * NOTE: If you are delegated to an operator and have been slashed, these values won't be your real actual
-     * delegatable shares!
      * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
      */
     function getDelegatableShares(
         address staker
     ) public view returns (IStrategy[] memory, uint256[] memory) {
-        // Get current StrategyManager/EigenPodManager shares and strategies for `staker`
-        // If `staker` is already delegated, these may not be the full withdrawable amounts due to slashing
-        int256 podShares = eigenPodManager.podOwnerShares(staker);
-        (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) =
-            strategyManager.getDeposits(staker);
-
-        // Has no shares in EigenPodManager, but potentially some in StrategyManager
-        if (podShares <= 0) {
-            return (strategyManagerStrats, strategyManagerShares);
+        // Get a list of all the strategies to check
+        IStrategy[] memory strategies = strategyManager.getStakerStrategyList(staker);
+        // resize and add beaconChainETH to the end
+        assembly {
+            mstore(strategies, add(mload(strategies), 1))
         }
+        strategies[strategies.length - 1] = beaconChainETHStrategy;
 
-        IStrategy[] memory strategies;
-        uint256[] memory shares;
-
-        if (strategyManagerStrats.length == 0) {
-            // Has shares in EigenPodManager, but not in StrategyManager
-            strategies = new IStrategy[](1);
-            shares = new uint256[](1);
-            strategies[0] = beaconChainETHStrategy;
-            shares[0] = uint256(podShares);
-        } else {
-            // Has shares in both
-            // TODO: make more efficient by resizing array
-            // 1. Allocate return arrays
-            strategies = new IStrategy[](strategyManagerStrats.length + 1);
-            shares = new uint256[](strategies.length);
-
-            // 2. Place StrategyManager strats/shares in return arrays
-            for (uint256 i = 0; i < strategyManagerStrats.length; ++i) {
-                strategies[i] = strategyManagerStrats[i];
-                shares[i] = strategyManagerShares[i];
+        // get the delegatable shares for each strategy
+        uint256[] memory shares = getDelegatableShares(staker, strategies);
+        // if the last shares are 0, remove them
+        if (shares[strategies.length - 1] == 0) {
+            // resize the arrays
+            assembly {
+                mstore(strategies, sub(mload(strategies), 1))
+                mstore(shares, sub(mload(shares), 1))
             }
-
-            // 3. Place EigenPodManager strat/shares in return arrays
-            strategies[strategies.length - 1] = beaconChainETHStrategy;
-            shares[strategies.length - 1] = uint256(podShares);
         }
 
         return (strategies, shares);

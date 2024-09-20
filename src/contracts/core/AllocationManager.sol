@@ -444,7 +444,6 @@ contract AllocationManager is
         uint192 nextIndex
     ) internal view returns (uint64 freeMagnitudeToAdd, uint192 completed) {
         uint256 pendingFreeMagnitudeLength = _pendingFreeMagnitude[operator][strategy].length;
-        uint16 completed = 0;
         freeMagnitudeToAdd = 0;
         while (nextIndex < pendingFreeMagnitudeLength && completed < numToComplete) {
             PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][nextIndex];

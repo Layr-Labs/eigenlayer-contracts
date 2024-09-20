@@ -104,6 +104,10 @@ interface IStrategyManager is IShareManager {
         address staker
     ) external view returns (IStrategy[] memory, uint256[] memory);
 
+    function getStakerStrategyList(
+        address staker
+    ) external view returns (IStrategy[] memory);
+
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
     function stakerStrategyListLength(
         address staker
