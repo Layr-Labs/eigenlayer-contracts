@@ -29,12 +29,6 @@ var (
 	_ = abi.ConvertType
 )
 
-// IDelegationManagerAllocationDelayDetails is an auto generated low-level Go binding around an user-defined struct.
-type IDelegationManagerAllocationDelayDetails struct {
-	IsSet           bool
-	AllocationDelay uint32
-}
-
 // IDelegationManagerOperatorDetails is an auto generated low-level Go binding around an user-defined struct.
 type IDelegationManagerOperatorDetails struct {
 	DeprecatedEarningsReceiver common.Address
@@ -51,13 +45,13 @@ type IDelegationManagerQueuedWithdrawalParams struct {
 
 // IDelegationManagerWithdrawal is an auto generated low-level Go binding around an user-defined struct.
 type IDelegationManagerWithdrawal struct {
-	Staker         common.Address
-	DelegatedTo    common.Address
-	Withdrawer     common.Address
-	Nonce          *big.Int
-	StartTimestamp uint32
-	Strategies     []common.Address
-	ScaledShares   []*big.Int
+	Staker      common.Address
+	DelegatedTo common.Address
+	Withdrawer  common.Address
+	Nonce       *big.Int
+	StartBlock  uint32
+	Strategies  []common.Address
+	Shares      []*big.Int
 }
 
 // ISignatureUtilsSignatureWithExpiry is an auto generated low-level Go binding around an user-defined struct.
@@ -620,6 +614,37 @@ func (_IDelegationManager *IDelegationManagerCallerSession) DomainSeparator() ([
 	return _IDelegationManager.Contract.DomainSeparator(&_IDelegationManager.CallOpts)
 }
 
+// GetOperatorShares is a free data retrieval call binding the contract method 0x90041347.
+//
+// Solidity: function getOperatorShares(address operator, address[] strategies) view returns(uint256[])
+func (_IDelegationManager *IDelegationManagerCaller) GetOperatorShares(opts *bind.CallOpts, operator common.Address, strategies []common.Address) ([]*big.Int, error) {
+	var out []interface{}
+	err := _IDelegationManager.contract.Call(opts, &out, "getOperatorShares", operator, strategies)
+
+	if err != nil {
+		return *new([]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
+
+	return out0, err
+
+}
+
+// GetOperatorShares is a free data retrieval call binding the contract method 0x90041347.
+//
+// Solidity: function getOperatorShares(address operator, address[] strategies) view returns(uint256[])
+func (_IDelegationManager *IDelegationManagerSession) GetOperatorShares(operator common.Address, strategies []common.Address) ([]*big.Int, error) {
+	return _IDelegationManager.Contract.GetOperatorShares(&_IDelegationManager.CallOpts, operator, strategies)
+}
+
+// GetOperatorShares is a free data retrieval call binding the contract method 0x90041347.
+//
+// Solidity: function getOperatorShares(address operator, address[] strategies) view returns(uint256[])
+func (_IDelegationManager *IDelegationManagerCallerSession) GetOperatorShares(operator common.Address, strategies []common.Address) ([]*big.Int, error) {
+	return _IDelegationManager.Contract.GetOperatorShares(&_IDelegationManager.CallOpts, operator, strategies)
+}
+
 // GetWithdrawalDelay is a free data retrieval call binding the contract method 0x0449ca39.
 //
 // Solidity: function getWithdrawalDelay(address[] strategies) view returns(uint256)
@@ -744,37 +769,6 @@ func (_IDelegationManager *IDelegationManagerCallerSession) MinWithdrawalDelayBl
 	return _IDelegationManager.Contract.MinWithdrawalDelayBlocks(&_IDelegationManager.CallOpts)
 }
 
-// OperatorAllocationDelay is a free data retrieval call binding the contract method 0x89829397.
-//
-// Solidity: function operatorAllocationDelay(address operator) view returns((bool,uint32))
-func (_IDelegationManager *IDelegationManagerCaller) OperatorAllocationDelay(opts *bind.CallOpts, operator common.Address) (IDelegationManagerAllocationDelayDetails, error) {
-	var out []interface{}
-	err := _IDelegationManager.contract.Call(opts, &out, "operatorAllocationDelay", operator)
-
-	if err != nil {
-		return *new(IDelegationManagerAllocationDelayDetails), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(IDelegationManagerAllocationDelayDetails)).(*IDelegationManagerAllocationDelayDetails)
-
-	return out0, err
-
-}
-
-// OperatorAllocationDelay is a free data retrieval call binding the contract method 0x89829397.
-//
-// Solidity: function operatorAllocationDelay(address operator) view returns((bool,uint32))
-func (_IDelegationManager *IDelegationManagerSession) OperatorAllocationDelay(operator common.Address) (IDelegationManagerAllocationDelayDetails, error) {
-	return _IDelegationManager.Contract.OperatorAllocationDelay(&_IDelegationManager.CallOpts, operator)
-}
-
-// OperatorAllocationDelay is a free data retrieval call binding the contract method 0x89829397.
-//
-// Solidity: function operatorAllocationDelay(address operator) view returns((bool,uint32))
-func (_IDelegationManager *IDelegationManagerCallerSession) OperatorAllocationDelay(operator common.Address) (IDelegationManagerAllocationDelayDetails, error) {
-	return _IDelegationManager.Contract.OperatorAllocationDelay(&_IDelegationManager.CallOpts, operator)
-}
-
 // OperatorDetails is a free data retrieval call binding the contract method 0xc5e480db.
 //
 // Solidity: function operatorDetails(address operator) view returns((address,address,uint32))
@@ -806,12 +800,12 @@ func (_IDelegationManager *IDelegationManagerCallerSession) OperatorDetails(oper
 	return _IDelegationManager.Contract.OperatorDetails(&_IDelegationManager.CallOpts, operator)
 }
 
-// OperatorScaledShares is a free data retrieval call binding the contract method 0x9fb4ee32.
+// OperatorShares is a free data retrieval call binding the contract method 0x778e55f3.
 //
-// Solidity: function operatorScaledShares(address operator, address strategy) view returns(uint256)
-func (_IDelegationManager *IDelegationManagerCaller) OperatorScaledShares(opts *bind.CallOpts, operator common.Address, strategy common.Address) (*big.Int, error) {
+// Solidity: function operatorShares(address operator, address strategy) view returns(uint256)
+func (_IDelegationManager *IDelegationManagerCaller) OperatorShares(opts *bind.CallOpts, operator common.Address, strategy common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _IDelegationManager.contract.Call(opts, &out, "operatorScaledShares", operator, strategy)
+	err := _IDelegationManager.contract.Call(opts, &out, "operatorShares", operator, strategy)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -823,18 +817,18 @@ func (_IDelegationManager *IDelegationManagerCaller) OperatorScaledShares(opts *
 
 }
 
-// OperatorScaledShares is a free data retrieval call binding the contract method 0x9fb4ee32.
+// OperatorShares is a free data retrieval call binding the contract method 0x778e55f3.
 //
-// Solidity: function operatorScaledShares(address operator, address strategy) view returns(uint256)
-func (_IDelegationManager *IDelegationManagerSession) OperatorScaledShares(operator common.Address, strategy common.Address) (*big.Int, error) {
-	return _IDelegationManager.Contract.OperatorScaledShares(&_IDelegationManager.CallOpts, operator, strategy)
+// Solidity: function operatorShares(address operator, address strategy) view returns(uint256)
+func (_IDelegationManager *IDelegationManagerSession) OperatorShares(operator common.Address, strategy common.Address) (*big.Int, error) {
+	return _IDelegationManager.Contract.OperatorShares(&_IDelegationManager.CallOpts, operator, strategy)
 }
 
-// OperatorScaledShares is a free data retrieval call binding the contract method 0x9fb4ee32.
+// OperatorShares is a free data retrieval call binding the contract method 0x778e55f3.
 //
-// Solidity: function operatorScaledShares(address operator, address strategy) view returns(uint256)
-func (_IDelegationManager *IDelegationManagerCallerSession) OperatorScaledShares(operator common.Address, strategy common.Address) (*big.Int, error) {
-	return _IDelegationManager.Contract.OperatorScaledShares(&_IDelegationManager.CallOpts, operator, strategy)
+// Solidity: function operatorShares(address operator, address strategy) view returns(uint256)
+func (_IDelegationManager *IDelegationManagerCallerSession) OperatorShares(operator common.Address, strategy common.Address) (*big.Int, error) {
+	return _IDelegationManager.Contract.OperatorShares(&_IDelegationManager.CallOpts, operator, strategy)
 }
 
 // StakerNonce is a free data retrieval call binding the contract method 0x29c77d4f.
@@ -930,67 +924,67 @@ func (_IDelegationManager *IDelegationManagerCallerSession) StrategyWithdrawalDe
 	return _IDelegationManager.Contract.StrategyWithdrawalDelayBlocks(&_IDelegationManager.CallOpts, strategy)
 }
 
-// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0xe4cc3f90.
+// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0x60d7faed.
 //
-// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, bool receiveAsTokens) returns()
-func (_IDelegationManager *IDelegationManagerTransactor) CompleteQueuedWithdrawal(opts *bind.TransactOpts, withdrawal IDelegationManagerWithdrawal, tokens []common.Address, receiveAsTokens bool) (*types.Transaction, error) {
-	return _IDelegationManager.contract.Transact(opts, "completeQueuedWithdrawal", withdrawal, tokens, receiveAsTokens)
+// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) returns()
+func (_IDelegationManager *IDelegationManagerTransactor) CompleteQueuedWithdrawal(opts *bind.TransactOpts, withdrawal IDelegationManagerWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
+	return _IDelegationManager.contract.Transact(opts, "completeQueuedWithdrawal", withdrawal, tokens, middlewareTimesIndex, receiveAsTokens)
 }
 
-// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0xe4cc3f90.
+// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0x60d7faed.
 //
-// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, bool receiveAsTokens) returns()
-func (_IDelegationManager *IDelegationManagerSession) CompleteQueuedWithdrawal(withdrawal IDelegationManagerWithdrawal, tokens []common.Address, receiveAsTokens bool) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.CompleteQueuedWithdrawal(&_IDelegationManager.TransactOpts, withdrawal, tokens, receiveAsTokens)
+// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) returns()
+func (_IDelegationManager *IDelegationManagerSession) CompleteQueuedWithdrawal(withdrawal IDelegationManagerWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
+	return _IDelegationManager.Contract.CompleteQueuedWithdrawal(&_IDelegationManager.TransactOpts, withdrawal, tokens, middlewareTimesIndex, receiveAsTokens)
 }
 
-// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0xe4cc3f90.
+// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0x60d7faed.
 //
-// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, bool receiveAsTokens) returns()
-func (_IDelegationManager *IDelegationManagerTransactorSession) CompleteQueuedWithdrawal(withdrawal IDelegationManagerWithdrawal, tokens []common.Address, receiveAsTokens bool) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.CompleteQueuedWithdrawal(&_IDelegationManager.TransactOpts, withdrawal, tokens, receiveAsTokens)
+// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) returns()
+func (_IDelegationManager *IDelegationManagerTransactorSession) CompleteQueuedWithdrawal(withdrawal IDelegationManagerWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
+	return _IDelegationManager.Contract.CompleteQueuedWithdrawal(&_IDelegationManager.TransactOpts, withdrawal, tokens, middlewareTimesIndex, receiveAsTokens)
 }
 
-// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x9435bb43.
+// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x33404396.
 //
-// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, bool[] receiveAsTokens) returns()
-func (_IDelegationManager *IDelegationManagerTransactor) CompleteQueuedWithdrawals(opts *bind.TransactOpts, withdrawals []IDelegationManagerWithdrawal, tokens [][]common.Address, receiveAsTokens []bool) (*types.Transaction, error) {
-	return _IDelegationManager.contract.Transact(opts, "completeQueuedWithdrawals", withdrawals, tokens, receiveAsTokens)
+// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, uint256[] middlewareTimesIndexes, bool[] receiveAsTokens) returns()
+func (_IDelegationManager *IDelegationManagerTransactor) CompleteQueuedWithdrawals(opts *bind.TransactOpts, withdrawals []IDelegationManagerWithdrawal, tokens [][]common.Address, middlewareTimesIndexes []*big.Int, receiveAsTokens []bool) (*types.Transaction, error) {
+	return _IDelegationManager.contract.Transact(opts, "completeQueuedWithdrawals", withdrawals, tokens, middlewareTimesIndexes, receiveAsTokens)
 }
 
-// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x9435bb43.
+// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x33404396.
 //
-// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, bool[] receiveAsTokens) returns()
-func (_IDelegationManager *IDelegationManagerSession) CompleteQueuedWithdrawals(withdrawals []IDelegationManagerWithdrawal, tokens [][]common.Address, receiveAsTokens []bool) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.CompleteQueuedWithdrawals(&_IDelegationManager.TransactOpts, withdrawals, tokens, receiveAsTokens)
+// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, uint256[] middlewareTimesIndexes, bool[] receiveAsTokens) returns()
+func (_IDelegationManager *IDelegationManagerSession) CompleteQueuedWithdrawals(withdrawals []IDelegationManagerWithdrawal, tokens [][]common.Address, middlewareTimesIndexes []*big.Int, receiveAsTokens []bool) (*types.Transaction, error) {
+	return _IDelegationManager.Contract.CompleteQueuedWithdrawals(&_IDelegationManager.TransactOpts, withdrawals, tokens, middlewareTimesIndexes, receiveAsTokens)
 }
 
-// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x9435bb43.
+// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x33404396.
 //
-// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, bool[] receiveAsTokens) returns()
-func (_IDelegationManager *IDelegationManagerTransactorSession) CompleteQueuedWithdrawals(withdrawals []IDelegationManagerWithdrawal, tokens [][]common.Address, receiveAsTokens []bool) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.CompleteQueuedWithdrawals(&_IDelegationManager.TransactOpts, withdrawals, tokens, receiveAsTokens)
-}
-
-// DecreaseDelegatedShares is a paid mutator transaction binding the contract method 0x132d4967.
-//
-// Solidity: function decreaseDelegatedShares(address staker, address strategy, uint256 removedShares) returns()
-func (_IDelegationManager *IDelegationManagerTransactor) DecreaseDelegatedShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, removedShares *big.Int) (*types.Transaction, error) {
-	return _IDelegationManager.contract.Transact(opts, "decreaseDelegatedShares", staker, strategy, removedShares)
+// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, uint256[] middlewareTimesIndexes, bool[] receiveAsTokens) returns()
+func (_IDelegationManager *IDelegationManagerTransactorSession) CompleteQueuedWithdrawals(withdrawals []IDelegationManagerWithdrawal, tokens [][]common.Address, middlewareTimesIndexes []*big.Int, receiveAsTokens []bool) (*types.Transaction, error) {
+	return _IDelegationManager.Contract.CompleteQueuedWithdrawals(&_IDelegationManager.TransactOpts, withdrawals, tokens, middlewareTimesIndexes, receiveAsTokens)
 }
 
 // DecreaseDelegatedShares is a paid mutator transaction binding the contract method 0x132d4967.
 //
-// Solidity: function decreaseDelegatedShares(address staker, address strategy, uint256 removedShares) returns()
-func (_IDelegationManager *IDelegationManagerSession) DecreaseDelegatedShares(staker common.Address, strategy common.Address, removedShares *big.Int) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.DecreaseDelegatedShares(&_IDelegationManager.TransactOpts, staker, strategy, removedShares)
+// Solidity: function decreaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
+func (_IDelegationManager *IDelegationManagerTransactor) DecreaseDelegatedShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IDelegationManager.contract.Transact(opts, "decreaseDelegatedShares", staker, strategy, shares)
 }
 
 // DecreaseDelegatedShares is a paid mutator transaction binding the contract method 0x132d4967.
 //
-// Solidity: function decreaseDelegatedShares(address staker, address strategy, uint256 removedShares) returns()
-func (_IDelegationManager *IDelegationManagerTransactorSession) DecreaseDelegatedShares(staker common.Address, strategy common.Address, removedShares *big.Int) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.DecreaseDelegatedShares(&_IDelegationManager.TransactOpts, staker, strategy, removedShares)
+// Solidity: function decreaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
+func (_IDelegationManager *IDelegationManagerSession) DecreaseDelegatedShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IDelegationManager.Contract.DecreaseDelegatedShares(&_IDelegationManager.TransactOpts, staker, strategy, shares)
+}
+
+// DecreaseDelegatedShares is a paid mutator transaction binding the contract method 0x132d4967.
+//
+// Solidity: function decreaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
+func (_IDelegationManager *IDelegationManagerTransactorSession) DecreaseDelegatedShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IDelegationManager.Contract.DecreaseDelegatedShares(&_IDelegationManager.TransactOpts, staker, strategy, shares)
 }
 
 // DelegateTo is a paid mutator transaction binding the contract method 0xeea9064b.
@@ -1035,46 +1029,25 @@ func (_IDelegationManager *IDelegationManagerTransactorSession) DelegateToBySign
 	return _IDelegationManager.Contract.DelegateToBySignature(&_IDelegationManager.TransactOpts, staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, approverSalt)
 }
 
-// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x3c651cf2.
+// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x28a573ae.
 //
-// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 existingShares, uint256 addedShares) returns()
-func (_IDelegationManager *IDelegationManagerTransactor) IncreaseDelegatedShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, existingShares *big.Int, addedShares *big.Int) (*types.Transaction, error) {
-	return _IDelegationManager.contract.Transact(opts, "increaseDelegatedShares", staker, strategy, existingShares, addedShares)
+// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
+func (_IDelegationManager *IDelegationManagerTransactor) IncreaseDelegatedShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IDelegationManager.contract.Transact(opts, "increaseDelegatedShares", staker, strategy, shares)
 }
 
-// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x3c651cf2.
+// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x28a573ae.
 //
-// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 existingShares, uint256 addedShares) returns()
-func (_IDelegationManager *IDelegationManagerSession) IncreaseDelegatedShares(staker common.Address, strategy common.Address, existingShares *big.Int, addedShares *big.Int) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.IncreaseDelegatedShares(&_IDelegationManager.TransactOpts, staker, strategy, existingShares, addedShares)
+// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
+func (_IDelegationManager *IDelegationManagerSession) IncreaseDelegatedShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IDelegationManager.Contract.IncreaseDelegatedShares(&_IDelegationManager.TransactOpts, staker, strategy, shares)
 }
 
-// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x3c651cf2.
+// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x28a573ae.
 //
-// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 existingShares, uint256 addedShares) returns()
-func (_IDelegationManager *IDelegationManagerTransactorSession) IncreaseDelegatedShares(staker common.Address, strategy common.Address, existingShares *big.Int, addedShares *big.Int) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.IncreaseDelegatedShares(&_IDelegationManager.TransactOpts, staker, strategy, existingShares, addedShares)
-}
-
-// InitializeAllocationDelay is a paid mutator transaction binding the contract method 0x0de5495d.
-//
-// Solidity: function initializeAllocationDelay(uint32 delay) returns()
-func (_IDelegationManager *IDelegationManagerTransactor) InitializeAllocationDelay(opts *bind.TransactOpts, delay uint32) (*types.Transaction, error) {
-	return _IDelegationManager.contract.Transact(opts, "initializeAllocationDelay", delay)
-}
-
-// InitializeAllocationDelay is a paid mutator transaction binding the contract method 0x0de5495d.
-//
-// Solidity: function initializeAllocationDelay(uint32 delay) returns()
-func (_IDelegationManager *IDelegationManagerSession) InitializeAllocationDelay(delay uint32) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.InitializeAllocationDelay(&_IDelegationManager.TransactOpts, delay)
-}
-
-// InitializeAllocationDelay is a paid mutator transaction binding the contract method 0x0de5495d.
-//
-// Solidity: function initializeAllocationDelay(uint32 delay) returns()
-func (_IDelegationManager *IDelegationManagerTransactorSession) InitializeAllocationDelay(delay uint32) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.InitializeAllocationDelay(&_IDelegationManager.TransactOpts, delay)
+// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
+func (_IDelegationManager *IDelegationManagerTransactorSession) IncreaseDelegatedShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IDelegationManager.Contract.IncreaseDelegatedShares(&_IDelegationManager.TransactOpts, staker, strategy, shares)
 }
 
 // ModifyOperatorDetails is a paid mutator transaction binding the contract method 0xf16172b0.
@@ -1119,25 +1092,25 @@ func (_IDelegationManager *IDelegationManagerTransactorSession) QueueWithdrawals
 	return _IDelegationManager.Contract.QueueWithdrawals(&_IDelegationManager.TransactOpts, queuedWithdrawalParams)
 }
 
-// RegisterAsOperator is a paid mutator transaction binding the contract method 0x49730060.
+// RegisterAsOperator is a paid mutator transaction binding the contract method 0x0f589e59.
 //
-// Solidity: function registerAsOperator((address,address,uint32) registeringOperatorDetails, uint32 allocationDelay, string metadataURI) returns()
-func (_IDelegationManager *IDelegationManagerTransactor) RegisterAsOperator(opts *bind.TransactOpts, registeringOperatorDetails IDelegationManagerOperatorDetails, allocationDelay uint32, metadataURI string) (*types.Transaction, error) {
-	return _IDelegationManager.contract.Transact(opts, "registerAsOperator", registeringOperatorDetails, allocationDelay, metadataURI)
+// Solidity: function registerAsOperator((address,address,uint32) registeringOperatorDetails, string metadataURI) returns()
+func (_IDelegationManager *IDelegationManagerTransactor) RegisterAsOperator(opts *bind.TransactOpts, registeringOperatorDetails IDelegationManagerOperatorDetails, metadataURI string) (*types.Transaction, error) {
+	return _IDelegationManager.contract.Transact(opts, "registerAsOperator", registeringOperatorDetails, metadataURI)
 }
 
-// RegisterAsOperator is a paid mutator transaction binding the contract method 0x49730060.
+// RegisterAsOperator is a paid mutator transaction binding the contract method 0x0f589e59.
 //
-// Solidity: function registerAsOperator((address,address,uint32) registeringOperatorDetails, uint32 allocationDelay, string metadataURI) returns()
-func (_IDelegationManager *IDelegationManagerSession) RegisterAsOperator(registeringOperatorDetails IDelegationManagerOperatorDetails, allocationDelay uint32, metadataURI string) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.RegisterAsOperator(&_IDelegationManager.TransactOpts, registeringOperatorDetails, allocationDelay, metadataURI)
+// Solidity: function registerAsOperator((address,address,uint32) registeringOperatorDetails, string metadataURI) returns()
+func (_IDelegationManager *IDelegationManagerSession) RegisterAsOperator(registeringOperatorDetails IDelegationManagerOperatorDetails, metadataURI string) (*types.Transaction, error) {
+	return _IDelegationManager.Contract.RegisterAsOperator(&_IDelegationManager.TransactOpts, registeringOperatorDetails, metadataURI)
 }
 
-// RegisterAsOperator is a paid mutator transaction binding the contract method 0x49730060.
+// RegisterAsOperator is a paid mutator transaction binding the contract method 0x0f589e59.
 //
-// Solidity: function registerAsOperator((address,address,uint32) registeringOperatorDetails, uint32 allocationDelay, string metadataURI) returns()
-func (_IDelegationManager *IDelegationManagerTransactorSession) RegisterAsOperator(registeringOperatorDetails IDelegationManagerOperatorDetails, allocationDelay uint32, metadataURI string) (*types.Transaction, error) {
-	return _IDelegationManager.Contract.RegisterAsOperator(&_IDelegationManager.TransactOpts, registeringOperatorDetails, allocationDelay, metadataURI)
+// Solidity: function registerAsOperator((address,address,uint32) registeringOperatorDetails, string metadataURI) returns()
+func (_IDelegationManager *IDelegationManagerTransactorSession) RegisterAsOperator(registeringOperatorDetails IDelegationManagerOperatorDetails, metadataURI string) (*types.Transaction, error) {
+	return _IDelegationManager.Contract.RegisterAsOperator(&_IDelegationManager.TransactOpts, registeringOperatorDetails, metadataURI)
 }
 
 // Undelegate is a paid mutator transaction binding the contract method 0xda8be864.
@@ -2635,142 +2608,6 @@ func (_IDelegationManager *IDelegationManagerFilterer) WatchStrategyWithdrawalDe
 func (_IDelegationManager *IDelegationManagerFilterer) ParseStrategyWithdrawalDelayBlocksSet(log types.Log) (*IDelegationManagerStrategyWithdrawalDelayBlocksSet, error) {
 	event := new(IDelegationManagerStrategyWithdrawalDelayBlocksSet)
 	if err := _IDelegationManager.contract.UnpackLog(event, "StrategyWithdrawalDelayBlocksSet", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// IDelegationManagerStrategyWithdrawalDelaySetIterator is returned from FilterStrategyWithdrawalDelaySet and is used to iterate over the raw logs and unpacked data for StrategyWithdrawalDelaySet events raised by the IDelegationManager contract.
-type IDelegationManagerStrategyWithdrawalDelaySetIterator struct {
-	Event *IDelegationManagerStrategyWithdrawalDelaySet // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *IDelegationManagerStrategyWithdrawalDelaySetIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(IDelegationManagerStrategyWithdrawalDelaySet)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(IDelegationManagerStrategyWithdrawalDelaySet)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *IDelegationManagerStrategyWithdrawalDelaySetIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *IDelegationManagerStrategyWithdrawalDelaySetIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// IDelegationManagerStrategyWithdrawalDelaySet represents a StrategyWithdrawalDelaySet event raised by the IDelegationManager contract.
-type IDelegationManagerStrategyWithdrawalDelaySet struct {
-	Strategy      common.Address
-	PreviousValue *big.Int
-	NewValue      *big.Int
-	Raw           types.Log // Blockchain specific contextual infos
-}
-
-// FilterStrategyWithdrawalDelaySet is a free log retrieval operation binding the contract event 0x4be295c8d739bae6e60f607ccde1aa068970dc43209682f7290d10726efc02e5.
-//
-// Solidity: event StrategyWithdrawalDelaySet(address strategy, uint256 previousValue, uint256 newValue)
-func (_IDelegationManager *IDelegationManagerFilterer) FilterStrategyWithdrawalDelaySet(opts *bind.FilterOpts) (*IDelegationManagerStrategyWithdrawalDelaySetIterator, error) {
-
-	logs, sub, err := _IDelegationManager.contract.FilterLogs(opts, "StrategyWithdrawalDelaySet")
-	if err != nil {
-		return nil, err
-	}
-	return &IDelegationManagerStrategyWithdrawalDelaySetIterator{contract: _IDelegationManager.contract, event: "StrategyWithdrawalDelaySet", logs: logs, sub: sub}, nil
-}
-
-// WatchStrategyWithdrawalDelaySet is a free log subscription operation binding the contract event 0x4be295c8d739bae6e60f607ccde1aa068970dc43209682f7290d10726efc02e5.
-//
-// Solidity: event StrategyWithdrawalDelaySet(address strategy, uint256 previousValue, uint256 newValue)
-func (_IDelegationManager *IDelegationManagerFilterer) WatchStrategyWithdrawalDelaySet(opts *bind.WatchOpts, sink chan<- *IDelegationManagerStrategyWithdrawalDelaySet) (event.Subscription, error) {
-
-	logs, sub, err := _IDelegationManager.contract.WatchLogs(opts, "StrategyWithdrawalDelaySet")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(IDelegationManagerStrategyWithdrawalDelaySet)
-				if err := _IDelegationManager.contract.UnpackLog(event, "StrategyWithdrawalDelaySet", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseStrategyWithdrawalDelaySet is a log parse operation binding the contract event 0x4be295c8d739bae6e60f607ccde1aa068970dc43209682f7290d10726efc02e5.
-//
-// Solidity: event StrategyWithdrawalDelaySet(address strategy, uint256 previousValue, uint256 newValue)
-func (_IDelegationManager *IDelegationManagerFilterer) ParseStrategyWithdrawalDelaySet(log types.Log) (*IDelegationManagerStrategyWithdrawalDelaySet, error) {
-	event := new(IDelegationManagerStrategyWithdrawalDelaySet)
-	if err := _IDelegationManager.contract.UnpackLog(event, "StrategyWithdrawalDelaySet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
