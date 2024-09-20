@@ -6,7 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
-import "../libraries/SlashingLib.sol";
+import "../libraries/SlashingConstants.sol";
 import "./DelegationManagerStorage.sol";
 
 /**
@@ -280,8 +280,8 @@ contract DelegationManager is
                 });
 
                 // all shares and queued withdrawn and no delegated operator
-                // reset staker's scaling factor to default
-                stakerScalingFactors[staker][strategies[i]] = PRECISION_FACTOR;
+                // reset staker's depositScalingFactor to default
+                depositScalingFactors[staker][strategies[i]] = PRECISION_FACTOR;
             }
         }
 
@@ -364,15 +364,14 @@ contract DelegationManager is
 
     /**
      * @notice Increases a staker's delegated share balance in a strategy. Note that before adding to operator shares,
-     * the delegated stakeShares.
-     * The staker's scaling factor is updated here.
+     * the delegated stakeShares. The staker's depositScalingFactor is updated here.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
      * @param existingDepositShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
      * @param addedShares The number of shares to added to the staker's shares in the strategy
      *
-     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated stakeShares in `strategy` after scaling `shares`.
+     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated stakeShares in `strategy`.
      * Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
@@ -387,22 +386,13 @@ contract DelegationManager is
             address operator = delegatedTo[staker];
             uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
 
-            // update stakers scaling deposit scaling factor
-            uint256 newStakerScalingFactor = SlashingLib.calculateStakerScalingFactor({
-                staker: staker,
-                currStakerScalingFactor: _getStakerScalingFactor(staker, strategy),
-                totalMagnitude: totalMagnitude,
-                existingShares: existingDepositShares, // TODO
-                addedShares: addedShares
-            });
-            stakerScalingFactors[staker][strategy] = newStakerScalingFactor;
-
-            // add strategy shares to delegate's shares
-            _increaseOperatorStakeShares({
-                operator: operator,
-                staker: staker,
+            // add deposit shares to operator's stake shares and update the staker's depositScalingFactor
+            _increaseOperatorStakeSharesAndScalingFactor({
+                operator: operator, 
+                staker: staker, 
                 strategy: strategy,
-                shares: addedShares,
+                existingDepositShares: existingDepositShares,
+                addedShares: addedShares,
                 totalMagnitude: totalMagnitude
             });
         }
@@ -514,27 +504,18 @@ contract DelegationManager is
         emit StakerDelegated(staker, operator);
 
         // read staker's delegatable shares and strategies to add to operator's stakeShares
-        // and also update the staker scaling factor for each strategy
+        // and also update the staker depositScalingFactor for each strategy
         (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
         uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
-            // update stakers scaling deposit scaling factor
-            uint256 newStakerScalingFactor = SlashingLib.calculateStakerScalingFactor({
-                staker: staker,
-                currStakerScalingFactor: _getStakerScalingFactor(staker, strategies[i]),
-                totalMagnitude: totalMagnitudes[i],
-                existingShares: 0,
-                addedShares: shares[i]
-            });
-            stakerScalingFactors[staker][strategies[i]] = newStakerScalingFactor;
-
             // forgefmt: disable-next-item
-            _increaseOperatorStakeShares({
+            _increaseOperatorStakeSharesAndScalingFactor({
                 operator: operator, 
                 staker: staker, 
-                strategy: strategies[i], 
-                shares: shares[i],
+                strategy: strategies[i],
+                existingDepositShares: 0,
+                addedShares: shares[i],
                 totalMagnitude: totalMagnitudes[i]
             });
         }
@@ -594,21 +575,32 @@ contract DelegationManager is
 
     /**
      * @notice Increases `operator`s delegated stakeShares in `strategy` based on staker's added shares and operator's totalMagnitude
+     * and increases the staker's depositScalingFactor for the strategy.
      * @param operator The operator to increase the delegated stakeShares for
-     * @param staker The staker to increase the delegated stakeShares for
-     * @param strategy The strategy to increase the delegated stakeShares for
-     * @param shares The shares added to the staker in the StrategyManager/EigenPodManager
+     * @param staker The staker to increase the depositScalingFactor for
+     * @param strategy The strategy to increase the delegated stakeShares and the depositScalingFactor for
+     * @param existingDepositShares The number of deposit shares the staker already has in the strategy. 
+     * @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
      * @param totalMagnitude The current total magnitude of the operator for the strategy
      */
-    function _increaseOperatorStakeShares(
+    function _increaseOperatorStakeSharesAndScalingFactor(
         address operator,
         address staker,
         IStrategy strategy,
-        uint256 shares,
+        uint256 existingDepositShares,
+        uint256 addedShares,
         uint64 totalMagnitude
     ) internal {
+        _updateDepositScalingFactor({
+            staker: staker, 
+            strategy: strategy, 
+            existingDepositShares: existingDepositShares, 
+            addedShares: addedShares,
+            totalMagnitude: totalMagnitude
+        });
+
         // based on total magnitude, update operators stakeShares
-        uint256 stakeShares = _convertSharesToStakeShares(shares, totalMagnitude);
+        uint256 stakeShares = _convertSharesToStakeShares(addedShares, totalMagnitude);
         operatorStakeShares[operator][strategy] += stakeShares;
 
         // TODO: What to do about event wrt scaling?
@@ -755,9 +747,9 @@ contract DelegationManager is
      *              - `withdrawal.stakeShares` is the amount of stakeShares in a withdrawal          
      *      3. depositShares 
      *          - These can be converted into stakeShares given a staker and a strategy
-     *              - by multiplying by the staker's scaling factor for the strategy
+     *              - by multiplying by the staker's depositScalingFactor for the strategy
      *          - These values automatically update their conversion into tokens
-     *             - when the staker's scaling factor for the strategy is increased upon new deposits
+     *             - when the staker's depositScalingFactor for the strategy is increased upon new deposits
      *             - or when the staker's operator's total magnitude for the strategy is decreased upon slashing
      *          - These represent the total amount of shares the staker would have of a strategy if they were never slashed
      *          - These live in the storage of the StrategyManager/EigenPodManager
@@ -774,22 +766,72 @@ contract DelegationManager is
     }
 
     function _convertSharesToDepositShares(address staker, IStrategy strategy, uint256 shares, uint64 totalMagnitude) internal view returns (uint256) {
-        return shares * PRECISION_FACTOR / _getStakerScalingFactor(staker, strategy) * PRECISION_FACTOR / totalMagnitude;
+        return shares * PRECISION_FACTOR / _getDepositScalingFactor(staker, strategy) * PRECISION_FACTOR / totalMagnitude;
     }
 
     function _convertDepositSharesToShares(address staker, IStrategy strategy, uint256 depositShares, uint64 totalMagnitude) internal view returns (uint256) {
-        return depositShares * _getStakerScalingFactor(staker, strategy) / PRECISION_FACTOR * totalMagnitude / PRECISION_FACTOR;
+        return depositShares * _getDepositScalingFactor(staker, strategy) / PRECISION_FACTOR * totalMagnitude / PRECISION_FACTOR;
     }
 
     /**
-     * @notice staker scaling factor should be initialized and lower bounded to 1e18
+     * @notice helper to calculate the new depositScalingFactor after adding shares. This is only used
+     * when a staker is depositing through the StrategyManager or EigenPodManager. A staker's depositScalingFactor
+     * is only updated when they have new deposits and their shares are being increased.
      */
-    function _getStakerScalingFactor(address staker, IStrategy strategy) internal view returns (uint256) {
-        uint256 currStakerScalingFactor = stakerScalingFactors[staker][strategy];
-        if (currStakerScalingFactor == 0) {
-            currStakerScalingFactor = PRECISION_FACTOR;
+    function _updateDepositScalingFactor(
+        address staker,
+        IStrategy strategy,
+        uint64 totalMagnitude,
+        uint256 existingDepositShares,
+        uint256 addedShares
+    ) internal returns (uint256) {
+        uint256 newDepositScalingFactor;
+
+        if (existingDepositShares == 0) {
+            // existing shares are 0, meaning no existing delegated shares. In this case, the new depositScalingFactor
+            // is re-initialized to
+            newDepositScalingFactor = PRECISION_FACTOR / totalMagnitude;
+        } else {
+            // TODO: OVERFLOWS: switch to muldiv everywhere
+            // since 
+            // 
+            // newShares
+            //      = existingShares + addedShares
+            //      = _convertDepositSharesToShares(staker, strategy, existingDepositShares, totalMagnitude) + addedShares
+            // 
+            // and it also is
+            // 
+            // newShares
+            //     = _convertDepositSharesToShares(staker, strategy, newDepositShares, totalMagnitude)
+            //     = newDepositShares * newDepositScalingFactor / PRECISION_FACTOR * totalMagnitude / PRECISION_FACTOR
+            //     = (existingDepositShares + addedShares) * newDepositScalingFactor / PRECISION_FACTOR * totalMagnitude / PRECISION_FACTOR
+            // 
+            // we can solve for 
+            //
+            newDepositScalingFactor = 
+                (
+                    _convertDepositSharesToShares(staker, strategy, existingDepositShares, totalMagnitude)
+                    + addedShares
+                ) 
+                * PRECISION_FACTOR
+                / (existingDepositShares + addedShares)
+                * PRECISION_FACTOR
+                / totalMagnitude;
         }
-        return currStakerScalingFactor;
+
+        // update the staker's depositScalingFactor
+        depositScalingFactors[staker][strategy] = newDepositScalingFactor;
+    }
+
+    /**
+     * @notice depositScalingFactor should be initialized and lower bounded to 1e18
+     */
+    function _getDepositScalingFactor(address staker, IStrategy strategy) internal view returns (uint256) {
+        uint256 currDepositScalingFactor = depositScalingFactors[staker][strategy];
+        if (currDepositScalingFactor == 0) {
+            currDepositScalingFactor = PRECISION_FACTOR;
+        }
+        return currDepositScalingFactor;
     }
 
     function _getShareManager(IStrategy strategy) internal view returns (IShareManager) {

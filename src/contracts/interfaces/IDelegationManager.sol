@@ -317,7 +317,7 @@ interface IDelegationManager is ISignatureUtils {
     /**
      * @notice Increases a staker's delegated share balance in a strategy. Note that before adding to operator shares,
      * the delegated shares are scaled according to the operator's total magnitude as part of slashing accounting.
-     * The staker's scaling factor is updated here.
+     * The staker's depositScalingFactor is updated here.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
      * @param existingDepositShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
@@ -325,7 +325,7 @@ interface IDelegationManager is ISignatureUtils {
      * @param addedShares The number of shares to added to the staker's shares in the strategy. This amount will be scaled prior to adding
      * to the operator's scaled shares.
      *
-     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated scaled shares in `strategy` after scaling `shares`.
+     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated scaled shares in `strategy`.
      * Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
@@ -339,7 +339,7 @@ interface IDelegationManager is ISignatureUtils {
     /**
      * @notice Decreases a staker's delegated share balance in a strategy. Note that before removing from operator shares,
      * the delegated shares are scaled according to the operator's total magnitude as part of slashing accounting. Unlike
-     * `increaseDelegatedShares`, the staker's scaling factor is not updated here.
+     * `increaseDelegatedShares`, the staker's depositScalingFactor is not updated here.
      * @param staker The address to increase the delegated scaled shares for their operator.
      * @param strategy The strategy in which to decrease the delegated scaled shares.
      * @param removedShares The number of shares to decremented for the strategy in the

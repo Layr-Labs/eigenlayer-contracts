@@ -7,7 +7,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
-import "../libraries/SlashingLib.sol";
+import "../libraries/SlashingConstants.sol";
 import "./AllocationManagerStorage.sol";
 
 contract AllocationManager is

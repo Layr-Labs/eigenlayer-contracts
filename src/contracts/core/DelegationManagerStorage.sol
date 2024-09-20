@@ -116,7 +116,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice Mapping: staker => strategy => scaling factor used to calculate the staker's shares in the strategy.
     /// This is updated upon each deposit based on the staker's currently delegated operator's totalMagnitude.
-    mapping(address => mapping(IStrategy => uint256)) public stakerScalingFactors;
+    mapping(address => mapping(IStrategy => uint256)) public depositScalingFactors;
 
     constructor(
         IStrategyManager _strategyManager,
