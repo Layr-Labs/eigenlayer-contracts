@@ -43,44 +43,44 @@ uint32 constant DEALLOCATION_DELAY = 17.5 days;
 
 type Shares is uint256;
 
-type StakeShares is uint256;
+type DelegationManagerShares is uint256;
 
-type DepositShares is uint256;
+type StakeManagerShares is uint256;
 
 using SlashingLib for Shares global;
-using SlashingLib for StakeShares global;
-using SlashingLib for DepositShares global;
+using SlashingLib for DelegationManagerShares global;
+using SlashingLib for StakeManagerShares global;
 
 library SlashingLib {
     using Math for uint256;
     using SlashingLib for uint256;
 
     function toDepositShares(
-        StakeShares stakeShares,
+        DelegationManagerShares stakeShares,
         uint256 depositScalingFactor
-    ) internal pure returns (DepositShares) {
+    ) internal pure returns (StakeManagerShares) {
         if (depositScalingFactor == 0) {
             depositScalingFactor = WAD;
         }
-        return DepositShares.wrap(StakeShares.unwrap(stakeShares).divWad(depositScalingFactor));
+        return StakeManagerShares.wrap(DelegationManagerShares.unwrap(stakeShares).divWad(depositScalingFactor));
     }
 
     function toStakeShares(
-        DepositShares depositShares,
+        StakeManagerShares depositShares,
         uint256 depositScalingFactor
-    ) internal pure returns (StakeShares) {
+    ) internal pure returns (DelegationManagerShares) {
         if (depositScalingFactor == 0) {
             depositScalingFactor = WAD;
         }
-        return StakeShares.wrap(DepositShares.unwrap(depositShares).mulWad(depositScalingFactor));
+        return DelegationManagerShares.wrap(StakeManagerShares.unwrap(depositShares).mulWad(depositScalingFactor));
     }
 
-    function toShares(StakeShares stakeShares, uint256 magnitude) internal pure returns (Shares) {
-        return Shares.wrap(StakeShares.unwrap(stakeShares).mulWad(magnitude));
+    function toShares(DelegationManagerShares stakeShares, uint256 magnitude) internal pure returns (Shares) {
+        return Shares.wrap(DelegationManagerShares.unwrap(stakeShares).mulWad(magnitude));
     }
 
-    function toStakeShares(Shares shares, uint256 magnitude) internal pure returns (StakeShares) {
-        return StakeShares.wrap(Shares.unwrap(shares).divWad(magnitude));
+    function toStakeShares(Shares shares, uint256 magnitude) internal pure returns (DelegationManagerShares) {
+        return DelegationManagerShares.wrap(Shares.unwrap(shares).divWad(magnitude));
     }
 
     // WAD MATH

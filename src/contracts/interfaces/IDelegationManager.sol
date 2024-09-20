@@ -132,7 +132,7 @@ interface IDelegationManager is ISignatureUtils {
         // Array containing the amount of staker's stakeShares for withdrawal in each Strategy in the `strategies` array
         // Note that these shares need to be multiplied by the operator's totalMagnitude at completion to include
         // slashing occurring during the queue withdrawal delay
-        StakeShares[] stakeShares;
+        DelegationManagerShares[] stakeShares;
     }
 
     struct QueuedWithdrawalParams {
