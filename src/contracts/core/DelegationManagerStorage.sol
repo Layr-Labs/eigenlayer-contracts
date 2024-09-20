@@ -56,15 +56,15 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     IAllocationManager public immutable allocationManager;
 
     /**
-     * @notice returns the total number of scaled shares (i.e. shares scaled down by a factor of the `operator`'s
+     * @notice returns the total number of stakeShares (i.e. shares divided by the `operator`'s
      * totalMagnitude) in `strategy` that are delegated to `operator`.
-     * @notice Mapping: operator => strategy => total number of scaled shares in the strategy delegated to the operator.
+     * @notice Mapping: operator => strategy => total number of stakeShares in the strategy delegated to the operator.
      * @dev By design, the following invariant should hold for each Strategy:
-     * (operator's scaled shares in delegation manager) = sum (scaled shares above zero of all stakers delegated to operator)
-     * = sum (delegateable scaled shares of all stakers delegated to the operator)
+     * (operator's stakeShares in delegation manager) = sum (stakeShares above zero of all stakers delegated to operator)
+     * = sum (delegateable stakeShares of all stakers delegated to the operator)
      * @dev FKA `operatorShares`
      */
-    mapping(address => mapping(IStrategy => uint256)) public operatorScaledShares;
+    mapping(address => mapping(IStrategy => uint256)) public operatorStakeShares;
 
     /**
      * @notice Mapping: operator => OperatorDetails struct
@@ -114,7 +114,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(IStrategy => uint256) private __deprecated_strategyWithdrawalDelayBlocks;
 
-    /// @notice Mapping: staker => strategy => scaling factor used to calculate the staker's withdrawable shares in the strategy.
+    /// @notice Mapping: staker => strategy => scaling factor used to calculate the staker's shares in the strategy.
     /// This is updated upon each deposit based on the staker's currently delegated operator's totalMagnitude.
     mapping(address => mapping(IStrategy => uint256)) public stakerScalingFactors;
 

@@ -427,9 +427,9 @@ contract AllocationManager is
     function _getLatestTotalMagnitude(address operator, IStrategy strategy) internal returns (uint64) {
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = PRECISION_FACTOR;
             _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
-            operatorMagnitudeInfo[operator][strategy].freeMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+            operatorMagnitudeInfo[operator][strategy].freeMagnitude = PRECISION_FACTOR;
         }
 
         return uint64(totalMagnitude);
@@ -624,7 +624,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < strategies.length; ++i) {
             (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestSnapshot();
             if (!exists) {
-                totalMagnitudes[i] = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+                totalMagnitudes[i] = PRECISION_FACTOR;
             } else {
                 totalMagnitudes[i] = uint64(value);
             }
@@ -650,7 +650,7 @@ contract AllocationManager is
                 _totalMagnitudeUpdate[operator][strategies[i]].upperLookupWithPos(timestamp);
             // if there is no existing total magnitude snapshot
             if (value == 0 && pos == 0) {
-                totalMagnitudes[i] = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+                totalMagnitudes[i] = PRECISION_FACTOR;
             } else {
                 totalMagnitudes[i] = uint64(value);
             }
@@ -668,7 +668,7 @@ contract AllocationManager is
         uint64 totalMagnitude;
         (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = PRECISION_FACTOR;
         } else {
             totalMagnitude = uint64(value);
         }
@@ -688,12 +688,12 @@ contract AllocationManager is
         IStrategy strategy,
         uint32 timestamp
     ) external view returns (uint64) {
-        uint64 totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+        uint64 totalMagnitude = PRECISION_FACTOR;
         (uint224 value, uint256 pos,) = _totalMagnitudeUpdate[operator][strategy].upperLookupRecentWithPos(timestamp);
 
         // if there is no existing total magnitude snapshot
         if (value == 0 && pos == 0) {
-            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = PRECISION_FACTOR;
         } else {
             totalMagnitude = uint64(value);
         }
