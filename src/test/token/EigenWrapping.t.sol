@@ -72,10 +72,6 @@ contract EigenWrappingTests is Test {
         _simulateMint();
         _simulateBackingAndSetTransferRestrictions();
 
-        // initial bEIGEN balance
-        uint256 initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
-        // initial EIGEN token supply
-        uint256 initialEigenSupply = eigen.totalSupply();
         // minter1 balance
         uint256 minter1Balance = eigen.balanceOf(minter1);
 
@@ -83,15 +79,23 @@ contract EigenWrappingTests is Test {
         vm.prank(minter1);
         eigen.transfer(unwrapper, minter1Balance);
 
+        // initial bEIGEN balance
+        uint256 initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
+        // initial EIGEN token supply
+        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(),
+            "eigen totalSupply changed incorrectly");
+
         // unwrap
         // unwrap amount should be less than minter1 balance
         unwrapAmount = unwrapAmount % minter1Balance;
         vm.prank(unwrapper);
         eigen.unwrap(unwrapAmount);
 
-        // check that the total supply of bEIGEN is equal to the total supply of EIGEN
-        assertEq(eigen.totalSupply(), initialEigenSupply);
-        assertEq(bEIGEN.balanceOf(address(eigen)), initialBEIGENBalanceOfEigenToken - unwrapAmount);
+        // check total supply and balance changes
+        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(),
+            "eigen totalSupply changed incorrectly");
+        assertEq(bEIGEN.balanceOf(address(eigen)), initialBEIGENBalanceOfEigenToken - unwrapAmount,
+            "beigen balance of EIGEN tokens changed incorrectly");
         assertEq(eigen.balanceOf(address(unwrapper)), minter1Balance - unwrapAmount);
         assertEq(bEIGEN.balanceOf(address(unwrapper)), unwrapAmount);
     }
@@ -104,8 +108,6 @@ contract EigenWrappingTests is Test {
 
         // initial bEIGEN balance
         uint256 initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
-        // initial EIGEN token supply
-        uint256 initialEigenSupply = eigen.totalSupply();
         // minter1 balance
         uint256 minter1Balance = eigen.balanceOf(minter1);
 
@@ -117,6 +119,10 @@ contract EigenWrappingTests is Test {
         bEIGEN.transfer(wrapper, minter1Balance);
         vm.stopPrank();
 
+        // initial EIGEN token supply
+        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(),
+            "eigen totalSupply changed incorrectly");
+
         // wrap
         // wrap amount should be less than minter1 balance
         wrapAmount = wrapAmount % minter1Balance;
@@ -127,8 +133,9 @@ contract EigenWrappingTests is Test {
         eigen.wrap(wrapAmount);
         vm.stopPrank();
 
-        // check that the total supply of bEIGEN is equal to the total supply of EIGEN
-        assertEq(eigen.totalSupply(), initialEigenSupply);
+        // check total supply and balance changes
+        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(),
+            "eigen totalSupply changed incorrectly");
         assertEq(bEIGEN.balanceOf(address(eigen)), initialBEIGENBalanceOfEigenToken - minter1Balance + wrapAmount);
         assertEq(eigen.balanceOf(address(wrapper)), wrapAmount);
         assertEq(bEIGEN.balanceOf(address(wrapper)), minter1Balance - wrapAmount);
@@ -147,7 +154,7 @@ contract EigenWrappingTests is Test {
 
         // unwrap
         vm.prank(unwrapper);
-        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        vm.expectRevert("ERC20: burn amount exceeds balance");
         eigen.unwrap(unwrapAmount + 1);
     }
 
@@ -196,5 +203,6 @@ contract EigenWrappingTests is Test {
         vm.startPrank(minter1);
         bEIGEN.setAllowedFrom(minter1, true);
         vm.stopPrank();
+
     }
 }

@@ -123,14 +123,14 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
      */
     function wrap(uint256 amount) external {
         require(bEIGEN.transferFrom(msg.sender, address(this), amount), "Eigen.wrap: bEIGEN transfer failed");
-        _transfer(address(this), msg.sender, amount);
+        _mint(msg.sender, amount);
     }
 
     /**
      * @notice This function allows Eigen holders to unwrap their tokens into bEIGEN
      */
     function unwrap(uint256 amount) external {
-        _transfer(msg.sender, address(this), amount);
+        _burn(msg.sender, amount);
         require(bEIGEN.transfer(msg.sender, amount), "Eigen.unwrap: bEIGEN transfer failed");
     }
 
@@ -155,11 +155,20 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
         if (block.timestamp <= transferRestrictionsDisabledAfter) {
             // if both from and to are not whitelisted
             require(
-                from == address(0) || from == address(this) || to == address(this) || allowedFrom[from] || allowedTo[to],
+                from == address(0) || to == address(0) || allowedFrom[from] || allowedTo[to],
                 "Eigen._beforeTokenTransfer: from or to must be whitelisted"
             );
         }
         super._beforeTokenTransfer(from, to, amount);
+    }
+
+    /**
+     * @notice Overridden to return the total bEIGEN supply instead.
+     * @dev The issued supply of EIGEN should match the bEIGEN balance of this contract,
+     * less any bEIGEN tokens that were sent directly to the contract (rather than being wrapped)
+     */
+    function totalSupply() public view override returns (uint256) {
+        return bEIGEN.totalSupply();
     }
 
     /**
