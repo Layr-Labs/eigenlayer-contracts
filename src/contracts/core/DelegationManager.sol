@@ -562,40 +562,36 @@ contract DelegationManager is
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
         require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
 
-        // read delegated operator's totalMagnitudes at time of withdrawal to scale shares again if any slashing has occurred
-        // during withdrawal delay period
-        uint64[] memory totalMagnitudes;
-
+        // TODO: is there a cleaner way to do this?
+        uint32 magnitudeSourceTimestamp;
         if (withdrawal.startTimestamp < LEGACY_WITHDRAWALS_TIMESTAMP) {
-            // this is a legacy M2 withdrawal using blocknumbers. We use the LEGACY_WITHDRAWALS_TIMESTAMP to check
-            // if the withdrawal is a legacy withdrawal or not. It would take up to 600+ years for the blocknumber
-            // to reach the LEGACY_WITHDRAWALS_TIMESTAMP, so this is a safe check.
+            // this is a legacy M2 withdrawal using blocknumbers. 
+            // It would take up to 600+ years for the blocknumber to reach the LEGACY_WITHDRAWALS_TIMESTAMP, so this is a safe check.
             require(
                 withdrawal.startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number,
                 WithdrawalDelayNotElapsed()
             );
-
-            totalMagnitudes = new uint64[](withdrawal.strategies.length);
-            for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
-                totalMagnitudes[i] = SlashingLib.PRECISION_FACTOR;
-            }
+            // sourcing the magnitudes from time=0, will always give us SlashingLib.PRECISION_FACTOR, which doesn't factor in slashing
+            magnitudeSourceTimestamp = 0;
         } else {
             // this is a post Slashing release withdrawal using timestamps
             require(withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY <= block.timestamp, WithdrawalDelayNotElapsed());
-
-            totalMagnitudes = allocationManager.getTotalMagnitudesAtTimestamp({
-                operator: withdrawal.delegatedTo,
-                strategies: withdrawal.strategies,
-                timestamp: withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY
-            });   
+            // source magnitudes from the time of completability
+            magnitudeSourceTimestamp = withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY;
         }
+
+        // read delegated operator's totalMagnitudes at time of withdrawal to scale shares again if any slashing has occurred
+        // during withdrawal delay period
+        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudesAtTimestamp({
+            operator: withdrawal.delegatedTo,
+            strategies: withdrawal.strategies,
+            timestamp: magnitudeSourceTimestamp
+        });
 
         for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
             IShareManager shareManager = _getShareManager(withdrawal.strategies[i]);
-            uint256 sharesToWithdraw = SlashingLib.calculateSharesToCompleteWithdraw(withdrawal.scaledShares[i], totalMagnitudes[i]);
+            uint256 sharesToWithdraw = SlashingLib.descaleShares(withdrawal.scaledShares[i], totalMagnitudes[i]);
             if (receiveAsTokens) {
-                // withdraws the underlying token of the strategy to the staker
-
                 // Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares,
                 // then a call is ultimately forwarded to the `staker`s EigenPod; otherwise a call is ultimately forwarded
                 // to the `strategy` with info on the `token`.
@@ -606,12 +602,8 @@ contract DelegationManager is
                     token: tokens[i]
                 });
             } else {
-                // adds the withdrawable shares back to the stakers account
-
                 // Award shares back in StrategyManager/EigenPodManager.
-
-                // big fukn TODO: refactor EPM to increaseDelegatedShares if applicable. this is completely broken as is
-                strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], sharesToWithdraw);
+                shareManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], sharesToWithdraw);
             }
         }
 
