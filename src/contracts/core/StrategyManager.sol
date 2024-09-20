@@ -253,14 +253,14 @@ contract StrategyManager is
         }
 
         // add the returned shares to their existing shares for this strategy
-        uint256 existingShares = stakerStrategyShares[staker][strategy];
+        uint256 existingDepositShares = stakerStrategyShares[staker][strategy];
         stakerStrategyShares[staker][strategy] += shares;
 
         // Increase shares delegated to operator, if needed
         delegation.increaseDelegatedShares({
             staker: staker,
             strategy: strategy,
-            existingShares: existingShares,
+            existingDepositShares: existingDepositShares,
             addedShares: shares
         });
 
@@ -379,6 +379,12 @@ contract StrategyManager is
             shares[i] = stakerStrategyShares[staker][stakerStrategyList[staker][i]];
         }
         return (stakerStrategyList[staker], shares);
+    }
+
+    function getStakerStrategyList(
+        address staker
+    ) external view returns (IStrategy[] memory) {
+        return stakerStrategyList[staker];
     }
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.

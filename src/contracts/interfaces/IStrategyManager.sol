@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
+import "./IShareManager.sol";
 import "./ISlasher.sol";
 import "./IDelegationManager.sol";
 import "./IEigenPodManager.sol";
@@ -12,7 +13,7 @@ import "./IEigenPodManager.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
-interface IStrategyManager {
+interface IStrategyManager is IShareManager {
     /// @dev Thrown when total strategies deployed exceeds max.
     error MaxStrategiesExceeded();
     /// @dev Thrown when two array parameters have mismatching lengths.
@@ -95,18 +96,6 @@ interface IStrategyManager {
         bytes memory signature
     ) external returns (uint256 shares);
 
-    /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
-    function removeShares(address staker, IStrategy strategy, uint256 shares) external;
-
-    /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
-    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external;
-
-    /// @notice Used by the DelegationManager to convert withdrawn descaled shares to tokens and send them to a recipient
-    function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external;
-
-    /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
-
     /**
      * @notice Get all details on the staker's deposits and corresponding shares
      * @return (staker's strategies, shares in these strategies)
@@ -114,6 +103,10 @@ interface IStrategyManager {
     function getDeposits(
         address staker
     ) external view returns (IStrategy[] memory, uint256[] memory);
+
+    function getStakerStrategyList(
+        address staker
+    ) external view returns (IStrategy[] memory);
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
     function stakerStrategyListLength(

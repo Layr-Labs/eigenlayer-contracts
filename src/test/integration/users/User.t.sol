@@ -107,7 +107,7 @@ contract User is PrintUtils {
             emit log("expecting withdrawal:");
             emit log_named_uint("nonce: ", expectedWithdrawals[i].nonce);
             emit log_named_address("strat: ", address(expectedWithdrawals[i].strategies[0]));
-            emit log_named_uint("scaledShares: ", expectedWithdrawals[i].scaledShares[0]);
+            emit log_named_uint("slashingShares: ", expectedWithdrawals[i].slashingShares[0]);
         }
         
         return expectedWithdrawals;

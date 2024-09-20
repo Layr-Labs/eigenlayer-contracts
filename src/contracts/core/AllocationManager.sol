@@ -7,7 +7,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
-import "../libraries/SlashingLib.sol";
+import "../libraries/SlashingConstants.sol";
 import "./AllocationManagerStorage.sol";
 
 contract AllocationManager is
@@ -427,9 +427,9 @@ contract AllocationManager is
     function _getLatestTotalMagnitude(address operator, IStrategy strategy) internal returns (uint64) {
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = PRECISION_FACTOR;
             _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
-            operatorMagnitudeInfo[operator][strategy].freeMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+            operatorMagnitudeInfo[operator][strategy].freeMagnitude = PRECISION_FACTOR;
         }
 
         return uint64(totalMagnitude);
@@ -444,7 +444,6 @@ contract AllocationManager is
         uint192 nextIndex
     ) internal view returns (uint64 freeMagnitudeToAdd, uint192 completed) {
         uint256 pendingFreeMagnitudeLength = _pendingFreeMagnitude[operator][strategy].length;
-        uint16 completed = 0;
         freeMagnitudeToAdd = 0;
         while (nextIndex < pendingFreeMagnitudeLength && completed < numToComplete) {
             PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][nextIndex];
@@ -624,7 +623,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < strategies.length; ++i) {
             (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestSnapshot();
             if (!exists) {
-                totalMagnitudes[i] = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+                totalMagnitudes[i] = PRECISION_FACTOR;
             } else {
                 totalMagnitudes[i] = uint64(value);
             }
@@ -646,11 +645,11 @@ contract AllocationManager is
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            (uint224 value, uint256 pos,) =
-                _totalMagnitudeUpdate[operator][strategies[i]].upperLookupRecentWithPos(timestamp);
+            (uint224 value, uint256 pos) =
+                _totalMagnitudeUpdate[operator][strategies[i]].upperLookupWithPos(timestamp);
             // if there is no existing total magnitude snapshot
             if (value == 0 && pos == 0) {
-                totalMagnitudes[i] = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+                totalMagnitudes[i] = PRECISION_FACTOR;
             } else {
                 totalMagnitudes[i] = uint64(value);
             }
@@ -668,7 +667,7 @@ contract AllocationManager is
         uint64 totalMagnitude;
         (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = PRECISION_FACTOR;
         } else {
             totalMagnitude = uint64(value);
         }
@@ -688,12 +687,12 @@ contract AllocationManager is
         IStrategy strategy,
         uint32 timestamp
     ) external view returns (uint64) {
-        uint64 totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+        uint64 totalMagnitude = PRECISION_FACTOR;
         (uint224 value, uint256 pos,) = _totalMagnitudeUpdate[operator][strategy].upperLookupRecentWithPos(timestamp);
 
         // if there is no existing total magnitude snapshot
         if (value == 0 && pos == 0) {
-            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = PRECISION_FACTOR;
         } else {
             totalMagnitude = uint64(value);
         }
