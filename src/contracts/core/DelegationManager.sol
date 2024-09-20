@@ -559,29 +559,13 @@ contract DelegationManager is
         require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
 
         // TODO: is there a cleaner way to do this?
-        uint32 magnitudeSourceTimestamp;
-        if (withdrawal.startTimestamp < LEGACY_WITHDRAWALS_TIMESTAMP) {
-            // this is a legacy M2 withdrawal using blocknumbers. 
-            // It would take up to 600+ years for the blocknumber to reach the LEGACY_WITHDRAWALS_TIMESTAMP, so this is a safe check.
-            require(
-                withdrawal.startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number,
-                WithdrawalDelayNotElapsed()
-            );
-            // sourcing the magnitudes from time=0, will always give us PRECISION_FACTOR, which doesn't factor in slashing
-            magnitudeSourceTimestamp = 0;
-        } else {
-            // this is a post Slashing release withdrawal using timestamps
-            require(withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY <= block.timestamp, WithdrawalDelayNotElapsed());
-            // source magnitudes from the time of completability
-            magnitudeSourceTimestamp = withdrawal.startTimestamp + MIN_WITHDRAWAL_DELAY;
-        }
-
+        uint32 completableTimestamp = _checkCompletability(withdrawal.startTimestamp);
         // read delegated operator's totalMagnitudes at time of withdrawal to convert the stakeShares to shared
         // factoring in slashing that occured during withdrawal delay
         uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudesAtTimestamp({
             operator: withdrawal.delegatedTo,
             strategies: withdrawal.strategies,
-            timestamp: magnitudeSourceTimestamp
+            timestamp: completableTimestamp
         });
 
         for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
@@ -728,9 +712,30 @@ contract DelegationManager is
         return withdrawalRoot;
     }
 
+    /// @dev check whether the withdrawal delay has elapsed (handles both legacy and post-slashing-release withdrawals) and returns the completable timestamp
+    function _checkCompletability(
+        uint32 startTimestamp
+    ) internal view returns (uint32 completableTimestamp) {
+        if (startTimestamp < LEGACY_WITHDRAWALS_TIMESTAMP) {
+            // this is a legacy M2 withdrawal using blocknumbers. 
+            // It would take up to 600+ years for the blocknumber to reach the LEGACY_WITHDRAWALS_TIMESTAMP, so this is a safe check.
+            require(
+                startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number,
+                WithdrawalDelayNotElapsed()
+            );
+            // sourcing the magnitudes from time=0, will always give us PRECISION_FACTOR, which doesn't factor in slashing
+            completableTimestamp = 0;
+        } else {
+            // this is a post Slashing release withdrawal using timestamps
+            require(startTimestamp + MIN_WITHDRAWAL_DELAY <= block.timestamp, WithdrawalDelayNotElapsed());
+            // source magnitudes from the time of completability
+            completableTimestamp = startTimestamp + MIN_WITHDRAWAL_DELAY;
+        }
+    }
+
     /**
      *
-     *                         SLASHING AND SHARES HELPER FUNCTIONS
+     *                              SHARES CONVERSION FUNCTIONS
      *  
      * There are 3 types of shares:
      *      1. shares
