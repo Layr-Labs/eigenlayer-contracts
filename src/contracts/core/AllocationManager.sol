@@ -427,9 +427,9 @@ contract AllocationManager is
     function _getLatestTotalMagnitude(address operator, IStrategy strategy) internal returns (uint64) {
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = PRECISION_FACTOR;
+            totalMagnitude = WAD;
             _totalMagnitudeUpdate[operator][strategy].push({key: uint32(block.timestamp), value: totalMagnitude});
-            operatorMagnitudeInfo[operator][strategy].freeMagnitude = PRECISION_FACTOR;
+            operatorMagnitudeInfo[operator][strategy].freeMagnitude = WAD;
         }
 
         return uint64(totalMagnitude);
@@ -623,7 +623,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < strategies.length; ++i) {
             (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestSnapshot();
             if (!exists) {
-                totalMagnitudes[i] = PRECISION_FACTOR;
+                totalMagnitudes[i] = WAD;
             } else {
                 totalMagnitudes[i] = uint64(value);
             }
@@ -645,11 +645,10 @@ contract AllocationManager is
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            (uint224 value, uint256 pos) =
-                _totalMagnitudeUpdate[operator][strategies[i]].upperLookupWithPos(timestamp);
+            (uint224 value, uint256 pos) = _totalMagnitudeUpdate[operator][strategies[i]].upperLookupWithPos(timestamp);
             // if there is no existing total magnitude snapshot
             if (value == 0 && pos == 0) {
-                totalMagnitudes[i] = PRECISION_FACTOR;
+                totalMagnitudes[i] = WAD;
             } else {
                 totalMagnitudes[i] = uint64(value);
             }
@@ -667,7 +666,7 @@ contract AllocationManager is
         uint64 totalMagnitude;
         (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = PRECISION_FACTOR;
+            totalMagnitude = WAD;
         } else {
             totalMagnitude = uint64(value);
         }
@@ -687,12 +686,12 @@ contract AllocationManager is
         IStrategy strategy,
         uint32 timestamp
     ) external view returns (uint64) {
-        uint64 totalMagnitude = PRECISION_FACTOR;
+        uint64 totalMagnitude = WAD;
         (uint224 value, uint256 pos,) = _totalMagnitudeUpdate[operator][strategy].upperLookupRecentWithPos(timestamp);
 
         // if there is no existing total magnitude snapshot
         if (value == 0 && pos == 0) {
-            totalMagnitude = PRECISION_FACTOR;
+            totalMagnitude = WAD;
         } else {
             totalMagnitude = uint64(value);
         }

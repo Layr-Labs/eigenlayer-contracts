@@ -253,14 +253,14 @@ contract StrategyManager is
         }
 
         // add the returned shares to their existing shares for this strategy
-        uint256 existingDepositShares = stakerStrategyShares[staker][strategy];
+        uint256 existingPrincipalShares = stakerStrategyShares[staker][strategy];
         stakerStrategyShares[staker][strategy] += shares;
 
         // Increase shares delegated to operator, if needed
         delegation.increaseDelegatedShares({
             staker: staker,
             strategy: strategy,
-            existingDepositShares: existingDepositShares,
+            existingPrincipalShares: existingPrincipalShares,
             addedShares: shares
         });
 

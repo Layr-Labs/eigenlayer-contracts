@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "@openzeppelin/contracts/utils/math/Math.sol";
+
 /// @dev the stakerScalingFactor and totalMagnitude have initial default values to 1e18 as "1"
-/// to preserve precision with uint256 math. We use `PRECISION_FACTOR` where these variables are used
+/// to preserve precision with uint256 math. We use `WAD` where these variables are used
 /// and divide to represent as 1
-uint64 constant PRECISION_FACTOR = 1e18;
+uint64 constant WAD = 1e18;
 
 /// @dev Delay before deallocations are completable and can be added back into freeMagnitude
 /// This is also the same delay for withdrawals to be completable
@@ -19,95 +21,79 @@ uint32 constant DEALLOCATION_DELAY = 17.5 days;
  *          - These are comparable between operators and stakers.
  *          - These live in the storage of StrategyManager strategies: 
  *              - `totalShares` is the total amount of shares delegated to a strategy
- *      2. stakeShares
+ *      2. delegatedShares
  *          - These can be converted to shares given an operator and a strategy
  *              - by multiplying by the operator's totalMagnitude for the strategy
  *          - These values automatically update their conversion into tokens
  *              - when the operator's total magnitude for the strategy is decreased upon slashing
  *          - These live in the storage of the DelegationManager:
- *              - `stakeShares` is the total amount of stakeShares delegated to an operator for a strategy
- *              - `withdrawal.stakeShares` is the amount of stakeShares in a withdrawal          
- *      3. depositShares 
- *          - These can be converted into stakeShares given a staker and a strategy
+ *              - `delegatedShares` is the total amount of delegatedShares delegated to an operator for a strategy
+ *              - `withdrawal.delegatedShares` is the amount of delegatedShares in a withdrawal          
+ *      3. principalShares 
+ *          - These can be converted into delegatedShares given a staker and a strategy
  *              - by multiplying by the staker's depositScalingFactor for the strategy
  *          - These values automatically update their conversion into tokens
  *             - when the staker's depositScalingFactor for the strategy is increased upon new deposits
  *             - or when the staker's operator's total magnitude for the strategy is decreased upon slashing
  *          - These represent the total amount of shares the staker would have of a strategy if they were never slashed
  *          - These live in the storage of the StrategyManager/EigenPodManager
- *              - `stakerStrategyShares` in the SM is the staker's depositShares that have not been queued for withdrawal in a strategy
- *              - `podOwnerShares` in the EPM is the staker's depositShares that have not been queued for withdrawal in the beaconChainETHStrategy
+ *              - `stakerStrategyShares` in the SM is the staker's principalShares that have not been queued for withdrawal in a strategy
+ *              - `podOwnerShares` in the EPM is the staker's principalShares that have not been queued for withdrawal in the beaconChainETHStrategy
  */
-struct StakeShares {
-    uint256 stakeShares;
-}
 
-struct DepositShares {
-    uint256 depositShares;
-}
+type Shares is uint256;
 
-struct Shares {
-    uint256 shares;
-}
+type DelegatedShares is uint256;
+
+type PrincipalShares is uint256;
+
+using SlashingLib for Shares global;
+using SlashingLib for DelegatedShares global;
+using SlashingLib for PrincipalShares global;
 
 library SlashingLib {
-    function createShares(uint256 shares) internal pure returns (Shares memory) {
-        return Shares({
-            shares: shares
-        });
-    }
+    using Math for uint256;
+    using SlashingLib for uint256;
 
-    function toUint256(Shares memory shares) internal pure returns (uint256) {
-        return shares.shares;
-    }
-
-    function createStakeShares(uint256 stakeShares) internal pure returns (StakeShares memory) {
-        return StakeShares({
-            stakeShares: stakeShares
-        });
-    }
-
-    function toUint256(StakeShares memory stakeShares) internal pure returns (uint256) {
-        return stakeShares.stakeShares;
-    }
-
-    function createDepositShares(uint256 depositShares) internal pure returns (DepositShares memory) {
-        return DepositShares({
-            depositShares: depositShares
-        });
-    }
-
-    function toUint256(DepositShares memory depositShares) internal pure returns (uint256) {
-        return depositShares.depositShares;
-    }
-
-    function toStakeShares(Shares memory shares, uint256 magnitude) internal pure returns (StakeShares memory) {
-        return StakeShares({
-            stakeShares: shares.shares * PRECISION_FACTOR / magnitude
-        });
-    }
-
-    function toDepositShares(StakeShares memory stakeShares, uint256 depositScalingFactor) internal pure returns (DepositShares memory) {
+    function toPrincipalShares(
+        DelegatedShares delegatedShares,
+        uint256 depositScalingFactor
+    ) internal pure returns (PrincipalShares) {
         if (depositScalingFactor == 0) {
-            depositScalingFactor = PRECISION_FACTOR;
+            depositScalingFactor = WAD;
         }
-        return DepositShares({
-            depositShares: stakeShares.stakeShares * PRECISION_FACTOR / depositScalingFactor
-        });
+        return PrincipalShares.wrap(DelegatedShares.unwrap(delegatedShares).divWad(depositScalingFactor));
     }
 
-    function toStakeShares(DepositShares memory depositShares, uint256 depositScalingFactor) internal pure returns (StakeShares memory) {
+    function toDelegatedShares(
+        PrincipalShares principalShares,
+        uint256 depositScalingFactor
+    ) internal pure returns (DelegatedShares) {
         if (depositScalingFactor == 0) {
-            depositScalingFactor = PRECISION_FACTOR;
+            depositScalingFactor = WAD;
         }
-        return StakeShares({
-            stakeShares: depositShares.depositShares * depositScalingFactor / PRECISION_FACTOR
-        });
+        return DelegatedShares.wrap(PrincipalShares.unwrap(principalShares).mulWad(depositScalingFactor));
     }
 
-    function toShares(StakeShares memory stakeShares, uint256 magnitude) internal pure returns (Shares memory) {
-        return Shares({
-            shares: stakeShares.stakeShares * magnitude / PRECISION_FACTOR
-        });
+    function toShares(DelegatedShares delegatedShares, uint256 magnitude) internal pure returns (Shares) {
+        return Shares.wrap(DelegatedShares.unwrap(delegatedShares).mulWad(magnitude));
+    }
+
+    function toPrincipalShares(Shares shares, uint256 magnitude) internal pure returns (DelegatedShares) {
+        return DelegatedShares.wrap(Shares.unwrap(shares).divWad(magnitude));
+    }
+
+    function toDelegatedShares(Shares shares, uint256 magnitude) internal pure returns (DelegatedShares) {
+        return DelegatedShares.wrap(Shares.unwrap(shares).divWad(magnitude));
+    }
+
+    // WAD MATH
+
+    function mulWad(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a.mulDiv(b, WAD);
+    }
+
+    function divWad(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a.mulDiv(WAD, b);
     }
 }
