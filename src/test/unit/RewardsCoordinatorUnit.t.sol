@@ -1448,6 +1448,13 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         mockTokenBytecode = address(mockToken).code;
     }
 
+    function _toClaims(
+        IRewardsCoordinator.RewardsMerkleClaim memory claim
+    ) internal pure returns (IRewardsCoordinator.RewardsMerkleClaim[] memory claims) {
+        claims = new IRewardsCoordinator.RewardsMerkleClaim[](1);
+        claims[0] = claim;
+    }
+
     /// @notice Claim against latest submitted root, rootIndex 3
     /// Limit fuzz runs to speed up tests since these require reading from JSON
     /// forge-config: default.fuzz.runs = 10
@@ -1484,7 +1491,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
         _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
-        rewardsCoordinator.processClaim(claim, claimer);
+        
+        rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
         uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1534,7 +1542,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
         _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
-        rewardsCoordinator.processClaim(claim, claimer);
+        rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
         uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1586,7 +1594,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
             _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
-            rewardsCoordinator.processClaim(claim, claimer);
+            rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1619,7 +1627,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
             _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
-            rewardsCoordinator.processClaim(claim, claimer);
+            rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1652,7 +1660,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
             _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
-            rewardsCoordinator.processClaim(claim, claimer);
+            rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1698,7 +1706,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // rootIndex in claim is 0, which is disabled
         IRewardsCoordinator.RewardsMerkleClaim memory claim;
         cheats.expectRevert("RewardsCoordinator._checkClaim: root is disabled");
-        rewardsCoordinator.processClaim(claim, claimer);
+        rewardsCoordinator.processClaims(_toClaims(claim), claimer);
         cheats.stopPrank();
     }
 
@@ -1739,7 +1747,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
             _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
-            rewardsCoordinator.processClaim(claim, claimer);
+            rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1767,7 +1775,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
             cheats.expectRevert("RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed");
-            rewardsCoordinator.processClaim(claim, claimer);
+            rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
             cheats.stopPrank();
         }
@@ -1809,7 +1817,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         assertFalse(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
         cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid token claim proof");
-        rewardsCoordinator.processClaim(claim, claimer);
+        rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
         cheats.stopPrank();
     }
@@ -1850,7 +1858,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         assertFalse(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
         cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
-        rewardsCoordinator.processClaim(claim, claimer);
+        rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
         cheats.stopPrank();
     }
@@ -1888,7 +1896,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         ).with_key(address(claim.tokenLeaves[0].token)).checked_write(type(uint256).max);
         cheats.startPrank(claimer);
         cheats.expectRevert("RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed");
-        rewardsCoordinator.processClaim(claim, claimer);
+        rewardsCoordinator.processClaims(_toClaims(claim), claimer);
         cheats.stopPrank();
     }
 
@@ -1927,7 +1935,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         claim.tokenIndices[0] = claim.tokenIndices[0] | uint32(1 << (numShift + proofLength / 32));
         cheats.startPrank(claimer);
         cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid tokenLeafIndex");
-        rewardsCoordinator.processClaim(claim, claimer);
+        rewardsCoordinator.processClaims(_toClaims(claim), claimer);
         cheats.stopPrank();
     }
 
@@ -1966,7 +1974,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         claim.earnerIndex = claim.earnerIndex | uint32(1 << (numShift + proofLength / 32));
         cheats.startPrank(claimer);
         cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex");
-        rewardsCoordinator.processClaim(claim, claimer);
+        rewardsCoordinator.processClaims(_toClaims(claim), claimer);
         cheats.stopPrank();
     }
 
@@ -2021,7 +2029,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
                 "TokenIndex not set to max value"
             );
             _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
-            rewardsCoordinator.processClaim(claim, claimer);
+            rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -2076,7 +2084,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             assertEq(claim.tokenIndices[0], 0, "TokenIndex should be 0");
             assertEq(claim.tokenTreeProofs[0].length, 0, "TokenTreeProof should be empty");
             _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
-            rewardsCoordinator.processClaim(claim, claimer);
+            rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -2134,7 +2142,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             assertEq(claim.earnerIndex, 0, "EarnerIndex should be 0");
             assertEq(claim.earnerTreeProof.length, 0, "EarnerTreeProof should be empty");
             _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
-            rewardsCoordinator.processClaim(claim, claimer);
+            rewardsCoordinator.processClaims(_toClaims(claim), claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
