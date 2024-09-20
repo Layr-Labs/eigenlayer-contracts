@@ -17,6 +17,14 @@ contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
         _initializePauser(_pauserRegistry, 0);
     }
 
+    function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
+
+    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external {}
+
+    function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external {}
+
+    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
+
     function slasher() external view returns(ISlasher) {}
 
     function createPod() external returns(address) {}

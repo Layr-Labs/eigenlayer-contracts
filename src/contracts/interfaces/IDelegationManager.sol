@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
+import "../libraries/SlashingLib.sol";
 
 /**
  * @title DelegationManager
@@ -128,10 +129,10 @@ interface IDelegationManager is ISignatureUtils {
         uint32 startTimestamp;
         // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
-        // Array containing the amount of staker's stakeShares for withdrawal in each Strategy in the `strategies` array
+        // Array containing the amount of staker's delegatedShares for withdrawal in each Strategy in the `strategies` array
         // Note that these shares need to be multiplied by the operator's totalMagnitude at completion to include
         // slashing occurring during the queue withdrawal delay
-        uint256[] stakeShares;
+        DelegatedShares[] delegatedShares;
     }
 
     struct QueuedWithdrawalParams {
@@ -320,7 +321,7 @@ interface IDelegationManager is ISignatureUtils {
      * The staker's depositScalingFactor is updated here.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
-     * @param existingDepositShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
+     * @param existingPrincipalShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
      * @param addedShares The number of shares to added to the staker's shares in the strategy. This amount will be scaled prior to adding
      * to the operator's scaled shares.
@@ -332,7 +333,7 @@ interface IDelegationManager is ISignatureUtils {
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 existingDepositShares,
+        uint256 existingPrincipalShares,
         uint256 addedShares
     ) external;
 
@@ -381,15 +382,15 @@ interface IDelegationManager is ISignatureUtils {
     ) external view returns (uint256);
 
     /**
-     * @notice returns the total number of stakeShares (i.e. shares divided by the `operator`'s
+     * @notice returns the total number of delegatedShares (i.e. shares divided by the `operator`'s
      * totalMagnitude) in `strategy` that are delegated to `operator`.
-     * @notice Mapping: operator => strategy => total number of stakeShares in the strategy delegated to the operator.
+     * @notice Mapping: operator => strategy => total number of delegatedShares in the strategy delegated to the operator.
      * @dev By design, the following invariant should hold for each Strategy:
-     * (operator's stakeShares in delegation manager) = sum (stakeShares above zero of all stakers delegated to operator)
-     * = sum (delegateable stakeShares of all stakers delegated to the operator)
+     * (operator's delegatedShares in delegation manager) = sum (delegatedShares above zero of all stakers delegated to operator)
+     * = sum (delegateable delegatedShares of all stakers delegated to the operator)
      * @dev FKA `operatorShares`
      */
-    function operatorStakeShares(address operator, IStrategy strategy) external view returns (uint256);
+    function operatorDelegatedShares(address operator, IStrategy strategy) external view returns (uint256);
 
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.

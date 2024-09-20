@@ -130,7 +130,7 @@ contract EigenPodManager is
                     staker: podOwner,
                     strategy: beaconChainETHStrategy,
                     // existing shares from standpoint of the DelegationManager
-                    existingDepositShares: currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares),
+                    existingPrincipalShares: currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares),
                     addedShares: uint256(changeInDelegatableShares)
                 });
             }
@@ -168,11 +168,11 @@ contract EigenPodManager is
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function addShares(
-        address staker, 
-        IERC20 token, 
-        IStrategy strategy, 
+        address staker,
+        IERC20 token,
+        IStrategy strategy,
         uint256 shares
-    )  external onlyDelegationManager {
+    ) external onlyDelegationManager {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         require(staker != address(0), InputAddressZero());
         require(int256(shares) >= 0, SharesNegative());
@@ -184,12 +184,8 @@ contract EigenPodManager is
         emit PodSharesUpdated(staker, int256(shares));
         emit NewTotalShares(staker, updatedShares);
 
-        uint256 increaseInDelegateableShares = uint256(
-            _calculateChangeInDelegatableShares({
-                sharesBefore: currentShares,
-                sharesAfter: updatedShares
-            })
-        );
+        uint256 increaseInDelegateableShares =
+            uint256(_calculateChangeInDelegatableShares({sharesBefore: currentShares, sharesAfter: updatedShares}));
 
         // TODO: ADD SHARES BACK TO DM
     }
@@ -202,9 +198,9 @@ contract EigenPodManager is
      *      we do not need to update the podOwnerShares if `currentPodOwnerShares` is positive
      */
     function withdrawSharesAsTokens(
-        address recipient, 
-        IStrategy strategy, 
-        uint256 shares, 
+        address recipient,
+        IStrategy strategy,
+        uint256 shares,
         IERC20
     ) external onlyDelegationManager {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
