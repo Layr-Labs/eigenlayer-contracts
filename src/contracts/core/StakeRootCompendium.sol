@@ -560,9 +560,10 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
 
     /// @inheritdoc IStakeRootCompendium
     function getOperatorSetRoot(
-        OperatorSet calldata operatorSet,
+        uint32 operatorSetIndex,
         OperatorLeaf[] calldata operatorLeaves
     ) external view returns (bytes32) {
+        OperatorSet memory operatorSet = operatorSets[operatorSetIndex];
         require(
             avsDirectory.isOperatorSet(operatorSet.avs, operatorSet.operatorSetId),
             "StakeRootCompendium.getOperatorSetRoot: operator set does not exist"
