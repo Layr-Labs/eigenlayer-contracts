@@ -392,8 +392,8 @@ interface IDelegationManager is ISignatureUtils {
      */
     function operatorDelegatedShares(address operator, IStrategy strategy) external view returns (uint256);
 
-    /// @notice Given array of strategies, returns array of scaled shares for the operator
-    function getOperatorScaledShares(
+    /// @notice Given array of strategies, returns array of delegated shares for the operator
+    function getOperatorDelegatedShares(
         address operator,
         IStrategy[] memory strategies
     ) external view returns (uint256[] memory);

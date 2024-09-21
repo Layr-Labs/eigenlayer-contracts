@@ -439,7 +439,7 @@ contract AllocationManager is
     function _getLatestTotalMagnitudeView(address operator, IStrategy strategy) internal view returns (uint64) {
         (bool exists,, uint224 totalMagnitude) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+            totalMagnitude = WAD;
         }
 
         return uint64(totalMagnitude);

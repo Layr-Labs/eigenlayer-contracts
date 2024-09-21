@@ -854,16 +854,16 @@ contract DelegationManager is
         return Shares.unwrap(DelegatedShares.wrap(operatorDelegatedShares[operator][strategy]).toShares(totalMagnitude));
     }
 
-    /// @notice Given array of strategies, returns array of scaled shares for the operator
-    function getOperatorScaledShares(
+    /// @notice Given array of strategies, returns array of delegated shares for the operator
+    function getOperatorDelegatedShares(
         address operator,
         IStrategy[] memory strategies
     ) external view returns (uint256[] memory) {
-        uint256[] memory scaledShares = new uint256[](strategies.length);
+        uint256[] memory delegatedShares = new uint256[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            scaledShares[i] = operatorScaledShares[operator][strategies[i]];
+            delegatedShares[i] = operatorDelegatedShares[operator][strategies[i]];
         }
-        return scaledShares;
+        return delegatedShares;
     }
 
     /**
