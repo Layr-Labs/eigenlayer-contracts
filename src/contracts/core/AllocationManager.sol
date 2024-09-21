@@ -473,7 +473,7 @@ contract AllocationManager is
      *
      * @return operatorSets the operator sets the operator is a member of and the current slashable magnitudes for each strategy
      */
-    function getCurrentSlashableMagnitudes(
+    function getSlashableMagnitudes(
         address operator,
         IStrategy[] calldata strategies
     ) external view returns (OperatorSet[] memory, uint64[][] memory) {
@@ -490,86 +490,6 @@ contract AllocationManager is
             }
         }
         return (operatorSets, slashableMagnitudes);
-    }
-
-    /**
-     * @param operator the operator to get the slashable magnitude for
-     * @param strategies the strategies to get the slashable magnitude for
-     * @param timestamp the timestamp to get the slashable magnitude for
-     *
-     * @return operatorSets the operator sets the operator is a member of and the slashable magnitudes for each strategy
-     */
-    function getSlashableMagnitudes(
-        address operator,
-        IStrategy[] calldata strategies,
-        uint32 timestamp
-    ) external view returns (OperatorSet[] memory, uint64[][] memory) {
-        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
-        uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            slashableMagnitudes[i] = new uint64[](operatorSets.length);
-            for (uint256 j = 0; j < operatorSets.length; ++j) {
-                slashableMagnitudes[i][j] = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupRecent(
-                        timestamp
-                    )
-                );
-            }
-        }
-        return (operatorSets, slashableMagnitudes);
-    }
-
-    /**
-     * @param operator the operator to get the slashable ppm for
-     * @param operatorSet the operatorSet to get the slashable ppm for
-     * @param strategies the strategies to get the slashable ppm for
-     * @param timestamp the timestamp to get the slashable ppm for for
-     * @param linear whether the search should be linear (from the most recent) or binary
-     *
-     * @return slashablePPM the slashable ppm of the given list of strategies allocated to
-     * the given OperatorSet for the given operator and timestamp
-     */
-    function getSlashablePPM(
-        address operator,
-        OperatorSet calldata operatorSet,
-        IStrategy[] calldata strategies,
-        uint32 timestamp,
-        bool linear
-    ) public view returns (uint24[] memory) {
-        uint24[] memory slashablePPM = new uint24[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            slashablePPM[i] = _getSlashablePPM(operator, operatorSet, strategies[i], timestamp, linear);
-        }
-        return slashablePPM;
-    }
-
-    function _getSlashablePPM(
-        address operator,
-        OperatorSet calldata operatorSet,
-        IStrategy strategy,
-        uint32 timestamp,
-        bool linear
-    ) public view returns (uint24) {
-        uint64 totalMagnitude;
-        if (linear) {
-            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookupLinear(timestamp));
-        } else {
-            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
-        }
-        // return early if totalMagnitude is 0
-        if (totalMagnitude == 0) {
-            return 0;
-        }
-
-        uint64 currentMagnitude;
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
-        if (linear) {
-            currentMagnitude = uint64(_magnitudeUpdate[operator][strategy][operatorSetKey].upperLookupLinear(timestamp));
-        } else {
-            currentMagnitude = uint64(_magnitudeUpdate[operator][strategy][operatorSetKey].upperLookup(timestamp));
-        }
-
-        return uint16(currentMagnitude * 1e6 / totalMagnitude);
     }
 
     /**
@@ -657,31 +577,6 @@ contract AllocationManager is
         uint64 totalMagnitude;
         (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = WAD;
-        } else {
-            totalMagnitude = uint64(value);
-        }
-
-        return totalMagnitude;
-    }
-
-    /**
-     * @notice Returns the total magnitude of an operator for a given strategy at a given timestamp
-     * @param operator the operator to get the total magnitude for
-     * @param strategy the strategy to get the total magnitude for
-     * @param timestamp the timestamp to get the total magnitude at
-     * @return totalMagnitude the total magnitude for the strategy
-     */
-    function getTotalMagnitudeAtTimestamp(
-        address operator,
-        IStrategy strategy,
-        uint32 timestamp
-    ) external view returns (uint64) {
-        uint64 totalMagnitude = WAD;
-        (uint224 value, uint256 pos,) = _totalMagnitudeUpdate[operator][strategy].upperLookupRecentWithPos(timestamp);
-
-        // if there is no existing total magnitude snapshot
-        if (value == 0 && pos == 0) {
             totalMagnitude = WAD;
         } else {
             totalMagnitude = uint64(value);
