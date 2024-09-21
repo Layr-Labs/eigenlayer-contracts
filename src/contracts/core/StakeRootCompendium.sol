@@ -587,7 +587,7 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
         uint256 operatorSetIndex,
         uint256 startOperatorIndex,
         uint256 numOperators
-    ) external view returns (OperatorSet memory, address[] memory, OperatorLeaf[] memory) {
+    ) external view returns (OperatorLeaf[] memory) {
         require(operatorSetIndex < operatorSets.length, OperatorSetIndexOutOfBounds());
         OperatorSet memory operatorSet = operatorSets[operatorSetIndex];
         address[] memory operators =
@@ -620,6 +620,9 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
             operatorLeaves.length == avsDirectory.getNumOperatorsInOperatorSet(operatorSet), InputArrayLengthMismatch()
         );
         uint256 totalDelegatedStake;
+        uint256 totalSlashableStake;
+        bytes32[] memory operatorLeavesHashes = new bytes32[](operatorLeaves.length);
+        bytes32 prevExtraData;
         for (uint256 i = 0; i < operatorLeaves.length; ++i) {
             require(uint256(prevExtraData) < uint256(operatorLeaves[i].extraData), ExtraDataNotSorted());
             prevExtraData = operatorLeaves[i].extraData;

@@ -866,18 +866,6 @@ contract DelegationManager is
         return delegatedShares;
     }
 
-    /// @notice Given array of strategies, returns array of scaled shares for the operator
-    function getOperatorScaledShares(
-        address operator,
-        IStrategy[] memory strategies
-    ) external view returns (uint256[] memory) {
-        uint256[] memory scaledShares = new uint256[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            scaledShares[i] = operatorScaledShares[operator][strategies[i]];
-        }
-        return scaledShares;
-    }
-
     /**
      * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal.
      * This value depends on which operator the staker is delegated to.

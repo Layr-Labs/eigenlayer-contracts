@@ -25,9 +25,8 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
             _delegationManager: delegationManager,
             _avsDirectory: avsDirectory,
             _allocationManager: allocationManager,
-            _maxTotalCharge: 100 ether,
             _minBalanceThreshold: 0 ether,
-            _minProofsDuration: 20,
+            _minPrepaidProofs: 20,
             _verifier: address(0),
             _imageId: bytes32(0)
         });
@@ -207,7 +206,7 @@ contract OperatorFactory is Test {
     }
 
     function allocateForOperators(IStrategy strategy, OperatorSet calldata operatorSet, address[] memory operators, uint64 magnitudeForOperators) public {
-        uint64 expectedTotalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+        uint64 expectedTotalMagnitude = WAD;
 
         OperatorSet[] memory operatorSets = new OperatorSet[](1);
         operatorSets[0] = operatorSet;
