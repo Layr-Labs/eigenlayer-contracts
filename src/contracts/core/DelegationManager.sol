@@ -393,8 +393,8 @@ contract DelegationManager is
                 operator: operator,
                 staker: staker,
                 strategy: strategy,
-                existingPrincipalShares: PrincipalShares.wrap(existingPrincipalShares),
-                addedShares: Shares.wrap(addedShares),
+                existingPrincipalShares: existingPrincipalShares,
+                addedShares: addedShares,
                 totalMagnitude: totalMagnitude
             });
         }
@@ -516,8 +516,8 @@ contract DelegationManager is
                 operator: operator, 
                 staker: staker, 
                 strategy: strategies[i],
-                existingPrincipalShares: PrincipalShares.wrap(0),
-                addedShares: Shares.wrap(shares[i]),
+                existingPrincipalShares: 0,
+                addedShares: shares[i],
                 totalMagnitude: totalMagnitudes[i]
             });
         }
@@ -589,8 +589,8 @@ contract DelegationManager is
         address operator,
         address staker,
         IStrategy strategy,
-        PrincipalShares existingPrincipalShares,
-        Shares addedShares,
+        uint256 existingPrincipalShares,
+        uint256 addedShares,
         uint64 totalMagnitude
     ) internal {
         _updateDepositScalingFactor({
@@ -602,7 +602,7 @@ contract DelegationManager is
         });
 
         // based on total magnitude, update operators delegatedShares
-        uint256 delegatedShares = DelegatedShares.unwrap(addedShares.toDelegatedShares(totalMagnitude));
+        uint256 delegatedShares = DelegatedShares.unwrap(Shares.wrap(addedShares).toDelegatedShares(totalMagnitude));
         operatorDelegatedShares[operator][strategy] += delegatedShares;
 
         // TODO: What to do about event wrt scaling?
@@ -735,12 +735,12 @@ contract DelegationManager is
         address staker,
         IStrategy strategy,
         uint64 totalMagnitude,
-        PrincipalShares existingPrincipalShares,
-        Shares addedShares
+        uint256 existingPrincipalShares,
+        uint256 addedShares
     ) internal returns (uint256) {
         uint256 newDepositScalingFactor;
 
-        if (PrincipalShares.unwrap(existingPrincipalShares) == 0) {
+        if (existingPrincipalShares == 0) {
             // existing shares are 0, meaning no existing delegated shares. In this case, the new depositScalingFactor
             // is re-initialized to
             newDepositScalingFactor = WAD / totalMagnitude;
@@ -762,12 +762,12 @@ contract DelegationManager is
             // we can solve for
             //
             uint256 existingShares = Shares.unwrap(
-                existingPrincipalShares.toDelegatedShares(depositScalingFactors[staker][strategy]).toShares(
+                PrincipalShares.wrap(existingPrincipalShares).toDelegatedShares(depositScalingFactors[staker][strategy]).toShares(
                     totalMagnitude
                 )
             );
-            newDepositScalingFactor = (existingShares + Shares.unwrap(addedShares)) * WAD
-                / (PrincipalShares.unwrap(existingPrincipalShares) + Shares.unwrap(addedShares)) * WAD / totalMagnitude;
+            newDepositScalingFactor = (existingShares + addedShares) * WAD
+                / (existingPrincipalShares + addedShares) * WAD / totalMagnitude;
         }
 
         // update the staker's depositScalingFactor
