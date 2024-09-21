@@ -209,7 +209,7 @@ contract OperatorFactory is Test {
     }
 
     function allocateForOperators(IStrategy strategy, OperatorSet calldata operatorSet, address[] memory operators, uint64 magnitudeForOperators) public {
-        uint64 expectedTotalMagnitude = SlashingLib.INITIAL_TOTAL_MAGNITUDE;
+        uint64 expectedTotalMagnitude = WAD;
 
         OperatorSet[] memory operatorSets = new OperatorSet[](1);
         operatorSets[0] = operatorSet;
