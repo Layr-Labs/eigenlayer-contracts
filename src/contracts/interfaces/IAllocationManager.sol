@@ -22,6 +22,8 @@ interface IAllocationManager is ISignatureUtils {
     error InvalidOperator();
     /// @dev Thrown when caller is not the delegation manager.
     error OnlyDelegationManager();
+    /// @dev Thrown when an operator attempts to set their allocation for an operatorSet to the same value
+    error SameMagnitude();
     /// @dev Thrown when an allocation is attempted for a given operator when they have pending allocations or deallocations.
     error PendingAllocationOrDeallocation();
     /// @dev Thrown when an allocation is attempted that exceeds a given operators total allocatable magnitude.

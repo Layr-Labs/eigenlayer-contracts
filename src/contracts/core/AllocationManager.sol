@@ -158,8 +158,8 @@ contract AllocationManager is
             _modifyAllocations({
                 operator: operator,
                 allocation: allocations[i],
-                allocationEffectTimestamp: effectTimestamp,
-                deallocationCompletableTimestamp: completableTimestamp
+                allocationEffectTimestamp: allocationEffectTimestamp,
+                deallocationCompletableTimestamp: deallocationCompletableTimestamp
             });
         }
     }
@@ -216,7 +216,7 @@ contract AllocationManager is
 
                     // Reached deallocation that is completable and, therefore, not slashable,
                     // therefore older deallocations will also be completable. Since this is ordered by completableTimestamps break loop now
-                    if (pendingFreeMagnitude.completableTimestamp >= uint32(block.timestamp)) {
+                    if (block.timestamp >= pendingFreeMagnitude.completableTimestamp) {
                         break;
                     }
 
@@ -320,6 +320,7 @@ contract AllocationManager is
             // We'll use these values later to check the number of pending allocations/deallocations.
             (uint224 currentMagnitude, uint256 pos, uint256 length) =
                 magnitudeUpdates.upperLookupRecentWithPos(uint32(block.timestamp));
+            require(currentMagnitude != allocation.magnitudes[i], SameMagnitude());
 
             // Check that there is at MOST `MAX_PENDING_UPDATES` combined allocations & deallocations for the operator, operatorSet, strategy
             {
@@ -400,7 +401,7 @@ contract AllocationManager is
             uint256 index = _queuedDeallocationIndices[operator][strategy][operatorSetKey][i - 1];
 
             // If completableTimestamp is greater than completeUntilTimestamp, break
-            if (uint32(block.timestamp) < _pendingFreeMagnitude[operator][strategy][index].completableTimestamp) {
+            if (block.timestamp < _pendingFreeMagnitude[operator][strategy][index].completableTimestamp) {
                 ++numQueuedDeallocations;
             } else {
                 break;
@@ -436,7 +437,7 @@ contract AllocationManager is
             PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][nextIndex];
             // pendingFreeMagnitude is ordered by completableTimestamp. If we reach one that is not completable yet, then break
             // loop until completableTimestamp is < block.timestamp
-            if (uint32(block.timestamp) < pendingFreeMagnitude.completableTimestamp) {
+            if (block.timestamp < pendingFreeMagnitude.completableTimestamp) {
                 break;
             }
 
@@ -590,10 +591,13 @@ contract AllocationManager is
 
     /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        bool isMember = avsDirectory.isMember(operator, operatorSet);
+        if (isMember) {
+            return true;
+        }
         (, uint32 lastDeregisteredTimestamp) =
             avsDirectory.operatorSetStatus(operatorSet.avs, operator, operatorSet.operatorSetId);
-        return avsDirectory.isMember(operator, operatorSet)
-            || lastDeregisteredTimestamp + DEALLOCATION_DELAY >= block.timestamp;
+        return block.timestamp < lastDeregisteredTimestamp + DEALLOCATION_DELAY;
     }
 
     /**
