@@ -750,14 +750,14 @@ contract DelegationManager is
             //
             // newShares
             //      = existingShares + addedShares
-            //      = _convertPrincipalSharesToShares(staker, strategy, existingPrincipalShares, totalMagnitude) + addedShares
+            //      = existingPrincipalShares.toDelegatedShares(stakerScalingFactors[staker][strategy).toShares(totalMagnitude) + addedShares
             //
             // and it also is
             //
             // newShares
-            //     = _convertPrincipalSharesToShares(staker, strategy, newPrincipalShares, totalMagnitude)
-            //     = newPrincipalShares * newDepositScalingFactor / WAD * totalMagnitude / WAD
-            //     = (existingPrincipalShares + addedShares) * newDepositScalingFactor / WAD * totalMagnitude / WAD
+            //     = newPrincipalShares.toDelegatedShares(stakerScalingFactors[staker][strategy).toShares(totalMagnitude)
+            //     = newPrincipalShares * newDepositScalingFactor / WAD * totalMagnitude / WAD 
+            //     = (existingPrincipalShares + addedShares) * newDepositScalingFactor / WAD * totalMagnitude / WAD 
             //
             // we can solve for
             //
