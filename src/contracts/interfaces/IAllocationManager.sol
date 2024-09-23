@@ -22,6 +22,8 @@ interface IAllocationManager is ISignatureUtils {
     error InvalidOperator();
     /// @dev Thrown when caller is not the delegation manager.
     error OnlyDelegationManager();
+    /// @dev Thrown when an operator attempts to set their allocation for an operatorSet to the same value
+    error SameMagnitude();
     /// @dev Thrown when an allocation is attempted for a given operator when they have pending allocations or deallocations.
     error PendingAllocationOrDeallocation();
     /// @dev Thrown when an allocation is attempted that exceeds a given operators total allocatable magnitude.
@@ -259,41 +261,10 @@ interface IAllocationManager is ISignatureUtils {
      *
      * @return operatorSets the operator sets the operator is a member of and the current slashable magnitudes for each strategy
      */
-    function getCurrentSlashableMagnitudes(
+    function getSlashableMagnitudes(
         address operator,
         IStrategy[] calldata strategies
     ) external view returns (OperatorSet[] memory, uint64[][] memory);
-
-    /**
-     * @param operator the operator to get the slashable magnitude for
-     * @param strategies the strategies to get the slashable magnitude for
-     * @param timestamp the timestamp to get the slashable magnitude for
-     *
-     * @return operatorSets the operator sets the operator is a member of and the slashable magnitudes for each strategy
-     */
-    function getSlashableMagnitudes(
-        address operator,
-        IStrategy[] calldata strategies,
-        uint32 timestamp
-    ) external view returns (OperatorSet[] memory, uint64[][] memory);
-
-    /**
-     * @param operator the operator to get the slashable ppm for
-     * @param operatorSet the operatorSet to get the slashable ppm for
-     * @param strategies the strategies to get the slashable ppm for
-     * @param timestamp the timestamp to get the slashable ppm for for
-     * @param linear whether the search should be linear (from the most recent) or binary
-     *
-     * @return slashablePPM the slashable ppm of the given list of strategies allocated to
-     * the given OperatorSet for the given operator and timestamp
-     */
-    function getSlashablePPM(
-        address operator,
-        OperatorSet calldata operatorSet,
-        IStrategy[] calldata strategies,
-        uint32 timestamp,
-        bool linear
-    ) external view returns (uint24[] memory);
 
     /**
      * @notice Returns the current total magnitudes of an operator for a given set of strategies
@@ -326,19 +297,6 @@ interface IAllocationManager is ISignatureUtils {
      * @return totalMagnitude the total magnitude for the strategy
      */
     function getTotalMagnitude(address operator, IStrategy strategy) external view returns (uint64);
-
-    /**
-     * @notice Returns the total magnitude of an operator for a given strategy at a given timestamp
-     * @param operator the operator to get the total magnitude for
-     * @param strategy the strategy to get the total magnitude for
-     * @param timestamp the timestamp to get the total magnitude at
-     * @return totalMagnitude the total magnitude for the strategy
-     */
-    function getTotalMagnitudeAtTimestamp(
-        address operator,
-        IStrategy strategy,
-        uint32 timestamp
-    ) external view returns (uint64);
 
     /**
      * @notice Calculates the digest hash to be signed by an operator to modify magnitude allocations

@@ -49,7 +49,6 @@ contract AllocationManager is
     {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
-        DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
     }
 
     /**
@@ -134,13 +133,12 @@ contract AllocationManager is
         require(delegation.isOperator(operator), OperatorNotRegistered());
 
         (bool isSet, uint32 delay) = allocationDelay(operator);
-
         require(isSet, UninitializedAllocationDelay());
 
         // effect timestamp for allocations to take effect. This is configurable by operators
-        uint32 effectTimestamp = uint32(block.timestamp) + delay;
+        uint32 allocationEffectTimestamp = uint32(block.timestamp) + delay;
         // completable timestamp for deallocations
-        uint32 completableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
+        uint32 deallocationCompletableTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
 
         for (uint256 i = 0; i < allocations.length; ++i) {
             // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
@@ -152,7 +150,7 @@ contract AllocationManager is
 
             // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
             // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
-            // proprtional magnitudes relative to eachother. This check prevents any surprising behavior.
+            // proprtional magnitudes relative to each other.
             uint64 currentTotalMagnitude = _getLatestTotalMagnitude(operator, allocations[i].strategy);
             require(currentTotalMagnitude == allocations[i].expectedTotalMagnitude, InvalidExpectedTotalMagnitude());
 
@@ -160,8 +158,8 @@ contract AllocationManager is
             _modifyAllocations({
                 operator: operator,
                 allocation: allocations[i],
-                allocationEffectTimestamp: effectTimestamp,
-                deallocationCompletableTimestamp: completableTimestamp
+                allocationEffectTimestamp: allocationEffectTimestamp,
+                deallocationCompletableTimestamp: deallocationCompletableTimestamp
             });
         }
     }
@@ -188,31 +186,25 @@ contract AllocationManager is
         require(isOperatorSlashable(operator, operatorSet), InvalidOperator());
 
         for (uint256 i = 0; i < strategies.length; ++i) {
-            // 1. calculate slashed magnitude from current allocation
-            // update current and all following queued magnitude updates for (operator, strategy, operatorSetId) tuple
+            // 1. slash the actively allocated (not pending deallocation) magnitude
             uint64 slashedMagnitude;
             {
-                uint64 currentMagnitude = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][operatorSetKey].upperLookupRecent(uint32(block.timestamp))
-                );
-                // slash nonzero current magnitude
+                Snapshots.History storage magnitudeUpdates = _magnitudeUpdate[operator][strategies[i]][operatorSetKey];
+                uint64 currentMagnitude = uint64(magnitudeUpdates.upperLookupRecent(uint32(block.timestamp)));
+                // skip if no actively allocated magnitude to slash
                 if (currentMagnitude != 0) {
                     /// TODO: add wrapping library for rounding up for slashing accounting
                     slashedMagnitude = uint64(uint256(bipsToSlash) * uint256(currentMagnitude) / BIPS_FACTOR);
 
-                    _magnitudeUpdate[operator][strategies[i]][operatorSetKey].decrementAtAndFutureSnapshots({
+                    // propagate slashing to current and future and allocations for the (operator, strategy, operatorSet)
+                    magnitudeUpdates.decrementAtAndFutureSnapshots({
                         key: uint32(block.timestamp),
                         decrementValue: slashedMagnitude
                     });
                 }
             }
 
-            // 2. if there are any pending deallocations then need to update and decrement if they fall within slashable window
-            // loop backwards through _queuedDeallocationIndices, each element contains an array index to
-            // corresponding deallocation to access in pendingFreeMagnitude
-            // if completable, then break
-            //      (since ordered by completableTimestamps, older deallocations will also be completable and outside slashable window)
-            // if NOT completable, then add to slashed magnitude
+            // 2. slash all pending deallocations that. pending deallocations are deallocations that are not completable yet
             {
                 uint256 queuedDeallocationIndicesLen =
                     _queuedDeallocationIndices[operator][strategies[i]][operatorSetKey].length;
@@ -222,25 +214,25 @@ contract AllocationManager is
                     PendingFreeMagnitude storage pendingFreeMagnitude =
                         _pendingFreeMagnitude[operator][strategies[i]][index];
 
-                    // Reached pendingFreeMagnitude/deallocation that is completable and not within slashability window,
+                    // Reached deallocation that is completable and, therefore, not slashable,
                     // therefore older deallocations will also be completable. Since this is ordered by completableTimestamps break loop now
-                    if (pendingFreeMagnitude.completableTimestamp >= uint32(block.timestamp)) {
+                    if (block.timestamp >= pendingFreeMagnitude.completableTimestamp) {
                         break;
                     }
 
-                    // pending deallocation is still within slashable window, slash magnitudeDiff and add to slashedMagnitude
+                    // slash the pending deallocation proportionally and store the updated magnitudeDiff
                     uint64 slashedAmount =
                         uint64(uint256(bipsToSlash) * uint256(pendingFreeMagnitude.magnitudeDiff) / BIPS_FACTOR);
                     pendingFreeMagnitude.magnitudeDiff -= slashedAmount;
+                    // keep track of total slashed magnitude
                     slashedMagnitude += slashedAmount;
                 }
             }
 
             // 3. update totalMagnitude, get total magnitude and subtract slashedMagnitude
-            _totalMagnitudeUpdate[operator][strategies[i]].push({
-                key: uint32(block.timestamp),
-                value: _getLatestTotalMagnitude(operator, strategies[i]) - slashedMagnitude
-            });
+            // this will be reflected in the conversion of delegatedShares to shares in the DM
+            Snapshots.History storage totalMagnitudes = _totalMagnitudeUpdate[operator][strategies[i]];
+            totalMagnitudes.push({key: uint32(block.timestamp), value: totalMagnitudes.latest() - slashedMagnitude});
         }
     }
 
@@ -320,25 +312,28 @@ contract AllocationManager is
                 InvalidOperatorSet()
             );
 
-            // use encoding of operatorSet as key in mappings
             bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[i]);
+            // prep magnitudeUpdates in storage
+            Snapshots.History storage magnitudeUpdates = _magnitudeUpdate[operator][allocation.strategy][operatorSetKey];
 
             // Read current magnitude allocation including its respective array index and length.
             // We'll use these values later to check the number of pending allocations/deallocations.
-            (uint224 currentMagnitude, uint256 pos, uint256 length) = _magnitudeUpdate[operator][allocation.strategy][operatorSetKey]
-                .upperLookupRecentWithPos(uint32(block.timestamp));
+            (uint224 currentMagnitude, uint256 pos, uint256 length) =
+                magnitudeUpdates.upperLookupRecentWithPos(uint32(block.timestamp));
+            require(currentMagnitude != allocation.magnitudes[i], SameMagnitude());
 
             // Check that there is at MOST `MAX_PENDING_UPDATES` combined allocations & deallocations for the operator, operatorSet, strategy
             {
                 uint256 numPendingAllocations;
-                // if no lookup found (currentMagnitude == 0 && pos == 0), then we are at the beginning of the array
-                // the number of pending allocations is simply length
+                // if no lookup found (currentMagnitude == 0 && pos == 0), then there were no allocaitons at
+                // or before the current timestamp: the number of pending allocations is simply length
                 if (currentMagnitude == 0 && pos == 0) {
                     numPendingAllocations = length;
-                    // if lookup found, then we take the difference between length-1 and pos
                 } else {
-                    numPendingAllocations = length - pos - 1;
+                    // if lookup found, then we take the difference between length-1 and pos
+                    numPendingAllocations = length - 1 - pos;
                 }
+
                 uint256 numPendingDeallocations =
                     _getNumQueuedDeallocations(operator, allocation.strategy, operatorSetKey);
 
@@ -367,7 +362,7 @@ contract AllocationManager is
                 );
 
                 // 2. decrement allocated magnitude
-                _magnitudeUpdate[operator][allocation.strategy][operatorSetKey].decrementAtAndFutureSnapshots({
+                magnitudeUpdates.decrementAtAndFutureSnapshots({
                     key: uint32(block.timestamp),
                     decrementValue: magnitudeToDeallocate
                 });
@@ -375,19 +370,14 @@ contract AllocationManager is
                 // Newly configured magnitude is greater than current value.
                 // Therefore we handle this as an allocation
 
-                // 1. allocate magnitude which will take effect in the future 21 days from now
-                _magnitudeUpdate[operator][allocation.strategy][operatorSetKey].push({
-                    key: allocationEffectTimestamp,
-                    value: allocation.magnitudes[i]
-                });
-
-                // 2. decrement free magnitude by incremented amount
+                // 1. decrement free magnitude by incremented amount
+                uint64 magnitudeToAllocate = allocation.magnitudes[i] - uint64(currentMagnitude);
                 OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][allocation.strategy];
-                require(
-                    info.freeMagnitude >= allocation.magnitudes[i] - uint64(currentMagnitude),
-                    InsufficientAllocatableMagnitude()
-                );
-                info.freeMagnitude -= allocation.magnitudes[i] - uint64(currentMagnitude);
+                require(info.freeMagnitude >= magnitudeToAllocate, InsufficientAllocatableMagnitude());
+                info.freeMagnitude -= magnitudeToAllocate;
+
+                // 2. allocate magnitude which will take effect in the future 21 days from now
+                magnitudeUpdates.push({key: allocationEffectTimestamp, value: allocation.magnitudes[i]});
             }
         }
     }
@@ -406,14 +396,12 @@ contract AllocationManager is
         uint256 numQueuedDeallocations;
 
         uint256 length = _queuedDeallocationIndices[operator][strategy][operatorSetKey].length;
-
         for (uint256 i = length; i > 0; --i) {
             // index of pendingFreeMagnitude/deallocation to check for slashing
             uint256 index = _queuedDeallocationIndices[operator][strategy][operatorSetKey][i - 1];
-            PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][index];
 
             // If completableTimestamp is greater than completeUntilTimestamp, break
-            if (pendingFreeMagnitude.completableTimestamp > uint32(block.timestamp)) {
+            if (block.timestamp < _pendingFreeMagnitude[operator][strategy][index].completableTimestamp) {
                 ++numQueuedDeallocations;
             } else {
                 break;
@@ -449,7 +437,7 @@ contract AllocationManager is
             PendingFreeMagnitude memory pendingFreeMagnitude = _pendingFreeMagnitude[operator][strategy][nextIndex];
             // pendingFreeMagnitude is ordered by completableTimestamp. If we reach one that is not completable yet, then break
             // loop until completableTimestamp is < block.timestamp
-            if (uint32(block.timestamp) < pendingFreeMagnitude.completableTimestamp) {
+            if (block.timestamp < pendingFreeMagnitude.completableTimestamp) {
                 break;
             }
 
@@ -485,7 +473,7 @@ contract AllocationManager is
      *
      * @return operatorSets the operator sets the operator is a member of and the current slashable magnitudes for each strategy
      */
-    function getCurrentSlashableMagnitudes(
+    function getSlashableMagnitudes(
         address operator,
         IStrategy[] calldata strategies
     ) external view returns (OperatorSet[] memory, uint64[][] memory) {
@@ -502,86 +490,6 @@ contract AllocationManager is
             }
         }
         return (operatorSets, slashableMagnitudes);
-    }
-
-    /**
-     * @param operator the operator to get the slashable magnitude for
-     * @param strategies the strategies to get the slashable magnitude for
-     * @param timestamp the timestamp to get the slashable magnitude for
-     *
-     * @return operatorSets the operator sets the operator is a member of and the slashable magnitudes for each strategy
-     */
-    function getSlashableMagnitudes(
-        address operator,
-        IStrategy[] calldata strategies,
-        uint32 timestamp
-    ) external view returns (OperatorSet[] memory, uint64[][] memory) {
-        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
-        uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            slashableMagnitudes[i] = new uint64[](operatorSets.length);
-            for (uint256 j = 0; j < operatorSets.length; ++j) {
-                slashableMagnitudes[i][j] = uint64(
-                    _magnitudeUpdate[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])].upperLookupRecent(
-                        timestamp
-                    )
-                );
-            }
-        }
-        return (operatorSets, slashableMagnitudes);
-    }
-
-    /**
-     * @param operator the operator to get the slashable ppm for
-     * @param operatorSet the operatorSet to get the slashable ppm for
-     * @param strategies the strategies to get the slashable ppm for
-     * @param timestamp the timestamp to get the slashable ppm for for
-     * @param linear whether the search should be linear (from the most recent) or binary
-     *
-     * @return slashablePPM the slashable ppm of the given list of strategies allocated to
-     * the given OperatorSet for the given operator and timestamp
-     */
-    function getSlashablePPM(
-        address operator,
-        OperatorSet calldata operatorSet,
-        IStrategy[] calldata strategies,
-        uint32 timestamp,
-        bool linear
-    ) public view returns (uint24[] memory) {
-        uint24[] memory slashablePPM = new uint24[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            slashablePPM[i] = _getSlashablePPM(operator, operatorSet, strategies[i], timestamp, linear);
-        }
-        return slashablePPM;
-    }
-
-    function _getSlashablePPM(
-        address operator,
-        OperatorSet calldata operatorSet,
-        IStrategy strategy,
-        uint32 timestamp,
-        bool linear
-    ) public view returns (uint24) {
-        uint64 totalMagnitude;
-        if (linear) {
-            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookupLinear(timestamp));
-        } else {
-            totalMagnitude = uint64(_totalMagnitudeUpdate[operator][strategy].upperLookup(timestamp));
-        }
-        // return early if totalMagnitude is 0
-        if (totalMagnitude == 0) {
-            return 0;
-        }
-
-        uint64 currentMagnitude;
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
-        if (linear) {
-            currentMagnitude = uint64(_magnitudeUpdate[operator][strategy][operatorSetKey].upperLookupLinear(timestamp));
-        } else {
-            currentMagnitude = uint64(_magnitudeUpdate[operator][strategy][operatorSetKey].upperLookup(timestamp));
-        }
-
-        return uint16(currentMagnitude * 1e6 / totalMagnitude);
     }
 
     /**
@@ -603,10 +511,13 @@ contract AllocationManager is
 
     /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        bool isMember = avsDirectory.isMember(operator, operatorSet);
+        if (isMember) {
+            return true;
+        }
         (, uint32 lastDeregisteredTimestamp) =
             avsDirectory.operatorSetStatus(operatorSet.avs, operator, operatorSet.operatorSetId);
-        return avsDirectory.isMember(operator, operatorSet)
-            || lastDeregisteredTimestamp + DEALLOCATION_DELAY >= block.timestamp;
+        return block.timestamp < lastDeregisteredTimestamp + DEALLOCATION_DELAY;
     }
 
     /**
@@ -666,31 +577,6 @@ contract AllocationManager is
         uint64 totalMagnitude;
         (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategy].latestSnapshot();
         if (!exists) {
-            totalMagnitude = WAD;
-        } else {
-            totalMagnitude = uint64(value);
-        }
-
-        return totalMagnitude;
-    }
-
-    /**
-     * @notice Returns the total magnitude of an operator for a given strategy at a given timestamp
-     * @param operator the operator to get the total magnitude for
-     * @param strategy the strategy to get the total magnitude for
-     * @param timestamp the timestamp to get the total magnitude at
-     * @return totalMagnitude the total magnitude for the strategy
-     */
-    function getTotalMagnitudeAtTimestamp(
-        address operator,
-        IStrategy strategy,
-        uint32 timestamp
-    ) external view returns (uint64) {
-        uint64 totalMagnitude = WAD;
-        (uint224 value, uint256 pos,) = _totalMagnitudeUpdate[operator][strategy].upperLookupRecentWithPos(timestamp);
-
-        // if there is no existing total magnitude snapshot
-        if (value == 0 && pos == 0) {
             totalMagnitude = WAD;
         } else {
             totalMagnitude = uint64(value);
@@ -763,26 +649,6 @@ contract AllocationManager is
         }
         return pendingMagnitudes;
     }
-
-    // /**
-    //  * @notice fetches the minimum slashable shares for a certain operator and operatorSet for a list of strategies
-    //  * from the current timestamp until the given timestamp
-    //  *
-    //  * @param operator the operator to get the minimum slashable shares for
-    //  * @param operatorSet the operatorSet to get the minimum slashable shares for
-    //  * @param strategies the strategies to get the minimum slashable shares for
-    //  * @param timestamp the timestamp to the minimum slashable shares before
-    //  *
-    //  * @dev used to get the slashable stakes of operators to weigh over a given slashability window
-    //  *
-    //  * @return the list of share amounts for each strategy
-    //  */
-    // function getMinimumSlashableSharesBefore(
-    //     address operator,
-    //     OperatorSet calldata operatorSet,
-    //     IStrategy[] calldata strategies,
-    //     uint32 timestamp
-    // ) external view returns (uint256[] calldata) {}
 
     /// @dev Verify operator's signature and spend salt
     function _verifyOperatorSignature(
