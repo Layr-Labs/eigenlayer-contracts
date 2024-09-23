@@ -55,11 +55,11 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @notice deposit balance to be deducted for operatorSets
     mapping(address => mapping(uint32 => DepositInfo)) public depositInfos;
     /// @notice the extraData for each operatorSet
-    mapping(address => mapping(uint32 => bytes32)) internal operatorSetExtraDatas;
+    mapping(address => mapping(uint32 => bytes32)) public operatorSetExtraDatas;
     /// @notice map from operator set to a trace of their index over time
     mapping(address => mapping(uint32 => Snapshots.History)) internal operatorSetToIndex;
     /// @notice the extraData for each operator in each operator set
-    mapping(address => mapping(uint32 => mapping(address => bytes32))) internal operatorExtraDatas;
+    mapping(address => mapping(uint32 => mapping(address => bytes32))) public operatorExtraDatas;
     /// @notice the strategies and multipliers for each operator set
     mapping(address => mapping(uint32 => EnumerableMap.AddressToUintMap)) internal operatorSetToStrategyAndMultipliers;
 
