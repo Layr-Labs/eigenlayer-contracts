@@ -474,6 +474,15 @@ contract StakeRootCompendium is StakeRootCompendiumStorage {
     }
 
     /// @inheritdoc IStakeRootCompendium
+    function getOperatorSetIndexAtTimestamp(OperatorSet memory operatorSet, uint32 timestamp)
+        external
+        view
+        returns (uint224)
+    {
+        return operatorSetToIndex[operatorSet.avs][operatorSet.operatorSetId].upperLookup(timestamp);
+    }
+
+    /// @inheritdoc IStakeRootCompendium
     function getStakes(
         OperatorSet calldata operatorSet,
         address operator
