@@ -120,6 +120,17 @@ interface IStakeRootCompendium {
     function getNumStakeRootSubmissions() external view returns (uint256);
 
     /**
+     * @notice returns the operatorSet at the given timestamp
+     * @param operatorSet the operatorSet to get the indec for
+     * @param timestamp the timestamp to get the index for
+     * @return index the index of the operatorSet
+     */
+    function getOperatorSetIndexAtTimestamp(OperatorSet memory operatorSet, uint32 timestamp)
+        external
+        view
+        returns (uint224);
+
+    /**
      * @notice returns the delegated and slashable stakes for an operator in an operatorSet
      * @param operatorSet the operatorSet to get the stakes for
      * @param operator the operator to get the stakes for
