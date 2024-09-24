@@ -5,7 +5,7 @@ import "./ISignatureUtils.sol";
 
 /// @notice Struct representing an operator set
 struct OperatorSet {
-    address avs;
+    bytes20 avs; // Identifier of an avs
     uint32 operatorSetId;
 }
 
@@ -30,6 +30,10 @@ interface IAVSDirectory is ISignatureUtils {
     error SaltSpent();
     /// @dev Thrown when attempting to use an expired eip-712 signature.
     error SignatureExpired();
+    /// @dev Thrown when a namespace is already claimed by an AVS
+    error IdentifierAlreadyClaimed();
+    /// @dev Thrown when an AVS already has a namespace
+    error AVSIdentifierNotSet();
 
     /// @notice Enum representing the registration status of an operator with an AVS.
     /// @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
@@ -69,13 +73,19 @@ interface IAVSDirectory is ISignatureUtils {
 
     /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
     /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
-    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+    event AVSMetadataURIUpdated(bytes20 indexed avs, string metadataURI);
 
     /// @notice Emitted when an AVS migrates to using operator sets.
-    event AVSMigratedToOperatorSets(address indexed avs);
+    event AVSMigratedToOperatorSets(bytes20 indexed avs, address indexed dispatcher);
 
     /// @notice Emitted when an operator is migrated from M2 registration to operator sets.
-    event OperatorMigratedToOperatorSets(address indexed operator, address indexed avs, uint32[] operatorSetIds);
+    event OperatorMigratedToOperatorSets(address indexed operator, bytes20 indexed avs, uint32[] operatorSetIds);
+
+    /// @notice Emitted when an AVS claims a namespace
+    event AVSIdentifierClaimed(bytes20 indexed avs, address dispatcher);
+
+    /// @notice Emitted when an AVS has relinquished their namespace
+    event AVSIdentifierTransferred(bytes20 indexed avs, address oldDispatcher, address newDispatcher);
 
     /**
      *
@@ -148,7 +158,7 @@ interface IAVSDirectory is ISignatureUtils {
      * @notice Called by an operator to deregister from an operator set
      *
      * @param operator The operator to deregister from the operatorSets.
-     * @param avs The address of the AVS to deregister the operator from.
+     * @param avs The avs to deregister the operator from.
      * @param operatorSetIds The IDs of the operator sets.
      * @param operatorSignature the signature of the operator on their intent to deregister or empty if the operator itself is calling
      *
@@ -157,13 +167,13 @@ interface IAVSDirectory is ISignatureUtils {
      */
     function forceDeregisterFromOperatorSets(
         address operator,
-        address avs,
+        bytes20 avs,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
     /**
-     *  @notice Legacy function called by the AVS's service manager contract
+     *  @notice Legacy function called by the AVS's service manager (dispatcher) contract
      * to register an operator with the AVS. NOTE: this function will be deprecated in a future release
      * after the slashing release. New AVSs should use `registerOperatorToOperatorSets` instead.
      *
@@ -190,6 +200,21 @@ interface IAVSDirectory is ISignatureUtils {
     function deregisterOperatorFromAVS(
         address operator
     ) external;
+
+
+    /**
+     * @notice Claims an identiier for the avs
+     * @param identifier to claim for the avs
+     */
+    function claimIdentifier(bytes20 identifier) external;
+
+    /**
+     * @notice Transfers the namespace associated with the caller to a new dispatcher
+     * @param newDispatcher The new dispatcher to transfer the identifier
+     * @dev This function should be used in tandem with `claimNamespace` for atomic
+     *      claiming of a namespace when an AVS's dispatcher contract is migrated
+     */
+    function transferIdentifier(address newDispatcher) external;   
 
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
@@ -221,10 +246,10 @@ interface IAVSDirectory is ISignatureUtils {
     function isMember(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
     function isOperatorSetAVS(
-        address avs
+        bytes20 avs
     ) external view returns (bool);
 
-    function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
+    function isOperatorSet(bytes32 encodedOperatorSet) external view returns (bool);
 
     /**
      * @notice Returns operator set an operator is registered to in the order they were registered.
@@ -304,7 +329,7 @@ interface IAVSDirectory is ISignatureUtils {
      * @param expiry Time after which the approver's signature becomes invalid.
      */
     function calculateOperatorSetRegistrationDigestHash(
-        address avs,
+        bytes20 avs,
         uint32[] calldata operatorSetIds,
         bytes32 salt,
         uint256 expiry
@@ -319,7 +344,7 @@ interface IAVSDirectory is ISignatureUtils {
      * @param expiry Time after which the approver's signature becomes invalid.
      */
     function calculateOperatorSetForceDeregistrationTypehash(
-        address avs,
+        bytes20 avs,
         uint32[] calldata operatorSetIds,
         bytes32 salt,
         uint256 expiry
@@ -336,8 +361,29 @@ interface IAVSDirectory is ISignatureUtils {
     function OPERATOR_SET_REGISTRATION_TYPEHASH() external view returns (bytes32);
 
     function operatorSetStatus(
-        address avs,
+        address operator,
+        bytes32 encodedOperatorSet
+    ) external view returns (bool registered, uint32 lastDeregisteredTimestamp);
+
+    /**
+     * @notice Method to get the status of an operator set by dispatcher contract
+     * @param dispatcher The dispatcher contract of the avs
+     * @param operator The operator to query
+     * @param operatorSetId The operator set id to query
+     */
+    function operatorSetStatusByDispatcher(
+        address dispatcher,
         address operator,
         uint32 operatorSetId
     ) external view returns (bool registered, uint32 lastDeregisteredTimestamp);
+
+    /**
+     * @notice Returns the dispatcher associated with an AVS
+     */
+    function avsToDispatcher(bytes20 avs) external view returns (address);
+
+    /**
+     * @notice Returns the avs associated with a dispatcher
+     */
+    function dispatcherToAVS(address dispatcher) external view returns (bytes20);
 }

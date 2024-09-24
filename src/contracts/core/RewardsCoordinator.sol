@@ -164,6 +164,58 @@ contract RewardsCoordinator is
 
             emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+<<<<<<< HEAD
+=======
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @notice Creates a new rewards submission on behalf of an AVS for a given operatorSet,
+     * to be split amongst the set of stakers delegated to operators who are
+     * registered to the msg.sender AVS and the given operatorSetId
+     *
+     * @param rewardsSubmissions The operatorSet rewards submission being created for
+     *
+     * @dev msg.sender is the AVS in the operatorSet the rewards submission is being made to
+     * @dev AVSs set their reward type depending on what metric they want rewards
+     * distributed proportional to
+     * @dev The tokens in the rewards submissions are sent to the `RewardsCoordinator` contract
+     * @dev Strategies of each rewards submission must be in ascending order of addresses to check for duplicates
+     */
+    function rewardOperatorSetForRange(
+        OperatorSetRewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARD_OPERATOR_SET) nonReentrant {
+        for (uint256 i = 0; i < rewardsSubmissions.length;) {
+            OperatorSetRewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[msg.sender];
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
+
+            // TODO: update to use isOperatorSet
+            // require(avsDirectory.isOperatorSet(msg.sender, rewardsSubmission.operatorSetId), InvalidOperatorSet());
+            _validateRewardsSubmission(
+                rewardsSubmission.strategiesAndMultipliers,
+                rewardsSubmission.token,
+                rewardsSubmission.amount,
+                rewardsSubmission.startTimestamp,
+                rewardsSubmission.duration,
+                OPERATOR_SET_MAX_RETROACTIVE_LENGTH,
+                OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP
+            );
+
+            isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
+            submissionNonce[msg.sender] = nonce + 1;
+
+            emit OperatorSetRewardCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            unchecked {
+                ++i;
+            }
+>>>>>>> 67844fa0 (feat: avs identifier)
         }
     }
 

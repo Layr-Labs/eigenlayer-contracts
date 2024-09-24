@@ -63,6 +63,22 @@ contract AVSDirectory is
      *                    EXTERNAL FUNCTIONS
      *
      */
+    
+    /// @inheritdoc IAVSDirectory
+    function claimIdentifier(bytes20 avs) external {
+        require(avsToDispatcher[avs] == address(0), IdentifierAlreadyClaimed());
+        _claimIdentifier(avs, msg.sender);
+    }
+
+    /// @inheritdoc IAVSDirectory
+    function transferIdentifier(address newDispatcher) external {
+        bytes20 avs = dispatcherToAVS[msg.sender];
+        require(avs != UNUSED_AVS_IDENTIFIER, AVSIdentifierNotSet());
+        
+        _claimIdentifier(avs, newDispatcher);
+
+        emit AVSIdentifierTransferred(avs, msg.sender, newDispatcher);
+    }
 
     /**
      * @notice Called by an AVS to create a list of new operatorSets.
@@ -75,22 +91,27 @@ contract AVSDirectory is
     function createOperatorSets(
         uint32[] calldata operatorSetIds
     ) external {
+        bytes20 avs = dispatcherToAVS[msg.sender];
+        require(avs != UNUSED_AVS_IDENTIFIER, AVSIdentifierNotSet());
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-            require(!isOperatorSet[msg.sender][operatorSetIds[i]], InvalidOperatorSet());
-            isOperatorSet[msg.sender][operatorSetIds[i]] = true;
-            emit OperatorSetCreated(OperatorSet({avs: msg.sender, operatorSetId: operatorSetIds[i]}));
+            bytes32 encodedOperatorSet = _encodeOperatorSet(OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
+            require(!isOperatorSet[encodedOperatorSet], InvalidOperatorSet());
+            isOperatorSet[encodedOperatorSet] = true;
+            emit OperatorSetCreated(OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
         }
     }
 
     /**
      * @notice Sets the AVS as an operator set AVS, preventing legacy M2 operator registrations.
-     *
-     * @dev msg.sender must be the AVS.
+     * @dev msg.sender must be the AVS's dispatcher contract.
+     * @dev The msg.sender must have a avs set.
      */
     function becomeOperatorSetAVS() external {
-        require(!isOperatorSetAVS[msg.sender], InvalidAVS());
-        isOperatorSetAVS[msg.sender] = true;
-        emit AVSMigratedToOperatorSets(msg.sender);
+        bytes20 avs = dispatcherToAVS[msg.sender];
+        require(avs != UNUSED_AVS_IDENTIFIER, AVSIdentifierNotSet());
+        require(!isOperatorSetAVS[avs], InvalidAVS());
+        isOperatorSetAVS[avs] = true;
+        emit AVSMigratedToOperatorSets(avs, msg.sender);
     }
 
     /**
@@ -99,7 +120,7 @@ contract AVSDirectory is
      * @param operators The list of operators to migrate
      * @param operatorSetIds The list of operatorSets to migrate the operators to
      *
-     * @dev The msg.sender used is the AVS
+     * @dev The msg.sender used is the AVS's dispatcher contract
      * @dev The operator can only be migrated at most once per AVS
      * @dev The AVS can no longer register operators via the legacy M2 registration path once it begins migration
      * @dev The operator is deregistered from the M2 legacy AVS once migrated
@@ -108,8 +129,10 @@ contract AVSDirectory is
         address[] calldata operators,
         uint32[][] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
+        bytes20 avs = dispatcherToAVS[msg.sender];
+
         // Assert that the AVS is an operator set AVS.
-        require(isOperatorSetAVS[msg.sender], InvalidAVS());
+        require(isOperatorSetAVS[avs], InvalidAVS());
 
         for (uint256 i = 0; i < operators.length; i++) {
             // Assert that the operator is registered & has not been migrated.
@@ -119,7 +142,7 @@ contract AVSDirectory is
             );
 
             // Migrate operator to operator sets.
-            _registerToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
+            _registerToOperatorSets(operators[i], avs, operatorSetIds[i]);
 
             // Deregister operator from AVS - this prevents the operator from being migrated again since
             // the AVS can no longer use the legacy M2 registration path
@@ -127,7 +150,7 @@ contract AVSDirectory is
             emit OperatorAVSRegistrationStatusUpdated(
                 operators[i], msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED
             );
-            emit OperatorMigratedToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
+            emit OperatorMigratedToOperatorSets(operators[i], avs, operatorSetIds[i]);
         }
     }
 
@@ -146,12 +169,13 @@ contract AVSDirectory is
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
+        bytes20 avs = dispatcherToAVS[msg.sender];
         // Assert operator's signature has not expired.
         require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
         // Assert `operator` is actually an operator.
         require(delegation.isOperator(operator), OperatorNotRegistered());
         // Assert that the AVS is an operator set AVS.
-        require(isOperatorSetAVS[msg.sender], InvalidAVS());
+        require(isOperatorSetAVS[avs], InvalidAVS());
         // Assert operator's signature `salt` has not already been spent.
         require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
 
@@ -159,7 +183,7 @@ contract AVSDirectory is
         EIP1271SignatureUtils.checkSignature_EIP1271(
             operator,
             calculateOperatorSetRegistrationDigestHash({
-                avs: msg.sender,
+                avs: avs,
                 operatorSetIds: operatorSetIds,
                 salt: operatorSignature.salt,
                 expiry: operatorSignature.expiry
@@ -170,14 +194,14 @@ contract AVSDirectory is
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
 
-        _registerToOperatorSets(operator, msg.sender, operatorSetIds);
+        _registerToOperatorSets(operator, avs, operatorSetIds);
     }
 
     /**
      * @notice Called by an operator to deregister from an operator set
      *
      * @param operator The operator to deregister from the operatorSets.
-     * @param avs The address of the AVS to deregister the operator from.
+     * @param avs The avs of the AVS to deregister the operator from.
      * @param operatorSetIds The IDs of the operator sets.
      * @param operatorSignature the signature of the operator on their intent to deregister or empty if the operator itself is calling
      *
@@ -186,7 +210,7 @@ contract AVSDirectory is
      */
     function forceDeregisterFromOperatorSets(
         address operator,
-        address avs,
+        bytes20 avs,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
@@ -222,13 +246,13 @@ contract AVSDirectory is
      *  @param operator The address of the operator to be removed from the operator set.
      *  @param operatorSetIds The IDs of the operator sets.
      *
-     *  @dev msg.sender is used as the AVS.
+     *  @dev msg.sender is used as the AVS dispatcher.
      */
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
-        _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
+        _deregisterFromOperatorSets(dispatcherToAVS[msg.sender], operator, operatorSetIds);
     }
 
     /**
@@ -241,7 +265,8 @@ contract AVSDirectory is
     function updateAVSMetadataURI(
         string calldata metadataURI
     ) external override {
-        emit AVSMetadataURIUpdated(msg.sender, metadataURI);
+        bytes20 avs = dispatcherToAVS[msg.sender];
+        emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
     /**
@@ -281,7 +306,8 @@ contract AVSDirectory is
         require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
 
         // Assert that the AVS is not an operator set AVS.
-        require(!isOperatorSetAVS[msg.sender], InvalidAVS());
+        bytes20 avs = dispatcherToAVS[msg.sender];
+        require(!isOperatorSetAVS[avs], InvalidAVS());
 
         // Assert that the `operator` is not actively registered to the AVS.
         require(avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED, InvalidOperator());
@@ -328,7 +354,7 @@ contract AVSDirectory is
         // Assert that operator is registered for the AVS.
         require(avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, OperatorNotRegistered());
         // Assert that the AVS is not an operator set AVS.
-        require(!isOperatorSetAVS[msg.sender], InvalidAVS());
+        require(!isOperatorSetAVS[dispatcherToAVS[msg.sender]], InvalidAVS());
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
@@ -344,25 +370,25 @@ contract AVSDirectory is
 
     /**
      * @notice Helper function used by migration & registration functions to register an operator to operator sets.
-     * @param avs The AVS that the operator is registering to.
      * @param operator The operator to register.
+     * @param avs The avs that the operator is registering to.
      * @param operatorSetIds The IDs of the operator sets.
      */
-    function _registerToOperatorSets(address operator, address avs, uint32[] calldata operatorSetIds) internal {
+    function _registerToOperatorSets(address operator, bytes20 avs, uint32[] calldata operatorSetIds) internal {
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
 
-            require(isOperatorSet[avs][operatorSetIds[i]], InvalidOperatorSet());
-
             bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+
+            require(isOperatorSet[encodedOperatorSet], InvalidOperatorSet());
 
             require(_operatorSetsMemberOf[operator].add(encodedOperatorSet), InvalidOperator());
 
             _operatorSetMembers[encodedOperatorSet].add(operator);
 
             OperatorSetRegistrationStatus storage registrationStatus =
-                operatorSetStatus[avs][operator][operatorSetIds[i]];
+                operatorSetStatus[operator][encodedOperatorSet];
 
             require(!registrationStatus.registered, InvalidOperator());
 
@@ -379,7 +405,7 @@ contract AVSDirectory is
      * @param operator The operator to deregister.
      * @param operatorSetIds The IDs of the operator sets.
      */
-    function _deregisterFromOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) internal {
+    function _deregisterFromOperatorSets(bytes20 avs, address operator, uint32[] calldata operatorSetIds) internal {
         // Loop over `operatorSetIds` array and deregister `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
@@ -392,6 +418,13 @@ contract AVSDirectory is
 
             emit OperatorRemovedFromOperatorSet(operator, operatorSet);
         }
+    }
+
+    function _claimIdentifier(bytes20 avs, address dispatcher) internal {
+        avsToDispatcher[avs] = msg.sender;
+        dispatcherToAVS[dispatcher] = avs;
+
+        emit AVSIdentifierClaimed(avs, dispatcher);
     }
 
     /**
@@ -486,6 +519,17 @@ contract AVSDirectory is
         return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
     }
 
+    /// @inheritdoc IAVSDirectory
+    function operatorSetStatusByDispatcher(
+        address dispatcher, 
+        address operator, 
+        uint32 operatorSetID
+    ) external view override returns(bool registered, uint32 lastDeregisteredTimestamp) {
+        bytes32 encodedOperatorSet = _encodeOperatorSet(OperatorSet(dispatcherToAVS[dispatcher], operatorSetID));
+        OperatorSetRegistrationStatus memory registrationStatus = operatorSetStatus[operator][encodedOperatorSet];
+        return (registrationStatus.registered, registrationStatus.lastDeregisteredTimestamp);
+    }
+
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
      *
@@ -507,13 +551,13 @@ contract AVSDirectory is
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an operator set.
      *
-     * @param avs The AVS that operator is registering to operator sets for.
+     * @param avs The AVS avs that operator is registering to operator sets for.
      * @param operatorSetIds An array of operator set IDs the operator is registering to.
      * @param salt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid.
      */
     function calculateOperatorSetRegistrationDigestHash(
-        address avs,
+        bytes20 avs,
         uint32[] calldata operatorSetIds,
         bytes32 salt,
         uint256 expiry
@@ -526,13 +570,13 @@ contract AVSDirectory is
     /**
      * @notice Calculates the digest hash to be signed by an operator to force deregister from an operator set.
      *
-     * @param avs The AVS that operator is deregistering from.
+     * @param avs The AVS avs that operator is deregistering from.
      * @param operatorSetIds An array of operator set IDs the operator is deregistering from.
      * @param salt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid.
      */
     function calculateOperatorSetForceDeregistrationTypehash(
-        address avs,
+        bytes20 avs,
         uint32[] calldata operatorSetIds,
         bytes32 salt,
         uint256 expiry
@@ -579,7 +623,7 @@ contract AVSDirectory is
         bytes32 encoded
     ) internal pure returns (OperatorSet memory) {
         return OperatorSet({
-            avs: address(uint160(uint256(encoded) >> 96)),
+            avs: bytes20(uint160(uint256(encoded) >> 96)),
             operatorSetId: uint32(uint256(encoded) & type(uint96).max)
         });
     }
