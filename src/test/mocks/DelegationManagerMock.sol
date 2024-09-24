@@ -11,7 +11,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
     mapping(address => mapping(IStrategy => uint256)) public operatorShares;
 
 
-    function operatorDelegatedShares(address operator, IStrategy strategy) external view returns (uint256) {}
+    function operatorDelegatedShares(address operator, IStrategy strategy) external view returns (DelegatedShares) {}
 
     function setIsOperator(address operator, bool _isOperatorReturnValue) external {
         isOperator[operator] = _isOperatorReturnValue;
@@ -58,11 +58,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 existingShares,
-        uint256 addedShares
+        Shares existingShares,
+        WithdrawableShares addedShares
     ) external {}
     
-    function decreaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external {}
+    function decreaseDelegatedShares(address staker, IStrategy strategy, WithdrawableShares shares) external {}
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
@@ -177,7 +177,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         address staker,
         IERC20 token,
         IStrategy strategy,
-        uint256 shares
+        Shares shares
     ) external {
         strategyManager.addShares(staker, token, strategy, shares);
     }
@@ -186,7 +186,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         IStrategyManager strategyManager,
         address staker,
         IStrategy strategy,
-        uint256 shares
+        Shares shares
     ) external {
         strategyManager.removeShares(staker, strategy, shares);
     }
@@ -195,7 +195,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         IStrategyManager strategyManager,
         address recipient,
         IStrategy strategy,
-        uint256 shares,
+        Shares shares,
         IERC20 token
     ) external {
         strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);

@@ -105,14 +105,40 @@ library SlashingLib {
             .wrapDelegated();
     }
 
-    // WAD MATH
+    // MATH
 
-    function mulWad(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a.mulDiv(b, WAD);
+    function add(Shares x, uint256 y) internal pure returns (uint256) {
+        return x.unwrap() + y;
     }
 
-    function divWad(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a.mulDiv(WAD, b);
+    function add(DelegatedShares x, uint256 y) internal pure returns (uint256) {
+        return x.unwrap() + y;
+    }
+
+    function add(WithdrawableShares x, uint256 y) internal pure returns (uint256) {
+        return x.unwrap() + y;
+    }
+
+    function sub(Shares x, uint256 y) internal pure returns (uint256) {
+        return x.unwrap() - y;
+    }
+
+    function sub(DelegatedShares x, uint256 y) internal pure returns (uint256) {
+        return x.unwrap() - y;
+    }
+
+    function sub(WithdrawableShares x, uint256 y) internal pure returns (uint256) {
+        return x.unwrap() - y;
+    }
+
+    // WAD MATH
+
+    function mulWad(uint256 x, uint256 y) internal pure returns (uint256) {
+        return x.mulDiv(y, WAD);
+    }
+
+    function divWad(uint256 x, uint256 y) internal pure returns (uint256) {
+        return x.mulDiv(WAD, y);
     }
 
     // TYPE CASTING

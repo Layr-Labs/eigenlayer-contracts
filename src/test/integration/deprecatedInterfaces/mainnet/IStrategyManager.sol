@@ -99,7 +99,7 @@ interface IStrategyManager_DeprecatedM1 {
         bytes memory signature
     )
         external
-        returns (uint256 shares);
+        returns (Shares shares);
 
     /// @notice Returns the current shares of `user` in `strategy`
     function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);

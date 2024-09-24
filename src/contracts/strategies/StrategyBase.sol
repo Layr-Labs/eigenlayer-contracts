@@ -284,7 +284,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     function userUnderlyingView(
         address user
     ) external view virtual returns (uint256) {
-        return sharesToUnderlyingView(shares(user));
+        return sharesToUnderlyingView(shares(user).unwrap());
     }
 
     /**
@@ -294,7 +294,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     function userUnderlying(
         address user
     ) external virtual returns (uint256) {
-        return sharesToUnderlying(shares(user));
+        return sharesToUnderlying(shares(user).unwrap());
     }
 
     /**
@@ -303,7 +303,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      */
     function shares(
         address user
-    ) public view virtual returns (uint256) {
+    ) public view virtual returns (Shares) {
         return strategyManager.stakerStrategyShares(user, IStrategy(address(this)));
     }
 

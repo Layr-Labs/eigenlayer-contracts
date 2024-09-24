@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../libraries/SlashingLib.sol";
 
 /**
  * @title Minimal interface for an `Strategy` contract.
@@ -96,7 +97,7 @@ interface IStrategy {
      */
     function shares(
         address user
-    ) external view returns (uint256);
+    ) external view returns (Shares);
 
     /**
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.

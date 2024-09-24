@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "../libraries/SlashingLib.sol";
+
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
@@ -64,7 +66,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * = sum (delegateable delegatedShares of all stakers delegated to the operator)
      * @dev FKA `operatorShares`
      */
-    mapping(address => mapping(IStrategy => uint256)) public operatorDelegatedShares;
+    mapping(address => mapping(IStrategy => DelegatedShares)) public operatorDelegatedShares;
 
     /**
      * @notice Mapping: operator => OperatorDetails struct

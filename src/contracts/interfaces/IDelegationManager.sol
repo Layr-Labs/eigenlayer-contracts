@@ -139,7 +139,7 @@ interface IDelegationManager is ISignatureUtils {
         // Array of strategies that the QueuedWithdrawal contains
         IStrategy[] strategies;
         // Array containing the amount of shares for withdrawal in each Strategy in the `strategies` array
-        uint256[] shares;
+        WithdrawableShares[] shares;
         // The address of the withdrawer
         address withdrawer;
     }
@@ -157,10 +157,10 @@ interface IDelegationManager is ISignatureUtils {
     event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
 
     /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares);
 
     /// @notice Emitted whenever an operator's shares are decreased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares);
 
     /// @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
@@ -333,8 +333,8 @@ interface IDelegationManager is ISignatureUtils {
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 existingPrincipalShares,
-        uint256 addedShares
+        Shares existingPrincipalShares,
+        WithdrawableShares addedShares
     ) external;
 
     /**
@@ -349,7 +349,7 @@ interface IDelegationManager is ISignatureUtils {
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated scaled shares in `strategy` by `scaledShares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedShares(address staker, IStrategy strategy, uint256 removedShares) external;
+    function decreaseDelegatedShares(address staker, IStrategy strategy, WithdrawableShares removedShares) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
@@ -390,7 +390,7 @@ interface IDelegationManager is ISignatureUtils {
      * = sum (delegateable delegatedShares of all stakers delegated to the operator)
      * @dev FKA `operatorShares`
      */
-    function operatorDelegatedShares(address operator, IStrategy strategy) external view returns (uint256);
+    function operatorDelegatedShares(address operator, IStrategy strategy) external view returns (DelegatedShares);
 
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
