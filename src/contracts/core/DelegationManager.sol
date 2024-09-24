@@ -854,6 +854,18 @@ contract DelegationManager is
         return WithdrawableShares.unwrap(DelegatedShares.wrap(operatorDelegatedShares[operator][strategy]).toWithdrawableShares(totalMagnitude));
     }
 
+    /// @notice Given array of strategies, returns array of delegated shares for the operator
+    function getOperatorDelegatedShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory) {
+        uint256[] memory delegatedShares = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            delegatedShares[i] = operatorDelegatedShares[operator][strategies[i]];
+        }
+        return delegatedShares;
+    }
+
     /**
      * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal.
      * This value depends on which operator the staker is delegated to.
@@ -894,21 +906,22 @@ contract DelegationManager is
         // Get a list of all the strategies to check
         IStrategy[] memory strategies = strategyManager.getStakerStrategyList(staker);
         // resize and add beaconChainETH to the end
-        assembly {
-            mstore(strategies, add(mload(strategies), 1))
+        IStrategy[] memory strategiesWithBeaconChainETH = new IStrategy[](strategies.length + 1);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            strategiesWithBeaconChainETH[i] = strategies[i];
         }
-        strategies[strategies.length - 1] = beaconChainETHStrategy;
+        strategiesWithBeaconChainETH[strategies.length] = beaconChainETHStrategy;
 
         // get the delegatable shares for each strategy
         uint256[] memory shares = getDelegatableShares(staker, strategies);
         // if the last shares are 0, remove them
-        if (shares[strategies.length - 1] == 0) {
-            // resize the arrays
-            assembly {
-                mstore(strategies, sub(mload(strategies), 1))
-                mstore(shares, sub(mload(shares), 1))
-            }
-        }
+        // if (shares[strategies.length - 1] == 0) {
+        //     // resize the arrays
+        //     assembly {
+        //         mstore(strategies, sub(mload(strategies), 1))
+        //         mstore(shares, sub(mload(shares), 1))
+        //     }
+        // }
 
         return (strategies, shares);
     }
