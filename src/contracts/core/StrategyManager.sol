@@ -104,7 +104,7 @@ contract StrategyManager is
         IStrategy strategy,
         IERC20 token,
         uint256 amount
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (Shares shares) {
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (WithdrawableShares shares) {
         shares = _depositIntoStrategy(msg.sender, strategy, token, amount);
     }
 
@@ -135,7 +135,7 @@ contract StrategyManager is
         address staker,
         uint256 expiry,
         bytes memory signature
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (Shares shares) {
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (WithdrawableShares shares) {
         require(expiry >= block.timestamp, SignatureExpired());
         // calculate struct hash, then increment `staker`'s nonce
         uint256 nonce = nonces[staker];
@@ -169,7 +169,7 @@ contract StrategyManager is
         address staker,
         IERC20 token,
         IStrategy strategy,
-        Shares shares
+        WithdrawableShares shares
     ) external onlyDelegationManager {
         _addShares(staker, token, strategy, shares);
     }
@@ -180,7 +180,7 @@ contract StrategyManager is
     function withdrawSharesAsTokens(
         address recipient,
         IStrategy strategy,
-        Shares shares,
+        WithdrawableShares shares,
         IERC20 token
     ) external onlyDelegationManager {
         strategy.withdraw(recipient, token, shares.unwrap());
@@ -242,7 +242,7 @@ contract StrategyManager is
      * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(address staker, IERC20 token, IStrategy strategy, Shares shares) internal {
+    function _addShares(address staker, IERC20 token, IStrategy strategy, WithdrawableShares shares) internal {
         // sanity checks on inputs
         require(staker != address(0), StakerAddressZero());
         require(shares.unwrap() != 0, SharesAmountZero());
@@ -263,7 +263,7 @@ contract StrategyManager is
             staker: staker,
             strategy: strategy,
             existingShares: existingShares,
-            addedWithdrawableShares: shares.unwrap().wrapWithdrawable()
+            addedWithdrawableShares: shares
         });
 
         emit Deposit(staker, token, strategy, shares);
@@ -283,12 +283,12 @@ contract StrategyManager is
         IStrategy strategy,
         IERC20 token,
         uint256 amount
-    ) internal onlyStrategiesWhitelistedForDeposit(strategy) returns (Shares shares) {
+    ) internal onlyStrategiesWhitelistedForDeposit(strategy) returns (WithdrawableShares shares) {
         // transfer tokens from the sender to the strategy
         token.safeTransferFrom(msg.sender, address(strategy), amount);
 
         // deposit the assets into the specified strategy and get the equivalent amount of shares in that strategy
-        shares = strategy.deposit(token, amount).wrapShares();
+        shares = strategy.deposit(token, amount).wrapWithdrawable();
 
         // add the returned shares to the staker's existing shares for this strategy
         _addShares(staker, token, strategy, shares);

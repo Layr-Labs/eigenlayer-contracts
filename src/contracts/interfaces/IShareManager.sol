@@ -19,12 +19,12 @@ interface IShareManager {
     /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     /// @dev token is not validated when talking to the EigenPodManager
-    function addShares(address staker, IERC20 token, IStrategy strategy, Shares shares) external;
+    function addShares(address staker, IERC20 token, IStrategy strategy, WithdrawableShares shares) external;
 
     /// @notice Used by the DelegationManager to convert withdrawn descaled shares to tokens and send them to a recipient
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     /// @dev token is not validated when talking to the EigenPodManager
-    function withdrawSharesAsTokens(address recipient, IStrategy strategy, Shares shares, IERC20 token) external;
+    function withdrawSharesAsTokens(address recipient, IStrategy strategy, WithdrawableShares shares, IERC20 token) external;
 
     /// @notice Returns the current shares of `user` in `strategy`
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager

@@ -177,7 +177,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         address staker,
         IERC20 token,
         IStrategy strategy,
-        Shares shares
+        WithdrawableShares shares
     ) external {
         strategyManager.addShares(staker, token, strategy, shares);
     }
@@ -195,7 +195,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         IStrategyManager strategyManager,
         address recipient,
         IStrategy strategy,
-        Shares shares,
+        WithdrawableShares shares,
         IERC20 token
     ) external {
         strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);

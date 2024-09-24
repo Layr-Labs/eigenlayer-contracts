@@ -174,7 +174,7 @@ contract EigenPodManager is
         address staker,
         IERC20 token,
         IStrategy strategy,
-        Shares shares
+        WithdrawableShares shares
     ) external onlyDelegationManager {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         require(staker != address(0), InputAddressZero());
@@ -203,7 +203,7 @@ contract EigenPodManager is
     function withdrawSharesAsTokens(
         address recipient,
         IStrategy strategy,
-        Shares shares,
+        WithdrawableShares shares,
         IERC20
     ) external onlyDelegationManager {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
@@ -219,7 +219,7 @@ contract EigenPodManager is
             if (shares.unwrap() > currentShareDeficit) {
                 // get rid of the whole deficit if possible, and pass any remaining shares onto destination
                 podOwnerShares[recipient] = 0;
-                shares = shares.sub(currentShareDeficit).wrapShares();
+                shares = shares.sub(currentShareDeficit).wrapWithdrawable();
                 emit PodSharesUpdated(recipient, int256(currentShareDeficit));
                 emit NewTotalShares(recipient, 0);
             } else {

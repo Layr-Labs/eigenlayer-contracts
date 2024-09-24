@@ -555,10 +555,8 @@ contract DelegationManager is
             IShareManager shareManager = _getShareManager(withdrawal.strategies[i]);
             
             // forgefmt: disable-next-line
-            Shares sharesToWithdraw = withdrawal.delegatedShares[i]
-                .toWithdrawableShares(totalMagnitudes[i])
-                .unwrap()
-                .wrapShares();
+            WithdrawableShares sharesToWithdraw = withdrawal.delegatedShares[i]
+                .toWithdrawableShares(totalMagnitudes[i]);
             
             if (receiveAsTokens) {
                 // Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares,
