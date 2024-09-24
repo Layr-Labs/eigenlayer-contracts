@@ -39,9 +39,9 @@ contract PopulateSRC is Script, Test, ExistingDeploymentParser {
                 msg.sender,
                 uint32(1 minutes),
                 IStakeRootCompendium.ChargeParams({
-                    chargePerOperatorSet: uint96(100 ether),
+                    chargePerOperatorSet: uint96(0),
                     chargePerStrategy: uint96(0),
-                    maxChargePerProof: uint96(0)
+                    maxChargePerProof: uint96(100 ether)
                 })
             )
         )));
@@ -251,7 +251,7 @@ contract Operator is IERC1271 {
         });
         delegationManager.registerAsOperator(
             operatorDetails,
-            0,
+            1,
             ""
         );
     }

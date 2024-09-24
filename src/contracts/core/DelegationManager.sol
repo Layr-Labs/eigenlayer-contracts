@@ -906,21 +906,22 @@ contract DelegationManager is
         // Get a list of all the strategies to check
         IStrategy[] memory strategies = strategyManager.getStakerStrategyList(staker);
         // resize and add beaconChainETH to the end
-        assembly {
-            mstore(strategies, add(mload(strategies), 1))
+        IStrategy[] memory strategiesWithBeaconChainETH = new IStrategy[](strategies.length + 1);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            strategiesWithBeaconChainETH[i] = strategies[i];
         }
-        strategies[strategies.length - 1] = beaconChainETHStrategy;
+        strategiesWithBeaconChainETH[strategies.length] = beaconChainETHStrategy;
 
         // get the delegatable shares for each strategy
         uint256[] memory shares = getDelegatableShares(staker, strategies);
         // if the last shares are 0, remove them
-        if (shares[strategies.length - 1] == 0) {
-            // resize the arrays
-            assembly {
-                mstore(strategies, sub(mload(strategies), 1))
-                mstore(shares, sub(mload(shares), 1))
-            }
-        }
+        // if (shares[strategies.length - 1] == 0) {
+        //     // resize the arrays
+        //     assembly {
+        //         mstore(strategies, sub(mload(strategies), 1))
+        //         mstore(shares, sub(mload(shares), 1))
+        //     }
+        // }
 
         return (strategies, shares);
     }
