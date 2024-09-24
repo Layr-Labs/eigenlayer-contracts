@@ -9,7 +9,7 @@ fi
 
 # Check for arguments
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 [goerli|local]"
+    echo "Usage: $0 [holesky|local]"
     return 1
 fi
 
@@ -17,17 +17,17 @@ fi
 CONFIG_FILE="config.yml"
 
 case $1 in
-    goerli)
-        CHAIN_ID=$(yq e '.goerli.CHAIN_ID' $CONFIG_FILE)
-        EXECUTOR_MULTISIG=$(yq e '.goerli.EXECUTOR_MULTISIG' $CONFIG_FILE)
-        FOUNDRY_FUZZ_RUNS=$(yq e '.goerli.FOUNDRY_FUZZ_RUNS' $CONFIG_FILE)
+    holesky)
+        CHAIN_ID=$(yq e '.holesky.CHAIN_ID' $CONFIG_FILE)
+        EXECUTOR_MULTISIG=$(yq e '.holesky.EXECUTOR_MULTISIG' $CONFIG_FILE)
+        FOUNDRY_FUZZ_RUNS=$(yq e '.holesky.FOUNDRY_FUZZ_RUNS' $CONFIG_FILE)
         ;;
     local)
         CHAIN_ID=$(yq e '.local.CHAIN_ID' $CONFIG_FILE)
         FOUNDRY_FUZZ_RUNS=$(yq e '.local.FOUNDRY_FUZZ_RUNS' $CONFIG_FILE)
         ;;
     *)
-        echo "Invalid argument. Usage: $0 [goerli|local]"
+        echo "Invalid argument. Usage: $0 [holesky|local]"
         return 1
         ;;
 esac
