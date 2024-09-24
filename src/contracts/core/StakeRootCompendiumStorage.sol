@@ -33,17 +33,16 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     /// @dev this prevents de-registering an operatorSet immediately after reconfiguring
     uint256 public immutable MIN_PREPAID_PROOFS;
 
-    /// @notice the total number of strategies among all operator sets (with duplicates)
-    uint256 public totalStrategies;
-
     /// @notice the verifier contract that will be used to verify snark proofs
     address public immutable verifier;
+
     /// @notice the id of the program being verified when roots are posted
     bytes32 public immutable imageId;
 
+    /// @notice the total number of strategies among all operator sets (with duplicates)
+    uint256 public totalStrategies;
     /// @notice the address allowed to confirm roots
     address public rootConfirmer;
-
     /// @notice list of operator sets that have been configured to be in the StakeTree
     OperatorSet[] public operatorSets;
     /// @notice the total charge for a proofs at a certain time depending on the number of strategies
@@ -62,7 +61,6 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
     mapping(address => mapping(uint32 => mapping(address => bytes32))) public operatorExtraDatas;
     /// @notice the strategies and multipliers for each operator set
     mapping(address => mapping(uint32 => EnumerableMap.AddressToUintMap)) internal operatorSetToStrategyAndMultipliers;
-
     /// @notice the stake root submissions
     IStakeRootCompendium.StakeRootSubmission[] public stakeRootSubmissions;
 
@@ -87,4 +85,11 @@ abstract contract StakeRootCompendiumStorage is IStakeRootCompendium, OwnableUpg
         verifier = _verifier;
         imageId = _imageId;
     }
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[37] private __gap;
 }
