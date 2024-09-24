@@ -819,7 +819,7 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
 
     /**
      * @notice deposit single strategy and removeShares() for less than the deposited amount
-     * Shares should be updated correctly with stakerStrategyListLength unchanged
+     * WithdrawableShares should be updated correctly with stakerStrategyListLength unchanged
      */
     function testFuzz_RemoveScaledSharesLessThanDeposit(
         address staker,
@@ -920,7 +920,7 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
 
     /**
      * @notice testing removeShares() function with 3 strategies deposited.
-     * Removing Shares could result in removing from staker strategy list if depositAmounts[i] == sharesAmounts[i].
+     * Removing WithdrawableShares could result in removing from staker strategy list if depositAmounts[i] == sharesAmounts[i].
      * Only callable by DelegationManager
      */
     function testFuzz_RemoveScaledShares(uint256[3] memory depositAmounts, uint256[3] memory sharesAmounts) external {

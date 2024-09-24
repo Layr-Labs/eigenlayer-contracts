@@ -700,7 +700,7 @@ type IStrategyManagerDeposit struct {
 	Staker   common.Address
 	Token    common.Address
 	Strategy common.Address
-	Shares   *big.Int
+	WithdrawableShares   *big.Int
 	Raw      types.Log // Blockchain specific contextual infos
 }
 

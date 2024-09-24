@@ -32,7 +32,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawals, withdrawalRoots);
 
-        // 4. Complete Queued Withdrawal as Shares
+        // 4. Complete Queued Withdrawal as WithdrawableShares
         _rollBlocksForCompleteWithdrawals(strategies);
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);

@@ -39,7 +39,7 @@ type IDelegationManagerOperatorDetails struct {
 // IDelegationManagerQueuedWithdrawalParams is an auto generated low-level Go binding around an user-defined struct.
 type IDelegationManagerQueuedWithdrawalParams struct {
 	Strategies []common.Address
-	Shares     []*big.Int
+	WithdrawableShares     []*big.Int
 	Withdrawer common.Address
 }
 
@@ -51,7 +51,7 @@ type IDelegationManagerWithdrawal struct {
 	Nonce       *big.Int
 	StartBlock  uint32
 	Strategies  []common.Address
-	Shares      []*big.Int
+	WithdrawableShares      []*big.Int
 }
 
 // ISignatureUtilsSignatureWithExpiry is an auto generated low-level Go binding around an user-defined struct.
@@ -1952,7 +1952,7 @@ type DelegationManagerStorageOperatorSharesDecreased struct {
 	Operator common.Address
 	Staker   common.Address
 	Strategy common.Address
-	Shares   *big.Int
+	WithdrawableShares   *big.Int
 	Raw      types.Log // Blockchain specific contextual infos
 }
 
@@ -2099,7 +2099,7 @@ type DelegationManagerStorageOperatorSharesIncreased struct {
 	Operator common.Address
 	Staker   common.Address
 	Strategy common.Address
-	Shares   *big.Int
+	WithdrawableShares   *big.Int
 	Raw      types.Log // Blockchain specific contextual infos
 }
 

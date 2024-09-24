@@ -326,10 +326,10 @@ func (_StrategyBase *StrategyBaseCallerSession) PauserRegistry() (common.Address
 	return _StrategyBase.Contract.PauserRegistry(&_StrategyBase.CallOpts)
 }
 
-// Shares is a free data retrieval call binding the contract method 0xce7c2ac2.
+// WithdrawableShares is a free data retrieval call binding the contract method 0xce7c2ac2.
 //
 // Solidity: function shares(address user) view returns(uint256)
-func (_StrategyBase *StrategyBaseCaller) Shares(opts *bind.CallOpts, user common.Address) (*big.Int, error) {
+func (_StrategyBase *StrategyBaseCaller) WithdrawableShares(opts *bind.CallOpts, user common.Address) (*big.Int, error) {
 	var out []interface{}
 	err := _StrategyBase.contract.Call(opts, &out, "shares", user)
 
@@ -343,18 +343,18 @@ func (_StrategyBase *StrategyBaseCaller) Shares(opts *bind.CallOpts, user common
 
 }
 
-// Shares is a free data retrieval call binding the contract method 0xce7c2ac2.
+// WithdrawableShares is a free data retrieval call binding the contract method 0xce7c2ac2.
 //
 // Solidity: function shares(address user) view returns(uint256)
-func (_StrategyBase *StrategyBaseSession) Shares(user common.Address) (*big.Int, error) {
-	return _StrategyBase.Contract.Shares(&_StrategyBase.CallOpts, user)
+func (_StrategyBase *StrategyBaseSession) WithdrawableShares(user common.Address) (*big.Int, error) {
+	return _StrategyBase.Contract.WithdrawableShares(&_StrategyBase.CallOpts, user)
 }
 
-// Shares is a free data retrieval call binding the contract method 0xce7c2ac2.
+// WithdrawableShares is a free data retrieval call binding the contract method 0xce7c2ac2.
 //
 // Solidity: function shares(address user) view returns(uint256)
-func (_StrategyBase *StrategyBaseCallerSession) Shares(user common.Address) (*big.Int, error) {
-	return _StrategyBase.Contract.Shares(&_StrategyBase.CallOpts, user)
+func (_StrategyBase *StrategyBaseCallerSession) WithdrawableShares(user common.Address) (*big.Int, error) {
+	return _StrategyBase.Contract.WithdrawableShares(&_StrategyBase.CallOpts, user)
 }
 
 // SharesToUnderlying is a free data retrieval call binding the contract method 0xf3e73875.

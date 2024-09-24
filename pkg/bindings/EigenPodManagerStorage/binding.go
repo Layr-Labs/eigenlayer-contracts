@@ -1039,7 +1039,7 @@ func (it *EigenPodManagerStorageBeaconChainETHWithdrawalCompletedIterator) Close
 // EigenPodManagerStorageBeaconChainETHWithdrawalCompleted represents a BeaconChainETHWithdrawalCompleted event raised by the EigenPodManagerStorage contract.
 type EigenPodManagerStorageBeaconChainETHWithdrawalCompleted struct {
 	PodOwner         common.Address
-	Shares           *big.Int
+	WithdrawableShares           *big.Int
 	Nonce            *big.Int
 	DelegatedAddress common.Address
 	Withdrawer       common.Address

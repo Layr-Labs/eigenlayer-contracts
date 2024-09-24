@@ -41,46 +41,68 @@ uint32 constant DEALLOCATION_DELAY = 17.5 days;
  *              - `podOwnerShares` in the EPM is the staker's principalShares that have not been queued for withdrawal in the beaconChainETHStrategy
  */
 
+type WithdrawableShares is uint256;
+type DelegatedShares is uint256;
 type Shares is uint256;
 
-type DelegatedShares is uint256;
-
-type PrincipalShares is uint256;
-
-using SlashingLib for Shares global;
+using SlashingLib for WithdrawableShares global;
 using SlashingLib for DelegatedShares global;
-using SlashingLib for PrincipalShares global;
+using SlashingLib for Shares global;
 
 library SlashingLib {
     using Math for uint256;
     using SlashingLib for uint256;
 
-    function toPrincipalShares(
+    function toShares(
         DelegatedShares delegatedShares,
         uint256 depositScalingFactor
-    ) internal pure returns (PrincipalShares) {
+    ) internal pure returns (Shares) {
         if (depositScalingFactor == 0) {
             depositScalingFactor = WAD;
         }
-        return PrincipalShares.wrap(DelegatedShares.unwrap(delegatedShares).divWad(depositScalingFactor));
+
+        // forgefmt: disable-next-item
+        return delegatedShares
+            .unwrap()
+            .divWad(depositScalingFactor)
+            .wrapShares();
     }
 
     function toDelegatedShares(
-        PrincipalShares principalShares,
+        Shares principalShares,
         uint256 depositScalingFactor
     ) internal pure returns (DelegatedShares) {
         if (depositScalingFactor == 0) {
             depositScalingFactor = WAD;
         }
-        return DelegatedShares.wrap(PrincipalShares.unwrap(principalShares).mulWad(depositScalingFactor));
+
+        // forgefmt: disable-next-item
+        return principalShares
+            .unwrap()
+            .mulWad(depositScalingFactor)
+            .wrapDelegated();
     }
 
-    function toShares(DelegatedShares delegatedShares, uint256 magnitude) internal pure returns (Shares) {
-        return Shares.wrap(DelegatedShares.unwrap(delegatedShares).mulWad(magnitude));
+    function toWithdrawableShares(
+        DelegatedShares delegatedShares, 
+        uint256 magnitude
+    ) internal pure returns (WithdrawableShares) {
+        // forgefmt: disable-next-item
+        return delegatedShares
+            .unwrap()
+            .mulWad(magnitude)
+            .wrapWithdrawable();
     }
 
-    function toDelegatedShares(Shares shares, uint256 magnitude) internal pure returns (DelegatedShares) {
-        return DelegatedShares.wrap(Shares.unwrap(shares).divWad(magnitude));
+    function toDelegatedShares(
+        WithdrawableShares shares, 
+        uint256 magnitude
+    ) internal pure returns (DelegatedShares) {
+        // forgefmt: disable-next-item
+        return shares
+            .unwrap()
+            .divWad(magnitude)
+            .wrapDelegated();
     }
 
     // WAD MATH
@@ -91,5 +113,31 @@ library SlashingLib {
 
     function divWad(uint256 a, uint256 b) internal pure returns (uint256) {
         return a.mulDiv(WAD, b);
+    }
+
+    // TYPE CASTING
+
+    function unwrap(Shares x) internal pure returns (uint256) {
+        return Shares.unwrap(x);
+    }
+
+    function unwrap(DelegatedShares x) internal pure returns (uint256) {
+        return DelegatedShares.unwrap(x);
+    }
+
+    function unwrap(WithdrawableShares x) internal pure returns (uint256) {
+        return WithdrawableShares.unwrap(x);
+    }
+
+    function wrapShares(uint256 x) internal pure returns (Shares) {
+        return Shares.wrap(x);
+    }
+
+    function wrapDelegated(uint256 x) internal pure returns (DelegatedShares) {
+        return DelegatedShares.wrap(x);
+    }
+
+    function wrapWithdrawable(uint256 x) internal pure returns (WithdrawableShares) {
+        return WithdrawableShares.wrap(x);
     }
 }

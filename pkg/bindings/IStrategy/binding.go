@@ -211,10 +211,10 @@ func (_IStrategy *IStrategyCallerSession) Explanation() (string, error) {
 	return _IStrategy.Contract.Explanation(&_IStrategy.CallOpts)
 }
 
-// Shares is a free data retrieval call binding the contract method 0xce7c2ac2.
+// WithdrawableShares is a free data retrieval call binding the contract method 0xce7c2ac2.
 //
 // Solidity: function shares(address user) view returns(uint256)
-func (_IStrategy *IStrategyCaller) Shares(opts *bind.CallOpts, user common.Address) (*big.Int, error) {
+func (_IStrategy *IStrategyCaller) WithdrawableShares(opts *bind.CallOpts, user common.Address) (*big.Int, error) {
 	var out []interface{}
 	err := _IStrategy.contract.Call(opts, &out, "shares", user)
 
@@ -228,18 +228,18 @@ func (_IStrategy *IStrategyCaller) Shares(opts *bind.CallOpts, user common.Addre
 
 }
 
-// Shares is a free data retrieval call binding the contract method 0xce7c2ac2.
+// WithdrawableShares is a free data retrieval call binding the contract method 0xce7c2ac2.
 //
 // Solidity: function shares(address user) view returns(uint256)
-func (_IStrategy *IStrategySession) Shares(user common.Address) (*big.Int, error) {
-	return _IStrategy.Contract.Shares(&_IStrategy.CallOpts, user)
+func (_IStrategy *IStrategySession) WithdrawableShares(user common.Address) (*big.Int, error) {
+	return _IStrategy.Contract.WithdrawableShares(&_IStrategy.CallOpts, user)
 }
 
-// Shares is a free data retrieval call binding the contract method 0xce7c2ac2.
+// WithdrawableShares is a free data retrieval call binding the contract method 0xce7c2ac2.
 //
 // Solidity: function shares(address user) view returns(uint256)
-func (_IStrategy *IStrategyCallerSession) Shares(user common.Address) (*big.Int, error) {
-	return _IStrategy.Contract.Shares(&_IStrategy.CallOpts, user)
+func (_IStrategy *IStrategyCallerSession) WithdrawableShares(user common.Address) (*big.Int, error) {
+	return _IStrategy.Contract.WithdrawableShares(&_IStrategy.CallOpts, user)
 }
 
 // SharesToUnderlyingView is a free data retrieval call binding the contract method 0x7a8b2637.

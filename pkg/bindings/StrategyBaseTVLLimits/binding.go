@@ -420,10 +420,10 @@ func (_StrategyBaseTVLLimits *StrategyBaseTVLLimitsCallerSession) PauserRegistry
 	return _StrategyBaseTVLLimits.Contract.PauserRegistry(&_StrategyBaseTVLLimits.CallOpts)
 }
 
-// Shares is a free data retrieval call binding the contract method 0xce7c2ac2.
+// WithdrawableShares is a free data retrieval call binding the contract method 0xce7c2ac2.
 //
 // Solidity: function shares(address user) view returns(uint256)
-func (_StrategyBaseTVLLimits *StrategyBaseTVLLimitsCaller) Shares(opts *bind.CallOpts, user common.Address) (*big.Int, error) {
+func (_StrategyBaseTVLLimits *StrategyBaseTVLLimitsCaller) WithdrawableShares(opts *bind.CallOpts, user common.Address) (*big.Int, error) {
 	var out []interface{}
 	err := _StrategyBaseTVLLimits.contract.Call(opts, &out, "shares", user)
 
@@ -437,18 +437,18 @@ func (_StrategyBaseTVLLimits *StrategyBaseTVLLimitsCaller) Shares(opts *bind.Cal
 
 }
 
-// Shares is a free data retrieval call binding the contract method 0xce7c2ac2.
+// WithdrawableShares is a free data retrieval call binding the contract method 0xce7c2ac2.
 //
 // Solidity: function shares(address user) view returns(uint256)
-func (_StrategyBaseTVLLimits *StrategyBaseTVLLimitsSession) Shares(user common.Address) (*big.Int, error) {
-	return _StrategyBaseTVLLimits.Contract.Shares(&_StrategyBaseTVLLimits.CallOpts, user)
+func (_StrategyBaseTVLLimits *StrategyBaseTVLLimitsSession) WithdrawableShares(user common.Address) (*big.Int, error) {
+	return _StrategyBaseTVLLimits.Contract.WithdrawableShares(&_StrategyBaseTVLLimits.CallOpts, user)
 }
 
-// Shares is a free data retrieval call binding the contract method 0xce7c2ac2.
+// WithdrawableShares is a free data retrieval call binding the contract method 0xce7c2ac2.
 //
 // Solidity: function shares(address user) view returns(uint256)
-func (_StrategyBaseTVLLimits *StrategyBaseTVLLimitsCallerSession) Shares(user common.Address) (*big.Int, error) {
-	return _StrategyBaseTVLLimits.Contract.Shares(&_StrategyBaseTVLLimits.CallOpts, user)
+func (_StrategyBaseTVLLimits *StrategyBaseTVLLimitsCallerSession) WithdrawableShares(user common.Address) (*big.Int, error) {
+	return _StrategyBaseTVLLimits.Contract.WithdrawableShares(&_StrategyBaseTVLLimits.CallOpts, user)
 }
 
 // SharesToUnderlying is a free data retrieval call binding the contract method 0xf3e73875.
