@@ -59,7 +59,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         address staker,
         IStrategy strategy,
         Shares existingShares,
-        WithdrawableShares addedShares
+        WithdrawableShares addedWithdrawableShares
     ) external {}
     
     function decreaseDelegatedShares(address staker, IStrategy strategy, WithdrawableShares shares) external {}

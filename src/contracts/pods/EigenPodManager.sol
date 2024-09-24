@@ -126,15 +126,15 @@ contract EigenPodManager is
                 delegationManager.decreaseDelegatedShares({
                     staker: podOwner,
                     strategy: beaconChainETHStrategy,
-                    removedShares: uint256(-changeInDelegatableShares).wrapWithdrawable()
+                    removedWithdrawableShares: uint256(-changeInDelegatableShares).wrapWithdrawable()
                 });
             } else {
                 delegationManager.increaseDelegatedShares({
                     staker: podOwner,
                     strategy: beaconChainETHStrategy,
                     // existing shares from standpoint of the DelegationManager
-                    existingPrincipalShares: (currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares)).wrapShares(),
-                    addedShares: uint256(changeInDelegatableShares).wrapWithdrawable()
+                    existingShares: (currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares)).wrapShares(),
+                    addedWithdrawableShares: uint256(changeInDelegatableShares).wrapWithdrawable()
                 });
             }
         }

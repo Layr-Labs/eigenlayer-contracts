@@ -247,23 +247,23 @@ contract StrategyManager is
         require(staker != address(0), StakerAddressZero());
         require(shares.unwrap() != 0, SharesAmountZero());
 
-        Shares existingPrincipalShares = stakerStrategyShares[staker][strategy];
+        Shares existingShares = stakerStrategyShares[staker][strategy];
 
         // if they dont have existing shares of this strategy, add it to their strats
-        if (existingPrincipalShares.unwrap()== 0) {
+        if (existingShares.unwrap()== 0) {
             require(stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, MaxStrategiesExceeded());
             stakerStrategyList[staker].push(strategy);
         }
 
         // add the returned shares to their existing shares for this strategy
-        stakerStrategyShares[staker][strategy] = existingPrincipalShares.add(shares.unwrap()).wrapShares();
+        stakerStrategyShares[staker][strategy] = existingShares.add(shares.unwrap()).wrapShares();
 
         // Increase shares delegated to operator, if needed
         delegation.increaseDelegatedShares({
             staker: staker,
             strategy: strategy,
-            existingPrincipalShares: existingPrincipalShares,
-            addedShares: shares.unwrap().wrapWithdrawable()
+            existingShares: existingShares,
+            addedWithdrawableShares: shares.unwrap().wrapWithdrawable()
         });
 
         emit Deposit(staker, token, strategy, shares);

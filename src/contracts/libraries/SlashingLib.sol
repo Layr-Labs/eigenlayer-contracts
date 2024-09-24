@@ -29,7 +29,7 @@ uint32 constant DEALLOCATION_DELAY = 17.5 days;
  *          - These live in the storage of the DelegationManager:
  *              - `delegatedShares` is the total amount of delegatedShares delegated to an operator for a strategy
  *              - `withdrawal.delegatedShares` is the amount of delegatedShares in a withdrawal          
- *      3. principalShares 
+ *      3. shares 
  *          - These can be converted into delegatedShares given a staker and a strategy
  *              - by multiplying by the staker's depositScalingFactor for the strategy
  *          - These values automatically update their conversion into tokens
@@ -37,8 +37,8 @@ uint32 constant DEALLOCATION_DELAY = 17.5 days;
  *             - or when the staker's operator's total magnitude for the strategy is decreased upon slashing
  *          - These represent the total amount of shares the staker would have of a strategy if they were never slashed
  *          - These live in the storage of the StrategyManager/EigenPodManager
- *              - `stakerStrategyShares` in the SM is the staker's principalShares that have not been queued for withdrawal in a strategy
- *              - `podOwnerShares` in the EPM is the staker's principalShares that have not been queued for withdrawal in the beaconChainETHStrategy
+ *              - `stakerStrategyShares` in the SM is the staker's shares that have not been queued for withdrawal in a strategy
+ *              - `podOwnerShares` in the EPM is the staker's shares that have not been queued for withdrawal in the beaconChainETHStrategy
  */
 
 type WithdrawableShares is uint256;
@@ -69,7 +69,7 @@ library SlashingLib {
     }
 
     function toDelegatedShares(
-        Shares principalShares,
+        Shares shares,
         uint256 depositScalingFactor
     ) internal pure returns (DelegatedShares) {
         if (depositScalingFactor == 0) {
@@ -77,7 +77,7 @@ library SlashingLib {
         }
 
         // forgefmt: disable-next-item
-        return principalShares
+        return shares
             .unwrap()
             .mulWad(depositScalingFactor)
             .wrapDelegated();
