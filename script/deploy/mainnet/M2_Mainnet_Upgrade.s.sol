@@ -5,6 +5,8 @@ import "../../utils/ExistingDeploymentParser.sol";
 import "../../utils/TimelockEncoding.sol";
 import "../../utils/Multisend.sol";
 
+import "../../../src/contracts/interfaces/IPausable.sol";
+
 /**
  * @notice Script used for the first deployment of EigenLayer core contracts to Holesky
  * anvil --fork-url $RPC_MAINNET
@@ -292,7 +294,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         // this works because rETH has more than 1 ETH of its own token at its address :)
         IERC20(rETH).transfer(address(this), amount);
         IERC20(rETH).approve(address(strategyManager), amount);
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         strategyManager.depositIntoStrategy({
             strategy: IStrategy(rETH_Strategy),
             token: IERC20(rETH),

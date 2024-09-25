@@ -615,7 +615,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         cheats.prank(pauser);
         delegationManager.pause(2 ** PAUSED_NEW_DELEGATION);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.registerAsOperator(
             IDelegationManager.OperatorDetails({
                 __deprecated_earningsReceiver: defaultOperator,
@@ -826,7 +826,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         cheats.prank(defaultStaker);
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);
     }
 
@@ -1845,7 +1845,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
             expiry
         );
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.delegateToBySignature(
             defaultStaker,
             defaultOperator,
@@ -2645,7 +2645,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
 
         cheats.prank(staker);
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.undelegate(staker);
     }
 
@@ -2799,7 +2799,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             strategy: strategyMock,
             withdrawalAmount: 100
         });
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
 
@@ -3077,7 +3077,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         });
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
     }
 
