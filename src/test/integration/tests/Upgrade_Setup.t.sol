@@ -68,7 +68,6 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
             "avsDirectory: delegationManager address not set correctly"
         );
         // DelegationManager
-        require(delegationManager.slasher() == slasher, "delegationManager: slasher address not set correctly");
         require(
             delegationManager.strategyManager() == strategyManager,
             "delegationManager: strategyManager address not set correctly"
@@ -78,7 +77,6 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
             "delegationManager: eigenPodManager address not set correctly"
         );
         // StrategyManager
-        require(strategyManager.slasher() == slasher, "strategyManager: slasher address not set correctly");
         require(
             strategyManager.delegation() == delegationManager,
             "strategyManager: delegationManager address not set correctly"
@@ -96,7 +94,6 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
             eigenPodManager.strategyManager() == strategyManager,
             "eigenPodManager: strategyManager contract address not set correctly"
         );
-        require(eigenPodManager.slasher() == slasher, "eigenPodManager: slasher contract address not set correctly");
         require(
             eigenPodManager.delegationManager() == delegationManager,
             "eigenPodManager: delegationManager contract address not set correctly"

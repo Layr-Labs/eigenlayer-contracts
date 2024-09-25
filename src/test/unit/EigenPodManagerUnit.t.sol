@@ -117,7 +117,6 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         assertEq(address(eigenPodManager.ethPOS()), address(ethPOSMock), "Initialization: ethPOS incorrect");
         assertEq(address(eigenPodManager.eigenPodBeacon()), address(eigenPodBeacon), "Initialization: eigenPodBeacon incorrect");
         assertEq(address(eigenPodManager.strategyManager()), address(strategyManagerMock), "Initialization: strategyManager incorrect");
-        assertEq(address(eigenPodManager.slasher()), address(slasherMock), "Initialization: slasher incorrect");
         assertEq(address(eigenPodManager.delegationManager()), address(delegationManagerMock), "Initialization: delegationManager incorrect");
     }
 

@@ -524,11 +524,6 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
             "constructor / initializer incorrect, strategyManager set wrong"
         );
         assertEq(
-            address(delegationManager.slasher()),
-            address(slasherMock),
-            "constructor / initializer incorrect, slasher set wrong"
-        );
-        assertEq(
             address(delegationManager.pauserRegistry()),
             address(pauserRegistry),
             "constructor / initializer incorrect, pauserRegistry set wrong"

@@ -24,7 +24,6 @@ contract StrategyManagerMock is
 
     IDelegationManager public delegation;
     IEigenPodManager public eigenPodManager;
-    ISlasher public slasher;
     address public strategyWhitelister;
 
     mapping(address => IStrategy[]) public strategiesToReturn;
@@ -37,10 +36,9 @@ contract StrategyManagerMock is
     
     mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
 
-    function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) external
+    function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager) external
     {
        delegation = _delegation;
-       slasher = _slasher;
        eigenPodManager = _eigenPodManager;
     }
 

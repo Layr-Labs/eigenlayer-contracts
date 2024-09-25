@@ -14,7 +14,6 @@ import "../contracts/interfaces/IETHPOSDeposit.sol";
 
 import "../contracts/core/StrategyManager.sol";
 import "../contracts/strategies/StrategyBase.sol";
-import "../contracts/core/Slasher.sol";
 
 import "../contracts/pods/EigenPod.sol";
 import "../contracts/pods/EigenPodManager.sol";
@@ -36,7 +35,6 @@ contract EigenLayerDeployer is Operators {
     ProxyAdmin public eigenLayerProxyAdmin;
     PauserRegistry public eigenLayerPauserReg;
 
-    Slasher public slasher;
     DelegationManager public delegation;
     StrategyManager public strategyManager;
     EigenPodManager public eigenPodManager;
@@ -129,7 +127,6 @@ contract EigenLayerDeployer is Operators {
         fuzzedAddressMapping[address(strategyManager)] = true;
         fuzzedAddressMapping[address(eigenPodManager)] = true;
         fuzzedAddressMapping[address(delegation)] = true;
-        fuzzedAddressMapping[address(slasher)] = true;
     }
 
     function _deployEigenLayerContractsLocal() internal {
@@ -154,9 +151,6 @@ contract EigenLayerDeployer is Operators {
         strategyManager = StrategyManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slasher = Slasher(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -170,14 +164,12 @@ contract EigenLayerDeployer is Operators {
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
-        Slasher slasherImplementation = new Slasher(strategyManager, delegation);
+        DelegationManager delegationImplementation = new DelegationManager(strategyManager, eigenPodManager);
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            slasher,
             delegation
         );
 
@@ -201,16 +193,6 @@ contract EigenLayerDeployer is Operators {
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
                 eigenLayerReputedMultisig,
-                eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
-                0 /*initialPausedStatus*/
-            )
-        );
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation),
-            abi.encodeWithSelector(
-                Slasher.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0 /*initialPausedStatus*/
@@ -263,7 +245,6 @@ contract EigenLayerDeployer is Operators {
         eigenLayerPauserRegAddress = stdJson.readAddress(config, ".addresses.eigenLayerPauserReg");
         delegationAddress = stdJson.readAddress(config, ".addresses.delegation");
         strategyManagerAddress = stdJson.readAddress(config, ".addresses.strategyManager");
-        slasherAddress = stdJson.readAddress(config, ".addresses.slasher");
         eigenPodManagerAddress = stdJson.readAddress(config, ".addresses.eigenPodManager");
         emptyContractAddress = stdJson.readAddress(config, ".addresses.emptyContract");
         operationsMultisig = stdJson.readAddress(config, ".parameters.operationsMultisig");

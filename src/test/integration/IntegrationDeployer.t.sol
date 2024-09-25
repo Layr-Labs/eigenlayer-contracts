@@ -11,7 +11,6 @@ import "forge-std/Test.sol";
 
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/StrategyManager.sol";
-import "src/contracts/core/Slasher.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
@@ -233,9 +232,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         strategyManager = StrategyManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slasher = Slasher(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -256,14 +252,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
-        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            slasher,
             delegationManager
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
@@ -295,17 +289,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 StrategyManager.initialize.selector,
                 eigenLayerReputedMultisig, //initialOwner
                 eigenLayerReputedMultisig, //initial whitelister
-                eigenLayerPauserReg,
-                0 // initialPausedStatus
-            )
-        );
-        // Slasher
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation),
-            abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0 // initialPausedStatus
             )
@@ -399,14 +382,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager);
         slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            slasher,
             delegationManager
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
@@ -421,11 +403,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation)
-        );
-        // Slasher
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation)
         );
         // EigenPodManager
         eigenLayerProxyAdmin.upgrade(
@@ -493,14 +470,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager);
         slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            slasher,
             delegationManager
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
@@ -515,11 +491,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation)
-        );
-        // Slasher
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation)
         );
         // EigenPodManager
         eigenLayerProxyAdmin.upgrade(
