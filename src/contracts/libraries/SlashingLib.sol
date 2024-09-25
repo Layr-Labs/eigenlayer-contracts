@@ -10,7 +10,7 @@ uint64 constant WAD = 1e18;
 
 /*
  * There are 3 types of shares:
- *      1. shares
+ *      1. ownedShares
  *          - These can be converted to an amount of tokens given a strategy
  *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens 
  *              in the case of EigenPods)
