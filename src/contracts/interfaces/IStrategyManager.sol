@@ -42,7 +42,7 @@ interface IStrategyManager is IShareManager {
      * @param token Is the token that `staker` deposited.
      * @param shares Is the number of new shares `staker` has been granted in `strategy`.
      */
-    event Deposit(address staker, IERC20 token, IStrategy strategy, WithdrawableShares shares);
+    event Deposit(address staker, IERC20 token, IStrategy strategy, OwnedShares shares);
 
     /// @notice Emitted when the `strategyWhitelister` is changed
     event StrategyWhitelisterChanged(address previousAddress, address newAddress);
@@ -65,7 +65,7 @@ interface IStrategyManager is IShareManager {
      * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
      */
-    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (WithdrawableShares shares);
+    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (OwnedShares shares);
 
     /**
      * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
@@ -94,7 +94,7 @@ interface IStrategyManager is IShareManager {
         address staker,
         uint256 expiry,
         bytes memory signature
-    ) external returns (WithdrawableShares shares);
+    ) external returns (OwnedShares shares);
 
     /**
      * @notice Get all details on the staker's deposits and corresponding shares

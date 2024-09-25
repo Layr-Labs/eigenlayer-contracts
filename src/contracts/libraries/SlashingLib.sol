@@ -41,11 +41,11 @@ uint32 constant DEALLOCATION_DELAY = 17.5 days;
  *              - `podOwnerShares` in the EPM is the staker's shares that have not been queued for withdrawal in the beaconChainETHStrategy
  */
 
-type WithdrawableShares is uint256;
+type OwnedShares is uint256;
 type DelegatedShares is uint256;
 type Shares is uint256;
 
-using SlashingLib for WithdrawableShares global;
+using SlashingLib for OwnedShares global;
 using SlashingLib for DelegatedShares global;
 using SlashingLib for Shares global;
 
@@ -83,19 +83,19 @@ library SlashingLib {
             .wrapDelegated();
     }
 
-    function toWithdrawableShares(
+    function toOwnedShares(
         DelegatedShares delegatedShares, 
         uint256 magnitude
-    ) internal pure returns (WithdrawableShares) {
+    ) internal pure returns (OwnedShares) {
         // forgefmt: disable-next-item
         return delegatedShares
             .unwrap()
             .mulWad(magnitude)
-            .wrapWithdrawable();
+            .wrapOwned();
     }
 
     function toDelegatedShares(
-        WithdrawableShares shares, 
+        OwnedShares shares, 
         uint256 magnitude
     ) internal pure returns (DelegatedShares) {
         // forgefmt: disable-next-item
@@ -115,8 +115,16 @@ library SlashingLib {
         return x.unwrap() + y;
     }
 
-    function add(WithdrawableShares x, uint256 y) internal pure returns (uint256) {
+    function add(DelegatedShares x, DelegatedShares y) internal pure returns (DelegatedShares) {
+        return (x.unwrap() + y.unwrap()).wrapDelegated();
+    }
+
+    function add(OwnedShares x, uint256 y) internal pure returns (uint256) {
         return x.unwrap() + y;
+    }
+
+    function add(OwnedShares x, OwnedShares y) internal pure returns (OwnedShares) {
+        return (x.unwrap() + y.unwrap()).wrapOwned();
     }
 
     function sub(Shares x, uint256 y) internal pure returns (uint256) {
@@ -127,7 +135,11 @@ library SlashingLib {
         return x.unwrap() - y;
     }
 
-    function sub(WithdrawableShares x, uint256 y) internal pure returns (uint256) {
+    function sub(DelegatedShares x, DelegatedShares y) internal pure returns (DelegatedShares) {
+        return (x.unwrap() - y.unwrap()).wrapDelegated();
+    }
+
+    function sub(OwnedShares x, uint256 y) internal pure returns (uint256) {
         return x.unwrap() - y;
     }
 
@@ -151,8 +163,8 @@ library SlashingLib {
         return DelegatedShares.unwrap(x);
     }
 
-    function unwrap(WithdrawableShares x) internal pure returns (uint256) {
-        return WithdrawableShares.unwrap(x);
+    function unwrap(OwnedShares x) internal pure returns (uint256) {
+        return OwnedShares.unwrap(x);
     }
 
     function wrapShares(uint256 x) internal pure returns (Shares) {
@@ -163,7 +175,7 @@ library SlashingLib {
         return DelegatedShares.wrap(x);
     }
 
-    function wrapWithdrawable(uint256 x) internal pure returns (WithdrawableShares) {
-        return WithdrawableShares.wrap(x);
+    function wrapOwned(uint256 x) internal pure returns (OwnedShares) {
+        return OwnedShares.wrap(x);
     }
 }

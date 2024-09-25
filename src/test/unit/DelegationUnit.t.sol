@@ -2946,8 +2946,8 @@
 //         // Post queueWithdrawal state values
 //         for (uint256 i = 0; i < strategies.length; i++) {
 //             assertEq(
-//                 delegatedSharesBefore[i] - withdrawalAmounts[i], // WithdrawableShares before - withdrawal amount
-//                 delegationManager.operatorShares(defaultOperator, strategies[i]), // WithdrawableShares after
+//                 delegatedSharesBefore[i] - withdrawalAmounts[i], // OwnedShares before - withdrawal amount
+//                 delegationManager.operatorShares(defaultOperator, strategies[i]), // OwnedShares after
 //                 "delegated shares not decreased correctly"
 //             );
 //         }
@@ -3011,8 +3011,8 @@
 //         // Post queueWithdrawal state values
 //         for (uint256 i = 0; i < strategies.length; i++) {
 //             assertEq(
-//                 delegatedSharesBefore[i] - withdrawalAmounts[i], // WithdrawableShares before - withdrawal amount
-//                 delegationManager.operatorShares(defaultOperator, strategies[i]), // WithdrawableShares after
+//                 delegatedSharesBefore[i] - withdrawalAmounts[i], // OwnedShares before - withdrawal amount
+//                 delegationManager.operatorShares(defaultOperator, strategies[i]), // OwnedShares after
 //                 "delegated shares not decreased correctly"
 //             );
 //         }

@@ -44,7 +44,7 @@ contract StrategyManagerMock is
 
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
-        returns (WithdrawableShares) {}
+        returns (OwnedShares) {}
 
 
     function depositBeaconChainETH(address staker, uint256 amount) external{}
@@ -62,7 +62,7 @@ contract StrategyManagerMock is
         bytes memory signature
     )
         external
-        returns (WithdrawableShares shares) {}
+        returns (OwnedShares shares) {}
 
     function getStakerStrategyList(
         address staker
@@ -114,9 +114,9 @@ contract StrategyManagerMock is
 
     function removeShares(address staker, IStrategy strategy, Shares shares) external {}
 
-    function addShares(address staker, IERC20 token, IStrategy strategy, WithdrawableShares shares) external {}
+    function addShares(address staker, IERC20 token, IStrategy strategy, OwnedShares shares) external {}
     
-    function withdrawSharesAsTokens(address recipient, IStrategy strategy, WithdrawableShares shares, IERC20 token) external {}
+    function withdrawSharesAsTokens(address recipient, IStrategy strategy, OwnedShares shares, IERC20 token) external {}
 
     /// @notice returns the enshrined beaconChainETH Strategy
     function beaconChainETHStrategy() external view returns (IStrategy) {}

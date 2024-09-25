@@ -138,8 +138,8 @@ interface IDelegationManager is ISignatureUtils {
     struct QueuedWithdrawalParams {
         // Array of strategies that the QueuedWithdrawal contains
         IStrategy[] strategies;
-        // Array containing the amount of shares for withdrawal in each Strategy in the `strategies` array
-        WithdrawableShares[] shares;
+        // Array containing the amount of withdrawable shares for withdrawal in each Strategy in the `strategies` array
+        OwnedShares[] ownedShares;
         // The address of the withdrawer
         address withdrawer;
     }
@@ -323,7 +323,7 @@ interface IDelegationManager is ISignatureUtils {
      * @param strategy The strategy in which to increase the delegated shares.
      * @param existingShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
-     * @param addedWithdrawableShares The number of shares to added to the staker's shares in the strategy. This amount will be scaled prior to adding
+     * @param addedOwnedShares The number of shares to added to the staker's shares in the strategy. This amount will be scaled prior to adding
      * to the operator's scaled shares.
      *
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated scaled shares in `strategy`.
@@ -334,7 +334,7 @@ interface IDelegationManager is ISignatureUtils {
         address staker,
         IStrategy strategy,
         Shares existingShares,
-        WithdrawableShares addedWithdrawableShares
+        OwnedShares addedOwnedShares
     ) external;
 
     /**
@@ -343,13 +343,13 @@ interface IDelegationManager is ISignatureUtils {
      * `increaseDelegatedShares`, the staker's depositScalingFactor is not updated here.
      * @param staker The address to increase the delegated scaled shares for their operator.
      * @param strategy The strategy in which to decrease the delegated scaled shares.
-     * @param removedWithdrawableShares The number of shares to decremented for the strategy in the
+     * @param removedOwnedShares The number of shares to decremented for the strategy in the
      * StrategyManager/EigenPodManager
      *
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated scaled shares in `strategy` by `scaledShares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedShares(address staker, IStrategy strategy, WithdrawableShares removedWithdrawableShares) external;
+    function decreaseDelegatedShares(address staker, IStrategy strategy, OwnedShares removedOwnedShares) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

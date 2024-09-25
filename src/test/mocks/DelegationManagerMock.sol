@@ -59,10 +59,10 @@ contract DelegationManagerMock is IDelegationManager, Test {
         address staker,
         IStrategy strategy,
         Shares existingShares,
-        WithdrawableShares addedWithdrawableShares
+        OwnedShares addedOwnedShares
     ) external {}
     
-    function decreaseDelegatedShares(address staker, IStrategy strategy, WithdrawableShares shares) external {}
+    function decreaseDelegatedShares(address staker, IStrategy strategy, OwnedShares shares) external {}
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
@@ -172,12 +172,12 @@ contract DelegationManagerMock is IDelegationManager, Test {
     ) external {}
     
     // onlyDelegationManager functions in StrategyManager
-    function addShares(
+    function addOwnedShares(
         IStrategyManager strategyManager,
         address staker,
         IERC20 token,
         IStrategy strategy,
-        WithdrawableShares shares
+        OwnedShares shares
     ) external {
         strategyManager.addShares(staker, token, strategy, shares);
     }
@@ -195,7 +195,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         IStrategyManager strategyManager,
         address recipient,
         IStrategy strategy,
-        WithdrawableShares shares,
+        OwnedShares shares,
         IERC20 token
     ) external {
         strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);
