@@ -116,9 +116,13 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(IStrategy => uint256) private __deprecated_strategyWithdrawalDelayBlocks;
 
-    /// @notice Mapping: staker => strategy => scaling factor used to calculate the staker's shares in the strategy.
-    /// This is updated upon each deposit based on the staker's currently delegated operator's totalMagnitude.
-    mapping(address => mapping(IStrategy => uint256)) public depositScalingFactors;
+    /// @notice Mapping: staker => strategy =>
+    ///    (
+    ///       scaling factor used to calculate the staker's shares in the strategy,
+    ///       beacon chain scaling factor used to calculate the staker's withdrawable shares in the strategy.
+    ///    )
+    /// Note that we don't need the beaconChainScalingFactor for non beaconChainETHStrategy strategies, but it's nicer syntactically to keep it.
+    mapping(address => mapping(IStrategy => StakerScalingFactors)) public stakerScalingFactors;
 
     constructor(
         IStrategyManager _strategyManager,

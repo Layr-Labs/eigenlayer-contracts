@@ -61,19 +61,19 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
     /// @notice Callable only by the EigenPodManager
     modifier onlyEigenPodManager() {
-        require(msg.sender == address(eigenPodManager), UnauthorizedCaller());
+        require(msg.sender == address(eigenPodManager), OnlyEigenPodManager());
         _;
     }
 
     /// @notice Callable only by the pod's owner
     modifier onlyEigenPodOwner() {
-        require(msg.sender == podOwner, UnauthorizedCaller());
+        require(msg.sender == podOwner, OnlyEigenPodOwner());
         _;
     }
 
     /// @notice Callable only by the pod's owner or proof submitter
     modifier onlyOwnerOrProofSubmitter() {
-        require(msg.sender == podOwner || msg.sender == proofSubmitter, UnauthorizedCaller());
+        require(msg.sender == podOwner || msg.sender == proofSubmitter, OnlyEigenPodOwnerOrProofSubmitter());
         _;
     }
 
@@ -261,7 +261,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         }
 
         // Update the EigenPodManager on this pod's new balance
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, int256(totalAmountToBeRestakedWei));
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, int256(totalAmountToBeRestakedWei), 0); // no decrease
     }
 
     /**
@@ -490,8 +490,12 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // purpose of `lastCheckpointedAt` is to enforce that newly-verified validators are not
         // eligible to progress already-existing checkpoints - however in this case, no checkpoints exist.
         activeValidatorCount++;
-        uint64 lastCheckpointedAt =
-            currentCheckpointTimestamp == 0 ? lastCheckpointTimestamp : currentCheckpointTimestamp;
+        uint64 lastCheckpointedAt = lastCheckpointTimestamp;
+        if (currentCheckpointTimestamp != 0) {
+            lastCheckpointedAt = currentCheckpointTimestamp;
+            _currentCheckpoint.beaconChainBalanceBefore += uint128(restakedBalanceGwei);
+            _currentCheckpoint.beaconChainBalanceAfter += uint128(restakedBalanceGwei);
+        }
 
         // Proofs complete - create the validator in state
         _validatorPubkeyHashToInfo[pubkeyHash] = ValidatorInfo({
@@ -529,6 +533,10 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
                 newAmountGwei: newBalanceGwei,
                 previousAmountGwei: prevBalanceGwei
             });
+
+            // Update the checkpoint values
+            _currentCheckpoint.beaconChainBalanceBefore += uint128(prevBalanceGwei);
+            _currentCheckpoint.beaconChainBalanceAfter += uint128(newBalanceGwei);
 
             emit ValidatorBalanceUpdated(validatorIndex, checkpointTimestamp, newBalanceGwei);
         }
@@ -598,7 +606,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             beaconBlockRoot: getParentBlockRoot(uint64(block.timestamp)),
             proofsRemaining: uint24(activeValidatorCount),
             podBalanceGwei: podBalanceGwei,
-            balanceDeltasGwei: 0
+            balanceDeltasGwei: 0,
+            beaconChainBalanceBefore: 0,
+            beaconChainBalanceAfter: 0
         });
 
         // Place checkpoint in storage. If `proofsRemaining` is 0, the checkpoint
@@ -633,8 +643,19 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             delete currentCheckpointTimestamp;
             delete _currentCheckpoint;
 
+            // Calculate the slashing proportion
+            uint64 proportionOfOldBalance = 0;
+            if (totalShareDeltaWei < 0) {
+                uint256 totalBefore = withdrawableRestakedExecutionLayerGwei + checkpoint.beaconChainBalanceBefore;
+                proportionOfOldBalance = uint64((totalBefore + uint256(-totalShareDeltaWei)) * WAD / totalBefore);
+            }
+
             // Update pod owner's shares
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei);
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(
+                podOwner, 
+                totalShareDeltaWei, 
+                proportionOfOldBalance
+            );
             emit CheckpointFinalized(lastCheckpointTimestamp, totalShareDeltaWei);
         } else {
             _currentCheckpoint = checkpoint;

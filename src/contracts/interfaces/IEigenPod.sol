@@ -13,8 +13,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
 interface IEigenPod {
-    /// @dev Thrown when msg.sender is not allowed to call a function
-    error UnauthorizedCaller();
+    /// @dev Thrown when msg.sender is not the EPM.
+    error OnlyEigenPodManager();
+    /// @dev Thrown when msg.sender is not the pod owner.
+    error OnlyEigenPodOwner();
+    /// @dev Thrown when msg.sender is not owner or the proof submitter.
+    error OnlyEigenPodOwnerOrProofSubmitter();
     /// @dev Thrown when attempting an action that is currently paused.
     error CurrentlyPaused();
 
@@ -99,6 +103,8 @@ interface IEigenPod {
         uint24 proofsRemaining;
         uint64 podBalanceGwei;
         int128 balanceDeltasGwei;
+        uint128 beaconChainBalanceBefore;
+        uint128 beaconChainBalanceAfter;
     }
 
     /**

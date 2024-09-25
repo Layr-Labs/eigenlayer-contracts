@@ -68,7 +68,7 @@ abstract contract EigenPodStorage is IEigenPod {
     mapping(uint64 => uint64) public checkpointBalanceExitedGwei;
 
     /// @notice The current checkpoint, if there is one active
-    Checkpoint internal _currentCheckpoint;
+    Checkpoint internal _currentCheckpoint; // TODO: this storage is fucked need split structs
 
     /// @notice An address with permissions to call `startCheckpoint` and `verifyWithdrawalCredentials`, set
     /// by the podOwner. This role exists to allow a podOwner to designate a hot wallet that can call
@@ -81,5 +81,5 @@ abstract contract EigenPodStorage is IEigenPod {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[36] private __gap;
+    uint256[35] private __gap; // Reduced the gap size by 1 to accommodate the new variable
 }

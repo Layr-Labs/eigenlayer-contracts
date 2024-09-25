@@ -18,6 +18,8 @@ import "../libraries/SlashingLib.sol";
 interface IDelegationManager is ISignatureUtils {
     /// @dev Thrown when msg.sender is not allowed to call a function
     error UnauthorizedCaller();
+    /// @dev Thrown when msg.sender is not the EigenPodManager
+    error OnlyEigenPodManager();
 
     /// Delegation Status
 
@@ -362,19 +364,21 @@ interface IDelegationManager is ISignatureUtils {
         OwnedShares addedOwnedShares
     ) external;
 
-    /**
-     * @notice Decreases a staker's delegated share balance in a strategy. Note that before removing from operator shares,
-     * the delegated shares are scaled according to the operator's total magnitude as part of slashing accounting. Unlike
-     * `increaseDelegatedShares`, the staker's depositScalingFactor is not updated here.
-     * @param staker The address to increase the delegated scaled shares for their operator.
-     * @param strategy The strategy in which to decrease the delegated scaled shares.
-     * @param removedOwnedShares The number of shares to decremented for the strategy in the
-     * StrategyManager/EigenPodManager
+        /**
+     * @notice Decreases a native restaker's delegated share balance in a strategy due to beacon chain slashing. This updates their beaconChainScalingFactor.
+     * Their operator's stakeShares are also updated (if they are delegated).
+     * @param staker The address to increase the delegated stakeShares for their operator.
+     * @param existingShares The number of shares the staker already has in the EPM. This does not change upon decreasing shares.
+     * @param proportionOfOldBalance The current pod owner shares proportion of the previous pod owner shares
      *
-     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated scaled shares in `strategy` by `scaledShares`. Otherwise does nothing.
-     * @dev Callable only by the StrategyManager or EigenPodManager.
+     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated stakeShares in `strategy` by `proportionPodBalanceDecrease` proportion. Otherwise does nothing.
+     * @dev Callable only by the EigenPodManager.
      */
-    function decreaseDelegatedShares(address staker, IStrategy strategy, OwnedShares removedOwnedShares) external;
+    function decreaseBeaconChainScalingFactor(
+        address staker,
+        Shares existingShares,
+        uint64 proportionOfOldBalance
+    ) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

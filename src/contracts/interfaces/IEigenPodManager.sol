@@ -28,6 +28,9 @@ interface IEigenPodManager is IShareManager, IPausable {
     error SharesNegative();
     /// @dev Thrown when the strategy is not the beaconChainETH strategy.
     error InvalidStrategy();
+     /// @dev Thrown when the pods shares are negative and a beacon chain balance update is attempted. 
+     /// The podOwner should complete legacy withdrawal first.
+    error LegacyWithdrawalsNotCompleted();
 
     /// @notice Emitted to notify the deployment of an EigenPod
     event PodDeployed(address indexed eigenPod, address indexed podOwner);
@@ -72,10 +75,15 @@ interface IEigenPodManager is IShareManager, IPausable {
      * to ensure that delegated shares are also tracked correctly
      * @param podOwner is the pod owner whose balance is being updated.
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
+     * @param proportionPodBalanceDecrease is the proportion (of WAD) of the podOwner's balance that has changed
      * @dev Callable only by the podOwner's EigenPod contract.
      * @dev Reverts if `sharesDelta` is not a whole Gwei amount
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external;
+    function recordBeaconChainETHBalanceUpdate(
+        address podOwner,
+        int256 sharesDelta,
+        uint64 proportionPodBalanceDecrease
+    ) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
     function ownerToPod(
