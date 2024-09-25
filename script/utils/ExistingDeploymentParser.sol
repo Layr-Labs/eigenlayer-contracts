@@ -10,6 +10,7 @@ import "../../src/contracts/core/Slasher.sol";
 import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
+import "../../src/contracts/core/AllocationManager.sol";
 
 import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
@@ -62,6 +63,8 @@ contract ExistingDeploymentParser is Script, Test {
     StrategyBase public baseStrategyImplementation;
     StrategyFactory public strategyFactory;
     StrategyFactory public strategyFactoryImplementation;
+    AllocationManager public allocationManager;
+    AllocationManager public allocationManagerImplementation;
     UpgradeableBeacon public strategyBeacon;
     StrategyBase public strategyFactoryBeaconImplementation;
 
@@ -105,6 +108,7 @@ contract ExistingDeploymentParser is Script, Test {
     // DelegationManager
     uint256 DELEGATION_MANAGER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS;
+    uint32 MIN_WITHDRAWAL_DELAY;
     // AVSDirectory
     uint256 AVS_DIRECTORY_INIT_PAUSED_STATUS;
     // RewardsCoordinator
@@ -117,8 +121,14 @@ contract ExistingDeploymentParser is Script, Test {
     uint32 REWARDS_COORDINATOR_ACTIVATION_DELAY;
     uint32 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
     uint32 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
+    uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
+    uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
+    // AllocationManager
+    uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
+    uint32 DEALLOCATION_DELAY;
+    uint32 ALLOCATION_DELAY_CONFIGURATION_DELAY;
     // EigenPod
     uint64 EIGENPOD_GENESIS_TIME;
     uint64 EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
@@ -314,12 +324,23 @@ contract ExistingDeploymentParser is Script, Test {
         REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
             stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.global_operator_commission_bips")
         );
+        REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP")
+        );
+        REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH")
+        );
         // AVSDirectory
         AVS_DIRECTORY_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".avsDirectory.init_paused_status");
         // EigenPodManager
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(
             initialDeploymentData,
             ".eigenPodManager.init_paused_status"
+        );
+        // AllocationManager
+        ALLOCATION_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(
+            initialDeploymentData,
+            ".allocationManager.init_paused_status"
         );
         // EigenPod
         EIGENPOD_GENESIS_TIME = uint64(stdJson.readUint(initialDeploymentData, ".eigenPod.GENESIS_TIME"));
@@ -461,10 +482,7 @@ contract ExistingDeploymentParser is Script, Test {
         delegationManager.initialize(
             address(0),
             eigenLayerPauserReg,
-            0,
-            0, // minWithdrawalDelayBLocks
-            initializeStrategiesToSetDelayBlocks,
-            initializeWithdrawalDelayBlocks
+            0
         );
         // StrategyManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
@@ -554,10 +572,6 @@ contract ExistingDeploymentParser is Script, Test {
         require(
             delegationManager.paused() == DELEGATION_MANAGER_INIT_PAUSED_STATUS,
             "delegationManager: init paused status set incorrectly"
-        );
-        require(
-            delegationManager.minWithdrawalDelayBlocks() == DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
-            "delegationManager: minWithdrawalDelayBlocks not set correctly"
         );
         // StrategyManager
         require(

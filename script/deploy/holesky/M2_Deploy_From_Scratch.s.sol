@@ -67,6 +67,10 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        allocationManager = AllocationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             IETHPOSDeposit(ETHPOSDepositAddress),
@@ -76,8 +80,8 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
-        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager, avsDirectory, allocationManager, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher, avsDirectory);
         slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             IETHPOSDeposit(ETHPOSDepositAddress),
@@ -86,6 +90,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             slasher,
             delegationManager
         );
+        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_DELAY_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to point to the implementations
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
@@ -149,13 +154,23 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
             )
         );
+        // AllocationManager
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation),
+            abi.encodeWithSelector(
+                AllocationManager.initialize.selector,
+                msg.sender, // initialOwner is msg.sender for now to set forktimestamp later
+                eigenLayerPauserReg,
+                ALLOCATION_MANAGER_INIT_PAUSED_STATUS
+            )
+        );
 
         // Deploy Strategies
         baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         uint256 numStrategiesToDeploy = strategiesToDeploy.length;
         // whitelist params
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](numStrategiesToDeploy);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](numStrategiesToDeploy);
 
         for (uint256 i = 0; i < numStrategiesToDeploy; i++) {
             StrategyUnderlyingTokenConfig memory strategyConfig = strategiesToDeploy[i];
@@ -177,13 +192,12 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             );
 
             strategiesToWhitelist[i] = strategy;
-            thirdPartyTransfersForbiddenValues[i] = false;
 
             deployedStrategyArray.push(strategy);
         }
 
         // Add strategies to whitelist and set whitelister to STRATEGY_MANAGER_WHITELISTER
-        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
         strategyManager.setStrategyWhitelister(STRATEGY_MANAGER_WHITELISTER);
 
         // Transfer ownership

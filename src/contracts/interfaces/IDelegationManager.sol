@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
+import "../libraries/SlashingLib.sol";
 
 /**
  * @title DelegationManager
@@ -31,10 +32,25 @@ interface IDelegationManager is ISignatureUtils {
 
     /// Invalid Inputs
 
+    /// @dev Thrown when an account is actively delegated.
+    error ActivelyDelegated();
+    /// @dev Thrown when attempting to execute an action that was not queued.
+    error WithdrawalNotQueued();
+    /// @dev Thrown when provided delay exceeds maximum.
+    error AllocationDelaySet();
+    /// @dev Thrown when caller cannot undelegate on behalf of a staker.
+    error CallerCannotUndelegate();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
     /// @dev Thrown when input arrays length is zero.
     error InputArrayLengthZero();
+    /// @dev Thrown when `operator` is not a registered operator.
+    error OperatorNotRegistered();
+    /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
+    error OnlyStrategyManagerOrEigenPodManager();
+
+    /// @dev Thrown when an account is not actively delegated.
+    error NotActivelyDelegated();
     /// @dev Thrown when provided `stakerOptOutWindowBlocks` cannot decrease.
     error StakerOptOutWindowBlocksCannotDecrease();
     /// @dev Thrown when provided `stakerOptOutWindowBlocks` exceeds maximum.
@@ -45,7 +61,7 @@ interface IDelegationManager is ISignatureUtils {
     /// Signatures
 
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
-    error SignatureSaltSpent();
+    error SaltSpent();
     /// @dev Thrown when attempting to use an expired eip-712 signature.
     error SignatureExpired();
 
@@ -55,6 +71,12 @@ interface IDelegationManager is ISignatureUtils {
     error WithdrawalDoesNotExist();
     /// @dev Thrown when attempting to withdraw before delay has elapsed.
     error WithdrawalDelayNotElapsed();
+    /// @dev Thrown when provided delay exceeds maximum.
+    error WithdrawalDelayExeedsMax();
+    /// @dev Thrown when a withdraw amount larger than max is attempted.
+    error WithdrawalExeedsMax();
+    /// @dev Thrown when withdrawer is not the current caller.
+    error WithdrawerNotCaller();
     /// @dev Thrown when `withdrawer` is not staker.
     error WithdrawerNotStaker();
 
@@ -125,19 +147,24 @@ interface IDelegationManager is ISignatureUtils {
         address withdrawer;
         // Nonce used to guarantee that otherwise identical withdrawals have unique hashes
         uint256 nonce;
-        // Block number when the Withdrawal was created
-        uint32 startBlock;
+        // Timestamp when the Withdrawal was created.
+        // NOTE this used to be `startBlock` but changedto timestamps in the Slashing release. This has no effect
+        // on the hash of this struct but we do need to know when to handle blocknumbers vs timestamps depending on
+        // if the withdrawal was created before or after the Slashing release.
+        uint32 startTimestamp;
         // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
-        // Array containing the amount of shares in each Strategy in the `strategies` array
-        uint256[] shares;
+        // Array containing the amount of staker's delegatedShares for withdrawal in each Strategy in the `strategies` array
+        // Note that these shares need to be multiplied by the operator's totalMagnitude at completion to include
+        // slashing occurring during the queue withdrawal delay
+        DelegatedShares[] delegatedShares;
     }
 
     struct QueuedWithdrawalParams {
         // Array of strategies that the QueuedWithdrawal contains
         IStrategy[] strategies;
-        // Array containing the amount of shares in each Strategy in the `strategies` array
-        uint256[] shares;
+        // Array containing the amount of withdrawable shares for withdrawal in each Strategy in the `strategies` array
+        OwnedShares[] ownedShares;
         // The address of the withdrawer
         address withdrawer;
     }
@@ -155,10 +182,10 @@ interface IDelegationManager is ISignatureUtils {
     event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
 
     /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares);
 
     /// @notice Emitted whenever an operator's shares are decreased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares);
 
     /// @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
@@ -179,15 +206,10 @@ interface IDelegationManager is ISignatureUtils {
     /// @notice Emitted when a queued withdrawal is completed
     event WithdrawalCompleted(bytes32 withdrawalRoot);
 
-    /// @notice Emitted when the `minWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
-    event MinWithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
-
-    /// @notice Emitted when the `strategyWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
-    event StrategyWithdrawalDelayBlocksSet(IStrategy strategy, uint256 previousValue, uint256 newValue);
-
     /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
+     * @param allocationDelay The delay before allocations take effect.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      *
      * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
@@ -195,6 +217,7 @@ interface IDelegationManager is ISignatureUtils {
      */
     function registerAsOperator(
         OperatorDetails calldata registeringOperatorDetails,
+        uint32 allocationDelay,
         string calldata metadataURI
     ) external;
 
@@ -290,12 +313,9 @@ interface IDelegationManager is ISignatureUtils {
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
      * @param withdrawal The Withdrawal to complete.
      * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
-     * This input can be provided with zero length if `receiveAsTokens` is set to 'false' (since in that case, this input will be unused)
-     * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
      * @param receiveAsTokens If true, the shares specified in the withdrawal will be withdrawn from the specified strategies themselves
      * and sent to the caller, through calls to `withdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
      * will simply be transferred to the caller directly.
-     * @dev middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`
      * @dev beaconChainETHStrategy shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
      * any beaconChainETHStrategy shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
      * any other strategies, which will be transferred to the withdrawer.
@@ -303,7 +323,6 @@ interface IDelegationManager is ISignatureUtils {
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
         bool receiveAsTokens
     ) external;
 
@@ -312,38 +331,50 @@ interface IDelegationManager is ISignatureUtils {
      * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
      * @param withdrawals The Withdrawals to complete.
      * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
-     * @param middlewareTimesIndexes One index to reference per Withdrawal. See `completeQueuedWithdrawal` for the usage of a single index.
      * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
      * @dev See `completeQueuedWithdrawal` for relevant dev tags
      */
     function completeQueuedWithdrawals(
         Withdrawal[] calldata withdrawals,
         IERC20[][] calldata tokens,
-        uint256[] calldata middlewareTimesIndexes,
         bool[] calldata receiveAsTokens
     ) external;
 
     /**
-     * @notice Increases a staker's delegated share balance in a strategy.
+     * @notice Increases a staker's delegated share balance in a strategy. Note that before adding to operator shares,
+     * the delegated shares are scaled according to the operator's total magnitude as part of slashing accounting.
+     * The staker's depositScalingFactor is updated here.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
-     * @param shares The number of shares to increase.
+     * @param existingShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
+     * StrategyManager/EigenPodManager for the staker's shares.
+     * @param addedOwnedShares The number of shares to added to the staker's shares in the strategy. This amount will be scaled prior to adding
+     * to the operator's scaled shares.
      *
-     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
+     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated scaled shares in `strategy`.
+     * Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external;
+    function increaseDelegatedShares(
+        address staker,
+        IStrategy strategy,
+        Shares existingShares,
+        OwnedShares addedOwnedShares
+    ) external;
 
     /**
-     * @notice Decreases a staker's delegated share balance in a strategy.
-     * @param staker The address to increase the delegated shares for their operator.
-     * @param strategy The strategy in which to decrease the delegated shares.
-     * @param shares The number of shares to decrease.
+     * @notice Decreases a staker's delegated share balance in a strategy. Note that before removing from operator shares,
+     * the delegated shares are scaled according to the operator's total magnitude as part of slashing accounting. Unlike
+     * `increaseDelegatedShares`, the staker's depositScalingFactor is not updated here.
+     * @param staker The address to increase the delegated scaled shares for their operator.
+     * @param strategy The strategy in which to decrease the delegated scaled shares.
+     * @param removedOwnedShares The number of shares to decremented for the strategy in the
+     * StrategyManager/EigenPodManager
      *
-     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
+     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated scaled shares in `strategy` by `scaledShares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external;
+    function decreaseDelegatedShares(address staker, IStrategy strategy, OwnedShares removedOwnedShares) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
@@ -376,30 +407,15 @@ interface IDelegationManager is ISignatureUtils {
     ) external view returns (uint256);
 
     /**
-     * @notice Given array of strategies, returns array of shares for the operator
-     */
-    function getOperatorShares(
-        address operator,
-        IStrategy[] memory strategies
-    ) external view returns (uint256[] memory);
-
-    /**
-     * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
-     * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
-     * @param strategies The strategies to check withdrawal delays for
-     */
-    function getWithdrawalDelay(
-        IStrategy[] calldata strategies
-    ) external view returns (uint256);
-
-    /**
-     * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
-     * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
+     * @notice returns the total number of delegatedShares (i.e. shares divided by the `operator`'s
+     * totalMagnitude) in `strategy` that are delegated to `operator`.
+     * @notice Mapping: operator => strategy => total number of delegatedShares in the strategy delegated to the operator.
      * @dev By design, the following invariant should hold for each Strategy:
-     * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
-     * = sum (delegateable shares of all stakers delegated to the operator)
+     * (operator's delegatedShares in delegation manager) = sum (delegatedShares above zero of all stakers delegated to operator)
+     * = sum (delegateable delegatedShares of all stakers delegated to the operator)
+     * @dev FKA `operatorShares`
      */
-    function operatorShares(address operator, IStrategy strategy) external view returns (uint256);
+    function operatorDelegatedShares(address operator, IStrategy strategy) external view returns (DelegatedShares);
 
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
@@ -426,22 +442,6 @@ interface IDelegationManager is ISignatureUtils {
      * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
      */
     function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
-
-    /**
-     * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
-     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     * Note that strategies each have a separate withdrawal delay, which can be greater than this value. So the minimum number of blocks that must pass
-     * to withdraw a strategy is MAX(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy])
-     */
-    function minWithdrawalDelayBlocks() external view returns (uint256);
-
-    /**
-     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
-     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     */
-    function strategyWithdrawalDelayBlocks(
-        IStrategy strategy
-    ) external view returns (uint256);
 
     /// @notice return address of the beaconChainETHStrategy
     function beaconChainETHStrategy() external view returns (IStrategy);

@@ -6,6 +6,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
+import "../interfaces/IAVSDirectory.sol";
 
 /**
  * @title Storage variables for the `StrategyManager` contract.
@@ -27,6 +28,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     IDelegationManager public immutable delegation;
     IEigenPodManager public immutable eigenPodManager;
     ISlasher public immutable slasher;
+    IAVSDirectory public immutable avsDirectory;
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -44,7 +46,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      */
     uint256 private __deprecated_withdrawalDelayBlocks;
     /// @notice Mapping: staker => Strategy => number of shares which they currently hold
-    mapping(address => mapping(IStrategy => uint256)) public stakerStrategyShares;
+    mapping(address => mapping(IStrategy => Shares)) public stakerStrategyShares;
     /// @notice Mapping: staker => array of strategies in which they have nonzero shares
     mapping(address => IStrategy[]) public stakerStrategyList;
     /// @notice *Deprecated* mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
@@ -70,12 +72,18 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * if true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
      * and also when performing queueWithdrawals, a staker can only withdraw to themselves
      */
-    mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
+    mapping(IStrategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
-    constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) {
+    constructor(
+        IDelegationManager _delegation,
+        IEigenPodManager _eigenPodManager,
+        ISlasher _slasher,
+        IAVSDirectory _avsDirectory
+    ) {
         delegation = _delegation;
         eigenPodManager = _eigenPodManager;
         slasher = _slasher;
+        avsDirectory = _avsDirectory;
     }
 
     /**

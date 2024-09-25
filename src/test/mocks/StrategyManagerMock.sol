@@ -28,14 +28,12 @@ contract StrategyManagerMock is
     address public strategyWhitelister;
 
     mapping(address => IStrategy[]) public strategiesToReturn;
-    mapping(address => uint256[]) public sharesToReturn;
+    mapping(address => Shares[]) public sharesToReturn;
 
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
-    
-    mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
 
     function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) external
     {
@@ -46,7 +44,7 @@ contract StrategyManagerMock is
 
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
-        returns (uint256) {}
+        returns (OwnedShares) {}
 
 
     function depositBeaconChainETH(address staker, uint256 amount) external{}
@@ -64,10 +62,11 @@ contract StrategyManagerMock is
         bytes memory signature
     )
         external
-        returns (uint256 shares) {}
+        returns (OwnedShares shares) {}
 
-    /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
+    function getStakerStrategyList(
+        address staker
+    ) external view returns (IStrategy[] memory) {}
 
     /**
      * @notice mocks the return value of getDeposits
@@ -75,22 +74,17 @@ contract StrategyManagerMock is
      * @param _strategiesToReturn strategies to return in getDeposits
      * @param _sharesToReturn shares to return in getDeposits
      */
-    function setDeposits(address staker, IStrategy[] calldata _strategiesToReturn, uint256[] calldata _sharesToReturn) external {
+    function setDeposits(address staker, IStrategy[] calldata _strategiesToReturn, Shares[] calldata _sharesToReturn) external {
         require(_strategiesToReturn.length == _sharesToReturn.length, "StrategyManagerMock: length mismatch");
         strategiesToReturn[staker] = _strategiesToReturn;
         sharesToReturn[staker] = _sharesToReturn;
-    }
-
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external {
-        emit UpdatedThirdPartyTransfersForbidden(strategy, value);
-        thirdPartyTransfersForbidden[strategy] = value;
     }
 
     /**
      * @notice Get all details on the staker's deposits and corresponding shares
      * @return (staker's strategies, shares in these strategies)
      */
-    function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
+    function getDeposits(address staker) external view returns (IStrategy[] memory, Shares[] memory) {
         return (strategiesToReturn[staker], sharesToReturn[staker]);
     }
 
@@ -98,6 +92,13 @@ contract StrategyManagerMock is
     function stakerStrats(address staker) external view returns (IStrategy[] memory) {}
 
     uint256 public stakerStrategyListLengthReturnValue;
+
+    /// @notice Returns the current shares of `user` in `strategy`
+    function stakerStrategyShares(
+        address user,
+        IStrategy strategy
+    ) external view returns (Shares shares) {}
+
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
     function stakerStrategyListLength(address /*staker*/) external view returns (uint256) {
         return stakerStrategyListLengthReturnValue;
@@ -111,11 +112,11 @@ contract StrategyManagerMock is
         strategyIsWhitelistedForDeposit[strategy] = value;
     }
 
-    function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
+    function removeShares(address staker, IStrategy strategy, Shares shares) external {}
 
-    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external {}
+    function addShares(address staker, IERC20 token, IStrategy strategy, OwnedShares shares) external {}
     
-    function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external {}
+    function withdrawSharesAsTokens(address recipient, IStrategy strategy, OwnedShares shares, IERC20 token) external {}
 
     /// @notice returns the enshrined beaconChainETH Strategy
     function beaconChainETHStrategy() external view returns (IStrategy) {}
@@ -123,12 +124,10 @@ contract StrategyManagerMock is
     // function withdrawalDelayBlocks() external view returns (uint256) {}
 
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external {
         for (uint256 i = 0; i < strategiesToWhitelist.length; ++i) {
             strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
-            thirdPartyTransfersForbidden[strategiesToWhitelist[i]] = thirdPartyTransfersForbiddenValues[i];
         }
     }
 

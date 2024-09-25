@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "../libraries/SlashingLib.sol";
+
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
+import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IEigenPodManager.sol";
+import "../interfaces/IAllocationManager.sol";
 
 /**
  * @title Storage variables for the `DelegationManager` contract.
@@ -26,6 +30,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         "DelegationApproval(address delegationApprover,address staker,address operator,bytes32 salt,uint256 expiry)"
     );
 
+    /// @notice Minimum withdrawal delay in seconds until all queued withdrawals can be completed.
+    uint32 public immutable MIN_WITHDRAWAL_DELAY;
+
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -33,26 +40,33 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     bytes32 internal _DOMAIN_SEPARATOR;
 
+    /// @notice The AVSDirectory contract for EigenLayer
+    IAVSDirectory public immutable avsDirectory;
+
+    // TODO: Switch these to ShareManagers, but this breaks a lot of tests
+
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
-
-    /// @notice The Slasher contract for EigenLayer
-    ISlasher public immutable slasher;
 
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216_000;
+    /// @notice The Slasher contract for EigenLayer
+    ISlasher public immutable slasher;
+
+    /// @notice The AllocationManager contract for EigenLayer
+    IAllocationManager public immutable allocationManager;
 
     /**
-     * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
-     * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
+     * @notice returns the total number of delegatedShares (i.e. shares divided by the `operator`'s
+     * totalMagnitude) in `strategy` that are delegated to `operator`.
+     * @notice Mapping: operator => strategy => total number of delegatedShares in the strategy delegated to the operator.
      * @dev By design, the following invariant should hold for each Strategy:
-     * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
-     * = sum (delegateable shares of all stakers delegated to the operator)
+     * (operator's delegatedShares in delegation manager) = sum (delegatedShares above zero of all stakers delegated to operator)
+     * = sum (delegateable delegatedShares of all stakers delegated to the operator)
+     * @dev FKA `operatorShares`
      */
-    mapping(address => mapping(IStrategy => uint256)) public operatorShares;
+    mapping(address => mapping(IStrategy => DelegatedShares)) public operatorDelegatedShares;
 
     /**
      * @notice Mapping: operator => OperatorDetails struct
@@ -83,7 +97,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * To withdraw from a strategy, max(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy]) number of blocks must have passed.
      * See mapping strategyWithdrawalDelayBlocks below for per-strategy withdrawal delays.
      */
-    uint256 public minWithdrawalDelayBlocks;
+    uint256 private __deprecated_minWithdrawalDelayBlocks;
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public pendingWithdrawals;
@@ -100,12 +114,26 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
-    mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks;
+    mapping(IStrategy => uint256) private __deprecated_strategyWithdrawalDelayBlocks;
 
-    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
+    /// @notice Mapping: staker => strategy => scaling factor used to calculate the staker's shares in the strategy.
+    /// This is updated upon each deposit based on the staker's currently delegated operator's totalMagnitude.
+    mapping(address => mapping(IStrategy => uint256)) public depositScalingFactors;
+
+    constructor(
+        IStrategyManager _strategyManager,
+        ISlasher _slasher,
+        IEigenPodManager _eigenPodManager,
+        IAVSDirectory _avsDirectory,
+        IAllocationManager _allocationManager,
+        uint32 _MIN_WITHDRAWAL_DELAY
+    ) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
         slasher = _slasher;
+        avsDirectory = _avsDirectory;
+        allocationManager = _allocationManager;
+        MIN_WITHDRAWAL_DELAY = _MIN_WITHDRAWAL_DELAY;
     }
 
     /**
@@ -113,5 +141,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[39] private __gap;
+    uint256[38] private __gap;
 }
