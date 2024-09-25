@@ -37,7 +37,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
-        strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, slasherMock);
+        strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, slasherMock, avsDirectoryMock);
         strategyManager = StrategyManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -66,17 +66,12 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         _strategies[0] = dummyStrat;
         _strategies[1] = dummyStrat2;
         _strategies[2] = dummyStrat3;
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](3);
-        _thirdPartyTransfersForbiddenValues[0] = false;
-        _thirdPartyTransfersForbiddenValues[1] = false;
-        _thirdPartyTransfersForbiddenValues[2] = false;
         for (uint256 i = 0; i < _strategies.length; ++i) {
             cheats.expectEmit(true, true, true, true, address(strategyManager));
             emit StrategyAddedToDepositWhitelist(_strategies[i]);
-            cheats.expectEmit(true, true, true, true, address(strategyManager));
-            emit UpdatedThirdPartyTransfersForbidden(_strategies[i], _thirdPartyTransfersForbiddenValues[i]);
+
         }
-        strategyManager.addStrategiesToDepositWhitelist(_strategies, _thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategies);
 
         addressIsExcludedFromFuzzedInputs[address(reenterer)] = true;
     }
@@ -214,7 +209,6 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
      */
     function _addStrategiesToWhitelist(uint8 numberOfStrategiesToAdd) internal returns (IStrategy[] memory) {
         IStrategy[] memory strategyArray = new IStrategy[](numberOfStrategiesToAdd);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](numberOfStrategiesToAdd);
         // loop that deploys a new strategy and adds it to the array
         for (uint256 i = 0; i < numberOfStrategiesToAdd; ++i) {
             IStrategy _strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
@@ -227,7 +221,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
             cheats.expectEmit(true, true, true, true, address(strategyManager));
             emit StrategyAddedToDepositWhitelist(strategyArray[i]);
         }
-        strategyManager.addStrategiesToDepositWhitelist(strategyArray, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategyArray);
 
         for (uint256 i = 0; i < numberOfStrategiesToAdd; ++i) {
             assertTrue(strategyManager.strategyIsWhitelistedForDeposit(strategyArray[i]), "strategy not whitelisted");
@@ -337,13 +331,12 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = IStrategy(address(reenterer));
         for (uint256 i = 0; i < _strategy.length; ++i) {
             cheats.expectEmit(true, true, true, true, address(strategyManager));
             emit StrategyAddedToDepositWhitelist(_strategy[i]);
         }
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         reenterer.prepareReturnData(abi.encode(amount));
@@ -369,10 +362,9 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
 
         _strategy[0] = dummyStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         address staker = address(this);
@@ -393,9 +385,8 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = dummyStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         address staker = address(this);
@@ -415,9 +406,8 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = dummyStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         address staker = address(this);
@@ -437,10 +427,9 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
 
         _strategy[0] = dummyStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         address staker = address(this);
@@ -475,10 +464,9 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
 
         _strategy[0] = dummyStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         address staker = address(this);
@@ -684,15 +672,13 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
-
         
         _strategy[0] = IStrategy(address(reenterer));
         for (uint256 i = 0; i < _strategy.length; ++i) {
             cheats.expectEmit(true, true, true, true, address(strategyManager));
             emit StrategyAddedToDepositWhitelist(_strategy[i]);
         }
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         address staker = cheats.addr(privateKey);
@@ -835,9 +821,9 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
 
     /**
      * @notice deposit single strategy and removeShares() for less than the deposited amount
-     * Shares should be updated correctly with stakerStrategyListLength unchanged
+     * OwnedShares should be updated correctly with stakerStrategyListLength unchanged
      */
-    function testFuzz_RemoveSharesLessThanDeposit(
+    function testFuzz_RemoveScaledSharesLessThanDeposit(
         address staker,
         uint256 depositAmount,
         uint256 removeSharesAmount
@@ -936,10 +922,10 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
 
     /**
      * @notice testing removeShares() function with 3 strategies deposited.
-     * Removing Shares could result in removing from staker strategy list if depositAmounts[i] == sharesAmounts[i].
+     * Removing OwnedShares could result in removing from staker strategy list if depositAmounts[i] == sharesAmounts[i].
      * Only callable by DelegationManager
      */
-    function testFuzz_RemoveShares(uint256[3] memory depositAmounts, uint256[3] memory sharesAmounts) external {
+    function testFuzz_RemoveScaledShares(uint256[3] memory depositAmounts, uint256[3] memory sharesAmounts) external {
         address staker = address(this);
         IStrategy[] memory strategies = new IStrategy[](3);
         strategies[0] = dummyStrat;
@@ -1019,7 +1005,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         assertEq(sharesBefore, 0, "Staker has already deposited into this strategy");
         assertFalse(_isDepositedStrategy(staker, dummyStrat), "strategy should not be deposited");
 
-        delegationManagerMock.addShares(strategyManager, staker, dummyToken, dummyStrat, amount);
+        delegationManagerMock.addOwnedShares(strategyManager, staker, dummyToken, dummyStrat, amount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, dummyStrat);
         assertEq(
@@ -1031,7 +1017,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         assertTrue(_isDepositedStrategy(staker, dummyStrat), "strategy should be deposited");
     }
 
-    function testFuzz_AddSharesToExistingShares(
+    function testFuzz_AddScaledSharesToExistingShares(
         address staker,
         uint256 sharesAmount
     ) external filterFuzzedAddressInputs(staker) {
@@ -1044,7 +1030,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         assertEq(sharesBefore, initialAmount, "Staker has not deposited amount into strategy");
         assertTrue(_isDepositedStrategy(staker, strategy), "strategy should be deposited");
 
-        delegationManagerMock.addShares(strategyManager, staker, dummyToken, dummyStrat, sharesAmount);
+        delegationManagerMock.addOwnedShares(strategyManager, staker, dummyToken, dummyStrat, sharesAmount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, dummyStrat);
         assertEq(
@@ -1079,10 +1065,9 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
             // whitelist the strategy for deposit
             cheats.startPrank(strategyManager.owner());
             IStrategy[] memory _strategy = new IStrategy[](1);
-            bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
 
             _strategy[0] = dummyStrat;
-            strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+            strategyManager.addStrategiesToDepositWhitelist(_strategy);
             cheats.stopPrank();
         }
 
@@ -1173,7 +1158,6 @@ contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyMan
     ) external filterFuzzedAddressInputs(notStrategyWhitelister) {
         cheats.assume(notStrategyWhitelister != strategyManager.strategyWhitelister());
         IStrategy[] memory strategyArray = new IStrategy[](1);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         IStrategy _strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
         strategyArray[0] = _strategy;
 
@@ -1184,32 +1168,28 @@ contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyMan
 
     function test_AddSingleStrategyToWhitelist() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         IStrategy strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
         strategyArray[0] = strategy;
         assertFalse(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should not be whitelisted");
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit StrategyAddedToDepositWhitelist(strategy);
-        strategyManager.addStrategiesToDepositWhitelist(strategyArray, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategyArray);
         assertTrue(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should be whitelisted");
     }
 
     function test_AddAlreadyWhitelistedStrategy() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         IStrategy strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
         strategyArray[0] = strategy;
         assertFalse(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should not be whitelisted");
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit StrategyAddedToDepositWhitelist(strategy);
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit UpdatedThirdPartyTransfersForbidden(strategy, false);
-        strategyManager.addStrategiesToDepositWhitelist(strategyArray, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategyArray);
         assertTrue(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should be whitelisted");
         // Make sure event not emitted by checking logs length
         cheats.recordLogs();
         uint256 numLogsBefore = cheats.getRecordedLogs().length;
-        strategyManager.addStrategiesToDepositWhitelist(strategyArray, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategyArray);
         uint256 numLogsAfter = cheats.getRecordedLogs().length;
         assertEq(numLogsBefore, numLogsAfter, "event emitted when strategy already whitelisted");
         assertTrue(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should still be whitelisted");
@@ -1261,12 +1241,11 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
         IStrategy[] memory strategyArray = new IStrategy[](1);
         IStrategy strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
         strategyArray[0] = strategy;
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         assertFalse(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should not be whitelisted");
         // Add strategy to whitelist first
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit StrategyAddedToDepositWhitelist(strategy);
-        strategyManager.addStrategiesToDepositWhitelist(strategyArray, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategyArray);
         assertTrue(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should be whitelisted");
 
         // Now remove strategy from whitelist

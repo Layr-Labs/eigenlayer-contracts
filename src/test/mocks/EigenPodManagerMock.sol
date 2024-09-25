@@ -17,7 +17,13 @@ contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
         _initializePauser(_pauserRegistry, 0);
     }
 
-    function slasher() external view returns(ISlasher) {}
+    function removeShares(address staker, IStrategy strategy, Shares shares) external {}
+
+    function addOwnedShares(address staker, IStrategy strategy, IERC20 token, OwnedShares shares) external {}
+
+    function withdrawSharesAsTokens(address recipient, IStrategy strategy, IERC20 token, OwnedShares shares) external {}
+
+    function stakerStrategyShares(address user, IStrategy strategy) external view returns (Shares shares) {}
 
     function createPod() external returns(address) {}
 
@@ -41,6 +47,10 @@ contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
         return false;
     }
 
+    function podOwnerScaledShares(address podOwner) external view returns (int256) {
+        return podShares[podOwner];
+    }
+
     function podOwnerShares(address podOwner) external view returns (int256) {
         return podShares[podOwner];
     }
@@ -49,14 +59,14 @@ contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
         podShares[podOwner] = shares;
     }
 
-    function addShares(address /*podOwner*/, uint256 shares) external pure returns (uint256) {
+    function addShares(address /*podOwner*/, OwnedShares shares) external pure returns (uint256, uint256) {
         // this is the "increase in delegateable tokens"
-        return (shares);
+        // return (shares);
     }
 
-    function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external {}
+    function withdrawSharesAsTokens(address podOwner, address destination, OwnedShares shares) external {}
 
-    function removeShares(address podOwner, uint256 shares) external {}
+    function removeShares(address podOwner, Shares shares) external {}
 
     function numPods() external view returns (uint256) {}
 

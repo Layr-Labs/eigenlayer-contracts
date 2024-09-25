@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/IStrategyManager.sol";
-import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IRewardsCoordinator.sol";
+import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IStrategyManager.sol";
 
 /**
  * @title Storage variables for the `RewardsCoordinator` contract.
@@ -12,11 +12,41 @@ import "../interfaces/IRewardsCoordinator.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
-    /**
-     *
-     *                            CONSTANTS AND IMMUTABLES
-     *
-     */
+    // Constants
+
+    /// @notice The EIP-712 typehash for the contract's domain
+    bytes32 internal constant DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+
+    /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
+    uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
+
+    /// @dev Index for flag that pauses calling createAVSRewardsSubmission
+    uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
+    /// @dev Index for flag that pauses calling createRewardsForAllSubmission
+    uint8 internal constant PAUSED_REWARDS_FOR_ALL_SUBMISSION = 1;
+    /// @dev Index for flag that pauses calling processClaim
+    uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
+    /// @dev Index for flag that pauses submitRoots and disableRoot
+    uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
+    /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
+    uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
+
+    /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
+    uint8 internal constant EARNER_LEAF_SALT = 0;
+    /// @dev Salt for the token leaf, meant to distinguish from earnerLeaf since they have the same sized data
+    uint8 internal constant TOKEN_LEAF_SALT = 1;
+
+    /// @notice Canonical, virtual beacon chain ETH strategy
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
+    // Immtuables
+
+    /// @notice The DelegationManager contract for EigenLayer
+    IDelegationManager public immutable delegationManager;
+
+    /// @notice The StrategyManager contract for EigenLayer
+    IStrategyManager public immutable strategyManager;
 
     /// @notice The interval in seconds at which the calculation for rewards distribution is done.
     /// @dev RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 week
@@ -32,17 +62,10 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice The cadence at which a snapshot is taken offchain for calculating rewards distributions
     uint32 internal constant SNAPSHOT_CADENCE = 1 days;
 
-    /// @notice The DelegationManager contract for EigenLayer
-    IDelegationManager public immutable delegationManager;
+    /// @dev Chain ID at the time of contract deployment
+    uint256 internal immutable ORIGINAL_CHAIN_ID;
 
-    /// @notice The StrategyManager contract for EigenLayer
-    IStrategyManager public immutable strategyManager;
-
-    /**
-     *
-     *                                    STORAGE
-     *
-     */
+    // Mutatables
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -89,6 +112,8 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// if rewards submission hash for all stakers and operators has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllEarnersHash;
 
+    // Construction
+
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
@@ -99,13 +124,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         uint32 _GENESIS_REWARDS_TIMESTAMP
     ) {
         require(
-            _GENESIS_REWARDS_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator: GENESIS_REWARDS_TIMESTAMP must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            _GENESIS_REWARDS_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0, InvalidGenesisRewardsTimestampRemainder()
         );
-        require(
-            _CALCULATION_INTERVAL_SECONDS % SNAPSHOT_CADENCE == 0,
-            "RewardsCoordinator: CALCULATION_INTERVAL_SECONDS must be a multiple of SNAPSHOT_CADENCE"
-        );
+        require(_CALCULATION_INTERVAL_SECONDS % SNAPSHOT_CADENCE == 0, InvalidCalculationIntervalSecondsRemainder());
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
         CALCULATION_INTERVAL_SECONDS = _CALCULATION_INTERVAL_SECONDS;
@@ -113,6 +134,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         MAX_RETROACTIVE_LENGTH = _MAX_RETROACTIVE_LENGTH;
         MAX_FUTURE_LENGTH = _MAX_FUTURE_LENGTH;
         GENESIS_REWARDS_TIMESTAMP = _GENESIS_REWARDS_TIMESTAMP;
+        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**

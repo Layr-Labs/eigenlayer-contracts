@@ -69,14 +69,12 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
             eigenPodManager,
             EIGENPOD_GENESIS_TIME
         );
-        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
-        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager);
         eigenPodManagerImplementation = new EigenPodManager(
             IETHPOSDeposit(ETHPOSDepositAddress),
             eigenPodBeacon,
             strategyManager,
-            slasher,
             delegationManager
         );
     }
@@ -100,11 +98,6 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation)
-        );
-        // Slasher
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation)
         );
         // EigenPodManager
         eigenLayerProxyAdmin.upgrade(
@@ -135,7 +128,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         _parseInitialDeploymentParams("script/configs/mainnet/M2_mainnet_upgrade.config.json");
 
         Tx[] memory txs = new Tx[](11);
-        // upgrade the DelegationManager, Slasher, StrategyManager, DelayedWithdrawalRouter, EigenPodManager, & EigenPod contracts
+        // upgrade the DelegationManager, StrategyManager, DelayedWithdrawalRouter, EigenPodManager, & EigenPod contracts
         txs[0] = Tx(
             address(eigenLayerProxyAdmin),
             0,
@@ -146,15 +139,15 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             )
         );
 
-        txs[1] = Tx(
-            address(eigenLayerProxyAdmin),
-            0,
-            abi.encodeWithSelector(
-                ProxyAdmin.upgrade.selector, 
-                ITransparentUpgradeableProxy(payable(address(slasher))), 
-                slasherImplementation
-            )
-        );
+        // txs[1] = Tx(
+        //     address(eigenLayerProxyAdmin),
+        //     0,
+        //     abi.encodeWithSelector(
+        //         ProxyAdmin.upgrade.selector, 
+        //         ITransparentUpgradeableProxy(payable(address(slasher))), 
+        //         slasherImplementation
+        //     )
+        // );
 
         txs[2] = Tx(
             address(eigenLayerProxyAdmin),

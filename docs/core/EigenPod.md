@@ -150,7 +150,7 @@ Checkpoint proofs comprise the bulk of proofs submitted to an `EigenPod`. Comple
 * when the pod has accumulated fees / partial withdrawals from validators
 * whether any validators on the beacon chain have increased/decreased in balance
 
-When a checkpoint is completed, shares are updated accordingly for each of these events. Shares can be withdrawn via the `DelegationManager` withdrawal queue (see [DelegationManager: Undelegating and Withdrawing](./DelegationManager.md#undelegating-and-withdrawing)), which means an `EigenPod's` checkpoint proofs also play an important role in allowing Pod Owners to exit funds from the system.
+When a checkpoint is completed, shares are updated accordingly for each of these events. OwnedShares can be withdrawn via the `DelegationManager` withdrawal queue (see [DelegationManager: Undelegating and Withdrawing](./DelegationManager.md#undelegating-and-withdrawing)), which means an `EigenPod's` checkpoint proofs also play an important role in allowing Pod Owners to exit funds from the system.
 
 _Important Notes:_
 * `EigenPods` can only have **one active checkpoint** at a given time, and once started, checkpoints **cannot be cancelled** (only completed)
