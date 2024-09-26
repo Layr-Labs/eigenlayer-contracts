@@ -278,11 +278,14 @@ contract AllocationManager is
      * In addition to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
      */
     function _updateFreeMagnitude(address operator, IStrategy strategy, uint16 numToComplete) internal {
-        OperatorMagnitudeInfo storage info = operatorMagnitudeInfo[operator][strategy];
+        OperatorMagnitudeInfo memory info = operatorMagnitudeInfo[operator][strategy];
+        
         (uint64 freeMagnitudeToAdd, uint192 completed) =
             _getPendingFreeMagnitude(operator, strategy, numToComplete, info.nextPendingFreeMagnitudeIndex);
         info.freeMagnitude += freeMagnitudeToAdd;
         info.nextPendingFreeMagnitudeIndex += completed;
+
+        operatorMagnitudeInfo[operator][strategy] = info;
     }
 
     /**
