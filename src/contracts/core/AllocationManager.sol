@@ -256,17 +256,16 @@ contract AllocationManager is
     function _setAllocationDelay(address operator, uint32 delay) internal {
         require(delay != 0, InvalidDelay());
 
-        AllocationDelayInfo storage delayInfo = _allocationDelayInfo[operator];
+        AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
-        bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
-
-        if (pendingInEffect) {
-            delayInfo.delay = delayInfo.pendingDelay;
+        if (info.pendingDelay != 0 && block.timestamp >= info.pendingDelayEffectTimestamp) {
+            info.delay = info.pendingDelay;
         }
 
-        delayInfo.pendingDelay = delay;
-        delayInfo.pendingDelayEffectTimestamp = uint32(block.timestamp + ALLOCATION_DELAY_CONFIGURATION_DELAY);
+        info.pendingDelay = delay;
+        info.pendingDelayEffectTimestamp = uint32(block.timestamp + ALLOCATION_DELAY_CONFIGURATION_DELAY);
 
+        _allocationDelayInfo[operator] = info;
         emit AllocationDelaySet(operator, delay);
     }
 
@@ -454,15 +453,13 @@ contract AllocationManager is
     function allocationDelay(
         address operator
     ) public view returns (bool isSet, uint32 delay) {
-        AllocationDelayInfo memory delayInfo = _allocationDelayInfo[operator];
+        AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
-        bool pendingInEffect = delayInfo.pendingDelay != 0 && block.timestamp >= delayInfo.pendingDelayEffectTimestamp;
-
-        isSet = delayInfo.delay != 0 || pendingInEffect;
-
-        if (pendingInEffect) return (isSet, delayInfo.pendingDelay);
-
-        return (isSet, delayInfo.delay);
+        if (info.pendingDelay != 0 && block.timestamp >= info.pendingDelayEffectTimestamp) {
+            return (true, info.pendingDelay);
+        } else {
+            return (info.delay != 0, info.delay);
+        }
     }
 
     /**
