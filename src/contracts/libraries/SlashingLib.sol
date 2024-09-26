@@ -10,13 +10,13 @@ uint64 constant WAD = 1e18;
 
 /*
  * There are 3 types of shares:
- *      1. ownedShares
+ *      1. shares
  *          - These can be converted to an amount of tokens given a strategy
  *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens 
  *              in the case of EigenPods)
  *          - These are comparable between operators and stakers.
  *          - These live in the storage of StrategyManager strategies: 
- *              - `totalShares` is the total amount of shares delegated to a strategy
+ *              - `totalShares` is the total amount of shares that exist in a strategy
  *      2. delegatedShares
  *          - These can be converted to shares given an operator and a strategy
  *              - by multiplying by the operator's totalMagnitude for the strategy
@@ -25,7 +25,7 @@ uint64 constant WAD = 1e18;
  *          - These live in the storage of the DelegationManager:
  *              - `delegatedShares` is the total amount of delegatedShares delegated to an operator for a strategy
  *              - `withdrawal.delegatedShares` is the amount of delegatedShares in a withdrawal          
- *      3. shares 
+ *      3. ownedShares 
  *          - These can be converted into delegatedShares given a staker and a strategy
  *              - by multiplying by the staker's depositScalingFactor for the strategy
  *          - These values automatically update their conversion into tokens
@@ -65,17 +65,24 @@ library SlashingLib {
     }
 
     function toDelegatedShares(
-        Shares shares,
-        uint256 depositScalingFactor
+        OwnedShares ownedShares, 
+        uint256 magnitude
     ) internal pure returns (DelegatedShares) {
-        if (depositScalingFactor == 0) {
-            depositScalingFactor = WAD;
-        }
+        // forgefmt: disable-next-item
+        return ownedShares
+            .unwrap()
+            .mulWad(magnitude)
+            .wrapDelegated();
+    }
 
+    function toDelegatedShares(
+        Shares shares,
+        uint256 magnitude
+    ) internal pure returns (DelegatedShares) {
         // forgefmt: disable-next-item
         return shares
             .unwrap()
-            .mulWad(depositScalingFactor)
+            .mulWad(magnitude)
             .wrapDelegated();
     }
 
@@ -90,15 +97,69 @@ library SlashingLib {
             .wrapOwned();
     }
 
-    function toDelegatedShares(
-        OwnedShares shares, 
-        uint256 magnitude
-    ) internal pure returns (DelegatedShares) {
-        // forgefmt: disable-next-item
+    function toOwnedShares(
+        Shares shares,
+        uint64 stakerScalingFactor,
+        uint64 operatorMagnitude
+    ) internal pure returns (OwnedShares) {
+        /**
+         * ownedShares = shares * stakerScalingFactor * operatorMagnitude
+         * stakerScalingFactor = storedScalingFactor / WAD
+         * operatorMagnitude = storedOperatorMagnitude / WAD
+         * ownedShares = shares * (storedScalingFactor / WAD) * (storedOperatorMagnitude / WAD)
+         */
         return shares
             .unwrap()
-            .divWad(magnitude)
-            .wrapDelegated();
+            .mulWad(stakerScalingFactor)
+            .mulWad(operatorMagnitude)
+            .wrapOwned();
+    }
+
+    function calculateNewDepositScalingFactor(
+        Shares currentShares,
+        Shares addedShares,
+        uint64 stakerScalingFactor,
+        uint64 operatorMagnitude
+    ) internal pure returns (uint64) {
+        /**
+         * Base Equations:
+         * (1) newShares = currentShares + addedShares
+         * (2) newOwnedShares = currentOwnedShares + addedShares
+         * (3) newOwnedShares = newShares * newStakerScalingFactor * newOperatorMagnitude
+         * 
+         * Plugging (3) into (2):
+         * (4) newShares * newStakerScalingFactor * newOperatorMagnitude = currentOwnedShares + addedShares
+         * 
+         * Solving for newStakerScalingFactor
+         * (5) newStakerScalingFactor = (ownedShares + addedShares) / (newShares * newOperatorMagnitude)
+         * 
+         * We also know that the operatorMagnitude remains constant on deposits, thus
+         * (6) newOperatorMagnitude = oldOperatorMagnitude
+         * 
+         * Plugging in (6) and (1) into (5):
+         * (7) newStakerScalingFactor = (ownedShares + addedShares) / ((currentShares + addedShares) * oldOperatorMagnitude)
+         * Note that magnitudes must be divided by WAD for precision. Thus,
+         * 
+         * (8) newStakerScalingFactor = (ownedShares + addedShares) / ((currentShares + addedShares) * oldOperatorMagnitude / WAD)
+         * (9) newStakerScalingFactor = (ownedShares + addedShares) / ((currentShares + addedShares) / WAD) * (oldOperatorMagnitude / WAD))
+         */
+
+        // Step 1: Calculate Numerator
+        OwnedShares currentOwnedShares = currentShares.toOwnedShares(stakerScalingFactor, operatorMagnitude);
+
+        // Step 2: Compute currentShares + addedShares
+        uint256 ownedPlusAddedShares = currentOwnedShares.add(addedShares).unwrap();
+
+        // Step 3: Calculate newStakerScalingFactor
+        // Note: We divide by operatorMagnitude to preserve 
+
+        //TODO: figure out if we only need to do one divWad here
+        uint256 newStakerScalingFactor = 
+            ownedPlusAddedShares
+            .divWad(currentShares.unwrap() + addedOwnedShares.unwrap())
+            .divWad(operatorMagnitude);
+
+        return newStakerScalingFactor;
     }
 
     // MATH
@@ -147,6 +208,16 @@ library SlashingLib {
 
     function divWad(uint256 x, uint256 y) internal pure returns (uint256) {
         return x.mulDiv(WAD, y);
+    }
+
+    // COMPARISONS
+
+    function isZero(Shares x) internal pure returns (bool) {
+        return x.unwrap() == 0;
+    }
+
+    function lte(Shares x, Shares y) internal pure returns (bool) {
+        return x.unwrap() <= y.unwrap();
     }
 
     // TYPE CASTING

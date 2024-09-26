@@ -104,7 +104,7 @@ contract StrategyManager is
         IStrategy strategy,
         IERC20 token,
         uint256 amount
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (OwnedShares shares) {
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (Shares shares) {
         shares = _depositIntoStrategy(msg.sender, strategy, token, amount);
     }
 
@@ -135,7 +135,7 @@ contract StrategyManager is
         address staker,
         uint256 expiry,
         bytes memory signature
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (OwnedShares shares) {
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (Shares shares) {
         require(expiry >= block.timestamp, SignatureExpired());
         // calculate struct hash, then increment `staker`'s nonce
         uint256 nonce = nonces[staker];
@@ -183,6 +183,7 @@ contract StrategyManager is
         IERC20 token,
         OwnedShares ownedShares
     ) external onlyDelegationManager {
+        // TODO: add Shares type to StrategyBase
         strategy.withdraw(staker, token, ownedShares.unwrap());
     }
 
@@ -237,36 +238,36 @@ contract StrategyManager is
      * @param staker The address to add shares to
      * @param token The token that is being deposited (used for indexing)
      * @param strategy The Strategy in which the `staker` is receiving shares
-     * @param ownedShares The amount of ownedShares to grant to the `staker`
+     * @param shares The amount of shares to grant to the `staker`
      * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
      * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addOwnedShares(address staker, IERC20 token, IStrategy strategy, OwnedShares ownedShares) internal {
+    function _addShares(address staker, IERC20 token, IStrategy strategy, Shares sharesToAdd) internal {
         // sanity checks on inputs
         require(staker != address(0), StakerAddressZero());
-        require(ownedShares.unwrap() != 0, SharesAmountZero());
+        require(!sharesToAdd.isZero(), SharesAmountZero());
 
         Shares existingShares = stakerStrategyShares[staker][strategy];
 
-        // if they dont have existing ownedShares of this strategy, add it to their strats
-        if (existingShares.unwrap()== 0) {
+        // if they dont have existing shares of this strategy, add it to their strats
+        if (existingShares.isZero()) {
             require(stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, MaxStrategiesExceeded());
             stakerStrategyList[staker].push(strategy);
         }
 
-        // add the returned ownedShares to their existing shares for this strategy
-        stakerStrategyShares[staker][strategy] = existingShares.add(ownedShares.unwrap()).wrapShares();
+        // add the returned shares to their existing shares for this strategy
+        stakerStrategyShares[staker][strategy] = existingShares.add(sharesToAdd);
 
         // Increase shares delegated to operator, if needed
         delegation.increaseDelegatedShares({
             staker: staker,
             strategy: strategy,
             existingShares: existingShares,
-            addedOwnedShares: ownedShares
+            addedShares: sharesToAdd
         });
 
-        emit Deposit(staker, token, strategy, ownedShares);
+        emit Deposit(staker, token, strategy, sharesToAdd);
     }
 
     /**
@@ -276,50 +277,51 @@ contract StrategyManager is
      * @param strategy The Strategy contract to deposit into.
      * @param token The ERC20 token to deposit.
      * @param amount The amount of `token` to deposit.
-     * @return ownedShares The amount of *new* ownedShares in `strategy` that have been credited to the `staker`.
+     * @return shares The amount of *new* shares in `strategy` that have been credited to the `staker`.
      */
     function _depositIntoStrategy(
         address staker,
         IStrategy strategy,
         IERC20 token,
         uint256 amount
-    ) internal onlyStrategiesWhitelistedForDeposit(strategy) returns (OwnedShares ownedShares) {
+    ) internal onlyStrategiesWhitelistedForDeposit(strategy) returns (Shares shares) {
         // transfer tokens from the sender to the strategy
         token.safeTransferFrom(msg.sender, address(strategy), amount);
 
         // deposit the assets into the specified strategy and get the equivalent amount of shares in that strategy
-        ownedShares = strategy.deposit(token, amount).wrapOwned();
+        // TODO: should we use Shares type in StrategyBase?
+        uint256 depositedShares = strategy.deposit(token, amount);
 
         // add the returned shares to the staker's existing shares for this strategy
-        _addOwnedShares(staker, token, strategy, ownedShares);
+        _addShares(staker, token, strategy, depositedShares);
 
-        return ownedShares;
+        return depositedShares.wrapShares();
     }
 
     /**
-     * @notice Decreases the shares that `staker` holds in `strategy` by `shareAmount`.
+     * @notice Decreases the shares that `staker` holds in `strategy` by `sharesToDecrement`.
      * @param staker The address to decrement shares from
      * @param strategy The strategy for which the `staker`'s shares are being decremented
-     * @param shareAmount The amount of shares to decrement
+     * @param sharesToDecrement The amount of shares to decrement
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
-    function _removeShares(address staker, IStrategy strategy, Shares shareAmount) internal returns (bool) {
+    function _removeShares(address staker, IStrategy strategy, Shares sharesToDecrement) internal returns (bool) {
         // sanity checks on inputs
-        require(shareAmount.unwrap() != 0, SharesAmountZero());
+        require(!sharesToDecrement.isZero(), SharesAmountZero());
 
         //check that the user has sufficient shares
         Shares userShares = stakerStrategyShares[staker][strategy];
 
-        require(shareAmount.unwrap() <= userShares.unwrap(), SharesAmountTooHigh());
+        require(sharesToDecrement.lte(userShares), SharesAmountTooHigh());
 
-        userShares = userShares.sub(shareAmount.unwrap()).wrapShares();
+        userShares = userShares.sub(sharesToDecrement);
     
         // subtract the shares from the staker's existing shares for this strategy
         stakerStrategyShares[staker][strategy] = userShares;
 
         // if no existing shares, remove the strategy from the staker's dynamic array of strategies
-        if (userShares.unwrap() == 0) {
+        if (userShares.isZero()) {
             _removeStrategyFromStakerStrategyList(staker, strategy);
 
             // return true in the event that the strategy was removed from stakerStrategyList[staker]

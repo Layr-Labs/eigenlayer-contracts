@@ -371,7 +371,7 @@ contract DelegationManager is
      * @param strategy The strategy in which to increase the delegated shares.
      * @param existingShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
-     * @param addedOwnedShares The number of shares to added to the staker's shares in the strategy
+     * @param addedShares The shares added to the staker's shares in the strategy
      *
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated delegatedShares in `strategy`.
      * Otherwise does nothing.
@@ -381,7 +381,7 @@ contract DelegationManager is
         address staker,
         IStrategy strategy,
         Shares existingShares,
-        OwnedShares addedOwnedShares
+        Shares addedShares
     ) external onlyStrategyManagerOrEigenPodManager {
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
@@ -394,7 +394,7 @@ contract DelegationManager is
                 staker: staker,
                 strategy: strategy,
                 existingShares: existingShares,
-                addedOwnedShares: addedOwnedShares,
+                addedShares: addedShares,
                 totalMagnitude: totalMagnitude
             });
         }
@@ -516,7 +516,7 @@ contract DelegationManager is
                 operator: operator, 
                 staker: staker, 
                 strategy: strategies[i],
-                existingShares: uint256(0).wrapShares(),
+                existingShares: Shares(0),
                 addedOwnedShares: ownedShares[i],
                 totalMagnitude: totalMagnitudes[i]
             });
@@ -589,7 +589,7 @@ contract DelegationManager is
      * @param staker The staker to increase the depositScalingFactor for
      * @param strategy The strategy to increase the delegated delegatedShares and the depositScalingFactor for
      * @param existingShares The number of deposit shares the staker already has in the strategy.
-     * @param addedOwnedShares The shares added to the staker in the StrategyManager/EigenPodManager
+     * @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
      * @param totalMagnitude The current total magnitude of the operator for the strategy
      */
     function _increaseDelegation(
@@ -597,19 +597,20 @@ contract DelegationManager is
         address staker,
         IStrategy strategy,
         Shares existingShares,
-        OwnedShares addedOwnedShares,
+        Shares addedShares,
         uint64 totalMagnitude
     ) internal {
         _updateDepositScalingFactor({
             staker: staker,
             strategy: strategy,
             existingShares: existingShares,
-            addedOwnedShares: addedOwnedShares,
+            addedShares: addedShares,
             totalMagnitude: totalMagnitude
         });
 
         // based on total magnitude, update operators delegatedShares
-        DelegatedShares delegatedShares = addedOwnedShares.toDelegatedShares(totalMagnitude);
+        DelegatedShares delegatedShares = addedShares.toDelegatedShares(totalMagnitude);
+        
         // forgefmt: disable-next-line
         operatorDelegatedShares[operator][strategy] = operatorDelegatedShares[operator][strategy].add(delegatedShares);
 
@@ -666,7 +667,7 @@ contract DelegationManager is
             // check sharesToWithdraw is valid
             // but for inputted strategies
             Shares sharesWithdrawable = shareManager.stakerStrategyShares(staker, strategies[i]);
-            require(sharesToWithdraw.unwrap() <= sharesWithdrawable.unwrap(), WithdrawalExeedsMax());
+            require(sharesToWithdraw.lte(sharesWithdrawable), WithdrawalExeedsMax());
 
             // Similar to `isDelegated` logic
             if (operator != address(0)) {
@@ -742,37 +743,17 @@ contract DelegationManager is
         IStrategy strategy,
         uint64 totalMagnitude,
         Shares existingShares,
-        OwnedShares addedOwnedShares
-    ) internal {
+        Shares addedShares
+    ) internal returns (uint256 newDepositScalingFactor) {
         uint256 newDepositScalingFactor;
-        if (existingShares.unwrap() == 0) {
+        if (existingShares.isZero()) {
             newDepositScalingFactor = WAD / totalMagnitude;
         } else {
-            // otherwise since
-            //
-            // newShares
-            //      = existingShares + addedShares
-            //      = existingPrincipalShares.toDelegatedShares(stakerScalingFactors[staker][strategy).toOwnedShares(totalMagnitude) + addedShares
-            //
-            // and it also is
-            //
-            // newShares
-            //     = newPrincipalShares.toDelegatedShares(stakerScalingFactors[staker][strategy).toOwnedShares(totalMagnitude)
-            //     = newPrincipalShares * newDepositScalingFactor / WAD * totalMagnitude / WAD 
-            //     = (existingPrincipalShares + addedShares) * newDepositScalingFactor / WAD * totalMagnitude / WAD 
-            //
-            // we can solve for
-            //
-            OwnedShares existingOwnedShares =
-                existingShares
-                .toDelegatedShares(depositScalingFactors[staker][strategy])
-                .toOwnedShares(totalMagnitude);
-            newDepositScalingFactor =
-                existingOwnedShares
-                .add(addedOwnedShares)
-                .unwrap()
-                .divWad(existingShares.unwrap() + addedOwnedShares.unwrap())
-                .divWad(totalMagnitude);
+            newDepositScalingFactor = existingShares.calculateNewScalingFactor(
+                addedShares: addedShares,
+                oldStakerScalingFactor: depositScalingFactors[staker][strategy],
+                totalMagnitude: totalMagnitude
+            );
         }
 
         // update the staker's depositScalingFactor
@@ -854,9 +835,9 @@ contract DelegationManager is
     }
 
     /// @notice a legacy function that returns the total delegated shares for an operator and strategy
-    function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
+    function operatorShares(address operator, IStrategy strategy) public view returns (DelegatedShares) {
         uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
-        return operatorDelegatedShares[operator][strategy].toOwnedShares(totalMagnitude).unwrap();
+        return operatorDelegatedShares[operator][strategy].toOwnedShares(totalMagnitude);
     }
 
     /**
@@ -884,9 +865,10 @@ contract DelegationManager is
                 uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategies[i]);
                 
                 // forgefmt: disable-next-item
-                ownedShares[i] = shares
-                    .toDelegatedShares(depositScalingFactors[staker][strategies[i]])
-                    .toOwnedShares(totalMagnitude);
+                ownedShares[i] = shares.toOwnedShares(
+                    stakerScalingFactor: depositScalingFactors[staker][strategies[i]],
+                    operatorMagnitude: totalMagnitude
+                );
             }
         }
         return ownedShares;
@@ -911,7 +893,7 @@ contract DelegationManager is
         OwnedShares[] memory shares = getDelegatableShares(staker, strategies);
 
         // if the last shares are 0, remove them
-        if (shares[strategies.length - 1].unwrap() == 0) {
+        if (shares[strategies.length - 1].isZero()) {
             // resize the arrays
             assembly {
                 mstore(strategies, sub(mload(strategies), 1))
