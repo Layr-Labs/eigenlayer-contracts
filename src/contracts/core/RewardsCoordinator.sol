@@ -210,14 +210,12 @@ contract RewardsCoordinator is
     /*
      * @notice Facilitates the distribution of rewards to participants through the UniPRInt V1.1 system.
      * @dev The function leverages AVS-defined logic and external data for reward calculations.
-     * @param avs The address of the AVS responsible for managing the reward distribution.
      * @param token The address of the ERC20 token used for rewards.
      * @param amount The total amount of tokens to be rewarded.
      * @param contentHash The keccak256 hash of the JSON manifest file that lists the earners and their rewards.
      * @param contentURI The URI where the JSON manifest file is publicly accessible.
      */
     function rewardParticipants(
-        address avs,
         IERC20 token,
         uint256 amount,
         bytes32 contentHash,
@@ -227,7 +225,7 @@ contract RewardsCoordinator is
         token.safeTransferFrom(msg.sender, address(this), amount);
 
         // Emit event indicating a direct reward payment.
-        emit DirectRewardPayment(msg.sender, avs, token, amount, contentHash, contentURI);
+        emit DirectRewardPayment(msg.sender, token, amount, contentHash, contentURI);
     }
 
     /**

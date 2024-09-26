@@ -2278,7 +2278,6 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
 
 contract RewardParticipantsTest is RewardsCoordinatorUnitTests {
     event DirectRewardPayment(
-        address indexed sender,
         address indexed avs,
         IERC20 token,
         uint256 amount,
@@ -2291,10 +2290,10 @@ contract RewardParticipantsTest is RewardsCoordinatorUnitTests {
         rewardToken.approve(address(rewardsCoordinator), mockTokenInitialSupply);
         cheats.expectEmit(true, true, true, false);
         emit DirectRewardPayment(
-            address(this), address(this), rewardToken, mockTokenInitialSupply, keccak256("content"), "content-uri"
+            address(this), rewardToken, mockTokenInitialSupply, keccak256("content"), "content-uri"
         );
         rewardsCoordinator.rewardParticipants(
-            address(this), rewardToken, mockTokenInitialSupply, keccak256("content"), "content-uri"
+            rewardToken, mockTokenInitialSupply, keccak256("content"), "content-uri"
         );
     }
 }
