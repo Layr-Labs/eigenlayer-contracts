@@ -59,8 +59,8 @@
             "tokenProxyAdmin": "0x3f5Ab2D4418d38568705bFd6672630fCC3435CC9",
             "EIGEN": "0xec53bf9167f50cdeb3ae105f56099aaab9061f83",
             "bEIGEN": "0x83E9115d334D248Ce39a6f36144aEaB5b3456e75",
-            "EIGENImpl": "0x7ec354c84680112d3cff1544ec1eb19ca583700b",
-            "bEIGENImpl": "0xB91c69Af3eE022bd0a59Da082945914BFDcEFFE3",
+            "EIGENImpl": "0x17f56E911C279bad67eDC08acbC9cf3DC4eF26A0",
+            "bEIGENImpl": "0xF2b225815F70c9b327DC9db758A36c92A4279b17",
             "eigenStrategy": "0xaCB55C530Acdb2849e6d4f36992Cd8c9D50ED8F7",
             "eigenStrategyImpl": "0x27e7a3a81741b9fcc5ad7edcbf9f8a72a5c00428"
         }
