@@ -57,7 +57,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
         cheats.stopPrank();
 
-        cheats.expectRevert(bytes("StrategyBase.deposit: Can only deposit underlyingToken"));
+        cheats.expectRevert(IStrategy.OnlyUnderlyingToken.selector);
         strategyManager.depositIntoStrategy(wethStrat, token, 10);
     }
 
@@ -108,7 +108,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
         cheats.stopPrank();
 
-        cheats.expectRevert(bytes("StrategyBase.deposit: newShares cannot be zero"));
+        cheats.expectRevert(IStrategy.NewSharesZero.selector);
         strategyManager.depositIntoStrategy(wethStrat, weth, 0);
     }
 

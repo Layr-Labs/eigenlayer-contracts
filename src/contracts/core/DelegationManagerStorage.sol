@@ -11,7 +11,7 @@ import "../interfaces/IEigenPodManager.sol";
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
- */
+ */ 
 abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
