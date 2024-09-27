@@ -2715,7 +2715,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         _delegateToOperatorWhoRequiresSig(staker, defaultOperator);
 
         cheats.prank(invalidCaller);
-        cheats.expectRevert(IPausable.InputAddressZero.selector);
+        cheats.expectRevert(IDelegationManager.UnauthorizedCaller.selector);
         delegationManager.undelegate(staker);
     }
 
