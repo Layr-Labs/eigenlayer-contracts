@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
+import "../../contracts/interfaces/IPausable.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 
 contract PauserRegistryUnitTests is Test {
@@ -66,7 +67,7 @@ contract PauserRegistryUnitTests is Test {
         cheats.assume(newPauser != address(0));
 
         cheats.startPrank(notUnpauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
         pauserRegistry.setIsPauser(newPauser, true);
         cheats.stopPrank();
     }
@@ -76,7 +77,7 @@ contract PauserRegistryUnitTests is Test {
         cheats.assume(newUnpauser != address(0));
 
         cheats.startPrank(notUnpauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
         pauserRegistry.setUnpauser(newUnpauser);
         cheats.stopPrank();
     }

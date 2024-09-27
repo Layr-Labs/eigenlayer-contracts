@@ -56,7 +56,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         cheats.assume(notUnpauser != address(proxyAdmin));
         cheats.assume(notUnpauser != unpauser);
         cheats.startPrank(notUnpauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
         strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
         cheats.stopPrank();
     }
