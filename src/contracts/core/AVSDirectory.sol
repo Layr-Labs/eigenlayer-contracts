@@ -65,14 +65,14 @@ contract AVSDirectory is
      */
     
     /// @inheritdoc IAVSDirectory
-    function claimIdentifier(bytes20 avs) external {
-        require(avsToDispatcher[avs] == address(0), IdentifierAlreadyClaimed());
-        _claimIdentifier(avs, msg.sender);
+    function claimIdentifier() external {
+        _claimIdentifier(avsCounter, msg.sender);
+        avsCounter++;
     }
 
     /// @inheritdoc IAVSDirectory
     function transferIdentifier(address newDispatcher) external {
-        bytes20 avs = dispatcherToAVS[msg.sender];
+        uint32 avs = dispatcherToAVS[msg.sender];
         require(avs != UNUSED_AVS_IDENTIFIER, AVSIdentifierNotSet());
         
         _claimIdentifier(avs, newDispatcher);
@@ -91,7 +91,7 @@ contract AVSDirectory is
     function createOperatorSets(
         uint32[] calldata operatorSetIds
     ) external {
-        bytes20 avs = dispatcherToAVS[msg.sender];
+        uint32 avs = dispatcherToAVS[msg.sender];
         require(avs != UNUSED_AVS_IDENTIFIER, AVSIdentifierNotSet());
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             bytes32 encodedOperatorSet = _encodeOperatorSet(OperatorSet({avs: avs, operatorSetId: operatorSetIds[i]}));
@@ -107,7 +107,7 @@ contract AVSDirectory is
      * @dev The msg.sender must have a avs set.
      */
     function becomeOperatorSetAVS() external {
-        bytes20 avs = dispatcherToAVS[msg.sender];
+        uint32 avs = dispatcherToAVS[msg.sender];
         require(avs != UNUSED_AVS_IDENTIFIER, AVSIdentifierNotSet());
         require(!isOperatorSetAVS[avs], InvalidAVS());
         isOperatorSetAVS[avs] = true;
@@ -129,7 +129,7 @@ contract AVSDirectory is
         address[] calldata operators,
         uint32[][] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
-        bytes20 avs = dispatcherToAVS[msg.sender];
+        uint32 avs = dispatcherToAVS[msg.sender];
 
         // Assert that the AVS is an operator set AVS.
         require(isOperatorSetAVS[avs], InvalidAVS());
@@ -169,7 +169,7 @@ contract AVSDirectory is
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
-        bytes20 avs = dispatcherToAVS[msg.sender];
+        uint32 avs = dispatcherToAVS[msg.sender];
         // Assert operator's signature has not expired.
         require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
         // Assert `operator` is actually an operator.
@@ -210,7 +210,7 @@ contract AVSDirectory is
      */
     function forceDeregisterFromOperatorSets(
         address operator,
-        bytes20 avs,
+        uint32 avs,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
@@ -265,7 +265,7 @@ contract AVSDirectory is
     function updateAVSMetadataURI(
         string calldata metadataURI
     ) external override {
-        bytes20 avs = dispatcherToAVS[msg.sender];
+        uint32 avs = dispatcherToAVS[msg.sender];
         emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
@@ -306,8 +306,7 @@ contract AVSDirectory is
         require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
 
         // Assert that the AVS is not an operator set AVS.
-        bytes20 avs = dispatcherToAVS[msg.sender];
-        require(!isOperatorSetAVS[avs], InvalidAVS());
+        require(!isOperatorSetAVS[dispatcherToAVS[msg.sender]], InvalidAVS());
 
         // Assert that the `operator` is not actively registered to the AVS.
         require(avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED, InvalidOperator());
@@ -374,7 +373,7 @@ contract AVSDirectory is
      * @param avs The avs that the operator is registering to.
      * @param operatorSetIds The IDs of the operator sets.
      */
-    function _registerToOperatorSets(address operator, bytes20 avs, uint32[] calldata operatorSetIds) internal {
+    function _registerToOperatorSets(address operator, uint32 avs, uint32[] calldata operatorSetIds) internal {
         // Loop over `operatorSetIds` array and register `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
@@ -405,7 +404,7 @@ contract AVSDirectory is
      * @param operator The operator to deregister.
      * @param operatorSetIds The IDs of the operator sets.
      */
-    function _deregisterFromOperatorSets(bytes20 avs, address operator, uint32[] calldata operatorSetIds) internal {
+    function _deregisterFromOperatorSets(uint32 avs, address operator, uint32[] calldata operatorSetIds) internal {
         // Loop over `operatorSetIds` array and deregister `operator` for each item.
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
@@ -420,7 +419,7 @@ contract AVSDirectory is
         }
     }
 
-    function _claimIdentifier(bytes20 avs, address dispatcher) internal {
+    function _claimIdentifier(uint32 avs, address dispatcher) internal {
         avsToDispatcher[avs] = msg.sender;
         dispatcherToAVS[dispatcher] = avs;
 
@@ -557,7 +556,7 @@ contract AVSDirectory is
      * @param expiry Time after which the approver's signature becomes invalid.
      */
     function calculateOperatorSetRegistrationDigestHash(
-        bytes20 avs,
+        uint32 avs,
         uint32[] calldata operatorSetIds,
         bytes32 salt,
         uint256 expiry
@@ -576,7 +575,7 @@ contract AVSDirectory is
      * @param expiry Time after which the approver's signature becomes invalid.
      */
     function calculateOperatorSetForceDeregistrationTypehash(
-        bytes20 avs,
+        uint32 avs,
         uint32[] calldata operatorSetIds,
         bytes32 salt,
         uint256 expiry
@@ -613,7 +612,7 @@ contract AVSDirectory is
     function _encodeOperatorSet(
         OperatorSet memory operatorSet
     ) internal pure returns (bytes32) {
-        return bytes32(abi.encodePacked(operatorSet.avs, uint96(operatorSet.operatorSetId)));
+        return bytes32(abi.encodePacked(uint128(operatorSet.avs), uint128(operatorSet.operatorSetId)));
     }
 
     /// @dev Returns an `OperatorSet` decoded from an encoded 32-byte value.
@@ -623,8 +622,9 @@ contract AVSDirectory is
         bytes32 encoded
     ) internal pure returns (OperatorSet memory) {
         return OperatorSet({
-            avs: bytes20(uint160(uint256(encoded) >> 96)),
-            operatorSetId: uint32(uint256(encoded) & type(uint96).max)
+            avs: uint32(uint256(encoded) >> 224),
+            //TODO: uint32(uint256(encoded)) should work here?
+            operatorSetId: uint32(uint256(encoded) & type(uint32).max)
         });
     }
 }

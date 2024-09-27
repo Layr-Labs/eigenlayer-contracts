@@ -20,14 +20,14 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     /// @notice The EIP-712 typehash for the `OperatorSetRegistration` struct used by the contract
     bytes32 public constant OPERATOR_SET_REGISTRATION_TYPEHASH =
-        keccak256("OperatorSetRegistration(bytes20 avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
+        keccak256("OperatorSetRegistration(uint32 avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
 
     /// @notice The EIP-712 typehash for the `OperatorSetMembership` struct used by the contract
     bytes32 public constant OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH =
-        keccak256("OperatorSetForceDeregistration(bytes20 avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
+        keccak256("OperatorSetForceDeregistration(uint32 avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
 
     /// @notice The unused AVS namespace
-    bytes20 public constant UNUSED_AVS_IDENTIFIER = bytes20(0);
+    uint32 public constant UNUSED_AVS_IDENTIFIER = uint32(0);
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
@@ -47,7 +47,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
     /// @notice Mapping: avs => Whether it is associated to an operatorSetAVS
-    mapping(bytes20 => bool) public isOperatorSetAVS;
+    mapping(uint32 => bool) public isOperatorSetAVS;
 
     /// @notice Mapping: EncodedOperatorSet =>  Whether or not an operator set is valid.
     mapping(bytes32 => bool) public isOperatorSet;
@@ -57,17 +57,19 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     mapping(address => EnumerableSet.Bytes32Set) internal _operatorSetsMemberOf;
 
     /// @notice Mapping: operatorSet => List of operators that are registered to the operatorSet
-    /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
+    /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, operatorSetId))
     mapping(bytes32 => EnumerableSet.AddressSet) internal _operatorSetMembers;
 
     /// @notice Mapping: operator => encodedOperatorSet => operator registration status
     mapping(address => mapping(bytes32 => OperatorSetRegistrationStatus)) public operatorSetStatus;
 
-    /// @notice Mapping: avs avs => service manager
-    mapping(bytes20 => address) public avsToDispatcher;
+    /// @notice Mapping: avs => service manager
+    mapping(uint32 => address) public avsToDispatcher;
 
-    /// @notice Mapping: service manager => avs avs
-    mapping(address => bytes20) public dispatcherToAVS;
+    /// @notice Mapping: service manager => avs
+    mapping(address => uint32) public dispatcherToAVS;
+
+    uint32 public avsCounter = 1;
 
     constructor(
         IDelegationManager _delegation
@@ -80,5 +82,5 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[39] private __gap;
 }
