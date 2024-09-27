@@ -314,38 +314,4 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         cheats.prank(defaultAVS);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
-
-    // NOTE: This check was removed.
-    // /// @notice Verifies that an operator cannot cancel the same salt twice
-    // function testFuzz_revert_whenSaltCancelledTwice(bytes32 salt) public {
-    //     address operator = cheats.addr(delegationSignerPrivateKey);
-    //     assertFalse(delegationManager.isOperator(operator), "bad test setup");
-    //     _registerOperatorWithBaseDetails(operator);
-
-    //     cheats.startPrank(operator);
-    //     avsDirectory.cancelSalt(salt);
-
-    //     cheats.expectRevert(IAVSDirectory.SignatureSaltSpent.selector);
-    //     avsDirectory.cancelSalt(salt);
-    //     cheats.stopPrank();
-    // }
-
-    // NOTE: This check was removed.
-    // /// @notice Verifies that an operator cannot cancel the same salt twice
-    // function testFuzz_revert_whenCancellingSaltUsedToRegister(bytes32 salt) public {
-    //     address operator = cheats.addr(delegationSignerPrivateKey);
-    //     assertFalse(delegationManager.isOperator(operator), "bad test setup");
-    //     _registerOperatorWithBaseDetails(operator);
-
-    //     uint256 expiry = type(uint256).max;
-    //     ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
-    //         _getOperatorSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
-
-    //     cheats.prank(defaultAVS);
-    //     avsDirectory.registerOperatorToAVS(operator, operatorSignature);
-
-    //     cheats.prank(operator);
-    //     cheats.expectRevert(IAVSDirectory.SignatureSaltSpent.selector);
-    //     avsDirectory.cancelSalt(salt);
-    // }
 }
