@@ -2689,37 +2689,35 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         delegationManager.undelegate(defaultOperator);
     }
 
-    //TODO: verify that this check is even needed
-    // function test_undelegate_revert_zeroAddress() public {
-    //     _registerOperatorWithBaseDetails(defaultOperator);
-    //     _delegateToOperatorWhoAcceptsAllStakers(address(0), defaultOperator);
+    function test_undelegate_revert_zeroAddress() public {
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(address(0), defaultOperator);
 
-    //     cheats.prank(address(0));
-    //     cheats.expectRevert(IDelegationManager.InputAddressZero.selector);
-    //     delegationManager.undelegate(address(0));
-    // }
+        cheats.prank(address(0));
+        cheats.expectRevert(IPausable.InputAddressZero.selector);
+        delegationManager.undelegate(address(0));
+    }
 
-    //TODO: verify that this check is even needed
-    // /**
-    //  * @notice Verifies that the `undelegate` function has proper access controls (can only be called by the operator who the `staker` has delegated
-    //  * to or the operator's `delegationApprover`), or the staker themselves
-    //  */
-    // function testFuzz_undelegate_revert_invalidCaller(
-    //     address invalidCaller
-    // ) public filterFuzzedAddressInputs(invalidCaller) {
-    //     address staker = address(0x123);
-    //     // filter out addresses that are actually allowed to call the function
-    //     cheats.assume(invalidCaller != staker);
-    //     cheats.assume(invalidCaller != defaultOperator);
-    //     cheats.assume(invalidCaller != defaultApprover);
+    /**
+     * @notice Verifies that the `undelegate` function has proper access controls (can only be called by the operator who the `staker` has delegated
+     * to or the operator's `delegationApprover`), or the staker themselves
+     */
+    function testFuzz_undelegate_revert_invalidCaller(
+        address invalidCaller
+    ) public filterFuzzedAddressInputs(invalidCaller) {
+        address staker = address(0x123);
+        // filter out addresses that are actually allowed to call the function
+        cheats.assume(invalidCaller != staker);
+        cheats.assume(invalidCaller != defaultOperator);
+        cheats.assume(invalidCaller != defaultApprover);
 
-    //     _registerOperatorWithDelegationApprover(defaultOperator);
-    //     _delegateToOperatorWhoRequiresSig(staker, defaultOperator);
+        _registerOperatorWithDelegationApprover(defaultOperator);
+        _delegateToOperatorWhoRequiresSig(staker, defaultOperator);
 
-    //     cheats.prank(invalidCaller);
-    //     cheats.expectRevert(IDelegationManager.InputAddressZero.selector);
-    //     delegationManager.undelegate(staker);
-    // }
+        cheats.prank(invalidCaller);
+        cheats.expectRevert(IPausable.InputAddressZero.selector);
+        delegationManager.undelegate(staker);
+    }
 
     /**
      * Staker is undelegated from an operator, via a call to `undelegate`, properly originating from the staker's address.
