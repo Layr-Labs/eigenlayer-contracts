@@ -86,7 +86,7 @@ contract PauserRegistryUnitTests is Test {
         address newPauser = address(0);
 
         cheats.startPrank(pauserRegistry.unpauser());
-        cheats.expectRevert(bytes("PauserRegistry._setPauser: zero address input"));
+        cheats.expectRevert(IPauserRegistry.InputAddressZero.selector);
         pauserRegistry.setIsPauser(newPauser, true);
         cheats.stopPrank();
     }
@@ -95,7 +95,7 @@ contract PauserRegistryUnitTests is Test {
         address newUnpauser = address(0);
 
         cheats.startPrank(pauserRegistry.unpauser());
-        cheats.expectRevert(bytes("PauserRegistry._setUnpauser: zero address input"));
+        cheats.expectRevert(IPauserRegistry.InputAddressZero.selector);
         pauserRegistry.setUnpauser(newUnpauser);
         cheats.stopPrank();
     }
