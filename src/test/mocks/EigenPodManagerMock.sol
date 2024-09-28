@@ -25,8 +25,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
 
     function stakerStrategyShares(address user, IStrategy strategy) external view returns (Shares shares) {}
 
-    function slasher() external view returns(ISlasher) {}
-
     function createPod() external returns(address) {}
 
     function stake(bytes calldata /*pubkey*/, bytes calldata /*signature*/, bytes32 /*depositDataRoot*/) external payable {}

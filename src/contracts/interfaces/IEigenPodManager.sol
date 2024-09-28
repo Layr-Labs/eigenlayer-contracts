@@ -7,7 +7,6 @@ import "./IStrategyManager.sol";
 import "./IEigenPod.sol";
 import "./IShareManager.sol";
 import "./IPausable.sol";
-import "./ISlasher.sol";
 import "./IStrategy.sol";
 
 /**
@@ -103,9 +102,6 @@ interface IEigenPodManager is IShareManager, IPausable {
 
     /// @notice EigenLayer's StrategyManager contract
     function strategyManager() external view returns (IStrategyManager);
-
-    /// @notice EigenLayer's Slasher contract
-    function slasher() external view returns (ISlasher);
 
     /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
     function hasPod(

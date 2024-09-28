@@ -357,9 +357,6 @@ pragma solidity ^0.8.27;
 //         strategyManager = StrategyManager(
 //             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
 //         );
-//         slasher = Slasher(
-//             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-//         );
 //         eigenPodManager = EigenPodManager(
 //             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
 //         );
@@ -370,10 +367,9 @@ pragma solidity ^0.8.27;
 //         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
 //         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-//         DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-//         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
-//         Slasher slasherImplementation = new Slasher(strategyManager, delegation);
-//         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
+//         DelegationManager delegationImplementation = new DelegationManager(strategyManager, eigenPodManager);
+//         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager);
+//         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, delegation);
 //         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
 //         eigenLayerProxyAdmin.upgradeAndCall(
 //             TransparentUpgradeableProxy(payable(address(delegation))),
@@ -394,16 +390,6 @@ pragma solidity ^0.8.27;
 //             abi.encodeWithSelector(
 //                 StrategyManager.initialize.selector,
 //                 eigenLayerReputedMultisig,
-//                 eigenLayerReputedMultisig,
-//                 eigenLayerPauserReg,
-//                 0/*initialPausedStatus*/
-//             )
-//         );
-//         eigenLayerProxyAdmin.upgradeAndCall(
-//             TransparentUpgradeableProxy(payable(address(slasher))),
-//             address(slasherImplementation),
-//             abi.encodeWithSelector(
-//                 Slasher.initialize.selector,
 //                 eigenLayerReputedMultisig,
 //                 eigenLayerPauserReg,
 //                 0/*initialPausedStatus*/

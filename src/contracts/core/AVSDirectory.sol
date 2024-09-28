@@ -19,14 +19,6 @@ contract AVSDirectory is
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    /// @dev Index for flag that pauses operator register/deregister to avs when set.
-    uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
-    /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
-    uint8 internal constant PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS = 1;
-
-    /// @dev Returns the chain ID from the time the contract was deployed.
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-
     /**
      *
      *                         INITIALIZING FUNCTIONS
@@ -34,14 +26,14 @@ contract AVSDirectory is
      */
 
     /**
-     * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher,
+     * @dev Initializes the immutable addresses of the strategy mananger, delegationManager,
      * and eigenpodManager contracts
      */
     constructor(
-        IDelegationManager _delegation
-    ) AVSDirectoryStorage(_delegation) {
+        IDelegationManager _delegation,
+        uint32 _DEALLOCATION_DELAY
+    ) AVSDirectoryStorage(_delegation, _DEALLOCATION_DELAY) {
         _disableInitializers();
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**
@@ -107,7 +99,7 @@ contract AVSDirectory is
     function migrateOperatorsToOperatorSets(
         address[] calldata operators,
         uint32[][] calldata operatorSetIds
-    ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
         // Assert that the AVS is an operator set AVS.
         require(isOperatorSetAVS[msg.sender], InvalidAVS());
 
@@ -145,7 +137,7 @@ contract AVSDirectory is
         address operator,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
         // Assert operator's signature has not expired.
         require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
         // Assert `operator` is actually an operator.
@@ -189,7 +181,7 @@ contract AVSDirectory is
         address avs,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
         if (operatorSignature.signature.length == 0) {
             require(msg.sender == operator, InvalidOperator());
         } else {
@@ -227,7 +219,7 @@ contract AVSDirectory is
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
-    ) external override onlyWhenNotPaused(PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS) {
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
         _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
@@ -484,6 +476,24 @@ contract AVSDirectory is
      */
     function isMember(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
+    }
+
+    /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        if (isMember(operator, operatorSet)) return true;
+
+        OperatorSetRegistrationStatus memory status =
+            operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
+            
+        return block.timestamp < status.lastDeregisteredTimestamp + DEALLOCATION_DELAY;
+    }
+
+    /// @notice Returns true if all provided operator sets are valid.
+    function isOperatorSetBatch(OperatorSet[] calldata operatorSets) public view returns (bool) {
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            if (!isOperatorSet[operatorSets[i].avs][operatorSets[i].operatorSetId]) return false;
+        }
+        return true;
     }
 
     /**

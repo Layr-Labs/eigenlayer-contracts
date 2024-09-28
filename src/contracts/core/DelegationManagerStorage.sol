@@ -2,10 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "../libraries/SlashingLib.sol";
-
-import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
-import "../interfaces/ISlasher.sol";
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IAllocationManager.sol";
@@ -17,6 +14,8 @@ import "../interfaces/IAllocationManager.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract DelegationManagerStorage is IDelegationManager {
+    // Constants
+
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -30,15 +29,26 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         "DelegationApproval(address delegationApprover,address staker,address operator,bytes32 salt,uint256 expiry)"
     );
 
-    /// @notice Minimum withdrawal delay in seconds until all queued withdrawals can be completed.
-    uint32 public immutable MIN_WITHDRAWAL_DELAY;
+    /// @dev Index for flag that pauses new delegations when set
+    uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
-    /**
-     * @notice Original EIP-712 Domain separator for this contract.
-     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
-     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
-     */
-    bytes32 internal _DOMAIN_SEPARATOR;
+    /// @dev Index for flag that pauses queuing new withdrawals when set.
+    uint8 internal constant PAUSED_ENTER_WITHDRAWAL_QUEUE = 1;
+
+    /// @dev Index for flag that pauses completing existing withdrawals when set.
+    uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
+
+    /// @notice The minimum number of blocks to complete a withdrawal of a strategy. 50400 * 12 seconds = 1 week
+    uint256 public constant LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS = 50_400;
+
+    /// @notice Wed Jan 01 2025 17:00:00 GMT+0000, timestamp used to check whether a pending withdrawal
+    /// should be processed as legacy M2 or with slashing considered.
+    uint32 public constant LEGACY_WITHDRAWALS_TIMESTAMP = 1_735_750_800;
+
+    /// @notice Canonical, virtual beacon chain ETH strategy
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
+    // Immutables
 
     /// @notice The AVSDirectory contract for EigenLayer
     IAVSDirectory public immutable avsDirectory;
@@ -51,11 +61,23 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-    /// @notice The Slasher contract for EigenLayer
-    ISlasher public immutable slasher;
-
     /// @notice The AllocationManager contract for EigenLayer
     IAllocationManager public immutable allocationManager;
+
+    /// @notice Minimum withdrawal delay in seconds until all queued withdrawals can be completed.
+    uint32 public immutable MIN_WITHDRAWAL_DELAY;
+
+    /// @dev Chain ID at the time of contract deployment
+    uint256 internal immutable ORIGINAL_CHAIN_ID;
+
+    // Mutatables
+    
+    /**
+     * @notice Original EIP-712 Domain separator for this contract.
+     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
+     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
+     */
+    bytes32 internal _DOMAIN_SEPARATOR;
 
     /**
      * @notice returns the total number of delegatedShares (i.e. shares divided by the `operator`'s
@@ -124,20 +146,21 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// Note that we don't need the beaconChainScalingFactor for non beaconChainETHStrategy strategies, but it's nicer syntactically to keep it.
     mapping(address => mapping(IStrategy => StakerScalingFactors)) public stakerScalingFactors;
 
+    // Construction
+
     constructor(
-        IStrategyManager _strategyManager,
-        ISlasher _slasher,
-        IEigenPodManager _eigenPodManager,
         IAVSDirectory _avsDirectory,
+        IStrategyManager _strategyManager,
+        IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
         uint32 _MIN_WITHDRAWAL_DELAY
     ) {
+        avsDirectory = _avsDirectory;
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
-        slasher = _slasher;
-        avsDirectory = _avsDirectory;
         allocationManager = _allocationManager;
         MIN_WITHDRAWAL_DELAY = _MIN_WITHDRAWAL_DELAY;
+        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**

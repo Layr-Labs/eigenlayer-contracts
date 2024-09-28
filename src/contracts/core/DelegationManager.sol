@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 import "../libraries/SlashingLib.sol";
@@ -28,28 +29,6 @@ contract DelegationManager is
 {
     using SlashingLib for *;
 
-    // @dev Index for flag that pauses new delegations when set
-    uint8 internal constant PAUSED_NEW_DELEGATION = 0;
-
-    // @dev Index for flag that pauses queuing new withdrawals when set.
-    uint8 internal constant PAUSED_ENTER_WITHDRAWAL_QUEUE = 1;
-
-    // @dev Index for flag that pauses completing existing withdrawals when set.
-    uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
-
-    // @dev Chain ID at the time of contract deployment
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-
-    /// @dev The minimum number of blocks to complete a withdrawal of a strategy. 50400 * 12 seconds = 1 week
-    uint256 public constant LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS = 50_400;
-
-    /// @dev Wed Jan 01 2025 17:00:00 GMT+0000, timestamp used to check whether a pending withdrawal
-    /// should be processed as legacy M2 or with slashing considered.
-    uint32 public constant LEGACY_WITHDRAWALS_TIMESTAMP = 1_735_750_800;
-
-    /// @notice Canonical, virtual beacon chain ETH strategy
-    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
     modifier onlyStrategyManagerOrEigenPodManager() {
         require(
@@ -71,27 +50,24 @@ contract DelegationManager is
      */
 
     /**
-     * @dev Initializes the immutable addresses of the strategy mananger and slasher.
+     * @dev Initializes the immutable addresses of the strategy mananger, eigenpod manager, and allocation manager.
      */
     constructor(
-        IStrategyManager _strategyManager,
-        ISlasher _slasher,
-        IEigenPodManager _eigenPodManager,
         IAVSDirectory _avsDirectory,
+        IStrategyManager _strategyManager,
+        IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
         uint32 _MIN_WITHDRAWAL_DELAY
-    )
+    ) 
         DelegationManagerStorage(
-            _strategyManager,
-            _slasher,
-            _eigenPodManager,
-            _avsDirectory,
-            _allocationManager,
+            _avsDirectory, 
+            _strategyManager, 
+            _eigenPodManager, 
+            _allocationManager, 
             _MIN_WITHDRAWAL_DELAY
-        )
-    {
+        ) 
+    {  
         _disableInitializers();
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**

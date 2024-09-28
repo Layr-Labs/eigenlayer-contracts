@@ -5,7 +5,6 @@ import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelegationManager.sol";
-import "../interfaces/ISlasher.sol";
 import "../interfaces/IAVSDirectory.sol";
 
 /**
@@ -15,20 +14,32 @@ import "../interfaces/IAVSDirectory.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract StrategyManagerStorage is IStrategyManager {
+    // Constants
+
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
     /// @notice The EIP-712 typehash for the deposit struct used by the contract
     bytes32 public constant DEPOSIT_TYPEHASH =
         keccak256("Deposit(address staker,address strategy,address token,uint256 amount,uint256 nonce,uint256 expiry)");
+    
     // maximum length of dynamic arrays in `stakerStrategyList` mapping, for sanity's sake
     uint8 internal constant MAX_STAKER_STRATEGY_LIST_LENGTH = 32;
+    
+    // index for flag that pauses deposits when set
+    uint8 internal constant PAUSED_DEPOSITS = 0;
 
-    // system contracts
+    // Immutables
+
     IDelegationManager public immutable delegation;
+    
     IEigenPodManager public immutable eigenPodManager;
-    ISlasher public immutable slasher;
+
     IAVSDirectory public immutable avsDirectory;
+
+    uint256 internal immutable ORIGINAL_CHAIN_ID;
+
+    // Mutatables
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -36,19 +47,25 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * Use the getter function `domainSeparator` to get the current domain separator for this contract.
      */
     bytes32 internal _DOMAIN_SEPARATOR;
+
     // staker => number of signed deposit nonce (used in depositIntoStrategyWithSignature)
     mapping(address => uint256) public nonces;
+    
     /// @notice Permissioned role, which can be changed by the contract owner. Has the ability to edit the strategy whitelist
     address public strategyWhitelister;
+    
     /*
      * Reserved space previously used by the deprecated storage variable `withdrawalDelayBlocks.
      * This variable was migrated to the DelegationManager instead.
      */
     uint256 private __deprecated_withdrawalDelayBlocks;
+    
     /// @notice Mapping: staker => Strategy => number of shares which they currently hold
     mapping(address => mapping(IStrategy => Shares)) public stakerStrategyShares;
+    
     /// @notice Mapping: staker => array of strategies in which they have nonzero shares
     mapping(address => IStrategy[]) public stakerStrategyList;
+    
     /// @notice *Deprecated* mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     /// @dev This mapping is preserved to allow the migration of withdrawals to the DelegationManager contract.
     mapping(bytes32 => bool) private __deprecated_withdrawalRootPending;
@@ -58,6 +75,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * Withdrawals are now initiated in the DlegationManager, so the mapping has moved to that contract.
      */
     mapping(address => uint256) private __deprecated_numWithdrawalsQueued;
+    
     /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
     /*
@@ -74,16 +92,21 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      */
     mapping(IStrategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
+    // Construction
+
+    /**
+     * @param _delegation The delegation contract of EigenLayer.
+     * @param _eigenPodManager The contract that keeps track of EigenPod stakes for restaking beacon chain ether.
+     */
     constructor(
         IDelegationManager _delegation,
         IEigenPodManager _eigenPodManager,
-        ISlasher _slasher,
         IAVSDirectory _avsDirectory
     ) {
         delegation = _delegation;
         eigenPodManager = _eigenPodManager;
-        slasher = _slasher;
         avsDirectory = _avsDirectory;
+        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**

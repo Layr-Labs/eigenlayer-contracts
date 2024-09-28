@@ -3,12 +3,14 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
+import "../interfaces/IDelegationManager.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
+
+    // Constants
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
@@ -31,9 +33,26 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
         "MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)"
     );
 
+    /// @dev Index for flag that pauses operator register/deregister to avs when set.
+    uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
+
+    /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
+    uint8 internal constant PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION = 1;
+
+    // Immutables
+
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
+    /// @notice Delay before deallocations are completable and can be added back into freeMagnitude
+    /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
+    uint32 public immutable DEALLOCATION_DELAY;
+
+    /// @dev Returns the chain ID from the time the contract was deployed.
+    uint256 internal immutable ORIGINAL_CHAIN_ID;
+    
+    // Mutatables
+    
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -65,10 +84,15 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice Mapping: operator => avs => operatorSetId => operator registration status
     mapping(address => mapping(address => mapping(uint32 => OperatorSetRegistrationStatus))) public operatorSetStatus;
 
+    // Construction
+
     constructor(
-        IDelegationManager _delegation
+        IDelegationManager _delegation,
+        uint32 _DEALLOCATION_DELAY
     ) {
         delegation = _delegation;
+        DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
+        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**
