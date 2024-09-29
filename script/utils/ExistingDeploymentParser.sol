@@ -181,6 +181,10 @@ contract ExistingDeploymentParser is Script, Test {
         strategyManagerImplementation = StrategyManager(
             stdJson.readAddress(existingDeploymentData, ".addresses.strategyManagerImplementation")
         );
+        strategyFactory = StrategyFactory(stdJson.readAddress(existingDeploymentData, ".addresses.strategyFactory"));
+        strategyFactoryImplementation = StrategyFactory(
+            stdJson.readAddress(existingDeploymentData, ".addresses.strategyFactoryImplementation")
+        );
         eigenPodManager = EigenPodManager(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodManager"));
         eigenPodManagerImplementation = EigenPodManager(
             stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodManagerImplementation")
@@ -571,7 +575,7 @@ contract ExistingDeploymentParser is Script, Test {
         );
         if (block.chainid == 1) {
             require(
-                strategyManager.strategyWhitelister() == operationsMultisig,
+                strategyManager.strategyWhitelister() == address(strategyFactory),
                 "strategyManager: strategyWhitelister not set correctly"
             );
         } else if (block.chainid == 17000) {
