@@ -100,46 +100,31 @@ contract EigenPodManager is
      * to ensure that delegated shares are also tracked correctly
      * @param podOwner is the pod owner whose balance is being updated.
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
+     * @param proportionOfOldBalance is the proportion (of WAD) of the podOwner's previous balance before the delta
      * @dev Callable only by the podOwner's EigenPod contract.
      * @dev Reverts if `sharesDelta` is not a whole Gwei amount
      */
     function recordBeaconChainETHBalanceUpdate(
         address podOwner,
-        int256 sharesDelta
+        int256 sharesDelta,
+        uint64 proportionOfOldBalance
     ) external onlyEigenPod(podOwner) nonReentrant {
-        // require(podOwner != address(0), InputAddressZero());
-        // require(sharesDelta % int256(GWEI_TO_WEI) == 0, SharesNotMultipleOfGwei());
-        // int256 currentPodOwnerShares = podOwnerShares[podOwner];
-        // int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
-        // podOwnerShares[podOwner] = updatedPodOwnerShares;
-
-        // // inform the DelegationManager of the change in delegateable shares
-        // int256 changeInDelegatableShares = _calculateChangeInDelegatableShares({
-        //     sharesBefore: currentPodOwnerShares,
-        //     sharesAfter: updatedPodOwnerShares
-        // });
-        // // skip making a call to the DelegationManager if there is no change in delegateable shares
-        // // or if the currentPodShares < 0 and updatedPodShares is still < 0. Means no update required
-        // // in delegated shares
-        // if (changeInDelegatableShares != 0) {
-        //     if (changeInDelegatableShares < 0) {
-        //         delegationManager.decreaseDelegatedShares({
-        //             staker: podOwner,
-        //             strategy: beaconChainETHStrategy,
-        //             removedOwnedShares: uint256(-changeInDelegatableShares).wrapWithdrawable()
-        //         });
-        //     } else {
-        //         delegationManager.increaseDelegatedShares({
-        //             staker: podOwner,
-        //             strategy: beaconChainETHStrategy,
-        //             // existing shares from standpoint of the DelegationManager
-        //             existingShares: (currentPodOwnerShares < 0 ? 0 : uint256(currentPodOwnerShares)).wrapShares(),
-        //             addedOwnedShares: uint256(changeInDelegatableShares).wrapWithdrawable()
-        //         });
-        //     }
-        // }
-        // emit PodSharesUpdated(podOwner, sharesDelta);
-        // emit NewTotalShares(podOwner, updatedPodOwnerShares);
+        require(podOwner != address(0), InputAddressZero());
+        require(sharesDelta % int256(GWEI_TO_WEI) == 0, SharesNotMultipleOfGwei());
+        // shares can only be negative if they were due to negative shareDeltas after queued withdrawals in before
+        // the slashing upgrade. Make people complete queued withdrawals before completing any further checkpoints.
+        // the only effects podOwner UX, not AVS UX, since the podOwner already has 0 shares in the DM if they
+        // have a negative shares in EPM.
+        require(podOwnerShares[podOwner] >= 0, LegacyWithdrawalsNotCompleted());
+        if (sharesDelta > 0) {
+            _addOwnedShares(podOwner, uint256(sharesDelta).wrapOwned());
+        } else if (sharesDelta < 0 && podOwnerShares[podOwner] > 0) {
+            delegationManager.decreaseBeaconChainScalingFactor(
+                podOwner,
+                uint256(podOwnerShares[podOwner]).wrapShares(),
+                proportionOfOldBalance
+            );
+        }
     }
 
     /**
@@ -177,20 +162,7 @@ contract EigenPodManager is
         OwnedShares shares
     ) external onlyDelegationManager {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
-        require(staker != address(0), InputAddressZero());
-        require(int256(shares.unwrap()) >= 0, SharesNegative());
-        require(shares.unwrap() % GWEI_TO_WEI == 0, SharesNotMultipleOfGwei());
-        int256 currentShares = podOwnerShares[staker];
-        int256 updatedShares = currentShares + int256(shares.unwrap());
-        podOwnerShares[staker] = updatedShares;
-
-        emit PodSharesUpdated(staker, int256(shares.unwrap()));
-        emit NewTotalShares(staker, updatedShares);
-
-        uint256 increaseInDelegateableShares =
-            uint256(_calculateChangeInDelegatableShares({sharesBefore: currentShares, sharesAfter: updatedShares}));
-
-        // TODO: ADD SHARES BACK TO DM
+        _addOwnedShares(staker, shares);
     }
 
     /**
@@ -263,31 +235,28 @@ contract EigenPodManager is
         return pod;
     }
 
-    /**
-     * @notice Calculates the change in a pod owner's delegateable shares as a result of their beacon chain ETH shares changing
-     * from `sharesBefore` to `sharesAfter`. The key concept here is that negative/"deficit" shares are not delegateable.
-     */
-    function _calculateChangeInDelegatableShares(
-        int256 sharesBefore,
-        int256 sharesAfter
-    ) internal pure returns (int256) {
-        if (sharesBefore <= 0) {
-            if (sharesAfter <= 0) {
-                // if the shares started negative and stayed negative, then there cannot have been an increase in delegateable shares
-                return 0;
-            } else {
-                // if the shares started negative and became positive, then the increase in delegateable shares is the ending share amount
-                return sharesAfter;
-            }
-        } else {
-            if (sharesAfter <= 0) {
-                // if the shares started positive and became negative, then the decrease in delegateable shares is the starting share amount
-                return (-sharesBefore);
-            } else {
-                // if the shares started positive and stayed positive, then the change in delegateable shares
-                // is the difference between starting and ending amounts
-                return (sharesAfter - sharesBefore);
-            }
+    function _addOwnedShares(
+        address staker,
+        OwnedShares ownedShares
+    ) internal {
+        require(staker != address(0), InputAddressZero());
+
+        int256 addedOwnedShares = int256(ownedShares.unwrap());
+        int256 currentShares = podOwnerShares[staker];
+        int256 updatedShares = currentShares + addedOwnedShares;
+        podOwnerShares[staker] = updatedShares;
+
+        emit PodSharesUpdated(staker, addedOwnedShares);
+        emit NewTotalShares(staker, updatedShares);
+
+        if (updatedShares > 0) {
+            delegationManager.increaseDelegatedShares({
+                staker: staker,
+                strategy: beaconChainETHStrategy,
+                // existing shares from standpoint of the DelegationManager
+                existingShares: currentShares < 0 ? Shares.wrap(0) : uint256(currentShares).wrapShares(),
+                addedOwnedShares: ownedShares
+            });
         }
     }
 
