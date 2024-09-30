@@ -516,8 +516,8 @@ contract DelegationManager is
                 operator: operator, 
                 staker: staker, 
                 strategy: strategies[i],
-                existingShares: Shares(0),
-                addedOwnedShares: ownedShares[i],
+                existingShares: Shares.wrap(0),
+                addedShares: ownedShares[i].unwrap().wrapShares(),
                 totalMagnitude: totalMagnitudes[i]
             });
         }
@@ -745,14 +745,13 @@ contract DelegationManager is
         Shares existingShares,
         Shares addedShares
     ) internal returns (uint256 newDepositScalingFactor) {
-        uint256 newDepositScalingFactor;
         if (existingShares.isZero()) {
             newDepositScalingFactor = WAD / totalMagnitude;
         } else {
-            newDepositScalingFactor = existingShares.calculateNewScalingFactor(
-                addedShares: addedShares,
-                oldStakerScalingFactor: depositScalingFactors[staker][strategy],
-                totalMagnitude: totalMagnitude
+            newDepositScalingFactor = existingShares.calculateNewDepositScalingFactor(
+                addedShares,
+                depositScalingFactors[staker][strategy],
+                totalMagnitude
             );
         }
 
@@ -866,8 +865,8 @@ contract DelegationManager is
                 
                 // forgefmt: disable-next-item
                 ownedShares[i] = shares.toOwnedShares(
-                    stakerScalingFactor: depositScalingFactors[staker][strategies[i]],
-                    operatorMagnitude: totalMagnitude
+                    depositScalingFactors[staker][strategies[i]],
+                    totalMagnitude
                 );
             }
         }

@@ -99,8 +99,8 @@ library SlashingLib {
 
     function toOwnedShares(
         Shares shares,
-        uint64 stakerScalingFactor,
-        uint64 operatorMagnitude
+        uint256 stakerScalingFactor,
+        uint256 operatorMagnitude
     ) internal pure returns (OwnedShares) {
         /**
          * ownedShares = shares * stakerScalingFactor * operatorMagnitude
@@ -118,9 +118,9 @@ library SlashingLib {
     function calculateNewDepositScalingFactor(
         Shares currentShares,
         Shares addedShares,
-        uint64 stakerScalingFactor,
-        uint64 operatorMagnitude
-    ) internal pure returns (uint64) {
+        uint256 stakerScalingFactor,
+        uint256 operatorMagnitude
+    ) internal pure returns (uint256) {
         /**
          * Base Equations:
          * (1) newShares = currentShares + addedShares
@@ -145,10 +145,10 @@ library SlashingLib {
          */
 
         // Step 1: Calculate Numerator
-        OwnedShares currentOwnedShares = currentShares.toOwnedShares(stakerScalingFactor, operatorMagnitude);
+        uint256 currentOwnedShares = currentShares.toOwnedShares(stakerScalingFactor, operatorMagnitude).unwrap();
 
         // Step 2: Compute currentShares + addedShares
-        uint256 ownedPlusAddedShares = currentOwnedShares.add(addedShares).unwrap();
+        uint256 ownedPlusAddedShares = currentOwnedShares + addedShares.unwrap();
 
         // Step 3: Calculate newStakerScalingFactor
         // Note: We divide by operatorMagnitude to preserve 
@@ -156,7 +156,7 @@ library SlashingLib {
         //TODO: figure out if we only need to do one divWad here
         uint256 newStakerScalingFactor = 
             ownedPlusAddedShares
-            .divWad(currentShares.unwrap() + addedOwnedShares.unwrap())
+            .divWad(currentShares.unwrap() + addedShares.unwrap())
             .divWad(operatorMagnitude);
 
         return newStakerScalingFactor;
@@ -166,6 +166,10 @@ library SlashingLib {
 
     function add(Shares x, uint256 y) internal pure returns (uint256) {
         return x.unwrap() + y;
+    }
+
+    function add(Shares x, Shares y) internal pure returns (Shares) {
+        return (x.unwrap() + y.unwrap()).wrapShares();
     }
 
     function add(DelegatedShares x, uint256 y) internal pure returns (uint256) {
@@ -186,6 +190,10 @@ library SlashingLib {
 
     function sub(Shares x, uint256 y) internal pure returns (uint256) {
         return x.unwrap() - y;
+    }
+
+    function sub(Shares x, Shares y) internal pure returns (Shares) {
+        return (x.unwrap() - y.unwrap()).wrapShares();
     }
 
     function sub(DelegatedShares x, uint256 y) internal pure returns (uint256) {
@@ -213,6 +221,10 @@ library SlashingLib {
     // COMPARISONS
 
     function isZero(Shares x) internal pure returns (bool) {
+        return x.unwrap() == 0;
+    }
+
+    function isZero(OwnedShares x) internal pure returns (bool) {
         return x.unwrap() == 0;
     }
 

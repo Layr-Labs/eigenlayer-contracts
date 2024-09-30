@@ -348,7 +348,7 @@ interface IDelegationManager is ISignatureUtils {
      * @param strategy The strategy in which to increase the delegated shares.
      * @param existingShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
-     * @param addedOwnedShares The number of shares to added to the staker's shares in the strategy. This amount will be scaled prior to adding
+     * @param addedShares The number of shares to added to the staker's shares in the strategy. This amount will be scaled prior to adding
      * to the operator's scaled shares.
      *
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated scaled shares in `strategy`.
@@ -359,7 +359,7 @@ interface IDelegationManager is ISignatureUtils {
         address staker,
         IStrategy strategy,
         Shares existingShares,
-        OwnedShares addedOwnedShares
+        Shares addedShares
     ) external;
 
     /**

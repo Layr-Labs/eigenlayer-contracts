@@ -171,7 +171,8 @@ contract StrategyManager is
         IERC20 token,
         OwnedShares ownedShares
     ) external onlyDelegationManager {
-        _addOwnedShares(staker, token, strategy, ownedShares);
+        //TODO: fix
+        // _addShares(staker, token, strategy, ownedShares);
     }
 
     /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
@@ -238,7 +239,7 @@ contract StrategyManager is
      * @param staker The address to add shares to
      * @param token The token that is being deposited (used for indexing)
      * @param strategy The Strategy in which the `staker` is receiving shares
-     * @param shares The amount of shares to grant to the `staker`
+     * @param sharesToAdd The amount of shares to grant to the `staker`
      * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
      * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
@@ -293,7 +294,7 @@ contract StrategyManager is
         uint256 depositedShares = strategy.deposit(token, amount);
 
         // add the returned shares to the staker's existing shares for this strategy
-        _addShares(staker, token, strategy, depositedShares);
+        _addShares(staker, token, strategy, depositedShares.wrapShares());
 
         return depositedShares.wrapShares();
     }
