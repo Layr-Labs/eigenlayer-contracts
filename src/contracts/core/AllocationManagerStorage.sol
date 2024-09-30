@@ -15,7 +15,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     /// @notice The EIP-712 typehash for the `MagnitudeAdjustments` struct used by the contract
     bytes32 public constant MAGNITUDE_ADJUSTMENT_TYPEHASH = keccak256(
-        "MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)"
+        "MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(bytes20 avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)"
     );
 
     /// @notice The DelegationManager contract for EigenLayer

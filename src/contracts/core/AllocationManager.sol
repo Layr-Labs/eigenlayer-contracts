@@ -181,7 +181,7 @@ contract AllocationManager is
         IStrategy[] calldata strategies,
         uint16 bipsToSlash
     ) external {
-        OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
+        OperatorSet memory operatorSet = OperatorSet({avs: avsDirectory.dispatcherToAVS(msg.sender), operatorSetId: operatorSetId});
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
         require(isOperatorSlashable(operator, operatorSet), InvalidOperator());
 
@@ -308,7 +308,12 @@ contract AllocationManager is
 
         for (uint256 i = 0; i < allocation.operatorSets.length; ++i) {
             require(
-                avsDirectory.isOperatorSet(allocation.operatorSets[i].avs, allocation.operatorSets[i].operatorSetId),
+                avsDirectory.isOperatorSet(_encodeOperatorSet(
+                    OperatorSet({
+                        avs: allocation.operatorSets[i].avs, 
+                        operatorSetId: allocation.operatorSets[i].operatorSetId
+                    })
+                )),
                 InvalidOperatorSet()
             );
 
@@ -514,7 +519,7 @@ contract AllocationManager is
             return true;
         }
         (, uint32 lastDeregisteredTimestamp) =
-            avsDirectory.operatorSetStatus(operatorSet.avs, operator, operatorSet.operatorSetId);
+            avsDirectory.operatorSetStatusByDispatcher(msg.sender, operator, operatorSet.operatorSetId);
         return block.timestamp < lastDeregisteredTimestamp + DEALLOCATION_DELAY;
     }
 
@@ -709,12 +714,13 @@ contract AllocationManager is
         return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
     }
 
+
     /// @dev Returns an `OperatorSet` encoded into a 32-byte value.
     /// @param operatorSet The `OperatorSet` to encode.
     function _encodeOperatorSet(
         OperatorSet memory operatorSet
     ) internal pure returns (bytes32) {
-        return bytes32(abi.encodePacked(operatorSet.avs, uint96(operatorSet.operatorSetId)));
+        return bytes32(abi.encodePacked(uint128(operatorSet.avs), uint128(operatorSet.operatorSetId)));
     }
 
     /// @dev Returns an `OperatorSet` decoded from an encoded 32-byte value.
@@ -724,8 +730,9 @@ contract AllocationManager is
         bytes32 encoded
     ) internal pure returns (OperatorSet memory) {
         return OperatorSet({
-            avs: address(uint160(uint256(encoded) >> 96)),
-            operatorSetId: uint32(uint256(encoded) & type(uint96).max)
+            avs: uint32(uint256(encoded) >> 224),
+            //TODO: uint32(uint256(encoded)) should work here?
+            operatorSetId: uint32(uint256(encoded) & type(uint32).max)
         });
     }
 }
