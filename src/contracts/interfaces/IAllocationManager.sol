@@ -172,7 +172,7 @@ interface IAllocationManager is ISignatureUtils {
      *
      * @dev can be called permissionlessly by anyone
      */
-    function updateFreeMagnitude(
+    function completePendingDeallocations(
         address operator,
         IStrategy[] calldata strategies,
         uint16[] calldata numToComplete

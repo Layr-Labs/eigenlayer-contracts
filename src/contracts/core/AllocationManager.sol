@@ -95,7 +95,7 @@ contract AllocationManager is
      *
      * @dev can be called permissionlessly by anyone
      */
-    function updateFreeMagnitude(
+    function completePendingDeallocations(
         address operator,
         IStrategy[] calldata strategies,
         uint16[] calldata numToComplete
@@ -103,7 +103,7 @@ contract AllocationManager is
         require(strategies.length == numToComplete.length, InputArrayLengthMismatch());
         require(delegation.isOperator(operator), OperatorNotRegistered());
         for (uint256 i = 0; i < strategies.length; ++i) {
-            _updateFreeMagnitude({operator: operator, strategy: strategies[i], numToComplete: numToComplete[i]});
+            _completePendingDeallocations({operator: operator, strategy: strategies[i], numToComplete: numToComplete[i]});
         }
     }
 
@@ -132,18 +132,20 @@ contract AllocationManager is
         require(isSet, UninitializedAllocationDelay());
 
         for (uint256 i = 0; i < allocations.length; ++i) {
-            // 1. For the given (operator,strategy) clear all pending free magnitude for the strategy and update freeMagnitude
-            _updateFreeMagnitude({
+            // 1. For the given (operator,strategy) complete any pending deallocations to update free magnitude
+            _completePendingDeallocations({
                 operator: operator,
                 strategy: allocations[i].strategy,
                 numToComplete: type(uint16).max
             });
 
-            // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
-            // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
-            // proprtional magnitudes relative to each other.
-            uint64 currentTotalMagnitude = _getLatestTotalMagnitude(operator, allocations[i].strategy);
-            require(currentTotalMagnitude == allocations[i].expectedTotalMagnitude, InvalidExpectedTotalMagnitude());
+            {
+                // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
+                // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
+                // proprtional magnitudes relative to each other.
+                uint64 currentTotalMagnitude = _getLatestTotalMagnitude(operator, allocations[i].strategy);
+                require(currentTotalMagnitude == allocations[i].expectedTotalMagnitude, InvalidExpectedTotalMagnitude());
+            }
 
             // 3. set allocations for the strategy after updating freeMagnitude
             MagnitudeAllocation calldata allocation = allocations[i];
@@ -169,7 +171,7 @@ contract AllocationManager is
                     // This is a deallocation
 
                     // 1. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
-                    _pendingDeallocationOperatorSets[operator][allocation.strategy].push(operatorSetKey);
+                    deallocationQueue[operator][allocation.strategy].push(operatorSetKey);
 
                     // 2. Update the effect timestamp for the deallocation
                     mInfo.effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
@@ -270,24 +272,24 @@ contract AllocationManager is
     }
 
     /**
-     * @notice For a single strategy, update freeMagnitude by adding completable pending free magnitudes
+     * @notice For a single strategy, complete pending deallocations and free up their magnitude
      * @param operator address to update freeMagnitude for
      * @param strategy the strategy to update freeMagnitude for
      * @param numToComplete the number of pending free magnitudes deallocations to complete
      * @dev read through pending free magnitudes and add to freeMagnitude if completableTimestamp is >= block timestamp
      * In addition to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
      */
-    function _updateFreeMagnitude(address operator, IStrategy strategy, uint16 numToComplete) internal {
+    function _completePendingDeallocations(address operator, IStrategy strategy, uint16 numToComplete) internal {
         FreeMagnitudeInfo memory freeInfo = operatorFreeMagnitudeInfo[operator][strategy];
         
-        uint256 numDeallocations = _pendingDeallocationOperatorSets[operator][strategy].length;
+        uint256 numDeallocations = deallocationQueue[operator][strategy].length;
         uint256 completed;
 
         while (freeInfo.nextPendingIndex < numDeallocations && completed < numToComplete) {
-            bytes32 opsetKey = _pendingDeallocationOperatorSets[operator][strategy][freeInfo.nextPendingIndex];
+            bytes32 opsetKey = deallocationQueue[operator][strategy][freeInfo.nextPendingIndex];
             MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][opsetKey];
 
-            // _pendingDeallocationOperatorSets is ordered by `effectTimestamp`. If we reach a pending deallocation
+            // deallocationQueue is ordered by `effectTimestamp`. If we reach a pending deallocation
             // that cannot be completed, we're done.
             if (block.timestamp < mInfo.effectTimestamp) {
                 break;
@@ -390,10 +392,10 @@ contract AllocationManager is
      */
     function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
         FreeMagnitudeInfo memory info = operatorFreeMagnitudeInfo[operator][strategy];
-        uint256 numDeallocations = _pendingDeallocationOperatorSets[operator][strategy].length;
+        uint256 numDeallocations = deallocationQueue[operator][strategy].length;
         uint64 freeMagnitudeToAdd = 0;
         for (uint192 i = info.nextPendingIndex; i < numDeallocations; ++i) {
-            bytes32 opsetKey = _pendingDeallocationOperatorSets[operator][strategy][i];
+            bytes32 opsetKey = deallocationQueue[operator][strategy][i];
             MagnitudeInfo memory opsetMagnitudeInfo = _operatorMagnitudeInfo[operator][strategy][opsetKey];
             if (block.timestamp < opsetMagnitudeInfo.effectTimestamp) {
                 break;

@@ -52,7 +52,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     mapping(address => mapping(IStrategy => mapping(bytes32 => MagnitudeInfo))) internal _operatorMagnitudeInfo;
 
     /// @notice Mapping: operator => strategy => operatorSet[] (encoded) to keep track of pending free magnitude for operatorSet from deallocations
-    mapping(address => mapping(IStrategy => bytes32[])) internal _pendingDeallocationOperatorSets;
+    mapping(address => mapping(IStrategy => bytes32[])) internal deallocationQueue;
 
     /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
     /// This determines how long it takes for allocations to take effect in the future.
