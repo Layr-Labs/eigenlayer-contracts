@@ -979,18 +979,18 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.expectRevert("StrategyManager.onlyDelegationManager: not the DelegationManager");
-        invalidDelegationManager.addShares(strategyManager, address(this), dummyToken, dummyStrat, 1);
+        invalidDelegationManager.addOwnedShares(strategyManager, address(this), dummyToken, dummyStrat, 1);
     }
 
     function testFuzz_Revert_StakerZeroAddress(uint256 amount) external {
         cheats.expectRevert("StrategyManager._addShares: staker cannot be zero address");
-        delegationManagerMock.addShares(strategyManager, address(0), dummyToken, dummyStrat, amount);
+        delegationManagerMock.addOwnedShares(strategyManager, address(0), dummyToken, dummyStrat, amount);
     }
 
     function testFuzz_Revert_ZeroShares(address staker) external filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != address(0));
         cheats.expectRevert("StrategyManager._addShares: shares should not be zero!");
-        delegationManagerMock.addShares(strategyManager, staker, dummyToken, dummyStrat, 0);
+        delegationManagerMock.addOwnedShares(strategyManager, staker, dummyToken, dummyStrat, 0);
     }
 
     function testFuzz_AppendsStakerStrategyList(
@@ -1003,7 +1003,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         assertEq(sharesBefore, 0, "Staker has already deposited into this strategy");
         assertFalse(_isDepositedStrategy(staker, dummyStrat), "strategy should not be deposited");
 
-        delegationManagerMock.addShares(strategyManager, staker, dummyToken, dummyStrat, amount);
+        delegationManagerMock.addOwnedShares(strategyManager, staker, dummyToken, dummyStrat, amount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, dummyStrat);
         assertEq(
@@ -1028,7 +1028,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         assertEq(sharesBefore, initialAmount, "Staker has not deposited amount into strategy");
         assertTrue(_isDepositedStrategy(staker, strategy), "strategy should be deposited");
 
-        delegationManagerMock.addShares(strategyManager, staker, dummyToken, dummyStrat, sharesAmount);
+        delegationManagerMock.addOwnedShares(strategyManager, staker, dummyToken, dummyStrat, sharesAmount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, dummyStrat);
         assertEq(
@@ -1077,7 +1077,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
 
         cheats.prank(staker);
         cheats.expectRevert("StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH");
-        delegationManagerMock.addShares(strategyManager, staker, dummyToken, strategy, amount);
+        delegationManagerMock.addOwnedShares(strategyManager, staker, dummyToken, strategy, amount);
 
         cheats.expectRevert("StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH");
         strategyManager.depositIntoStrategy(strategy, token, amount);

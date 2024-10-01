@@ -25,7 +25,7 @@ interface IAllocationManager is ISignatureUtils {
     /// @dev Thrown when an operator attempts to set their allocation for an operatorSet to the same value
     error SameMagnitude();
     /// @dev Thrown when an allocation is attempted for a given operator when they have pending allocations or deallocations.
-    error PendingAllocationOrDeallocation();
+    error ModificationAlreadyPending();
     /// @dev Thrown when an allocation is attempted that exceeds a given operators total allocatable magnitude.
     error InsufficientAllocatableMagnitude();
     /// @dev Thrown when attempting to use an expired eip-712 signature.

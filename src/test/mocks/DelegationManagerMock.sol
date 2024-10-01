@@ -179,7 +179,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         IStrategy strategy,
         OwnedShares shares
     ) external {
-        strategyManager.addShares(staker, token, strategy, shares);
+        strategyManager.addOwnedShares(staker, strategy, token, shares);
     }
 
     function removeShares(
@@ -198,6 +198,6 @@ contract DelegationManagerMock is IDelegationManager, Test {
         OwnedShares shares,
         IERC20 token
     ) external {
-        strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);
+        strategyManager.withdrawSharesAsTokens(recipient, strategy, token, shares);
     }
 }
