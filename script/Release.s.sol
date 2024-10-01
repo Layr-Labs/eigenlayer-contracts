@@ -33,14 +33,28 @@ contract Release is Releasoor {
             .append(this.executeUpgrade);
     }
 
-    function deploy(Addresses memory addrs) internal override {
+    struct Deployment {
+        string name;
+        address deployedTo;
+    }
+
+    function deploy(
+        Addresses memory addrs, 
+        Environment memory env, 
+        Params memory params
+    ) internal override returns (Deployment[] memory deployments) {
+        
+
         vm.startBroadcast();
 
-        EigenPod newEigenPodImpl = new EigenPod(
-            IETHPOSDeposit(params.ethPOS),
-            IEigenPodManager(addrs.eigenPodManager.proxy),
-            params.EIGENPOD_GENESIS_TIME
-        );
+        deployments[0] = Deployment({
+            name: type(EigenPod).name,
+            address: address(new EigenPod(
+                IETHPOSDeposit(params.ethPOS),
+                IEigenPodManager(addrs.eigenPodManager.proxy),
+                params.EIGENPOD_GENESIS_TIME
+            ))
+        });
 
         EigenPodManager newEPMImpl = new EigenPodManager(
             IETHPOSDeposit(params.ethPOS),
@@ -52,8 +66,14 @@ contract Release is Releasoor {
 
         vm.stopBroadcast();
 
-        addrs.eigenPod.setPending(address(newEigenPodImpl));
-        addrs.eigenPodManager.setPending(address(newEPMImpl));
+        type(EigenPod).contractName;
+
+        
+
+        _logDeploy(EIGENPOD, address(newEigenPodImpl));
+
+        // addrs.eigenPod.setPending(address(newEigenPodImpl));
+        // addrs.eigenPodManager.setPending(address(newEPMImpl));
     }
 
     function queueUpgrade(Addresses memory addrs) internal override {

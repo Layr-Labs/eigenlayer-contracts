@@ -9,6 +9,10 @@ import "./StringUtils.sol";
 import "./AddressUtils.sol";
 import "./TxBuilder.sol";
 
+contract OpsMultisigBuilder is Releasoor {
+
+}
+
 contract Releasoor is ConfigParser {
 
     using StringUtils for *;
@@ -33,6 +37,13 @@ contract Releasoor is ConfigParser {
 
     string constant CONFIG_ZIPZOOP = "script/configs/zipzoop.json";
     
+    function deploy(string memory jsonFile) public returns (Deployment[] memory deployments) {
+
+        (Addresses, Env, Params) = _readConfig();
+
+        return _deploy(addrs, env, params);
+    }
+
     /// $ run execute mainnet
     /// -- requires that you have previously run deploy and queue
     /// ... except that sometimes we don't need to run deploy OR queue. For example:
@@ -46,7 +57,7 @@ contract Releasoor is ConfigParser {
     ///   - This would mean we haven't called `queue` yet
     /// - We reference a pendingImpl that doesn't exist in the config
     ///   - This would mean we haven't called `deploy` yet
-    function run(string memory action, string memory _env) public {
+    function run(string memory action, string memory _env) public returns (bytes memory) {
         _log(action);
         _log(_env);
 
@@ -80,7 +91,7 @@ contract Releasoor is ConfigParser {
         bytes32 initialAddrs = keccak256(abi.encode(addrs));
         
         if (action.eq(DEPLOY)) {
-            deploy(addrs);
+            (string[] memory names, ..) = deploy(addrs);
         } else if (action.eq(QUEUE)) {
             (Txs storage executorTxns, uint eta) = queueUpgrade(addrs);
 
