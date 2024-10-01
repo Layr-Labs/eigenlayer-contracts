@@ -66,7 +66,7 @@ interface IAllocationManager is ISignatureUtils {
      */
     struct MagnitudeInfo {
         uint64 currentMagnitude;
-        int64 pendingMagnitudeDiff;
+        int128 pendingMagnitudeDiff;
         uint32 effectTimestamp;
     }
 
