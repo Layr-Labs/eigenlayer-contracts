@@ -10,7 +10,7 @@ abstract contract EOABuilder {
 
 abstract contract MultisigBuilder {
     function execute(string memory envPath) public returns (Transaction memory) {
-        // TODO
+        // TODO - pull from Releasoor.run
     }
 
     function _execute(Addresses memory addrs, Env, Params) internal virtual returns (Calls[] memory);
@@ -32,7 +32,7 @@ contract ExampleScript is MultisigBuilder {
     }
 
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory) {
-        
+
 
         return Transaction({
             to: addrs.admin.timelock,
