@@ -294,10 +294,7 @@ contract AllocationManager is
             );
 
             // Set the current magnitude to the pending magnitude if the effectTimestamp is in the past
-            uint64 currentMagnitude = opsetMagnitudeInfo.currentMagnitude;
-            if (opsetMagnitudeInfo.effectTimestamp <= block.timestamp) {
-                currentMagnitude = _calculateNewCurrentMagnitude(opsetMagnitudeInfo);
-            }
+            uint64 currentMagnitude = _calculateNewCurrentMagnitude(opsetMagnitudeInfo);
             
             require(currentMagnitude != allocation.magnitudes[i], SameMagnitude());
             
