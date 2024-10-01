@@ -25,7 +25,7 @@ interface IAllocationManager is ISignatureUtils {
     /// @dev Thrown when an operator attempts to set their allocation for an operatorSet to the same value
     error SameMagnitude();
     /// @dev Thrown when an allocation is attempted for a given operator when they have pending allocations or deallocations.
-    error PendingAllocationOrDeallocation();
+    error ModificationAlreadyPending();
     /// @dev Thrown when an allocation is attempted that exceeds a given operators total allocatable magnitude.
     error InsufficientAllocatableMagnitude();
     /// @dev Thrown when attempting to use an expired eip-712 signature.
@@ -53,18 +53,30 @@ interface IAllocationManager is ISignatureUtils {
      * @param magnitudeDiff the amount of magnitude to deallocate
      * @param completableTimestamp the timestamp at which the deallocation can be completed, 21 days from when queued
      */
-    struct PendingFreeMagnitude {
-        uint64 magnitudeDiff;
-        uint32 completableTimestamp;
+    // struct PendingFreeMagnitude {
+    //     uint64 magnitudeDiff;
+    //     uint32 completableTimestamp;
+    // }
+
+    /**
+     * @notice struct used for operator magnitude updates. Stored in _operatorMagnitudeInfo mapping
+     * @param currentMagnitude the current magnitude of the operator
+     * @param pendingMagnitudeIdff the pending magnitude difference of the operator
+     * @param effectTimestamp the timestamp at which the pending magnitude will take effect
+     */
+    struct MagnitudeInfo {
+        int128 pendingMagnitudeDiff;
+        uint64 currentMagnitude;
+        uint32 effectTimestamp;
     }
 
     /**
      * @notice Struct containing info regarding free allocatable magnitude.
-     * @param nextPendingFreeMagnitudeIndex The next available update index.
+     * @param nextPendingIndex The next available update index.
      * @param freeMagnitude The total amount of free allocatable magnitude.
      */
-    struct OperatorMagnitudeInfo {
-        uint192 nextPendingFreeMagnitudeIndex;
+    struct FreeMagnitudeInfo {
+        uint192 nextPendingIndex;
         uint64 freeMagnitude;
     }
 
@@ -239,13 +251,14 @@ interface IAllocationManager is ISignatureUtils {
      * @param operator the operator to get the pending deallocations for
      * @param strategy the strategy to get the pending deallocations for
      * @param operatorSets the operatorSets to get the pending deallocations for
-     * @return pendingMagnitudes the latest pending deallocation
+     * @return pendingMagnitudeDiffs the pending deallocation diffs for each operatorSet
+     * @return timestamps the timestamps for each pending dealloction
      */
     function getPendingDeallocations(
         address operator,
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
-    ) external view returns (PendingFreeMagnitude[] memory);
+    ) external view returns (uint64[] memory, uint32[] memory);
 
     /**
      * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days

@@ -45,17 +45,14 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// Note that totalMagnitude is monotonically decreasing and only gets updated upon slashing
     mapping(address => mapping(IStrategy => Snapshots.History)) internal _totalMagnitudeUpdate;
 
-    /// @notice Mapping: operator => strategy => operatorSet (encoded) => snapshotted magnitude
-    mapping(address => mapping(IStrategy => mapping(bytes32 => Snapshots.History))) internal _magnitudeUpdate;
-
     /// @notice Mapping: operator => strategy => OperatorMagnitudeInfo to keep track of info regarding pending magnitude allocations.
-    mapping(address => mapping(IStrategy => OperatorMagnitudeInfo)) public operatorMagnitudeInfo;
+    mapping(address => mapping(IStrategy => FreeMagnitudeInfo)) public operatorFreeMagnitudeInfo;
 
-    /// @notice Mapping: operator => strategy => PendingFreeMagnitude[] to keep track of pending free magnitude from deallocations
-    mapping(address => mapping(IStrategy => PendingFreeMagnitude[])) internal _pendingFreeMagnitude;
+    /// @notice Mapping: operator => strategy => operatorSet (encoded) => MagnitudeInfo
+    mapping(address => mapping(IStrategy => mapping(bytes32 => MagnitudeInfo))) internal _operatorMagnitudeInfo;
 
-    /// @notice Mapping: operator => strategy => operatorSet (encoded) => list of queuedDeallocation indices
-    mapping(address => mapping(IStrategy => mapping(bytes32 => uint256[]))) internal _queuedDeallocationIndices;
+    /// @notice Mapping: operator => strategy => operatorSet[] (encoded) to keep track of pending free magnitude for operatorSet from deallocations
+    mapping(address => mapping(IStrategy => bytes32[])) internal _pendingDeallocationOperatorSets;
 
     /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
     /// This determines how long it takes for allocations to take effect in the future.
@@ -78,5 +75,5 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[42] private __gap;
+    uint256[44] private __gap;
 }

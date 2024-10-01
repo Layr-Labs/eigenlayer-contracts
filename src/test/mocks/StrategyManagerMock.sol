@@ -114,9 +114,9 @@ contract StrategyManagerMock is
 
     function removeShares(address staker, IStrategy strategy, Shares shares) external {}
 
-    function addShares(address staker, IERC20 token, IStrategy strategy, OwnedShares shares) external {}
+    function addOwnedShares(address staker, IStrategy strategy, IERC20 token, OwnedShares shares) external {}
     
-    function withdrawSharesAsTokens(address recipient, IStrategy strategy, OwnedShares shares, IERC20 token) external {}
+    function withdrawSharesAsTokens(address recipient, IStrategy strategy, IERC20 token, OwnedShares shares) external {}
 
     /// @notice returns the enshrined beaconChainETH Strategy
     function beaconChainETHStrategy() external view returns (IStrategy) {}

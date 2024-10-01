@@ -194,28 +194,28 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         cheats.assume(notDelegationManager != address(delegationManagerMock));
         cheats.prank(notDelegationManager);
         cheats.expectRevert("EigenPodManager.onlyDelegationManager: not the DelegationManager");
-        eigenPodManager.addShares(defaultStaker, 0);
+        eigenPodManager.addOwnedShares(defaultStaker, 0);
     }
     
     function test_addShares_revert_podOwnerInputAddressZero() public {
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.addShares: podOwner cannot be zero address");
-        eigenPodManager.addShares(address(0), 0);
+        cheats.expectRevert("EigenPodManager.addOwnedShares: podOwner cannot be zero address");
+        eigenPodManager.addOwnedShares(address(0), 0);
     }
 
     function testFuzz_addShares_revert_sharesNegative(int256 shares) public {
         cheats.assume(shares < 0);
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.addShares: shares cannot be negative");
-        eigenPodManager.addShares(defaultStaker, uint256(shares));
+        cheats.expectRevert("EigenPodManager.addOwnedShares: shares cannot be negative");
+        eigenPodManager.addOwnedShares(defaultStaker, uint256(shares));
     }
 
     function testFuzz_addShares_revert_sharesNotWholeGwei(uint256 shares) public {
         cheats.assume(int256(shares) >= 0);
         cheats.assume(shares % GWEI_TO_WEI != 0);
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.addShares: shares must be a whole Gwei amount");
-        eigenPodManager.addShares(defaultStaker, shares);
+        cheats.expectRevert("EigenPodManager.addOwnedShares: shares must be a whole Gwei amount");
+        eigenPodManager.addOwnedShares(defaultStaker, shares);
     }
 
     function testFuzz_addShares(uint256 shares) public {
@@ -226,7 +226,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
         // Add shares
         cheats.prank(address(delegationManagerMock));
-        eigenPodManager.addShares(defaultStaker, shares);
+        eigenPodManager.addOwnedShares(defaultStaker, shares);
 
         // Check storage update
         assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(shares), "Incorrect number of shares added");
