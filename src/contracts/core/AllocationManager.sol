@@ -229,8 +229,8 @@ contract AllocationManager is
             mInfo.currentMagnitude -= slashedMagnitude;
             // if there is a pending deallocation, slash pending deallocation proportionally
             if (mInfo.pendingMagnitudeDiff < 0) {
-                uint256 pendingMagnitudeDiff = uint256(uint128(-mInfo.pendingMagnitudeDiff)) * (BIPS_FACTOR - bipsToSlash) / BIPS_FACTOR;
-                mInfo.pendingMagnitudeDiff += -int128(uint128(pendingMagnitudeDiff));
+                uint128 slashedPending = uint128(uint128(-mInfo.pendingMagnitudeDiff) * bipsToSlash / BIPS_FACTOR);
+                mInfo.pendingMagnitudeDiff += int128(slashedPending);
             }
             // update operatorMagnitudeInfo
             _operatorMagnitudeInfo[operator][strategies[i]][operatorSetKey] = mInfo;
