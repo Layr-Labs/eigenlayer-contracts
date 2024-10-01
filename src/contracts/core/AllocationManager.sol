@@ -185,11 +185,9 @@ contract AllocationManager is
             // 1. Slash from pending deallocations and allocations
             MagnitudeInfo memory opsetMagnitudeInfo = _operatorMagnitudeInfo[operator][strategies[i]][operatorSetKey];
             if (opsetMagnitudeInfo.effectTimestamp <= block.timestamp) {
-                if (opsetMagnitudeInfo.pendingMagnitudeDiff >= 0) {
-                    opsetMagnitudeInfo.currentMagnitude = opsetMagnitudeInfo.currentMagnitude + uint64(opsetMagnitudeInfo.pendingMagnitudeDiff);
-                } else {
-                    opsetMagnitudeInfo.currentMagnitude = opsetMagnitudeInfo.currentMagnitude - uint64(-opsetMagnitudeInfo.pendingMagnitudeDiff);
-                }
+                opsetMagnitudeInfo.currentMagnitude = _calculateNewCurrentMagnitude(opsetMagnitudeInfo);
+
+                // Reset pendingMagnitudeDiff to 0 since it has passed
                 opsetMagnitudeInfo.pendingMagnitudeDiff = 0;
             }
             
@@ -298,11 +296,7 @@ contract AllocationManager is
             // Set the current magnitude to the pending magnitude if the effectTimestamp is in the past
             uint64 currentMagnitude = opsetMagnitudeInfo.currentMagnitude;
             if (opsetMagnitudeInfo.effectTimestamp <= block.timestamp) {
-                if (opsetMagnitudeInfo.pendingMagnitudeDiff >= 0) {
-                    currentMagnitude = opsetMagnitudeInfo.currentMagnitude + uint64(opsetMagnitudeInfo.pendingMagnitudeDiff);
-                } else {
-                    currentMagnitude = opsetMagnitudeInfo.currentMagnitude - uint64(-opsetMagnitudeInfo.pendingMagnitudeDiff);
-                }
+                currentMagnitude = _calculateNewCurrentMagnitude(opsetMagnitudeInfo);
             }
             
             require(currentMagnitude != allocation.magnitudes[i], SameMagnitude());
@@ -385,6 +379,17 @@ contract AllocationManager is
         return (freeMagnitudeToAdd, completed);
     }
 
+    function _calculateNewCurrentMagnitude(MagnitudeInfo memory magnitudeInfo) internal returns (int64) {
+        int64 newCurrentMagnitude;
+        if (magnitudeInfo.pendingMagnitudeDiff >= 0) {
+            magnitudeInfo.currentMagnitude = magnitudeInfo.currentMagnitude + uint64(magnitudeInfo.pendingMagnitudeDiff);
+        } else {
+            magnitudeInfo.currentMagnitude = magnitudeInfo.currentMagnitude - uint64(-magnitudeInfo.pendingMagnitudeDiff);
+        }
+        return newCurrentMagnitude;
+    }
+
+
     /**
      * @notice Returns the allocation delay of an operator
      * @param operator The operator to get the allocation delay for
@@ -417,14 +422,10 @@ contract AllocationManager is
             slashableMagnitudes[i] = new uint64[](operatorSets.length);
             for (uint256 j = 0; j < operatorSets.length; ++j) {
                 MagnitudeInfo memory opsetMagnitudeInfo = _operatorMagnitudeInfo[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])];
-                if (block.timestamp < opsetMagnitudeInfo.effectTimestamp) {
-                    slashableMagnitudes[i][j] = opsetMagnitudeInfo.currentMagnitude;
+                if (opsetMagnitudeInfo.effectTimestamp <= block.timestamp) {
+                    slashableMagnitudes[i][j] = _calculateNewCurrentMagnitude(opsetMagnitudeInfo);
                 } else {
-                    if (opsetMagnitudeInfo.pendingMagnitudeDiff >= 0) {
-                        slashableMagnitudes[i][j] = opsetMagnitudeInfo.currentMagnitude + uint64(opsetMagnitudeInfo.pendingMagnitudeDiff);
-                    } else {
-                        slashableMagnitudes[i][j] = opsetMagnitudeInfo.currentMagnitude - uint64(-opsetMagnitudeInfo.pendingMagnitudeDiff);
-                    }
+                    slashableMagnitudes[i][j] = opsetMagnitudeInfo.currentMagnitude;
                 }
             }
         }
