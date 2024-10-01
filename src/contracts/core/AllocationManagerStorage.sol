@@ -54,9 +54,6 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @notice Mapping: operator => strategy => operatorSet[] (encoded) to keep track of pending free magnitude for operatorSet from deallocations
     mapping(address => mapping(IStrategy => bytes32[])) internal _pendingDeallocationOperatorSets;
 
-    /// @notice Mapping: operator => strategy => operatorSet (encoded) => list of queuedDeallocation indices
-    // mapping(address => mapping(IStrategy => mapping(bytes32 => uint256[]))) internal _queuedDeallocationIndices;
-
     /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
     /// This determines how long it takes for allocations to take effect in the future.
     mapping(address => AllocationDelayInfo) internal _allocationDelayInfo;
@@ -78,5 +75,5 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[43] private __gap;
+    uint256[44] private __gap;
 }
