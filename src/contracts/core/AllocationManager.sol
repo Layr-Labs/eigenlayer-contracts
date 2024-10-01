@@ -548,9 +548,7 @@ contract AllocationManager is
             if (opsetMagnitudeInfo.effectTimestamp < block.timestamp && opsetMagnitudeInfo.pendingMagnitudeDiff < 0) {
                 pendingMagnitudeDiffs[i] = uint64(uint128(-opsetMagnitudeInfo.pendingMagnitudeDiff));
                 timestamps[i] = opsetMagnitudeInfo.effectTimestamp;
-            } else {
                 pendingMagnitudeDiffs[i] = 0;
-                timestamps[i] = 0;
             }
         }
     }
