@@ -172,7 +172,7 @@ contract AllocationManager is
                     _pendingDeallocationOperatorSets[operator][allocation.strategy].push(operatorSetKey);
 
                     // 2. Update the effect timestamp for the deallocation
-                    mInfo.effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;            
+                    mInfo.effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
                 } else if (mInfo.pendingMagnitudeDiff > 0) {
                     // This is an allocation
 
@@ -280,10 +280,33 @@ contract AllocationManager is
     function _updateFreeMagnitude(address operator, IStrategy strategy, uint16 numToComplete) internal {
         FreeMagnitudeInfo memory freeInfo = operatorFreeMagnitudeInfo[operator][strategy];
         
-        (uint64 freeMagnitudeToAdd, uint192 completed) =
-            _getPendingFreeMagnitude(operator, strategy, numToComplete, freeInfo.nextPendingIndex);
-        freeInfo.freeMagnitude += freeMagnitudeToAdd;
-        freeInfo.nextPendingIndex += completed;
+        uint256 numDeallocations = _pendingDeallocationOperatorSets[operator][strategy].length;
+        uint256 completed;
+
+        while (freeInfo.nextPendingIndex < numDeallocations && completed < numToComplete) {
+            bytes32 opsetKey = _pendingDeallocationOperatorSets[operator][strategy][freeInfo.nextPendingIndex];
+            MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][opsetKey];
+
+            // _pendingDeallocationOperatorSets is ordered by `effectTimestamp`. If we reach a pending deallocation
+            // that cannot be completed, we're done.
+            if (block.timestamp < mInfo.effectTimestamp) {
+                break;
+            }
+
+            // We know that this is a deallocation because this `opsetKey` was in the pending deallocation set
+            // Therefore, `pendingMagnitudeDiff` MUST be negative.
+            uint64 freeMagnitudeToAdd = uint64(uint128(-mInfo.pendingMagnitudeDiff));
+            mInfo.pendingMagnitudeDiff = 0;
+            mInfo.currentMagnitude -= freeMagnitudeToAdd;
+
+            // Add newly-freed magnitude to FreeMagnitudeInfo
+            freeInfo.freeMagnitude += freeMagnitudeToAdd;
+            freeInfo.nextPendingIndex++;
+            ++completed;
+
+            // Update MagnitudeInfo in storage
+            _operatorMagnitudeInfo[operator][strategy][opsetKey] = mInfo;
+        }
 
         operatorFreeMagnitudeInfo[operator][strategy] = freeInfo;
     }
@@ -298,39 +321,6 @@ contract AllocationManager is
         }
 
         return uint64(totalMagnitude);
-    }
-
-    /// @dev gets the pending free magnitude available to add by completing numToComplete pending deallocations
-    /// and returns the next index to start from if completed.
-    function _getPendingFreeMagnitude(
-        address operator,
-        IStrategy strategy,
-        uint16 numToComplete,
-        uint192 nextIndex
-    ) internal returns (uint64 freeMagnitudeToAdd, uint192 completed) {
-        uint256 numDeallocations = _pendingDeallocationOperatorSets[operator][strategy].length;
-        freeMagnitudeToAdd = 0;
-        while (nextIndex < numDeallocations && completed < numToComplete) {
-            bytes32 opsetKey = _pendingDeallocationOperatorSets[operator][strategy][nextIndex];
-            MagnitudeInfo memory opsetMagnitudeInfo = _operatorMagnitudeInfo[operator][strategy][opsetKey];
-            // _pendingDeallocationOperatorSets is ordered by `effectTimestamp`. If we reach one that is not completable yet, then break
-            // loop until completableTimestamp is < block.timestamp
-            if (block.timestamp < opsetMagnitudeInfo.effectTimestamp) {
-                break;
-            }
-
-            // pending free magnitude can be added to freeMagnitude
-            freeMagnitudeToAdd += uint64(uint128(-opsetMagnitudeInfo.pendingMagnitudeDiff));
-            _operatorMagnitudeInfo[operator][strategy][opsetKey] = MagnitudeInfo({
-                pendingMagnitudeDiff: 0,
-                currentMagnitude: opsetMagnitudeInfo.currentMagnitude - uint64(uint128(-opsetMagnitudeInfo.pendingMagnitudeDiff)),
-                effectTimestamp: 0
-            });
-
-            ++nextIndex;
-            ++completed;
-        }
-        return (freeMagnitudeToAdd, completed);
     }
 
     /// @dev Fetch the operator's current magnitude, applying a pending diff if the effect timestamp is passed
