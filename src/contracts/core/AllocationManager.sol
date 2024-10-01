@@ -20,7 +20,7 @@ contract AllocationManager is
     using Snapshots for Snapshots.History;
 
     /// @dev BIPS factor for slashable bips
-    uint256 internal constant BIPS_FACTOR = 10_000;
+    uint64 internal constant BIPS_FACTOR = 10_000;
 
     /// @dev Returns the chain ID from the time the contract was deployed.
     uint256 internal immutable ORIGINAL_CHAIN_ID;
@@ -143,12 +143,10 @@ contract AllocationManager is
             // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
             // proprtional magnitudes relative to each other.
             uint64 currentTotalMagnitude = _getLatestTotalMagnitude(operator, allocations[i].strategy);
-
             require(currentTotalMagnitude == allocations[i].expectedTotalMagnitude, InvalidExpectedTotalMagnitude());
 
             // 3. set allocations for the strategy after updating freeMagnitude
             MagnitudeAllocation calldata allocation = allocations[i];
-
             require(allocation.operatorSets.length == allocation.magnitudes.length, InputArrayLengthMismatch());
 
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
@@ -157,14 +155,10 @@ contract AllocationManager is
                     InvalidOperatorSet()
                 );
 
-                bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
-
                 // Check that there are no pending allocations & deallocations for the operator, operatorSet, strategy
-                MagnitudeInfo memory mInfo = _getCurrentMagnitudeWithPending(operator, allocation.strategy, operatorSetKey);
-                require(
-                    block.timestamp >= mInfo.effectTimestamp,
-                    ModificationAlreadyPending()
-                );
+                bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
+                MagnitudeInfo memory mInfo = _getCurrentEffectiveMagnitude(operator, allocation.strategy, operatorSetKey);
+                require(block.timestamp >= mInfo.effectTimestamp, ModificationAlreadyPending());
 
                 // Calculate the new pending diff with this modification
                 mInfo.pendingMagnitudeDiff = int128(uint128(allocation.magnitudes[j])) - int128(uint128(mInfo.currentMagnitude));
@@ -223,13 +217,13 @@ contract AllocationManager is
 
         for (uint256 i = 0; i < strategies.length; ++i) {
             // 1. Slash from pending deallocations and allocations
-            MagnitudeInfo memory mInfo = _getCurrentMagnitudeWithPending(operator, strategies[i], operatorSetKey);
+            MagnitudeInfo memory mInfo = _getCurrentEffectiveMagnitude(operator, strategies[i], operatorSetKey);
             
-            uint64 slashedMagnitude = uint64(uint256(mInfo.currentMagnitude) * bipsToSlash / BIPS_FACTOR);
+            uint64 slashedMagnitude = mInfo.currentMagnitude * bipsToSlash / BIPS_FACTOR;
             mInfo.currentMagnitude -= slashedMagnitude;
             // if there is a pending deallocation, slash pending deallocation proportionally
             if (mInfo.pendingMagnitudeDiff < 0) {
-                uint128 slashedPending = uint128(uint128(-mInfo.pendingMagnitudeDiff) * bipsToSlash / BIPS_FACTOR);
+                uint128 slashedPending = uint128(-mInfo.pendingMagnitudeDiff) * bipsToSlash / BIPS_FACTOR;
                 mInfo.pendingMagnitudeDiff += int128(slashedPending);
             }
             // update operatorMagnitudeInfo
@@ -341,7 +335,7 @@ contract AllocationManager is
 
     /// @dev Fetch the operator's current magnitude, applying a pending diff if the effect timestamp is passed
     /// @notice This may return something that is not recorded in state. Remember to store this updated value if needed!
-    function _getCurrentMagnitudeWithPending(address operator, IStrategy strategy, bytes32 operatorSetKey) internal view returns (MagnitudeInfo memory) {
+    function _getCurrentEffectiveMagnitude(address operator, IStrategy strategy, bytes32 operatorSetKey) internal view returns (MagnitudeInfo memory) {
         MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][operatorSetKey];
 
         // If the magnitude change is not yet in effect, return unaltered
@@ -391,7 +385,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < strategies.length; ++i) {
             slashableMagnitudes[i] = new uint64[](operatorSets.length);
             for (uint256 j = 0; j < operatorSets.length; ++j) {
-                MagnitudeInfo memory mInfo = _getCurrentMagnitudeWithPending(operator, strategies[i], _encodeOperatorSet(operatorSets[j]));
+                MagnitudeInfo memory mInfo = _getCurrentEffectiveMagnitude(operator, strategies[i], _encodeOperatorSet(operatorSets[j]));
                 slashableMagnitudes[i][j] = mInfo.currentMagnitude;
             }
         }
