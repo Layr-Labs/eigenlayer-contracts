@@ -328,8 +328,8 @@ contract AllocationManager is
             // pending free magnitude can be added to freeMagnitude
             freeMagnitudeToAdd += uint64(uint128(-opsetMagnitudeInfo.pendingMagnitudeDiff));
             _operatorMagnitudeInfo[operator][strategy][opsetKey] = MagnitudeInfo({
-                currentMagnitude: opsetMagnitudeInfo.currentMagnitude - uint64(uint128(-opsetMagnitudeInfo.pendingMagnitudeDiff)),
                 pendingMagnitudeDiff: 0,
+                currentMagnitude: opsetMagnitudeInfo.currentMagnitude - uint64(uint128(-opsetMagnitudeInfo.pendingMagnitudeDiff)),
                 effectTimestamp: 0
             });
 

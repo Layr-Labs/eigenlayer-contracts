@@ -65,8 +65,8 @@ interface IAllocationManager is ISignatureUtils {
      * @param effectTimestamp the timestamp at which the pending magnitude will take effect
      */
     struct MagnitudeInfo {
-        uint64 currentMagnitude;
         int128 pendingMagnitudeDiff;
+        uint64 currentMagnitude;
         uint32 effectTimestamp;
     }
 
