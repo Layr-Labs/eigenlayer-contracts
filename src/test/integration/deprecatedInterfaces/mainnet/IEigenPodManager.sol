@@ -79,8 +79,5 @@ interface IEigenPodManager_DeprecatedM1 is IPausable {
     /// @notice EigenLayer's StrategyManager contract
     function strategyManager() external view returns(IStrategyManager_DeprecatedM1);
 
-    /// @notice EigenLayer's Slasher contract
-    function slasher() external view returns(ISlasher);
-
     function hasPod(address podOwner) external view returns (bool);
 }

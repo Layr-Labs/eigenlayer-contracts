@@ -45,7 +45,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
 
     // deallocation delay in AllocationManager
     uint32 DEALLOCATION_DELAY = 17.5 days;
-    uint32 ALLOCATION_DELAY_CONFIGURATION_DELAY = 21 days;
+    uint32 ALLOCATION_CONFIGURATION_DELAY = 21 days;
     // withdrawal delay in DelegationManager
     uint32 MIN_WITHDRAWAL_DELAY = 17.5 days;
     uint256 minWithdrawalDelayBlocks = 216_000;
@@ -55,7 +55,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     // Index for flag that pauses registering/deregistering for AVSs
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
     // Index for flag that pauses operator register/deregister to operator sets when set.
-    uint8 internal constant PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS = 1;
+    uint8 internal constant PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION = 1;
 
     function setUp() public virtual override {
         // Setup
@@ -77,7 +77,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
-        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_DELAY_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         delegationManagerImplementation = new DelegationManager(
             strategyManagerMock, 
@@ -975,7 +975,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
 
     function test_revert_paused() public {
         cheats.prank(pauser);
-        avsDirectory.pause(2 ** PAUSER_OPERATOR_REGISTER_DEREGISTER_TO_OPERATOR_SETS);
+        avsDirectory.pause(2 ** PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION);
 
         operators = new address[](1);
         operatorSetIds = new uint32[][](1);

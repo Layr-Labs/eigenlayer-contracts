@@ -3,7 +3,6 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./IShareManager.sol";
-import "./ISlasher.sol";
 import "./IDelegationManager.sol";
 import "./IEigenPodManager.sol";
 
@@ -131,9 +130,6 @@ interface IStrategyManager is IShareManager {
 
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
-
-    /// @notice Returns the single, central Slasher contract of EigenLayer
-    function slasher() external view returns (ISlasher);
 
     /// @notice Returns the EigenPodManager contract of EigenLayer
     function eigenPodManager() external view returns (IEigenPodManager);

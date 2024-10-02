@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IAllocationManager.sol";
+import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
     using Snapshots for Snapshots.History;
+
+    // Constants
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
@@ -17,6 +19,20 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     bytes32 public constant MAGNITUDE_ADJUSTMENT_TYPEHASH = keccak256(
         "MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)"
     );
+
+    /// @dev Index for flag that pauses operator allocations/deallocations when set.
+    uint8 internal constant PAUSED_STAKE_ALLOCATIONS_AND_DEALLOCATIONS = 0;
+
+    /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
+    uint8 internal constant PAUSED_OPERATOR_SLASHING = 1;
+
+    /// @dev BIPS factor for slashable bips
+    uint256 internal constant BIPS_FACTOR = 10_000;
+
+    /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
+    uint256 internal constant MAX_PENDING_UPDATES = 1;
+
+    // Immutables
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
@@ -29,7 +45,12 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     uint32 public immutable DEALLOCATION_DELAY;
 
     /// @dev Delay before alloaction delay modifications take effect.
-    uint32 public immutable ALLOCATION_DELAY_CONFIGURATION_DELAY; // QUESTION: 21 days?
+    uint32 public immutable ALLOCATION_CONFIGURATION_DELAY; // QUESTION: 21 days?
+
+    /// @dev Returns the chain ID from the time the contract was deployed.
+    uint256 internal immutable ORIGINAL_CHAIN_ID;
+
+    // Mutatables
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -58,16 +79,19 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// This determines how long it takes for allocations to take effect in the future.
     mapping(address => AllocationDelayInfo) internal _allocationDelayInfo;
 
+    // Construction
+
     constructor(
         IDelegationManager _delegation,
         IAVSDirectory _avsDirectory,
         uint32 _DEALLOCATION_DELAY,
-        uint32 _ALLOCATION_DELAY_CONFIGURATION_DELAY
+        uint32 _ALLOCATION_CONFIGURATION_DELAY
     ) {
         delegation = _delegation;
         avsDirectory = _avsDirectory;
         DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
-        ALLOCATION_DELAY_CONFIGURATION_DELAY = _ALLOCATION_DELAY_CONFIGURATION_DELAY;
+        ALLOCATION_CONFIGURATION_DELAY = _ALLOCATION_CONFIGURATION_DELAY;
+        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**

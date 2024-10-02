@@ -6,6 +6,8 @@ import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 
 interface IAllocationManager is ISignatureUtils {
+    /// @dev Thrown when `bipsToSlash` is greater than 10,000 bips (100%), or zero.
+    error InvalidBipsToSlash();
     /// @dev Thrown when `operator` is not a registered operator.
     error OperatorNotRegistered();
     /// @dev Thrown when two array parameters have mismatching lengths.
@@ -259,14 +261,6 @@ interface IAllocationManager is ISignatureUtils {
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
     ) external view returns (uint64[] memory, uint32[] memory);
-
-    /**
-     * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
-     * @param operator the operator to check slashability for
-     * @param operatorSet the operatorSet to check slashability for
-     * @return bool if the operator is slashable by the operatorSet
-     */
-    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
     /**
      * @param operator the operator to get the slashable magnitude for

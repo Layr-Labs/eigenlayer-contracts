@@ -62,6 +62,8 @@ contract AVSDirectoryMock is IAVSDirectory, Test {
 
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool) {}
 
+    function isOperatorSetBatch(OperatorSet[] calldata operatorSets) public view returns (bool) {}
+
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool) {}
 
     function operatorSetMemberCount(address avs, uint32 operatorSetId) external view returns (uint256) {}

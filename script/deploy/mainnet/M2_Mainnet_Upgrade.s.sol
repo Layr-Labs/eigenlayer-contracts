@@ -67,8 +67,8 @@
 //             eigenPodManager,
 //             EIGENPOD_GENESIS_TIME
 //         );
-//         delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-//         strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher, avsDirectory);
+//         delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager);
+//         strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, avsDirectory);
 //         slasherImplementation = new Slasher(strategyManager, delegationManager);
 //         eigenPodManagerImplementation = new EigenPodManager(
 //             IETHPOSDeposit(ETHPOSDepositAddress),
@@ -133,7 +133,7 @@
 //         _parseInitialDeploymentParams("script/configs/mainnet/M2_mainnet_upgrade.config.json");
 
 //         Tx[] memory txs = new Tx[](11);
-//         // upgrade the DelegationManager, Slasher, StrategyManager, DelayedWithdrawalRouter, EigenPodManager, & EigenPod contracts
+//         // upgrade the DelegationManager, StrategyManager, DelayedWithdrawalRouter, EigenPodManager, & EigenPod contracts
 //         txs[0] = Tx(
 //             address(eigenLayerProxyAdmin),
 //             0,

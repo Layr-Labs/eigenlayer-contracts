@@ -220,11 +220,23 @@ interface IAVSDirectory is ISignatureUtils {
 
     function isMember(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
+    /**
+     * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
+     * @param operator the operator to check slashability for
+     * @param operatorSet the operatorSet to check slashability for
+     * @return bool if the operator is slashable by the operatorSet
+     */
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
+
     function isOperatorSetAVS(
         address avs
     ) external view returns (bool);
 
+    /// @notice Returns true if the operator set is valid.
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
+
+    /// @notice Returns true if all provided operator sets are valid.
+    function isOperatorSetBatch(OperatorSet[] calldata operatorSets) external view returns (bool);
 
     /**
      * @notice Returns operator set an operator is registered to in the order they were registered.

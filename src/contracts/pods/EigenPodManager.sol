@@ -47,9 +47,8 @@ contract EigenPodManager is
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
         IStrategyManager _strategyManager,
-        ISlasher _slasher,
         IDelegationManager _delegationManager
-    ) EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _strategyManager, _slasher, _delegationManager) {
+    ) EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _strategyManager, _delegationManager) {
         _disableInitializers();
     }
 

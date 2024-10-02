@@ -5,6 +5,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
@@ -29,12 +30,6 @@ contract StrategyManager is
     using SlashingLib for *;
     using SafeERC20 for IERC20;
 
-    // index for flag that pauses deposits when set
-    uint8 internal constant PAUSED_DEPOSITS = 0;
-
-    // chain id at the time of contract deployment
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-
     modifier onlyStrategyWhitelister() {
         require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
         _;
@@ -54,17 +49,14 @@ contract StrategyManager is
 
     /**
      * @param _delegation The delegation contract of EigenLayer.
-     * @param _slasher The primary slashing contract of EigenLayer.
      * @param _eigenPodManager The contract that keeps track of EigenPod stakes for restaking beacon chain ether.
      */
     constructor(
         IDelegationManager _delegation,
         IEigenPodManager _eigenPodManager,
-        ISlasher _slasher,
         IAVSDirectory _avsDirectory
-    ) StrategyManagerStorage(_delegation, _eigenPodManager, _slasher, _avsDirectory) {
+    ) StrategyManagerStorage(_delegation, _eigenPodManager, _avsDirectory) {
         _disableInitializers();
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     // EXTERNAL FUNCTIONS
