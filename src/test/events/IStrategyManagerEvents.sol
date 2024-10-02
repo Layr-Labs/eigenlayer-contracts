@@ -31,19 +31,12 @@ interface IStrategyManagerEvents {
      * @param withdrawalRoot Is a hash of the input data for the withdrawal.
      */
     event WithdrawalQueued(
-        address depositor,
-        uint96 nonce,
-        address withdrawer,
-        address delegatedAddress,
-        bytes32 withdrawalRoot
+        address depositor, uint96 nonce, address withdrawer, address delegatedAddress, bytes32 withdrawalRoot
     );
 
     /// @notice Emitted when a queued withdrawal is completed
     event WithdrawalCompleted(
-        address indexed depositor,
-        uint96 nonce,
-        address indexed withdrawer,
-        bytes32 withdrawalRoot
+        address indexed depositor, uint96 nonce, address indexed withdrawer, bytes32 withdrawalRoot
     );
 
     /// @notice Emitted when `thirdPartyTransfersForbidden` is updated for a strategy and value by the owner

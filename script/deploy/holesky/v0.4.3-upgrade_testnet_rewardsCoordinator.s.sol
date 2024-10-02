@@ -42,10 +42,10 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
             TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
             rewardsCoordinatorImplementation
         );
-        
+
         bytes memory final_calldata_to_executor_multisig = encodeForExecutor(
             communityMultisig, //from
-            address(eigenLayerProxyAdmin), //to 
+            address(eigenLayerProxyAdmin), //to
             0, // value
             calldata_to_proxy_admin, // data
             ISafe.Operation.Call // operation
@@ -53,7 +53,7 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
 
         // Simulate Transaction
         vm.prank(communityMultisig);
-        (bool success, ) = address(executorMultisig).call(final_calldata_to_executor_multisig);
+        (bool success,) = address(executorMultisig).call(final_calldata_to_executor_multisig);
         require(success, "Transaction failed");
 
         // Sanity Checks
@@ -65,40 +65,18 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
 
     function _sanityCheckImplementations(RewardsCoordinator oldRc, RewardsCoordinator newRc) internal {
         // Verify configs between both rewardsCoordinatorImplementations
-        assertEq(
-            address(oldRc.delegationManager()),
-            address(newRc.delegationManager()),
-            "DM mismatch"
-        );
-        assertEq(
-            address(oldRc.strategyManager()),
-            address(newRc.strategyManager()),
-            "SM mismatch"
-        );
+        assertEq(address(oldRc.delegationManager()), address(newRc.delegationManager()), "DM mismatch");
+        assertEq(address(oldRc.strategyManager()), address(newRc.strategyManager()), "SM mismatch");
         assertEq(
             oldRc.CALCULATION_INTERVAL_SECONDS(),
             newRc.CALCULATION_INTERVAL_SECONDS(),
             "CALCULATION_INTERVAL_SECONDS mismatch"
         );
+        assertEq(oldRc.MAX_REWARDS_DURATION(), newRc.MAX_REWARDS_DURATION(), "MAX_REWARDS_DURATION mismatch");
+        assertEq(oldRc.MAX_RETROACTIVE_LENGTH(), newRc.MAX_RETROACTIVE_LENGTH(), "MAX_RETROACTIVE_LENGTH mismatch");
+        assertEq(oldRc.MAX_FUTURE_LENGTH(), newRc.MAX_FUTURE_LENGTH(), "MAX_FUTURE_LENGTH mismatch");
         assertEq(
-            oldRc.MAX_REWARDS_DURATION(),
-            newRc.MAX_REWARDS_DURATION(),
-            "MAX_REWARDS_DURATION mismatch"
-        );
-        assertEq(
-            oldRc.MAX_RETROACTIVE_LENGTH(),
-            newRc.MAX_RETROACTIVE_LENGTH(),
-            "MAX_RETROACTIVE_LENGTH mismatch"
-        );
-        assertEq(
-            oldRc.MAX_FUTURE_LENGTH(),
-            newRc.MAX_FUTURE_LENGTH(),
-            "MAX_FUTURE_LENGTH mismatch"
-        );
-        assertEq(
-            oldRc.GENESIS_REWARDS_TIMESTAMP(),
-            newRc.GENESIS_REWARDS_TIMESTAMP(),
-            "GENESIS_REWARDS_TIMESTAMP mismatch"
+            oldRc.GENESIS_REWARDS_TIMESTAMP(), newRc.GENESIS_REWARDS_TIMESTAMP(), "GENESIS_REWARDS_TIMESTAMP mismatch"
         );
     }
 

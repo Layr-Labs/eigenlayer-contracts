@@ -61,21 +61,21 @@ contract EigenLayerDeployer is Operators {
     //strategy indexes for undelegation (see commitUndelegation function)
     uint256[] public strategyIndexes;
     address[2] public stakers;
-    address sample_registrant = cheats.addr(436364636);
+    address sample_registrant = cheats.addr(436_364_636);
 
     address[] public slashingContracts;
 
     uint256 wethInitialSupply = 10e50;
     uint256 public constant eigenTotalSupply = 1000e18;
     uint256 nonce = 69;
-    uint256 public gasLimit = 750000;
+    uint256 public gasLimit = 750_000;
     IStrategy[] public initializeStrategiesToSetDelayBlocks;
     uint256[] public initializeWithdrawalDelayBlocks;
     uint256 minWithdrawalDelayBlocks = 0;
     uint32 PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
     uint256 REQUIRED_BALANCE_WEI = 32 ether;
     uint64 MAX_PARTIAL_WTIHDRAWAL_AMOUNT_GWEI = 1 ether / 1e9;
-    uint64 GOERLI_GENESIS_TIME = 1616508000;
+    uint64 GOERLI_GENESIS_TIME = 1_616_508_000;
 
     address pauser;
     address unpauser;
@@ -98,12 +98,13 @@ contract EigenLayerDeployer is Operators {
     address operationsMultisig;
     address executorMultisig;
 
-
     // addresses excluded from fuzzing due to abnormal behavior. TODO: @Sidu28 define this better and give it a clearer name
     mapping(address => bool) fuzzedAddressMapping;
 
     //ensures that a passed in address is not set to true in the fuzzedAddressMapping
-    modifier fuzzedAddress(address addr) virtual {
+    modifier fuzzedAddress(
+        address addr
+    ) virtual {
         cheats.assume(fuzzedAddressMapping[addr] == false);
         _;
     }
@@ -116,7 +117,7 @@ contract EigenLayerDeployer is Operators {
     //performs basic deployment before each test
     function setUp() public virtual {
         try vm.envUint("CHAIN_ID") returns (uint256 chainId) {
-            if (chainId == 31337) {
+            if (chainId == 31_337) {
                 _deployEigenLayerContractsLocal();
             }
             // If CHAIN_ID ENV is not set, assume local deployment on 31337
@@ -154,18 +155,13 @@ contract EigenLayerDeployer is Operators {
         strategyManager = StrategyManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slasher = Slasher(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
+        slasher =
+            Slasher(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(
-            ethPOSDeposit,
-            eigenPodManager,
-            GOERLI_GENESIS_TIME
-        );
+        pod = new EigenPod(ethPOSDeposit, eigenPodManager, GOERLI_GENESIS_TIME);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
@@ -173,13 +169,8 @@ contract EigenLayerDeployer is Operators {
         DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         Slasher slasherImplementation = new Slasher(strategyManager, delegation);
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            strategyManager,
-            slasher,
-            delegation
-        );
+        EigenPodManager eigenPodManagerImplementation =
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -189,7 +180,7 @@ contract EigenLayerDeployer is Operators {
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
-                0 /*initialPausedStatus*/,
+                0, /*initialPausedStatus*/
                 minWithdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
                 initializeWithdrawalDelayBlocks
@@ -210,10 +201,7 @@ contract EigenLayerDeployer is Operators {
             TransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation),
             abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
-                0 /*initialPausedStatus*/
+                Slasher.initialize.selector, eigenLayerReputedMultisig, eigenLayerPauserReg, 0 /*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -258,7 +246,9 @@ contract EigenLayerDeployer is Operators {
         stakers = [acct_0, acct_1];
     }
 
-    function _setAddresses(string memory config) internal {
+    function _setAddresses(
+        string memory config
+    ) internal {
         eigenLayerProxyAdminAddress = stdJson.readAddress(config, ".addresses.eigenLayerProxyAdmin");
         eigenLayerPauserRegAddress = stdJson.readAddress(config, ".addresses.eigenLayerPauserReg");
         delegationAddress = stdJson.readAddress(config, ".addresses.delegation");

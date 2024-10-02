@@ -10,17 +10,12 @@ import "../../utils/ExistingDeploymentParser.sol";
  * forge script script/deploy/holesky/v040-holesky-pepe.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --verify --broadcast -vvvv
  */
 contract PEPE_Deploy_Preprod is ExistingDeploymentParser {
-
     address testAddress = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
     address initOwner = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
 
     function run() external virtual {
-        _parseInitialDeploymentParams(
-            "script/configs/holesky/eigenlayer_preprod.config.json"
-        );
-        _parseDeployedContracts(
-            "script/configs/holesky/eigenlayer_addresses.config.json"
-        );
+        _parseInitialDeploymentParams("script/configs/holesky/eigenlayer_preprod.config.json");
+        _parseDeployedContracts("script/configs/holesky/eigenlayer_addresses.config.json");
 
         emit log_named_address("Deployer Address", msg.sender);
 
@@ -49,19 +44,12 @@ contract PEPE_Deploy_Preprod is ExistingDeploymentParser {
 
     function _deployPEPE() internal {
         // Deploy EigenPod
-        eigenPodImplementation = new EigenPod(
-            IETHPOSDeposit(ETHPOSDepositAddress),
-            eigenPodManager,
-            EIGENPOD_GENESIS_TIME
-        );
+        eigenPodImplementation =
+            new EigenPod(IETHPOSDeposit(ETHPOSDepositAddress), eigenPodManager, EIGENPOD_GENESIS_TIME);
 
         // Deploy EigenPodManager
         eigenPodManagerImplementation = new EigenPodManager(
-            IETHPOSDeposit(ETHPOSDepositAddress),
-            eigenPodBeacon,
-            strategyManager,
-            slasher,
-            delegationManager
+            IETHPOSDeposit(ETHPOSDepositAddress), eigenPodBeacon, strategyManager, slasher, delegationManager
         );
     }
 
@@ -71,8 +59,7 @@ contract PEPE_Deploy_Preprod is ExistingDeploymentParser {
 
         // upgrade TUPS
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
-            address(eigenPodManagerImplementation)
+            TransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerImplementation)
         );
     }
 }

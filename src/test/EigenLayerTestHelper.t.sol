@@ -21,7 +21,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      * @param amountEigenToDeposit amount of eigen token to deposit
      * @param amountEthToDeposit amount of eth to deposit
      */
-
     function _testInitiateDelegation(
         uint8 operatorIndex,
         uint256 amountEigenToDeposit,
@@ -155,8 +154,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             if (operatorSharesBefore == 0) {
                 // check that strategy is appropriately added to dynamic array of all of sender's strategies
                 assertTrue(
-                    strategyManager.stakerStrategyList(sender, strategyManager.stakerStrategyListLength(sender) - 1) ==
-                        stratToDepositTo,
+                    strategyManager.stakerStrategyList(sender, strategyManager.stakerStrategyListLength(sender) - 1)
+                        == stratToDepositTo,
                     "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
                 );
             }
@@ -279,8 +278,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             });
             _testRegisterAsOperator(staker, operatorDetails);
             assertTrue(
-                delegation.isDelegated(staker),
-                "_createQueuedWithdrawal: staker isn't delegated when they should be"
+                delegation.isDelegated(staker), "_createQueuedWithdrawal: staker isn't delegated when they should be"
             );
         }
 
@@ -332,12 +330,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     /// @param staker is the staker delegating stake to the operator.
     /// @param ethAmount is the amount of ETH to deposit into the operator's strategy.
     /// @param eigenAmount is the amount of EIGEN to deposit into the operator's strategy.
-    function _testDelegation(
-        address operator,
-        address staker,
-        uint256 ethAmount,
-        uint256 eigenAmount
-    ) internal {
+    function _testDelegation(address operator, address staker, uint256 ethAmount, uint256 eigenAmount) internal {
         if (!delegation.isOperator(operator)) {
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
                 __deprecated_earningsReceiver: operator,
@@ -356,7 +349,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         _testDelegateToOperator(staker, operator);
         assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
 
-        (/*IStrategy[] memory updatedStrategies*/, uint256[] memory updatedShares) = strategyManager.getDeposits(staker);
+        ( /*IStrategy[] memory updatedStrategies*/ , uint256[] memory updatedShares) =
+            strategyManager.getDeposits(staker);
 
         IStrategy _strat = wethStrat;
         // IStrategy _strat = strategyManager.stakerStrategyList(staker, 0);
@@ -378,7 +372,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      * @param withdrawalStartBlock the block number of the original queued withdrawal
      * @param middlewareTimesIndex index in the middlewareTimes array used to queue this withdrawal
      */
-
     function _testCompleteQueuedWithdrawalShares(
         address depositor,
         IStrategy[] memory strategyArray,
@@ -482,7 +475,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
     function _testQueueWithdrawal(
         address depositor,
-        uint256[] memory /*strategyIndexes*/,
+        uint256[] memory, /*strategyIndexes*/
         IStrategy[] memory strategyArray,
         uint256[] memory shareAmounts,
         address withdrawer

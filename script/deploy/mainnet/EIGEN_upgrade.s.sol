@@ -24,7 +24,8 @@ contract EIGEN_upgrade is Script, Test {
     Eigen public EIGEN_proxy = Eigen(0xec53bF9167f50cDEB3Ae105f56099aaaB9061F83);
     Eigen public EIGEN_implementation;
     ProxyAdmin public EIGEN_ProxyAdmin = ProxyAdmin(0xB8915E195121f2B5D989Ec5727fd47a5259F1CEC);
-    TimelockController public EIGEN_TimelockController = TimelockController(payable(0x2520C6b2C1FBE1813AB5c7c1018CDa39529e9FF2));
+    TimelockController public EIGEN_TimelockController =
+        TimelockController(payable(0x2520C6b2C1FBE1813AB5c7c1018CDa39529e9FF2));
     address public EIGEN_TimelockAdmin = 0xbb00DDa2832850a43840A3A86515E3Fe226865F2;
 
     IERC20 public bEIGEN_addressBefore;
@@ -42,16 +43,13 @@ contract EIGEN_upgrade is Script, Test {
 
         bEIGEN_addressBefore = EIGEN_proxy.bEIGEN();
 
-        require(bEIGEN_addressBefore == IERC20(0x83E9115d334D248Ce39a6f36144aEaB5b3456e75),
-            "something horribly wrong");
+        require(bEIGEN_addressBefore == IERC20(0x83E9115d334D248Ce39a6f36144aEaB5b3456e75), "something horribly wrong");
 
         // Begin deployment
         vm.startBroadcast();
 
         // Deploy new implmementation contract
-        EIGEN_implementation = new Eigen({
-            _bEIGEN: bEIGEN_addressBefore
-        });
+        EIGEN_implementation = new Eigen({_bEIGEN: bEIGEN_addressBefore});
 
         vm.stopBroadcast();
 
@@ -67,9 +65,9 @@ contract EIGEN_upgrade is Script, Test {
         // Upgrade beacon
         uint256 delay = EIGEN_TimelockController.getMinDelay();
         bytes memory data = abi.encodeWithSelector(
-                ProxyAdmin.upgrade.selector,
-                TransparentUpgradeableProxy(payable(address(EIGEN_proxy))),
-                EIGEN_implementation
+            ProxyAdmin.upgrade.selector,
+            TransparentUpgradeableProxy(payable(address(EIGEN_proxy))),
+            EIGEN_implementation
         );
         emit log_named_bytes("data", data);
 
@@ -97,10 +95,12 @@ contract EIGEN_upgrade is Script, Test {
 
     function checkUpgradeCorrectness() public {
         vm.prank(address(EIGEN_TimelockController));
-        require(EIGEN_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN_proxy)))) == address(EIGEN_implementation),
-            "implementation set incorrectly");
-        require(EIGEN_proxy.bEIGEN() == bEIGEN_addressBefore,
-            "bEIGEN address changed unexpectedly");
+        require(
+            EIGEN_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN_proxy))))
+                == address(EIGEN_implementation),
+            "implementation set incorrectly"
+        );
+        require(EIGEN_proxy.bEIGEN() == bEIGEN_addressBefore, "bEIGEN address changed unexpectedly");
     }
 
     function simulateWrapAndUnwrap() public {

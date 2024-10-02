@@ -53,7 +53,7 @@ contract ERC20Mock is Context, IERC20 {
     function decimals() external pure returns (uint8) {
         return 18;
     }
-    
+
     /**
      * @dev See {IERC20-totalSupply}.
      */
@@ -64,7 +64,9 @@ contract ERC20Mock is Context, IERC20 {
     /**
      * @dev See {IERC20-balanceOf}.
      */
-    function balanceOf(address account) public view virtual override returns (uint256) {
+    function balanceOf(
+        address account
+    ) public view virtual override returns (uint256) {
         return _balances[account];
     }
 
@@ -89,7 +91,7 @@ contract ERC20Mock is Context, IERC20 {
         return _allowances[owner][spender];
     }
 
-    function mint(address /*to*/, uint256 amount) public virtual {
+    function mint(address, /*to*/ uint256 amount) public virtual {
         address owner = _msgSender();
         _mint(owner, amount);
     }
@@ -104,7 +106,7 @@ contract ERC20Mock is Context, IERC20 {
      *
      * - `spender` cannot be the zero address.
      */
-    function approve(address /*spender*/, uint256 /*amount*/) public virtual override returns (bool) {
+    function approve(address, /*spender*/ uint256 /*amount*/ ) public virtual override returns (bool) {
         return true;
     }
 
@@ -162,7 +164,8 @@ contract ERC20Mock is Context, IERC20 {
         _afterTokenTransfer(from, to, amount);
     }
 
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
+    /**
+     * @dev Creates `amount` tokens and assigns them to `account`, increasing
      * the total supply.
      *
      * Emits a {Transfer} event with `from` set to the zero address.
@@ -246,7 +249,6 @@ contract ERC20Mock is Context, IERC20 {
             require(currentAllowance >= amount, "ERC20: insufficient allowance");
         }
     }
-
 
     /**
      * @dev Hook that is called before any transfer of tokens. This includes

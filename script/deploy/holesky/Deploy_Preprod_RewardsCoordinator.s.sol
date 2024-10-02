@@ -16,7 +16,9 @@ import "./Deploy_Test_RewardsCoordinator.s.sol";
  *
  */
 contract Deploy_Preprod_RewardsCoordinator is Deploy_Test_RewardsCoordinator {
-    function run(string memory deployArg) external virtual {
+    function run(
+        string memory deployArg
+    ) external virtual {
         _parseInitialDeploymentParams("script/configs/holesky/eigenlayer_preprod.config.json");
         _parseDeployedContracts("script/output/holesky/M2_deploy_preprod.output.json");
 

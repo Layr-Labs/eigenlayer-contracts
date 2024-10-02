@@ -31,7 +31,7 @@ var (
 
 // IBackingEigenMetaData contains all meta data concerning the IBackingEigen contract.
 var IBackingEigenMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"CLOCK_MODE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"allowance\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"approve\",\"inputs\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"balanceOf\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"clock\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"disableTransferRestrictions\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setAllowedFrom\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"isAllowedFrom\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setAllowedTo\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"isAllowedTo\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"totalSupply\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transfer\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferFrom\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Approval\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Transfer\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"CLOCK_MODE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"EIGEN\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allowance\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"approve\",\"inputs\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"balanceOf\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"burn\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"clock\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"disableTransferRestrictions\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"initialOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"mint\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setAllowedFrom\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"isAllowedFrom\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setAllowedTo\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"isAllowedTo\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setIsMinter\",\"inputs\":[{\"name\":\"minterAddress\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"newStatus\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"totalSupply\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transfer\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferFrom\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferRestrictionsDisabledAfter\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"Approval\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Transfer\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
 }
 
 // IBackingEigenABI is the input ABI used to generate the binding from.
@@ -211,6 +211,37 @@ func (_IBackingEigen *IBackingEigenCallerSession) CLOCKMODE() (string, error) {
 	return _IBackingEigen.Contract.CLOCKMODE(&_IBackingEigen.CallOpts)
 }
 
+// EIGEN is a free data retrieval call binding the contract method 0xfdc371ce.
+//
+// Solidity: function EIGEN() view returns(address)
+func (_IBackingEigen *IBackingEigenCaller) EIGEN(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _IBackingEigen.contract.Call(opts, &out, "EIGEN")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// EIGEN is a free data retrieval call binding the contract method 0xfdc371ce.
+//
+// Solidity: function EIGEN() view returns(address)
+func (_IBackingEigen *IBackingEigenSession) EIGEN() (common.Address, error) {
+	return _IBackingEigen.Contract.EIGEN(&_IBackingEigen.CallOpts)
+}
+
+// EIGEN is a free data retrieval call binding the contract method 0xfdc371ce.
+//
+// Solidity: function EIGEN() view returns(address)
+func (_IBackingEigen *IBackingEigenCallerSession) EIGEN() (common.Address, error) {
+	return _IBackingEigen.Contract.EIGEN(&_IBackingEigen.CallOpts)
+}
+
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
 // Solidity: function allowance(address owner, address spender) view returns(uint256)
@@ -335,6 +366,37 @@ func (_IBackingEigen *IBackingEigenCallerSession) TotalSupply() (*big.Int, error
 	return _IBackingEigen.Contract.TotalSupply(&_IBackingEigen.CallOpts)
 }
 
+// TransferRestrictionsDisabledAfter is a free data retrieval call binding the contract method 0x9aec4bae.
+//
+// Solidity: function transferRestrictionsDisabledAfter() view returns(uint256)
+func (_IBackingEigen *IBackingEigenCaller) TransferRestrictionsDisabledAfter(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _IBackingEigen.contract.Call(opts, &out, "transferRestrictionsDisabledAfter")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// TransferRestrictionsDisabledAfter is a free data retrieval call binding the contract method 0x9aec4bae.
+//
+// Solidity: function transferRestrictionsDisabledAfter() view returns(uint256)
+func (_IBackingEigen *IBackingEigenSession) TransferRestrictionsDisabledAfter() (*big.Int, error) {
+	return _IBackingEigen.Contract.TransferRestrictionsDisabledAfter(&_IBackingEigen.CallOpts)
+}
+
+// TransferRestrictionsDisabledAfter is a free data retrieval call binding the contract method 0x9aec4bae.
+//
+// Solidity: function transferRestrictionsDisabledAfter() view returns(uint256)
+func (_IBackingEigen *IBackingEigenCallerSession) TransferRestrictionsDisabledAfter() (*big.Int, error) {
+	return _IBackingEigen.Contract.TransferRestrictionsDisabledAfter(&_IBackingEigen.CallOpts)
+}
+
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
 // Solidity: function approve(address spender, uint256 amount) returns(bool)
@@ -356,6 +418,27 @@ func (_IBackingEigen *IBackingEigenTransactorSession) Approve(spender common.Add
 	return _IBackingEigen.Contract.Approve(&_IBackingEigen.TransactOpts, spender, amount)
 }
 
+// Burn is a paid mutator transaction binding the contract method 0x42966c68.
+//
+// Solidity: function burn(uint256 amount) returns()
+func (_IBackingEigen *IBackingEigenTransactor) Burn(opts *bind.TransactOpts, amount *big.Int) (*types.Transaction, error) {
+	return _IBackingEigen.contract.Transact(opts, "burn", amount)
+}
+
+// Burn is a paid mutator transaction binding the contract method 0x42966c68.
+//
+// Solidity: function burn(uint256 amount) returns()
+func (_IBackingEigen *IBackingEigenSession) Burn(amount *big.Int) (*types.Transaction, error) {
+	return _IBackingEigen.Contract.Burn(&_IBackingEigen.TransactOpts, amount)
+}
+
+// Burn is a paid mutator transaction binding the contract method 0x42966c68.
+//
+// Solidity: function burn(uint256 amount) returns()
+func (_IBackingEigen *IBackingEigenTransactorSession) Burn(amount *big.Int) (*types.Transaction, error) {
+	return _IBackingEigen.Contract.Burn(&_IBackingEigen.TransactOpts, amount)
+}
+
 // DisableTransferRestrictions is a paid mutator transaction binding the contract method 0xeb415f45.
 //
 // Solidity: function disableTransferRestrictions() returns()
@@ -375,6 +458,48 @@ func (_IBackingEigen *IBackingEigenSession) DisableTransferRestrictions() (*type
 // Solidity: function disableTransferRestrictions() returns()
 func (_IBackingEigen *IBackingEigenTransactorSession) DisableTransferRestrictions() (*types.Transaction, error) {
 	return _IBackingEigen.Contract.DisableTransferRestrictions(&_IBackingEigen.TransactOpts)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0xc4d66de8.
+//
+// Solidity: function initialize(address initialOwner) returns()
+func (_IBackingEigen *IBackingEigenTransactor) Initialize(opts *bind.TransactOpts, initialOwner common.Address) (*types.Transaction, error) {
+	return _IBackingEigen.contract.Transact(opts, "initialize", initialOwner)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0xc4d66de8.
+//
+// Solidity: function initialize(address initialOwner) returns()
+func (_IBackingEigen *IBackingEigenSession) Initialize(initialOwner common.Address) (*types.Transaction, error) {
+	return _IBackingEigen.Contract.Initialize(&_IBackingEigen.TransactOpts, initialOwner)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0xc4d66de8.
+//
+// Solidity: function initialize(address initialOwner) returns()
+func (_IBackingEigen *IBackingEigenTransactorSession) Initialize(initialOwner common.Address) (*types.Transaction, error) {
+	return _IBackingEigen.Contract.Initialize(&_IBackingEigen.TransactOpts, initialOwner)
+}
+
+// Mint is a paid mutator transaction binding the contract method 0x40c10f19.
+//
+// Solidity: function mint(address to, uint256 amount) returns()
+func (_IBackingEigen *IBackingEigenTransactor) Mint(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _IBackingEigen.contract.Transact(opts, "mint", to, amount)
+}
+
+// Mint is a paid mutator transaction binding the contract method 0x40c10f19.
+//
+// Solidity: function mint(address to, uint256 amount) returns()
+func (_IBackingEigen *IBackingEigenSession) Mint(to common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _IBackingEigen.Contract.Mint(&_IBackingEigen.TransactOpts, to, amount)
+}
+
+// Mint is a paid mutator transaction binding the contract method 0x40c10f19.
+//
+// Solidity: function mint(address to, uint256 amount) returns()
+func (_IBackingEigen *IBackingEigenTransactorSession) Mint(to common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _IBackingEigen.Contract.Mint(&_IBackingEigen.TransactOpts, to, amount)
 }
 
 // SetAllowedFrom is a paid mutator transaction binding the contract method 0x1ffacdef.
@@ -417,6 +542,27 @@ func (_IBackingEigen *IBackingEigenSession) SetAllowedTo(to common.Address, isAl
 // Solidity: function setAllowedTo(address to, bool isAllowedTo) returns()
 func (_IBackingEigen *IBackingEigenTransactorSession) SetAllowedTo(to common.Address, isAllowedTo bool) (*types.Transaction, error) {
 	return _IBackingEigen.Contract.SetAllowedTo(&_IBackingEigen.TransactOpts, to, isAllowedTo)
+}
+
+// SetIsMinter is a paid mutator transaction binding the contract method 0x66eb399f.
+//
+// Solidity: function setIsMinter(address minterAddress, bool newStatus) returns()
+func (_IBackingEigen *IBackingEigenTransactor) SetIsMinter(opts *bind.TransactOpts, minterAddress common.Address, newStatus bool) (*types.Transaction, error) {
+	return _IBackingEigen.contract.Transact(opts, "setIsMinter", minterAddress, newStatus)
+}
+
+// SetIsMinter is a paid mutator transaction binding the contract method 0x66eb399f.
+//
+// Solidity: function setIsMinter(address minterAddress, bool newStatus) returns()
+func (_IBackingEigen *IBackingEigenSession) SetIsMinter(minterAddress common.Address, newStatus bool) (*types.Transaction, error) {
+	return _IBackingEigen.Contract.SetIsMinter(&_IBackingEigen.TransactOpts, minterAddress, newStatus)
+}
+
+// SetIsMinter is a paid mutator transaction binding the contract method 0x66eb399f.
+//
+// Solidity: function setIsMinter(address minterAddress, bool newStatus) returns()
+func (_IBackingEigen *IBackingEigenTransactorSession) SetIsMinter(minterAddress common.Address, newStatus bool) (*types.Transaction, error) {
+	return _IBackingEigen.Contract.SetIsMinter(&_IBackingEigen.TransactOpts, minterAddress, newStatus)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.

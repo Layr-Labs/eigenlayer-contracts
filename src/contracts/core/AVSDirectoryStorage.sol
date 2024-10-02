@@ -30,7 +30,9 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @dev Salt is used in the `registerOperatorToAVS` function.
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
-    constructor(IDelegationManager _delegation) {
+    constructor(
+        IDelegationManager _delegation
+    ) {
         delegation = _delegation;
     }
 

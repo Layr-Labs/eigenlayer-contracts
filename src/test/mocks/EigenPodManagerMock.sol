@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 import "../../contracts/interfaces/IEigenPodManager.sol";
 import "../../contracts/permissions/Pausable.sol";
 
-
 contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     IBeacon public eigenPodBeacon;
@@ -13,35 +12,49 @@ contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
 
     mapping(address => int256) public podShares;
 
-    constructor(IPauserRegistry _pauserRegistry) {
+    constructor(
+        IPauserRegistry _pauserRegistry
+    ) {
         _initializePauser(_pauserRegistry, 0);
     }
 
-    function slasher() external view returns(ISlasher) {}
+    function slasher() external view returns (ISlasher) {}
 
-    function createPod() external returns(address) {}
+    function createPod() external returns (address) {}
 
-    function stake(bytes calldata /*pubkey*/, bytes calldata /*signature*/, bytes32 /*depositDataRoot*/) external payable {}
+    function stake(
+        bytes calldata, /*pubkey*/
+        bytes calldata, /*signature*/
+        bytes32 /*depositDataRoot*/
+    ) external payable {}
 
-    function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, int256 /*sharesDelta*/) external pure {}
+    function recordBeaconChainETHBalanceUpdate(address, /*podOwner*/ int256 /*sharesDelta*/ ) external pure {}
 
-    function ownerToPod(address /*podOwner*/) external pure returns(IEigenPod) {
+    function ownerToPod(
+        address /*podOwner*/
+    ) external pure returns (IEigenPod) {
         return IEigenPod(address(0));
     }
 
-    function getPod(address podOwner) external pure returns(IEigenPod) {
+    function getPod(
+        address podOwner
+    ) external pure returns (IEigenPod) {
         return IEigenPod(podOwner);
     }
 
-    function strategyManager() external pure returns(IStrategyManager) {
+    function strategyManager() external pure returns (IStrategyManager) {
         return IStrategyManager(address(0));
     }
-    
-    function hasPod(address /*podOwner*/) external pure returns (bool) {
+
+    function hasPod(
+        address /*podOwner*/
+    ) external pure returns (bool) {
         return false;
     }
 
-    function podOwnerShares(address podOwner) external view returns (int256) {
+    function podOwnerShares(
+        address podOwner
+    ) external view returns (int256) {
         return podShares[podOwner];
     }
 
@@ -49,7 +62,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
         podShares[podOwner] = shares;
     }
 
-    function addShares(address /*podOwner*/, uint256 shares) external pure returns (uint256) {
+    function addShares(address, /*podOwner*/ uint256 shares) external pure returns (uint256) {
         // this is the "increase in delegateable tokens"
         return (shares);
     }
@@ -66,5 +79,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
         return type(uint64).max;
     }
 
-    function setDenebForkTimestamp(uint64 timestamp) external{}
+    function setDenebForkTimestamp(
+        uint64 timestamp
+    ) external {}
 }

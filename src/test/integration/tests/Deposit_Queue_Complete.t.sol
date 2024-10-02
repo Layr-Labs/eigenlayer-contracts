@@ -5,12 +5,13 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
-
     /// Randomly generates a user with different held assets. Then:
     /// 1. deposit into strategy
     /// 2. queueWithdrawal
     /// 3. completeQueuedWithdrawal"
-     function testFuzz_deposit_queueWithdrawal_completeAsTokens(uint24 _random) public {
+    function testFuzz_deposit_queueWithdrawal_completeAsTokens(
+        uint24 _random
+    ) public {
         // Configure the random parameters for the test
         _configRand({
             _randomSeed: _random,
@@ -19,13 +20,13 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         });
 
         // Create a staker with a nonzero balance and corresponding strategies
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         // Upgrade contracts if forkType is not local
         _upgradeEigenLayerContracts();
 
         // 1. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint256[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // Ensure staker is not delegated to anyone post deposit
@@ -36,17 +37,23 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
 
         // 3. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(strategies);
-        for (uint i = 0; i < withdrawals.length; i++) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
+        for (uint256 i = 0; i < withdrawals.length; i++) {
+            uint256[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, User(payable(0)), withdrawals[i], strategies, shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(
+                staker, User(payable(0)), withdrawals[i], strategies, shares, tokens, expectedTokens
+            );
         }
 
         // Ensure staker is still not delegated to anyone post withdrawal completion
-        assertFalse(delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
+        assertFalse(
+            delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal"
+        );
     }
 
-    function testFuzz_deposit_queueWithdrawal_completeAsShares(uint24 _random) public {
+    function testFuzz_deposit_queueWithdrawal_completeAsShares(
+        uint24 _random
+    ) public {
         // Configure the random parameters for the test
         _configRand({
             _randomSeed: _random,
@@ -55,13 +62,13 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         });
 
         // Create a staker with a nonzero balance and corresponding strategies
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         // Upgrade contracts if forkType is not local
         _upgradeEigenLayerContracts();
 
         // 1. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint256[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // Ensure staker is not delegated to anyone post deposit
@@ -72,12 +79,14 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
 
         // 3. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(strategies);
-        for (uint i = 0; i < withdrawals.length; i++) {
-            staker.completeWithdrawalAsShares(withdrawals[i]); 
+        for (uint256 i = 0; i < withdrawals.length; i++) {
+            staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, User(payable(0)), withdrawals[i], strategies, shares);
         }
 
         // Ensure staker is still not delegated to anyone post withdrawal completion
-        assertFalse(delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
+        assertFalse(
+            delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal"
+        );
     }
 }

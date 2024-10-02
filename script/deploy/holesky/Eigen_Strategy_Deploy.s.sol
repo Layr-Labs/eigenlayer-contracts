@@ -9,7 +9,6 @@ import "../../utils/ExistingDeploymentParser.sol";
  * forge script script/deploy/holesky/Eigen_Strategy_Deploy.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv
  */
 contract Eigen_Strategy_Deploy is ExistingDeploymentParser {
-
     function run() external virtual {
         _parseDeployedContracts("script/configs/holesky/Holesky_current_deployment.config.json");
 
@@ -35,14 +34,9 @@ contract Eigen_Strategy_Deploy is ExistingDeploymentParser {
         eigenStrategy = EigenStrategy(
             address(
                 new TransparentUpgradeableProxy(
-                    address(eigenStrategyImpl), 
-                    address(eigenLayerProxyAdmin), 
-                    abi.encodeWithSelector(
-                        EigenStrategy.initialize.selector,
-                        EIGEN,
-                        bEIGEN,
-                        eigenLayerPauserReg
-                    )
+                    address(eigenStrategyImpl),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(EigenStrategy.initialize.selector, EIGEN, bEIGEN, eigenLayerPauserReg)
                 )
             )
         );

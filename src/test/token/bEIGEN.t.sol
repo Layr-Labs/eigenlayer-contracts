@@ -9,13 +9,12 @@ import "../harnesses/EigenHarness.sol";
 
 import "../../contracts/token/BackingEigen.sol";
 
-
 contract bEIGENTest is Test {
     mapping(address => bool) fuzzedOutAddresses;
 
     address initialOwner = 0xbb00DDa2832850a43840A3A86515E3Fe226865F2;
     address minterToSet = address(500);
-    address mintTo = address(12345);
+    address mintTo = address(12_345);
 
     ProxyAdmin proxyAdmin;
 
@@ -24,7 +23,6 @@ contract bEIGENTest is Test {
 
     BackingEigen bEIGENImpl;
     BackingEigen bEIGEN;
-
 
     function setUp() public {
         vm.startPrank(initialOwner);
@@ -47,18 +45,20 @@ contract bEIGENTest is Test {
 
     function test_Initialize() public {
         bEIGEN.initialize(initialOwner);
-        
+
         // check that the owner is initialOwner
         assertEq(bEIGEN.owner(), initialOwner);
         // check the transfer restrictions are disabled after one year in the future
         assertEq(bEIGEN.transferRestrictionsDisabledAfter(), type(uint256).max);
     }
 
-    function testFuzz_CanBackTheEigenToken(uint eigenSupply) public {
+    function testFuzz_CanBackTheEigenToken(
+        uint256 eigenSupply
+    ) public {
         StdCheats.deal(address(eigen), address(this), eigenSupply);
 
         bEIGEN.initialize(initialOwner);
-        
+
         // check that the total supply of bEIGEN is equal to the total supply of EIGEN
         assertEq(bEIGEN.totalSupply(), eigen.totalSupply());
         assertEq(bEIGEN.balanceOf(address(eigen)), bEIGEN.totalSupply());

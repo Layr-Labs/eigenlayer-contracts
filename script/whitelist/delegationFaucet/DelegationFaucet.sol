@@ -115,10 +115,7 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
         bytes32 _approverSalt
     ) public onlyOwner returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(
-            IDelegationManager.delegateTo.selector,
-            _operator,
-            _approverSignatureAndExpiry,
-            _approverSalt
+            IDelegationManager.delegateTo.selector, _operator, _approverSignatureAndExpiry, _approverSalt
         );
         return DelegationFaucetStaker(getStaker(_operator)).callAddress(address(delegation), data);
     }
@@ -128,12 +125,9 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
      */
     function queueWithdrawal(
         address staker,
-         IDelegationManager.QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+        IDelegationManager.QueuedWithdrawalParams[] calldata queuedWithdrawalParams
     ) public onlyOwner returns (bytes memory) {
-        bytes memory data = abi.encodeWithSelector(
-            IDelegationManager.queueWithdrawals.selector, 
-            queuedWithdrawalParams
-        );
+        bytes memory data = abi.encodeWithSelector(IDelegationManager.queueWithdrawals.selector, queuedWithdrawalParams);
         return DelegationFaucetStaker(staker).callAddress(address(delegation), data);
     }
 
@@ -186,14 +180,15 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
      * @notice Returns the deterministic staker contract address for the operator
      * @param _operator The operator to get the staker contract address for
      */
-    function getStaker(address _operator) public view returns (address) {
-        return
-            Create2.computeAddress(
-                bytes32(uint256(uint160(_operator))), //salt
-                keccak256(
-                    abi.encodePacked(type(DelegationFaucetStaker).creationCode, abi.encode(strategyManager, stakeToken))
-                )
-            );
+    function getStaker(
+        address _operator
+    ) public view returns (address) {
+        return Create2.computeAddress(
+            bytes32(uint256(uint160(_operator))), //salt
+            keccak256(
+                abi.encodePacked(type(DelegationFaucetStaker).creationCode, abi.encode(strategyManager, stakeToken))
+            )
+        );
     }
 
     /**
@@ -205,12 +200,8 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
         IERC20 _token,
         uint256 _amount
     ) internal returns (bytes memory) {
-        bytes memory data = abi.encodeWithSelector(
-            IStrategyManager.depositIntoStrategy.selector,
-            _strategy,
-            _token,
-            _amount
-        );
+        bytes memory data =
+            abi.encodeWithSelector(IStrategyManager.depositIntoStrategy.selector, _strategy, _token, _amount);
         return DelegationFaucetStaker(_staker).callAddress(address(strategyManager), data);
     }
 }

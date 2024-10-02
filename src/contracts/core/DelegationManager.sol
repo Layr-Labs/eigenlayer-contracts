@@ -111,13 +111,17 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external {
+    function modifyOperatorDetails(
+        OperatorDetails calldata newOperatorDetails
+    ) external {
         require(isOperator(msg.sender), "DelegationManager.modifyOperatorDetails: caller must be an operator");
         _setOperatorDetails(msg.sender, newOperatorDetails);
     }
 
     /// @inheritdoc IDelegationManager
-    function updateOperatorMetadataURI(string calldata metadataURI) external {
+    function updateOperatorMetadataURI(
+        string calldata metadataURI
+    ) external {
         require(isOperator(msg.sender), "DelegationManager.updateOperatorMetadataURI: caller must be an operator");
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
@@ -168,11 +172,9 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function undelegate(address staker)
-        external
-        onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
-        returns (bytes32[] memory withdrawalRoots)
-    {
+    function undelegate(
+        address staker
+    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
@@ -221,11 +223,9 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams)
-        external
-        onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
-        returns (bytes32[] memory)
-    {
+    function queueWithdrawals(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
         address operator = delegatedTo[msg.sender];
 
@@ -312,7 +312,9 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function setMinWithdrawalDelayBlocks(uint256 newMinWithdrawalDelayBlocks) external onlyOwner {
+    function setMinWithdrawalDelayBlocks(
+        uint256 newMinWithdrawalDelayBlocks
+    ) external onlyOwner {
         _setMinWithdrawalDelayBlocks(newMinWithdrawalDelayBlocks);
     }
 
@@ -646,7 +648,9 @@ contract DelegationManager is
         }
     }
 
-    function _setMinWithdrawalDelayBlocks(uint256 _minWithdrawalDelayBlocks) internal {
+    function _setMinWithdrawalDelayBlocks(
+        uint256 _minWithdrawalDelayBlocks
+    ) internal {
         require(
             _minWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
             "DelegationManager._setMinWithdrawalDelayBlocks: _minWithdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
@@ -701,27 +705,37 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function isDelegated(address staker) public view returns (bool) {
+    function isDelegated(
+        address staker
+    ) public view returns (bool) {
         return (delegatedTo[staker] != address(0));
     }
 
     /// @inheritdoc IDelegationManager
-    function isOperator(address operator) public view returns (bool) {
+    function isOperator(
+        address operator
+    ) public view returns (bool) {
         return operator != address(0) && delegatedTo[operator] == operator;
     }
 
     /// @inheritdoc IDelegationManager
-    function operatorDetails(address operator) external view returns (OperatorDetails memory) {
+    function operatorDetails(
+        address operator
+    ) external view returns (OperatorDetails memory) {
         return _operatorDetails[operator];
     }
 
     /// @inheritdoc IDelegationManager
-    function delegationApprover(address operator) external view returns (address) {
+    function delegationApprover(
+        address operator
+    ) external view returns (address) {
         return _operatorDetails[operator].delegationApprover;
     }
 
     /// @inheritdoc IDelegationManager
-    function stakerOptOutWindowBlocks(address operator) external view returns (uint256) {
+    function stakerOptOutWindowBlocks(
+        address operator
+    ) external view returns (uint256) {
         return _operatorDetails[operator].stakerOptOutWindowBlocks;
     }
 
@@ -738,7 +752,9 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
+    function getDelegatableShares(
+        address staker
+    ) public view returns (IStrategy[] memory, uint256[] memory) {
         // Get currently active shares and strategies for `staker`
         int256 podShares = eigenPodManager.podOwnerShares(staker);
         (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) =
@@ -784,7 +800,9 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function getWithdrawalDelay(IStrategy[] calldata strategies) public view returns (uint256) {
+    function getWithdrawalDelay(
+        IStrategy[] calldata strategies
+    ) public view returns (uint256) {
         uint256 withdrawalDelay = minWithdrawalDelayBlocks;
         for (uint256 i = 0; i < strategies.length; ++i) {
             uint256 currWithdrawalDelay = strategyWithdrawalDelayBlocks[strategies[i]];
@@ -796,7 +814,9 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function calculateWithdrawalRoot(Withdrawal memory withdrawal) public pure returns (bytes32) {
+    function calculateWithdrawalRoot(
+        Withdrawal memory withdrawal
+    ) public pure returns (bytes32) {
         return keccak256(abi.encode(withdrawal));
     }
 

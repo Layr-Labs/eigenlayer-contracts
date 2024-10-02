@@ -14,7 +14,9 @@ contract StrategyTests is EigenLayerTestHelper {
     ///@notice This function tests to ensure that only the strategyManager
     ///         can deposit into a strategy
     ///@param invalidDepositor is the non-registered depositor
-    function testInvalidCalltoDeposit(address invalidDepositor) public fuzzedAddress(invalidDepositor) {
+    function testInvalidCalltoDeposit(
+        address invalidDepositor
+    ) public fuzzedAddress(invalidDepositor) {
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(invalidDepositor);
@@ -27,10 +29,10 @@ contract StrategyTests is EigenLayerTestHelper {
     ///         can deposit into a strategy
     ///@param invalidWithdrawer is the non-registered withdrawer
     ///@param depositor is the depositor for which the shares are being withdrawn
-    function testInvalidCalltoWithdraw(address depositor, address invalidWithdrawer)
-        public
-        fuzzedAddress(invalidWithdrawer)
-    {
+    function testInvalidCalltoWithdraw(
+        address depositor,
+        address invalidWithdrawer
+    ) public fuzzedAddress(invalidWithdrawer) {
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(invalidWithdrawer);
@@ -48,9 +50,7 @@ contract StrategyTests is EigenLayerTestHelper {
 
         cheats.startPrank(address(strategyManager));
 
-        cheats.expectRevert(
-            bytes("StrategyBase.withdraw: amountShares must be less than or equal to totalShares")
-        );
+        cheats.expectRevert(bytes("StrategyBase.withdraw: amountShares must be less than or equal to totalShares"));
         wethStrat.withdraw(depositor, underlyingToken, shares);
 
         cheats.stopPrank();

@@ -11,7 +11,6 @@ import "../../utils/ExistingDeploymentParser.sol";
  *
  */
 contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
-
     address testAddress = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
     address initOwner = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
 
@@ -71,7 +70,7 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         );
     }
 
-        /**
+    /**
      * @notice Deploy RewardsCoordinator Implementation for Holesky and upgrade the proxy
      */
     function _upgradeRewardsCoordinator() internal {
@@ -87,31 +86,29 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         );
 
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
-            address(rewardsCoordinatorImplementation)
+            TransparentUpgradeableProxy(payable(address(rewardsCoordinator))), address(rewardsCoordinatorImplementation)
         );
     }
 
     function _deployImplementation() internal {
         // Existing values for current RewardsCoordinator implementationt on holesky
         require(
-            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS == 604800,
+            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS == 604_800,
             "REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS must be 604800"
         );
         require(
-            REWARDS_COORDINATOR_MAX_REWARDS_DURATION == 6048000,
+            REWARDS_COORDINATOR_MAX_REWARDS_DURATION == 6_048_000,
             "REWARDS_COORDINATOR_MAX_REWARDS_DURATION must be 6048000"
         );
         require(
-            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH == 7776000,
+            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH == 7_776_000,
             "REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH must be 7776000"
         );
         require(
-            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH == 2592000,
-            "REWARDS_COORDINATOR_MAX_FUTURE_LENGTH must be 2592000"
+            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH == 2_592_000, "REWARDS_COORDINATOR_MAX_FUTURE_LENGTH must be 2592000"
         );
         require(
-            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP == 1710979200,
+            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP == 1_710_979_200,
             "REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP must be 1710979200"
         );
 

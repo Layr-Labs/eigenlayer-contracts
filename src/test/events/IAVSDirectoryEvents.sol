@@ -11,5 +11,7 @@ interface IAVSDirectoryEvents {
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
     /// @notice Emitted when an operator's registration status for an AVS is updated
-    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, IAVSDirectory.OperatorAVSRegistrationStatus status);
+    event OperatorAVSRegistrationStatusUpdated(
+        address indexed operator, address indexed avs, IAVSDirectory.OperatorAVSRegistrationStatus status
+    );
 }

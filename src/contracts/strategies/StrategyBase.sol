@@ -69,7 +69,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     }
 
     /// @notice Since this contract is designed to be initializable, the constructor simply sets `strategyManager`, the only immutable variable.
-    constructor(IStrategyManager _strategyManager) {
+    constructor(
+        IStrategyManager _strategyManager
+    ) {
         strategyManager = _strategyManager;
         _disableInitializers();
     }
@@ -225,7 +227,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @return The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function sharesToUnderlyingView(uint256 amountShares) public view virtual override returns (uint256) {
+    function sharesToUnderlyingView(
+        uint256 amountShares
+    ) public view virtual override returns (uint256) {
         // account for virtual shares and balance
         uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
         uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
@@ -240,7 +244,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @return The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function sharesToUnderlying(uint256 amountShares) public view virtual override returns (uint256) {
+    function sharesToUnderlying(
+        uint256 amountShares
+    ) public view virtual override returns (uint256) {
         return sharesToUnderlyingView(amountShares);
     }
 
@@ -251,7 +257,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @return The amount of shares corresponding to the input `amountUnderlying`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function underlyingToSharesView(uint256 amountUnderlying) public view virtual returns (uint256) {
+    function underlyingToSharesView(
+        uint256 amountUnderlying
+    ) public view virtual returns (uint256) {
         // account for virtual shares and balance
         uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
         uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
@@ -266,7 +274,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @return The amount of shares corresponding to the input `amountUnderlying`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
-    function underlyingToShares(uint256 amountUnderlying) external view virtual returns (uint256) {
+    function underlyingToShares(
+        uint256 amountUnderlying
+    ) external view virtual returns (uint256) {
         return underlyingToSharesView(amountUnderlying);
     }
 
@@ -274,7 +284,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
      * this strategy. In contrast to `userUnderlying`, this function guarantees no state modifications
      */
-    function userUnderlyingView(address user) external view virtual returns (uint256) {
+    function userUnderlyingView(
+        address user
+    ) external view virtual returns (uint256) {
         return sharesToUnderlyingView(shares(user));
     }
 
@@ -282,7 +294,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
      * this strategy. In contrast to `userUnderlyingView`, this function **may** make state modifications
      */
-    function userUnderlying(address user) external virtual returns (uint256) {
+    function userUnderlying(
+        address user
+    ) external virtual returns (uint256) {
         return sharesToUnderlying(shares(user));
     }
 
@@ -290,7 +304,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice convenience function for fetching the current total shares of `user` in this strategy, by
      * querying the `strategyManager` contract
      */
-    function shares(address user) public view virtual returns (uint256) {
+    function shares(
+        address user
+    ) public view virtual returns (uint256) {
         return strategyManager.stakerStrategyShares(user, IStrategy(address(this)));
     }
 

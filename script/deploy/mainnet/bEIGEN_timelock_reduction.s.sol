@@ -14,7 +14,8 @@ import "forge-std/Test.sol";
 contract bEIGEN_timelock_reduction is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    TimelockController public bEIGEN_TimelockController = TimelockController(payable(0xd6EC41E453C5E7dA5494f4d51A053Ab571712E6f));
+    TimelockController public bEIGEN_TimelockController =
+        TimelockController(payable(0xd6EC41E453C5E7dA5494f4d51A053Ab571712E6f));
     address public bEIGEN_TimelockAdmin = 0xbb00DDa2832850a43840A3A86515E3Fe226865F2;
 
     uint256 public newDelay = 0;
@@ -32,13 +33,9 @@ contract bEIGEN_timelock_reduction is Script, Test {
 
         uint256 minDelayBefore = bEIGEN_TimelockController.getMinDelay();
 
-        require(minDelayBefore == 24 days,
-            "something horribly wrong");
+        require(minDelayBefore == 24 days, "something horribly wrong");
 
-        bytes memory proposalData = abi.encodeWithSelector(
-                TimelockController.updateDelay.selector,
-                newDelay
-        );
+        bytes memory proposalData = abi.encodeWithSelector(TimelockController.updateDelay.selector, newDelay);
         emit log_named_bytes("proposalData", proposalData);
 
         // propose change to zero delay
@@ -66,7 +63,6 @@ contract bEIGEN_timelock_reduction is Script, Test {
 
         uint256 minDelayAfter = bEIGEN_TimelockController.getMinDelay();
 
-        require(minDelayAfter == 0,
-            "min delay not set to zero");
+        require(minDelayAfter == 0, "min delay not set to zero");
     }
 }

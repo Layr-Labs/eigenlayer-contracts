@@ -32,7 +32,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
     Reenterer public reenterer;
 
     address initialOwner = address(this);
-    uint256 public privateKey = 111111;
+    uint256 public privateKey = 111_111;
     address constant dummyAdmin = address(uint160(uint256(keccak256("DummyAdmin"))));
 
     function setUp() public override {
@@ -154,7 +154,9 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
         {
             bytes32 structHash = keccak256(
-                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), staker, dummyStrat, dummyToken, amount, nonceBefore, expiry)
+                abi.encode(
+                    strategyManager.DEPOSIT_TYPEHASH(), staker, dummyStrat, dummyToken, amount, nonceBefore, expiry
+                )
             );
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
@@ -181,14 +183,8 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
             cheats.expectEmit(true, true, true, true, address(strategyManager));
             emit Deposit(staker, dummyToken, dummyStrat, expectedShares);
         }
-        uint256 shares = strategyManager.depositIntoStrategyWithSignature(
-            dummyStrat,
-            dummyToken,
-            amount,
-            staker,
-            expiry,
-            signature
-        );
+        uint256 shares =
+            strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, dummyStrat);
         uint256 nonceAfter = strategyManager.nonces(staker);
@@ -217,7 +213,9 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
     /**
      * @notice Deploys numberOfStrategiesToAdd new strategies and adds them to the whitelist
      */
-    function _addStrategiesToWhitelist(uint8 numberOfStrategiesToAdd) internal returns (IStrategy[] memory) {
+    function _addStrategiesToWhitelist(
+        uint8 numberOfStrategiesToAdd
+    ) internal returns (IStrategy[] memory) {
         IStrategy[] memory strategyArray = new IStrategy[](numberOfStrategiesToAdd);
         bool[] memory thirdPartyTransfersForbiddenValues = new bool[](numberOfStrategiesToAdd);
         // loop that deploys a new strategy and adds it to the array
@@ -251,9 +249,7 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
     function test_InitializedStorageProperly() public {
         assertEq(strategyManager.owner(), initialOwner, "strategyManager.owner() != initialOwner");
         assertEq(
-            strategyManager.strategyWhitelister(),
-            initialOwner,
-            "strategyManager.strategyWhitelister() != initialOwner"
+            strategyManager.strategyWhitelister(), initialOwner, "strategyManager.strategyWhitelister() != initialOwner"
         );
         assertEq(
             address(strategyManager.pauserRegistry()),
@@ -355,12 +351,8 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
 
         address targetToUse = address(strategyManager);
         uint256 msgValueToUse = 0;
-        bytes memory calldataToUse = abi.encodeWithSelector(
-            StrategyManager.depositIntoStrategy.selector,
-            address(reenterer),
-            dummyToken,
-            amount
-        );
+        bytes memory calldataToUse =
+            abi.encodeWithSelector(StrategyManager.depositIntoStrategy.selector, address(reenterer), dummyToken, amount);
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
         strategyManager.depositIntoStrategy(IStrategy(address(reenterer)), dummyToken, amount);
@@ -559,7 +551,9 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
     }
 
     // tries depositing using a signature and an EIP 1271 compliant wallet, *but* providing a bad signature
-    function testFuzz_Revert_WithContractWallet_BadSignature(uint256 amount) public {
+    function testFuzz_Revert_WithContractWallet_BadSignature(
+        uint256 amount
+    ) public {
         // min shares must be minted on strategy
         cheats.assume(amount >= 1);
 
@@ -639,7 +633,9 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         {
             bytes32 structHash = keccak256(
-                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), staker, dummyStrat, revertToken, amount, nonceBefore, expiry)
+                abi.encode(
+                    strategyManager.DEPOSIT_TYPEHASH(), staker, dummyStrat, revertToken, amount, nonceBefore, expiry
+                )
             );
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
@@ -694,7 +690,6 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         IStrategy[] memory _strategy = new IStrategy[](1);
         bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
 
-        
         _strategy[0] = IStrategy(address(reenterer));
         for (uint256 i = 0; i < _strategy.length; ++i) {
             cheats.expectEmit(true, true, true, true, address(strategyManager));
@@ -730,10 +725,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
             address targetToUse = address(strategyManager);
             uint256 msgValueToUse = 0;
             bytes memory calldataToUse = abi.encodeWithSelector(
-                StrategyManager.depositIntoStrategy.selector,
-                address(reenterer),
-                dummyToken,
-                amount
+                StrategyManager.depositIntoStrategy.selector, address(reenterer), dummyToken, amount
             );
             reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
         }
@@ -782,11 +774,11 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         address staker = cheats.addr(privateKey);
         uint256 amount = 1e18;
 
-        string
-            memory expectedRevertMessage = "StrategyManager.onlyStrategiesWhitelistedForDeposit: strategy not whitelisted";
+        string memory expectedRevertMessage =
+            "StrategyManager.onlyStrategiesWhitelistedForDeposit: strategy not whitelisted";
         _depositIntoStrategyWithSignature(staker, amount, type(uint256).max, expectedRevertMessage);
     }
-    
+
     function testFuzz_Revert_WhenThirdPartyTransfersForbidden(uint256 amount, uint256 expiry) public {
         // min shares must be minted on strategy
         cheats.assume(amount >= 1);
@@ -796,7 +788,8 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         address staker = cheats.addr(privateKey);
         // not expecting a revert, so input an empty string
-        string memory expectedRevertMessage = "StrategyManager.depositIntoStrategyWithSignature: third transfers disabled";
+        string memory expectedRevertMessage =
+            "StrategyManager.depositIntoStrategyWithSignature: third transfers disabled";
         _depositIntoStrategyWithSignature(staker, amount, expiry, expectedRevertMessage);
     }
 }
@@ -939,10 +932,7 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
             "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore - 1"
         );
         assertEq(sharesAfter, 0, "sharesAfter != 0");
-        assertFalse(
-            _isDepositedStrategy(staker, removeStrategy),
-            "strategy should not be part of staker strategy list"
-        );
+        assertFalse(_isDepositedStrategy(staker, removeStrategy), "strategy should not be part of staker strategy list");
     }
 
     /**
@@ -978,19 +968,15 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
             if (sharesAmounts[i] == depositAmounts[i]) {
                 ++numPoppedStrategies;
                 assertFalse(
-                    _isDepositedStrategy(staker, strategies[i]),
-                    "strategy should not be part of staker strategy list"
+                    _isDepositedStrategy(staker, strategies[i]), "strategy should not be part of staker strategy list"
                 );
                 assertEq(sharesAfter[i], 0, "sharesAfter != 0");
             } else {
                 assertTrue(
-                    _isDepositedStrategy(staker, strategies[i]),
-                    "strategy should be part of staker strategy list"
+                    _isDepositedStrategy(staker, strategies[i]), "strategy should be part of staker strategy list"
                 );
                 assertEq(
-                    sharesAfter[i],
-                    sharesBefore[i] - sharesAmounts[i],
-                    "sharesAfter != sharesBefore - sharesAmounts"
+                    sharesAfter[i], sharesBefore[i] - sharesAmounts[i], "sharesAfter != sharesBefore - sharesAmounts"
                 );
             }
         }
@@ -1009,12 +995,16 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         invalidDelegationManager.addShares(strategyManager, address(this), dummyToken, dummyStrat, 1);
     }
 
-    function testFuzz_Revert_StakerZeroAddress(uint256 amount) external {
+    function testFuzz_Revert_StakerZeroAddress(
+        uint256 amount
+    ) external {
         cheats.expectRevert("StrategyManager._addShares: staker cannot be zero address");
         delegationManagerMock.addShares(strategyManager, address(0), dummyToken, dummyStrat, amount);
     }
 
-    function testFuzz_Revert_ZeroShares(address staker) external filterFuzzedAddressInputs(staker) {
+    function testFuzz_Revert_ZeroShares(
+        address staker
+    ) external filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != address(0));
         cheats.expectRevert("StrategyManager._addShares: shares should not be zero!");
         delegationManagerMock.addShares(strategyManager, staker, dummyToken, dummyStrat, 0);
@@ -1169,7 +1159,9 @@ contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitT
         );
     }
 
-    function testFuzz_Revert_WhenCalledByNotOwner(address notOwner) external filterFuzzedAddressInputs(notOwner) {
+    function testFuzz_Revert_WhenCalledByNotOwner(
+        address notOwner
+    ) external filterFuzzedAddressInputs(notOwner) {
         cheats.assume(notOwner != strategyManager.owner());
         address newWhitelister = address(this);
         cheats.prank(notOwner);
@@ -1226,7 +1218,9 @@ contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyMan
         assertTrue(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should still be whitelisted");
     }
 
-    function testFuzz_AddStrategiesToDepositWhitelist(uint8 numberOfStrategiesToAdd) external {
+    function testFuzz_AddStrategiesToDepositWhitelist(
+        uint8 numberOfStrategiesToAdd
+    ) external {
         // sanity filtering on fuzzed input
         cheats.assume(numberOfStrategiesToAdd <= 16);
         _addStrategiesToWhitelist(numberOfStrategiesToAdd);
@@ -1260,8 +1254,7 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
         uint256 numLogsAfter = cheats.getRecordedLogs().length;
         assertEq(numLogsBefore, numLogsAfter, "event emitted when strategy already not whitelisted");
         assertFalse(
-            strategyManager.strategyIsWhitelistedForDeposit(strategy),
-            "strategy still should not be whitelisted"
+            strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy still should not be whitelisted"
         );
     }
 
@@ -1285,8 +1278,7 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
         emit StrategyRemovedFromDepositWhitelist(strategy);
         strategyManager.removeStrategiesFromDepositWhitelist(strategyArray);
         assertFalse(
-            strategyManager.strategyIsWhitelistedForDeposit(strategy),
-            "strategy should no longer be whitelisted"
+            strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should no longer be whitelisted"
         );
     }
 

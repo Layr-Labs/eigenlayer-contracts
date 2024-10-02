@@ -6,7 +6,6 @@ import "forge-std/Test.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 
 contract PauserRegistryUnitTests is Test {
-
     Vm cheats = Vm(HEVM_ADDRESS);
 
     PauserRegistry public pauserRegistry;
@@ -20,13 +19,15 @@ contract PauserRegistryUnitTests is Test {
 
     event UnpauserChanged(address previousUnpauser, address newUnpauser);
 
-    function setUp() virtual public {
+    function setUp() public virtual {
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
     }
 
-    function testSetIsPauserTrue(address newPauser) public {
+    function testSetIsPauserTrue(
+        address newPauser
+    ) public {
         cheats.assume(newPauser != address(0));
 
         cheats.startPrank(pauserRegistry.unpauser());
@@ -48,7 +49,9 @@ contract PauserRegistryUnitTests is Test {
         require(!pauserRegistry.isPauser(pauser), "pauser not set correctly");
     }
 
-    function testSetUnpauser(address newUnpauser) public {
+    function testSetUnpauser(
+        address newUnpauser
+    ) public {
         cheats.assume(newUnpauser != address(0));
 
         cheats.startPrank(pauserRegistry.unpauser());

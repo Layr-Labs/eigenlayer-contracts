@@ -15,12 +15,8 @@ import "../../utils/ExistingDeploymentParser.sol";
  */
 contract MainnetPEPEDeploy is ExistingDeploymentParser {
     function run() external virtual {
-        _parseInitialDeploymentParams(
-            "script/configs/mainnet/mainnet-config.config.json"
-        );
-        _parseDeployedContracts(
-            "script/configs/mainnet/mainnet-addresses.config.json"
-        );
+        _parseInitialDeploymentParams("script/configs/mainnet/mainnet-config.config.json");
+        _parseDeployedContracts("script/configs/mainnet/mainnet-addresses.config.json");
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
@@ -47,19 +43,12 @@ contract MainnetPEPEDeploy is ExistingDeploymentParser {
 
     function _deployPEPE() internal {
         // Deploy EigenPod
-        eigenPodImplementation = new EigenPod(
-            IETHPOSDeposit(ETHPOSDepositAddress),
-            eigenPodManager,
-            EIGENPOD_GENESIS_TIME
-        );
+        eigenPodImplementation =
+            new EigenPod(IETHPOSDeposit(ETHPOSDepositAddress), eigenPodManager, EIGENPOD_GENESIS_TIME);
 
         // Deploy EigenPodManager
         eigenPodManagerImplementation = new EigenPodManager(
-            IETHPOSDeposit(ETHPOSDepositAddress),
-            eigenPodBeacon,
-            strategyManager,
-            slasher,
-            delegationManager
+            IETHPOSDeposit(ETHPOSDepositAddress), eigenPodBeacon, strategyManager, slasher, delegationManager
         );
     }
 
@@ -71,8 +60,7 @@ contract MainnetPEPEDeploy is ExistingDeploymentParser {
 
         // upgrade TUPS
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
-            address(eigenPodManagerImplementation)
+            TransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerImplementation)
         );
 
         vm.stopPrank();

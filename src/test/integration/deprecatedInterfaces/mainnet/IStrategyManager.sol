@@ -42,14 +42,11 @@ interface IStrategyManager_DeprecatedM1 {
      * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
-     * 
+     *
      * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
      */
-    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
-        external
-        returns (uint256 shares);
-
+    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (uint256 shares);
 
     /**
      * @notice Deposits `amount` of beaconchain ETH into this contract on behalf of `staker`
@@ -66,13 +63,16 @@ interface IStrategyManager_DeprecatedM1 {
      * @param amount is the amount to decrement the slashedAddress's beaconChainETHStrategy shares
      * @dev Only callable by EigenPodManager.
      */
-    function recordOvercommittedBeaconChainETH(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
-        external;
+    function recordOvercommittedBeaconChainETH(
+        address overcommittedPodOwner,
+        uint256 beaconChainETHStrategyIndex,
+        uint256 amount
+    ) external;
 
     /**
      * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
      * who must sign off on the action.
-     * Note that the assets are transferred out/from the `msg.sender`, not from the `staker`; this function is explicitly designed 
+     * Note that the assets are transferred out/from the `msg.sender`, not from the `staker`; this function is explicitly designed
      * purely to help one address deposit 'for' another.
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
@@ -86,7 +86,7 @@ interface IStrategyManager_DeprecatedM1 {
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
      * @dev Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen).
-     * 
+     *
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
      */
@@ -97,9 +97,7 @@ interface IStrategyManager_DeprecatedM1 {
         address staker,
         uint256 expiry,
         bytes memory signature
-    )
-        external
-        returns (uint256 shares);
+    ) external returns (uint256 shares);
 
     /// @notice Returns the current shares of `user` in `strategy`
     function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
@@ -108,10 +106,14 @@ interface IStrategyManager_DeprecatedM1 {
      * @notice Get all details on the depositor's deposits and corresponding shares
      * @return (depositor's strategies, shares in these strategies)
      */
-    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory);
+    function getDeposits(
+        address depositor
+    ) external view returns (IStrategy[] memory, uint256[] memory);
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
-    function stakerStrategyListLength(address staker) external view returns (uint256);
+    function stakerStrategyListLength(
+        address staker
+    ) external view returns (uint256);
 
     /**
      * @notice Called by a staker to queue a withdrawal of the given amount of `shares` from each of the respective given `strategies`.
@@ -134,7 +136,7 @@ interface IStrategyManager_DeprecatedM1 {
      * is to order the strategies *for which `msg.sender` is withdrawing 100% of their shares* from highest index in
      * `stakerStrategyList` to lowest index
      * @dev Note that if the withdrawal includes shares in the enshrined 'beaconChainETH' strategy, then it must *only* include shares in this strategy, and
-     * `withdrawer` must match the caller's address. The first condition is because slashing of queued withdrawals cannot be guaranteed 
+     * `withdrawer` must match the caller's address. The first condition is because slashing of queued withdrawals cannot be guaranteed
      * for Beacon Chain ETH (since we cannot trigger a withdrawal from the beacon chain through a smart contract) and the second condition is because shares in
      * the enshrined 'beaconChainETH' strategy technically represent non-fungible positions (deposits to the Beacon Chain, each pointed at a specific EigenPod).
      */
@@ -144,9 +146,8 @@ interface IStrategyManager_DeprecatedM1 {
         uint256[] calldata shares,
         address withdrawer,
         bool undelegateIfPossible
-    )
-        external returns(bytes32);
-        
+    ) external returns (bytes32);
+
     /**
      * @notice Used to complete the specified `queuedWithdrawal`. The function caller must match `queuedWithdrawal.withdrawer`
      * @param queuedWithdrawal The QueuedWithdrawal to complete.
@@ -163,9 +164,8 @@ interface IStrategyManager_DeprecatedM1 {
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens
-    )
-        external;
-    
+    ) external;
+
     /**
      * @notice Used to complete the specified `queuedWithdrawals`. The function caller must match `queuedWithdrawals[...].withdrawer`
      * @param queuedWithdrawals The QueuedWithdrawals to complete.
@@ -182,8 +182,7 @@ interface IStrategyManager_DeprecatedM1 {
         IERC20[][] calldata tokens,
         uint256[] calldata middlewareTimesIndexes,
         bool[] calldata receiveAsTokens
-    )
-        external;
+    ) external;
 
     /**
      * @notice Slashes the shares of a 'frozen' operator (or a staker delegated to one)
@@ -208,8 +207,7 @@ interface IStrategyManager_DeprecatedM1 {
         IERC20[] calldata tokens,
         uint256[] calldata strategyIndexes,
         uint256[] calldata shareAmounts
-    )
-        external;
+    ) external;
 
     /**
      * @notice Slashes an existing queued withdrawal that was created by a 'frozen' operator (or a staker delegated to one)
@@ -221,28 +219,33 @@ interface IStrategyManager_DeprecatedM1 {
      * so that, e.g., if the slashed QueuedWithdrawal contains a malicious strategy in the `strategies` array which always reverts on calls to its 'withdraw' function,
      * then the malicious strategy can be skipped (with the shares in effect "burned"), while the non-malicious strategies are still called as normal.
      */
-    function slashQueuedWithdrawal(address recipient, QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256[] calldata indicesToSkip)
-        external;
+    function slashQueuedWithdrawal(
+        address recipient,
+        QueuedWithdrawal calldata queuedWithdrawal,
+        IERC20[] calldata tokens,
+        uint256[] calldata indicesToSkip
+    ) external;
 
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
     function calculateWithdrawalRoot(
         QueuedWithdrawal memory queuedWithdrawal
-    )
-        external
-        pure
-        returns (bytes32);
+    ) external pure returns (bytes32);
 
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-    */
-    function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external;
+     */
+    function addStrategiesToDepositWhitelist(
+        IStrategy[] calldata strategiesToWhitelist
+    ) external;
 
     /**
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
-    */
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
+     */
+    function removeStrategiesFromDepositWhitelist(
+        IStrategy[] calldata strategiesToRemoveFromWhitelist
+    ) external;
 
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
@@ -256,10 +259,12 @@ interface IStrategyManager_DeprecatedM1 {
     /// @notice Returns the number of blocks that must pass between the time a withdrawal is queued and the time it can be completed
     function withdrawalDelayBlocks() external view returns (uint256);
 
-
-
     /// VIEW FUNCTIONS FOR PUBLIC VARIABLES, NOT IN ORIGINAL INTERFACE
-    function withdrawalRootPending(bytes32 withdrawalRoot) external view returns (bool);
+    function withdrawalRootPending(
+        bytes32 withdrawalRoot
+    ) external view returns (bool);
 
-    function numWithdrawalsQueued(address staker) external view returns (uint256);
+    function numWithdrawalsQueued(
+        address staker
+    ) external view returns (uint256);
 }

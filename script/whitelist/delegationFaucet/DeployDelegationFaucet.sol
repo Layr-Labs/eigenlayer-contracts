@@ -73,7 +73,9 @@ contract DeployDelegationFaucet is Script, DSTest {
         vm.stopBroadcast();
     }
 
-    function _setAddresses(string memory config) internal {
+    function _setAddresses(
+        string memory config
+    ) internal {
         eigenLayerProxyAdminAddress = stdJson.readAddress(config, ".addresses.eigenLayerProxyAdmin");
         eigenLayerPauserRegAddress = stdJson.readAddress(config, ".addresses.eigenLayerPauserReg");
         delegationAddress = stdJson.readAddress(config, ".addresses.delegation");
