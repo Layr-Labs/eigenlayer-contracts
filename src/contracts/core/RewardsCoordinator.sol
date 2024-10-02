@@ -45,6 +45,8 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
     /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
     uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
+    /// @dev Index for flag that pauses rewardParticipants
+    uint8 internal constant PAUSED_REWARD_PARTICIPANTS = 4;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -204,13 +206,34 @@ contract RewardsCoordinator is
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
+    
+    /*
+     * @notice Facilitates the distribution of rewards to participants through the UniPRInt V1.1 system.
+     * @dev The function leverages AVS-defined logic and external data for reward calculations.
+     * @param token The address of the ERC20 token used for rewards.
+     * @param amount The total amount of tokens to be rewarded.
+     * @param contentHash The keccak256 hash of the JSON manifest file that lists the earners and their rewards.
+     * @param contentURI The URI where the JSON manifest file is publicly accessible.
+     */
+    function rewardParticipants(
+        IERC20 token,
+        uint256 amount,
+        bytes32 contentHash,
+        string calldata contentURI
+    ) external onlyWhenNotPaused(PAUSED_REWARD_PARTICIPANTS) {
+        // Pull `token` of `amount` from caller to this contract.
+        token.safeTransferFrom(msg.sender, address(this), amount);
+
+        // Emit event indicating a direct reward payment.
+        emit DirectRewardPayment(msg.sender, token, amount, contentHash, contentURI);
+    }
 
     /**
      * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
      * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
-     * @param claim The RewardsMerkleClaim to be processed.
+     * @param claim The RewardsMerkleClaims to be processed.
      * Contains the root index, earner, token leaves, and required proofs
      * @param recipient The address recipient that receives the ERC20 rewards
      * @dev only callable by the valid claimer, that is
@@ -221,30 +244,27 @@ contract RewardsCoordinator is
         RewardsMerkleClaim calldata claim,
         address recipient
     ) external onlyWhenNotPaused(PAUSED_PROCESS_CLAIM) nonReentrant {
-        DistributionRoot memory root = _distributionRoots[claim.rootIndex];
-        _checkClaim(claim, root);
-        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address earner = claim.earnerLeaf.earner;
-        address claimer = claimerFor[earner];
-        if (claimer == address(0)) {
-            claimer = earner;
-        }
-        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
-        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
-            TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
+        _processClaim(claim, recipient);
+    }
 
-            uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
-            require(
-                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
-                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
-            );
-
-            // Calculate amount to claim and update cumulativeClaimed
-            uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
-            cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
-
-            tokenLeaf.token.safeTransfer(recipient, claimAmount);
-            emit RewardsClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
+    /**
+     * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
+     * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
+     * they can simply claim against the latest root and the contract will calculate the difference between
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
+     * @param claims The array of RewardsMerkleClaims to be processed.
+     * Contains the root index, earner, token leaves, and required proofs
+     * @param recipient The address recipient that receives the ERC20 rewards
+     * @dev only callable by the valid claimer, that is
+     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
+     * claimerFor[claim.earner] can claim the rewards.
+     */
+    function processClaims(
+        RewardsMerkleClaim[] calldata claims,
+        address recipient
+    ) external onlyWhenNotPaused(PAUSED_PROCESS_CLAIM) nonReentrant {
+        for (uint256 i; i < claims.length; ++i) {
+            _processClaim(claims[i], recipient);
         }
     }
 
@@ -498,6 +518,42 @@ contract RewardsCoordinator is
             }),
             "RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof"
         );
+    }
+
+    /**
+     * @notice Internal helper to process reward claims.
+     * @param claim The RewardsMerkleClaims to be processed.
+     * @param recipient The address recipient that receives the ERC20 rewards
+     */
+    function _processClaim(
+        RewardsMerkleClaim calldata claim,
+        address recipient
+    ) internal {
+        DistributionRoot memory root = _distributionRoots[claim.rootIndex];
+        _checkClaim(claim, root);
+        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
+        address earner = claim.earnerLeaf.earner;
+        address claimer = claimerFor[earner];
+        if (claimer == address(0)) {
+            claimer = earner;
+        }
+        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
+        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
+            TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
+
+            uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
+            require(
+                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
+                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
+            );
+
+            // Calculate amount to claim and update cumulativeClaimed
+            uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
+            cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
+
+            tokenLeaf.token.safeTransfer(recipient, claimAmount);
+            emit RewardsClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
+        }
     }
 
     function _setActivationDelay(uint32 _activationDelay) internal {

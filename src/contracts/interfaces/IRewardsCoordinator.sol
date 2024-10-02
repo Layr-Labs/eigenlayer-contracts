@@ -176,6 +176,21 @@ interface IRewardsCoordinator {
         uint256 claimedAmount
     );
 
+    /// @notice Emitted when a direct reward payment is initiated through the UniPRInt V1.1 system.
+    /// @dev Supports programmatic rewards for AVS performance, EIGEN incentives, and more.
+    /// @param avs The address of the AVS managing this reward.
+    /// @param token The address of the ERC20 token used for payment.
+    /// @param amount The total amount of tokens transferred to the RewardsCoordinator.
+    /// @param contentHash The keccak256 hash of the JSON manifest file listing the earners and amounts.
+    /// @param contentURI The publicly addressable URI pointing to the JSON manifest file.
+    event DirectRewardPayment(
+        address indexed avs,
+        IERC20 token,
+        uint256 amount,
+        bytes32 contentHash,
+        string contentURI
+    );
+
     /**
      *
      *                         VIEW FUNCTIONS
@@ -282,13 +297,28 @@ interface IRewardsCoordinator {
      * @param rewardsSubmissions The rewards submissions being created
      */
     function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions) external;
+    
+   /**
+    * @notice Facilitates the distribution of rewards to participants through the UniPRInt V1.1 system.
+    * @dev The function leverages AVS-defined logic and external data for reward calculations.
+    * @param token The address of the ERC20 token used for rewards.
+    * @param totalAmount The total amount of tokens to be transferred to the RewardsCoordinator.
+    * @param contentHash The keccak256 hash of the JSON manifest file that lists the earners and their rewards.
+    * @param contentURI The URI where the JSON manifest file is publicly accessible.
+    */
+    function rewardParticipants(
+        IERC20 token,
+        uint256 totalAmount,
+        bytes32 contentHash,
+        string calldata contentURI
+    ) external;
 
     /**
      * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
      * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
-     * @param claim The RewardsMerkleClaim to be processed.
+     * @param claim The RewardsMerkleClaims to be processed.
      * Contains the root index, earner, token leaves, and required proofs
      * @param recipient The address recipient that receives the ERC20 rewards
      * @dev only callable by the valid claimer, that is
@@ -296,6 +326,20 @@ interface IRewardsCoordinator {
      * claimerFor[claim.earner] can claim the rewards.
      */
     function processClaim(RewardsMerkleClaim calldata claim, address recipient) external;
+
+    /**
+     * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
+     * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
+     * they can simply claim against the latest root and the contract will calculate the difference between
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
+     * @param claims The array of RewardsMerkleClaims to be processed.
+     * Contains the root index, earner, token leaves, and required proofs
+     * @param recipient The address recipient that receives the ERC20 rewards
+     * @dev only callable by the valid claimer, that is
+     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
+     * claimerFor[claim.earner] can claim the rewards.
+     */
+    function processClaims(RewardsMerkleClaim[] calldata claims, address recipient) external;
 
     /**
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
