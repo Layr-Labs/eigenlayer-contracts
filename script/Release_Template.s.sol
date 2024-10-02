@@ -4,11 +4,14 @@ pragma solidity ^0.8.12;
 import "script/utils/ConfigParser.sol";
 import {EncGnosisSafe} from "script/utils/Encoders.sol";
 
+/// @notice Deployment data struct
 struct Deployment {
     string name;
     address deployedTo;
 }
 
+/// @notice Tx data struct
+/// @dev based on <https://docs.safe.global/sdk/api-kit/guides/propose-and-confirm-transactions#propose-a-transaction-to-the-service>
 struct Transaction {
     address to;
     uint256 value;
@@ -16,17 +19,27 @@ struct Transaction {
     EncGnosisSafe.Operation op;
 }
 
-abstract contract EOABuilder {
+/// @notice template for an EOA script
+abstract contract EOABuilder is ConfigParser {
+    Deployment[] internal deployments;
+
     function deploy(string memory envPath) public returns (Deployment[] memory) {
-        // TODO
+        (
+            Addresses memory addrs,
+            Environment memory env,
+            Params memory params
+        ) = _readConfigFile(envPath);
+
+        return _deploy(addrs, env, params);
     }
+
     function _deploy(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Deployment[] memory);
 }
 
+/// @notice template for a Multisig script
 abstract contract MultisigBuilder is ConfigParser {
 
     function execute(string memory envPath) public returns (Transaction memory) {
-        // TODO - pull from Releasoor.run
         (
             Addresses memory addrs,
             Environment memory env,
@@ -36,28 +49,17 @@ abstract contract MultisigBuilder is ConfigParser {
         return _execute(addrs, env, params);
     }
 
+    /// @notice to be implemented by inheriting contract
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
 }
 
+
+/// @notice template for an OpsMultisig script that goes through the timelock
 abstract contract OpsTimelockBuilder is MultisigBuilder {
     function queue(string memory envPath) public returns (Transaction memory) {
         // TODO
     }
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
+
     function _makeTimelockTxns(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
-}
-
-contract ExampleScript is MultisigBuilder {
-
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (Transaction memory) {
-
-
-        bytes memory calldata_to_executor;
-        return Transaction({
-            to: addrs.timelock,
-            value: 0,
-            data: calldata_to_executor,
-            op: EncGnosisSafe.Operation.DelegateCall
-        });
-    }
 }
