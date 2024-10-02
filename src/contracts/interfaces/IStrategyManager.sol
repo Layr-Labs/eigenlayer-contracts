@@ -92,6 +92,7 @@ interface IStrategyManager {
 
     /**
      * @notice Get all details on the staker's deposits and corresponding shares
+     * @param staker The staker of interest, whose deposits this function will fetch
      * @return (staker's strategies, shares in these strategies)
      */
     function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory);
@@ -140,8 +141,20 @@ interface IStrategyManager {
     function strategyIsWhitelistedForDeposit(IStrategy strategy) external view returns (bool);
 
     /**
+     * @notice Owner-only function to change the `strategyWhitelister` address.
+     * @param newStrategyWhitelister new address for the `strategyWhitelister`.
+     */
+    function setStrategyWhitelister(address newStrategyWhitelister) external;
+
+    /**
      * @notice Returns bool for whether or not `strategy` enables credit transfers. i.e enabling
      * depositIntoStrategyWithSignature calls or queueing withdrawals to a different address than the staker.
      */
     function thirdPartyTransfersForbidden(IStrategy strategy) external view returns (bool);
+
+    /**
+     * @notice Getter function for the current EIP-712 domain separator for this contract.
+     * @dev The domain separator will change in the event of a fork that changes the ChainID.
+     */
+    function domainSeparator() external view returns (bytes32);
 }

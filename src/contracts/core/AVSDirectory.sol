@@ -56,11 +56,7 @@ contract AVSDirectory is
      *
      */
 
-    /**
-     * @notice Called by the AVS's service manager contract to register an operator with the avs.
-     * @param operator The address of the operator to register.
-     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
-     */
+    /// @inheritdoc IAVSDirectory
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
@@ -107,10 +103,7 @@ contract AVSDirectory is
         emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
     }
 
-    /**
-     * @notice Called by an avs to deregister an operator with the avs.
-     * @param operator The address of the operator to deregister.
-     */
+    /// @inheritdoc IAVSDirectory
     function deregisterOperatorFromAVS(address operator)
         external
         onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
@@ -126,18 +119,12 @@ contract AVSDirectory is
         emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
     }
 
-    /**
-     * @notice Called by an avs to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
-     * @param metadataURI The URI for metadata associated with an avs
-     */
+    /// @inheritdoc IAVSDirectory
     function updateAVSMetadataURI(string calldata metadataURI) external {
         emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
-    /**
-     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
-     * @param salt A unique and single use value associated with the approver signature.
-     */
+    /// @inheritdoc IAVSDirectory
     function cancelSalt(bytes32 salt) external {
         require(!operatorSaltIsSpent[msg.sender][salt], "AVSDirectory.cancelSalt: cannot cancel spent salt");
         operatorSaltIsSpent[msg.sender][salt] = true;
@@ -149,13 +136,7 @@ contract AVSDirectory is
      *
      */
 
-    /**
-     * @notice Calculates the digest hash to be signed by an operator to register with an AVS
-     * @param operator The account registering as an operator
-     * @param avs The address of the service manager contract for the AVS that the operator is registering to
-     * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid
-     */
+    /// @inheritdoc IAVSDirectory
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
         address avs,
@@ -169,10 +150,7 @@ contract AVSDirectory is
         return digestHash;
     }
 
-    /**
-     * @notice Getter function for the current EIP-712 domain separator for this contract.
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     */
+    /// @inheritdoc IAVSDirectory
     function domainSeparator() public view returns (bytes32) {
         if (block.chainid == ORIGINAL_CHAIN_ID) {
             return _DOMAIN_SEPARATOR;
