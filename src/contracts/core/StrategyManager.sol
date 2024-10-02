@@ -242,7 +242,7 @@ contract StrategyManager is
         Shares existingShares = stakerStrategyShares[staker][strategy];
 
         // if they dont have existing ownedShares of this strategy, add it to their strats
-        if (existingShares.unwrap()== 0) {
+        if (existingShares.unwrap() == 0) {
             require(stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, MaxStrategiesExceeded());
             stakerStrategyList[staker].push(strategy);
         }
@@ -306,7 +306,7 @@ contract StrategyManager is
         require(shareAmount.unwrap() <= userShares.unwrap(), SharesAmountTooHigh());
 
         userShares = userShares.sub(shareAmount.unwrap()).wrapShares();
-    
+
         // subtract the shares from the staker's existing shares for this strategy
         stakerStrategyShares[staker][strategy] = userShares;
 

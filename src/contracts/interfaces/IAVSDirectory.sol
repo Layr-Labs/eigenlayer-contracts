@@ -236,7 +236,9 @@ interface IAVSDirectory is ISignatureUtils {
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
 
     /// @notice Returns true if all provided operator sets are valid.
-    function isOperatorSetBatch(OperatorSet[] calldata operatorSets) external view returns (bool);
+    function isOperatorSetBatch(
+        OperatorSet[] calldata operatorSets
+    ) external view returns (bool);
 
     /**
      * @notice Returns operator set an operator is registered to in the order they were registered.

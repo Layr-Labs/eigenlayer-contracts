@@ -184,10 +184,14 @@ interface IDelegationManager is ISignatureUtils {
     event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
 
     /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares);
+    event OperatorSharesIncreased(
+        address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares
+    );
 
     /// @notice Emitted whenever an operator's shares are decreased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares);
+    event OperatorSharesDecreased(
+        address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares
+    );
 
     /// @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
@@ -364,7 +368,7 @@ interface IDelegationManager is ISignatureUtils {
         OwnedShares addedOwnedShares
     ) external;
 
-        /**
+    /**
      * @notice Decreases a native restaker's delegated share balance in a strategy due to beacon chain slashing. This updates their beaconChainScalingFactor.
      * Their operator's stakeShares are also updated (if they are delegated).
      * @param staker The address to increase the delegated stakeShares for their operator.

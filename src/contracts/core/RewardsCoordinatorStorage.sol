@@ -12,13 +12,12 @@ import "../interfaces/IStrategyManager.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
-
     // Constants
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 internal constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-    
+
     /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
     uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
 
@@ -67,7 +66,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
     // Mutatables
-    
+
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -125,13 +124,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         uint32 _GENESIS_REWARDS_TIMESTAMP
     ) {
         require(
-            _GENESIS_REWARDS_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0,
-            InvalidGenesisRewardsTimestampRemainder()
+            _GENESIS_REWARDS_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0, InvalidGenesisRewardsTimestampRemainder()
         );
-        require(
-            _CALCULATION_INTERVAL_SECONDS % SNAPSHOT_CADENCE == 0,
-            InvalidCalculationIntervalSecondsRemainder()
-        );
+        require(_CALCULATION_INTERVAL_SECONDS % SNAPSHOT_CADENCE == 0, InvalidCalculationIntervalSecondsRemainder());
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
         CALCULATION_INTERVAL_SECONDS = _CALCULATION_INTERVAL_SECONDS;

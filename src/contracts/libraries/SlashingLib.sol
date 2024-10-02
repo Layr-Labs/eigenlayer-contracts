@@ -41,16 +41,17 @@ uint64 constant WAD = 1e18;
  */
 
 type OwnedShares is uint256;
+
 type DelegatedShares is uint256;
+
 type Shares is uint256;
+
 struct StakerScalingFactors {
     uint256 depositScalingFactor;
-
     // we need to know if the beaconChainScalingFactor is set because it can be set to 0 through 100% slashing
     bool isBeaconChainScalingFactorSet;
     uint64 beaconChainScalingFactor;
 }
-
 
 using SlashingLib for OwnedShares global;
 using SlashingLib for DelegatedShares global;
@@ -105,16 +106,11 @@ library SlashingLib {
         DelegatedShares delegatedShares,
         StakerScalingFactors storage ssf
     ) internal view returns (Shares) {
-        return delegatedShares.unwrap()
-                .divWad(ssf.getDepositScalingFactor())
-                .divWad(ssf.getBeaconChainScalingFactor())
-                .wrapShares();
+        return delegatedShares.unwrap().divWad(ssf.getDepositScalingFactor()).divWad(ssf.getBeaconChainScalingFactor())
+            .wrapShares();
     }
 
-    function toDelegatedShares(
-        OwnedShares shares, 
-        uint256 magnitude
-    ) internal pure returns (DelegatedShares) {
+    function toDelegatedShares(OwnedShares shares, uint256 magnitude) internal pure returns (DelegatedShares) {
         // forgefmt: disable-next-item
         return shares
             .unwrap()
@@ -123,27 +119,27 @@ library SlashingLib {
     }
 
     function toOwnedShares(DelegatedShares delegatedShares, uint256 magnitude) internal view returns (OwnedShares) {
-        return delegatedShares
-                .unwrap()
-                .mulWad(magnitude)
-                .wrapOwned();
+        return delegatedShares.unwrap().mulWad(magnitude).wrapOwned();
     }
 
-    function scaleForQueueWithdrawal(DelegatedShares delegatedShares, StakerScalingFactors storage ssf) internal view returns (DelegatedShares) {
-        return delegatedShares
-                .unwrap()
-                .divWad(ssf.getBeaconChainScalingFactor())
-                .wrapDelegated();
+    function scaleForQueueWithdrawal(
+        DelegatedShares delegatedShares,
+        StakerScalingFactors storage ssf
+    ) internal view returns (DelegatedShares) {
+        return delegatedShares.unwrap().divWad(ssf.getBeaconChainScalingFactor()).wrapDelegated();
     }
 
-    function scaleForCompleteWithdrawal(DelegatedShares delegatedShares, StakerScalingFactors storage ssf) internal view returns (DelegatedShares) {
-        return delegatedShares
-                .unwrap()
-                .mulWad(ssf.getBeaconChainScalingFactor())
-                .wrapDelegated();
+    function scaleForCompleteWithdrawal(
+        DelegatedShares delegatedShares,
+        StakerScalingFactors storage ssf
+    ) internal view returns (DelegatedShares) {
+        return delegatedShares.unwrap().mulWad(ssf.getBeaconChainScalingFactor()).wrapDelegated();
     }
 
-    function decreaseBeaconChainScalingFactor(StakerScalingFactors storage ssf, uint64 proportionOfOldBalance) internal {
+    function decreaseBeaconChainScalingFactor(
+        StakerScalingFactors storage ssf,
+        uint64 proportionOfOldBalance
+    ) internal {
         ssf.beaconChainScalingFactor = uint64(uint256(ssf.beaconChainScalingFactor).mulWad(proportionOfOldBalance));
         ssf.isBeaconChainScalingFactorSet = true;
     }
@@ -153,16 +149,12 @@ library SlashingLib {
         Shares shares,
         StakerScalingFactors storage ssf
     ) internal view returns (DelegatedShares) {
-        return shares.unwrap()
-                .mulWad(ssf.getDepositScalingFactor())
-                .mulWad(ssf.getBeaconChainScalingFactor())
-                .wrapDelegated();
+        return shares.unwrap().mulWad(ssf.getDepositScalingFactor()).mulWad(ssf.getBeaconChainScalingFactor())
+            .wrapDelegated();
     }
 
     function toDelegatedShares(Shares shares, uint256 magnitude) internal view returns (DelegatedShares) {
-        return shares.unwrap()
-                .mulWad(magnitude)
-                .wrapDelegated();
+        return shares.unwrap().mulWad(magnitude).wrapDelegated();
     }
 
     // WAD MATH
@@ -177,35 +169,52 @@ library SlashingLib {
 
     // TYPE CASTING
 
-    function unwrap(Shares x) internal pure returns (uint256) {
+    function unwrap(
+        Shares x
+    ) internal pure returns (uint256) {
         return Shares.unwrap(x);
     }
 
-    function unwrap(DelegatedShares x) internal pure returns (uint256) {
+    function unwrap(
+        DelegatedShares x
+    ) internal pure returns (uint256) {
         return DelegatedShares.unwrap(x);
     }
 
-    function unwrap(OwnedShares x) internal pure returns (uint256) {
+    function unwrap(
+        OwnedShares x
+    ) internal pure returns (uint256) {
         return OwnedShares.unwrap(x);
     }
 
-    function wrapShares(uint256 x) internal pure returns (Shares) {
+    function wrapShares(
+        uint256 x
+    ) internal pure returns (Shares) {
         return Shares.wrap(x);
     }
 
-    function wrapDelegated(uint256 x) internal pure returns (DelegatedShares) {
+    function wrapDelegated(
+        uint256 x
+    ) internal pure returns (DelegatedShares) {
         return DelegatedShares.wrap(x);
     }
 
-    function wrapOwned(uint256 x) internal pure returns (OwnedShares) {
+    function wrapOwned(
+        uint256 x
+    ) internal pure returns (OwnedShares) {
         return OwnedShares.wrap(x);
     }
 
-    function getDepositScalingFactor(StakerScalingFactors storage ssf) internal view returns (uint256) {
+    function getDepositScalingFactor(
+        StakerScalingFactors storage ssf
+    ) internal view returns (uint256) {
         return ssf.depositScalingFactor == 0 ? WAD : ssf.depositScalingFactor;
     }
-    
-    function getBeaconChainScalingFactor(StakerScalingFactors storage ssf) internal view returns (uint64) {
-        return !ssf.isBeaconChainScalingFactorSet && ssf.beaconChainScalingFactor == 0 ? WAD : ssf.beaconChainScalingFactor;
+
+    function getBeaconChainScalingFactor(
+        StakerScalingFactors storage ssf
+    ) internal view returns (uint64) {
+        return
+            !ssf.isBeaconChainScalingFactorSet && ssf.beaconChainScalingFactor == 0 ? WAD : ssf.beaconChainScalingFactor;
     }
 }

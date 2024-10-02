@@ -119,9 +119,7 @@ contract EigenPodManager is
             _addOwnedShares(podOwner, uint256(sharesDelta).wrapOwned());
         } else if (sharesDelta < 0 && podOwnerShares[podOwner] > 0) {
             delegationManager.decreaseBeaconChainScalingFactor(
-                podOwner,
-                uint256(podOwnerShares[podOwner]).wrapShares(),
-                proportionOfOldBalance
+                podOwner, uint256(podOwnerShares[podOwner]).wrapShares(), proportionOfOldBalance
             );
         }
     }
@@ -234,10 +232,7 @@ contract EigenPodManager is
         return pod;
     }
 
-    function _addOwnedShares(
-        address staker,
-        OwnedShares ownedShares
-    ) internal {
+    function _addOwnedShares(address staker, OwnedShares ownedShares) internal {
         require(staker != address(0), InputAddressZero());
 
         int256 addedOwnedShares = int256(ownedShares.unwrap());

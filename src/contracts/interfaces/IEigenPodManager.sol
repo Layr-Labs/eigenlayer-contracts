@@ -27,8 +27,8 @@ interface IEigenPodManager is IShareManager, IPausable {
     error SharesNegative();
     /// @dev Thrown when the strategy is not the beaconChainETH strategy.
     error InvalidStrategy();
-     /// @dev Thrown when the pods shares are negative and a beacon chain balance update is attempted. 
-     /// The podOwner should complete legacy withdrawal first.
+    /// @dev Thrown when the pods shares are negative and a beacon chain balance update is attempted.
+    /// The podOwner should complete legacy withdrawal first.
     error LegacyWithdrawalsNotCompleted();
 
     /// @notice Emitted to notify the deployment of an EigenPod

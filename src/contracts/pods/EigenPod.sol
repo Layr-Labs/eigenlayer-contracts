@@ -644,16 +644,14 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             // Calculate the slashing proportion
             uint64 proportionOfOldBalance = 0;
             if (totalShareDeltaWei < 0) {
-                uint256 totalRestakedBeforeWei = (withdrawableRestakedExecutionLayerGwei + checkpoint.beaconChainBalanceBeforeGwei) * GWEI_TO_WEI;
-                proportionOfOldBalance = uint64((totalRestakedBeforeWei + uint256(-totalShareDeltaWei)) * WAD / totalRestakedBeforeWei);
+                uint256 totalRestakedBeforeWei =
+                    (withdrawableRestakedExecutionLayerGwei + checkpoint.beaconChainBalanceBeforeGwei) * GWEI_TO_WEI;
+                proportionOfOldBalance =
+                    uint64((totalRestakedBeforeWei + uint256(-totalShareDeltaWei)) * WAD / totalRestakedBeforeWei);
             }
 
             // Update pod owner's shares
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(
-                podOwner, 
-                totalShareDeltaWei, 
-                proportionOfOldBalance
-            );
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei, proportionOfOldBalance);
             emit CheckpointFinalized(lastCheckpointTimestamp, totalShareDeltaWei);
         } else {
             _currentCheckpoint = checkpoint;

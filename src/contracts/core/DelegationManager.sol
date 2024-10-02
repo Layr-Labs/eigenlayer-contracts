@@ -58,15 +58,15 @@ contract DelegationManager is
         IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
         uint32 _MIN_WITHDRAWAL_DELAY
-    ) 
+    )
         DelegationManagerStorage(
-            _avsDirectory, 
-            _strategyManager, 
-            _eigenPodManager, 
-            _allocationManager, 
+            _avsDirectory,
+            _strategyManager,
+            _eigenPodManager,
+            _allocationManager,
             _MIN_WITHDRAWAL_DELAY
-        ) 
-    {  
+        )
+    {
         _disableInitializers();
     }
 
@@ -396,13 +396,15 @@ contract DelegationManager is
         Shares existingShares,
         uint64 proportionOfOldBalance
     ) external onlyEigenPodManager {
-        DelegatedShares delegatedSharesBefore = existingShares.toDelegatedShares(stakerScalingFactors[staker][beaconChainETHStrategy]);
+        DelegatedShares delegatedSharesBefore =
+            existingShares.toDelegatedShares(stakerScalingFactors[staker][beaconChainETHStrategy]);
 
         // decrease the staker's beaconChainScalingFactor proportionally
         // forgefmt: disable-next-item
         stakerScalingFactors[staker][beaconChainETHStrategy].decreaseBeaconChainScalingFactor(proportionOfOldBalance);
 
-        DelegatedShares delegatedSharesAfter = existingShares.toDelegatedShares(stakerScalingFactors[staker][beaconChainETHStrategy]);
+        DelegatedShares delegatedSharesAfter =
+            existingShares.toDelegatedShares(stakerScalingFactors[staker][beaconChainETHStrategy]);
 
         // if the staker is delegated to an operators
         if (isDelegated(staker)) {
@@ -538,10 +540,9 @@ contract DelegationManager is
 
         for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
             IShareManager shareManager = _getShareManager(withdrawal.strategies[i]);
-            OwnedShares ownedSharesToWithdraw = 
-                withdrawal.delegatedShares[i]
-                .scaleForCompleteWithdrawal(stakerScalingFactors[withdrawal.staker][withdrawal.strategies[i]])
-                .toOwnedShares(totalMagnitudes[i]);
+            OwnedShares ownedSharesToWithdraw = withdrawal.delegatedShares[i].scaleForCompleteWithdrawal(
+                stakerScalingFactors[withdrawal.staker][withdrawal.strategies[i]]
+            ).toOwnedShares(totalMagnitudes[i]);
 
             if (receiveAsTokens) {
                 // Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares,
@@ -619,7 +620,7 @@ contract DelegationManager is
     ) internal {
         // based on total magnitude, decrement operator's delegatedShares
         operatorDelegatedShares[operator][strategy] = operatorDelegatedShares[operator][strategy].sub(delegatedShares);
-        
+
         // TODO: What to do about event wrt scaling?
         emit OperatorSharesDecreased(operator, staker, strategy, delegatedShares);
     }
@@ -647,7 +648,7 @@ contract DelegationManager is
 
             // delegatedShares for staker to place into queueWithdrawal
             DelegatedShares delegatedSharesToRemove = ownedSharesToWithdraw[i].toDelegatedShares(totalMagnitudes[i]);
-            // TODO: should this include beaconChainScalingFactor?            
+            // TODO: should this include beaconChainScalingFactor?
             Shares sharesToWithdraw = delegatedSharesToRemove.toShares(stakerScalingFactors[staker][strategies[i]]);
             // TODO: maybe have a getter to get shares for all strategies, like getDelegatableShares
             // check sharesToWithdraw is valid
@@ -665,7 +666,8 @@ contract DelegationManager is
                     delegatedShares: delegatedSharesToRemove
                 });
             }
-            delegatedSharesToWithdraw[i] = delegatedSharesToRemove.scaleForQueueWithdrawal(stakerScalingFactors[staker][strategies[i]]);
+            delegatedSharesToWithdraw[i] =
+                delegatedSharesToRemove.scaleForQueueWithdrawal(stakerScalingFactors[staker][strategies[i]]);
 
             // Remove active shares from EigenPodManager/StrategyManager
             // EigenPodManager: this call will revert if it would reduce the Staker's virtual beacon chain ETH shares below zero
@@ -747,21 +749,15 @@ contract DelegationManager is
             // newShares
             //     = newPrincipalShares.toDelegatedShares(stakerScalingFactors[staker][strategy).toOwnedShares(totalMagnitude)
             //     = newPrincipalShares * newDepositScalingFactor / WAD * beaonChainScalingFactor / WAD * totalMagnitude / WAD
-            //     = (existingPrincipalShares + addedShares) * newDepositScalingFactor / WAD * beaonChainScalingFactor / WAD * totalMagnitude / WAD 
+            //     = (existingPrincipalShares + addedShares) * newDepositScalingFactor / WAD * beaonChainScalingFactor / WAD * totalMagnitude / WAD
             //
             // we can solve for
             //
             OwnedShares existingOwnedShares =
-                existingShares
-                .toDelegatedShares(stakerScalingFactors[staker][strategy])
-                .toOwnedShares(totalMagnitude);
-            newDepositScalingFactor =
-                existingOwnedShares
-                .add(addedOwnedShares)
-                .unwrap()
-                .divWad(existingShares.unwrap() + addedOwnedShares.unwrap())
-                .divWad(stakerScalingFactors[staker][strategy].getBeaconChainScalingFactor())
-                .divWad(totalMagnitude);
+                existingShares.toDelegatedShares(stakerScalingFactors[staker][strategy]).toOwnedShares(totalMagnitude);
+            newDepositScalingFactor = existingOwnedShares.add(addedOwnedShares).unwrap().divWad(
+                existingShares.unwrap() + addedOwnedShares.unwrap()
+            ).divWad(stakerScalingFactors[staker][strategy].getBeaconChainScalingFactor()).divWad(totalMagnitude);
         }
 
         // update the staker's depositScalingFactor
@@ -863,7 +859,7 @@ contract DelegationManager is
             IShareManager shareManager = _getShareManager(strategies[i]);
             // TODO: batch call for strategyManager shares?
             // 1. read strategy deposit shares
-            
+
             // forgefmt: disable-next-item
             Shares shares = shareManager.stakerStrategyShares(staker, strategies[i]);
 
@@ -871,7 +867,7 @@ contract DelegationManager is
             // in the StrategyManager/EigenPodManager because they could have been slashed
             if (operator != address(0)) {
                 uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategies[i]);
-                
+
                 // forgefmt: disable-next-item
                 ownedShares[i] = shares
                     .toDelegatedShares(stakerScalingFactors[staker][strategies[i]])

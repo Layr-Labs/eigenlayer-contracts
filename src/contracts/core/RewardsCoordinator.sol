@@ -47,16 +47,16 @@ contract RewardsCoordinator is
         uint32 _MAX_RETROACTIVE_LENGTH,
         uint32 _MAX_FUTURE_LENGTH,
         uint32 _GENESIS_REWARDS_TIMESTAMP
-    ) 
+    )
         RewardsCoordinatorStorage(
-            _delegationManager, 
-            _strategyManager, 
-            _CALCULATION_INTERVAL_SECONDS, 
-            _MAX_REWARDS_DURATION, 
-            _MAX_RETROACTIVE_LENGTH, 
-            _MAX_FUTURE_LENGTH, 
+            _delegationManager,
+            _strategyManager,
+            _CALCULATION_INTERVAL_SECONDS,
+            _MAX_REWARDS_DURATION,
+            _MAX_RETROACTIVE_LENGTH,
+            _MAX_FUTURE_LENGTH,
             _GENESIS_REWARDS_TIMESTAMP
-        ) 
+        )
     {
         _disableInitializers();
     }

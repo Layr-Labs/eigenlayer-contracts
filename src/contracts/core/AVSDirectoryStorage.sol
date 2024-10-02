@@ -50,9 +50,9 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     /// @dev Returns the chain ID from the time the contract was deployed.
     uint256 internal immutable ORIGINAL_CHAIN_ID;
-    
+
     // Mutatables
-    
+
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -86,10 +86,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     // Construction
 
-    constructor(
-        IDelegationManager _delegation,
-        uint32 _DEALLOCATION_DELAY
-    ) {
+    constructor(IDelegationManager _delegation, uint32 _DEALLOCATION_DELAY) {
         delegation = _delegation;
         DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
         ORIGINAL_CHAIN_ID = block.chainid;

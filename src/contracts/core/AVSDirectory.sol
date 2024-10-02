@@ -318,7 +318,9 @@ contract AVSDirectory is
         address operator
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that operator is registered for the AVS.
-        require(avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, OperatorNotRegistered());
+        require(
+            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, OperatorNotRegistered()
+        );
         // Assert that the AVS is not an operator set AVS.
         require(!isOperatorSetAVS[msg.sender], InvalidAVS());
 
@@ -484,12 +486,14 @@ contract AVSDirectory is
 
         OperatorSetRegistrationStatus memory status =
             operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
-            
+
         return block.timestamp < status.lastDeregisteredTimestamp + DEALLOCATION_DELAY;
     }
 
     /// @notice Returns true if all provided operator sets are valid.
-    function isOperatorSetBatch(OperatorSet[] calldata operatorSets) public view returns (bool) {
+    function isOperatorSetBatch(
+        OperatorSet[] calldata operatorSets
+    ) public view returns (bool) {
         for (uint256 i = 0; i < operatorSets.length; ++i) {
             if (!isOperatorSet[operatorSets[i].avs][operatorSets[i].operatorSetId]) return false;
         }

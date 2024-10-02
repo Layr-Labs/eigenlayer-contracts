@@ -68,7 +68,7 @@ abstract contract EigenPodStorage is IEigenPod {
     mapping(uint64 => uint64) public checkpointBalanceExitedGwei;
 
     /// @notice The current checkpoint, if there is one active
-    Checkpoint internal _currentCheckpoint; 
+    Checkpoint internal _currentCheckpoint;
 
     /// @notice An address with permissions to call `startCheckpoint` and `verifyWithdrawalCredentials`, set
     /// by the podOwner. This role exists to allow a podOwner to designate a hot wallet that can call
