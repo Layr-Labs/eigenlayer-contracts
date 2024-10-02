@@ -330,7 +330,11 @@ contract DelegationManager is
      *
      */
 
-    /// @inheritdoc IDelegationManager
+    /**
+     * @notice Sets operator parameters in the `_operatorDetails` mapping.
+     * @param operator The account registered as an operator updating their operatorDetails
+     * @param newOperatorDetails The new parameters for the operator
+     */
     function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
         require(
             newOperatorDetails.stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS,
@@ -344,7 +348,19 @@ contract DelegationManager is
         emit OperatorDetailsModified(msg.sender, newOperatorDetails);
     }
 
-    /// @inheritdoc IDelegationManager
+    /**
+     * @notice Delegates *from* a `staker` *to* an `operator`.
+     * @param staker The address to delegate *from* -- this address is delegating control of its own assets.
+     * @param operator The address to delegate *to* -- this address is being given power to place the `staker`'s assets at risk on services
+     * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
+     * @param approverSalt Is a salt used to help guarantee signature uniqueness. Each salt can only be used once by a given approver.
+     * @dev Assumes the following is checked before calling this function:
+     *          1) the `staker` is not already delegated to an operator
+     *          2) the `operator` has indeed registered as an operator in EigenLayer
+     * Ensures that:
+     *          1) if applicable, that the approver signature is valid and non-expired
+     *          2) new delegations are not paused (PAUSED_NEW_DELEGATION)
+     */
     function _delegate(
         address staker,
         address operator,
@@ -411,7 +427,10 @@ contract DelegationManager is
         }
     }
 
-    /// @inheritdoc IDelegationManager
+    /**
+     * @dev commented-out param (middlewareTimesIndex) is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
+     * This param is intended to be passed on to the Slasher contract, but is unused in the M2 release of these contracts, and is thus commented-out.
+     */
     function _completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
