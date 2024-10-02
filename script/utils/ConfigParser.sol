@@ -63,7 +63,7 @@ contract ConfigParser is Script, Test {
 
     // Yes, you can use either one
     Vm cheats = Vm(HEVM_ADDRESS);
-    Vm vm = Vm(HEVM_ADDRESS);
+    // Vm vm = Vm(HEVM_ADDRESS);
 
     string configPath;
     string configData;
