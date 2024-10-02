@@ -27,23 +27,17 @@ contract TimelockEncoding is Test {
         uint256 value,
         bytes memory data,
         uint256 timelockEta
-    ) public returns (bytes memory calldata_to_timelock_queuing_action, bytes memory calldata_to_timelock_executing_action) {
-        calldata_to_timelock_queuing_action = abi.encodeWithSelector(ITimelock.queueTransaction.selector,
-            to,
-            value,
-            timelockSignature,
-            data,
-            timelockEta
-        );
+    )
+        public
+        returns (bytes memory calldata_to_timelock_queuing_action, bytes memory calldata_to_timelock_executing_action)
+    {
+        calldata_to_timelock_queuing_action =
+            abi.encodeWithSelector(ITimelock.queueTransaction.selector, to, value, timelockSignature, data, timelockEta);
 
         emit log_named_bytes("calldata_to_timelock_queuing_action", calldata_to_timelock_queuing_action);
 
-        calldata_to_timelock_executing_action = abi.encodeWithSelector(ITimelock.executeTransaction.selector,
-            to,
-            value,
-            timelockSignature,
-            data,
-            timelockEta
+        calldata_to_timelock_executing_action = abi.encodeWithSelector(
+            ITimelock.executeTransaction.selector, to, value, timelockSignature, data, timelockEta
         );
 
         emit log_named_bytes("calldata_to_timelock_executing_action", calldata_to_timelock_executing_action);
@@ -62,10 +56,11 @@ contract TimelockEncoding is Test {
         bytes1 v = bytes1(uint8(1));
         bytes32 r = bytes32(uint256(uint160(from)));
         bytes32 s;
-        bytes memory sig = abi.encodePacked(r,s,v);
+        bytes memory sig = abi.encodePacked(r, s, v);
         emit log_named_bytes("sig", sig);
 
-        bytes memory final_calldata_to_executor_multisig = abi.encodeWithSelector(ISafe.execTransaction.selector,
+        bytes memory final_calldata_to_executor_multisig = abi.encodeWithSelector(
+            ISafe.execTransaction.selector,
             to,
             value,
             data,
@@ -76,7 +71,7 @@ contract TimelockEncoding is Test {
             gasToken,
             refundReceiver,
             sig
-            );
+        );
 
         emit log_named_bytes("final_calldata_to_executor_multisig", final_calldata_to_executor_multisig);
 
@@ -89,18 +84,13 @@ contract TimelockEncoding is Test {
         bytes data;
     }
 
-    function encodeMultisendTxs(Tx[] memory txs) public pure returns (bytes memory) {
+    function encodeMultisendTxs(
+        Tx[] memory txs
+    ) public pure returns (bytes memory) {
         bytes memory ret = new bytes(0);
         for (uint256 i = 0; i < txs.length; i++) {
             ret = abi.encodePacked(
-                ret,
-                abi.encodePacked(
-                    uint8(0),
-                    txs[i].to,
-                    txs[i].value,
-                    uint256(txs[i].data.length),
-                    txs[i].data
-                )
+                ret, abi.encodePacked(uint8(0), txs[i].to, txs[i].value, uint256(txs[i].data.length), txs[i].data)
             );
         }
         return ret;

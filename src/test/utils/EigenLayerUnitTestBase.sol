@@ -18,7 +18,9 @@ abstract contract EigenLayerUnitTestBase is Test {
     address public constant unpauser = address(556);
 
     // Helper Functions/Modifiers
-    modifier filterFuzzedAddressInputs(address fuzzedAddress) {
+    modifier filterFuzzedAddressInputs(
+        address fuzzedAddress
+    ) {
         cheats.assume(!addressIsExcludedFromFuzzedInputs[fuzzedAddress]);
         _;
     }

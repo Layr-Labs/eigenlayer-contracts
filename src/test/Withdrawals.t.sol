@@ -61,9 +61,8 @@ contract WithdrawalTests is EigenLayerTestHelper {
         // scoped block to deal with stack-too-deep issues
         {
             //delegator-specific information
-            (IStrategy[] memory delegatorStrategies, uint256[] memory delegatorShares) = strategyManager.getDeposits(
-                depositor
-            );
+            (IStrategy[] memory delegatorStrategies, uint256[] memory delegatorShares) =
+                strategyManager.getDeposits(depositor);
             dataForTestWithdrawal.delegatorStrategies = delegatorStrategies;
             dataForTestWithdrawal.delegatorShares = delegatorShares;
             dataForTestWithdrawal.withdrawer = withdrawer;
@@ -162,9 +161,8 @@ contract WithdrawalTests is EigenLayerTestHelper {
         // scoped block to deal with stack-too-deep issues
         {
             //delegator-specific information
-            (IStrategy[] memory delegatorStrategies, uint256[] memory delegatorShares) = strategyManager.getDeposits(
-                depositor
-            );
+            (IStrategy[] memory delegatorStrategies, uint256[] memory delegatorShares) =
+                strategyManager.getDeposits(depositor);
             dataForTestWithdrawal.delegatorStrategies = delegatorStrategies;
             dataForTestWithdrawal.delegatorShares = delegatorShares;
             dataForTestWithdrawal.withdrawer = withdrawer;
@@ -282,4 +280,3 @@ contract WithdrawalTests is EigenLayerTestHelper {
         _;
     }
 }
-

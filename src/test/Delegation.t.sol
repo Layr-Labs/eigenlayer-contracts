@@ -32,7 +32,9 @@ contract DelegationTests is EigenLayerTestHelper {
 
     /// @notice testing if an operator can delegate to themselves.
     /// @param sender is the address of the operator.
-    function testSelfOperatorDelegate(address sender) public {
+    function testSelfOperatorDelegate(
+        address sender
+    ) public {
         cheats.assume(sender != address(0));
         cheats.assume(sender != address(eigenLayerProxyAdmin));
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
@@ -102,7 +104,8 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDelegateToOperator(staker, operator);
         assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
 
-        (/*IStrategy[] memory updatedStrategies*/, uint256[] memory updatedShares) = strategyManager.getDeposits(staker);
+        ( /*IStrategy[] memory updatedStrategies*/ , uint256[] memory updatedShares) =
+            strategyManager.getDeposits(staker);
 
         {
             IStrategy _strat = wethStrat;
@@ -141,7 +144,7 @@ contract DelegationTests is EigenLayerTestHelper {
         uint256[] memory strategyIndexes = new uint256[](strategyArray.length);
 
         // withdraw shares
-        _testQueueWithdrawal(staker, strategyIndexes, strategyArray, shareAmounts, staker /*withdrawer*/);
+        _testQueueWithdrawal(staker, strategyIndexes, strategyArray, shareAmounts, staker /*withdrawer*/ );
 
         cheats.startPrank(staker);
         delegation.undelegate(staker);
@@ -162,9 +165,8 @@ contract DelegationTests is EigenLayerTestHelper {
 
         uint256 nonceBefore = delegation.stakerNonce(staker);
 
-        bytes32 structHash = keccak256(
-            abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, expiry)
-        );
+        bytes32 structHash =
+            keccak256(abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, expiry));
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.domainSeparator(), structHash));
 
         bytes memory signature;
@@ -176,10 +178,8 @@ contract DelegationTests is EigenLayerTestHelper {
         if (expiry < block.timestamp) {
             cheats.expectRevert("DelegationManager.delegateToBySignature: staker signature expired");
         }
-        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
-            signature: signature,
-            expiry: expiry
-        });
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry =
+            ISignatureUtils.SignatureWithExpiry({signature: signature, expiry: expiry});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
         if (expiry >= block.timestamp) {
             assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
@@ -217,10 +217,8 @@ contract DelegationTests is EigenLayerTestHelper {
             signature = abi.encodePacked(r, s, v);
         }
 
-        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
-            signature: signature,
-            expiry: type(uint256).max
-        });
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry =
+            ISignatureUtils.SignatureWithExpiry({signature: signature, expiry: type(uint256).max});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
         assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
         assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
@@ -261,10 +259,8 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.expectRevert(
             bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed")
         );
-        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
-            signature: signature,
-            expiry: type(uint256).max
-        });
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry =
+            ISignatureUtils.SignatureWithExpiry({signature: signature, expiry: type(uint256).max});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     }
 
@@ -292,10 +288,8 @@ contract DelegationTests is EigenLayerTestHelper {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         cheats.expectRevert();
-        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
-            signature: signature,
-            expiry: type(uint256).max
-        });
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry =
+            ISignatureUtils.SignatureWithExpiry({signature: signature, expiry: type(uint256).max});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     }
 
@@ -315,10 +309,8 @@ contract DelegationTests is EigenLayerTestHelper {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         cheats.expectRevert();
-        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
-            signature: signature,
-            expiry: type(uint256).max
-        });
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry =
+            ISignatureUtils.SignatureWithExpiry({signature: signature, expiry: type(uint256).max});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     }
 
@@ -338,7 +330,9 @@ contract DelegationTests is EigenLayerTestHelper {
 
     /// @notice This function tests to ensure that a you can't register as a delegate multiple times
     /// @param operator is the operator being delegated to.
-    function testRegisterAsOperatorMultipleTimes(address operator) public fuzzedAddress(operator) {
+    function testRegisterAsOperatorMultipleTimes(
+        address operator
+    ) public fuzzedAddress(operator) {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
@@ -351,7 +345,9 @@ contract DelegationTests is EigenLayerTestHelper {
 
     /// @notice This function tests to ensure that a staker cannot delegate to an unregistered operator
     /// @param delegate is the unregistered operator
-    function testDelegationToUnregisteredDelegate(address delegate) public fuzzedAddress(delegate) {
+    function testDelegationToUnregisteredDelegate(
+        address delegate
+    ) public fuzzedAddress(delegate) {
         //deposit into 1 strategy for getOperatorAddress(1), who is delegating to the unregistered operator
         _testDepositStrategies(getOperatorAddress(1), 1e18, 1);
         _testDepositEigen(getOperatorAddress(1), 1e18);
@@ -365,7 +361,9 @@ contract DelegationTests is EigenLayerTestHelper {
 
     /// @notice This function tests to ensure that a delegation contract
     ///         cannot be intitialized multiple times, test with different caller addresses
-    function testCannotInitMultipleTimesDelegation(address _attacker) public {
+    function testCannotInitMultipleTimesDelegation(
+        address _attacker
+    ) public {
         cheats.assume(_attacker != address(eigenLayerProxyAdmin));
         //delegation has already been initialized in the Deployer test contract
         vm.prank(_attacker);
@@ -452,7 +450,9 @@ contract DelegationTests is EigenLayerTestHelper {
         assertTrue(delegation.isOperator(_operator));
     }
 
-    function _testRegisterAdditionalOperator(uint256 index) internal {
+    function _testRegisterAdditionalOperator(
+        uint256 index
+    ) internal {
         address sender = getOperatorAddress(index);
 
         //register as both ETH and EIGEN operator

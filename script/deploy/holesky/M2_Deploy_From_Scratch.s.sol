@@ -7,7 +7,7 @@ import "../../utils/ExistingDeploymentParser.sol";
  * @notice Script used for the first deployment of EigenLayer core contracts to Holesky
  * forge script script/deploy/holesky/M2_Deploy_From_Scratch.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv
  * forge script script/deploy/holesky/M2_Deploy_From_Scratch.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv
- * 
+ *
  */
 contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
     function run() external virtual {
@@ -61,18 +61,14 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         strategyManager = StrategyManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slasher = Slasher(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
+        slasher =
+            Slasher(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
         // Deploy EigenPod Contracts
-        eigenPodImplementation = new EigenPod(
-            IETHPOSDeposit(ETHPOSDepositAddress),
-            eigenPodManager,
-            EIGENPOD_GENESIS_TIME
-        );
+        eigenPodImplementation =
+            new EigenPod(IETHPOSDeposit(ETHPOSDepositAddress), eigenPodManager, EIGENPOD_GENESIS_TIME);
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
@@ -80,11 +76,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
         slasherImplementation = new Slasher(strategyManager, delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
-            IETHPOSDeposit(ETHPOSDepositAddress),
-            eigenPodBeacon,
-            strategyManager,
-            slasher,
-            delegationManager
+            IETHPOSDeposit(ETHPOSDepositAddress), eigenPodBeacon, strategyManager, slasher, delegationManager
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -132,10 +124,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             TransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation),
             abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                SLASHER_INIT_PAUSED_STATUS
+                Slasher.initialize.selector, executorMultisig, eigenLayerPauserReg, SLASHER_INIT_PAUSED_STATUS
             )
         );
         // EigenPodManager

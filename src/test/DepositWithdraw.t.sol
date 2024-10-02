@@ -12,23 +12,28 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
      * @notice Verifies that it is possible to deposit WETH
      * @param amountToDeposit Fuzzed input for amount of WETH to deposit
      */
-    function testWethDeposit(uint256 amountToDeposit) public returns (uint256 amountDeposited) {
+    function testWethDeposit(
+        uint256 amountToDeposit
+    ) public returns (uint256 amountDeposited) {
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
         cheats.assume(amountToDeposit >= 1);
         cheats.assume(amountToDeposit <= 1e38 - 1);
         return _testDepositWeth(getOperatorAddress(0), amountToDeposit);
     }
 
-
     /// @notice deploys 'numStratsToAdd' strategies using '_testAddStrategy' and then deposits '1e18' to each of them from 'getOperatorAddress(0)'
     /// @param numStratsToAdd is the number of strategies being added and deposited into
-    function testDepositStrategies(uint8 numStratsToAdd) public {
+    function testDepositStrategies(
+        uint8 numStratsToAdd
+    ) public {
         _testDepositStrategies(getOperatorAddress(0), 1e18, numStratsToAdd);
     }
 
     /// @notice Verifies that it is possible to deposit eigen.
     /// @param eigenToDeposit is amount of eigen to deposit into the eigen strategy
-    function testDepositEigen(uint96 eigenToDeposit) public {
+    function testDepositEigen(
+        uint96 eigenToDeposit
+    ) public {
         // sanity check for inputs; keeps fuzzed tests from failing
         cheats.assume(eigenToDeposit < eigenTotalSupply);
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
@@ -41,12 +46,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
      * Verifies that reversion occurs correctly.
      */
     function testDepositUnsupportedToken() public {
-        IERC20 token = new ERC20PresetFixedSupply(
-            "badToken",
-            "BADTOKEN",
-            100,
-            address(this)
-        );
+        IERC20 token = new ERC20PresetFixedSupply("badToken", "BADTOKEN", 100, address(this));
         token.approve(address(strategyManager), type(uint256).max);
 
         // whitelist the strategy for deposit
@@ -65,7 +65,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
      * @notice Tries to deposit into an unsupported strategy by calling `strategyManager.depositIntoStrategy`.
      * Verifies that reversion occurs correctly.
      */
-    function testDepositNonexistentStrategy(address nonexistentStrategy) public fuzzedAddress(nonexistentStrategy) {
+    function testDepositNonexistentStrategy(
+        address nonexistentStrategy
+    ) public fuzzedAddress(nonexistentStrategy) {
         // assume that the fuzzed address is not already a contract!
         uint256 size;
         assembly {
@@ -78,12 +80,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // harcoded input
         uint256 testDepositAmount = 10;
 
-        IERC20 token = new ERC20PresetFixedSupply(
-            "badToken",
-            "BADTOKEN",
-            100,
-            address(this)
-        );
+        IERC20 token = new ERC20PresetFixedSupply("badToken", "BADTOKEN", 100, address(this));
         token.approve(address(strategyManager), type(uint256).max);
 
         // whitelist the strategy for deposit
@@ -112,8 +109,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         strategyManager.depositIntoStrategy(wethStrat, weth, 0);
     }
 
-
-     /**
+    /**
      * @notice Modified from existing _createQueuedWithdrawal, skips delegation and deposit steps so that we can isolate the withdrawal step
      * @notice Creates a queued withdrawal from `staker`, queues a withdrawal using
      * `delegation.queueWithdrawal(strategyIndexes, strategyArray, tokensArray, shareAmounts, withdrawer)`
@@ -124,16 +120,14 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
      */
     function _createOnlyQueuedWithdrawal(
         address staker,
-        bool /*registerAsOperator*/,
+        bool, /*registerAsOperator*/
         uint256 amountToDeposit,
         IStrategy[] memory strategyArray,
-        IERC20[] memory /*tokensArray*/,
+        IERC20[] memory, /*tokensArray*/
         uint256[] memory shareAmounts,
-        uint256[] memory /*strategyIndexes*/,
+        uint256[] memory, /*strategyIndexes*/
         address withdrawer
-    )
-        internal returns(bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal)
-    {
+    ) internal returns (bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal) {
         require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
 
         queuedWithdrawal = IDelegationManager.Withdrawal({
@@ -146,9 +140,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             startBlock: uint32(block.number)
         });
 
-
         IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
-        
+
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategyArray,
             shares: shareAmounts,
@@ -162,18 +155,16 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         withdrawalRoots = delegation.queueWithdrawals(params);
         cheats.stopPrank();
         return (withdrawalRoots[0], queuedWithdrawal);
-     }
-        
-        
-    function testFrontrunFirstDepositor(/*uint256 depositAmount*/) public {
+    }
 
+    function testFrontrunFirstDepositor( /*uint256 depositAmount*/ ) public {
         //setup addresses
         address attacker = address(100);
         address user = address(200);
 
         //give 2 ether to attacker and user
-        weth.transfer(attacker,2 ether);
-        weth.transfer(user,2 ether);
+        weth.transfer(attacker, 2 ether);
+        weth.transfer(user, 2 ether);
 
         //attacker FRONTRUN: deposit 1 wei (receive 1 share)
         StrategyManager _strategyManager = _whitelistStrategy(strategyManager, wethStrat);
@@ -185,15 +176,15 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         //attacker FRONTRUN: transfer 1 ether into strategy directly to manipulate the value of shares
         cheats.prank(attacker);
-        weth.transfer(address(wethStrat),1 ether);
+        weth.transfer(address(wethStrat), 1 ether);
 
-        //user deposits 2 eth into strategy - only gets 1 share due to rounding 
+        //user deposits 2 eth into strategy - only gets 1 share due to rounding
         cheats.startPrank(user);
         weth.approve(address(_strategyManager), type(uint256).max);
         _strategyManager.depositIntoStrategy(wethStrat, weth, 2 ether);
         cheats.stopPrank();
 
-        //attacker deposited 1 ether and 1 wei - received 1 share 
+        //attacker deposited 1 ether and 1 wei - received 1 share
         //user deposited 2 ether - received X shares
         //user has lost 0.5 ether?
         (, uint256[] memory shares) = _strategyManager.getDeposits(attacker);
@@ -202,7 +193,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         (, shares) = _strategyManager.getDeposits(user);
         uint256 userValueWeth = wethStrat.sharesToUnderlyingView(shares[0]);
-        require(userValueWeth >= (1900000000000000000), "user has lost more than 0.1 eth from frontrunning");
+        require(userValueWeth >= (1_900_000_000_000_000_000), "user has lost more than 0.1 eth from frontrunning");
 
         uint256 attackerLossesWeth = (2 ether + 1 wei) - attackerValueWeth;
         uint256 userLossesWeth = 2 ether - userValueWeth;
@@ -210,7 +201,11 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
     }
 
     // fuzzed amounts user uint96's to be more realistic with amounts
-    function testFrontrunFirstDepositorFuzzed(uint96 firstDepositAmount, uint96 donationAmount, uint96 secondDepositAmount) public {
+    function testFrontrunFirstDepositorFuzzed(
+        uint96 firstDepositAmount,
+        uint96 donationAmount,
+        uint96 secondDepositAmount
+    ) public {
         // want to only use nonzero amounts or else we'll get reverts
         cheats.assume(firstDepositAmount != 0 && secondDepositAmount != 0);
 
@@ -249,8 +244,10 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         require(attackerLossesWeth + 1 >= userLossesWeth, "griefing attack deals more damage than cost");
     }
 
-
-    function testDepositTokenWithOneWeiFeeOnTransfer(address sender, uint64 amountToDeposit) public fuzzedAddress(sender) {
+    function testDepositTokenWithOneWeiFeeOnTransfer(
+        address sender,
+        uint64 amountToDeposit
+    ) public fuzzedAddress(sender) {
         cheats.assume(amountToDeposit != 0);
 
         IERC20 underlyingToken;
@@ -266,14 +263,14 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         underlyingToken.transfer(sender, 1000);
 
         IStrategy oneWeiFeeOnTransferTokenStrategy = StrategyBase(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(baseStrategyImplementation),
-                        address(eigenLayerProxyAdmin),
+            address(
+                new TransparentUpgradeableProxy(
+                    address(baseStrategyImplementation),
+                    address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
-                    )
                 )
-            );
+            )
+        );
 
         // REMAINDER OF CODE ADAPTED FROM `_testDepositToStrategy`
         // _testDepositToStrategy(sender, amountToDeposit, underlyingToken, oneWeiFeeOnTransferTokenStrategy);
@@ -287,7 +284,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
             cheats.stopPrank();
         }
-    
+
         uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(sender, oneWeiFeeOnTransferTokenStrategy);
         // check the expected output
         uint256 expectedSharesOut = oneWeiFeeOnTransferTokenStrategy.underlyingToShares(amountToDeposit);
@@ -306,17 +303,21 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
             );
         }
-            
+
         // check that the shares out match the expected amount out
         // the actual transfer in will be lower by 1 wei than expected due to stETH's internal rounding
         // to account for this we check approximate rather than strict equivalence here
         {
-            uint256 actualSharesOut = strategyManager.stakerStrategyShares(sender, oneWeiFeeOnTransferTokenStrategy) - operatorSharesBefore;
+            uint256 actualSharesOut =
+                strategyManager.stakerStrategyShares(sender, oneWeiFeeOnTransferTokenStrategy) - operatorSharesBefore;
             require((actualSharesOut * 1000) / expectedSharesOut > 998, "too few shares");
             require((actualSharesOut * 1000) / expectedSharesOut < 1002, "too many shares");
 
             // additional sanity check for deposit not increasing in value
-            require(oneWeiFeeOnTransferTokenStrategy.sharesToUnderlying(actualSharesOut) <= amountToDeposit, "value cannot have increased");
+            require(
+                oneWeiFeeOnTransferTokenStrategy.sharesToUnderlying(actualSharesOut) <= amountToDeposit,
+                "value cannot have increased"
+            );
         }
         cheats.stopPrank();
     }
@@ -330,8 +331,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // shadow-fork mainnet
         try cheats.createFork("mainnet") returns (uint256 forkId) {
             cheats.selectFork(forkId);
-        // If RPC_MAINNET ENV not set, default to this mainnet RPC endpoint
-        } catch  {
+            // If RPC_MAINNET ENV not set, default to this mainnet RPC endpoint
+        } catch {
             cheats.createSelectFork("https://eth.llamarpc.com");
         }
 
@@ -357,9 +358,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         strategyManager = StrategyManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slasher = Slasher(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
+        slasher =
+            Slasher(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -373,7 +373,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         Slasher slasherImplementation = new Slasher(strategyManager, delegation);
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
+        EigenPodManager eigenPodManagerImplementation =
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegation))),
@@ -382,7 +383,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
-                0 /*initialPausedStatus*/,
+                0, /*initialPausedStatus*/
                 minWithdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
                 initializeWithdrawalDelayBlocks
@@ -396,17 +397,14 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 eigenLayerReputedMultisig,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
-                0/*initialPausedStatus*/
+                0 /*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation),
             abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
-                0/*initialPausedStatus*/
+                Slasher.initialize.selector, eigenLayerReputedMultisig, eigenLayerPauserReg, 0 /*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -416,7 +414,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 EigenPodManager.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
-                0/*initialPausedStatus*/
+                0 /*initialPausedStatus*/
             )
         );
 
@@ -432,14 +430,14 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // deploy StrategyBase contract implementation, then create upgradeable proxy that points to implementation and initialize it
         baseStrategyImplementation = new StrategyBase(strategyManager);
         IStrategy stethStrategy = StrategyBase(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(baseStrategyImplementation),
-                        address(eigenLayerProxyAdmin),
+            address(
+                new TransparentUpgradeableProxy(
+                    address(baseStrategyImplementation),
+                    address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
-                    )
                 )
-            );
+            )
+        );
 
         // REMAINDER OF CODE ADAPTED FROM `_testDepositToStrategy`
         // _testDepositToStrategy(sender, amountToDeposit, underlyingToken, stethStrategy);
@@ -467,29 +465,37 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         if (operatorSharesBefore == 0) {
             // check that strategy is appropriately added to dynamic array of all of sender's strategies
             assertTrue(
-                strategyManager.stakerStrategyList(address(this), strategyManager.stakerStrategyListLength(address(this)) - 1)
-                    == stethStrategy,
+                strategyManager.stakerStrategyList(
+                    address(this), strategyManager.stakerStrategyListLength(address(this)) - 1
+                ) == stethStrategy,
                 "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
             );
         }
-            
+
         // check that the shares out match the expected amount out
         // the actual transfer in will be lower by 1-2 wei than expected due to stETH's internal rounding
         // to account for this we check approximate rather than strict equivalence here
         {
-            uint256 actualSharesOut = strategyManager.stakerStrategyShares(address(this), stethStrategy) - operatorSharesBefore;
+            uint256 actualSharesOut =
+                strategyManager.stakerStrategyShares(address(this), stethStrategy) - operatorSharesBefore;
             require(actualSharesOut >= expectedSharesOut, "too few shares");
             require((actualSharesOut * 1000) / expectedSharesOut < 1003, "too many shares");
 
             // additional sanity check for deposit not increasing in value
             require(stethStrategy.sharesToUnderlying(actualSharesOut) <= amountToDeposit, "value cannot have increased");
             // slippage check
-            require((stethStrategy.sharesToUnderlying(actualSharesOut) * 1e6) / amountToDeposit >= (1e6 - 1), "bad slippage on first deposit");
+            require(
+                (stethStrategy.sharesToUnderlying(actualSharesOut) * 1e6) / amountToDeposit >= (1e6 - 1),
+                "bad slippage on first deposit"
+            );
         }
         cheats.stopPrank();
     }
 
-    function _whitelistStrategy(StrategyManager _strategyManager, StrategyBase _strategyBase) internal returns(StrategyManager) {
+    function _whitelistStrategy(
+        StrategyManager _strategyManager,
+        StrategyBase _strategyBase
+    ) internal returns (StrategyManager) {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);

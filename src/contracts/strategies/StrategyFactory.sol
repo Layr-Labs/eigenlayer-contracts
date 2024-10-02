@@ -21,7 +21,9 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     IStrategyManager public immutable strategyManager;
 
     /// @notice Since this contract is designed to be initializable, the constructor simply sets the immutable variables.
-    constructor(IStrategyManager _strategyManager) {
+    constructor(
+        IStrategyManager _strategyManager
+    ) {
         strategyManager = _strategyManager;
         _disableInitializers();
     }
@@ -43,11 +45,9 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
      * $dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
      * like those that conform to ERC777.
      */
-    function deployNewStrategy(IERC20 token)
-        external
-        onlyWhenNotPaused(PAUSED_NEW_STRATEGIES)
-        returns (IStrategy newStrategy)
-    {
+    function deployNewStrategy(
+        IERC20 token
+    ) external onlyWhenNotPaused(PAUSED_NEW_STRATEGIES) returns (IStrategy newStrategy) {
         require(!isBlacklisted[token], "StrategyFactory.deployNewStrategy: Token is blacklisted");
         require(
             deployedStrategies[token] == IStrategy(address(0)),
@@ -74,7 +74,9 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
      * @notice Owner-only function to prevent strategies from being created for given tokens.
      * @param tokens An array of token addresses to blacklist.
      */
-    function blacklistTokens(IERC20[] calldata tokens) external onlyOwner {
+    function blacklistTokens(
+        IERC20[] calldata tokens
+    ) external onlyOwner {
         IStrategy[] memory strategiesToRemove = new IStrategy[](tokens.length);
         uint256 removeIdx = 0;
 
@@ -123,7 +125,9 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     /**
      * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
      */
-    function removeStrategiesFromWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external onlyOwner {
+    function removeStrategiesFromWhitelist(
+        IStrategy[] calldata strategiesToRemoveFromWhitelist
+    ) external onlyOwner {
         strategyManager.removeStrategiesFromDepositWhitelist(strategiesToRemoveFromWhitelist);
     }
 
@@ -132,7 +136,9 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         emit StrategySetForToken(token, strategy);
     }
 
-    function _setStrategyBeacon(IBeacon _strategyBeacon) internal {
+    function _setStrategyBeacon(
+        IBeacon _strategyBeacon
+    ) internal {
         emit StrategyBeaconModified(strategyBeacon, _strategyBeacon);
         strategyBeacon = _strategyBeacon;
     }

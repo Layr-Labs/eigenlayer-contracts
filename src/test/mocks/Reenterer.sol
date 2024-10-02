@@ -15,11 +15,7 @@ contract Reenterer is Test {
 
     event Reentered(bytes returnData);
 
-    function prepare(
-        address targetToUse,
-        uint256 msgValueToUse,
-        bytes memory callDataToUse
-    ) external {
+    function prepare(address targetToUse, uint256 msgValueToUse, bytes memory callDataToUse) external {
         target = targetToUse;
         msgValue = msgValueToUse;
         callData = callDataToUse;
@@ -39,7 +35,9 @@ contract Reenterer is Test {
     }
 
     // added function that allows writing to `dataToReturn`
-    function prepareReturnData(bytes memory returnDataToUse) external {
+    function prepareReturnData(
+        bytes memory returnDataToUse
+    ) external {
         dataToReturn = returnDataToUse;
     }
 
@@ -48,9 +46,7 @@ contract Reenterer is Test {
         if (expectedRevertData.length != 0) {
             cheats.expectRevert(expectedRevertData);
         }
-        (bool success, bytes memory returnData) = target.call{
-            value: msgValue
-        }(callData);
+        (bool success, bytes memory returnData) = target.call{value: msgValue}(callData);
 
         if (!success) {
             assembly {
@@ -77,9 +73,7 @@ contract Reenterer is Test {
         if (expectedRevertData.length != 0) {
             cheats.expectRevert(expectedRevertData);
         }
-        (bool success, bytes memory returnData) = target.call{
-            value: msgValue
-        }(callData);
+        (bool success, bytes memory returnData) = target.call{value: msgValue}(callData);
 
         if (!success) {
             assembly {

@@ -19,7 +19,6 @@ import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
 import "src/test/events/IEigenPodEvents.sol";
 
-
 contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants, IEigenPodEvents {
     using Strings for *;
     using BytesLib for bytes;
@@ -29,13 +28,13 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
     EigenPod public eigenPod;
     EigenPod public podImplementation;
     IBeacon public eigenPodBeacon;
-    
+
     // BeaconChain Mock Setup
     TimeMachine public timeMachine;
     ETHPOSDepositMock ethPOSDepositMock;
     BeaconChainMock public beaconChain;
     EIP_4788_Oracle_Mock constant EIP_4788_ORACLE = EIP_4788_Oracle_Mock(0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02);
-    
+
     uint256 public numStakers;
 
     address defaultProofSubmitter = cheats.addr(uint256(0xDEADBEEF));
@@ -48,7 +47,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
     bytes internal constant beaconProxyBytecode =
         hex"608060405260405161090e38038061090e83398101604081905261002291610460565b61002e82826000610035565b505061058a565b61003e83610100565b6040516001600160a01b038416907f1cf3b03a6cf19fa2baba4df148e9dcabedea7f8a5c07840e207e5c089be95d3e90600090a260008251118061007f5750805b156100fb576100f9836001600160a01b0316635c60da1b6040518163ffffffff1660e01b8152600401602060405180830381865afa1580156100c5573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906100e99190610520565b836102a360201b6100291760201c565b505b505050565b610113816102cf60201b6100551760201c565b6101725760405162461bcd60e51b815260206004820152602560248201527f455243313936373a206e657720626561636f6e206973206e6f74206120636f6e6044820152641d1c9858dd60da1b60648201526084015b60405180910390fd5b6101e6816001600160a01b0316635c60da1b6040518163ffffffff1660e01b8152600401602060405180830381865afa1580156101b3573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101d79190610520565b6102cf60201b6100551760201c565b61024b5760405162461bcd60e51b815260206004820152603060248201527f455243313936373a20626561636f6e20696d706c656d656e746174696f6e206960448201526f1cc81b9bdd08184818dbdb9d1c9858dd60821b6064820152608401610169565b806102827fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d5060001b6102de60201b6100641760201c565b80546001600160a01b0319166001600160a01b039290921691909117905550565b60606102c883836040518060600160405280602781526020016108e7602791396102e1565b9392505050565b6001600160a01b03163b151590565b90565b6060600080856001600160a01b0316856040516102fe919061053b565b600060405180830381855af49150503d8060008114610339576040519150601f19603f3d011682016040523d82523d6000602084013e61033e565b606091505b5090925090506103508683838761035a565b9695505050505050565b606083156103c65782516103bf576001600160a01b0385163b6103bf5760405162461bcd60e51b815260206004820152601d60248201527f416464726573733a2063616c6c20746f206e6f6e2d636f6e74726163740000006044820152606401610169565b50816103d0565b6103d083836103d8565b949350505050565b8151156103e85781518083602001fd5b8060405162461bcd60e51b81526004016101699190610557565b80516001600160a01b038116811461041957600080fd5b919050565b634e487b7160e01b600052604160045260246000fd5b60005b8381101561044f578181015183820152602001610437565b838111156100f95750506000910152565b6000806040838503121561047357600080fd5b61047c83610402565b60208401519092506001600160401b038082111561049957600080fd5b818501915085601f8301126104ad57600080fd5b8151818111156104bf576104bf61041e565b604051601f8201601f19908116603f011681019083821181831017156104e7576104e761041e565b8160405282815288602084870101111561050057600080fd5b610511836020830160208801610434565b80955050505050509250929050565b60006020828403121561053257600080fd5b6102c882610402565b6000825161054d818460208701610434565b9190910192915050565b6020815260008251806020840152610576816040850160208701610434565b601f01601f19169190910160400192915050565b61034e806105996000396000f3fe60806040523661001357610011610017565b005b6100115b610027610022610067565b610100565b565b606061004e83836040518060600160405280602781526020016102f260279139610124565b9392505050565b6001600160a01b03163b151590565b90565b600061009a7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50546001600160a01b031690565b6001600160a01b0316635c60da1b6040518163ffffffff1660e01b8152600401602060405180830381865afa1580156100d7573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906100fb9190610249565b905090565b3660008037600080366000845af43d6000803e80801561011f573d6000f35b3d6000fd5b6060600080856001600160a01b03168560405161014191906102a2565b600060405180830381855af49150503d806000811461017c576040519150601f19603f3d011682016040523d82523d6000602084013e610181565b606091505b50915091506101928683838761019c565b9695505050505050565b6060831561020d578251610206576001600160a01b0385163b6102065760405162461bcd60e51b815260206004820152601d60248201527f416464726573733a2063616c6c20746f206e6f6e2d636f6e747261637400000060448201526064015b60405180910390fd5b5081610217565b610217838361021f565b949350505050565b81511561022f5781518083602001fd5b8060405162461bcd60e51b81526004016101fd91906102be565b60006020828403121561025b57600080fd5b81516001600160a01b038116811461004e57600080fd5b60005b8381101561028d578181015183820152602001610275565b8381111561029c576000848401525b50505050565b600082516102b4818460208701610272565b9190910192915050565b60208152600082518060208401526102dd816040850160208701610272565b601f01601f1916919091016040019291505056fe416464726573733a206c6f772d6c6576656c2064656c65676174652063616c6c206661696c6564a2646970667358221220d51e81d3bc5ed20a26aeb05dce7e825c503b2061aa78628027300c8d65b9d89a64736f6c634300080c0033416464726573733a206c6f772d6c6576656c2064656c65676174652063616c6c206661696c6564";
 
-    function setUp() public override virtual {
+    function setUp() public virtual override {
         // Setup
         EigenLayerUnitTestSetup.setUp();
 
@@ -60,56 +59,60 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         beaconChain = new BeaconChainMock(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
         // Deploy EigenPod
-        podImplementation = new EigenPod(
-            ethPOSDepositMock,
-            eigenPodManagerMock,
-            GENESIS_TIME_LOCAL
-        );
+        podImplementation = new EigenPod(ethPOSDepositMock, eigenPodManagerMock, GENESIS_TIME_LOCAL);
 
         // Deploy Beacon
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
         // Deploy Proxy same way as EigenPodManager does
-        eigenPod = EigenPod(payable(
-            Create2.deploy(
-                0,
-                bytes32(uint256(uint160(address(this)))),
-                // set the beacon address to the eigenPodBeacon
-                abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))
-        )));
+        eigenPod = EigenPod(
+            payable(
+                Create2.deploy(
+                    0,
+                    bytes32(uint256(uint160(address(this)))),
+                    // set the beacon address to the eigenPodBeacon
+                    abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))
+                )
+            )
+        );
 
         // Etch 4788 precompile
         cheats.etch(address(EIP_4788_ORACLE), type(EIP_4788_Oracle_Mock).runtimeCode);
 
         // Store the eigenPodBeacon address in the eigenPod beacon proxy
-        bytes32 beaconSlot = 0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50;   
+        bytes32 beaconSlot = 0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50;
         cheats.store(address(eigenPod), beaconSlot, bytes32(uint256(uint160(address(eigenPodBeacon)))));
 
         // Initialize pod
         eigenPod.initialize(address(this));
-        
+
         // Set a proof submitter
         eigenPod.setProofSubmitter(defaultProofSubmitter);
     }
 
-    /*******************************************************************************
-                        EIGENPOD Helpers
-    *******************************************************************************/
-
+    /**
+     *
+     *                     EIGENPOD Helpers
+     *
+     */
     modifier timewarp() {
-        uint curState = timeMachine.warpToLast();
+        uint256 curState = timeMachine.warpToLast();
         _;
         timeMachine.warpToPresent(curState);
     }
 
-    function _seedPodWithETH(uint256 ethAmount) internal {
+    function _seedPodWithETH(
+        uint256 ethAmount
+    ) internal {
         cheats.deal(address(this), ethAmount);
         bool result;
         bytes memory data;
         (result, data) = address(eigenPod).call{value: ethAmount}("");
     }
 
-    function _newEigenPodStaker(uint256 rand) internal returns (EigenPodUser, uint256) {
+    function _newEigenPodStaker(
+        uint256 rand
+    ) internal returns (EigenPodUser, uint256) {
         string memory stakerName;
 
         EigenPodUser staker;
@@ -125,9 +128,11 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
     }
 
     /// @dev Opposite of Endian.fromLittleEndianUint64
-    function _toLittleEndianUint64(uint64 num) internal pure returns (bytes32) {
+    function _toLittleEndianUint64(
+        uint64 num
+    ) internal pure returns (bytes32) {
         uint256 lenum;
-        
+
         // Rearrange the bytes from big-endian to little-endian format
         lenum |= uint256((num & 0xFF) << 56);
         lenum |= uint256((num & 0xFF00) << 40);
@@ -137,53 +142,55 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         lenum |= uint256((num & 0xFF0000000000) >> 24);
         lenum |= uint256((num & 0xFF000000000000) >> 40);
         lenum |= uint256((num & 0xFF00000000000000) >> 56);
-    
+
         // Shift the little-endian bytes to the end of the bytes32 value
         return bytes32(lenum << 192);
     }
 
-    /*******************************************************************************
-                        verifyWithdrawalCredentials Assertions
-    *******************************************************************************/
-
+    /**
+     *
+     *                     verifyWithdrawalCredentials Assertions
+     *
+     */
     function assert_Snap_Added_ActiveValidatorCount(
         EigenPodUser staker,
-        uint addedValidators,
+        uint256 addedValidators,
         string memory err
     ) internal {
-        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
-        uint prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
+        uint256 curActiveValidatorCount = _getActiveValidatorCount(staker);
+        uint256 prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
 
         assertEq(prevActiveValidatorCount + addedValidators, curActiveValidatorCount, err);
     }
 
     function assert_Snap_Removed_ActiveValidatorCount(
         EigenPodUser staker,
-        uint removedValidators,
+        uint256 removedValidators,
         string memory err
     ) internal {
-        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
-        uint prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
+        uint256 curActiveValidatorCount = _getActiveValidatorCount(staker);
+        uint256 prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
 
         assertEq(curActiveValidatorCount + removedValidators, prevActiveValidatorCount, err);
     }
 
-    function assert_Snap_Unchanged_ActiveValidatorCount(
-        EigenPodUser staker,
-        string memory err
-    ) internal {
-        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
-        uint prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
+    function assert_Snap_Unchanged_ActiveValidatorCount(EigenPodUser staker, string memory err) internal {
+        uint256 curActiveValidatorCount = _getActiveValidatorCount(staker);
+        uint256 prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
 
         assertEq(curActiveValidatorCount, prevActiveValidatorCount, err);
     }
 
-    function _getActiveValidatorCount(EigenPodUser staker) internal view returns (uint) {
+    function _getActiveValidatorCount(
+        EigenPodUser staker
+    ) internal view returns (uint256) {
         EigenPod pod = staker.pod();
         return pod.activeValidatorCount();
     }
 
-    function _getPrevActiveValidatorCount(EigenPodUser staker) internal timewarp() returns (uint) {
+    function _getPrevActiveValidatorCount(
+        EigenPodUser staker
+    ) internal timewarp returns (uint256) {
         return _getActiveValidatorCount(staker);
     }
 
@@ -197,7 +204,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         IEigenPod.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
         IEigenPod.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
-        for (uint i = 0; i < curStatuses.length; i++) {
+        for (uint256 i = 0; i < curStatuses.length; i++) {
             assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.INACTIVE, err);
             assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
         }
@@ -213,31 +220,38 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         IEigenPod.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
         IEigenPod.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
-        for (uint i = 0; i < curStatuses.length; i++) {
+        for (uint256 i = 0; i < curStatuses.length; i++) {
             assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
             assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.WITHDRAWN, err);
         }
     }
 
-    function _getValidatorStatuses(EigenPodUser staker, bytes32[] memory pubkeyHashes) internal view returns (IEigenPod.VALIDATOR_STATUS[] memory) {
+    function _getValidatorStatuses(
+        EigenPodUser staker,
+        bytes32[] memory pubkeyHashes
+    ) internal view returns (IEigenPod.VALIDATOR_STATUS[] memory) {
         EigenPod pod = staker.pod();
         IEigenPod.VALIDATOR_STATUS[] memory statuses = new IEigenPod.VALIDATOR_STATUS[](pubkeyHashes.length);
 
-        for (uint i = 0; i < statuses.length; i++) {
+        for (uint256 i = 0; i < statuses.length; i++) {
             statuses[i] = pod.validatorStatus(pubkeyHashes[i]);
         }
 
         return statuses;
     }
 
-    function _getPrevValidatorStatuses(EigenPodUser staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (IEigenPod.VALIDATOR_STATUS[] memory) {
+    function _getPrevValidatorStatuses(
+        EigenPodUser staker,
+        bytes32[] memory pubkeyHashes
+    ) internal timewarp returns (IEigenPod.VALIDATOR_STATUS[] memory) {
         return _getValidatorStatuses(staker, pubkeyHashes);
     }
 
-    /*******************************************************************************
-                        startCheckpoint Assertions
-    *******************************************************************************/
-
+    /**
+     *
+     *                     startCheckpoint Assertions
+     *
+     */
     function check_StartCheckpoint_State(
         EigenPodUser staker
     ) internal {
@@ -245,18 +259,12 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         assert_Snap_Created_Checkpoint(staker, "staker should have created a new checkpoint");
     }
 
-    function assert_ProofsRemainingEqualsActive(
-        EigenPodUser staker,
-        string memory err
-    ) internal {
+    function assert_ProofsRemainingEqualsActive(EigenPodUser staker, string memory err) internal {
         EigenPod pod = staker.pod();
         assertEq(pod.currentCheckpoint().proofsRemaining, pod.activeValidatorCount(), err);
     }
 
-    function assert_Snap_Created_Checkpoint(
-        EigenPodUser staker,
-        string memory err
-    ) internal {
+    function assert_Snap_Created_Checkpoint(EigenPodUser staker, string memory err) internal {
         uint64 curCheckpointTimestamp = _getCheckpointTimestamp(staker);
         uint64 prevCheckpointTimestamp = _getPrevCheckpointTimestamp(staker);
 
@@ -264,18 +272,24 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         assertTrue(curCheckpointTimestamp != 0, err);
     }
 
-    function _getCheckpointTimestamp(EigenPodUser staker) internal view returns (uint64) {
+    function _getCheckpointTimestamp(
+        EigenPodUser staker
+    ) internal view returns (uint64) {
         EigenPod pod = staker.pod();
         return pod.currentCheckpointTimestamp();
     }
 
-    function _getPrevCheckpointTimestamp(EigenPodUser staker) internal timewarp() returns (uint64) {
+    function _getPrevCheckpointTimestamp(
+        EigenPodUser staker
+    ) internal timewarp returns (uint64) {
         return _getCheckpointTimestamp(staker);
     }
 
-    /*******************************************************************************
-                        verifyCheckpointProofs
-    *******************************************************************************/
+    /**
+     *
+     *                     verifyCheckpointProofs
+     *
+     */
 
     /// @notice assumes positive rewards and that the checkpoint will be finalized
     function _expectEventsVerifyCheckpointProofs(
@@ -286,24 +300,18 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         EigenPod pod = staker.pod();
         int256 totalBalanceDeltaGWei = 0;
         uint64 checkpointTimestamp = pod.currentCheckpointTimestamp();
-        for (uint i = 0; i < validators.length; i++) {
+        for (uint256 i = 0; i < validators.length; i++) {
             IEigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(proofs[i].pubkeyHash);
             uint64 prevBalanceGwei = info.restakedBalanceGwei;
             uint64 newBalanceGwei = BeaconChainProofs.getBalanceAtIndex(proofs[i].balanceRoot, validators[i]);
-            int128 balanceDeltaGwei = _calcBalanceDelta({
-                newAmountGwei: newBalanceGwei,
-                previousAmountGwei: prevBalanceGwei
-            });
+            int128 balanceDeltaGwei =
+                _calcBalanceDelta({newAmountGwei: newBalanceGwei, previousAmountGwei: prevBalanceGwei});
             if (newBalanceGwei != prevBalanceGwei) {
                 cheats.expectEmit(true, true, true, true, address(pod));
-                emit ValidatorBalanceUpdated(
-                    validators[i],
-                    checkpointTimestamp,
-                    newBalanceGwei
-                );
+                emit ValidatorBalanceUpdated(validators[i], checkpointTimestamp, newBalanceGwei);
             }
 
-            if (newBalanceGwei == 0 ) {
+            if (newBalanceGwei == 0) {
                 cheats.expectEmit(true, true, true, true, address(pod));
                 emit ValidatorWithdrawn(checkpointTimestamp, validators[i]);
             }
@@ -313,20 +321,19 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
 
             totalBalanceDeltaGWei += balanceDeltaGwei;
         }
-        int256 totalShareDeltaWei = (int128(uint128(pod.currentCheckpoint().podBalanceGwei)) + totalBalanceDeltaGWei) * int256(1 gwei);
+        int256 totalShareDeltaWei =
+            (int128(uint128(pod.currentCheckpoint().podBalanceGwei)) + totalBalanceDeltaGWei) * int256(1 gwei);
         cheats.expectEmit(true, true, true, true, address(pod));
         emit CheckpointFinalized(checkpointTimestamp, totalShareDeltaWei);
     }
 
     /// @dev Calculates the delta between two Gwei amounts and returns as an int256
     function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int128) {
-        return
-            int128(uint128(newAmountGwei)) - int128(uint128(previousAmountGwei));
+        return int128(uint128(newAmountGwei)) - int128(uint128(previousAmountGwei));
     }
 }
 
 contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
-
     function test_constructor() public {
         EigenPod pod = new EigenPod(ethPOSDepositMock, eigenPodManagerMock, GENESIS_TIME_LOCAL);
 
@@ -336,7 +343,7 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     }
 
     function test_initialization() public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
 
         // Check podOwner and restaked
@@ -348,7 +355,7 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     }
 
     function test_initialize_revert_alreadyInitialized() public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
 
         cheats.expectRevert("Initializable: contract is already initialized");
@@ -364,8 +371,10 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
         pod.initialize(address(0));
     }
 
-    function test_setProofSubmitter_revert_notPodOwner(address invalidCaller) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+    function test_setProofSubmitter_revert_notPodOwner(
+        address invalidCaller
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
 
         cheats.assume(invalidCaller != address(staker));
@@ -374,8 +383,10 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
         pod.setProofSubmitter(invalidCaller);
     }
 
-    function test_setProofSubmitter(address newProofSubmitter) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+    function test_setProofSubmitter(
+        address newProofSubmitter
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
         address prevProofSubmitter = pod.proofSubmitter();
 
@@ -389,18 +400,21 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
 }
 
 contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
+    /**
+     *
+     *                         stake() tests
+     *
+     */
 
-    /*******************************************************************************
-                            stake() tests
-    *******************************************************************************/
-    
     // Beacon chain staking constnats
     bytes public constant pubkey =
         hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
     bytes public signature;
     bytes32 public depositDataRoot;
 
-    function testFuzz_stake_revert_notEigenPodManager(address invalidCaller) public {
+    function testFuzz_stake_revert_notEigenPodManager(
+        address invalidCaller
+    ) public {
         cheats.assume(invalidCaller != address(eigenPodManagerMock));
         cheats.deal(invalidCaller, 32 ether);
 
@@ -409,8 +423,9 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         eigenPod.stake{value: 32 ether}(pubkey, signature, depositDataRoot);
     }
 
-
-    function testFuzz_stake_revert_invalidValue(uint256 value) public {
+    function testFuzz_stake_revert_invalidValue(
+        uint256 value
+    ) public {
         cheats.assume(value != 32 ether);
         cheats.deal(address(eigenPodManagerMock), value);
 
@@ -434,17 +449,18 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         assertEq(address(ethPOSDepositMock).balance, 32 ether, "Incorrect amount transferred");
     }
 
-    /*******************************************************************************
-                            withdrawRestakedBeaconChainETH() tests
-    *******************************************************************************/
-
+    /**
+     *
+     *                         withdrawRestakedBeaconChainETH() tests
+     *
+     */
     function testFuzz_withdrawRestakedBeaconChainETH_revert_notEigenPodManager(
         address invalidCaller,
         address recipient,
         uint256 randAmount
     ) public filterFuzzedAddressInputs(invalidCaller) {
         // Setup EigenPod Staker
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
 
         // ensure invalid caller causing revert
@@ -459,7 +475,7 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         uint256 randAmount
     ) public {
         // Setup EigenPod Staker
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
@@ -480,7 +496,7 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         uint256 randAmountWei
     ) public {
         // Setup EigenPod Staker
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
@@ -499,12 +515,9 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         pod.withdrawRestakedBeaconChainETH(recipient, randAmountWei);
     }
 
-    function testFuzz_withdrawRestakedBeaconChainETH(
-        uint256 rand,
-        uint256 randAmountWei
-    ) public {
+    function testFuzz_withdrawRestakedBeaconChainETH(uint256 rand, uint256 randAmountWei) public {
         // Setup EigenPod Staker
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
@@ -526,12 +539,12 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 
         assertEq(address(recipient).balance, randAmountWei, "recipient should have received withdrawn balance");
         assertEq(
-            address(pod).balance, 
-            uint(withdrawableRestakedExecutionLayerGwei * 1 gwei) - randAmountWei,
+            address(pod).balance,
+            uint256(withdrawableRestakedExecutionLayerGwei * 1 gwei) - randAmountWei,
             "pod balance should have decreased by withdrawn eth"
         );
         assertEq(
-            pod.withdrawableRestakedExecutionLayerGwei(), 
+            pod.withdrawableRestakedExecutionLayerGwei(),
             withdrawableRestakedExecutionLayerGwei - uint64(randAmountWei / 1 gwei),
             "withdrawableRestakedExecutionLayerGwei should have decreased by amount withdrawn"
         );
@@ -539,13 +552,15 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 }
 
 contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
-    
-    /*******************************************************************************
-                            recoverTokens() tests
-    *******************************************************************************/
-    
-    function testFuzz_recoverTokens_revert_notPodOwner(address invalidCaller) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+    /**
+     *
+     *                         recoverTokens() tests
+     *
+     */
+    function testFuzz_recoverTokens_revert_notPodOwner(
+        address invalidCaller
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
         address podOwner = pod.podOwner();
 
@@ -554,14 +569,14 @@ contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
         tokens[0] = IERC20(address(0x123));
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1;
-        
+
         cheats.prank(invalidCaller);
         cheats.expectRevert("EigenPod.onlyEigenPodOwner: not podOwner");
         pod.recoverTokens(tokens, amounts, podOwner);
     }
-    
+
     function test_recoverTokens_revert_whenPaused() public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
         address podOwner = pod.podOwner();
 
@@ -569,7 +584,7 @@ contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
         tokens[0] = IERC20(address(0x123));
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1;
-        
+
         // pause recoverTokens
         cheats.prank(pauser);
         eigenPodManagerMock.pause(1 << PAUSED_NON_PROOF_WITHDRAWALS);
@@ -580,7 +595,7 @@ contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
     }
 
     function test_recoverTokens_revert_invalidLengths() public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
         address podOwner = pod.podOwner();
 
@@ -597,7 +612,7 @@ contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
     }
 
     function test_recoverTokens() public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
         address podOwner = pod.podOwner();
 
@@ -621,14 +636,17 @@ contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
 }
 
 contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, ProofParsing {
-
-    /*******************************************************************************
-                            verifyWithdrawalCredentials() tests
-    *******************************************************************************/
+    /**
+     *
+     *                         verifyWithdrawalCredentials() tests
+     *
+     */
 
     /// @notice revert when verify wc is not called by pod owner
-    function testFuzz_revert_callerIsNotPodOwnerOrProofSubmitter(address invalidCaller) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+    function testFuzz_revert_callerIsNotPodOwnerOrProofSubmitter(
+        address invalidCaller
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
 
         (uint40[] memory validators,) = staker.startValidators();
         EigenPod pod = staker.pod();
@@ -638,9 +656,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
 
         cheats.assume(invalidCaller != podOwner && invalidCaller != proofSubmitter);
         cheats.prank(invalidCaller);
-        cheats.expectRevert(
-            "EigenPod.onlyOwnerOrProofSubmitter: caller is not pod owner or proof submitter"
-        );
+        cheats.expectRevert("EigenPod.onlyOwnerOrProofSubmitter: caller is not pod owner or proof submitter");
 
         pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
@@ -653,7 +669,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
 
     /// @notice test verify wc reverts when paused
     function test_revert_verifyWithdrawalCredentialsPaused() public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         (uint40[] memory validators,) = staker.startValidators();
 
         cheats.prank(pauser);
@@ -664,9 +680,11 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
     /// @notice beaconTimestamp must be after the current checkpoint
-    function testFuzz_revert_beaconTimestampInvalid(uint256 rand) public {
+    function testFuzz_revert_beaconTimestampInvalid(
+        uint256 rand
+    ) public {
         cheats.warp(10 days);
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         // Ensure we have more than one validator (_newEigenPodStaker allocates a nonzero amt of eth)
         cheats.deal(address(staker), address(staker).balance + 32 ether);
         (uint40[] memory validators,) = staker.startValidators();
@@ -684,8 +702,10 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
     /// @notice Check for revert on input array mismatch lengths
-    function testFuzz_revert_inputArrayLengthsMismatch(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_inputArrayLengthsMismatch(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         (uint40[] memory validators,) = staker.startValidators();
         EigenPod pod = staker.pod();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
@@ -726,8 +746,10 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
     /// @notice Check beaconStateRootProof reverts on invalid length or invalid proof
-    function testFuzz_revert_beaconStateRootProofInvalid(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_beaconStateRootProofInvalid(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         (uint40[] memory validators,) = staker.startValidators();
         EigenPod pod = staker.pod();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
@@ -737,7 +759,6 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
             beaconStateRoot: proofs.stateRootProof.beaconStateRoot,
             proof: proofWithInvalidLength
         });
-
 
         cheats.startPrank(address(staker));
         cheats.expectRevert("BeaconChainProofs.verifyStateRoot: Proof has incorrect length");
@@ -767,8 +788,10 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
 
     /// @notice attempt to verify validator credentials in both ACTIVE and WITHDRAWN states
     /// check reverts
-    function testFuzz_revert_validatorsWithdrawn(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_validatorsWithdrawn(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
 
@@ -794,25 +817,25 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
 
     /// @notice attempt to verify validator credentials after they have exited
     /// check reverts
-    function testFuzz_revert_validatorsExited(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_validatorsExited(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         (uint40[] memory validators,) = staker.startValidators();
-        
+
         // Exit validators from beacon chain and withdraw to pod
         staker.exitValidators(validators);
         beaconChain.advanceEpoch();
 
         // now that validators are exited, ensure we can't verify them
-        cheats.expectRevert(
-            "EigenPod._verifyWithdrawalCredentials: validator must not be exiting"
-        );
+        cheats.expectRevert("EigenPod._verifyWithdrawalCredentials: validator must not be exiting");
         staker.verifyWithdrawalCredentials(validators);
     }
 
     /// @notice modify withdrawal credentials to cause a revert
     function testFuzz_revert_invalidWithdrawalAddress(uint256 rand, bytes32 invalidWithdrawalCredentials) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
-        (uint40[] memory validators, ) = staker.startValidators();
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
+        (uint40[] memory validators,) = staker.startValidators();
         EigenPod pod = staker.pod();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
 
@@ -833,15 +856,17 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
     /// @notice modify validator field length to cause a revert
-    function testFuzz_revert_invalidValidatorFields(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
-        (uint40[] memory validators, ) = staker.startValidators();
+    function testFuzz_revert_invalidValidatorFields(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
+        (uint40[] memory validators,) = staker.startValidators();
         EigenPod pod = staker.pod();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
 
         // change validator field length to invalid value
         bytes32[] memory invalidValidatorFields = new bytes32[](BeaconChainProofs.VALIDATOR_FIELDS_LENGTH + 1);
-        for (uint i = 0; i < BeaconChainProofs.VALIDATOR_FIELDS_LENGTH; i++) {
+        for (uint256 i = 0; i < BeaconChainProofs.VALIDATOR_FIELDS_LENGTH; i++) {
             invalidValidatorFields[i] = proofs.validatorFields[0][i];
         }
         proofs.validatorFields[0] = invalidValidatorFields;
@@ -859,14 +884,16 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
     /// @notice modify validator activation epoch to cause a revert
-    function testFuzz_revert_activationEpochNotSet(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
-        (uint40[] memory validators, ) = staker.startValidators();
+    function testFuzz_revert_activationEpochNotSet(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
+        (uint40[] memory validators,) = staker.startValidators();
         EigenPod pod = staker.pod();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
-        
-        proofs.validatorFields[0][BeaconChainProofs.VALIDATOR_ACTIVATION_EPOCH_INDEX] 
-            = _toLittleEndianUint64(BeaconChainProofs.FAR_FUTURE_EPOCH);
+
+        proofs.validatorFields[0][BeaconChainProofs.VALIDATOR_ACTIVATION_EPOCH_INDEX] =
+            _toLittleEndianUint64(BeaconChainProofs.FAR_FUTURE_EPOCH);
 
         cheats.startPrank(address(staker));
         cheats.expectRevert("EigenPod._verifyWithdrawalCredentials: validator must be in the process of activating");
@@ -881,9 +908,11 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
     /// @notice modify validator proof length to cause a revert
-    function testFuzz_revert_invalidValidatorProofLength(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
-        (uint40[] memory validators, ) = staker.startValidators();
+    function testFuzz_revert_invalidValidatorProofLength(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
+        (uint40[] memory validators,) = staker.startValidators();
         EigenPod pod = staker.pod();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
 
@@ -904,8 +933,8 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
 
     /// @notice modify validator pubkey to cause a revert
     function testFuzz_revert_invalidValidatorProof(uint256 rand, bytes32 randPubkey) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
-        (uint40[] memory validators, ) = staker.startValidators();
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
+        (uint40[] memory validators,) = staker.startValidators();
         EigenPod pod = staker.pod();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
 
@@ -926,10 +955,12 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
     /// @notice fuzz test a eigenPod with multiple validators. Using timemachine to assert values over time
-    function testFuzz_verifyWithdrawalCredentials(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_verifyWithdrawalCredentials(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
-        (uint40[] memory validators, ) = staker.startValidators();
+        (uint40[] memory validators,) = staker.startValidators();
         // Complete a quick empty checkpoint so we have a nonzero value for `lastCheckpointedAt`
         staker.startCheckpoint();
         beaconChain.advanceEpoch_NoRewards();
@@ -941,9 +972,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
             emit ValidatorRestaked(validators[i]);
             cheats.expectEmit(true, true, true, true, address(pod));
             emit ValidatorBalanceUpdated(
-                validators[i],
-                pod.lastCheckpointTimestamp(),
-                beaconChain.effectiveBalance(validators[i])
+                validators[i], pod.lastCheckpointTimestamp(), beaconChain.effectiveBalance(validators[i])
             );
         }
         // staker.verifyWithdrawalCredentials(validators);
@@ -956,33 +985,42 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
             validatorFieldsProofs: proofs.validatorFieldsProofs,
             validatorFields: proofs.validatorFields
         });
-        assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
+        assert_Snap_Added_ActiveValidatorCount(
+            staker, validators.length, "staker should have increased active validator count"
+        );
         assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
         // Check ValidatorInfo values for each validator
-        for (uint i = 0; i < validators.length; i++) {
+        for (uint256 i = 0; i < validators.length; i++) {
             bytes32 pubkeyHash = beaconChain.pubkeyHash(validators[i]);
             bytes memory pubkey = beaconChain.pubkey(validators[i]);
 
             IEigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(pubkeyHash);
             IEigenPod.ValidatorInfo memory pkInfo = pod.validatorPubkeyToInfo(pubkey);
-            assertTrue(pod.validatorStatus(pubkey) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "validator status should be active");
+            assertTrue(
+                pod.validatorStatus(pubkey) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "validator status should be active"
+            );
             assertEq(keccak256(abi.encode(info)), keccak256(abi.encode(pkInfo)), "validator info should be identical");
             assertEq(info.validatorIndex, validators[i], "should have assigned correct validator index");
-            assertEq(info.restakedBalanceGwei, beaconChain.effectiveBalance(validators[i]), "should have restaked full effective balance");
+            assertEq(
+                info.restakedBalanceGwei,
+                beaconChain.effectiveBalance(validators[i]),
+                "should have restaked full effective balance"
+            );
             assertEq(info.lastCheckpointedAt, pod.lastCheckpointTimestamp(), "should have recorded correct update time");
         }
     }
 }
 
 contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
-
-    /*******************************************************************************
-                            startCheckpoint() tests
-    *******************************************************************************/
+    /**
+     *
+     *                         startCheckpoint() tests
+     *
+     */
 
     /// @notice revert when startCheckpoint is not called by pod owner
     function testFuzz_revert_callerIsNotPodOwnerOrProofSubmitter(uint256 rand, address invalidCaller) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
 
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
@@ -992,15 +1030,15 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
 
         cheats.assume(invalidCaller != podOwner && invalidCaller != proofSubmitter);
         cheats.prank(invalidCaller);
-        cheats.expectRevert(
-            "EigenPod.onlyOwnerOrProofSubmitter: caller is not pod owner or proof submitter"
-        );
-        pod.startCheckpoint({ revertIfNoBalance: false });
+        cheats.expectRevert("EigenPod.onlyOwnerOrProofSubmitter: caller is not pod owner or proof submitter");
+        pod.startCheckpoint({revertIfNoBalance: false});
     }
 
     /// @notice test startCheckpoint reverts when paused
-    function testFuzz_revert_startCheckpointPaused(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_startCheckpointPaused(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
 
         staker.startValidators();
 
@@ -1012,8 +1050,10 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
     }
 
     /// @notice startCheckpoint should revert if another checkpoint already in progress
-    function testFuzz_revert_checkpointAlreadyStarted(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_checkpointAlreadyStarted(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
 
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
@@ -1023,8 +1063,10 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
     }
 
     /// @notice startCheckpoint should revert if a checkpoint has already been completed this block
-    function testFuzz_revert_checkpointTwicePerBlock(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_checkpointTwicePerBlock(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
 
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
@@ -1036,8 +1078,10 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
     }
 
     /// @notice if no rewards and revertIfNoBalance is set, startCheckpoint should revert
-    function testFuzz_revert_revertIfNoBalanceIsSet(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_revertIfNoBalanceIsSet(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
 
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
@@ -1046,189 +1090,181 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
 
         cheats.prank(pod.podOwner());
         cheats.expectRevert("EigenPod._startCheckpoint: no balance available to checkpoint");
-        pod.startCheckpoint({ revertIfNoBalance: true });
+        pod.startCheckpoint({revertIfNoBalance: true});
     }
 
     /// @notice fuzz test an eigenpod with multiple validators and starting a checkpoint
-    function testFuzz_startCheckpoint(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_startCheckpoint(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
 
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
 
         cheats.expectEmit(true, true, true, true, address(staker.pod()));
-        emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp), validators.length);
+        emit CheckpointCreated(
+            uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp), validators.length
+        );
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
-        assertEq(pod.currentCheckpoint().proofsRemaining, uint24(validators.length), "should have one proof remaining pre verified validator");
+        assertEq(
+            pod.currentCheckpoint().proofsRemaining,
+            uint24(validators.length),
+            "should have one proof remaining pre verified validator"
+        );
     }
 
     /// @notice fuzz test an eigenpod with multiple validators and starting a checkpoint
-    function testFuzz_startCheckpoint_AsProofSubmitter(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_startCheckpoint_AsProofSubmitter(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
 
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
 
         cheats.expectEmit(true, true, true, true, address(staker.pod()));
-        emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp), validators.length);
+        emit CheckpointCreated(
+            uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp), validators.length
+        );
         cheats.prank(pod.proofSubmitter());
         pod.startCheckpoint(false);
         check_StartCheckpoint_State(staker);
-        assertEq(pod.currentCheckpoint().proofsRemaining, uint24(validators.length), "should have one proof remaining pre verified validator");
+        assertEq(
+            pod.currentCheckpoint().proofsRemaining,
+            uint24(validators.length),
+            "should have one proof remaining pre verified validator"
+        );
     }
 }
 
 contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
-    
-    /*******************************************************************************
-                            verifyCheckpointProofs() tests
-    *******************************************************************************/
+    /**
+     *
+     *                         verifyCheckpointProofs() tests
+     *
+     */
 
     /// @notice test verifyCheckpointProofs reverts when paused
-    function testFuzz_revert_verifyCheckpointProofsPaused(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_verifyCheckpointProofsPaused(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
-            validators,
-            pod.currentCheckpointTimestamp()
-        );
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
 
         cheats.prank(pauser);
         eigenPodManagerMock.pause(2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS);
         cheats.expectRevert("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager");
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
     }
 
     /// @notice verifyCheckpointProofs should revert if checkpoint not in progress
-    function testFuzz_revert_checkpointNotStarted(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_checkpointNotStarted(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
-            validators,
-            pod.currentCheckpointTimestamp()
-        );
-        cheats.expectRevert(
-            "EigenPod.verifyCheckpointProofs: must have active checkpoint to perform checkpoint proof"
-        );
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
+        cheats.expectRevert("EigenPod.verifyCheckpointProofs: must have active checkpoint to perform checkpoint proof");
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
     }
 
     /// @notice invalid proof length should revert
-    function testFuzz_revert_verifyBalanceContainerInvalidLengths(uint256 rand) public {
+    function testFuzz_revert_verifyBalanceContainerInvalidLengths(
+        uint256 rand
+    ) public {
         // Setup verifyCheckpointProofs
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
         beaconChain.advanceEpoch();
         staker.startCheckpoint();
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
-            validators,
-            pod.currentCheckpointTimestamp()
-        );
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
 
         // change the length of balanceContainerProof to cause a revert
         proofs.balanceContainerProof.proof = new bytes(proofs.balanceContainerProof.proof.length + 1);
 
         cheats.expectRevert("BeaconChainProofs.verifyBalanceContainer: Proof has incorrect length");
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
     }
 
     /// @notice change one of the bytes in the balanceContainer proof to cause a revert
-    function testFuzz_revert_verifyBalanceContainerInvalidProof(uint256 rand) public {
+    function testFuzz_revert_verifyBalanceContainerInvalidProof(
+        uint256 rand
+    ) public {
         // Setup verifyCheckpointProofs
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
         beaconChain.advanceEpoch();
         staker.startCheckpoint();
 
-
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
-            validators,
-            pod.currentCheckpointTimestamp()
-        );
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
         // randomly change one of the bytes in the proof to make the proof invalid
         bytes1 randValue = bytes1(keccak256(abi.encodePacked(proofs.balanceContainerProof.proof[0])));
         proofs.balanceContainerProof.proof[0] = randValue;
 
         cheats.expectRevert("BeaconChainProofs.verifyBalanceContainer: invalid balance container proof");
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
     }
 
     /// @notice invalid balance proof length should revert
-    function testFuzz_revert_verifyValidatorBalanceInvalidLength(uint256 rand) public {
+    function testFuzz_revert_verifyValidatorBalanceInvalidLength(
+        uint256 rand
+    ) public {
         // Setup verifyCheckpointProofs
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
         beaconChain.advanceEpoch();
         staker.startCheckpoint();
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
-            validators,
-            pod.currentCheckpointTimestamp()
-        );
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
 
         // change the length of balance proof to cause a revert
         proofs.balanceProofs[0].proof = new bytes(proofs.balanceProofs[0].proof.length + 1);
 
         cheats.expectRevert("BeaconChainProofs.verifyValidatorBalance: Proof has incorrect length");
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
     }
 
     /// @notice change one of the bytes in one of the balance proofs to cause a revert
-    function testFuzz_revert_verifyValidatorBalanceInvalidProof(uint256 rand) public {
+    function testFuzz_revert_verifyValidatorBalanceInvalidProof(
+        uint256 rand
+    ) public {
         // Setup verifyCheckpointProofs
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
         beaconChain.advanceEpoch();
         staker.startCheckpoint();
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
-            validators,
-            pod.currentCheckpointTimestamp()
-        );
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
         // randomly change one of the bytes in the first proof to make the proof invalid
         bytes1 randValue = bytes1(keccak256(abi.encodePacked(proofs.balanceProofs[0].proof[0])));
         proofs.balanceProofs[0].proof[0] = randValue;
 
         cheats.expectRevert("BeaconChainProofs.verifyValidatorBalance: Invalid merkle proof");
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
     }
 
     /// @notice test that verifyCheckpointProofs skips proofs submitted for non-ACTIVE validators
-    function testFuzz_verifyCheckpointProofs_skipIfNotActive(uint256 rand) public {
+    function testFuzz_verifyCheckpointProofs_skipIfNotActive(
+        uint256 rand
+    ) public {
         // Setup verifyCheckpointProofs
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         // Ensure we have more than one validator (_newEigenPodStaker allocates a nonzero amt of eth)
         cheats.deal(address(staker), address(staker).balance + 32 ether);
         EigenPod pod = staker.pod();
@@ -1244,20 +1280,19 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
 
         staker.startCheckpoint();
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
-            exitedValidator,
-            pod.currentCheckpointTimestamp()
-        );
+        CheckpointProofs memory proofs =
+            beaconChain.getCheckpointProofs(exitedValidator, pod.currentCheckpointTimestamp());
 
         // verify checkpoint proof for one exited validator
         // manually create a snapshot here for Snap checks
         timeMachine.createSnapshot();
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
         assertEq(0, pod.withdrawableRestakedExecutionLayerGwei(), "should not have updated withdrawable balance");
-        assertEq(pod.currentCheckpoint().proofsRemaining, validators.length - 1, "should have decreased proofs remaining by 1");
+        assertEq(
+            pod.currentCheckpoint().proofsRemaining,
+            validators.length - 1,
+            "should have decreased proofs remaining by 1"
+        );
         assert_Snap_Removed_ActiveValidatorCount(staker, 1, "should have removed one validator from active set");
         assert_Snap_Removed_ActiveValidators(staker, exitedValidator, "should have set validator status to WITHDRAWN");
 
@@ -1265,40 +1300,35 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         // the call should succeed, but nothing should happen
         // manually create a snapshot here for Snap checks
         timeMachine.createSnapshot();
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
 
         assertEq(0, pod.withdrawableRestakedExecutionLayerGwei(), "should not have updated withdrawable balance");
-        assertEq(pod.currentCheckpoint().proofsRemaining, validators.length - 1, "should not have decreased proofs remaining");
+        assertEq(
+            pod.currentCheckpoint().proofsRemaining, validators.length - 1, "should not have decreased proofs remaining"
+        );
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should have the same active validator count");
 
         // finally, finish the checkpoint by submitting all proofs
-        proofs = beaconChain.getCheckpointProofs(
-            validators,
-            pod.currentCheckpointTimestamp()
-        );
+        proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
         // manually create a snapshot here for Snap checks
         timeMachine.createSnapshot();
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
 
-        assert_Snap_Unchanged_ActiveValidatorCount(staker, "should have the same active validator count after completing checkpoint");
-        assertEq(exitedBalanceGwei, pod.withdrawableRestakedExecutionLayerGwei(), "exited balance should now be withdrawable");
-        assertEq(
-            pod.currentCheckpointTimestamp(),
-            0,
-            "checkpoint should be complete"
+        assert_Snap_Unchanged_ActiveValidatorCount(
+            staker, "should have the same active validator count after completing checkpoint"
         );
+        assertEq(
+            exitedBalanceGwei, pod.withdrawableRestakedExecutionLayerGwei(), "exited balance should now be withdrawable"
+        );
+        assertEq(pod.currentCheckpointTimestamp(), 0, "checkpoint should be complete");
     }
 
     /// @notice test that verifyCheckpointProofs skips duplicate checkpoint proofs
-    function testFuzz_verifyCheckpointProofs_skipIfAlreadyProven(uint256 rand) public {
+    function testFuzz_verifyCheckpointProofs_skipIfAlreadyProven(
+        uint256 rand
+    ) public {
         // Setup verifyCheckpointProofs
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         // Ensure we have more than one validator (_newEigenPodStaker allocates a nonzero amt of eth)
         cheats.deal(address(staker), address(staker).balance + 32 ether);
         EigenPod pod = staker.pod();
@@ -1313,55 +1343,49 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
 
         staker.startCheckpoint();
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
-            singleValidator,
-            pod.currentCheckpointTimestamp()
-        );
+        CheckpointProofs memory proofs =
+            beaconChain.getCheckpointProofs(singleValidator, pod.currentCheckpointTimestamp());
 
         // verify checkpoint proof for one validator
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
-        assertEq(pod.currentCheckpoint().proofsRemaining, validators.length - 1, "should have decreased proofs remaining by 1");
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
+        assertEq(
+            pod.currentCheckpoint().proofsRemaining,
+            validators.length - 1,
+            "should have decreased proofs remaining by 1"
+        );
 
         // attempt to submit the same proof and ensure that checkpoint did not progress
         // the call should succeed, but nothing should happen
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
-        assertEq(pod.currentCheckpoint().proofsRemaining, validators.length - 1, "should not have decreased proofs remaining");
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
+        assertEq(
+            pod.currentCheckpoint().proofsRemaining, validators.length - 1, "should not have decreased proofs remaining"
+        );
 
         // finally, finish the checkpoint by submitting all proofs
-        proofs = beaconChain.getCheckpointProofs(
-            validators,
-            pod.currentCheckpointTimestamp()
-        );
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
 
-        assertEq(
-            pod.currentCheckpointTimestamp(),
-            0,
-            "checkpoint should be complete"
-        );
+        assertEq(pod.currentCheckpointTimestamp(), 0, "checkpoint should be complete");
         // Check ValidatorInfo values for each validator
-        for (uint i = 0; i < validators.length; i++) {
+        for (uint256 i = 0; i < validators.length; i++) {
             bytes32 pubkeyHash = beaconChain.pubkeyHash(validators[i]);
 
             IEigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(pubkeyHash);
-            assertEq(info.restakedBalanceGwei, beaconChain.currentBalance(validators[i]), "should have restaked full current balance");
+            assertEq(
+                info.restakedBalanceGwei,
+                beaconChain.currentBalance(validators[i]),
+                "should have restaked full current balance"
+            );
             assertEq(info.lastCheckpointedAt, pod.lastCheckpointTimestamp(), "should have recorded correct update time");
         }
     }
 
     /// @notice test that verifyCheckpointProofs sets validators to WITHDRAWN if they are exited
-    function testFuzz_verifyCheckpointProofs_validatorExits(uint256 rand) public {
+    function testFuzz_verifyCheckpointProofs_validatorExits(
+        uint256 rand
+    ) public {
         // Setup verifyCheckpointProofs
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
@@ -1372,27 +1396,19 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
 
         staker.startCheckpoint();
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
-            validators,
-            pod.currentCheckpointTimestamp()
-        );
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
 
         // Verify checkpoint proofs emit the expected values
         _expectEventsVerifyCheckpointProofs(staker, validators, proofs.balanceProofs);
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
+        assertEq(pod.currentCheckpointTimestamp(), 0, "checkpoint should be complete");
+
         assertEq(
-            pod.currentCheckpointTimestamp(),
-            0,
-            "checkpoint should be complete"
+            pod.withdrawableRestakedExecutionLayerGwei(), exitedBalanceGwei, "exited balance should be withdrawable"
         );
 
-        assertEq(pod.withdrawableRestakedExecutionLayerGwei(), exitedBalanceGwei, "exited balance should be withdrawable");
-
         // Check ValidatorInfo values for each validator
-        for (uint i = 0; i < validators.length; i++) {
+        for (uint256 i = 0; i < validators.length; i++) {
             bytes32 pubkeyHash = beaconChain.pubkeyHash(validators[i]);
 
             IEigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(pubkeyHash);
@@ -1405,7 +1421,7 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
     /// @notice fuzz test an eigenPod with multiple validators and verifyCheckpointProofs
     function testFuzz_verifyCheckpointProofs(uint256 rand, bool epochRewards) public {
         // Setup verifyCheckpointProofs
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
@@ -1416,30 +1432,22 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         }
         staker.startCheckpoint();
 
-        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
-            validators,
-            pod.currentCheckpointTimestamp()
-        );
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
 
         // Verify checkpoint proofs emit the expected values
         _expectEventsVerifyCheckpointProofs(staker, validators, proofs.balanceProofs);
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
-        assertEq(
-            pod.currentCheckpointTimestamp(),
-            0,
-            "checkpoint should be complete"
-        );
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
+        assertEq(pod.currentCheckpointTimestamp(), 0, "checkpoint should be complete");
     }
 }
 
 /// @notice TODO
 contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     /// @notice test verifyStaleBalance reverts when paused
-    function testFuzz_revert_verifyStaleBalancePaused(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_verifyStaleBalancePaused(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validators[0]);
@@ -1455,8 +1463,10 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     }
 
     /// @notice test verifyStaleBalance reverts when paused via the PAUSED_START_CHECKPOINT flag
-    function testFuzz_revert_verifyStaleBalancePausedViaStartCheckpoint(uint256 rand) public {
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+    function testFuzz_revert_verifyStaleBalancePausedViaStartCheckpoint(
+        uint256 rand
+    ) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validators[0]);
@@ -1472,9 +1482,11 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     }
 
     /// @notice verifyStaleBalance should revert if validator balance too stale
-    function testFuzz_revert_validatorBalanceNotStale(uint256 rand) public {
+    function testFuzz_revert_validatorBalanceNotStale(
+        uint256 rand
+    ) public {
         // setup eigenpod staker and validators
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         uint40 validator = validators[0];
@@ -1497,9 +1509,11 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
     /// @notice checks staleness condition when a pod has never completed a checkpoint before
     /// The only value that will result in a revert here is `beaconTimestamp == 0`
-    function testFuzz_revert_validatorBalanceNotStale_NeverCheckpointed(uint256 rand) public {
+    function testFuzz_revert_validatorBalanceNotStale_NeverCheckpointed(
+        uint256 rand
+    ) public {
         // setup eigenpod staker and validators
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         uint40 validator = validators[0];
@@ -1509,17 +1523,15 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         // proof for given beaconTimestamp is not yet stale, this should revert
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
         cheats.expectRevert("EigenPod.verifyStaleBalance: proof is older than last checkpoint");
-        pod.verifyStaleBalance({
-            beaconTimestamp: 0,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
-        });
+        pod.verifyStaleBalance({beaconTimestamp: 0, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof});
     }
 
     /// @notice verifyStaleBalance should revert if validator status is not ACTIVE
-    function testFuzz_revert_validatorStatusNotActive(uint256 rand) public {
+    function testFuzz_revert_validatorStatusNotActive(
+        uint256 rand
+    ) public {
         // setup eigenpod staker and validators
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         uint40 validator = validators[0];
@@ -1538,9 +1550,11 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     }
 
     /// @notice verifyStaleBalance should revert if validator is not slashed
-    function testFuzz_revert_validatorNotSlashed(uint256 rand) public {
+    function testFuzz_revert_validatorNotSlashed(
+        uint256 rand
+    ) public {
         // setup eigenpod staker and validators
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         uint40 validator = validators[0];
@@ -1559,10 +1573,12 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         });
     }
 
-     /// @notice verifyStaleBalance should revert with invalid beaconStateRoot proof length
-    function testFuzz_revert_beaconStateRootProofInvalidLength(uint256 rand) public {
+    /// @notice verifyStaleBalance should revert with invalid beaconStateRoot proof length
+    function testFuzz_revert_beaconStateRootProofInvalidLength(
+        uint256 rand
+    ) public {
         // setup eigenpod staker and validators
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         uint40 validator = validators[0];
@@ -1589,9 +1605,11 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     }
 
     /// @notice verifyStaleBalance should revert with invalid beaconStateRoot proof
-    function testFuzz_revert_beaconStateRootProofInvalid(uint256 rand) public {
+    function testFuzz_revert_beaconStateRootProofInvalid(
+        uint256 rand
+    ) public {
         // setup eigenpod staker and validators
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         uint40 validator = validators[0];
@@ -1621,7 +1639,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         uint256 rand
     ) public {
         // setup eigenpod staker and validators
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         uint40 validator = validators[0];
@@ -1662,12 +1680,9 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     }
 
     /// @notice verifyStaleBalance should revert with invalid validatorContainer proof
-    function testFuzz_revert_validatorContainerProofInvalid(
-        uint256 rand,
-        bytes32 randWithdrawalCredentials
-    ) public {
+    function testFuzz_revert_validatorContainerProofInvalid(uint256 rand, bytes32 randWithdrawalCredentials) public {
         // setup eigenpod staker and validators
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         uint40 validator = validators[0];
@@ -1694,7 +1709,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         uint256 rand
     ) public {
         // setup eigenpod staker and validators
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
         EigenPod pod = staker.pod();
         (uint40[] memory validators,) = staker.startValidators();
         uint40 validator = validators[0];
@@ -1706,7 +1721,9 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
         cheats.expectEmit(true, true, true, true, address(staker.pod()));
-        emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp), validators.length);
+        emit CheckpointCreated(
+            uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp), validators.length
+        );
         pod.verifyStaleBalance({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -1725,16 +1742,12 @@ contract EigenPodHarnessSetup is EigenPodUnitTests {
         EigenPodUnitTests.setUp();
 
         // Deploy EP Harness
-        eigenPodHarnessImplementation = new EigenPodHarness(
-            ethPOSDepositMock,
-            eigenPodManagerMock,
-            GENESIS_TIME_LOCAL
-        );
+        eigenPodHarnessImplementation = new EigenPodHarness(ethPOSDepositMock, eigenPodManagerMock, GENESIS_TIME_LOCAL);
 
         // Upgrade eigenPod to harness
         UpgradeableBeacon(address(eigenPodBeacon)).upgradeTo(address(eigenPodHarnessImplementation));
         eigenPodHarness = EigenPodHarness(payable(eigenPod));
-    }    
+    }
 }
 
 /// @notice No unit tests as of now but would be good to add specific unit tests using proofs from our proofGen library
@@ -1750,9 +1763,13 @@ contract EigenPodUnitTests_proofParsingTests is EigenPodHarnessSetup, ProofParsi
     bytes validatorFieldsProof;
     bytes32[] validatorFields;
 
-    function _assertWithdrawalCredentialsSet(uint256 restakedBalanceGwei) internal {
+    function _assertWithdrawalCredentialsSet(
+        uint256 restakedBalanceGwei
+    ) internal {
         IEigenPod.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
-        assertEq(uint8(validatorInfo.status), uint8(IEigenPod.VALIDATOR_STATUS.ACTIVE), "Validator status should be active");
+        assertEq(
+            uint8(validatorInfo.status), uint8(IEigenPod.VALIDATOR_STATUS.ACTIVE), "Validator status should be active"
+        );
         assertEq(validatorInfo.validatorIndex, validatorIndex, "Validator index incorrectly set");
         assertEq(validatorInfo.lastCheckpointedAt, oracleTimestamp, "Last checkpointed at timestamp incorrectly set");
         assertEq(validatorInfo.restakedBalanceGwei, restakedBalanceGwei, "Restaked balance gwei not set correctly");
@@ -1785,10 +1802,7 @@ contract EigenPodUnitTests_proofParsingTests is EigenPodHarnessSetup, ProofParsi
         oracleTimestamp = uint64(block.timestamp);
 
         eigenPodHarness.verifyWithdrawalCredentials(
-            beaconStateRoot,
-            validatorIndex,
-            validatorFieldsProof,
-            validatorFields
+            beaconStateRoot, validatorIndex, validatorFieldsProof, validatorFields
         );
         _;
     }

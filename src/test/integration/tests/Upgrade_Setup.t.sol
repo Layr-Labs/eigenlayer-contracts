@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
-
     // /// @notice Test upgrade setup is correct
     // /// forge-config: default.fuzz.runs = 1
     // function test_mainnet_upgrade_setup(uint24 _random) public {
@@ -61,11 +60,10 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
 
     /// @notice Ensure contracts point at each other correctly via constructors
     /// override to remove ethPOSDeposit contract check
-    function _verifyContractPointers() internal virtual override view {
+    function _verifyContractPointers() internal view virtual override {
         // AVSDirectory
         require(
-            avsDirectory.delegation() == delegationManager,
-            "avsDirectory: delegationManager address not set correctly"
+            avsDirectory.delegation() == delegationManager, "avsDirectory: delegationManager address not set correctly"
         );
         // DelegationManager
         require(delegationManager.slasher() == slasher, "delegationManager: slasher address not set correctly");

@@ -7,7 +7,6 @@ import "../../contracts/permissions/PauserRegistry.sol";
 import "../harnesses/PausableHarness.sol";
 
 contract PausableUnitTests is Test {
-
     Vm cheats = Vm(HEVM_ADDRESS);
 
     PauserRegistry public pauserRegistry;
@@ -25,7 +24,7 @@ contract PausableUnitTests is Test {
     /// @notice Emitted when the pause is lifted by `account`, and changed to `newPausedStatus`.
     event Unpaused(address indexed account, uint256 newPausedStatus);
 
-    function setUp() virtual public {
+    function setUp() public virtual {
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
@@ -38,7 +37,9 @@ contract PausableUnitTests is Test {
         pausable.initializePauser(PauserRegistry(_pauserRegistry), _initPausedStatus);
     }
 
-    function testCannotInitializeWithZeroAddress(uint256 _initPausedStatus) public {
+    function testCannotInitializeWithZeroAddress(
+        uint256 _initPausedStatus
+    ) public {
         address _pauserRegistry = address(0);
         pausable = new PausableHarness();
         cheats.expectRevert(bytes("Pausable._initializePauser: _initializePauser() can only be called once"));
@@ -75,7 +76,9 @@ contract PausableUnitTests is Test {
         cheats.stopPrank();
     }
 
-    function testPauseAll(uint256 previousPausedStatus) public {
+    function testPauseAll(
+        uint256 previousPausedStatus
+    ) public {
         cheats.startPrank(pauser);
         cheats.expectEmit(true, true, true, true, address(pausable));
         emit Paused(pauser, previousPausedStatus);
@@ -93,7 +96,9 @@ contract PausableUnitTests is Test {
         require(pausable.paused() == type(uint256).max, "newPausedStatus not set correctly");
     }
 
-    function testPauseAll_RevertsWhenCalledByNotPauser(address notPauser) public {
+    function testPauseAll_RevertsWhenCalledByNotPauser(
+        address notPauser
+    ) public {
         cheats.assume(notPauser != pauser);
 
         cheats.startPrank(notPauser);
@@ -156,7 +161,6 @@ contract PausableUnitTests is Test {
         cheats.stopPrank();
     }
 
-
     function testUnpause_RevertsWhenTryingToPause(uint256 previousPausedStatus, uint256 newPausedStatus) public {
         // filter to only fuzzed inputs which would (improperly) flip any bits to '1'.
         cheats.assume(~previousPausedStatus & ~newPausedStatus != ~previousPausedStatus);
@@ -172,5 +176,4 @@ contract PausableUnitTests is Test {
         pausable.unpause(newPausedStatus);
         cheats.stopPrank();
     }
-
 }

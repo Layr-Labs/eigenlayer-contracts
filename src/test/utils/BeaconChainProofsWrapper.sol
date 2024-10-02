@@ -5,11 +5,7 @@ import "src/contracts/libraries/BeaconChainProofs.sol";
 
 /// @notice This contract is used to test offchain proof generation
 contract BeaconChainProofsWrapper {
-
-    function verifyStateRoot(
-        bytes32 beaconBlockRoot,
-        BeaconChainProofs.StateRootProof calldata proof
-    ) external view {
+    function verifyStateRoot(bytes32 beaconBlockRoot, BeaconChainProofs.StateRootProof calldata proof) external view {
         BeaconChainProofs.verifyStateRoot(beaconBlockRoot, proof);
     }
 
@@ -36,6 +32,4 @@ contract BeaconChainProofsWrapper {
     ) external view {
         BeaconChainProofs.verifyValidatorBalance(balanceContainerRoot, validatorIndex, proof);
     }
-
-
 }

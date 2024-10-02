@@ -2,15 +2,14 @@
 pragma solidity ^0.8.12;
 
 contract EIP_4788_Oracle_Mock {
+    mapping(uint256 => bytes32) blockRoots;
 
-    mapping(uint => bytes32) blockRoots;
-
-    uint constant HISTORY_BUFFER_LENGTH = 8191;
+    uint256 constant HISTORY_BUFFER_LENGTH = 8191;
 
     fallback() external {
         require(msg.data.length == 32, "4788OracleMock.fallback: malformed msg.data");
 
-        uint timestamp = abi.decode(msg.data, (uint));
+        uint256 timestamp = abi.decode(msg.data, (uint256));
         require(timestamp != 0, "4788OracleMock.fallback: timestamp is 0");
 
         bytes32 blockRoot = blockRoots[timestamp];
@@ -22,7 +21,9 @@ contract EIP_4788_Oracle_Mock {
         }
     }
 
-    function timestampToBlockRoot(uint timestamp) public view returns (bytes32) {
+    function timestampToBlockRoot(
+        uint256 timestamp
+    ) public view returns (bytes32) {
         return blockRoots[uint64(timestamp)];
     }
 

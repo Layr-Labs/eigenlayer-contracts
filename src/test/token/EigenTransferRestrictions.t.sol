@@ -30,7 +30,9 @@ contract EigenTransferRestrictionsTest is Test {
     /// @notice event emitted when the transfer restrictions are disabled
     event TransferRestrictionsDisabled();
 
-    modifier filterAddress(address fuzzedAddress) {
+    modifier filterAddress(
+        address fuzzedAddress
+    ) {
         vm.assume(!fuzzedOutAddresses[fuzzedAddress]);
         _;
     }
@@ -39,13 +41,10 @@ contract EigenTransferRestrictionsTest is Test {
         vm.startPrank(minter1);
         proxyAdmin = new ProxyAdmin();
         // initialize with dummy BackingEigen address
-        
-        eigenImpl = new EigenHarness(new ERC20PresetFixedSupply({
-            name: "bEIGEN",
-            symbol: "bEIGEN",
-            initialSupply: totalSupply,
-            owner: minter1
-        }));
+
+        eigenImpl = new EigenHarness(
+            new ERC20PresetFixedSupply({name: "bEIGEN", symbol: "bEIGEN", initialSupply: totalSupply, owner: minter1})
+        );
         eigen = Eigen(address(new TransparentUpgradeableProxy(address(eigenImpl), address(proxyAdmin), "")));
         eigen.bEIGEN().transfer(address(eigen), totalSupply);
         vm.stopPrank();
@@ -57,7 +56,9 @@ contract EigenTransferRestrictionsTest is Test {
         fuzzedOutAddresses[address(0)] = true;
     }
 
-    function test_AllowedFromCanSendAnywhere(address to) public filterAddress(to) {
+    function test_AllowedFromCanSendAnywhere(
+        address to
+    ) public filterAddress(to) {
         _simulateMint();
 
         // minter1 and eigenminter2 are already allowedFrom
@@ -90,7 +91,9 @@ contract EigenTransferRestrictionsTest is Test {
         assertEq(eigen.allowedFrom(from), false, "EigenTest.test_CanSetAllowedFrom: allowedFrom was not set correctly");
     }
 
-    function test_OnlyOwnerCanSetAllowedFrom(address notOwner) public filterAddress(notOwner) {
+    function test_OnlyOwnerCanSetAllowedFrom(
+        address notOwner
+    ) public filterAddress(notOwner) {
         _simulateMint();
 
         // set allowedFrom[from] = true
@@ -99,13 +102,16 @@ contract EigenTransferRestrictionsTest is Test {
         eigen.setAllowedFrom(notOwner, true);
     }
 
-    function test_NotAllowedFromCannotSendIfNoAllowedTos(address from, address to) public filterAddress(from) filterAddress(to) {
+    function test_NotAllowedFromCannotSendIfNoAllowedTos(
+        address from,
+        address to
+    ) public filterAddress(from) filterAddress(to) {
         _simulateMint();
 
         // send other tokens from minter1
         vm.startPrank(minter1);
         eigen.transfer(from, eigen.balanceOf(minter1) / 2);
-        
+
         // sending from other will revert
         vm.startPrank(from);
         uint256 fromBalance = eigen.balanceOf(from);
@@ -135,7 +141,9 @@ contract EigenTransferRestrictionsTest is Test {
         assertEq(eigen.allowedTo(to), false, "EigenTest.test_CanSetAllowedTo: allowedTo was not set correctly");
     }
 
-    function test_OnlyOwnerCanSetAllowedTo(address notOwner) public filterAddress(notOwner) {
+    function test_OnlyOwnerCanSetAllowedTo(
+        address notOwner
+    ) public filterAddress(notOwner) {
         _simulateMint();
 
         // set allowedFrom[from] = true
@@ -163,7 +171,11 @@ contract EigenTransferRestrictionsTest is Test {
         vm.expectEmit(true, true, true, true, address(eigen));
         emit TransferRestrictionsDisabled();
         eigen.disableTransferRestrictions();
-        assertEq(eigen.transferRestrictionsDisabledAfter(), 0, "EigenTest.test_disableTransferRestrictions: transfer restrictions were not disabled correctly");
+        assertEq(
+            eigen.transferRestrictionsDisabledAfter(),
+            0,
+            "EigenTest.test_disableTransferRestrictions: transfer restrictions were not disabled correctly"
+        );
 
         vm.startPrank(from);
         // transfer restrictions are disabled

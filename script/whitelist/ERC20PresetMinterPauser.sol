@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
-
 /**
  * @dev {ERC20} token, including:
  *
@@ -66,7 +65,6 @@ contract ERC20PresetMinterPauser is Context, AccessControlEnumerable, ERC20Burna
      */
     function pause() public virtual {
         require(hasRole(PAUSER_ROLE, _msgSender()), "ERC20PresetMinterPauser: must have pauser role to pause");
-
     }
 
     /**
@@ -82,11 +80,7 @@ contract ERC20PresetMinterPauser is Context, AccessControlEnumerable, ERC20Burna
         require(hasRole(PAUSER_ROLE, _msgSender()), "ERC20PresetMinterPauser: must have pauser role to unpause");
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override(ERC20) {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20) {
         super._beforeTokenTransfer(from, to, amount);
     }
 }

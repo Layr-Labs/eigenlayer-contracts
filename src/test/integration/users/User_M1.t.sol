@@ -24,7 +24,9 @@ contract User_M1 is User {
     IStrategyManager_DeprecatedM1 strategyManager_M1;
     IEigenPodManager_DeprecatedM1 eigenPodManager_M1;
 
-    constructor(string memory name) User(name) {
+    constructor(
+        string memory name
+    ) User(name) {
         IUserMainnetForkDeployer deployer = IUserMainnetForkDeployer(msg.sender);
 
         strategyManager_M1 = IStrategyManager_DeprecatedM1(address(deployer.strategyManager()));
@@ -70,7 +72,9 @@ contract User_M1 is User {
 contract User_M1_AltMethods is User_M1 {
     mapping(bytes32 => bool) public signedHashes;
 
-    constructor(string memory name) User_M1(name) {}
+    constructor(
+        string memory name
+    ) User_M1(name) {}
 
     function depositIntoEigenlayer_M1(
         IStrategy[] memory strategies,
@@ -86,7 +90,7 @@ contract User_M1_AltMethods is User_M1 {
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 revert("Should not be depositing with BEACONCHAIN_ETH_STRAT for M1-mainnet User");
             }
-            
+
             // Approve token
             IERC20 underlyingToken = strat.underlyingToken();
             underlyingToken.approve(address(strategyManager), tokenBalance);
@@ -95,17 +99,18 @@ contract User_M1_AltMethods is User_M1 {
             uint256 nonceBefore = strategyManager.nonces(address(this));
             bytes32 structHash = keccak256(
                 abi.encode(
-                    strategyManager.DEPOSIT_TYPEHASH(),
-                    strat,
-                    underlyingToken,
-                    tokenBalance,
-                    nonceBefore,
-                    expiry
+                    strategyManager.DEPOSIT_TYPEHASH(), strat, underlyingToken, tokenBalance, nonceBefore, expiry
                 )
             );
-            bytes32 domain_separator = keccak256(abi.encode(strategyManager.DOMAIN_TYPEHASH(), keccak256(bytes("EigenLayer")), block.chainid, address(strategyManager)));
-            bytes32 digestHash =
-                keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
+            bytes32 domain_separator = keccak256(
+                abi.encode(
+                    strategyManager.DOMAIN_TYPEHASH(),
+                    keccak256(bytes("EigenLayer")),
+                    block.chainid,
+                    address(strategyManager)
+                )
+            );
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
             bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
 
             // Mark hash as signed

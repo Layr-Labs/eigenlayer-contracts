@@ -9,17 +9,12 @@ import "../../utils/ExistingDeploymentParser.sol";
  * forge script script/deploy/holesky/longtail-preprod-upgrade.s.sol:Longtail_Upgrade_Preprod --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --verify --broadcast -vvvv
  */
 contract Longtail_Upgrade_Preprod is ExistingDeploymentParser {
-
     address testAddress = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
     address initOwner = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
 
     function run() external virtual {
-        _parseInitialDeploymentParams(
-            "script/configs/holesky/eigenlayer_preprod.config.json"
-        );
-        _parseDeployedContracts(
-            "script/configs/holesky/eigenlayer_addresses_preprod.config.json"
-        );
+        _parseInitialDeploymentParams("script/configs/holesky/eigenlayer_preprod.config.json");
+        _parseDeployedContracts("script/configs/holesky/eigenlayer_addresses_preprod.config.json");
 
         emit log_named_address("Deployer Address", msg.sender);
 
@@ -44,17 +39,17 @@ contract Longtail_Upgrade_Preprod is ExistingDeploymentParser {
 
         // Deploy and initialize proxies
         strategyBeacon = new UpgradeableBeacon(address(strategyFactoryBeaconImplementation));
-        strategyFactory = StrategyFactory(address(new TransparentUpgradeableProxy(
-            address(strategyFactoryImplementation),
-            address(eigenLayerProxyAdmin),
-            abi.encodeWithSelector(
-                StrategyFactory.initialize.selector,
-                initOwner,
-                eigenLayerPauserReg,
-                0,
-                strategyBeacon
+        strategyFactory = StrategyFactory(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(strategyFactoryImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(
+                        StrategyFactory.initialize.selector, initOwner, eigenLayerPauserReg, 0, strategyBeacon
+                    )
+                )
             )
-        )));
+        );
     }
 
     function _tokensToBlacklist() internal pure returns (IERC20[] memory) {
@@ -66,7 +61,7 @@ contract Longtail_Upgrade_Preprod is ExistingDeploymentParser {
         t[1] = IERC20(0xa63f56985F9C7F3bc9fFc5685535649e0C1a55f3); // sfrxETH
         t[2] = IERC20(0x8783C9C904e1bdC87d9168AE703c8481E8a477Fd); // ankrETH
         t[3] = IERC20(0xe3C063B1BEe9de02eb28352b55D49D85514C67FF); // mETH
-        t[4] = IERC20(0xF603c5A3F774F05d4D848A9bB139809790890864); // osETH 
+        t[4] = IERC20(0xF603c5A3F774F05d4D848A9bB139809790890864); // osETH
         t[5] = IERC20(0x1d8b30cC38Dba8aBce1ac29Ea27d9cFd05379A09); // lsETH
         t[6] = IERC20(0x17845EA6a9BfD2caF1b9E558948BB4999dF2656e); // frxETH
         t[7] = IERC20(0x8720095Fa5739Ab051799211B146a2EEE4Dd8B37); // cbETH
@@ -88,18 +83,26 @@ contract Longtail_Upgrade_Preprod is ExistingDeploymentParser {
     function _sanityChecks() internal {
         // Sanity checks
 
-        require(eigenLayerProxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(strategyFactory)))) == address(eigenLayerProxyAdmin), "proxy admin not set correctly");
-        require(eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(strategyFactory)))) == address(strategyFactoryImplementation), "proxy impl not set correctly");
+        require(
+            eigenLayerProxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(strategyFactory))))
+                == address(eigenLayerProxyAdmin),
+            "proxy admin not set correctly"
+        );
+        require(
+            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(strategyFactory))))
+                == address(strategyFactoryImplementation),
+            "proxy impl not set correctly"
+        );
 
         require(strategyFactory.owner() == initOwner, "owner not set correctly");
         require(strategyFactory.pauserRegistry() == eigenLayerPauserReg, "pauser not set correctly");
         require(strategyFactory.strategyBeacon() == strategyBeacon, "beacon not set correctly");
         require(strategyFactory.strategyManager() == strategyManager, "strategy manager not set correctly");
-        
+
         require(strategyManager.strategyWhitelister() == address(strategyFactory), "whitelist role not set correctly");
-        
+
         IERC20[] memory tokensToBlacklist = _tokensToBlacklist();
-        for (uint i = 0; i < tokensToBlacklist.length; i++) {
+        for (uint256 i = 0; i < tokensToBlacklist.length; i++) {
             require(strategyFactory.isBlacklisted(tokensToBlacklist[i]), "token not blacklisted");
         }
 

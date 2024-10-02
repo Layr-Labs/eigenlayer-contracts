@@ -6,7 +6,6 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract PrintUtils is Test {
-
     using Strings for *;
     using StdStyle for *;
 
@@ -14,9 +13,11 @@ abstract contract PrintUtils is Test {
     string constant SECTION_DELIMITER = "======";
 
     /// @dev Inheriting contracts implement this method
-    function NAME() public virtual view returns (string memory);
+    function NAME() public view virtual returns (string memory);
 
-    function _logHeader(string memory key) internal {
+    function _logHeader(
+        string memory key
+    ) internal {
         emit log(HEADER_DELIMITER);
 
         emit log(key);
@@ -33,55 +34,40 @@ abstract contract PrintUtils is Test {
         emit log(HEADER_DELIMITER);
     }
 
-    function _logSection(string memory key) internal {
-        emit log(string.concat(
-            SECTION_DELIMITER,
-            key,
-            SECTION_DELIMITER
-        ));
+    function _logSection(
+        string memory key
+    ) internal {
+        emit log(string.concat(SECTION_DELIMITER, key, SECTION_DELIMITER));
     }
 
     function _logSection(string memory key, address a) internal {
-        emit log(string.concat(
-            SECTION_DELIMITER,
-            key.cyan(),
-            ": ",
-            a.yellow().dim(),
-            SECTION_DELIMITER
-        ));
+        emit log(string.concat(SECTION_DELIMITER, key.cyan(), ": ", a.yellow().dim(), SECTION_DELIMITER));
     }
 
     function _logAction(string memory key, string memory action) internal {
-        emit log_named_string(
-            key.cyan(),
-            action.italic()
-        );
+        emit log_named_string(key.cyan(), action.italic());
     }
 
     /// @dev Log method name
-    function _logM(string memory method) internal {
-        emit log(string.concat(
-            NAME().cyan(),
-            ".",
-            method.italic()
-        ));
+    function _logM(
+        string memory method
+    ) internal {
+        emit log(string.concat(NAME().cyan(), ".", method.italic()));
     }
 
     function _logM(string memory method, string memory arg) internal {
-        emit log(string.concat(
-            NAME().cyan(),
-            ".",
-            method.italic(),
-            ":",
-            arg
-        ));
+        emit log(string.concat(NAME().cyan(), ".", method.italic(), ":", arg));
     }
 
-    function _log(string memory s) internal {
+    function _log(
+        string memory s
+    ) internal {
         emit log(s);
     }
 
-    function _logGreen(string memory s) internal {
+    function _logGreen(
+        string memory s
+    ) internal {
         emit log(s.green());
     }
 
@@ -97,7 +83,7 @@ abstract contract PrintUtils is Test {
         emit log_named_string(key, value);
     }
 
-    function _log(string memory key, uint value) internal {
+    function _log(string memory key, uint256 value) internal {
         emit log_named_uint(key, value);
     }
 

@@ -39,7 +39,6 @@ struct StaleBalanceProofs {
 }
 
 contract BeaconChainMock is PrintUtils {
-
     Vm cheats = Vm(HEVM_ADDRESS);
 
     struct Validator {
@@ -53,8 +52,8 @@ contract BeaconChainMock is PrintUtils {
     }
 
     /// @dev All withdrawals are processed with index == 0
-    uint constant GWEI_TO_WEI = 1e9;
-    uint constant ZERO_NODES_LENGTH = 100;
+    uint256 constant GWEI_TO_WEI = 1e9;
+    uint256 constant ZERO_NODES_LENGTH = 100;
 
     // Rewards given to each validator during epoch processing
     uint64 public constant CONSENSUS_REWARD_AMOUNT_GWEI = 1;
@@ -63,28 +62,26 @@ contract BeaconChainMock is PrintUtils {
     /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
 
     // see https://eth2book.info/capella/part3/containers/state/#beaconstate
-    uint constant BEACON_STATE_FIELDS = 32;
+    uint256 constant BEACON_STATE_FIELDS = 32;
     // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
-    uint constant BEACON_BLOCK_FIELDS = 5;
+    uint256 constant BEACON_BLOCK_FIELDS = 5;
 
-    uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
-    uint immutable VAL_FIELDS_PROOF_LEN = 32 * (
-        (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT
-    );
-    uint immutable BALANCE_CONTAINER_PROOF_LEN = 32 * (
-        BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT
-    );
-    uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
-    
+    uint256 immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
+    uint256 immutable VAL_FIELDS_PROOF_LEN =
+        32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT);
+    uint256 immutable BALANCE_CONTAINER_PROOF_LEN =
+        32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT);
+    uint256 immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
+
     uint64 genesisTime;
     uint64 public nextTimestamp;
 
     EigenPodManager eigenPodManager;
     EIP_4788_Oracle_Mock constant EIP_4788_ORACLE = EIP_4788_Oracle_Mock(0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02);
-    
+
     /**
      * BeaconState containers, used for proofgen:
-     * https://eth2book.info/capella/part3/containers/state/#beaconstate 
+     * https://eth2book.info/capella/part3/containers/state/#beaconstate
      */
 
     // Validator container, references every validator created so far
@@ -105,7 +102,7 @@ contract BeaconChainMock is PrintUtils {
     mapping(uint64 => bytes32) beaconBlockRoots;
 
     // Keeps track of the index of the last validator we've seen during epoch processing
-    uint lastIndexProcessed;
+    uint256 lastIndexProcessed;
     uint64 curTimestamp;
 
     // Maps block.timestamp -> beacon state root and proof
@@ -119,9 +116,9 @@ contract BeaconChainMock is PrintUtils {
 
     // Maps block.timestamp -> balanceRootIndex -> balance proof for that timestamp
     mapping(uint64 => mapping(uint40 => BalanceRootProof)) balanceRootProofs;
-    
+
     bytes32[] zeroNodes;
-    
+
     constructor(EigenPodManager _eigenPodManager, uint64 _genesisTime) {
         genesisTime = _genesisTime;
         eigenPodManager = _eigenPodManager;
@@ -134,7 +131,7 @@ contract BeaconChainMock is PrintUtils {
         zeroNodes = new bytes32[](ZERO_NODES_LENGTH);
         zeroNodes[0] = curNode;
 
-        for (uint i = 1; i < zeroNodes.length; i++) {
+        for (uint256 i = 1; i < zeroNodes.length; i++) {
             zeroNodes[i] = sha256(abi.encodePacked(curNode, curNode));
             curNode = zeroNodes[i];
         }
@@ -144,9 +141,11 @@ contract BeaconChainMock is PrintUtils {
         return "BeaconChain";
     }
 
-    /*******************************************************************************
-                                    EXTERNAL METHODS
-    *******************************************************************************/
+    /**
+     *
+     *                                 EXTERNAL METHODS
+     *
+     */
 
     /// @dev Creates a new validator by:
     /// - Creating the validator container
@@ -157,16 +156,16 @@ contract BeaconChainMock is PrintUtils {
     ) public payable returns (uint40) {
         _logM("newValidator");
 
-        uint balanceWei = msg.value;
+        uint256 balanceWei = msg.value;
 
         // These checks mimic the checks made in the beacon chain deposit contract
         //
-        // We sanity-check them here because this contract sorta acts like the 
+        // We sanity-check them here because this contract sorta acts like the
         // deposit contract and this ensures we only create validators that could
         // exist IRL
         require(balanceWei >= 1 ether, "BeaconChainMock.newValidator: deposit value too low");
         require(balanceWei % 1 gwei == 0, "BeaconChainMock.newValidator: value not multiple of gwei");
-        uint depositAmount = balanceWei / GWEI_TO_WEI;
+        uint256 depositAmount = balanceWei / GWEI_TO_WEI;
         require(depositAmount <= type(uint64).max, "BeaconChainMock.newValidator: deposit value too high");
 
         // Create new validator and return its unique index
@@ -190,7 +189,9 @@ contract BeaconChainMock is PrintUtils {
     /// `exitValidator` combines steps 1 and 2 into this method.
     ///
     /// TODO we may need to advance a slot here to maintain the properties we want in startCheckpoint
-    function exitValidator(uint40 validatorIndex) public returns (uint64 exitedBalanceGwei) {
+    function exitValidator(
+        uint40 validatorIndex
+    ) public returns (uint64 exitedBalanceGwei) {
         _logM("exitValidator");
 
         // Update validator.exitEpoch
@@ -198,22 +199,24 @@ contract BeaconChainMock is PrintUtils {
         require(!v.isDummy, "BeaconChainMock: attempting to exit dummy validator. We need those for proofgen >:(");
         require(v.exitEpoch == BeaconChainProofs.FAR_FUTURE_EPOCH, "BeaconChainMock: validator already exited");
         v.exitEpoch = currentEpoch() + 1;
-        
+
         // Set current balance to 0
         exitedBalanceGwei = _currentBalanceGwei(validatorIndex);
         _setCurrentBalance(validatorIndex, 0);
 
         // Send current balance to pod
         address destination = _toAddress(validators[validatorIndex].withdrawalCreds);
-        cheats.deal(destination, address(destination).balance + uint(uint(exitedBalanceGwei) * GWEI_TO_WEI));
+        cheats.deal(destination, address(destination).balance + uint256(uint256(exitedBalanceGwei) * GWEI_TO_WEI));
 
         return exitedBalanceGwei;
     }
 
-    function slashValidators(uint40[] memory _validators) public returns (uint64 slashedBalanceGwei) {
+    function slashValidators(
+        uint40[] memory _validators
+    ) public returns (uint64 slashedBalanceGwei) {
         _logM("slashValidators");
 
-        for (uint i = 0; i < _validators.length; i++) {
+        for (uint256 i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
             Validator storage v = validators[validatorIndex];
             require(!v.isDummy, "BeaconChainMock: attempting to exit dummy validator. We need those for proofgen >:(");
@@ -223,7 +226,7 @@ contract BeaconChainMock is PrintUtils {
                 v.isSlashed = true;
                 v.exitEpoch = currentEpoch() + 1;
             }
-            
+
             // Calculate slash amount
             uint64 curBalanceGwei = _currentBalanceGwei(validatorIndex);
             if (SLASH_AMOUNT_GWEI > curBalanceGwei) {
@@ -250,7 +253,7 @@ contract BeaconChainMock is PrintUtils {
     /// - State root calculated and credential/balance proofs generated for all validators
     /// - Send state root to 4788 oracle
     ///
-    /// Note: 
+    /// Note:
     /// - DOES generate consensus rewards for ALL non-exited validators
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch() public {
@@ -271,7 +274,7 @@ contract BeaconChainMock is PrintUtils {
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch_NoRewards() public {
         _logM("advanceEpoch_NoRewards");
-        
+
         _withdrawExcess();
 
         _advanceEpoch();
@@ -281,13 +284,13 @@ contract BeaconChainMock is PrintUtils {
     /// are over 32 ETH. This exists to support tests that check share increases solely
     /// due to beacon chain balance changes.
     ///
-    /// Note: 
+    /// Note:
     /// - DOES generate consensus rewards for ALL non-exited validators
     /// - does NOT withdraw in excess of 32 ETH
     /// - does NOT withdraw if validator is exited
     function advanceEpoch_NoWithdraw() public {
         _logM("advanceEpoch_NoWithdraw");
-        
+
         _generateRewards();
 
         _advanceEpoch();
@@ -296,8 +299,8 @@ contract BeaconChainMock is PrintUtils {
     /// @dev Iterate over all validators. If the validator is still active,
     /// add CONSENSUS_REWARD_AMOUNT_GWEI to its current balance
     function _generateRewards() internal {
-        uint totalRewarded;
-        for (uint i = 0; i < validators.length; i++) {
+        uint256 totalRewarded;
+        for (uint256 i = 0; i < validators.length; i++) {
             Validator storage v = validators[i];
             if (v.isDummy) continue; // don't process dummy validators
 
@@ -317,14 +320,14 @@ contract BeaconChainMock is PrintUtils {
     /// @dev Iterate over all validators. If the validator has > 32 ETH current balance
     /// OR is exited, withdraw the excess to the validator's withdrawal address.
     function _withdrawExcess() internal {
-        uint totalExcessWei;
-        for (uint i = 0; i < validators.length; i++) {
+        uint256 totalExcessWei;
+        for (uint256 i = 0; i < validators.length; i++) {
             Validator storage v = validators[i];
             if (v.isDummy) continue; // don't process dummy validators
 
-            uint balanceWei = uint(_currentBalanceGwei(uint40(i))) * GWEI_TO_WEI;
+            uint256 balanceWei = uint256(_currentBalanceGwei(uint40(i))) * GWEI_TO_WEI;
             address destination = _toAddress(v.withdrawalCreds);
-            uint excessBalanceWei;
+            uint256 excessBalanceWei;
             uint64 newBalanceGwei = uint64(balanceWei / GWEI_TO_WEI);
 
             // If the validator has exited, withdraw any existing balance
@@ -348,13 +351,14 @@ contract BeaconChainMock is PrintUtils {
             _setCurrentBalance(uint40(i), newBalanceGwei);
         }
 
-        if (totalExcessWei != 0)
+        if (totalExcessWei != 0) {
             _log("- withdrew excess balance", totalExcessWei);
+        }
     }
 
     function _advanceEpoch() public {
         // Update effective balances for each validator
-        for (uint i = 0; i < validators.length; i++) {
+        for (uint256 i = 0; i < validators.length; i++) {
             Validator storage v = validators[i];
             if (v.isDummy) continue; // don't process dummy validators
 
@@ -392,7 +396,7 @@ contract BeaconChainMock is PrintUtils {
             _log("-- no validators; added empty block root");
             return;
         }
-        
+
         // Build merkle tree for validators
         bytes32 validatorsRoot = _buildMerkleTree({
             leaves: _getValidatorLeaves(),
@@ -400,7 +404,7 @@ contract BeaconChainMock is PrintUtils {
             tree: trees[curTimestamp].validatorTree
         });
         // _log("-- validator container root", validatorsRoot);
-        
+
         // Build merkle tree for current balances
         bytes32 balanceContainerRoot = _buildMerkleTree({
             leaves: _getBalanceLeaves(),
@@ -408,7 +412,7 @@ contract BeaconChainMock is PrintUtils {
             tree: trees[curTimestamp].balancesTree
         });
         // _log("-- balances container root", balanceContainerRoot);
-        
+
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = _buildMerkleTree({
             leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot),
@@ -435,10 +439,11 @@ contract BeaconChainMock is PrintUtils {
         _genBalanceProofs();
     }
 
-    /*******************************************************************************
-                                INTERNAL FUNCTIONS
-    *******************************************************************************/
-
+    /**
+     *
+     *                             INTERNAL FUNCTIONS
+     *
+     */
     function _createValidator(bytes memory withdrawalCreds, uint64 balanceGwei) internal returns (uint40) {
         uint40 validatorIndex = uint40(validators.length);
 
@@ -452,16 +457,20 @@ contract BeaconChainMock is PrintUtils {
             uint64 dummyBalanceGwei = type(uint64).max - uint64(validators.length);
 
             bytes memory _dummyPubkey = new bytes(48);
-            assembly { mstore(add(48, _dummyPubkey), validatorIndex) }
-            validators.push(Validator({
-                isDummy: true,
-                isSlashed: false,
-                pubkeyHash: sha256(abi.encodePacked(_dummyPubkey, bytes16(0))),
-                withdrawalCreds: "",
-                effectiveBalanceGwei: dummyBalanceGwei,
-                activationEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH,
-                exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
-            }));
+            assembly {
+                mstore(add(48, _dummyPubkey), validatorIndex)
+            }
+            validators.push(
+                Validator({
+                    isDummy: true,
+                    isSlashed: false,
+                    pubkeyHash: sha256(abi.encodePacked(_dummyPubkey, bytes16(0))),
+                    withdrawalCreds: "",
+                    effectiveBalanceGwei: dummyBalanceGwei,
+                    activationEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH,
+                    exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
+                })
+            );
             _setCurrentBalance(validatorIndex, dummyBalanceGwei);
 
             validatorIndex++;
@@ -469,16 +478,20 @@ contract BeaconChainMock is PrintUtils {
 
         // Use pubkey format from `EigenPod._calculateValidatorPubkeyHash`
         bytes memory _pubkey = new bytes(48);
-        assembly { mstore(add(48, _pubkey), validatorIndex) }
-        validators.push(Validator({
-            isDummy: false,
-            isSlashed: false,
-            pubkeyHash: sha256(abi.encodePacked(_pubkey, bytes16(0))),
-            withdrawalCreds: withdrawalCreds,
-            effectiveBalanceGwei: balanceGwei,
-            activationEpoch: currentEpoch(),
-            exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
-        }));
+        assembly {
+            mstore(add(48, _pubkey), validatorIndex)
+        }
+        validators.push(
+            Validator({
+                isDummy: false,
+                isSlashed: false,
+                pubkeyHash: sha256(abi.encodePacked(_pubkey, bytes16(0))),
+                withdrawalCreds: withdrawalCreds,
+                effectiveBalanceGwei: balanceGwei,
+                activationEpoch: currentEpoch(),
+                exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
+            })
+        );
         _setCurrentBalance(validatorIndex, balanceGwei);
 
         return validatorIndex;
@@ -514,18 +527,18 @@ contract BeaconChainMock is PrintUtils {
     /// _createValidator adds "dummy" validators every 4 validators created, with a unique
     /// balance value. This ensures each balance root is unique.
     function _buildMerkleTree(
-        bytes32[] memory leaves, 
-        uint treeHeight, 
+        bytes32[] memory leaves,
+        uint256 treeHeight,
         Tree storage tree
     ) internal returns (bytes32) {
-        for (uint depth = 0; depth < treeHeight; depth++) {
-            uint newLength = (leaves.length + 1) / 2;
+        for (uint256 depth = 0; depth < treeHeight; depth++) {
+            uint256 newLength = (leaves.length + 1) / 2;
             bytes32[] memory newLeaves = new bytes32[](newLength);
 
             // Hash each pair of nodes in this level of the tree
-            for (uint i = 0; i < newLength; i++) {
-                uint leftIdx = 2 * i;
-                uint rightIdx = leftIdx + 1;
+            for (uint256 i = 0; i < newLength; i++) {
+                uint256 leftIdx = 2 * i;
+                uint256 rightIdx = leftIdx + 1;
 
                 // Get left leaf
                 bytes32 leftLeaf = leaves[leftIdx];
@@ -559,95 +572,82 @@ contract BeaconChainMock is PrintUtils {
         return leaves[0];
     }
 
-    function _genStateRootProof(bytes32 beaconStateRoot) internal {
+    function _genStateRootProof(
+        bytes32 beaconStateRoot
+    ) internal {
         bytes memory proof = new bytes(BLOCKROOT_PROOF_LEN);
         bytes32 curNode = beaconStateRoot;
 
-        uint depth = 0;
-        for (uint i = 0; i < BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT; i++) {
+        uint256 depth = 0;
+        for (uint256 i = 0; i < BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT; i++) {
             bytes32 sibling = trees[curTimestamp].blockTree.siblings[curNode];
 
             // proof[j] = sibling;
             assembly {
-                mstore(
-                    add(proof, add(32, mul(32, i))),
-                    sibling
-                )
+                mstore(add(proof, add(32, mul(32, i))), sibling)
             }
 
             curNode = trees[curTimestamp].blockTree.parents[curNode];
             depth++;
         }
 
-        stateRootProofs[curTimestamp] = BeaconChainProofs.StateRootProof({
-            beaconStateRoot: beaconStateRoot,
-            proof: proof
-        });
+        stateRootProofs[curTimestamp] =
+            BeaconChainProofs.StateRootProof({beaconStateRoot: beaconStateRoot, proof: proof});
     }
 
-    function _genBalanceContainerProof(bytes32 balanceContainerRoot) internal {
+    function _genBalanceContainerProof(
+        bytes32 balanceContainerRoot
+    ) internal {
         bytes memory proof = new bytes(BALANCE_CONTAINER_PROOF_LEN);
         bytes32 curNode = balanceContainerRoot;
 
-        uint totalHeight = BALANCE_CONTAINER_PROOF_LEN / 32;
-        uint depth = 0;
-        for (uint i = 0; i < BeaconChainProofs.BEACON_STATE_TREE_HEIGHT; i++) {
+        uint256 totalHeight = BALANCE_CONTAINER_PROOF_LEN / 32;
+        uint256 depth = 0;
+        for (uint256 i = 0; i < BeaconChainProofs.BEACON_STATE_TREE_HEIGHT; i++) {
             bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
 
             // proof[j] = sibling;
             assembly {
-                mstore(
-                    add(proof, add(32, mul(32, i))),
-                    sibling
-                )
+                mstore(add(proof, add(32, mul(32, i))), sibling)
             }
 
             curNode = trees[curTimestamp].stateTree.parents[curNode];
             depth++;
         }
 
-        for (uint i = depth; i < totalHeight; i++) {
+        for (uint256 i = depth; i < totalHeight; i++) {
             bytes32 sibling = trees[curTimestamp].blockTree.siblings[curNode];
 
             // proof[j] = sibling;
             assembly {
-                mstore(
-                    add(proof, add(32, mul(32, i))),
-                    sibling
-                )
+                mstore(add(proof, add(32, mul(32, i))), sibling)
             }
 
             curNode = trees[curTimestamp].blockTree.parents[curNode];
             depth++;
         }
 
-        balanceContainerProofs[curTimestamp] = BeaconChainProofs.BalanceContainerProof({
-            balanceContainerRoot: balanceContainerRoot,
-            proof: proof
-        });
+        balanceContainerProofs[curTimestamp] =
+            BeaconChainProofs.BalanceContainerProof({balanceContainerRoot: balanceContainerRoot, proof: proof});
     }
 
     function _genCredentialProofs() internal {
         mapping(uint40 => ValidatorFieldsProof) storage vfProofs = validatorFieldsProofs[curTimestamp];
 
         // Calculate credential proofs for each validator
-        for (uint i = 0; i < validators.length; i++) {
-
+        for (uint256 i = 0; i < validators.length; i++) {
             bytes memory proof = new bytes(VAL_FIELDS_PROOF_LEN);
             bytes32[] memory validatorFields = _getValidatorFields(uint40(i));
             bytes32 curNode = Merkle.merkleizeSha256(validatorFields);
 
             // Validator fields leaf -> validator container root
-            uint depth = 0;
-            for (uint j = 0; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT; j++) {
+            uint256 depth = 0;
+            for (uint256 j = 0; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT; j++) {
                 bytes32 sibling = trees[curTimestamp].validatorTree.siblings[curNode];
 
                 // proof[j] = sibling;
                 assembly {
-                    mstore(
-                        add(proof, add(32, mul(32, j))),
-                        sibling
-                    )
+                    mstore(add(proof, add(32, mul(32, j))), sibling)
                 }
 
                 curNode = trees[curTimestamp].validatorTree.parents[curNode];
@@ -656,18 +656,15 @@ contract BeaconChainMock is PrintUtils {
 
             // Validator container root -> beacon state root
             for (
-                uint j = depth; 
-                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT; 
+                uint256 j = depth;
+                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT;
                 j++
             ) {
                 bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
 
                 // proof[j] = sibling;
                 assembly {
-                    mstore(
-                        add(proof, add(32, mul(32, j))),
-                        sibling
-                    )
+                    mstore(add(proof, add(32, mul(32, j))), sibling)
                 }
 
                 curNode = trees[curTimestamp].stateTree.parents[curNode];
@@ -683,24 +680,20 @@ contract BeaconChainMock is PrintUtils {
         mapping(uint40 => BalanceRootProof) storage brProofs = balanceRootProofs[curTimestamp];
 
         // Calculate current balance proofs for each balance root
-        uint numBalanceRoots = _numBalanceRoots();
-        for (uint i = 0; i < numBalanceRoots; i++) {
-
+        uint256 numBalanceRoots = _numBalanceRoots();
+        for (uint256 i = 0; i < numBalanceRoots; i++) {
             bytes memory proof = new bytes(BALANCE_PROOF_LEN);
             bytes32 balanceRoot = balances[uint40(i)];
             bytes32 curNode = balanceRoot;
 
             // Balance root leaf -> balances container root
-            uint depth = 0;
-            for (uint j = 0; j < 1 + BeaconChainProofs.BALANCE_TREE_HEIGHT; j++) {
+            uint256 depth = 0;
+            for (uint256 j = 0; j < 1 + BeaconChainProofs.BALANCE_TREE_HEIGHT; j++) {
                 bytes32 sibling = trees[curTimestamp].balancesTree.siblings[curNode];
 
                 // proof[j] = sibling;
                 assembly {
-                    mstore(
-                        add(proof, add(32, mul(32, j))),
-                        sibling
-                    )
+                    mstore(add(proof, add(32, mul(32, j))), sibling)
                 }
 
                 curNode = trees[curTimestamp].balancesTree.parents[curNode];
@@ -714,12 +707,10 @@ contract BeaconChainMock is PrintUtils {
 
     function _getValidatorLeaves() internal view returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](validators.length);
-        
+
         // Place each validator's validatorFields into tree
-        for (uint i = 0; i < validators.length; i++) {
-            leaves[i] = Merkle.merkleizeSha256(
-                _getValidatorFields(uint40(i))
-            );
+        for (uint256 i = 0; i < validators.length; i++) {
+            leaves[i] = Merkle.merkleizeSha256(_getValidatorFields(uint40(i)));
         }
 
         return leaves;
@@ -728,25 +719,27 @@ contract BeaconChainMock is PrintUtils {
     function _getBalanceLeaves() internal view returns (bytes32[] memory) {
         // Place each validator's current balance into tree
         bytes32[] memory leaves = new bytes32[](_numBalanceRoots());
-        for (uint i = 0; i < leaves.length; i++) {
+        for (uint256 i = 0; i < leaves.length; i++) {
             leaves[i] = balances[uint40(i)];
         }
 
         return leaves;
     }
 
-    function _numBalanceRoots() internal view returns (uint) {
+    function _numBalanceRoots() internal view returns (uint256) {
         // Each balance leaf is shared by 4 validators. This uses div_ceil
         // to calculate the number of balance leaves
-        return (validators.length == 0) ? 
-            0 : ((validators.length - 1) / 4) + 1;
+        return (validators.length == 0) ? 0 : ((validators.length - 1) / 4) + 1;
     }
 
-    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal pure returns (bytes32[] memory) {
+    function _getBeaconStateLeaves(
+        bytes32 validatorsRoot,
+        bytes32 balancesRoot
+    ) internal pure returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](BEACON_STATE_FIELDS);
 
         // Pre-populate leaves with dummy values so sibling/parent tracking is correct
-        for (uint i = 0; i < leaves.length; i++) {
+        for (uint256 i = 0; i < leaves.length; i++) {
             leaves[i] = bytes32(i + 1);
         }
 
@@ -756,11 +749,13 @@ contract BeaconChainMock is PrintUtils {
         return leaves;
     }
 
-    function _getBeaconBlockLeaves(bytes32 beaconStateRoot) internal pure returns (bytes32[] memory) {
+    function _getBeaconBlockLeaves(
+        bytes32 beaconStateRoot
+    ) internal pure returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](BEACON_BLOCK_FIELDS);
 
         // Pre-populate leaves with dummy values so sibling/parent tracking is correct
-        for (uint i = 0; i < leaves.length; i++) {
+        for (uint256 i = 0; i < leaves.length; i++) {
             leaves[i] = bytes32(i + 1);
         }
 
@@ -769,7 +764,9 @@ contract BeaconChainMock is PrintUtils {
         return leaves;
     }
 
-    function _currentBalanceGwei(uint40 validatorIndex) internal view returns (uint64) {
+    function _currentBalanceGwei(
+        uint40 validatorIndex
+    ) internal view returns (uint64) {
         return currentBalance(validatorIndex);
     }
 
@@ -779,41 +776,52 @@ contract BeaconChainMock is PrintUtils {
     }
 
     /// @dev Returns the validator's exit epoch
-    function exitEpoch(uint40 validatorIndex) public view returns (uint64) {
+    function exitEpoch(
+        uint40 validatorIndex
+    ) public view returns (uint64) {
         return validators[validatorIndex].exitEpoch;
     }
 
-    function totalEffectiveBalanceWei(uint40[] memory validatorIndices) public view returns (uint) {
-        uint total;
-        for (uint i = 0; i < validatorIndices.length; i++) {
-            total += uint(validators[validatorIndices[i]].effectiveBalanceGwei * GWEI_TO_WEI);
+    function totalEffectiveBalanceWei(
+        uint40[] memory validatorIndices
+    ) public view returns (uint256) {
+        uint256 total;
+        for (uint256 i = 0; i < validatorIndices.length; i++) {
+            total += uint256(validators[validatorIndices[i]].effectiveBalanceGwei * GWEI_TO_WEI);
         }
 
         return total;
     }
 
     /// @dev Returns the validator's effective balance, in gwei
-    function effectiveBalance(uint40 validatorIndex) public view returns (uint64) {
+    function effectiveBalance(
+        uint40 validatorIndex
+    ) public view returns (uint64) {
         return validators[validatorIndex].effectiveBalanceGwei;
     }
 
     /// @dev Returns the validator's current balance, in gwei
-    function currentBalance(uint40 validatorIndex) public view returns (uint64) {
-        return BeaconChainProofs.getBalanceAtIndex(
-            getBalanceRoot(validatorIndex),
-            validatorIndex
-        );
+    function currentBalance(
+        uint40 validatorIndex
+    ) public view returns (uint64) {
+        return BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(validatorIndex), validatorIndex);
     }
 
-    function getBalanceRoot(uint40 validatorIndex) public view returns (bytes32) {
+    function getBalanceRoot(
+        uint40 validatorIndex
+    ) public view returns (bytes32) {
         return balances[validatorIndex / 4];
     }
 
-    function _getBalanceRootIndex(uint40 validatorIndex) internal pure returns (uint40) {
+    function _getBalanceRootIndex(
+        uint40 validatorIndex
+    ) internal pure returns (uint40) {
         return validatorIndex / 4;
     }
 
-    function _getValidatorFields(uint40 validatorIndex) internal view returns (bytes32[] memory) {
+    function _getValidatorFields(
+        uint40 validatorIndex
+    ) internal view returns (bytes32[] memory) {
         bytes32[] memory vFields = new bytes32[](8);
         Validator memory v = validators[validatorIndex];
 
@@ -836,33 +844,40 @@ contract BeaconChainMock is PrintUtils {
     }
 
     /// From EigenPod.sol
-    function _nextEpochStartTimestamp(uint64 epoch) internal view returns (uint64) {
-        return  
-            genesisTime + ((1 + epoch) * BeaconChainProofs.SECONDS_PER_EPOCH);
+    function _nextEpochStartTimestamp(
+        uint64 epoch
+    ) internal view returns (uint64) {
+        return genesisTime + ((1 + epoch) * BeaconChainProofs.SECONDS_PER_EPOCH);
     }
 
-    function _calcValProofIndex(uint40 validatorIndex) internal pure returns (uint) {
-        return 
-            (BeaconChainProofs.VALIDATOR_CONTAINER_INDEX << (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1)) | 
-            uint(validatorIndex);
+    function _calcValProofIndex(
+        uint40 validatorIndex
+    ) internal pure returns (uint256) {
+        return (BeaconChainProofs.VALIDATOR_CONTAINER_INDEX << (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1))
+            | uint256(validatorIndex);
     }
 
-    function _calcBalanceProofIndex(uint40 balanceRootIndex) internal pure returns (uint) {
-        return
-            (BeaconChainProofs.BALANCE_CONTAINER_INDEX << (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1)) |
-            uint(balanceRootIndex);
+    function _calcBalanceProofIndex(
+        uint40 balanceRootIndex
+    ) internal pure returns (uint256) {
+        return (BeaconChainProofs.BALANCE_CONTAINER_INDEX << (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1))
+            | uint256(balanceRootIndex);
     }
 
-    function _getZeroNode(uint depth) internal view returns (bytes32) {
+    function _getZeroNode(
+        uint256 depth
+    ) internal view returns (bytes32) {
         require(depth < ZERO_NODES_LENGTH, "_getZeroNode: invalid depth");
 
         return zeroNodes[depth];
     }
 
     /// @dev Opposite of Endian.fromLittleEndianUint64
-    function _toLittleEndianUint64(uint64 num) internal pure returns (bytes32) {
+    function _toLittleEndianUint64(
+        uint64 num
+    ) internal pure returns (bytes32) {
         uint256 lenum;
-    
+
         // Rearrange the bytes from big-endian to little-endian format
         lenum |= uint256((num & 0xFF) << 56);
         lenum |= uint256((num & 0xFF00) << 40);
@@ -880,38 +895,49 @@ contract BeaconChainMock is PrintUtils {
     /// @dev Opposite of BeaconChainProofs.getBalanceAtIndex, calculates a new balance
     /// root by updating the balance at validatorIndex
     /// @return The new, updated balance root
-    function _calcBalanceRoot(bytes32 balanceRoot, uint40 validatorIndex, uint64 newBalanceGwei) internal pure returns (bytes32) {
+    function _calcBalanceRoot(
+        bytes32 balanceRoot,
+        uint40 validatorIndex,
+        uint64 newBalanceGwei
+    ) internal pure returns (bytes32) {
         // Clear out old balance
-        uint bitShiftAmount = 256 - (64 * ((validatorIndex % 4) + 1));
-        uint mask = ~(uint(0xFFFFFFFFFFFFFFFF) << bitShiftAmount);
-        uint clearedRoot = uint(balanceRoot) & mask;
+        uint256 bitShiftAmount = 256 - (64 * ((validatorIndex % 4) + 1));
+        uint256 mask = ~(uint256(0xFFFFFFFFFFFFFFFF) << bitShiftAmount);
+        uint256 clearedRoot = uint256(balanceRoot) & mask;
 
         // Convert validator balance to little endian and shift to correct position
-        uint leBalance = uint(_toLittleEndianUint64(newBalanceGwei));
-        uint shiftedBalance = leBalance >> (192 - bitShiftAmount);
+        uint256 leBalance = uint256(_toLittleEndianUint64(newBalanceGwei));
+        uint256 shiftedBalance = leBalance >> (192 - bitShiftAmount);
 
         return bytes32(clearedRoot | shiftedBalance);
     }
 
     /// @dev Helper to convert 32-byte withdrawal credentials to an address
-    function _toAddress(bytes memory withdrawalCreds) internal pure returns (address a) {
+    function _toAddress(
+        bytes memory withdrawalCreds
+    ) internal pure returns (address a) {
         bytes32 creds = bytes32(withdrawalCreds);
         uint160 mask = type(uint160).max;
 
-        assembly { a := and(creds, mask) }
+        assembly {
+            a := and(creds, mask)
+        }
     }
 
-    /*******************************************************************************
-                                  VIEW METHODS
-    *******************************************************************************/
-
-    function getCredentialProofs(uint40[] memory _validators) public view returns (CredentialProofs memory) {
+    /**
+     *
+     *                               VIEW METHODS
+     *
+     */
+    function getCredentialProofs(
+        uint40[] memory _validators
+    ) public view returns (CredentialProofs memory) {
         // If we have not advanced an epoch since a validator was created, no proofs have been
         // generated for that validator. We check this here and revert early so we don't return
         // empty proofs.
-        for (uint i = 0; i < _validators.length; i++) {
+        for (uint256 i = 0; i < _validators.length; i++) {
             require(
-                _validators[i] <= lastIndexProcessed, 
+                _validators[i] <= lastIndexProcessed,
                 "BeaconChain.getCredentialProofs: validator has not been included in beacon chain state (DID YOU CALL advanceEpoch YET?)"
             );
         }
@@ -924,7 +950,7 @@ contract BeaconChainMock is PrintUtils {
         });
 
         // Get proofs for each validator
-        for (uint i = 0; i < _validators.length; i++) {
+        for (uint256 i = 0; i < _validators.length; i++) {
             ValidatorFieldsProof memory proof = validatorFieldsProofs[curTimestamp][_validators[i]];
             proofs.validatorFieldsProofs[i] = proof.validatorFieldsProof;
             proofs.validatorFields[i] = proof.validatorFields;
@@ -933,13 +959,16 @@ contract BeaconChainMock is PrintUtils {
         return proofs;
     }
 
-    function getCheckpointProofs(uint40[] memory _validators, uint64 timestamp) public view returns (CheckpointProofs memory) {
+    function getCheckpointProofs(
+        uint40[] memory _validators,
+        uint64 timestamp
+    ) public view returns (CheckpointProofs memory) {
         // If we have not advanced an epoch since a validator was created, no proofs have been
         // generated for that validator. We check this here and revert early so we don't return
         // empty proofs.
-        for (uint i = 0; i < _validators.length; i++) {
+        for (uint256 i = 0; i < _validators.length; i++) {
             require(
-                _validators[i] <= lastIndexProcessed, 
+                _validators[i] <= lastIndexProcessed,
                 "BeaconChain.getCredentialProofs: no checkpoint proof found (did you call advanceEpoch yet?)"
             );
         }
@@ -950,7 +979,7 @@ contract BeaconChainMock is PrintUtils {
         });
 
         // Get proofs for each validator
-        for (uint i = 0; i < _validators.length; i++) {
+        for (uint256 i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
             uint40 balanceRootIndex = _getBalanceRootIndex(validatorIndex);
             BalanceRootProof memory proof = balanceRootProofs[timestamp][balanceRootIndex];
@@ -965,7 +994,9 @@ contract BeaconChainMock is PrintUtils {
         return proofs;
     }
 
-    function getStaleBalanceProofs(uint40 validatorIndex) public view returns (StaleBalanceProofs memory) {
+    function getStaleBalanceProofs(
+        uint40 validatorIndex
+    ) public view returns (StaleBalanceProofs memory) {
         ValidatorFieldsProof memory vfProof = validatorFieldsProofs[curTimestamp][validatorIndex];
         return StaleBalanceProofs({
             beaconTimestamp: curTimestamp,
@@ -977,31 +1008,43 @@ contract BeaconChainMock is PrintUtils {
         });
     }
 
-    function balanceOfGwei(uint40 validatorIndex) public view returns (uint64) {
+    function balanceOfGwei(
+        uint40 validatorIndex
+    ) public view returns (uint64) {
         return validators[validatorIndex].effectiveBalanceGwei;
     }
 
-    function pubkeyHash(uint40 validatorIndex) public view returns (bytes32) {
+    function pubkeyHash(
+        uint40 validatorIndex
+    ) public view returns (bytes32) {
         return validators[validatorIndex].pubkeyHash;
     }
 
-    function pubkey(uint40 validatorIndex) public pure returns (bytes memory) {
+    function pubkey(
+        uint40 validatorIndex
+    ) public pure returns (bytes memory) {
         bytes memory _pubkey = new bytes(48);
-        assembly { mstore(add(48, _pubkey), validatorIndex) }
+        assembly {
+            mstore(add(48, _pubkey), validatorIndex)
+        }
         return _pubkey;
     }
 
-    function getPubkeyHashes(uint40[] memory _validators) public view returns (bytes32[] memory) {
+    function getPubkeyHashes(
+        uint40[] memory _validators
+    ) public view returns (bytes32[] memory) {
         bytes32[] memory pubkeyHashes = new bytes32[](_validators.length);
 
-        for (uint i = 0; i < _validators.length; i++) {
+        for (uint256 i = 0; i < _validators.length; i++) {
             pubkeyHashes[i] = validators[_validators[i]].pubkeyHash;
         }
 
         return pubkeyHashes;
     }
 
-    function isActive(uint40 validatorIndex) public view returns (bool) {
+    function isActive(
+        uint40 validatorIndex
+    ) public view returns (bool) {
         return validators[validatorIndex].exitEpoch == BeaconChainProofs.FAR_FUTURE_EPOCH;
     }
 }

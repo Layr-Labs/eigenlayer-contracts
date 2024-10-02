@@ -24,7 +24,9 @@ contract StrategyBaseTVLLimits is StrategyBase {
     event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
 
     // solhint-disable-next-line no-empty-blocks
-    constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
+    constructor(
+        IStrategyManager _strategyManager
+    ) StrategyBase(_strategyManager) {}
 
     function initialize(
         uint256 _maxPerDeposit,

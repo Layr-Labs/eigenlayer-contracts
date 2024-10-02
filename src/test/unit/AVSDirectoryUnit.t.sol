@@ -113,7 +113,9 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         return operatorSignature;
     }
 
-    function _registerOperatorWithBaseDetails(address operator) internal {
+    function _registerOperatorWithBaseDetails(
+        address operator
+    ) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
@@ -122,7 +124,9 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
     }
 
-    function _registerOperatorWithDelegationApprover(address operator) internal {
+    function _registerOperatorWithDelegationApprover(
+        address operator
+    ) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: cheats.addr(delegationSignerPrivateKey),
@@ -131,7 +135,9 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
     }
 
-    function _registerOperatorWith1271DelegationApprover(address operator) internal returns (ERC1271WalletMock) {
+    function _registerOperatorWith1271DelegationApprover(
+        address operator
+    ) internal returns (ERC1271WalletMock) {
         address delegationSigner = cheats.addr(delegationSignerPrivateKey);
         /**
          * deploy a ERC1271WalletMock contract with the `delegationSigner` address as the owner,
@@ -177,14 +183,18 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         avsDirectory.pause(2 ** PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS);
 
         cheats.expectRevert("Pausable: index is paused");
-        avsDirectory.registerOperatorToAVS(address(0), ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(""), 0, 0));
+        avsDirectory.registerOperatorToAVS(
+            address(0), ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(""), 0, 0)
+        );
 
         cheats.expectRevert("Pausable: index is paused");
         avsDirectory.deregisterOperatorFromAVS(address(0));
     }
 
     // @notice Tests that an avs who calls `updateAVSMetadataURI` will correctly see an `AVSMetadataURIUpdated` event emitted with their input
-    function testFuzz_UpdateAVSMetadataURI(string memory metadataURI) public {
+    function testFuzz_UpdateAVSMetadataURI(
+        string memory metadataURI
+    ) public {
         // call `updateAVSMetadataURI` and check for event
         cheats.expectEmit(true, true, true, true, address(avsDirectory));
         cheats.prank(defaultAVS);
@@ -193,7 +203,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
     }
 
     // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
-    function testFuzz_registerOperatorToAVS(bytes32 salt) public {
+    function testFuzz_registerOperatorToAVS(
+        bytes32 salt
+    ) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
         _registerOperatorWithBaseDetails(operator);
@@ -213,7 +225,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
     }
 
     // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
-    function testFuzz_revert_whenOperatorNotRegisteredToEigenLayerYet(bytes32 salt) public {
+    function testFuzz_revert_whenOperatorNotRegisteredToEigenLayerYet(
+        bytes32 salt
+    ) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
 
@@ -227,7 +241,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
     }
 
     // @notice Verifies an operator registers fails when the signature is not from the operator
-    function testFuzz_revert_whenSignatureAddressIsNotOperator(bytes32 salt) public {
+    function testFuzz_revert_whenSignatureAddressIsNotOperator(
+        bytes32 salt
+    ) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
         _registerOperatorWithBaseDetails(operator);
@@ -253,7 +269,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
     }
 
     // @notice Verifies an operator registers fails when it's already registered to the avs
-    function testFuzz_revert_whenOperatorAlreadyRegisteredToAVS(bytes32 salt) public {
+    function testFuzz_revert_whenOperatorAlreadyRegisteredToAVS(
+        bytes32 salt
+    ) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
         _registerOperatorWithBaseDetails(operator);
@@ -271,7 +289,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
     }
 
     /// @notice Checks that cancelSalt updates the operatorSaltIsSpent mapping correctly
-    function testFuzz_cancelSalt(bytes32 salt) public {
+    function testFuzz_cancelSalt(
+        bytes32 salt
+    ) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
         _registerOperatorWithBaseDetails(operator);
@@ -283,10 +303,14 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         avsDirectory.cancelSalt(salt);
 
         assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt), "salt was not successfully cancelled");
-        assertFalse(avsDirectory.operatorSaltIsSpent(defaultAVS, salt), "salt should only be cancelled for the operator");
+        assertFalse(
+            avsDirectory.operatorSaltIsSpent(defaultAVS, salt), "salt should only be cancelled for the operator"
+        );
 
-        bytes32 newSalt; 
-        unchecked { newSalt = bytes32(uint(salt) + 1); }
+        bytes32 newSalt;
+        unchecked {
+            newSalt = bytes32(uint256(salt) + 1);
+        }
 
         assertFalse(salt == newSalt, "bad test setup");
 
@@ -298,7 +322,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
     }
 
     /// @notice Verifies that registration fails when the salt has been cancelled via cancelSalt
-    function testFuzz_revert_whenRegisteringWithCancelledSalt(bytes32 salt) public {
+    function testFuzz_revert_whenRegisteringWithCancelledSalt(
+        bytes32 salt
+    ) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
         _registerOperatorWithBaseDetails(operator);
@@ -316,7 +342,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
     }
 
     /// @notice Verifies that an operator cannot cancel the same salt twice
-    function testFuzz_revert_whenSaltCancelledTwice(bytes32 salt) public {
+    function testFuzz_revert_whenSaltCancelledTwice(
+        bytes32 salt
+    ) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
         _registerOperatorWithBaseDetails(operator);
@@ -330,7 +358,9 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
     }
 
     /// @notice Verifies that an operator cannot cancel the same salt twice
-    function testFuzz_revert_whenCancellingSaltUsedToRegister(bytes32 salt) public {
+    function testFuzz_revert_whenCancellingSaltUsedToRegister(
+        bytes32 salt
+    ) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
         _registerOperatorWithBaseDetails(operator);

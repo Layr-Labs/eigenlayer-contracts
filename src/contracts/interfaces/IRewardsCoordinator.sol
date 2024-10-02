@@ -207,7 +207,9 @@ interface IRewardsCoordinator {
     function activationDelay() external view returns (uint32);
 
     /// @notice Mapping: earner => the address of the entity who can call `processClaim` on behalf of the earner
-    function claimerFor(address earner) external view returns (address);
+    function claimerFor(
+        address earner
+    ) external view returns (address);
 
     /// @notice Mapping: claimer => token => total amount claimed
     function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
@@ -220,14 +222,20 @@ interface IRewardsCoordinator {
     function operatorCommissionBips(address operator, address avs) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
+    function calculateEarnerLeafHash(
+        EarnerTreeMerkleLeaf calldata leaf
+    ) external pure returns (bytes32);
 
     /// @notice returns the hash of the earner's token leaf
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
+    function calculateTokenLeafHash(
+        TokenTreeMerkleLeaf calldata leaf
+    ) external pure returns (bytes32);
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     /// but will revert if not valid
-    function checkClaim(RewardsMerkleClaim calldata claim) external view returns (bool);
+    function checkClaim(
+        RewardsMerkleClaim calldata claim
+    ) external view returns (bool);
 
     /// @notice The timestamp until which RewardsSubmissions have been calculated
     function currRewardsCalculationEndTimestamp() external view returns (uint32);
@@ -236,7 +244,9 @@ interface IRewardsCoordinator {
     function getDistributionRootsLength() external view returns (uint256);
 
     /// @notice returns the distributionRoot at the specified index
-    function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory);
+    function getDistributionRootAtIndex(
+        uint256 index
+    ) external view returns (DistributionRoot memory);
 
     /// @notice returns the current distributionRoot
     function getCurrentDistributionRoot() external view returns (DistributionRoot memory);
@@ -246,7 +256,9 @@ interface IRewardsCoordinator {
     function getCurrentClaimableDistributionRoot() external view returns (DistributionRoot memory);
 
     /// @notice loop through distribution roots from reverse and return index from hash
-    function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32);
+    function getRootIndexFromHash(
+        bytes32 rootHash
+    ) external view returns (uint32);
 
     /**
      *
@@ -265,7 +277,9 @@ interface IRewardsCoordinator {
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions) external;
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
 
     /**
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
@@ -273,7 +287,9 @@ interface IRewardsCoordinator {
      * a permissioned call based on isRewardsForAllSubmitter mapping.
      * @param rewardsSubmission The rewards submission being created
      */
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmission) external;
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmission
+    ) external;
 
     /**
      * @notice Creates a new rewards submission for all earners across all AVSs.
@@ -282,7 +298,9 @@ interface IRewardsCoordinator {
      * by the token hopper contract from the Eigen Foundation
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions) external;
+    function createRewardsForAllEarners(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
 
     /**
      * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
@@ -310,35 +328,45 @@ interface IRewardsCoordinator {
      * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
      * @param rootIndex The index of the root to be disabled
      */
-    function disableRoot(uint32 rootIndex) external;
+    function disableRoot(
+        uint32 rootIndex
+    ) external;
 
     /**
      * @notice Sets the address of the entity that can call `processClaim` on behalf of the earner (msg.sender)
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
      * @dev Only callable by the `earner`
      */
-    function setClaimerFor(address claimer) external;
+    function setClaimerFor(
+        address claimer
+    ) external;
 
     /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
      * @dev Only callable by the contract owner
      * @param _activationDelay The new value for activationDelay
      */
-    function setActivationDelay(uint32 _activationDelay) external;
+    function setActivationDelay(
+        uint32 _activationDelay
+    ) external;
 
     /**
      * @notice Sets the global commission for all operators across all avss
      * @param _globalCommissionBips The commission for all operators across all avss
      * @dev Only callable by the contract owner
      */
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external;
+    function setGlobalOperatorCommission(
+        uint16 _globalCommissionBips
+    ) external;
 
     /**
      * @notice Sets the permissioned `rewardsUpdater` address which can post new roots
      * @dev Only callable by the contract owner
      * @param _rewardsUpdater The address of the new rewardsUpdater
      */
-    function setRewardsUpdater(address _rewardsUpdater) external;
+    function setRewardsUpdater(
+        address _rewardsUpdater
+    ) external;
 
     /**
      * @notice Sets the permissioned `rewardsForAllSubmitter` address which can submit createRewardsForAllSubmission

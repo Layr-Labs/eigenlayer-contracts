@@ -35,7 +35,9 @@ contract EigenStrategy is StrategyBase {
     IEigen public EIGEN;
 
     /// @notice Since this contract is designed to be initializable, the constructor simply sets `strategyManager`, the only immutable variable.
-    constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
+    constructor(
+        IStrategyManager _strategyManager
+    ) StrategyBase(_strategyManager) {}
 
     function initialize(IEigen _EIGEN, IERC20 _bEIGEN, IPauserRegistry _pauserRegistry) public virtual initializer {
         EIGEN = _EIGEN;

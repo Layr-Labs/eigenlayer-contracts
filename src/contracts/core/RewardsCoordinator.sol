@@ -118,11 +118,9 @@ contract RewardsCoordinator is
      */
 
     /// @inheritdoc IRewardsCoordinator
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
-        nonReentrant
-    {
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -139,12 +137,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -161,12 +156,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllEarners(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -244,7 +236,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function disableRoot(uint32 rootIndex) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
+    function disableRoot(
+        uint32 rootIndex
+    ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
         require(rootIndex < _distributionRoots.length, "RewardsCoordinator.disableRoot: invalid rootIndex");
         DistributionRoot storage root = _distributionRoots[rootIndex];
         require(!root.disabled, "RewardsCoordinator.disableRoot: root already disabled");
@@ -254,7 +248,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setClaimerFor(address claimer) external {
+    function setClaimerFor(
+        address claimer
+    ) external {
         address earner = msg.sender;
         address prevClaimer = claimerFor[earner];
         claimerFor[earner] = claimer;
@@ -262,17 +258,23 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setActivationDelay(uint32 _activationDelay) external onlyOwner {
+    function setActivationDelay(
+        uint32 _activationDelay
+    ) external onlyOwner {
         _setActivationDelay(_activationDelay);
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external onlyOwner {
+    function setGlobalOperatorCommission(
+        uint16 _globalCommissionBips
+    ) external onlyOwner {
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setRewardsUpdater(address _rewardsUpdater) external onlyOwner {
+    function setRewardsUpdater(
+        address _rewardsUpdater
+    ) external onlyOwner {
         _setRewardsUpdater(_rewardsUpdater);
     }
 
@@ -292,7 +294,9 @@ contract RewardsCoordinator is
     /**
      * @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
      */
-    function _validateRewardsSubmission(RewardsSubmission calldata rewardsSubmission) internal view {
+    function _validateRewardsSubmission(
+        RewardsSubmission calldata rewardsSubmission
+    ) internal view {
         require(
             rewardsSubmission.strategiesAndMultipliers.length > 0,
             "RewardsCoordinator._validateRewardsSubmission: no strategies set"
@@ -439,17 +443,23 @@ contract RewardsCoordinator is
         );
     }
 
-    function _setActivationDelay(uint32 _activationDelay) internal {
+    function _setActivationDelay(
+        uint32 _activationDelay
+    ) internal {
         emit ActivationDelaySet(activationDelay, _activationDelay);
         activationDelay = _activationDelay;
     }
 
-    function _setGlobalOperatorCommission(uint16 _globalCommissionBips) internal {
+    function _setGlobalOperatorCommission(
+        uint16 _globalCommissionBips
+    ) internal {
         emit GlobalCommissionBipsSet(globalOperatorCommissionBips, _globalCommissionBips);
         globalOperatorCommissionBips = _globalCommissionBips;
     }
 
-    function _setRewardsUpdater(address _rewardsUpdater) internal {
+    function _setRewardsUpdater(
+        address _rewardsUpdater
+    ) internal {
         emit RewardsUpdaterSet(rewardsUpdater, _rewardsUpdater);
         rewardsUpdater = _rewardsUpdater;
     }
@@ -461,17 +471,23 @@ contract RewardsCoordinator is
      */
 
     /// @inheritdoc IRewardsCoordinator
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+    function calculateEarnerLeafHash(
+        EarnerTreeMerkleLeaf calldata leaf
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(EARNER_LEAF_SALT, leaf.earner, leaf.earnerTokenRoot));
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+    function calculateTokenLeafHash(
+        TokenTreeMerkleLeaf calldata leaf
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(TOKEN_LEAF_SALT, leaf.token, leaf.cumulativeEarnings));
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function checkClaim(RewardsMerkleClaim calldata claim) public view returns (bool) {
+    function checkClaim(
+        RewardsMerkleClaim calldata claim
+    ) public view returns (bool) {
         _checkClaim(claim, _distributionRoots[claim.rootIndex]);
         return true;
     }
@@ -487,7 +503,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory) {
+    function getDistributionRootAtIndex(
+        uint256 index
+    ) external view returns (DistributionRoot memory) {
         return _distributionRoots[index];
     }
 
@@ -507,7 +525,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function getRootIndexFromHash(bytes32 rootHash) public view returns (uint32) {
+    function getRootIndexFromHash(
+        bytes32 rootHash
+    ) public view returns (uint32) {
         for (uint32 i = uint32(_distributionRoots.length); i > 0; i--) {
             if (_distributionRoots[i - 1].root == rootHash) {
                 return i - 1;

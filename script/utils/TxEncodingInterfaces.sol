@@ -16,13 +16,29 @@ interface ISafe {
         bytes memory signatures
     ) external;
 
-    enum Operation {Call, DelegateCall}
+    enum Operation {
+        Call,
+        DelegateCall
+    }
 }
 
 // based on https://github.com/compound-finance/compound-protocol/blob/master/contracts/Timelock.sol
 interface ITimelock {
-    function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) external returns (bytes32);
-    function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) external payable returns (bytes memory);
-    function queuedTransactions(bytes32) external view returns (bool);
+    function queueTransaction(
+        address target,
+        uint256 value,
+        string memory signature,
+        bytes memory data,
+        uint256 eta
+    ) external returns (bytes32);
+    function executeTransaction(
+        address target,
+        uint256 value,
+        string memory signature,
+        bytes memory data,
+        uint256 eta
+    ) external payable returns (bytes memory);
+    function queuedTransactions(
+        bytes32
+    ) external view returns (bool);
 }
-

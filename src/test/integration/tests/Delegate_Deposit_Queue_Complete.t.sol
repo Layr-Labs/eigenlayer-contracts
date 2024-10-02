@@ -5,8 +5,9 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
-
-    function testFuzz_delegate_deposit_queue_completeAsShares(uint24 _random) public {
+    function testFuzz_delegate_deposit_queue_completeAsShares(
+        uint24 _random
+    ) public {
         // Configure the random parameters for the test
         _configRand({
             _randomSeed: _random,
@@ -14,8 +15,8 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
             _userTypes: DEFAULT | ALT_METHODS
         });
         // Create a staker and an operator with a nonzero balance and corresponding strategies
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator, ,) = _newRandomOperator();
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
+        (User operator,,) = _newRandomOperator();
         // Upgrade contracts if forkType is not local
         _upgradeEigenLayerContracts();
 
@@ -25,7 +26,7 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
 
         // 2. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint256[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         // Check that the deposit increased operator shares the staker is delegated to
         check_Deposit_State(staker, strategies, shares);
@@ -38,13 +39,15 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
 
         // 4. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(strategies);
-        for (uint i = 0; i < withdrawals.length; i++) {
+        for (uint256 i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
         }
     }
 
-    function testFuzz_delegate_deposit_queue_completeAsTokens(uint24 _random) public {
+    function testFuzz_delegate_deposit_queue_completeAsTokens(
+        uint24 _random
+    ) public {
         // Configure the random parameters for the test
         _configRand({
             _randomSeed: _random,
@@ -53,8 +56,8 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         });
 
         // Create a staker and an operator with a nonzero balance and corresponding strategies
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator, ,) = _newRandomOperator();
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
+        (User operator,,) = _newRandomOperator();
         // Upgrade contracts if forkType is not local
         _upgradeEigenLayerContracts();
 
@@ -64,7 +67,7 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
 
         // 2. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint256[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         // Check that the deposit increased operator shares the staker is delegated to
         check_Deposit_State(staker, strategies, shares);
@@ -77,10 +80,12 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
 
         // 4. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(strategies);
-        for (uint i = 0; i < withdrawals.length; i++) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
+        for (uint256 i = 0; i < withdrawals.length; i++) {
+            uint256[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(
+                staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens
+            );
         }
     }
 }

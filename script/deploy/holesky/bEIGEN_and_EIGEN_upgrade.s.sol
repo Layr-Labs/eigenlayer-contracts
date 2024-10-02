@@ -34,28 +34,22 @@ contract bEIGEN_and_EIGEN_upgrade is Script, Test {
         uint256 chainId = block.chainid;
         emit log_named_uint("You are deploying on ChainID", chainId);
 
-        if (chainId != 17000) {
+        if (chainId != 17_000) {
             revert("Chain not supported");
         }
 
         bEIGEN_addressBefore = EIGEN_proxy.bEIGEN();
         EIGEN_addressBefore = bEIGEN_proxy.EIGEN();
 
-        require(bEIGEN_addressBefore == IERC20(0x275cCf9Be51f4a6C94aBa6114cdf2a4c45B9cb27),
-            "something horribly wrong");
-        require(EIGEN_addressBefore == IERC20(0x3B78576F7D6837500bA3De27A60c7f594934027E),
-            "something horribly wrong");
+        require(bEIGEN_addressBefore == IERC20(0x275cCf9Be51f4a6C94aBa6114cdf2a4c45B9cb27), "something horribly wrong");
+        require(EIGEN_addressBefore == IERC20(0x3B78576F7D6837500bA3De27A60c7f594934027E), "something horribly wrong");
 
         // Begin deployment
         vm.startBroadcast();
 
         // Deploy new implementation contracts
-        EIGEN_implementation = new Eigen({
-            _bEIGEN: bEIGEN_addressBefore
-        });
-        bEIGEN_implementation = new BackingEigen({
-            _EIGEN: EIGEN_addressBefore
-        });
+        EIGEN_implementation = new Eigen({_bEIGEN: bEIGEN_addressBefore});
+        bEIGEN_implementation = new BackingEigen({_EIGEN: EIGEN_addressBefore});
         vm.stopBroadcast();
 
         emit log_named_address("EIGEN_implementation", address(EIGEN_implementation));
@@ -70,21 +64,29 @@ contract bEIGEN_and_EIGEN_upgrade is Script, Test {
     function simulatePerformingUpgrade() public {
         cheats.startPrank(opsMultisig);
         // Upgrade contracts
-        token_ProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(EIGEN_proxy))), address(EIGEN_implementation));
-        token_ProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(bEIGEN_proxy))), address(bEIGEN_implementation));
+        token_ProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(EIGEN_proxy))), address(EIGEN_implementation)
+        );
+        token_ProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(bEIGEN_proxy))), address(bEIGEN_implementation)
+        );
         cheats.stopPrank();
     }
 
     function checkUpgradeCorrectness() public {
         vm.startPrank(opsMultisig);
-        require(token_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN_proxy)))) == address(EIGEN_implementation),
-            "implementation set incorrectly");
-        require(EIGEN_proxy.bEIGEN() == bEIGEN_addressBefore,
-            "bEIGEN address changed unexpectedly");
-        require(token_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(bEIGEN_proxy)))) == address(bEIGEN_implementation),
-            "implementation set incorrectly");
-        require(bEIGEN_proxy.EIGEN() == EIGEN_addressBefore,
-            "EIGEN address changed unexpectedly");
+        require(
+            token_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN_proxy))))
+                == address(EIGEN_implementation),
+            "implementation set incorrectly"
+        );
+        require(EIGEN_proxy.bEIGEN() == bEIGEN_addressBefore, "bEIGEN address changed unexpectedly");
+        require(
+            token_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(bEIGEN_proxy))))
+                == address(bEIGEN_implementation),
+            "implementation set incorrectly"
+        );
+        require(bEIGEN_proxy.EIGEN() == EIGEN_addressBefore, "EIGEN address changed unexpectedly");
         cheats.stopPrank();
     }
 

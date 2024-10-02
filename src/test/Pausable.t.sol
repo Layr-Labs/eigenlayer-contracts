@@ -5,7 +5,6 @@ pragma solidity ^0.8.12;
 import "./EigenLayerTestHelper.t.sol";
 
 contract PausableTests is EigenLayerTestHelper {
-
     /// @notice Emitted when the `pauserRegistry` is set to `newPauserRegistry`.
     event PauserRegistrySet(IPauserRegistry pauserRegistry, IPauserRegistry newPauserRegistry);
 
@@ -34,10 +33,9 @@ contract PausableTests is EigenLayerTestHelper {
         // cheats.stopPrank();
     }
 
-    function testUnauthorizedPauserStrategyManager(address unauthorizedPauser)
-        public
-        fuzzedAddress(unauthorizedPauser)
-    {
+    function testUnauthorizedPauserStrategyManager(
+        address unauthorizedPauser
+    ) public fuzzedAddress(unauthorizedPauser) {
         cheats.assume(!eigenLayerPauserReg.isPauser(unauthorizedPauser));
         cheats.startPrank(unauthorizedPauser);
         cheats.expectRevert(bytes("msg.sender is not permissioned as pauser"));
@@ -45,23 +43,26 @@ contract PausableTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    function testSetPauser(address newPauser) public fuzzedAddress(newPauser) {
+    function testSetPauser(
+        address newPauser
+    ) public fuzzedAddress(newPauser) {
         cheats.startPrank(unpauser);
         eigenLayerPauserReg.setIsPauser(newPauser, true);
         cheats.stopPrank();
     }
 
-    function testSetUnpauser(address newUnpauser) public fuzzedAddress(newUnpauser) {
+    function testSetUnpauser(
+        address newUnpauser
+    ) public fuzzedAddress(newUnpauser) {
         cheats.startPrank(unpauser);
         eigenLayerPauserReg.setUnpauser(newUnpauser);
         cheats.stopPrank();
     }
 
-    function testSetPauserUnauthorized(address fakePauser, address newPauser)
-        public
-        fuzzedAddress(newPauser)
-        fuzzedAddress(fakePauser)
-    {
+    function testSetPauserUnauthorized(
+        address fakePauser,
+        address newPauser
+    ) public fuzzedAddress(newPauser) fuzzedAddress(fakePauser) {
         cheats.assume(fakePauser != eigenLayerPauserReg.unpauser());
         cheats.startPrank(fakePauser);
         cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
@@ -69,20 +70,25 @@ contract PausableTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    function testSetPauserRegistryUnpauser(IPauserRegistry newPauserRegistry) public {
+    function testSetPauserRegistryUnpauser(
+        IPauserRegistry newPauserRegistry
+    ) public {
         cheats.assume(address(newPauserRegistry) != address(0));
         IPauserRegistry oldPauserRegistry = strategyManager.pauserRegistry();
         cheats.prank(unpauser);
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit PauserRegistrySet(oldPauserRegistry, newPauserRegistry);
         strategyManager.setPauserRegistry(newPauserRegistry);
-        
+
         assertEq(address(newPauserRegistry), address(strategyManager.pauserRegistry()));
     }
 
-    function testSetPauserRegistyUnauthorized(IPauserRegistry newPauserRegistry, address notUnpauser) public fuzzedAddress(notUnpauser) {
+    function testSetPauserRegistyUnauthorized(
+        IPauserRegistry newPauserRegistry,
+        address notUnpauser
+    ) public fuzzedAddress(notUnpauser) {
         cheats.assume(notUnpauser != eigenLayerPauserReg.unpauser());
-        
+
         cheats.prank(notUnpauser);
         cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
         strategyManager.setPauserRegistry(newPauserRegistry);

@@ -25,7 +25,7 @@ contract Eigen_Token_Deploy is Script, Test {
     BackingEigen public bEIGENImpl;
     BackingEigen public bEIGEN;
 
-    uint256 constant TOTAL_SUPPLY = 1673646668284660000000000000;
+    uint256 constant TOTAL_SUPPLY = 1_673_646_668_284_660_000_000_000_000;
 
     function run() external virtual {
         vm.startBroadcast();
@@ -49,13 +49,10 @@ contract Eigen_Token_Deploy is Script, Test {
         // Deploy ProxyAdmin, later set admins for all proxies to be executorMultisig
         tokenProxyAdmin = new ProxyAdmin();
 
-        EIGEN = Eigen(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(tokenProxyAdmin), ""))
-        ); 
+        EIGEN = Eigen(address(new TransparentUpgradeableProxy(address(emptyContract), address(tokenProxyAdmin), "")));
 
-        bEIGEN = BackingEigen(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(tokenProxyAdmin), ""))
-        );
+        bEIGEN =
+            BackingEigen(address(new TransparentUpgradeableProxy(address(emptyContract), address(tokenProxyAdmin), "")));
 
         // deploy impls
         EIGENImpl = new Eigen(IERC20(address(bEIGEN)));
@@ -71,26 +68,17 @@ contract Eigen_Token_Deploy is Script, Test {
 
         // upgrade and initialize proxies
         tokenProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(EIGEN))), 
-            address(EIGENImpl), 
-            abi.encodeWithSelector(
-                Eigen.initialize.selector, 
-                msg.sender,
-                minters,
-                mintingAllowances,
-                mintAllowedAfters
-            )
+            TransparentUpgradeableProxy(payable(address(EIGEN))),
+            address(EIGENImpl),
+            abi.encodeWithSelector(Eigen.initialize.selector, msg.sender, minters, mintingAllowances, mintAllowedAfters)
         );
 
         EIGEN.mint();
 
         tokenProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(bEIGEN))), 
+            TransparentUpgradeableProxy(payable(address(bEIGEN))),
             address(bEIGENImpl),
-            abi.encodeWithSelector(
-                BackingEigen.initialize.selector,
-                msg.sender
-            )
+            abi.encodeWithSelector(BackingEigen.initialize.selector, msg.sender)
         );
 
         tokenProxyAdmin.transferOwnership(operationsMultisig);
@@ -106,8 +94,16 @@ contract Eigen_Token_Deploy is Script, Test {
         require(EIGEN.owner() == msg.sender, "Eigen_Token_Deploy: EIGEN owner mismatch");
         require(bEIGEN.owner() == msg.sender, "Eigen_Token_Deploy: bEIGEN owner mismatch");
 
-        require(tokenProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN)))) == address(EIGENImpl), "Eigen_Token_Deploy: EIGEN implementation mismatch");
-        require(tokenProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(bEIGEN)))) == address(bEIGENImpl), "Eigen_Token_Deploy: bEIGEN implementation mismatch");
+        require(
+            tokenProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN))))
+                == address(EIGENImpl),
+            "Eigen_Token_Deploy: EIGEN implementation mismatch"
+        );
+        require(
+            tokenProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(bEIGEN))))
+                == address(bEIGENImpl),
+            "Eigen_Token_Deploy: bEIGEN implementation mismatch"
+        );
 
         require(tokenProxyAdmin.owner() == operationsMultisig, "Eigen_Token_Deploy: ProxyAdmin owner mismatch");
     }

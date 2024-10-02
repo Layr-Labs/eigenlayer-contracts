@@ -13,12 +13,11 @@ import "script/utils/TimelockEncoding.sol";
  * Test: forge test --mc Upgrade_Mainnet_RewardsCoordinator --mt test_set_reward_for_all_submitter --rpc-url $MAINNET_RPC -vv
  */
 contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, TimelockEncoding {
-
     // CALLDATA FOR CALL TO TIMELOCK
     // TUESDAY, SEPTEMBER 27 2024 22:00:00 GMT (6pm EST/3pm PST)
-    uint256 timelockEta = 1727474400;
+    uint256 timelockEta = 1_727_474_400;
 
-    uint256 dayToQueueAction = 1726610400;
+    uint256 dayToQueueAction = 1_726_610_400;
 
     // Calldatas for upgrading RC
     bytes final_calldata_to_executor_multisig;
@@ -41,7 +40,7 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         if (chainId != 1) {
             revert("Chain not supported");
         }
-        
+
         RewardsCoordinator oldRewardsCoordinator = rewardsCoordinatorImplementation;
 
         // Deploy Rewards Coordinator
@@ -82,15 +81,13 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         txs[1] = Tx({
             to: address(rewardsCoordinator),
             value: 0,
-            data: abi.encodeWithSelector(
-                Ownable.transferOwnership.selector,
-                address(operationsMultisig)
-            )
+            data: abi.encodeWithSelector(Ownable.transferOwnership.selector, address(operationsMultisig))
         });
 
-        bytes memory calldata_to_multisend_contract = abi.encodeWithSelector(MultiSendCallOnly.multiSend.selector, encodeMultisendTxs(txs));
+        bytes memory calldata_to_multisend_contract =
+            abi.encodeWithSelector(MultiSendCallOnly.multiSend.selector, encodeMultisendTxs(txs));
         emit log_named_bytes("calldata_to_multisend_contract", calldata_to_multisend_contract);
-        
+
         final_calldata_to_executor_multisig = encodeForExecutor({
             from: timelock,
             to: multiSendCallOnly,
@@ -99,7 +96,8 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
             operation: ISafe.Operation.DelegateCall
         });
 
-        calldata_to_timelock_queuing_action = abi.encodeWithSelector(ITimelock.queueTransaction.selector,
+        calldata_to_timelock_queuing_action = abi.encodeWithSelector(
+            ITimelock.queueTransaction.selector,
             timelockTarget,
             timelockValue,
             timelockSignature,
@@ -109,7 +107,8 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
 
         emit log_named_bytes("calldata_to_timelock_queuing_action", calldata_to_timelock_queuing_action);
 
-        calldata_to_timelock_executing_action = abi.encodeWithSelector(ITimelock.executeTransaction.selector,
+        calldata_to_timelock_executing_action = abi.encodeWithSelector(
+            ITimelock.executeTransaction.selector,
             timelockTarget,
             timelockValue,
             timelockSignature,
@@ -121,23 +120,27 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
     }
 
     function test_mainnet_rc_upgrade() public {
-        run();  
+        run();
 
         vm.warp(dayToQueueAction);
 
         // Queue Transaction
         vm.prank(operationsMultisig);
-        (bool success, ) = address(timelock).call(calldata_to_timelock_queuing_action);
+        (bool success,) = address(timelock).call(calldata_to_timelock_queuing_action);
         require(success, "Timelock queueTransaction failed");
 
         // Fast forwart to after ETA
         vm.warp(timelockEta + 1);
         vm.prank(operationsMultisig);
-        (success, ) = address(timelock).call(calldata_to_timelock_executing_action);
+        (success,) = address(timelock).call(calldata_to_timelock_executing_action);
         require(success, "Timelock executeTransaction failed");
 
         // Assert owner
-        assertEq(address(rewardsCoordinator.owner()), address(operationsMultisig), "RewardsCoordinator owner is not OperationsMultisig");
+        assertEq(
+            address(rewardsCoordinator.owner()),
+            address(operationsMultisig),
+            "RewardsCoordinator owner is not OperationsMultisig"
+        );
 
         // Sanity Checks
         _verifyContractPointers();
@@ -148,50 +151,30 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
 
     function _sanityCheckImplementations(RewardsCoordinator oldRc, RewardsCoordinator newRc) internal {
         // Verify configs between both rewardsCoordinatorImplementations
-        assertEq(
-            address(oldRc.delegationManager()),
-            address(newRc.delegationManager()),
-            "DM mismatch"
-        );
-        assertEq(
-            address(oldRc.strategyManager()),
-            address(newRc.strategyManager()),
-            "SM mismatch"
-        );
+        assertEq(address(oldRc.delegationManager()), address(newRc.delegationManager()), "DM mismatch");
+        assertEq(address(oldRc.strategyManager()), address(newRc.strategyManager()), "SM mismatch");
         assertEq(
             oldRc.CALCULATION_INTERVAL_SECONDS(),
             newRc.CALCULATION_INTERVAL_SECONDS(),
             "CALCULATION_INTERVAL_SECONDS mismatch"
         );
+        assertEq(oldRc.MAX_REWARDS_DURATION(), newRc.MAX_REWARDS_DURATION(), "MAX_REWARDS_DURATION mismatch");
+        assertEq(oldRc.MAX_RETROACTIVE_LENGTH(), newRc.MAX_RETROACTIVE_LENGTH(), "MAX_RETROACTIVE_LENGTH mismatch");
+        assertEq(oldRc.MAX_FUTURE_LENGTH(), newRc.MAX_FUTURE_LENGTH(), "MAX_FUTURE_LENGTH mismatch");
         assertEq(
-            oldRc.MAX_REWARDS_DURATION(),
-            newRc.MAX_REWARDS_DURATION(),
-            "MAX_REWARDS_DURATION mismatch"
-        );
-        assertEq(
-            oldRc.MAX_RETROACTIVE_LENGTH(),
-            newRc.MAX_RETROACTIVE_LENGTH(),
-            "MAX_RETROACTIVE_LENGTH mismatch"
-        );
-        assertEq(
-            oldRc.MAX_FUTURE_LENGTH(),
-            newRc.MAX_FUTURE_LENGTH(),
-            "MAX_FUTURE_LENGTH mismatch"
-        );
-        assertEq(
-            oldRc.GENESIS_REWARDS_TIMESTAMP(),
-            newRc.GENESIS_REWARDS_TIMESTAMP(),
-            "GENESIS_REWARDS_TIMESTAMP mismatch"
+            oldRc.GENESIS_REWARDS_TIMESTAMP(), newRc.GENESIS_REWARDS_TIMESTAMP(), "GENESIS_REWARDS_TIMESTAMP mismatch"
         );
     }
 
-    function test_set_reward_for_all_submitter(address hopper) public {
+    function test_set_reward_for_all_submitter(
+        address hopper
+    ) public {
         test_mainnet_rc_upgrade();
-    
+
         // Set reward for all submitters
         vm.prank(operationsMultisig);
         rewardsCoordinator.setRewardsForAllSubmitter(hopper, true);
-        
+
         assertTrue(rewardsCoordinator.isRewardsForAllSubmitter(hopper), "Hopper not set for all submitters");
     }
 }

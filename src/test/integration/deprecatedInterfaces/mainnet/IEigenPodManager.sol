@@ -12,7 +12,6 @@ import "src/contracts/interfaces/IPausable.sol";
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-
 interface IEigenPodManager_DeprecatedM1 is IPausable {
     /**
      * @notice Creates an EigenPod for the sender.
@@ -21,7 +20,7 @@ interface IEigenPodManager_DeprecatedM1 is IPausable {
     function createPod() external;
 
     /**
-     * @notice Stakes for a new beacon chain validator on the sender's EigenPod. 
+     * @notice Stakes for a new beacon chain validator on the sender's EigenPod.
      * Also creates an EigenPod for the sender if they don't have one already.
      * @param pubkey The 48 bytes public key of the beacon chain validator.
      * @param signature The validator's signature of the deposit data.
@@ -41,13 +40,17 @@ interface IEigenPodManager_DeprecatedM1 is IPausable {
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
      * @param podOwner The owner of the pod whose balance must be removed.
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
+     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to
      *                                    the StrategyManager in case it must be removed from the list of the podOwner's strategies
      * @param amount The amount of ETH to remove.
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordOvercommittedBeaconChainETH(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external;
-    
+    function recordOvercommittedBeaconChainETH(
+        address podOwner,
+        uint256 beaconChainETHStrategyIndex,
+        uint256 amount
+    ) external;
+
     /**
      * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.
      * @param podOwner The owner of the pod whose balance must be withdrawn.
@@ -62,25 +65,35 @@ interface IEigenPodManager_DeprecatedM1 is IPausable {
      * @param newBeaconChainOracle is the new oracle contract being pointed to
      * @dev Callable only by the owner of this contract (i.e. governance)
      */
-    function updateBeaconChainOracle(IBeaconChainOracle_DeprecatedM1 newBeaconChainOracle) external;
+    function updateBeaconChainOracle(
+        IBeaconChainOracle_DeprecatedM1 newBeaconChainOracle
+    ) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
-    function ownerToPod(address podOwner) external view returns(IEigenPod_DeprecatedM1);
+    function ownerToPod(
+        address podOwner
+    ) external view returns (IEigenPod_DeprecatedM1);
 
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
-    function getPod(address podOwner) external view returns(IEigenPod_DeprecatedM1);
+    function getPod(
+        address podOwner
+    ) external view returns (IEigenPod_DeprecatedM1);
 
     /// @notice Oracle contract that provides updates to the beacon chain's state
-    function beaconChainOracle() external view returns(IBeaconChainOracle_DeprecatedM1);    
+    function beaconChainOracle() external view returns (IBeaconChainOracle_DeprecatedM1);
 
     /// @notice Returns the Beacon Chain state root at `blockNumber`. Reverts if the Beacon Chain state root at `blockNumber` has not yet been finalized.
-    function getBeaconChainStateRoot(uint64 blockNumber) external view returns(bytes32);
+    function getBeaconChainStateRoot(
+        uint64 blockNumber
+    ) external view returns (bytes32);
 
     /// @notice EigenLayer's StrategyManager contract
-    function strategyManager() external view returns(IStrategyManager_DeprecatedM1);
+    function strategyManager() external view returns (IStrategyManager_DeprecatedM1);
 
     /// @notice EigenLayer's Slasher contract
-    function slasher() external view returns(ISlasher);
+    function slasher() external view returns (ISlasher);
 
-    function hasPod(address podOwner) external view returns (bool);
+    function hasPod(
+        address podOwner
+    ) external view returns (bool);
 }

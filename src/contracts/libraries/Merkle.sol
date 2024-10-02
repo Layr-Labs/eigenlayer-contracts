@@ -140,7 +140,9 @@ library Merkle {
      *  @return The computed Merkle root of the tree.
      *  @dev A pre-condition to this function is that leaves.length is a power of two.  If not, the function will merkleize the inputs incorrectly.
      */
-    function merkleizeSha256(bytes32[] memory leaves) internal pure returns (bytes32) {
+    function merkleizeSha256(
+        bytes32[] memory leaves
+    ) internal pure returns (bytes32) {
         //there are half as many nodes in the layer above the leaves
         uint256 numNodesInLayer = leaves.length / 2;
         //create a layer to store the internal nodes

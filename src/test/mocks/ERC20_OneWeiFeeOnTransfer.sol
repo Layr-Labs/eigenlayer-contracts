@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-
 // copy-pasted OZ code with _balances mapping made *internal* instead of private
-
-
 
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
 
@@ -60,7 +57,9 @@ interface OpenZeppelin_IERC20 {
     /**
      * @dev Returns the amount of tokens owned by `account`.
      */
-    function balanceOf(address account) external view returns (uint256);
+    function balanceOf(
+        address account
+    ) external view returns (uint256);
 
     /**
      * @dev Moves `amount` tokens from the caller's account to `to`.
@@ -233,7 +232,9 @@ contract OpenZeppelin_ERC20 is OpenZeppelin_Context, OpenZeppelin_IERC20, OpenZe
     /**
      * @dev See {IERC20-balanceOf}.
      */
-    function balanceOf(address account) public view virtual override returns (uint256) {
+    function balanceOf(
+        address account
+    ) public view virtual override returns (uint256) {
         return _balances[account];
     }
 
@@ -374,7 +375,8 @@ contract OpenZeppelin_ERC20 is OpenZeppelin_Context, OpenZeppelin_IERC20, OpenZe
         _afterTokenTransfer(from, to, amount);
     }
 
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
+    /**
+     * @dev Creates `amount` tokens and assigns them to `account`, increasing
      * the total supply.
      *
      * Emits a {Transfer} event with `from` set to the zero address.
@@ -499,7 +501,6 @@ contract OpenZeppelin_ERC20 is OpenZeppelin_Context, OpenZeppelin_IERC20, OpenZe
     function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual {}
 }
 
-
 // OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/extensions/ERC20Burnable.sol)
 
 // pragma solidity ^0.8.0;
@@ -518,7 +519,9 @@ abstract contract OpenZeppelin_ERC20Burnable is OpenZeppelin_Context, OpenZeppel
      *
      * See {ERC20-_burn}.
      */
-    function burn(uint256 amount) public virtual {
+    function burn(
+        uint256 amount
+    ) public virtual {
         _burn(_msgSender(), amount);
     }
 
@@ -564,19 +567,29 @@ contract OpenZeppelin_ERC20PresetFixedSupply is OpenZeppelin_ERC20Burnable {
      *
      * See {ERC20-constructor}.
      */
-    constructor(string memory name, string memory symbol, uint256 initialSupply, address owner) OpenZeppelin_ERC20(name, symbol) {
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint256 initialSupply,
+        address owner
+    ) OpenZeppelin_ERC20(name, symbol) {
         _mint(owner, initialSupply);
     }
 }
 
-
-
 // actual mock code
 contract ERC20_OneWeiFeeOnTransfer is OpenZeppelin_ERC20PresetFixedSupply {
-
-    constructor(uint256 initSupply, address initOwner) 
-        OpenZeppelin_ERC20PresetFixedSupply("ERC20_OneWeiFeeOnTransfer_Mock", "ERC20_OneWeiFeeOnTransfer_Mock", initSupply, initOwner)
-        {}
+    constructor(
+        uint256 initSupply,
+        address initOwner
+    )
+        OpenZeppelin_ERC20PresetFixedSupply(
+            "ERC20_OneWeiFeeOnTransfer_Mock",
+            "ERC20_OneWeiFeeOnTransfer_Mock",
+            initSupply,
+            initOwner
+        )
+    {}
 
     /**
      * @dev Moves `amount` of tokens from `from` to `to`.
@@ -606,12 +619,11 @@ contract ERC20_OneWeiFeeOnTransfer is OpenZeppelin_ERC20PresetFixedSupply {
                 // Overflow not possible: the sum of all balances is capped by totalSupply, and the sum is preserved by
                 // decrementing then incrementing.
                 _balances[to] += (amount - 1);
-            }            
+            }
         }
 
         emit Transfer(from, to, amount);
 
         _afterTokenTransfer(from, to, amount);
     }
-
 }

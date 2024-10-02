@@ -31,7 +31,9 @@ contract AVSDirectory is
      * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher,
      * and eigenpodManager contracts
      */
-    constructor(IDelegationManager _delegation) AVSDirectoryStorage(_delegation) {
+    constructor(
+        IDelegationManager _delegation
+    ) AVSDirectoryStorage(_delegation) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -104,10 +106,9 @@ contract AVSDirectory is
     }
 
     /// @inheritdoc IAVSDirectory
-    function deregisterOperatorFromAVS(address operator)
-        external
-        onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
-    {
+    function deregisterOperatorFromAVS(
+        address operator
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         require(
             avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
             "AVSDirectory.deregisterOperatorFromAVS: operator not registered"
@@ -120,12 +121,16 @@ contract AVSDirectory is
     }
 
     /// @inheritdoc IAVSDirectory
-    function updateAVSMetadataURI(string calldata metadataURI) external {
+    function updateAVSMetadataURI(
+        string calldata metadataURI
+    ) external {
         emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /// @inheritdoc IAVSDirectory
-    function cancelSalt(bytes32 salt) external {
+    function cancelSalt(
+        bytes32 salt
+    ) external {
         require(!operatorSaltIsSpent[msg.sender][salt], "AVSDirectory.cancelSalt: cannot cancel spent salt");
         operatorSaltIsSpent[msg.sender][salt] = true;
     }

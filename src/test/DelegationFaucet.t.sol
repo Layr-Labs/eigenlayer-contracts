@@ -189,7 +189,9 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
     /**
      * @param _operatorIndex is the index of the operator to use from the test-data/operators.json file
      */
-    function test_mintDepositAndDelegate_RevertsIf_UnregisteredOperator(uint8 _operatorIndex) public {
+    function test_mintDepositAndDelegate_RevertsIf_UnregisteredOperator(
+        uint8 _operatorIndex
+    ) public {
         cheats.assume(_operatorIndex < 15);
         address operator = getOperatorAddress(_operatorIndex);
         // Unregistered operator should revert
@@ -266,35 +268,33 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
 
         uint256 operatorSharesBefore = delegation.operatorShares(operator, stakeTokenStrat);
         uint256 stakerSharesBefore = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
-        uint256 nonceBefore = delegation.cumulativeWithdrawalsQueued(/*staker*/ stakerContract);
+        uint256 nonceBefore = delegation.cumulativeWithdrawalsQueued( /*staker*/ stakerContract);
 
         // Queue withdrawal
         (
             IDelegationManager.Withdrawal memory queuedWithdrawal,
-            , /*tokensArray is unused in this test*/
-             /*withdrawalRoot is unused in this test*/
+            , /*tokensArray is unused in this test*/ /*withdrawalRoot is unused in this test*/
         ) = _setUpQueuedWithdrawalStructSingleStrat(
-                /*staker*/ stakerContract,
-                /*withdrawer*/ stakerContract,
-                stakeToken,
-                stakeTokenStrat,
-                _withdrawAmount
-            );
+            /*staker*/
+            stakerContract,
+            /*withdrawer*/
+            stakerContract,
+            stakeToken,
+            stakeTokenStrat,
+            _withdrawAmount
+        );
         IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
-        
+
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: queuedWithdrawal.strategies,
             shares: queuedWithdrawal.shares,
             withdrawer: stakerContract
         });
 
-        delegationFaucet.queueWithdrawal(
-            stakerContract,
-            params
-        );
+        delegationFaucet.queueWithdrawal(stakerContract, params);
         uint256 operatorSharesAfter = delegation.operatorShares(operator, stakeTokenStrat);
         uint256 stakerSharesAfter = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
-        uint256 nonceAfter = delegation.cumulativeWithdrawalsQueued(/*staker*/ stakerContract);
+        uint256 nonceAfter = delegation.cumulativeWithdrawalsQueued( /*staker*/ stakerContract);
 
         assertEq(
             operatorSharesBefore,
@@ -308,9 +308,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             "test_queueWithdrawal_WithdrawStakeToken: staker shares not updated correctly"
         );
         assertEq(
-            nonceBefore,
-            nonceAfter - 1,
-            "test_queueWithdrawal_WithdrawStakeToken: staker withdrawal nonce not updated"
+            nonceBefore, nonceAfter - 1, "test_queueWithdrawal_WithdrawStakeToken: staker withdrawal nonce not updated"
         );
     }
 
@@ -354,11 +352,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = false;
         delegationFaucet.completeQueuedWithdrawal(
-            stakerContract,
-            queuedWithdrawal,
-            tokensArray,
-            middlewareTimesIndex,
-            receiveAsTokens
+            stakerContract, queuedWithdrawal, tokensArray, middlewareTimesIndex, receiveAsTokens
         );
         // assertion after values
         uint256 sharesAfter = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
@@ -415,11 +409,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = true;
         delegationFaucet.completeQueuedWithdrawal(
-            stakerContract,
-            queuedWithdrawal,
-            tokensArray,
-            middlewareTimesIndex,
-            receiveAsTokens
+            stakerContract, queuedWithdrawal, tokensArray, middlewareTimesIndex, receiveAsTokens
         );
         // assertion after values
         uint256 sharesAfter = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
@@ -467,7 +457,9 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         );
     }
 
-    function _registerOperator(address _operator) internal {
+    function _registerOperator(
+        address _operator
+    ) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             __deprecated_earningsReceiver: _operator,
             delegationApprover: address(0),

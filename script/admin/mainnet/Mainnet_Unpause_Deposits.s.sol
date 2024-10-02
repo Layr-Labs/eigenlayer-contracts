@@ -9,7 +9,7 @@ contract Mainnet_Unpause_Deposits is ExistingDeploymentParser, TimelockEncoding 
     Vm cheats = Vm(HEVM_ADDRESS);
 
     // Tues Apr 16 2024 12:00:00 GMT-0700 (Pacific Daylight Time)
-    uint256 timelockEta = 1713250800;
+    uint256 timelockEta = 1_713_250_800;
 
     function run() external virtual {
         _parseDeployedContracts("script/output/mainnet/M1_deployment_mainnet_2023_6_9.json");
@@ -27,7 +27,8 @@ contract Mainnet_Unpause_Deposits is ExistingDeploymentParser, TimelockEncoding 
             operation: ISafe.Operation.Call
         });
 
-        (bytes memory calldata_to_timelock_queuing_action, bytes memory calldata_to_timelock_executing_action) = encodeForTimelock({
+        (bytes memory calldata_to_timelock_queuing_action, bytes memory calldata_to_timelock_executing_action) =
+        encodeForTimelock({
             // address to be called from the timelock
             to: executorMultisig,
             // value to send in tx
@@ -47,7 +48,7 @@ contract Mainnet_Unpause_Deposits is ExistingDeploymentParser, TimelockEncoding 
         emit log_named_bytes32("expectedTxHash", expectedTxHash);
 
         cheats.prank(operationsMultisig);
-        (bool success, ) = timelock.call(calldata_to_timelock_queuing_action);
+        (bool success,) = timelock.call(calldata_to_timelock_queuing_action);
         require(success, "call to timelock queuing action failed");
 
         require(ITimelock(timelock).queuedTransactions(expectedTxHash), "expectedTxHash not queued");
@@ -55,7 +56,7 @@ contract Mainnet_Unpause_Deposits is ExistingDeploymentParser, TimelockEncoding 
         // test performing the upgrade
         cheats.warp(timelockEta);
         cheats.prank(operationsMultisig);
-        (success, ) = timelock.call(calldata_to_timelock_executing_action);
+        (success,) = timelock.call(calldata_to_timelock_executing_action);
         require(success, "call to timelock executing action failed");
 
         // Check correctness after upgrade
@@ -66,6 +67,6 @@ contract Mainnet_Unpause_Deposits is ExistingDeploymentParser, TimelockEncoding 
         // empty bytes
         bytes memory signature;
         bytes32 txHash = keccak256(abi.encode(target, _value, signature, _data, eta));
-        return txHash;        
+        return txHash;
     }
 }

@@ -105,11 +105,8 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
         string memory chain_info_output = vm.serializeUint(chain_info, "chainId", chainId);
 
         // Serialize new implementation addresses
-        string memory deployed_addresses_output = vm.serializeAddress(
-            deployed_addresses,
-            "eigenPodImplementation",
-            address(eigenPodImplementation)
-        );
+        string memory deployed_addresses_output =
+            vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
 
         // Save addresses
         vm.serializeString(parent_object, deployed_addresses, deployed_addresses_output);
@@ -135,25 +132,25 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
 
     function _verifyEigenPodCorrectness() public view {
         // Check that state is correct
-        require(eigenPodBeacon.implementation() == address(eigenPodImplementation),
-            "implementation set incorrectly");
-        require(eigenPodImplementation.ethPOS() == ethPOS,
-            "ethPOS set incorrectly");
-        require(eigenPodImplementation.eigenPodManager() == eigenPodManager,
-            "eigenPodManager set incorrectly");
+        require(eigenPodBeacon.implementation() == address(eigenPodImplementation), "implementation set incorrectly");
+        require(eigenPodImplementation.ethPOS() == ethPOS, "ethPOS set incorrectly");
+        require(eigenPodImplementation.eigenPodManager() == eigenPodManager, "eigenPodManager set incorrectly");
         // check that values are unchanged
         // require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == maxRestakedBalanceBefore,
         //     "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR set incorrectly");
-        require(eigenPodImplementation.GENESIS_TIME() == genesisTimeBefore,
-            "GENESIS_TIME set incorrectly");
+        require(eigenPodImplementation.GENESIS_TIME() == genesisTimeBefore, "GENESIS_TIME set incorrectly");
         // redundant checks on correct values
         // require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == 32 gwei,
         //     "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR set incorrectly");
-        require(eigenPodImplementation.GENESIS_TIME() == 1606824023,
-            "GENESIS_TIME set incorrectly");
+        require(eigenPodImplementation.GENESIS_TIME() == 1_606_824_023, "GENESIS_TIME set incorrectly");
 
-
-        require(address(EigenPod(payable(eigenPodBeacon.implementation())).eigenPodManager())  == 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338);
-        require(address(EigenPod(payable(eigenPodBeacon.implementation())).ethPOS())  == 0x00000000219ab540356cBB839Cbe05303d7705Fa);
+        require(
+            address(EigenPod(payable(eigenPodBeacon.implementation())).eigenPodManager())
+                == 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338
+        );
+        require(
+            address(EigenPod(payable(eigenPodBeacon.implementation())).ethPOS())
+                == 0x00000000219ab540356cBB839Cbe05303d7705Fa
+        );
     }
 }
