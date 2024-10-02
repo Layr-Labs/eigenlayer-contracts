@@ -23,7 +23,7 @@ interface IAVSDirectory is ISignatureUtils {
     );
 
     /**
-     * @notice Called by an avs to register an operator with the avs.
+     * @notice Called by the AVS's service manager contract to register an operator with the avs.
      * @param operator The address of the operator to register.
      * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
@@ -54,7 +54,7 @@ interface IAVSDirectory is ISignatureUtils {
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an AVS
      * @param operator The account registering as an operator
-     * @param avs The AVS the operator is registering to
+     * @param avs The address of the service manager contract for the AVS that the operator is registering to
      * @param salt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid
      */
@@ -67,4 +67,19 @@ interface IAVSDirectory is ISignatureUtils {
 
     /// @notice The EIP-712 typehash for the Registration struct used by the contract
     function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32);
+
+    /**
+     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
+     * @param salt A unique and single use value associated with the approver signature.
+     */
+    function cancelSalt(bytes32 salt) external;
+
+    /**
+     * @notice Getter function for the current EIP-712 domain separator for this contract.
+     *
+     * @dev The domain separator will change in the event of a fork that changes the ChainID.
+     * @dev By introducing a domain separator the DApp developers are guaranteed that there can be no signature collision.
+     * for more detailed information please read EIP-712.
+     */
+    function domainSeparator() external view returns (bytes32);
 }
