@@ -130,38 +130,39 @@ contract AllocationManager is
         require(isSet, UninitializedAllocationDelay());
 
         for (uint256 i = 0; i < allocations.length; ++i) {
+            MagnitudeAllocation calldata allocation = allocations[i];
+            require(allocation.operatorSets.length == allocation.magnitudes.length, InputArrayLengthMismatch());
+            require(avsDirectory.isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
+            
             // 1. For the given (operator,strategy) complete any pending deallocations to update free magnitude
             _completePendingDeallocations({
                 operator: operator,
-                strategy:allocation.strategy,
+                strategy: allocation.strategy,
                 numToComplete: type(uint16).max
             });
 
-            MagnitudeAllocation calldata allocation = allocations[i];
+            {
+                // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
+                // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
+                // proprtional magnitudes relative to each other.
 
-            // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
-            // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
-            // proprtional magnitudes relative to each other.
+                // Load the operator's total magnitude for the strategy.
+                (bool exists,, uint224 currentTotalMagnitude) = _totalMagnitudeUpdate[operator][allocation.strategy].latestSnapshot();
 
-            // Load the operator's total magnitude for the strategy.
-            (bool exists,, uint224 currentTotalMagnitude) = _totalMagnitudeUpdate[operator][allocation.strategy].latestSnapshot();
+                // If the operator has no total magnitude snapshot, set it to WAD, which denotes an unslashed operator.
+                if (!exists) {
+                    currentTotalMagnitude = WAD;
+                    _totalMagnitudeUpdate[operator][allocation.strategy].push({key: uint32(block.timestamp), value: currentTotalMagnitude});
+                    operatorFreeMagnitudeInfo[operator][allocation.strategy].freeMagnitude = uint64(currentTotalMagnitude);
+                }
 
-            // If the operator has no total magnitude snapshot, set it to WAD, which denotes an unslashed operator.
-            if (!exists) {
-                currentTotalMagnitude = WAD;
-                _totalMagnitudeUpdate[operator][allocation.strategy].push({key: uint32(block.timestamp), value: currentTotalMagnitude});
-                operatorFreeMagnitudeInfo[operator][allocation.strategy].freeMagnitude = WAD;
+                // 3. set allocations for the strategy after updating freeMagnitude
+                require(uint64(currentTotalMagnitude) == allocation.expectedTotalMagnitude, InvalidExpectedTotalMagnitude());
             }
-
-            // 3. set allocations for the strategy after updating freeMagnitude
-            require(uint64(currentTotalMagnitude) == allocation.expectedTotalMagnitude, InvalidExpectedTotalMagnitude());
-            require(allocation.operatorSets.length == allocation.magnitudes.length, InputArrayLengthMismatch());
-            require(avsDirectory.isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
 
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
                 // Check that there are no pending allocations & deallocations for the operator, operatorSet, strategy
-                bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
-                MagnitudeInfo memory mInfo = _getCurrentEffectiveMagnitude(operator, allocation.strategy, operatorSetKey);
+                MagnitudeInfo memory mInfo = _getCurrentEffectiveMagnitude(operator, allocation.strategy, _encodeOperatorSet(allocation.operatorSets[j]));
                 require(block.timestamp >= mInfo.effectTimestamp, ModificationAlreadyPending());
 
                 // Calculate the new pending diff with this modification
@@ -173,7 +174,7 @@ contract AllocationManager is
                     // This is a deallocation
 
                     // 1. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
-                    deallocationQueue[operator][allocation.strategy].push(operatorSetKey);
+                    deallocationQueue[operator][allocation.strategy].push(_encodeOperatorSet(allocation.operatorSets[j]));
 
                     // 2. Update the effect timestamp for the deallocation
                     mInfo.effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
@@ -189,11 +190,11 @@ contract AllocationManager is
                     // 2. Update the effectTimestamp for the allocation
                     mInfo.effectTimestamp = uint32(block.timestamp) + operatorAllocationDelay; 
 
-                    operatorFreeMagnitudeInfo[operator][allocation.strategy] = freeInfo;       
+                    operatorFreeMagnitudeInfo[operator][allocation.strategy] = freeInfo;
                 }
 
                 // Allocate magnitude which will take effect at the `effectTimestamp`
-                _operatorMagnitudeInfo[operator][allocation.strategy][operatorSetKey] = mInfo;
+                _operatorMagnitudeInfo[operator][allocation.strategy][_encodeOperatorSet(allocation.operatorSets[j])] = mInfo;
             }
         }
     }
