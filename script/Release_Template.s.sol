@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "script/utils/ConfigParser.sol";
+import "script/utils/EncodeSafeMultisendMainnet.sol";
 import {EncGnosisSafe} from "script/utils/Encoders.sol";
 
 /// @notice Deployment data struct
@@ -19,9 +20,10 @@ struct Transaction {
     EncGnosisSafe.Operation op;
 }
 
+/// TODO: break all abstract contracts out into their own file in a `template` directory
+
 /// @notice template for an EOA script
 abstract contract EOABuilder is ConfigParser {
-    Deployment[] internal deployments;
 
     function deploy(string memory envPath) public returns (Deployment[] memory) {
         (
@@ -37,8 +39,30 @@ abstract contract EOABuilder is ConfigParser {
 }
 
 /// @notice template for a Multisig script
-abstract contract MultisigBuilder is ConfigParser {
+abstract contract MultisigBuilder is ConfigParser, EncodeSafeTransactionMainnet {
 
+    /// @return a Transaction object for a Gnosis Safe to ingest
+    function execute(string memory envPath) public returns (bytes memory) {
+        (
+            Addresses memory addrs,
+            Environment memory env,
+            Params memory params
+        ) = _readConfigFile(envPath);
+
+        Tx[] memory txs = _execute(addrs, env, params);
+
+        return encodeMultisendTxs(txs);
+    }
+
+    /// @notice to be implemented by inheriting contract
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Tx[] memory);
+}
+
+abstract contract NestedMultisigBuilder is ConfigParser {
+
+    /// @return a Transaction object for a Gnosis Safe to ingest
+    /// @dev this object is intended to hold calldata to be sent to *yet another* Safe
+    /// which will contain the actual relevant calldata
     function execute(string memory envPath) public returns (Transaction memory) {
         (
             Addresses memory addrs,
@@ -53,11 +77,16 @@ abstract contract MultisigBuilder is ConfigParser {
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
 }
 
-
 /// @notice template for an OpsMultisig script that goes through the timelock
-abstract contract OpsTimelockBuilder is MultisigBuilder {
+abstract contract OpsTimelockBuilder is NestedMultisigBuilder {
+
+    /// @return a Transaction object for a Gnosis Safe to ingest
     function queue(string memory envPath) public returns (Transaction memory) {
         // TODO
+
+        // get response from _queue()
+        // encode for Timelock
+        // return encoded call for Ops Multisig
     }
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
 
