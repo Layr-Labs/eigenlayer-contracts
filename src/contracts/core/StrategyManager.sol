@@ -5,6 +5,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
@@ -26,16 +27,11 @@ contract StrategyManager is
     Pausable,
     StrategyManagerStorage
 {
+    using SlashingLib for *;
     using SafeERC20 for IERC20;
 
-    // index for flag that pauses deposits when set
-    uint8 internal constant PAUSED_DEPOSITS = 0;
-
-    // chain id at the time of contract deployment
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-
     modifier onlyStrategyWhitelister() {
-        require(msg.sender == strategyWhitelister, UnauthorizedCaller());
+        require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
         _;
     }
 
@@ -47,22 +43,20 @@ contract StrategyManager is
     }
 
     modifier onlyDelegationManager() {
-        require(msg.sender == address(delegation), UnauthorizedCaller());
+        require(msg.sender == address(delegation), OnlyDelegationManager());
         _;
     }
 
     /**
      * @param _delegation The delegation contract of EigenLayer.
-     * @param _slasher The primary slashing contract of EigenLayer.
      * @param _eigenPodManager The contract that keeps track of EigenPod stakes for restaking beacon chain ether.
      */
     constructor(
         IDelegationManager _delegation,
         IEigenPodManager _eigenPodManager,
-        ISlasher _slasher
-    ) StrategyManagerStorage(_delegation, _eigenPodManager, _slasher) {
+        IAVSDirectory _avsDirectory
+    ) StrategyManagerStorage(_delegation, _eigenPodManager, _avsDirectory) {
         _disableInitializers();
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     // EXTERNAL FUNCTIONS
@@ -102,7 +96,7 @@ contract StrategyManager is
         IStrategy strategy,
         IERC20 token,
         uint256 amount
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (OwnedShares shares) {
         shares = _depositIntoStrategy(msg.sender, strategy, token, amount);
     }
 
@@ -122,7 +116,6 @@ contract StrategyManager is
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
-     * @dev Cannot be called if thirdPartyTransfersForbidden is set to true for this strategy
      *
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
@@ -134,8 +127,7 @@ contract StrategyManager is
         address staker,
         uint256 expiry,
         bytes memory signature
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
-        require(!thirdPartyTransfersForbidden[strategy], ThirdPartyTransfersDisabled());
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (OwnedShares shares) {
         require(expiry >= block.timestamp, SignatureExpired());
         // calculate struct hash, then increment `staker`'s nonce
         uint256 nonce = nonces[staker];
@@ -160,39 +152,30 @@ contract StrategyManager is
     }
 
     /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
-    function removeShares(address staker, IStrategy strategy, uint256 shares) external onlyDelegationManager {
+    function removeShares(address staker, IStrategy strategy, Shares shares) external onlyDelegationManager {
         _removeShares(staker, strategy, shares);
     }
 
     /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
-    function addShares(
+    function addOwnedShares(
         address staker,
-        IERC20 token,
         IStrategy strategy,
-        uint256 shares
+        IERC20 token,
+        OwnedShares ownedShares
     ) external onlyDelegationManager {
-        _addShares(staker, token, strategy, shares);
+        _addOwnedShares(staker, token, strategy, ownedShares);
     }
 
     /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
+    /// Assumes that shares being passed in have already been accounted for any slashing
+    /// and are the `real` shares in the strategy to withdraw
     function withdrawSharesAsTokens(
-        address recipient,
+        address staker,
         IStrategy strategy,
-        uint256 shares,
-        IERC20 token
+        IERC20 token,
+        OwnedShares ownedShares
     ) external onlyDelegationManager {
-        strategy.withdraw(recipient, token, shares);
-    }
-
-    /**
-     * If true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
-     * and also when performing DelegationManager.queueWithdrawals, a staker can only withdraw to themselves.
-     * Defaulted to false for all existing strategies.
-     * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
-     * @param value bool value to set `thirdPartyTransfersForbidden` to
-     */
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external onlyStrategyWhitelister {
-        _setThirdPartyTransfersForbidden(strategy, value);
+        strategy.withdraw(staker, token, ownedShares.unwrap());
     }
 
     /**
@@ -208,23 +191,16 @@ contract StrategyManager is
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-     * @param thirdPartyTransfersForbiddenValues bool values to set `thirdPartyTransfersForbidden` to for each strategy
      */
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external onlyStrategyWhitelister {
-        require(strategiesToWhitelist.length == thirdPartyTransfersForbiddenValues.length, InputArrayLengthMismatch());
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
-        for (uint256 i = 0; i < strategiesToWhitelistLength;) {
+        for (uint256 i = 0; i < strategiesToWhitelistLength; ++i) {
             // change storage and emit event only if strategy is not already in whitelist
             if (!strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
                 emit StrategyAddedToDepositWhitelist(strategiesToWhitelist[i]);
-                _setThirdPartyTransfersForbidden(strategiesToWhitelist[i], thirdPartyTransfersForbiddenValues[i]);
-            }
-            unchecked {
-                ++i;
             }
         }
     }
@@ -237,16 +213,11 @@ contract StrategyManager is
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external onlyStrategyWhitelister {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
-        for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength;) {
+        for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength; ++i) {
             // change storage and emit event only if strategy is already in whitelist
             if (strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]] = false;
                 emit StrategyRemovedFromDepositWhitelist(strategiesToRemoveFromWhitelist[i]);
-                // Set mapping value to default false value
-                _setThirdPartyTransfersForbidden(strategiesToRemoveFromWhitelist[i], false);
-            }
-            unchecked {
-                ++i;
             }
         }
     }
@@ -258,26 +229,36 @@ contract StrategyManager is
      * @param staker The address to add shares to
      * @param token The token that is being deposited (used for indexing)
      * @param strategy The Strategy in which the `staker` is receiving shares
-     * @param shares The amount of shares to grant to the `staker`
+     * @param ownedShares The amount of ownedShares to grant to the `staker`
      * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
      * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) internal {
+    function _addOwnedShares(address staker, IERC20 token, IStrategy strategy, OwnedShares ownedShares) internal {
         // sanity checks on inputs
         require(staker != address(0), StakerAddressZero());
-        require(shares != 0, SharesAmountZero());
+        require(ownedShares.unwrap() != 0, SharesAmountZero());
 
-        // if they dont have existing shares of this strategy, add it to their strats
-        if (stakerStrategyShares[staker][strategy] == 0) {
+        Shares existingShares = stakerStrategyShares[staker][strategy];
+
+        // if they dont have existing ownedShares of this strategy, add it to their strats
+        if (existingShares.unwrap() == 0) {
             require(stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, MaxStrategiesExceeded());
             stakerStrategyList[staker].push(strategy);
         }
 
-        // add the returned shares to their existing shares for this strategy
-        stakerStrategyShares[staker][strategy] += shares;
+        // add the returned ownedShares to their existing shares for this strategy
+        stakerStrategyShares[staker][strategy] = existingShares.add(ownedShares.unwrap()).wrapShares();
 
-        emit Deposit(staker, token, strategy, shares);
+        // Increase shares delegated to operator, if needed
+        delegation.increaseDelegatedShares({
+            staker: staker,
+            strategy: strategy,
+            existingShares: existingShares,
+            addedOwnedShares: ownedShares
+        });
+
+        emit Deposit(staker, token, strategy, ownedShares);
     }
 
     /**
@@ -287,27 +268,24 @@ contract StrategyManager is
      * @param strategy The Strategy contract to deposit into.
      * @param token The ERC20 token to deposit.
      * @param amount The amount of `token` to deposit.
-     * @return shares The amount of *new* shares in `strategy` that have been credited to the `staker`.
+     * @return ownedShares The amount of *new* ownedShares in `strategy` that have been credited to the `staker`.
      */
     function _depositIntoStrategy(
         address staker,
         IStrategy strategy,
         IERC20 token,
         uint256 amount
-    ) internal onlyStrategiesWhitelistedForDeposit(strategy) returns (uint256 shares) {
+    ) internal onlyStrategiesWhitelistedForDeposit(strategy) returns (OwnedShares ownedShares) {
         // transfer tokens from the sender to the strategy
         token.safeTransferFrom(msg.sender, address(strategy), amount);
 
         // deposit the assets into the specified strategy and get the equivalent amount of shares in that strategy
-        shares = strategy.deposit(token, amount);
+        ownedShares = strategy.deposit(token, amount).wrapOwned();
 
         // add the returned shares to the staker's existing shares for this strategy
-        _addShares(staker, token, strategy, shares);
+        _addOwnedShares(staker, token, strategy, ownedShares);
 
-        // Increase shares delegated to operator, if needed
-        delegation.increaseDelegatedShares(staker, strategy, shares);
-
-        return shares;
+        return ownedShares;
     }
 
     /**
@@ -318,24 +296,22 @@ contract StrategyManager is
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
-    function _removeShares(address staker, IStrategy strategy, uint256 shareAmount) internal returns (bool) {
+    function _removeShares(address staker, IStrategy strategy, Shares shareAmount) internal returns (bool) {
         // sanity checks on inputs
-        require(shareAmount != 0, SharesAmountZero());
+        require(shareAmount.unwrap() != 0, SharesAmountZero());
 
         //check that the user has sufficient shares
-        uint256 userShares = stakerStrategyShares[staker][strategy];
+        Shares userShares = stakerStrategyShares[staker][strategy];
 
-        require(shareAmount <= userShares, InsufficientShares());
-        //unchecked arithmetic since we just checked this above
-        unchecked {
-            userShares = userShares - shareAmount;
-        }
+        require(shareAmount.unwrap() <= userShares.unwrap(), SharesAmountTooHigh());
+
+        userShares = userShares.sub(shareAmount.unwrap()).wrapShares();
 
         // subtract the shares from the staker's existing shares for this strategy
         stakerStrategyShares[staker][strategy] = userShares;
 
         // if no existing shares, remove the strategy from the staker's dynamic array of strategies
-        if (userShares == 0) {
+        if (userShares.unwrap() == 0) {
             _removeStrategyFromStakerStrategyList(staker, strategy);
 
             // return true in the event that the strategy was removed from stakerStrategyList[staker]
@@ -354,31 +330,17 @@ contract StrategyManager is
         //loop through all of the strategies, find the right one, then replace
         uint256 stratsLength = stakerStrategyList[staker].length;
         uint256 j = 0;
-        for (; j < stratsLength;) {
+        for (; j < stratsLength; ++j) {
             if (stakerStrategyList[staker][j] == strategy) {
                 //replace the strategy with the last strategy in the list
                 stakerStrategyList[staker][j] = stakerStrategyList[staker][stakerStrategyList[staker].length - 1];
                 break;
-            }
-            unchecked {
-                ++j;
             }
         }
         // if we didn't find the strategy, revert
         require(j != stratsLength, StrategyNotFound());
         // pop off the last entry in the list of strategies
         stakerStrategyList[staker].pop();
-    }
-
-    /**
-     * @notice Internal function for modifying `thirdPartyTransfersForbidden`.
-     * Used inside of the `setThirdPartyTransfersForbidden` and `addStrategiesToDepositWhitelist` functions.
-     * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
-     * @param value bool value to set `thirdPartyTransfersForbidden` to
-     */
-    function _setThirdPartyTransfersForbidden(IStrategy strategy, bool value) internal {
-        emit UpdatedThirdPartyTransfersForbidden(strategy, value);
-        thirdPartyTransfersForbidden[strategy] = value;
     }
 
     /**
@@ -393,6 +355,7 @@ contract StrategyManager is
     }
 
     // VIEW FUNCTIONS
+
     /**
      * @notice Get all details on the staker's deposits and corresponding shares
      * @param staker The staker of interest, whose deposits this function will fetch
@@ -400,17 +363,20 @@ contract StrategyManager is
      */
     function getDeposits(
         address staker
-    ) external view returns (IStrategy[] memory, uint256[] memory) {
+    ) external view returns (IStrategy[] memory, Shares[] memory) {
         uint256 strategiesLength = stakerStrategyList[staker].length;
-        uint256[] memory shares = new uint256[](strategiesLength);
+        Shares[] memory shares = new Shares[](strategiesLength);
 
-        for (uint256 i = 0; i < strategiesLength;) {
+        for (uint256 i = 0; i < strategiesLength; ++i) {
             shares[i] = stakerStrategyShares[staker][stakerStrategyList[staker][i]];
-            unchecked {
-                ++i;
-            }
         }
         return (stakerStrategyList[staker], shares);
+    }
+
+    function getStakerStrategyList(
+        address staker
+    ) external view returns (IStrategy[] memory) {
+        return stakerStrategyList[staker];
     }
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.

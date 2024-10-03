@@ -46,9 +46,6 @@ interface IStrategyManagerEvents {
         bytes32 withdrawalRoot
     );
 
-    /// @notice Emitted when `thirdPartyTransfersForbidden` is updated for a strategy and value by the owner
-    event UpdatedThirdPartyTransfersForbidden(IStrategy strategy, bool value);
-
     /// @notice Emitted when the `strategyWhitelister` is changed
     event StrategyWhitelisterChanged(address previousAddress, address newAddress);
 

@@ -64,7 +64,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /// @notice Simply checks that the `msg.sender` is the `strategyManager`, which is an address stored immutably at construction.
     modifier onlyStrategyManager() {
-        require(msg.sender == address(strategyManager), UnauthorizedCaller());
+        require(msg.sender == address(strategyManager), OnlyStrategyManager());
         _;
     }
 
@@ -302,7 +302,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     function shares(
         address user
     ) public view virtual returns (uint256) {
-        return strategyManager.stakerStrategyShares(user, IStrategy(address(this)));
+        return strategyManager.stakerStrategyShares(user, IStrategy(address(this))).unwrap();
     }
 
     /// @notice Internal function used to fetch this contract's current balance of `underlyingToken`.

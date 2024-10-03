@@ -32,10 +32,10 @@ interface IDelegationManagerEvents {
     event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status);
 
     /// @notice Emitted whenever an operator's shares are increased for a given strategy
-    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares);
 
     /// @notice Emitted whenever an operator's shares are decreased for a given strategy
-    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares);
 
     // @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);

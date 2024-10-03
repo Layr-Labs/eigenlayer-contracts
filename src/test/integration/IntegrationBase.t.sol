@@ -1003,7 +1003,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
         //         blocksToRoll = withdrawalDelayBlocks;
         //     }
         // }
-        cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
+        // TODO: Fix this with withdrawal changes
+        // cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot

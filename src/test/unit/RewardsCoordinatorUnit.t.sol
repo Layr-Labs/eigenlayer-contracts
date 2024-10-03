@@ -55,8 +55,18 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     /// @notice absolute min timestamp that a rewards can start at
     uint32 GENESIS_REWARDS_TIMESTAMP = 1712188800;
 
+    /// @notice Lower bound start range is ~1 month into the past, multiple of CALCULATION_INTERVAL_SECONDS
+    uint32 OPERATOR_SET_MAX_RETROACTIVE_LENGTH = 28 days;
+    /// @notice absolute min timestamp (seconds) that an operatorSet rewards submission can start at
+    uint32 OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = 1720656000;
+
+
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
+    /// @notice The activation delay until an updated operator's commission bips takes effect
+    uint32 OPERATOR_COMMISSION_ACTIVATION_DELAY = 17.5 days;
+    /// @notice The maximum commission bips that can be set for an operator
+    uint16 MAX_COMMISSION_BIPS = 10000;
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
 
@@ -74,7 +84,10 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
 
     /// @dev Index for flag that pauses submitRoots
-    uint8 internal constant PAUSED_SUBMIT_ROOTS = 3;
+    uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
+
+    /// @dev Index for flag that pauses calling rewardOperatorSetForRange
+    uint8 internal constant PAUSED_REWARD_OPERATOR_SET = 4;
 
     /// @dev Index for flag that pauses rewardAllStakersAndOperators
     uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
@@ -93,11 +106,14 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManagerMock,
             strategyManagerMock,
+            avsDirectoryMock,
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
             MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP
+            GENESIS_REWARDS_TIMESTAMP,
+            OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP,
+            OPERATOR_SET_MAX_RETROACTIVE_LENGTH
         );
         rewardsCoordinator = RewardsCoordinator(
             address(
@@ -1337,7 +1353,7 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
 
     function test_Revert_WhenSubmitRootPaused() public {
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_ROOTS);
+        rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_DISABLE_ROOTS);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         rewardsCoordinator.submitRoot(bytes32(0), 0);
@@ -2248,5 +2264,96 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_SingleEarnerLeaf.json");
 
         return claims;
+    }
+}
+
+contract RewardsCoordinatorUnitTests_disableRoot is RewardsCoordinatorUnitTests {
+    function testFuzz_disableRoot_Revert_WhenNotRewardsUpdater(
+        address invalidRewardsUpdater
+    ) public filterFuzzedAddressInputs(invalidRewardsUpdater) {
+        cheats.prank(invalidRewardsUpdater);
+
+        cheats.expectRevert("RewardsCoordinator: caller is not the rewardsUpdater");
+        rewardsCoordinator.disableRoot(0);
+    }
+
+    function test_disableRoot_Revert_WhenPaused() public {
+        cheats.prank(pauser);
+        rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_DISABLE_ROOTS);
+
+        cheats.expectRevert("Pausable: index is paused");
+        rewardsCoordinator.disableRoot(0);
+    }
+
+    function testFuzz_disableRoot_Revert_WhenRootIndexOutOfBounds(uint32 rootIndex) public {
+        // submitRoots with indexes 0,1,2
+        _submitRoots();
+        cheats.assume(rootIndex > 2);
+
+        cheats.expectRevert("RewardsCoordinator.disableRoot: invalid rootIndex");
+        cheats.prank(rewardsUpdater);
+        rewardsCoordinator.disableRoot(rootIndex);
+    }
+
+    function testFuzz_disableRoot_Revert_WhenRootAlreadyDisabled(uint32 rootIndex) public {
+        // submitRoots with indexes 0,1,2
+        _submitRoots();
+        rootIndex = uint32(bound(uint256(rootIndex), 0, 2));
+        
+        cheats.startPrank(rewardsUpdater);
+        rewardsCoordinator.disableRoot(rootIndex);
+
+        cheats.expectRevert("RewardsCoordinator.disableRoot: root already disabled");
+        rewardsCoordinator.disableRoot(rootIndex);
+        cheats.stopPrank();
+    }
+
+    function testeFuzz_disableRoot_Revert_WhenRootAlreadyActivated(uint32 rootIndex) public {
+        // submitRoots with indexes 0,1,2
+        _submitRoots();
+        rootIndex = uint32(bound(uint256(rootIndex), 0, 2));
+        cheats.warp(block.timestamp + activationDelay);
+
+        cheats.expectRevert("RewardsCoordinator.disableRoot: root already activated");
+        cheats.prank(rewardsUpdater);
+        rewardsCoordinator.disableRoot(rootIndex);
+    }
+
+    function testFuzz_disableRoot(uint32 rootIndex, uint256 randSalt) public {
+        // Set timestamp to some value in the future
+        cheats.warp(bound(randSalt, 1e5, 1e6));
+        uint256 currTimestamp = block.timestamp;
+        // submitRoots with indexes 0,1,2
+        _submitRoots();
+        rootIndex = uint32(bound(uint256(rootIndex), 0, 2));
+
+        cheats.warp(currTimestamp);
+
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit DistributionRootDisabled(rootIndex);
+        cheats.prank(rewardsUpdater);
+        rewardsCoordinator.disableRoot(rootIndex);
+
+        assertEq(
+            rewardsCoordinator.getDistributionRootAtIndex(rootIndex).disabled,
+            true,
+            "root should be disabled"
+        );
+    }
+
+    function _submitRoots() internal {
+        cheats.warp(1e6);
+        
+        // submitRoots with indexes 0,1,2
+        cheats.startPrank(rewardsUpdater);
+        rewardsCoordinator.submitRoot(bytes32("0"), uint32(block.timestamp - 1));
+
+        cheats.warp(block.timestamp + 2);
+        rewardsCoordinator.submitRoot(bytes32("1"), uint32(block.timestamp - 1));
+
+        cheats.warp(block.timestamp + 2);
+        rewardsCoordinator.submitRoot(bytes32("2"), uint32(block.timestamp - 1));
+
+        cheats.stopPrank();
     }
 }

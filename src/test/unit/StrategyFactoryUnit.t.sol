@@ -116,7 +116,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         require(newStrategy.pauserRegistry() == pauserRegistry, "pauserRegistry not set correctly");
         require(newStrategy.underlyingToken() == underlyingToken, "underlyingToken not set correctly");
         require(strategyManagerMock.strategyIsWhitelistedForDeposit(newStrategy), "underlyingToken is not whitelisted");
-        require(!strategyManagerMock.thirdPartyTransfersForbidden(newStrategy), "newStrategy has 3rd party transfers forbidden");
     }
 
     function test_deployNewStrategy_revert_StrategyAlreadyExists() public {
@@ -159,38 +158,18 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     function test_whitelistStrategies() public {
         StrategyBase strategy = _deployStrategy();
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](1);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         strategiesToWhitelist[0] = strategy;
-        thirdPartyTransfersForbiddenValues[0] = true;
-        strategyFactory.whitelistStrategies(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
+        strategyFactory.whitelistStrategies(strategiesToWhitelist);
 
         assertTrue(strategyManagerMock.strategyIsWhitelistedForDeposit(strategy), "Strategy not whitelisted");
-        require(strategyManagerMock.thirdPartyTransfersForbidden(strategy), "3rd party transfers forbidden not set correctly");
     }
 
     function test_whitelistStrategies_revert_notOwner() public {
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](1);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
 
         cheats.expectRevert("Ownable: caller is not the owner");
         cheats.prank(notOwner);
-        strategyFactory.whitelistStrategies(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
-    }
-
-    function test_setThirdPartyTransfersForbidden_revert_notOwner() public {
-        IStrategy strategy;
-
-        cheats.expectRevert("Ownable: caller is not the owner");
-        cheats.prank(notOwner);
-        strategyFactory.setThirdPartyTransfersForbidden(strategy, true);
-    }
-
-    function test_setThirdPartyTransfersFrobidden() public {
-        StrategyBase strategy = _deployStrategy();
-        bool thirdPartyTransfersForbidden = true;
-
-        strategyFactory.setThirdPartyTransfersForbidden(strategy, thirdPartyTransfersForbidden);
-        assertTrue(strategyManagerMock.thirdPartyTransfersForbidden(strategy), "3rd party transfers forbidden not set");
+        strategyFactory.whitelistStrategies(strategiesToWhitelist);
     }
 
     function test_removeStrategiesFromWhitelist_revert_notOwner() public {

@@ -327,10 +327,7 @@ contract DelegationTests is EigenLayerTestHelper {
         delegation.initialize(
             address(this),
             eigenLayerPauserReg,
-            0,
-            minWithdrawalDelayBlocks,
-            initializeStrategiesToSetDelayBlocks,
-            initializeWithdrawalDelayBlocks
+            0
         );
     }
 
@@ -371,10 +368,7 @@ contract DelegationTests is EigenLayerTestHelper {
         delegation.initialize(
             _attacker,
             eigenLayerPauserReg,
-            0,
-            0, // minWithdrawalDelayBLocks
-            initializeStrategiesToSetDelayBlocks,
-            initializeWithdrawalDelayBlocks
+            0
         );
     }
 

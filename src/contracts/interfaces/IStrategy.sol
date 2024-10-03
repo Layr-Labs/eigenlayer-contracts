@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../libraries/SlashingLib.sol";
 
 /**
  * @title Minimal interface for an `Strategy` contract.
@@ -10,11 +11,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @notice Custom `Strategy` implementations may expand extensively on this interface.
  */
 interface IStrategy {
-    /// @dev Thrown when msg.sender is not allowed to call a function
-    error UnauthorizedCaller();
-
-    /// StrategyBase
-
+    /// @dev Thrown when called by an account that is not strategy manager.
+    error OnlyStrategyManager();
     /// @dev Thrown when new shares value is zero.
     error NewSharesZero();
     /// @dev Thrown when total shares exceeds max.

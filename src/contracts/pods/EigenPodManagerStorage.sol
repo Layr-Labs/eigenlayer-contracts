@@ -26,9 +26,6 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
 
-    /// @notice EigenLayer's Slasher contract
-    ISlasher public immutable slasher;
-
     /// @notice EigenLayer's DelegationManager contract
     IDelegationManager public immutable delegationManager;
 
@@ -83,13 +80,11 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
         IStrategyManager _strategyManager,
-        ISlasher _slasher,
         IDelegationManager _delegationManager
     ) {
         ethPOS = _ethPOS;
         eigenPodBeacon = _eigenPodBeacon;
         strategyManager = _strategyManager;
-        slasher = _slasher;
         delegationManager = _delegationManager;
     }
 

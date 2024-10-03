@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../../src/contracts/core/StrategyManager.sol";
-import "../../src/contracts/core/Slasher.sol";
 import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
+import "../../src/contracts/core/AllocationManager.sol";
 
 import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
@@ -45,8 +45,6 @@ contract ExistingDeploymentParser is Script, Test {
     // EigenLayer Contracts
     ProxyAdmin public eigenLayerProxyAdmin;
     PauserRegistry public eigenLayerPauserReg;
-    Slasher public slasher;
-    Slasher public slasherImplementation;
     AVSDirectory public avsDirectory;
     AVSDirectory public avsDirectoryImplementation;
     DelegationManager public delegationManager;
@@ -62,6 +60,8 @@ contract ExistingDeploymentParser is Script, Test {
     StrategyBase public baseStrategyImplementation;
     StrategyFactory public strategyFactory;
     StrategyFactory public strategyFactoryImplementation;
+    AllocationManager public allocationManager;
+    AllocationManager public allocationManagerImplementation;
     UpgradeableBeacon public strategyBeacon;
     StrategyBase public strategyFactoryBeaconImplementation;
 
@@ -100,11 +100,10 @@ contract ExistingDeploymentParser is Script, Test {
     // StrategyManager
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
     address STRATEGY_MANAGER_WHITELISTER;
-    // SLasher
-    uint256 SLASHER_INIT_PAUSED_STATUS;
     // DelegationManager
     uint256 DELEGATION_MANAGER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS;
+    uint32 MIN_WITHDRAWAL_DELAY;
     // AVSDirectory
     uint256 AVS_DIRECTORY_INIT_PAUSED_STATUS;
     // RewardsCoordinator
@@ -117,8 +116,14 @@ contract ExistingDeploymentParser is Script, Test {
     uint32 REWARDS_COORDINATOR_ACTIVATION_DELAY;
     uint32 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
     uint32 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
+    uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
+    uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
+    // AllocationManager
+    uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
+    uint32 DEALLOCATION_DELAY;
+    uint32 ALLOCATION_DELAY_CONFIGURATION_DELAY;
     // EigenPod
     uint64 EIGENPOD_GENESIS_TIME;
     uint64 EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
@@ -156,10 +161,6 @@ contract ExistingDeploymentParser is Script, Test {
         );
         eigenLayerPauserReg = PauserRegistry(
             stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerPauserReg")
-        );
-        slasher = Slasher(stdJson.readAddress(existingDeploymentData, ".addresses.slasher"));
-        slasherImplementation = Slasher(
-            stdJson.readAddress(existingDeploymentData, ".addresses.slasherImplementation")
         );
         delegationManager = DelegationManager(
             stdJson.readAddress(existingDeploymentData, ".addresses.delegationManager")
@@ -288,8 +289,6 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".strategyManager.init_strategy_whitelister"
         );
-        // Slasher
-        SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".slasher.init_paused_status");
         // DelegationManager
         DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = stdJson.readUint(
             initialDeploymentData,
@@ -314,12 +313,23 @@ contract ExistingDeploymentParser is Script, Test {
         REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
             stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.global_operator_commission_bips")
         );
+        REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP")
+        );
+        REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH")
+        );
         // AVSDirectory
         AVS_DIRECTORY_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".avsDirectory.init_paused_status");
         // EigenPodManager
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(
             initialDeploymentData,
             ".eigenPodManager.init_paused_status"
+        );
+        // AllocationManager
+        ALLOCATION_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(
+            initialDeploymentData,
+            ".allocationManager.init_paused_status"
         );
         // EigenPod
         EIGENPOD_GENESIS_TIME = uint64(stdJson.readUint(initialDeploymentData, ".eigenPod.GENESIS_TIME"));
@@ -345,7 +355,6 @@ contract ExistingDeploymentParser is Script, Test {
             "rewardsCoordinator: strategyManager address not set correctly"
         );
         // DelegationManager
-        require(delegationManager.slasher() == slasher, "delegationManager: slasher address not set correctly");
         require(
             delegationManager.strategyManager() == strategyManager,
             "delegationManager: strategyManager address not set correctly"
@@ -355,7 +364,6 @@ contract ExistingDeploymentParser is Script, Test {
             "delegationManager: eigenPodManager address not set correctly"
         );
         // StrategyManager
-        require(strategyManager.slasher() == slasher, "strategyManager: slasher address not set correctly");
         require(
             strategyManager.delegation() == delegationManager,
             "strategyManager: delegationManager address not set correctly"
@@ -377,7 +385,6 @@ contract ExistingDeploymentParser is Script, Test {
             eigenPodManager.strategyManager() == strategyManager,
             "eigenPodManager: strategyManager contract address not set correctly"
         );
-        require(eigenPodManager.slasher() == slasher, "eigenPodManager: slasher contract address not set correctly");
         require(
             eigenPodManager.delegationManager() == delegationManager,
             "eigenPodManager: delegationManager contract address not set correctly"
@@ -408,11 +415,6 @@ contract ExistingDeploymentParser is Script, Test {
                 ITransparentUpgradeableProxy(payable(address(strategyManager)))
             ) == address(strategyManagerImplementation),
             "strategyManager: implementation set incorrectly"
-        );
-        require(
-            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(slasher)))) ==
-                address(slasherImplementation),
-            "slasher: implementation set incorrectly"
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
@@ -461,10 +463,7 @@ contract ExistingDeploymentParser is Script, Test {
         delegationManager.initialize(
             address(0),
             eigenLayerPauserReg,
-            0,
-            0, // minWithdrawalDelayBLocks
-            initializeStrategiesToSetDelayBlocks,
-            initializeWithdrawalDelayBlocks
+            0
         );
         // StrategyManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
@@ -555,10 +554,6 @@ contract ExistingDeploymentParser is Script, Test {
             delegationManager.paused() == DELEGATION_MANAGER_INIT_PAUSED_STATUS,
             "delegationManager: init paused status set incorrectly"
         );
-        require(
-            delegationManager.minWithdrawalDelayBlocks() == DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
-            "delegationManager: minWithdrawalDelayBlocks not set correctly"
-        );
         // StrategyManager
         require(
             strategyManager.pauserRegistry() == eigenLayerPauserReg,
@@ -639,7 +634,6 @@ contract ExistingDeploymentParser is Script, Test {
 
         emit log_named_uint("STRATEGY_MANAGER_INIT_PAUSED_STATUS", STRATEGY_MANAGER_INIT_PAUSED_STATUS);
         emit log_named_address("STRATEGY_MANAGER_WHITELISTER", STRATEGY_MANAGER_WHITELISTER);
-        emit log_named_uint("SLASHER_INIT_PAUSED_STATUS", SLASHER_INIT_PAUSED_STATUS);
         emit log_named_uint(
             "DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS",
             DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS
@@ -690,8 +684,6 @@ contract ExistingDeploymentParser is Script, Test {
         string memory deployed_addresses = "addresses";
         vm.serializeAddress(deployed_addresses, "eigenLayerProxyAdmin", address(eigenLayerProxyAdmin));
         vm.serializeAddress(deployed_addresses, "eigenLayerPauserReg", address(eigenLayerPauserReg));
-        vm.serializeAddress(deployed_addresses, "slasher", address(slasher));
-        vm.serializeAddress(deployed_addresses, "slasherImplementation", address(slasherImplementation));
         vm.serializeAddress(deployed_addresses, "avsDirectory", address(avsDirectory));
         vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
         vm.serializeAddress(deployed_addresses, "delegationManager", address(delegationManager));
