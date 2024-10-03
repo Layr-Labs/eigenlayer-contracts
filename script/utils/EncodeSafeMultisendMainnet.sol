@@ -126,27 +126,4 @@ contract EncodeSafeTransactionMainnet is Test {
 
         return final_calldata_to_executor_multisig;
     }
-
-    struct MultisigCall {
-        address to;
-        uint256 value;
-        bytes data;
-    }
-
-    function encodeMultisendTxs(MultisigCall[] memory txs) public pure returns (bytes memory) {
-        bytes memory ret = new bytes(0);
-        for (uint256 i = 0; i < txs.length; i++) {
-            ret = abi.encodePacked(
-                ret,
-                abi.encodePacked(
-                    uint8(0),
-                    txs[i].to,
-                    txs[i].value,
-                    uint256(txs[i].data.length),
-                    txs[i].data
-                )
-            );
-        }
-        return ret;
-    }
 }

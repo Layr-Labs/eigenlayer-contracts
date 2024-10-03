@@ -12,17 +12,18 @@ contract UpgradeCounter is MultisigBuilder {
 
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
         _multisigCalls.append({
-            to: addrs.admin.timelock,
+            to: addrs.timelock,
+            value: 0,
             data: abi.encodeWithSelector(
-                ITimelock.executeTransaction.selector({
-                    to: addrs.proxyAdmin,
-                    value: 0,
-                    signature: bytes(0),
-                    data: bytes(0),
-                    eta: uint(0)
-                })
-            )
-        });
+                    ITimelock.executeTransaction.selector,
+                    addrs.proxyAdmin,
+                    0,
+                    "",
+                    bytes(""),
+                    uint(0)
+                )
+            }
+        );
 
         _multisigCalls.append({
             to: addrs.proxyAdmin,
@@ -36,17 +37,15 @@ contract UpgradeCounter is MultisigBuilder {
         return _multisigCalls;
     }
 
-    function _test_Execute(
+    function _testExecute(
         Addresses memory addrs,
         Environment memory env,
         Params memory params
     ) internal override {
-        bytes memory data = encodeMultisendTxs(_multisigCalls);
+        bytes memory data = _multisigCalls.encodeMultisendTxs();
 
-        vm.startBroadcast(addrs.admin.opsMultisig);
-        addrs.admin.multiSend.delegatecall(data);
+        vm.startBroadcast(addrs.operationsMultisig);
+        params.multiSendCallOnly.delegatecall(data);
         vm.stopBroadcast();
-
-
     }
 }

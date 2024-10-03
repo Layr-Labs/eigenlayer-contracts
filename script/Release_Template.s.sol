@@ -2,8 +2,8 @@
 pragma solidity ^0.8.12;
 
 import "script/utils/ConfigParser.sol";
-import "script/utils/EncodeSafeMultisendMainnet.sol";
 import {EncGnosisSafe} from "script/utils/Encoders.sol";
+import "script/utils/Interfaces.sol";
 
 /// @notice Deployment data struct
 struct Deployment {
@@ -57,6 +57,25 @@ library MultisigCallHelper {
 
         return multisigCalls;
     }
+
+    function encodeMultisendTxs(MultisigCall[] memory txs) public pure returns (bytes memory) {
+        bytes memory ret = new bytes(0);
+        for (uint256 i = 0; i < txs.length; i++) {
+            ret = abi.encodePacked(
+                ret,
+                abi.encodePacked(
+                    uint8(0),
+                    txs[i].to,
+                    txs[i].value,
+                    uint256(txs[i].data.length),
+                    txs[i].data
+                )
+            );
+        }
+
+
+        return abi.encodeWithSelector(IMultiSend.multiSend.selector, ret);
+    }
 }
 
 
@@ -79,10 +98,12 @@ abstract contract EOABuilder is ConfigParser {
 }
 
 /// @notice template for a Multisig script
-abstract contract MultisigBuilder is ConfigParser, EncodeSafeTransactionMainnet {
+abstract contract MultisigBuilder is ConfigParser {
+
+    using MultisigCallHelper for *;
 
     /// @return a Transaction object for a Gnosis Safe to ingest
-    function execute(string memory envPath) public returns (bytes memory) {
+    function execute(string memory envPath) public returns (Transaction memory) {
         (
             Addresses memory addrs,
             Environment memory env,
@@ -91,15 +112,36 @@ abstract contract MultisigBuilder is ConfigParser, EncodeSafeTransactionMainnet 
 
         MultisigCall[] memory calls = _execute(addrs, env, params);
 
-        return encodeMultisendTxs(calls);
+        bytes memory data = calls.encodeMultisendTxs();
+
+        return Transaction({
+            to: params.multiSendCallOnly,
+            value: 0,
+            data: data,
+            op: EncGnosisSafe.Operation.DelegateCall
+        });
     }
 
-    function test_Execute(string memory envPath) public {
+    function testExecute(string memory envPath) public {
+        (
+            Addresses memory addrs,
+            Environment memory env,
+            Params memory params
+        ) = _readConfigFile(envPath);
+
         execute(envPath);
+        _testExecute(
+            addrs,
+            env,
+            params
+        );
     }
 
     /// @notice to be implemented by inheriting contract
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
+
+    /// @notice to be implemented for testing
+    function _testExecute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual;
 }
 
 /// @notice template for an OpsMultisig script that goes through the timelock

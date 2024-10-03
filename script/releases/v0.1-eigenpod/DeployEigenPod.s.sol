@@ -5,13 +5,13 @@ import "script/Release_Template.s.sol";
 import "src/contracts/pods/EigenPod.sol";
 
 contract DeployEigenPod is EOABuilder {
-    Deployment[] internal deployments;
+    Deployment[] internal _deployments;
 
     /// @notice deploys an EigenPod and returns the deployed address
     function _deploy(Addresses memory addrs, Environment memory, Params memory params) internal override returns (Deployment[] memory) {
 
         vm.startBroadcast();
-        deployments.push(Deployment({
+        _deployments.push(Deployment({
             name: type(EigenPod).name,
             deployedTo: address(new EigenPod(
                 IETHPOSDeposit(params.ethPOS),
@@ -21,6 +21,6 @@ contract DeployEigenPod is EOABuilder {
         }));
         vm.stopBroadcast();
 
-        return deployments;
+        return _deployments;
     }
 }
