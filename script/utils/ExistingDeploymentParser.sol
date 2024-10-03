@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/Slasher.sol";
@@ -66,13 +67,16 @@ contract ExistingDeploymentParser is Script, Test {
     StrategyBase public strategyFactoryBeaconImplementation;
 
     // Token
-    ProxyAdmin public tokenProxyAdmin;
+    ProxyAdmin public eigenTokenProxyAdmin;
+    ProxyAdmin public beigenTokenProxyAdmin;
     IEigen public EIGEN;
     IEigen public EIGENImpl;
     IBackingEigen public bEIGEN;
     IBackingEigen public bEIGENImpl;
     EigenStrategy public eigenStrategy;
     EigenStrategy public eigenStrategyImpl;
+    TimelockController public eigenTokenTimelockController;
+    TimelockController public beigenTokenTimelockController;
 
     // EigenPods deployed
     address[] public multiValidatorPods;
@@ -87,6 +91,7 @@ contract ExistingDeploymentParser is Script, Test {
     address operationsMultisig;
     address communityMultisig;
     address pauserMultisig;
+    address foundationMultisig;
     address timelock;
 
     // strategies deployed
@@ -151,6 +156,7 @@ contract ExistingDeploymentParser is Script, Test {
         operationsMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.operationsMultisig");
         communityMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.communityMultisig");
         pauserMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.pauserMultisig");
+        foundationMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.foundationMultisig");
         timelock = stdJson.readAddress(existingDeploymentData, ".parameters.timelock");
 
         eigenLayerProxyAdmin =
@@ -199,7 +205,8 @@ contract ExistingDeploymentParser is Script, Test {
         }
 
         // token
-        tokenProxyAdmin = ProxyAdmin(stdJson.readAddress(existingDeploymentData, ".addresses.token.tokenProxyAdmin"));
+        eigenTokenProxyAdmin = ProxyAdmin(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenTokenProxyAdmin"));
+        beigenTokenProxyAdmin = ProxyAdmin(stdJson.readAddress(existingDeploymentData, ".addresses.token.beigenTokenProxyAdmin"));
         EIGEN = IEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.EIGEN"));
         EIGENImpl = IEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.EIGENImpl"));
         bEIGEN = IBackingEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.bEIGEN"));
@@ -207,6 +214,10 @@ contract ExistingDeploymentParser is Script, Test {
         eigenStrategy = EigenStrategy(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenStrategy"));
         eigenStrategyImpl =
             EigenStrategy(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenStrategyImpl"));
+        eigenTokenTimelockController = TimelockController(
+            payable(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenTokenTimelockController")));
+        beigenTokenTimelockController = TimelockController(
+            payable(stdJson.readAddress(existingDeploymentData, ".addresses.token.beigenTokenTimelockController")));
     }
 
     function _parseDeployedEigenPods(
@@ -256,6 +267,7 @@ contract ExistingDeploymentParser is Script, Test {
         operationsMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.operationsMultisig");
         communityMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.communityMultisig");
         pauserMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.pauserMultisig");
+        foundationMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.foundationMultisig");
 
         // Strategies to Deploy, load strategy list
         numStrategiesToDeploy = stdJson.readUint(initialDeploymentData, ".strategies.numStrategies");
@@ -618,6 +630,7 @@ contract ExistingDeploymentParser is Script, Test {
         emit log_named_address("operationsMultisig", operationsMultisig);
         emit log_named_address("communityMultisig", communityMultisig);
         emit log_named_address("pauserMultisig", pauserMultisig);
+        emit log_named_address("foundationMultisig", foundationMultisig);
 
         emit log_named_uint("STRATEGY_MANAGER_INIT_PAUSED_STATUS", STRATEGY_MANAGER_INIT_PAUSED_STATUS);
         emit log_named_address("STRATEGY_MANAGER_WHITELISTER", STRATEGY_MANAGER_WHITELISTER);
@@ -699,6 +712,7 @@ contract ExistingDeploymentParser is Script, Test {
         vm.serializeAddress(parameters, "operationsMultisig", operationsMultisig);
         vm.serializeAddress(parameters, "communityMultisig", communityMultisig);
         vm.serializeAddress(parameters, "pauserMultisig", pauserMultisig);
+        vm.serializeAddress(parameters, "foundationMultisig", foundationMultisig);
         vm.serializeAddress(parameters, "timelock", timelock);
         string memory parameters_output = vm.serializeAddress(parameters, "operationsMultisig", operationsMultisig);
 
