@@ -31,6 +31,12 @@ contract EigenPodManagerMock is IEigenPodManager, Test, Pausable {
 
     function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, int256 /*sharesDelta*/) external pure {}
 
+    function recordBeaconChainETHBalanceUpdate(
+        address podOwner,
+        int256 sharesDelta,
+        uint64 proportionPodBalanceDecrease
+    ) external { }
+
     function ownerToPod(address /*podOwner*/) external pure returns(IEigenPod) {
         return IEigenPod(address(0));
     }

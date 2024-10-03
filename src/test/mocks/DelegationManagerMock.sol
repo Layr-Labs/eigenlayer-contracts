@@ -64,6 +64,12 @@ contract DelegationManagerMock is IDelegationManager, Test {
     
     function decreaseDelegatedShares(address staker, IStrategy strategy, OwnedShares shares) external {}
 
+    function decreaseBeaconChainScalingFactor(
+        address staker,
+        Shares existingShares,
+        uint64 proportionOfOldBalance
+    ) external { }
+
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
             __deprecated_earningsReceiver: operator,

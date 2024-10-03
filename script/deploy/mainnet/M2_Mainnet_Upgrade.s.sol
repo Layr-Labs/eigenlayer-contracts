@@ -47,7 +47,7 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
      */
     function _deployImplementationContracts() internal {
         // 1. Deploy New TUPS
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -69,8 +69,8 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
             eigenPodManager,
             EIGENPOD_GENESIS_TIME
         );
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager);
+        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, avsDirectory);
         eigenPodManagerImplementation = new EigenPodManager(
             IETHPOSDeposit(ETHPOSDepositAddress),
             eigenPodBeacon,
@@ -106,7 +106,6 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         );
 
         // Second, configure additional settings and paused statuses
-        delegationManager.setMinWithdrawalDelayBlocks(DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
         delegationManager.unpause(0);
         eigenPodManager.unpause(0);
 
@@ -189,11 +188,11 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         );
 
         // set the min withdrawal delay blocks on the DelegationManager
-        txs[6] = Tx(
-            address(delegationManager), 
-            0, // value
-            abi.encodeWithSelector(DelegationManager.setMinWithdrawalDelayBlocks.selector, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS)
-        );
+        // txs[6] = Tx(
+        //     address(delegationManager), 
+        //     0, // value
+        //     abi.encodeWithSelector(DelegationManager.setMinWithdrawalDelayBlocks.selector, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS)
+        // );
 
         // set beacon chain oracle on EigenPodManager
         // txs[7] = Tx(

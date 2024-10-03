@@ -378,10 +378,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
-                0 /*initialPausedStatus*/,
-                minWithdrawalDelayBlocks,
-                initializeStrategiesToSetDelayBlocks,
-                initializeWithdrawalDelayBlocks
+                0 /*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(

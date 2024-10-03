@@ -43,7 +43,6 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
             ethPOSMock,
             eigenPodBeacon,
             strategyManagerMock,
-            slasherMock,
             delegationManagerMock
         );
         eigenPodManager = EigenPodManager(
@@ -449,7 +448,6 @@ contract EigenPodManagerUnitTests_ShareAdjustmentCalculationTests is EigenPodMan
             ethPOSMock,
             eigenPodBeacon,
             strategyManagerMock,
-            slasherMock,
             delegationManagerMock
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));

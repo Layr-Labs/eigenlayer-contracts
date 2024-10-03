@@ -37,7 +37,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
-        strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, slasherMock, avsDirectoryMock);
+        strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, avsDirectoryMock);
         strategyManager = StrategyManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -1163,7 +1163,7 @@ contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyMan
 
         cheats.prank(notStrategyWhitelister);
         cheats.expectRevert(IStrategyManager.UnauthorizedCaller.selector);
-        strategyManager.addStrategiesToDepositWhitelist(strategyArray, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategyArray);
     }
 
     function test_AddSingleStrategyToWhitelist() external {

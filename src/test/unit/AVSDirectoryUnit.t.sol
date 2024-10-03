@@ -81,7 +81,6 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
 
         delegationManagerImplementation = new DelegationManager(
             strategyManagerMock, 
-            slasherMock, 
             eigenPodManagerMock, 
             avsDirectory, 
             allocationManager,

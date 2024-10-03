@@ -44,7 +44,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     address defaultAVS = address(this);
 
     // 604800 seconds in week / 12 = 50,400 blocks
-    uint256 minWithdrawalDelayBlocks = 50400;
+    uint256 MIN_WITHDRAWAL_DELAY = 50400;
     IStrategy[] public initializeStrategiesToSetDelayBlocks;
     uint256[] public initializeWithdrawalDelayBlocks;
 
@@ -73,7 +73,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         // Deploy DelegationManager implmentation and proxy
         initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         initializeWithdrawalDelayBlocks = new uint256[](0);
-        delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
+        delegationManagerImplementation = new DelegationManager(avsDirectoryMock, strategyManagerMock, eigenPodManagerMock, allocationManagerMock, MIN_WITHDRAWAL_DELAY);
         delegationManager = DelegationManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -84,7 +84,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                         address(this),
                         pauserRegistry,
                         0, // 0 is initialPausedStatus
-                        minWithdrawalDelayBlocks,
                         initializeStrategiesToSetDelayBlocks,
                         initializeWithdrawalDelayBlocks
                     )
@@ -524,11 +523,6 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
             "constructor / initializer incorrect, strategyManager set wrong"
         );
         assertEq(
-            address(delegationManager.slasher()),
-            address(slasherMock),
-            "constructor / initializer incorrect, slasher set wrong"
-        );
-        assertEq(
             address(delegationManager.pauserRegistry()),
             address(pauserRegistry),
             "constructor / initializer incorrect, pauserRegistry set wrong"
@@ -544,65 +538,8 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
             address(this),
             pauserRegistry,
             0,
-            0, // minWithdrawalDelayBlocks
             initializeStrategiesToSetDelayBlocks,
             initializeWithdrawalDelayBlocks
-        );
-    }
-
-    function testFuzz_setMinWithdrawalDelayBlocks_revert_notOwner(
-        address invalidCaller
-    ) public filterFuzzedAddressInputs(invalidCaller) {
-        cheats.assume(invalidCaller != delegationManager.owner());
-        cheats.prank(invalidCaller);
-        cheats.expectRevert("Ownable: caller is not the owner");
-        delegationManager.setMinWithdrawalDelayBlocks(0);
-    }
-
-    function testFuzz_setMinWithdrawalDelayBlocks_revert_tooLarge(uint256 newMinWithdrawalDelayBlocks) external {
-        // filter fuzzed inputs to disallowed amounts
-        cheats.assume(newMinWithdrawalDelayBlocks > delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS());
-
-        // attempt to set the `minWithdrawalDelayBlocks` variable
-        cheats.expectRevert(IDelegationManager.WithdrawalDelayExceedsMax.selector);
-        delegationManager.setMinWithdrawalDelayBlocks(newMinWithdrawalDelayBlocks);
-    }
-
-    function testFuzz_initialize_Revert_WhenWithdrawalDelayBlocksTooLarge(
-        uint256[] memory withdrawalDelayBlocks,
-        uint256 invalidStrategyIndex
-    ) public {
-        // set withdrawalDelayBlocks to be too large
-        cheats.assume(withdrawalDelayBlocks.length > 0);
-        uint256 numStrats = withdrawalDelayBlocks.length;
-        IStrategy[] memory strategiesToSetDelayBlocks = new IStrategy[](numStrats);
-        for (uint256 i = 0; i < numStrats; i++) {
-            strategiesToSetDelayBlocks[i] = IStrategy(address(uint160(uint256(keccak256(abi.encode(strategyMock, i))))));
-        }
-
-        // set at least one index to be too large for withdrawalDelayBlocks
-        invalidStrategyIndex = invalidStrategyIndex % numStrats;
-        withdrawalDelayBlocks[invalidStrategyIndex] = MAX_WITHDRAWAL_DELAY_BLOCKS + 1;
-
-        // Deploy DelegationManager implmentation and proxy
-        delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
-        cheats.expectRevert(IDelegationManager.WithdrawalDelayExceedsMax.selector);
-        delegationManager = DelegationManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(delegationManagerImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        DelegationManager.initialize.selector,
-                        address(this),
-                        pauserRegistry,
-                        0, // 0 is initialPausedStatus
-                        minWithdrawalDelayBlocks,
-                        strategiesToSetDelayBlocks,
-                        withdrawalDelayBlocks
-                    )
-                )
-            )
         );
     }
 }
@@ -3103,8 +3040,8 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
     }
 
     /**
-     * @notice should revert if minWithdrawalDelayBlocks has not passed, and if
-     * delegationManager.getWithdrawalDelay returns a value greater than minWithdrawalDelayBlocks
+     * @notice should revert if MIN_WITHDRAWAL_DELAY has not passed, and if
+     * delegationManager.getWithdrawalDelay returns a value greater than MIN_WITHDRAWAL_DELAY
      * then it should revert if the validBlockNumber has not passed either.
      */
     function test_Revert_WhenWithdrawalDelayBlocksNotPassed(
@@ -3129,11 +3066,11 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         // prank as withdrawer address
         cheats.startPrank(defaultStaker);
         cheats.expectRevert(IDelegationManager.WithdrawalDelayNotElapsed.selector);
-        cheats.roll(block.number + minWithdrawalDelayBlocks - 1);
+        cheats.roll(block.number + MIN_WITHDRAWAL_DELAY - 1);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, receiveAsTokens);
 
         uint256 validBlockNumber = delegationManager.getWithdrawalDelay(withdrawal.strategies);
-        if (validBlockNumber > minWithdrawalDelayBlocks) {
+        if (validBlockNumber > MIN_WITHDRAWAL_DELAY) {
             cheats.expectRevert(IDelegationManager.WithdrawalDelayNotElapsed.selector);
             cheats.roll(validBlockNumber - 1);
             delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, receiveAsTokens);
@@ -3152,7 +3089,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         uint256 beaconWithdrawalDelay
     ) public {
         cheats.assume(depositAmount > 1 && withdrawalAmount <= depositAmount);
-        beaconWithdrawalDelay = bound(beaconWithdrawalDelay, minWithdrawalDelayBlocks, MAX_WITHDRAWAL_DELAY_BLOCKS);
+        beaconWithdrawalDelay = bound(beaconWithdrawalDelay, MIN_WITHDRAWAL_DELAY, MAX_WITHDRAWAL_DELAY_BLOCKS);
         _registerOperatorWithBaseDetails(defaultOperator);
         (
             IDelegationManager.Withdrawal memory withdrawal,
@@ -3174,11 +3111,11 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         cheats.startPrank(defaultStaker);
 
         cheats.expectRevert(IDelegationManager.WithdrawalDelayNotElapsed.selector);
-        cheats.roll(block.number + minWithdrawalDelayBlocks - 1);
+        cheats.roll(block.number + MIN_WITHDRAWAL_DELAY - 1);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
 
         uint256 validBlockNumber = delegationManager.getWithdrawalDelay(withdrawal.strategies);
-        if (validBlockNumber > minWithdrawalDelayBlocks) {
+        if (validBlockNumber > MIN_WITHDRAWAL_DELAY) {
             cheats.expectRevert(
                 IDelegationManager.WithdrawalDelayNotElapsed.selector
             );

@@ -12,6 +12,8 @@ import "../contracts/core/DelegationManager.sol";
 
 import "../contracts/interfaces/IETHPOSDeposit.sol";
 
+import "../contracts/core/AVSDirectory.sol";
+import "../contracts/core/AllocationManager.sol";
 import "../contracts/core/StrategyManager.sol";
 import "../contracts/strategies/StrategyBase.sol";
 
@@ -38,6 +40,8 @@ contract EigenLayerDeployer is Operators {
     DelegationManager public delegation;
     StrategyManager public strategyManager;
     EigenPodManager public eigenPodManager;
+    AVSDirectory public avsDirectory;
+    AllocationManager public allocationManager;
     IEigenPod public pod;
     IETHPOSDeposit public ethPOSDeposit;
     IBeacon public eigenPodBeacon;
@@ -69,7 +73,7 @@ contract EigenLayerDeployer is Operators {
     uint256 public gasLimit = 750000;
     IStrategy[] public initializeStrategiesToSetDelayBlocks;
     uint256[] public initializeWithdrawalDelayBlocks;
-    uint256 minWithdrawalDelayBlocks = 0;
+    uint32 MIN_WITHDRAWAL_DELAY = 0;
     uint32 PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
     uint256 REQUIRED_BALANCE_WEI = 32 ether;
     uint64 MAX_PARTIAL_WTIHDRAWAL_AMOUNT_GWEI = 1 ether / 1e9;
@@ -164,8 +168,8 @@ contract EigenLayerDeployer is Operators {
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationImplementation = new DelegationManager(strategyManager, eigenPodManager);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager);
+        DelegationManager delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, avsDirectory);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
@@ -182,7 +186,6 @@ contract EigenLayerDeployer is Operators {
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0 /*initialPausedStatus*/,
-                minWithdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
                 initializeWithdrawalDelayBlocks
             )
