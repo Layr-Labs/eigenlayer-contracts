@@ -54,6 +54,10 @@ abstract contract MultisigBuilder is ConfigParser, EncodeSafeTransactionMainnet 
         return encodeMultisendTxs(txs);
     }
 
+    function test_Execute(string memory envPath) public {
+        execute(envPath);
+    }
+
     /// @notice to be implemented by inheriting contract
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Tx[] memory);
 }
@@ -81,13 +85,24 @@ abstract contract NestedMultisigBuilder is ConfigParser {
 abstract contract OpsTimelockBuilder is NestedMultisigBuilder {
 
     /// @return a Transaction object for a Gnosis Safe to ingest
-    function queue(string memory envPath) public returns (Transaction memory) {
+    function queue(string memory envPath) public returns (bytes memory) {
         // TODO
 
         // get response from _queue()
         // encode for Timelock
         // return encoded call for Ops Multisig
+
+        (
+            Addresses memory addrs,
+            Environment memory env,
+            Params memory params
+        ) = _readConfigFile(envPath);
+
+        TimelockTx[] memory ttx = _queue(addrs, env, params);
+
+        return encodeTimelockTxn(ttx);
     }
+    
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
 
     function _makeTimelockTxns(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);

@@ -36,27 +36,24 @@ library TxHelper {
     }
 }
 
-contract UpgradeCounter is MultisigBuilder {
+contract UpgradeCounter is OpsTimelockBuilder {
 
     using TxHelper for *;
 
-    Tx[] txs;
+    FinalExecutorCall[] finalCalls;
 
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (Tx[] memory) {
-        txs.append({
-            to: addrs.admin.timelock,
+    OpsCalls[] opsCalls;
+
+    function _makeTimelockTxns(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (FinalExecutorCall[] memory) {
+        finalCalls.append({
+            to: addrs.eigenPod.beacon,
             data: abi.encodeWithSelector(
-                ITimelock.executeTransaction.selector(
-                    to, 
-                    value, 
-                    signature, 
-                    data, 
-                    eta
-                )
+                IUpgradeableBeacon.upgradeTo.selector,
+                addrs.eigenPod.pendingImpl
             )
         });
 
-        txs.append({
+        finalCalls.append({
             to: addrs.proxyAdmin,
             data: abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector,
@@ -65,7 +62,31 @@ contract UpgradeCounter is MultisigBuilder {
             )
         });
 
-        return txs;
+        return finalCalls;
+    }
+
+    function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (TimelockTx[] memory) {
+        opsCalls.append({
+            to: addrs.admin.timelock,
+            data: EncTimelock.queueTransaction(finalCalls)
+        });
+
+        return opsCalls;
+    }
+
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (Tx[] memory) {
+        opsCalls.append({
+            to: addrs.admin.timelock,
+            data: EncTimelock.executeTransaction()
+            encodeTimelockTxn(ttx)
+        });
+
+        opsCalls.append({
+            to: addrs.strategyFactory.proxy,
+            data: IStrategyFactory.whitelistThing(details)
+        });
+
+        return opsCalls;
     }
 
     function _test_Execute(
