@@ -39,7 +39,8 @@
       "eigenStrategy": "0xdcCF401fD121d8C542E96BC1d0078884422aFAD2",
       "eigenStrategyImpl": "0x59D13E7Fb0bC0e57c1fc6594ff701592A6e4dD2B",
       "eigenTokenTimelockController": "0x313360df34C8896ED117e863e7B2F2d4Aa7727FA",
-      "beigenTokenTimelockController": "0xeB3DEac9d24660921aFfEEEA9ee8aB81C623da10"
+      "beigenTokenTimelockController": "0xeB3DEac9d24660921aFfEEEA9ee8aB81C623da10",
+      "eigenTokenProxyAdmin": "0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B"
     }
   },
   "chainInfo": {
