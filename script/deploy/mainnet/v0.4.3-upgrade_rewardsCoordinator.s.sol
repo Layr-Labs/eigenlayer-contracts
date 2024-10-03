@@ -142,7 +142,7 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized();
+        _verifyContractsInitialized(false);
         _verifyInitializationParams();
     }
 
