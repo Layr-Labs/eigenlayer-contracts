@@ -477,7 +477,7 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16) {
+    function operatorCommissionBips(address /* operator */, address /* avs */) external view returns (uint16) {
         return globalOperatorCommissionBips;
     }
 
@@ -504,6 +504,8 @@ contract RewardsCoordinator is
                 return root;
             }
         }
+        // Silence compiler warning.
+        return DistributionRoot(bytes32(0), 0, 0, false);
     }
 
     /// @inheritdoc IRewardsCoordinator

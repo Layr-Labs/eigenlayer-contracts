@@ -699,17 +699,21 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             // ethPOSDeposit = new ETHPOSDepositMock();
             // eigenPodImplementation = new EigenPod(
             //     ethPOSDeposit,
+            //     eigenPodImplementation.delayedWithdrawalRouter(),
             //     eigenPodImplementation.eigenPodManager(),
+            //     eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(),
             //     0
             // );
-            // // Create time machine and mock beacon chain
+            // // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
             // timeMachine = new TimeMachine();
-            // beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_MAINNET);
+            // beaconChainOracle = new BeaconChainOracleMock();
+            // // Create mock beacon chain / proof gen interface
+            // beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
 
             // cheats.startPrank(executorMultisig);
             // eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
+            // eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
             // cheats.stopPrank();
-
         } else {
             revert("_deployOrFetchContracts: unimplemented forkType");
         }

@@ -34,7 +34,7 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized();
+        _verifyContractsInitialized(true);
         _verifyInitializationParams();
 
         logAndOutputContractAddresses("script/output/mainnet/M2_mainnet_upgrade.output.json");
@@ -278,7 +278,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         // Check correctness after upgrade
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized();
+        _verifyContractsInitialized(true);
         _verifyInitializationParams();
         _postUpgradeChecks();
     }

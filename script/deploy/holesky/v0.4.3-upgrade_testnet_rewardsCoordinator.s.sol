@@ -59,7 +59,7 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized();
+        _verifyContractsInitialized(false);
         _verifyInitializationParams();
     }
 

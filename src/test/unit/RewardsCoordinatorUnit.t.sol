@@ -1656,7 +1656,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
     function testFuzz_processClaim_Revert_WhenRootDisabled(
         bool setClaimerFor,
         address claimerFor,
-        bytes32 merkleRoot
+        bytes32 root
     ) public filterFuzzedAddressInputs(claimerFor) {
         // if setClaimerFor is true, set the earners claimer to the fuzzed address
         address claimer;
@@ -1670,7 +1670,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
 
         // Submit a root and disable it
         cheats.startPrank(rewardsUpdater);
-        rewardsCoordinator.submitRoot(merkleRoot, 1);
+        rewardsCoordinator.submitRoot(root, 1);
         uint32 rootIndex = 0;
         IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
         rewardsCoordinator.disableRoot(rootIndex);
