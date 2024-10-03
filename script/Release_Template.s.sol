@@ -62,27 +62,14 @@ abstract contract MultisigBuilder is ConfigParser, EncodeSafeTransactionMainnet 
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Tx[] memory);
 }
 
-abstract contract NestedMultisigBuilder is ConfigParser {
-
-    /// @return a Transaction object for a Gnosis Safe to ingest
-    /// @dev this object is intended to hold calldata to be sent to *yet another* Safe
-    /// which will contain the actual relevant calldata
-    function execute(string memory envPath) public returns (Transaction memory) {
-        (
-            Addresses memory addrs,
-            Environment memory env,
-            Params memory params
-        ) = _readConfigFile(envPath);
-
-        return _execute(addrs, env, params);
-    }
-
-    /// @notice to be implemented by inheriting contract
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
-}
-
 /// @notice template for an OpsMultisig script that goes through the timelock
-abstract contract OpsTimelockBuilder is NestedMultisigBuilder {
+/// @dev writing a script is done from the perspective of the OpsMultisig
+abstract contract OpsTimelockBuilder is MultisigBuilder {
+
+    struct FinalExecutorCall {
+        address to;
+        bytes data;
+    }
 
     /// @return a Transaction object for a Gnosis Safe to ingest
     function queue(string memory envPath) public returns (bytes memory) {
@@ -102,8 +89,29 @@ abstract contract OpsTimelockBuilder is NestedMultisigBuilder {
 
         return encodeTimelockTxn(ttx);
     }
-    
+
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
 
-    function _makeTimelockTxns(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
+    function _makeTimelockTxns(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (FinalExecutorCall[] memory);
+}
+
+/// @notice to be used for CommunityMultisig
+/// NOTE: WIP
+abstract contract NestedMultisigBuilder is ConfigParser {
+
+    /// @return a Transaction object for a Gnosis Safe to ingest
+    /// @dev this object is intended to hold calldata to be sent to *yet another* Safe
+    /// which will contain the actual relevant calldata
+    function execute(string memory envPath) public returns (Transaction memory) {
+        (
+            Addresses memory addrs,
+            Environment memory env,
+            Params memory params
+        ) = _readConfigFile(envPath);
+
+        return _execute(addrs, env, params);
+    }
+
+    /// @notice to be implemented by inheriting contract
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
 }
