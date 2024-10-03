@@ -4,45 +4,13 @@ pragma solidity ^0.8.12;
 import "script/Release_Template.s.sol";
 import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
 
-library TxHelper {
-
-    function append(
-        Tx[] storage txs, 
-        address to,
-        uint value,
-        bytes memory data
-    ) internal returns (Tx[] storage) {
-        txs.push(Tx({
-            to: to,
-            value: value,
-            data: data
-        }));
-
-        return txs;
-    }
-
-    function append(
-        Tx[] storage txs, 
-        address to,
-        bytes memory data
-    ) internal returns (Tx[] storage) {
-        txs.push(Tx({
-            to: to,
-            value: 0,
-            data: data
-        }));
-
-        return txs;
-    }
-}
-
 contract UpgradeCounter is OpsTimelockBuilder {
 
-    using TxHelper for *;
+    using MultisigCallHelper for MultisigCall;
 
     FinalExecutorCall[] finalCalls;
 
-    OpsCalls[] opsCalls;
+    MultisigCall[] opsCalls;
 
     function _makeTimelockTxns(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (FinalExecutorCall[] memory) {
         finalCalls.append({
@@ -65,7 +33,9 @@ contract UpgradeCounter is OpsTimelockBuilder {
         return finalCalls;
     }
 
-    function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (TimelockTx[] memory) {
+    function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
+        _makeTimelockTxns(addrs, env, params);
+
         opsCalls.append({
             to: addrs.admin.timelock,
             data: EncTimelock.queueTransaction(finalCalls)
@@ -74,11 +44,11 @@ contract UpgradeCounter is OpsTimelockBuilder {
         return opsCalls;
     }
 
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (Tx[] memory) {
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
         opsCalls.append({
             to: addrs.admin.timelock,
-            data: EncTimelock.executeTransaction()
-            encodeTimelockTxn(ttx)
+            data: EncTimelock.executeTransaction(),
+            data: _makeTimelockTxns(addrs, env, params)
         });
 
         opsCalls.append({
@@ -90,16 +60,14 @@ contract UpgradeCounter is OpsTimelockBuilder {
     }
 
     function _test_Execute(
-        Addresses memory addrs, 
-        Environment memory env, 
+        Addresses memory addrs,
+        Environment memory env,
         Params memory params
     ) internal override {
         bytes memory data = encodeMultisendTxs(arr);
-        
+
         vm.startBroadcast(addrs.admin.opsMultisig);
         addrs.admin.multiSend.delegatecall(data);
         vm.stopBroadcast();
-
-
     }
 }

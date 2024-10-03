@@ -20,6 +20,46 @@ struct Transaction {
     EncGnosisSafe.Operation op;
 }
 
+/// @dev from EncodeSafeMultisendMainnet
+struct MultisigCall {
+    address to;
+    uint256 value;
+    bytes data;
+}
+
+library MultisigCallHelper {
+
+    function append(
+        MultisigCall[] storage multisigCalls,
+        address to,
+        uint value,
+        bytes memory data
+    ) internal returns (MultisigCall[] storage) {
+        multisigCalls.push(MultisigCall({
+            to: to,
+            value: value,
+            data: data
+        }));
+
+        return multisigCalls;
+    }
+
+    function append(
+        MultisigCall[] storage multisigCalls,
+        address to,
+        bytes memory data
+    ) internal returns (MultisigCall[] storage) {
+        multisigCalls.push(MultisigCall({
+            to: to,
+            value: 0,
+            data: data
+        }));
+
+        return multisigCalls;
+    }
+}
+
+
 /// TODO: break all abstract contracts out into their own file in a `template` directory
 
 /// @notice template for an EOA script
@@ -49,9 +89,9 @@ abstract contract MultisigBuilder is ConfigParser, EncodeSafeTransactionMainnet 
             Params memory params
         ) = _readConfigFile(envPath);
 
-        Tx[] memory txs = _execute(addrs, env, params);
+        MultisigCall[] memory calls = _execute(addrs, env, params);
 
-        return encodeMultisendTxs(txs);
+        return encodeMultisendTxs(calls);
     }
 
     function test_Execute(string memory envPath) public {
@@ -59,7 +99,7 @@ abstract contract MultisigBuilder is ConfigParser, EncodeSafeTransactionMainnet 
     }
 
     /// @notice to be implemented by inheriting contract
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Tx[] memory);
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
 }
 
 /// @notice template for an OpsMultisig script that goes through the timelock
@@ -85,12 +125,17 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
             Params memory params
         ) = _readConfigFile(envPath);
 
-        TimelockTx[] memory ttx = _queue(addrs, env, params);
+        // _makeTimelockTxns(addrs, env, params);
 
-        return encodeTimelockTxn(ttx);
+        // opsCalls.append({
+        //     to: addrs.admin.timelock,
+        //     data: EncTimelock.queueTransaction(finalCalls)
+        // });
+
+        return _queue(addrs, env, params);
     }
 
-    function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
+    function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (bytes memory);
 
     function _makeTimelockTxns(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (FinalExecutorCall[] memory);
 }

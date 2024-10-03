@@ -10,6 +10,7 @@ contract DeployEigenPod is EOABuilder {
     /// @notice deploys an EigenPod and returns the deployed address
     function _deploy(Addresses memory addrs, Environment memory, Params memory params) internal override returns (Deployment[] memory) {
 
+        vm.startBroadcast();
         deployments.push(Deployment({
             name: type(EigenPod).name,
             deployedTo: address(new EigenPod(
@@ -18,6 +19,7 @@ contract DeployEigenPod is EOABuilder {
                 params.EIGENPOD_GENESIS_TIME
             ))
         }));
+        vm.stopBroadcast();
 
         return deployments;
     }

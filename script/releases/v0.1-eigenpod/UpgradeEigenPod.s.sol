@@ -4,59 +4,27 @@ pragma solidity ^0.8.12;
 import "script/Release_Template.s.sol";
 import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
 
-library TxHelper {
-
-    function append(
-        Tx[] storage txs, 
-        address to,
-        uint value,
-        bytes memory data
-    ) internal returns (Tx[] storage) {
-        txs.push(Tx({
-            to: to,
-            value: value,
-            data: data
-        }));
-
-        return txs;
-    }
-
-    function append(
-        Tx[] storage txs, 
-        address to,
-        bytes memory data
-    ) internal returns (Tx[] storage) {
-        txs.push(Tx({
-            to: to,
-            value: 0,
-            data: data
-        }));
-
-        return txs;
-    }
-}
-
 contract UpgradeCounter is MultisigBuilder {
 
-    using TxHelper for *;
+    using MultisigCallHelper for *;
 
-    Tx[] txs;
+    MultisigCall[] _multisigCalls;
 
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (Tx[] memory) {
-        txs.append({
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
+        _multisigCalls.append({
             to: addrs.admin.timelock,
             data: abi.encodeWithSelector(
-                ITimelock.executeTransaction.selector(
-                    to, 
-                    value, 
-                    signature, 
-                    data, 
-                    eta
-                )
+                ITimelock.executeTransaction.selector({
+                    to: addrs.proxyAdmin,
+                    value: 0,
+                    signature: bytes(0),
+                    data: bytes(0),
+                    eta: uint(0)
+                })
             )
         });
 
-        txs.append({
+        _multisigCalls.append({
             to: addrs.proxyAdmin,
             data: abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector,
@@ -65,16 +33,16 @@ contract UpgradeCounter is MultisigBuilder {
             )
         });
 
-        return txs;
+        return _multisigCalls;
     }
 
     function _test_Execute(
-        Addresses memory addrs, 
-        Environment memory env, 
+        Addresses memory addrs,
+        Environment memory env,
         Params memory params
     ) internal override {
-        bytes memory data = encodeMultisendTxs(arr);
-        
+        bytes memory data = encodeMultisendTxs(_multisigCalls);
+
         vm.startBroadcast(addrs.admin.opsMultisig);
         addrs.admin.multiSend.delegatecall(data);
         vm.stopBroadcast();
