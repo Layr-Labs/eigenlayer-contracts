@@ -59,10 +59,9 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * This variable was migrated to the DelegationManager instead.
      */
     uint256 private __deprecated_withdrawalDelayBlocks;
-
-    /// @notice Mapping: staker => Strategy => number of shares which they currently hold
-    mapping(address => mapping(IStrategy => Shares)) public stakerStrategyShares;
-
+    /// @notice Mapping: staker => Strategy => number of shares which they have deposited. All of these shares
+    ///         may not be withdrawable if the staker has delegated to an operator that has been slashed.
+    mapping(address => mapping(IStrategy => uint256)) public stakerDepositShares;
     /// @notice Mapping: staker => array of strategies in which they have nonzero shares
     mapping(address => IStrategy[]) public stakerStrategyList;
 

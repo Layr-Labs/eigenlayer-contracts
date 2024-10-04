@@ -244,7 +244,11 @@ contract AllocationManager is
             // 2. update totalMagnitude, get total magnitude and subtract slashedMagnitude
             // this will be reflected in the conversion of delegatedShares to shares in the DM
             Snapshots.History storage totalMagnitudes = _totalMagnitudeUpdate[operator][strategies[i]];
-            totalMagnitudes.push({key: uint32(block.timestamp), value: totalMagnitudes.latest() - slashedMagnitude});
+            uint64 totalMagnitudeBeforeSlashing = uint64(totalMagnitudes.latest());
+            totalMagnitudes.push({key: uint32(block.timestamp), value: totalMagnitudeBeforeSlashing - slashedMagnitude});
+
+            // 3. Decrease operators shares in the DM
+            delegation.decreaseOperatorShares(operator, strategies[i], totalMagnitudeBeforeSlashing, uint64(totalMagnitudes.latest()));
         }
     }
 
