@@ -855,6 +855,8 @@ contract DelegationManager is
         IStrategy[] memory strategies
     ) public view returns (OwnedShares[] memory ownedShares) {
         address operator = delegatedTo[staker];
+        ownedShares = new OwnedShares[](strategies.length);
+
         for (uint256 i = 0; i < strategies.length; ++i) {
             IShareManager shareManager = _getShareManager(strategies[i]);
             // TODO: batch call for strategyManager shares?
@@ -885,24 +887,16 @@ contract DelegationManager is
         address staker
     ) public view returns (IStrategy[] memory, OwnedShares[] memory) {
         // Get a list of all the strategies to check
-        IStrategy[] memory strategies = strategyManager.getStakerStrategyList(staker);
+        IStrategy[] memory strategiesPre = strategyManager.getStakerStrategyList(staker);
         // resize and add beaconChainETH to the end
-        assembly {
-            mstore(strategies, add(mload(strategies), 1))
+        IStrategy[] memory strategies = new IStrategy[](strategiesPre.length + 1);
+        for (uint256 i = 0; i < strategiesPre.length; i++) {
+            strategies[i] = strategiesPre[i];
         }
         strategies[strategies.length - 1] = beaconChainETHStrategy;
 
         // get the delegatable shares for each strategy
         OwnedShares[] memory shares = getDelegatableShares(staker, strategies);
-
-        // if the last shares are 0, remove them
-        if (shares[strategies.length - 1].unwrap() == 0) {
-            // resize the arrays
-            assembly {
-                mstore(strategies, sub(mload(strategies), 1))
-                mstore(shares, sub(mload(shares), 1))
-            }
-        }
 
         return (strategies, shares);
     }
