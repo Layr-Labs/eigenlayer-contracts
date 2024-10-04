@@ -9,8 +9,14 @@ import "../../utils/TimelockEncoding.sol";
  * 
  */
 contract Current_Config_Check is ExistingDeploymentParser, TimelockEncoding {
-    string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
-    string intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
+    // Holesky - testnet
+    // string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
+    // string intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
+
+    // Holesky - preprod
+    string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
+    string intialDeploymentParams = "script/configs/holesky/eigenlayer_preprod.config.json";
+
     function run() external virtual {
         string memory forkUrl = vm.envString("RPC_HOLESKY");
         uint256 forkId = vm.createFork(forkUrl);
