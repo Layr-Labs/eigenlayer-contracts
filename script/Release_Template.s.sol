@@ -190,14 +190,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
         MultisigCall[] memory calls = _queue(addrs, env, params);
 
         // ENCODE CALLS FOR EXECUTOR
-        bytes memory data = calls.encodeMultisendTxs();
-
-        bytes memory executorCalldata = Transaction({
-            to: params.multiSendCallOnly,
-            value: 0,
-            data: data,
-            op: EncGnosisSafe.Operation.DelegateCall
-        }).encodeForExecutor();
+        bytes memory executorCalldata = makeExecutorCalldata(calls, params.multiSendCallOnly);
 
         // ENCODE EXECUTOR CALLDATA FOR TIMELOCK
         bytes memory timelockCalldata = abi.encodeWithSelector(
@@ -218,22 +211,23 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
         });
     }
 
-    function makeTimelockTx(Addresses memory addrs, Environment memory env, Params memory params) public returns (Transaction memory) {
-        MultisigCall[] memory calls = _makeTimelockTx(addrs, env, params);
-
-        bytes memory data = calls.encodeMultisendTxs();
-
-        return Transaction({
-            to: params.multiSendCallOnly,
-            value: 0,
-            data: data,
-            op: EncGnosisSafe.Operation.DelegateCall
-        });
-    }
 
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
 
-    function _makeTimelockTx(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
+    /// @notice helper function to create calldata for executor
+    /// can be used for queue or execute
+    function makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly) internal returns (bytes memory) {
+        bytes memory data = calls.encodeMultisendTxs();
+
+        bytes memory executorCalldata = Transaction({
+            to: multiSendCallOnly,
+            value: 0,
+            data: data,
+            op: EncGnosisSafe.Operation.DelegateCall
+        }).encodeForExecutor();
+
+        return executorCalldata;
+    }
 }
 
 /// @notice to be used for CommunityMultisig

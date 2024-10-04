@@ -15,21 +15,6 @@ contract UpgradeViaTimelock is OpsTimelockBuilder {
 
     MultisigCall[] _opsCalls;
 
-    function _makeTimelockTx(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
-        Transaction memory t = makeTimelockTx(addrs, env, params);
-
-        // SOME MAGIC
-
-        bytes memory b = t.encodeForExecutor();
-
-        _opsCalls.append({
-            to: addrs.timelock,
-            data: b
-        });
-
-        return _opsCalls;
-    }
-
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
 
         _executorCalls.append({
@@ -54,20 +39,31 @@ contract UpgradeViaTimelock is OpsTimelockBuilder {
 
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
 
-        // bytes memory executorCalldata;
+        // steals logic from queue() to perform execute()
+        bytes memory executorCalldata = makeExecutorCalldata(
+            _queue(addrs, env, params),
+            params.multiSendCallOnly
+        );
 
-        // _opsCalls.append({
-        //     to: addrs.timelock,
-        //     data: abi.encodeWithSelector(
-        //         ITimelock.executeTransaction.selector,
-        //         executorCalldata
-        //     )
-        // });
+        // _executorCalls.append(multisigCalls, to, value, data);
 
-        // _opsCalls.append({
-        //     to: addrs.strategyFactory.proxy,
-        //     data: IStrategyFactory.deployNewStrategy(address(0xE))
-        // });
+        _opsCalls.append({
+            to: addrs.timelock,
+            value: 0,
+            data: abi.encodeWithSelector(
+                ITimelock.executeTransaction.selector,
+                executorCalldata
+            )
+        });
+
+        _opsCalls.append({
+            to: addrs.strategyFactory.proxy,
+            value: 0,
+            data: abi.encodeWithSelector(
+                IStrategyFactory.deployNewStrategy.selector,
+                address(0xE)
+            )
+        });
 
         return _opsCalls;
     }
