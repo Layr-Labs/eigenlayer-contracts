@@ -119,7 +119,7 @@ interface IEigenPodManager is IShareManager, IPausable {
      * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
      * as the withdrawal "paying off the deficit".
      */
-    function podOwnerShares(
+    function podOwnerDepositShares(
         address podOwner
     ) external view returns (int256);
 
