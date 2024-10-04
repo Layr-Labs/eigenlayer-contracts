@@ -102,6 +102,8 @@ function depositIntoStrategyWithSignature(
     returns (uint256 shares)
 ```
 
+This method has a similar purpose as `depositIntoStrategy()`, except it is intended to be used when submitting a deposit on behalf of `staker` which will be credited with the new shares.
+
 *Effects*: See `depositIntoStrategy` above. Additionally:
 * The Staker's nonce is incremented
 
