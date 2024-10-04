@@ -10,22 +10,30 @@ import "../../utils/TimelockEncoding.sol";
  */
 contract Current_Config_Check is ExistingDeploymentParser, TimelockEncoding {
     // Holesky - testnet
-    string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
-    string intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
+    // string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
+    // string intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
 
     // Holesky - preprod
     // string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
     // string intialDeploymentParams = "script/configs/holesky/eigenlayer_preprod.config.json";
 
+    // mainnet
+    string deployedContractsConfig = "script/configs/mainnet/mainnet-addresses.config.json";
+    string intialDeploymentParams = "script/configs/mainnet/mainnet-config.config.json";    
+
     function run() external virtual {
-        string memory forkUrl = vm.envString("RPC_HOLESKY");
+        // holesky
+        // string memory forkUrl = vm.envString("RPC_HOLESKY");
+        // mainnet
+        string memory forkUrl = vm.envString("RPC_MAINNET");
+
         uint256 forkId = vm.createFork(forkUrl);
         vm.selectFork(forkId);
 
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         emit log_named_uint("You are parsing on ChainID", currentChainId);
-        require(currentChainId == 17000, "script is only for mainnet");
+        require(currentChainId == 1 || currentChainId == 17000, "script is only for mainnet or holesky");
 
         _parseDeployedContracts(deployedContractsConfig);
         _parseInitialDeploymentParams(intialDeploymentParams);
