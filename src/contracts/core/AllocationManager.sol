@@ -148,10 +148,10 @@ contract AllocationManager is
                     currentTotalMagnitude = WAD;
                     _totalMagnitudeUpdate[operator][allocation.strategy].push({
                         key: uint32(block.timestamp),
-                        value: currentTotalMagnitude
+                        denominator: WAD,
+                        free: WAD
                     });
-                    operatorFreeMagnitudeInfo[operator][allocation.strategy].freeMagnitude =
-                        uint64(currentTotalMagnitude);
+                    // _allocatableMagnitude[operator][allocation.strategy] = uint64(currentTotalMagnitude);
                 }
 
                 // 3. set allocations for the strategy after updating freeMagnitude
@@ -161,46 +161,36 @@ contract AllocationManager is
             }
 
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
-                // Check that there are no pending allocations & deallocations for the operator, operatorSet, strategy
-                MagnitudeInfo memory mInfo = _getCurrentEffectiveMagnitude(
-                    operator, allocation.strategy, _encodeOperatorSet(allocation.operatorSets[j])
-                );
-                require(block.timestamp >= mInfo.effectTimestamp, ModificationAlreadyPending());
+                bytes32 opSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
+                
+                uint64 curAllocatedMagnitude = _allocatedMagnitude[operator][allocation.strategy][opSetKey];
+                // Check that there is not currently a pending modification for this operatorSet
+                PendingModification memory pending = _pendingModification[operator][allocation.strategy][opSetKey];
+                require(block.timestamp >= pending.effectTimestamp, ModificationAlreadyPending());
 
-                // Calculate the new pending diff with this modification
-                mInfo.pendingMagnitudeDiff =
-                    int128(uint128(allocation.magnitudes[j])) - int128(uint128(mInfo.currentMagnitude));
-                require(mInfo.pendingMagnitudeDiff != 0, SameMagnitude());
+                // Calculate the pending change in magnitude
+                pending.magnitudeDelta = 
+                    int128(uint128(allocation.magnitudes[j])) - int128(uint128(curAllocatedMagnitude));
+                require(pending.magnitudeDelta != 0, SameMagnitude());
 
                 // Handle deallocation/allocation and modification effect timestamp
-                if (mInfo.pendingMagnitudeDiff < 0) {
-                    // This is a deallocation
+                if (pending.magnitudeDelta < 0) {
+                    deallocationQueue[operator][allocation.strategy].push(opSetKey);
 
-                    // 1. push PendingFreeMagnitude and respective array index into (op,opSet,Strategy) queued deallocations
-                    deallocationQueue[operator][allocation.strategy].push(
-                        _encodeOperatorSet(allocation.operatorSets[j])
-                    );
-
-                    // 2. Update the effect timestamp for the deallocation
-                    mInfo.effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
+                    pending.effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
                 } else if (mInfo.pendingMagnitudeDiff > 0) {
-                    // This is an allocation
+                    allocationQueue[operator][allocation.strategy].push(opSetKey);
 
                     // 1. decrement free magnitude by incremented amount
-                    uint64 magnitudeToAllocate = uint64(uint128(mInfo.pendingMagnitudeDiff));
-                    FreeMagnitudeInfo memory freeInfo = operatorFreeMagnitudeInfo[operator][allocation.strategy];
-                    require(freeInfo.freeMagnitude >= magnitudeToAllocate, InsufficientAllocatableMagnitude());
-                    freeInfo.freeMagnitude -= magnitudeToAllocate;
+                    uint64 amountToAllocate = uint64(uint128(mInfo.pendingMagnitudeDiff));
+                    uint64 allocatable = _allocatableMagnitude[operator][allocation.strategy];
+                    require(allocatable >= amountToAllocate, InsufficientAllocatableMagnitude());
+                    _allocatableMagnitude[operator][allocation.strategy] = allocatable - amountToAllocate;
 
-                    // 2. Update the effectTimestamp for the allocation
-                    mInfo.effectTimestamp = uint32(block.timestamp) + operatorAllocationDelay;
-
-                    operatorFreeMagnitudeInfo[operator][allocation.strategy] = freeInfo;
+                    pending.effectTimestamp = uint32(block.timestamp) + operatorAllocationDelay;
                 }
 
-                // Allocate magnitude which will take effect at the `effectTimestamp`
-                _operatorMagnitudeInfo[operator][allocation.strategy][_encodeOperatorSet(allocation.operatorSets[j])] =
-                    mInfo;
+                _pendingModification[operator][allocation.strategy][opSetKey] = pending;
             }
         }
     }
@@ -228,6 +218,8 @@ contract AllocationManager is
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
+            uint64 
+
             // 1. Slash from pending deallocations and allocations
             MagnitudeInfo memory mInfo = _getCurrentEffectiveMagnitude(operator, strategies[i], operatorSetKey);
 
@@ -294,13 +286,16 @@ contract AllocationManager is
      * In addition to updating freeMagnitude, updates next starting index to read from for pending free magnitudes after completing
      */
     function _completePendingDeallocations(address operator, IStrategy strategy, uint16 numToComplete) internal {
-        FreeMagnitudeInfo memory freeInfo = operatorFreeMagnitudeInfo[operator][strategy];
+        uint64 allocatableMagnitude = _allocatableMagnitude[operator][strategy];
 
-        uint256 numDeallocations = deallocationQueue[operator][strategy].length;
+        OperatorSetQueue storage queue = deallocationQueue[operator][strategy];
+        uint256 length = queue.operatorSets.length;
+        uint256 index = queue.nextIndex;
         uint256 completed;
 
-        while (freeInfo.nextPendingIndex < numDeallocations && completed < numToComplete) {
-            bytes32 opsetKey = deallocationQueue[operator][strategy][freeInfo.nextPendingIndex];
+        while (index < length && completed < numToComplete) {
+            bytes32 opSetKey = queue.operatorSets[index];
+
             MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][opsetKey];
 
             // deallocationQueue is ordered by `effectTimestamp`. If we reach a pending deallocation
@@ -311,20 +306,20 @@ contract AllocationManager is
 
             // We know that this is a deallocation because this `opsetKey` was in the pending deallocation set
             // Therefore, `pendingMagnitudeDiff` MUST be negative.
-            uint64 freeMagnitudeToAdd = uint64(uint128(-mInfo.pendingMagnitudeDiff));
+            uint64 deallocatedMagnitude = uint64(uint128(-mInfo.pendingMagnitudeDiff));
             mInfo.pendingMagnitudeDiff = 0;
             mInfo.currentMagnitude -= freeMagnitudeToAdd;
 
-            // Add newly-freed magnitude to FreeMagnitudeInfo
-            freeInfo.freeMagnitude += freeMagnitudeToAdd;
-            freeInfo.nextPendingIndex++;
+            allocatableMagnitude += deallocatedMagnitude;
+            ++index;
             ++completed;
 
             // Update MagnitudeInfo in storage
             _operatorMagnitudeInfo[operator][strategy][opsetKey] = mInfo;
         }
 
-        operatorFreeMagnitudeInfo[operator][strategy] = freeInfo;
+        queue.nextIndex = index;
+        _allocatableMagnitude[operator][strategy] = allocatableMagnitude;
     }
 
     /// @dev Fetch the operator's current magnitude, applying a pending diff if the effect timestamp is passed
