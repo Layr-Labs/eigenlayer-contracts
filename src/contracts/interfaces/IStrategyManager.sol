@@ -41,7 +41,7 @@ interface IStrategyManager is IShareManager {
      * @param token Is the token that `staker` deposited.
      * @param shares Is the number of new shares `staker` has been granted in `strategy`.
      */
-    event Deposit(address staker, IERC20 token, IStrategy strategy, uint256 shares);
+    event Deposit(address staker, IERC20 token, IStrategy strategy, OwnedShares shares);
 
     /// @notice Emitted when the `strategyWhitelister` is changed
     event StrategyWhitelisterChanged(address previousAddress, address newAddress);
@@ -97,7 +97,7 @@ interface IStrategyManager is IShareManager {
         address staker,
         uint256 expiry,
         bytes memory signature
-    ) external returns (uint256 shares);
+    ) external returns (OwnedShares shares);
 
     /**
      * @notice Get all details on the staker's deposits and corresponding shares
@@ -111,17 +111,10 @@ interface IStrategyManager is IShareManager {
         address staker
     ) external view returns (IStrategy[] memory);
 
-    function getStakerStrategyList(
-        address staker
-    ) external view returns (IStrategy[] memory);
-
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
     function stakerStrategyListLength(
         address staker
     ) external view returns (uint256);
-
-    /// @notice Returns the current shares of `user` in `strategy`
-    function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 shares);
 
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
