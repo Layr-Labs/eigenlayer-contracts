@@ -48,6 +48,7 @@
     "executorMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
     "operationsMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
     "pauserMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
+    "foundationMultisig": "0x9c36f012585c8bb4247eEe18C01Cdfc5f2e90336",
     "timelock": "0xcF19CE0561052a7A7Ff21156730285997B350A7D"
   }
 }
