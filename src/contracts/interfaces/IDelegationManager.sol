@@ -20,11 +20,6 @@ interface IDelegationManager is ISignatureUtils {
     error UnauthorizedCaller();
     /// @dev Thrown when msg.sender is not the EigenPodManager
     error OnlyEigenPodManager();
-<<<<<<< HEAD
-=======
-    /// @dev Throw when msg.sender is not the AllocationManager
-    error OnlyAllocationManager();
->>>>>>> c902d747 (feat: dm cleanup)
 
     /// Delegation Status
 
@@ -161,29 +156,17 @@ interface IDelegationManager is ISignatureUtils {
         uint32 startTimestamp;
         // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
-<<<<<<< HEAD
         // Array containing the amount of staker's delegatedShares for withdrawal in each Strategy in the `strategies` array
         // Note that these shares need to be multiplied by the operator's totalMagnitude at completion to include
         // slashing occurring during the queue withdrawal delay
         DelegatedShares[] delegatedShares;
-=======
-        // TODO: Find a better name for this
-        // Array containing the amount of staker's scaledSharesToWithdraw for withdrawal in each Strategy in the `strategies` array
-        // Note that these shares need to be multiplied by the operator's totalMagnitude at completion to include
-        // slashing occurring during the queue withdrawal delay
-        uint256[] scaledSharesToWithdraw;
->>>>>>> c902d747 (feat: dm cleanup)
     }
 
     struct QueuedWithdrawalParams {
         // Array of strategies that the QueuedWithdrawal contains
         IStrategy[] strategies;
         // Array containing the amount of withdrawable shares for withdrawal in each Strategy in the `strategies` array
-<<<<<<< HEAD
         OwnedShares[] ownedShares;
-=======
-        uint256[] ownedShares;
->>>>>>> c902d747 (feat: dm cleanup)
         // The address of the withdrawer
         address withdrawer;
     }
@@ -201,7 +184,6 @@ interface IDelegationManager is ISignatureUtils {
     event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
 
     /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
-<<<<<<< HEAD
     event OperatorSharesIncreased(
         address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares
     );
@@ -210,12 +192,6 @@ interface IDelegationManager is ISignatureUtils {
     event OperatorSharesDecreased(
         address indexed operator, address staker, IStrategy strategy, DelegatedShares delegatedShares
     );
-=======
-    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 delegatedShares);
-
-    /// @notice Emitted whenever an operator's shares are decreased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, uint256 delegatedShares);
->>>>>>> c902d747 (feat: dm cleanup)
 
     /// @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
@@ -372,22 +348,24 @@ interface IDelegationManager is ISignatureUtils {
 
     /**
      * @notice Increases a staker's delegated share balance in a strategy. Note that before adding to operator shares,
-     * the delegated delegatedShares. The staker's depositScalingFactor is updated here.
+     * the delegated shares are scaled according to the operator's total magnitude as part of slashing accounting.
+     * The staker's depositScalingFactor is updated here.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
-     * @param existingDepositShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
+     * @param existingShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
-     * @param addedShares The number of shares added to the staker's shares in the strategy
+     * @param addedOwnedShares The number of shares to added to the staker's shares in the strategy. This amount will be scaled prior to adding
+     * to the operator's scaled shares.
      *
-     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated delegatedShares in `strategy`.
+     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated scaled shares in `strategy`.
      * Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 existingDepositShares,
-        uint256 addedShares
+        Shares existingShares,
+        OwnedShares addedOwnedShares
     ) external;
 
     /**
@@ -402,19 +380,9 @@ interface IDelegationManager is ISignatureUtils {
      */
     function decreaseBeaconChainScalingFactor(
         address staker,
-        uint256 existingShares,
+        Shares existingShares,
         uint64 proportionOfOldBalance
     ) external;
-
-    /**
-     * @notice Decreases the operators shares in storage after a slash
-     * @param operator The operator to decrease shares for
-     * @param strategy The strategy to decrease shares for
-     * @param previousMagnitude The magnitude before the slash
-     * @param newMagnitude The magnitude after the slash
-     * @dev Callable only by the AllocationManager
-     */
-    function decreaseOperatorShares(address operator, IStrategy strategy, uint64 previousMagnitude, uint64 newMagnitude) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
@@ -445,6 +413,17 @@ interface IDelegationManager is ISignatureUtils {
     function stakerOptOutWindowBlocks(
         address operator
     ) external view returns (uint256);
+
+    /**
+     * @notice returns the total number of delegatedShares (i.e. shares divided by the `operator`'s
+     * totalMagnitude) in `strategy` that are delegated to `operator`.
+     * @notice Mapping: operator => strategy => total number of delegatedShares in the strategy delegated to the operator.
+     * @dev By design, the following invariant should hold for each Strategy:
+     * (operator's delegatedShares in delegation manager) = sum (delegatedShares above zero of all stakers delegated to operator)
+     * = sum (delegateable delegatedShares of all stakers delegated to the operator)
+     * @dev FKA `operatorShares`
+     */
+    function operatorDelegatedShares(address operator, IStrategy strategy) external view returns (DelegatedShares);
 
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.

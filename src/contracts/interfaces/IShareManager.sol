@@ -14,20 +14,25 @@ import "./IStrategy.sol";
 interface IShareManager {
     /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
-    function removeDepositShares(address staker, IStrategy strategy, uint256 depositSharesToRemove) external;
+    function removeShares(address staker, IStrategy strategy, Shares shares) external;
 
     /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     /// @dev token is not validated when talking to the EigenPodManager
-    function addShares(address staker, IStrategy strategy,  IERC20 token, uint256 shares) external;
+    function addOwnedShares(address staker, IStrategy strategy, IERC20 token, OwnedShares ownedShares) external;
 
     /// @notice Used by the DelegationManager to convert withdrawn descaled shares to tokens and send them to a staker
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     /// @dev token is not validated when talking to the EigenPodManager
-    function withdrawSharesAsTokens(address staker, IStrategy strategy,  IERC20 token, uint256 shares) external;
+    function withdrawSharesAsTokens(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
+        OwnedShares ownedShares
+    ) external;
 
     /// @notice Returns the current shares of `user` in `strategy`
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     /// @dev returns 0 if the user has negative shares
-    function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 depositShares);
+    function stakerStrategyShares(address user, IStrategy strategy) external view returns (Shares shares);
 }

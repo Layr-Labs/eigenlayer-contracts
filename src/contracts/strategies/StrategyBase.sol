@@ -302,7 +302,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     function shares(
         address user
     ) public view virtual returns (uint256) {
-        return strategyManager.stakerDepositShares(user, IStrategy(address(this)));
+        return strategyManager.stakerStrategyShares(user, IStrategy(address(this))).unwrap();
     }
 
     /// @notice Internal function used to fetch this contract's current balance of `underlyingToken`.

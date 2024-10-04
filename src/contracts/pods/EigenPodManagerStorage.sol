@@ -65,15 +65,14 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
 
     // BEGIN STORAGE VARIABLES ADDED AFTER MAINNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /**
-     * // TODO: Update this comment
-     * @notice Mapping from Pod owner owner to the number of deposit shares they have in the virtual beacon chain ETH strategy.
-     * @dev The deposit share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
+     * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
+     * @dev The share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
      * decrease between the pod owner queuing and completing a withdrawal.
      * When the pod owner's shares would otherwise increase, this "deficit" is decreased first _instead_.
      * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
      * as the withdrawal "paying off the deficit".
      */
-    mapping(address => int256) public podOwnerDepositShares;
+    mapping(address => int256) public podOwnerShares;
 
     uint64 internal __deprecated_denebForkTimestamp;
 
