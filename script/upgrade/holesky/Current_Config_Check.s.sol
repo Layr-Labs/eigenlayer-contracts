@@ -10,12 +10,12 @@ import "../../utils/TimelockEncoding.sol";
  */
 contract Current_Config_Check is ExistingDeploymentParser, TimelockEncoding {
     // Holesky - testnet
-    // string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
-    // string intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
+    string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
+    string intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
 
     // Holesky - preprod
-    string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
-    string intialDeploymentParams = "script/configs/holesky/eigenlayer_preprod.config.json";
+    // string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
+    // string intialDeploymentParams = "script/configs/holesky/eigenlayer_preprod.config.json";
 
     function run() external virtual {
         string memory forkUrl = vm.envString("RPC_HOLESKY");
@@ -36,10 +36,15 @@ contract Current_Config_Check is ExistingDeploymentParser, TimelockEncoding {
         _verifyContractsInitialized(false);
         _verifyInitializationParams();
 
-        // bytes memory data = abi.encodeWithSelector(strategyFactory.transferOwnership.selector, operationsMultisig);
+        // bytes memory data = abi.encodeWithSelector(ProxyAdmin.changeProxyAdmin.selector, address(bEIGEN), address(beigenTokenProxyAdmin));
+        // bytes memory data = abi.encodeWithSignature("swapOwner(address,address,address)",
+        //     0xCb8d2f9e55Bc7B1FA9d089f9aC80C583D2BDD5F7,
+        //     0xcF19CE0561052a7A7Ff21156730285997B350A7D,
+        //     0xFddd03C169E3FD9Ea4a9548dDC4BedC6502FE239
+        // );
         // bytes memory callToExecutor = encodeForExecutor({
         //     from: communityMultisig,
-        //     to: address(strategyFactory),
+        //     to: address(executorMultisig),
         //     value: 0,
         //     data: data,
         //     operation: ISafe.Operation.Call 
@@ -115,5 +120,12 @@ contract Current_Config_Check is ExistingDeploymentParser, TimelockEncoding {
             "eigenTokenProxyAdmin.owner() != eigenTokenTimelockController");
         assertEq(beigenTokenProxyAdmin.owner(), address(beigenTokenTimelockController),
             "beigenTokenProxyAdmin.owner() != beigenTokenTimelockController");
+
+        assertEq(eigenTokenProxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(EIGEN)))),
+            address(eigenTokenProxyAdmin),
+            "eigenTokenProxyAdmin is not actually the admin of the EIGEN token");
+        assertEq(beigenTokenProxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(bEIGEN)))),
+            address(beigenTokenProxyAdmin),
+            "beigenTokenProxyAdmin is not actually the admin of the bEIGEN token");
     }
 }
