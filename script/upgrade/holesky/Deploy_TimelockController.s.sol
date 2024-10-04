@@ -13,8 +13,13 @@ contract Deploy_TimelockController is ExistingDeploymentParser {
     bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
     bytes32 public constant CANCELLER_ROLE = keccak256("CANCELLER_ROLE");
 
-    string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
-    string intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
+    // Holesky - testnet
+    // string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
+    // string intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
+
+    // Holesky - preprod
+    string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
+    string intialDeploymentParams = "script/configs/holesky/eigenlayer_preprod.config.json";
 
     function run() external virtual {
         string memory forkUrl = vm.envString("RPC_HOLESKY");
