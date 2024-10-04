@@ -80,13 +80,12 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     bytes32 internal _DOMAIN_SEPARATOR;
 
     /**
-     * @notice returns the total number of delegatedShares (i.e. shares divided by the `operator`'s
-     * totalMagnitude) in `strategy` that are delegated to `operator`.
-     * @notice Mapping: operator => strategy => total number of delegatedShares in the strategy delegated to the operator.
+     * @notice returns the total number of shares of the operator
+     * @notice Mapping: operator => strategy => total number of shares of the operator
+     * 
      * @dev By design, the following invariant should hold for each Strategy:
      * (operator's delegatedShares in delegation manager) = sum (delegatedShares above zero of all stakers delegated to operator)
      * = sum (delegateable delegatedShares of all stakers delegated to the operator)
-     * @dev FKA `operatorShares`
      */
     mapping(address => mapping(IStrategy => DelegatedShares)) public operatorDelegatedShares;
 
@@ -144,7 +143,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     ///       beacon chain scaling factor used to calculate the staker's withdrawable shares in the strategy.
     ///    )
     /// Note that we don't need the beaconChainScalingFactor for non beaconChainETHStrategy strategies, but it's nicer syntactically to keep it.
-    mapping(address => mapping(IStrategy => StakerScalingFactors)) public stakerScalingFactors;
+    mapping(address => mapping(IStrategy => StakerScalingFactors)) public stakerScalingFactor;
 
     // Construction
 
