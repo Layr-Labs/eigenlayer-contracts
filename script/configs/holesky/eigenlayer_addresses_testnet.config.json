@@ -73,7 +73,7 @@
     "executorMultisig": "0x28Ade60640fdBDb2609D8d8734D1b5cBeFc0C348",
     "operationsMultisig": "0xfaEF7338b7490b9E272d80A1a39f4657cAf2b97d",
     "pauserMultisig": "0x53410249ec7d3a3F9F1ba3912D50D6A3Df6d10A7",
-    "timelock": "0xcF19CE0561052a7A7Ff21156730285997B350A7D",
+    "timelock": "0xFddd03C169E3FD9Ea4a9548dDC4BedC6502FE239",
     "foundationMultisig": "0x7Cb5d96A8D67304E51E022979Eb9C63a17484076"
   }
 }
