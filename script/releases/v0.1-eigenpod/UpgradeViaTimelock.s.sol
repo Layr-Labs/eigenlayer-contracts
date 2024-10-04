@@ -6,7 +6,7 @@ import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
 
 import "src/contracts/interfaces/IStrategyFactory.sol";
 
-contract UpgradeCounter is OpsTimelockBuilder {
+contract UpgradeViaTimelock is OpsTimelockBuilder {
 
     using MultisigCallHelper for *;
     using TransactionHelper for *;
