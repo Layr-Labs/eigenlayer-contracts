@@ -120,7 +120,7 @@ contract EncodeSafeTransactionMainnet is Test {
             gasToken,
             refundReceiver,
             sig
-            );
+        );
 
         emit log_named_bytes("final_calldata_to_executor_multisig", final_calldata_to_executor_multisig);
 

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "script/utils/ConfigParser.sol";
-import {EncGnosisSafe} from "script/utils/Encoders.sol";
+import "script/utils/Encoders.sol";
 import "script/utils/Interfaces.sol";
 
 /// @notice Deployment data struct
@@ -32,7 +32,7 @@ library MultisigCallHelper {
     function append(
         MultisigCall[] storage multisigCalls,
         address to,
-        uint value,
+        uint256 value,
         bytes memory data
     ) internal returns (MultisigCall[] storage) {
         multisigCalls.push(MultisigCall({
@@ -44,6 +44,7 @@ library MultisigCallHelper {
         return multisigCalls;
     }
 
+    /// @notice appends a multisig call with a value of 0
     function append(
         MultisigCall[] storage multisigCalls,
         address to,
@@ -75,6 +76,33 @@ library MultisigCallHelper {
 
 
         return abi.encodeWithSelector(IMultiSend.multiSend.selector, ret);
+    }
+}
+
+library TransactionHelper {
+    function encodeForExecutor(
+        Transaction memory t
+    ) public returns (bytes memory) {
+        bytes1 v = bytes1(uint8(1));
+        bytes32 r = bytes32(uint256(uint160(0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF))); // HARDCODED MAINNET TIMELOCK
+        bytes32 s;
+        bytes memory sig = abi.encodePacked(r,s,v);
+
+        bytes memory final_calldata_to_executor_multisig = abi.encodeWithSelector(
+            ISafe.execTransaction.selector,
+            t.to,
+            t.value,
+            t.data,
+            t.op,
+            0, // safeTxGas
+            0, // baseGas
+            0, // gasPrice
+            address(uint160(0)), // gasToken
+            payable(address(uint160(0))), // refundReceiver
+            sig
+        );
+
+        return final_calldata_to_executor_multisig;
     }
 }
 
@@ -148,38 +176,64 @@ abstract contract MultisigBuilder is ConfigParser {
 /// @dev writing a script is done from the perspective of the OpsMultisig
 abstract contract OpsTimelockBuilder is MultisigBuilder {
 
-    struct FinalExecutorCall {
-        address to;
-        bytes data;
-    }
+    using MultisigCallHelper for *;
+    using TransactionHelper for *;
 
     /// @return a Transaction object for a Gnosis Safe to ingest
-    function queue(string memory envPath) public returns (bytes memory) {
-        // TODO
-
-        // get response from _queue()
-        // encode for Timelock
-        // return encoded call for Ops Multisig
-
+    function queue(string memory envPath) public returns (Transaction memory) {
         (
             Addresses memory addrs,
             Environment memory env,
             Params memory params
         ) = _readConfigFile(envPath);
 
-        // _makeTimelockTxns(addrs, env, params);
+        MultisigCall[] memory calls = _queue(addrs, env, params);
 
-        // opsCalls.append({
-        //     to: addrs.admin.timelock,
-        //     data: EncTimelock.queueTransaction(finalCalls)
-        // });
+        // ENCODE CALLS FOR EXECUTOR
+        bytes memory data = calls.encodeMultisendTxs();
 
-        return _queue(addrs, env, params);
+        bytes memory executorCalldata = Transaction({
+            to: params.multiSendCallOnly,
+            value: 0,
+            data: data,
+            op: EncGnosisSafe.Operation.DelegateCall
+        }).encodeForExecutor();
+
+        // ENCODE EXECUTOR CALLDATA FOR TIMELOCK
+        bytes memory timelockCalldata = abi.encodeWithSelector(
+            ITimelock.queueTransaction.selector,
+            addrs.executorMultisig,
+            0,
+            "",
+            executorCalldata,
+            type(uint256).max
+        );
+
+        // ENCODE TIMELOCK DATA FOR OPS MULTISIG
+        return Transaction({
+            to: addrs.timelock,
+            value: 0,
+            data: timelockCalldata,
+            op: EncGnosisSafe.Operation.DelegateCall
+        });
     }
 
-    function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (bytes memory);
+    function makeTimelockTx(Addresses memory addrs, Environment memory env, Params memory params) public returns (Transaction memory) {
+        MultisigCall[] memory calls = _makeTimelockTx(addrs, env, params);
 
-    function _makeTimelockTxns(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (FinalExecutorCall[] memory);
+        bytes memory data = calls.encodeMultisendTxs();
+
+        return Transaction({
+            to: params.multiSendCallOnly,
+            value: 0,
+            data: data,
+            op: EncGnosisSafe.Operation.DelegateCall
+        });
+    }
+
+    function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
+
+    function _makeTimelockTx(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
 }
 
 /// @notice to be used for CommunityMultisig
