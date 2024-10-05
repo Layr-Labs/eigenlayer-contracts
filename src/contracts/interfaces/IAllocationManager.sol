@@ -52,11 +52,11 @@ interface IAllocationManager is ISignatureUtils {
     /**
      * @notice struct used for pending free magnitude. Stored in (operator, strategy, operatorSet) mapping
      * to be used in completeDeallocations.
-     * @param magnitudeDiff the amount of magnitude to deallocate
+     * @param magnitudeDelta the amount of magnitude to deallocate
      * @param completableTimestamp the timestamp at which the deallocation can be completed, 21 days from when queued
      */
     // struct PendingFreeMagnitude {
-    //     uint64 magnitudeDiff;
+    //     uint64 magnitudeDelta;
     //     uint32 completableTimestamp;
     // }
 
@@ -67,7 +67,7 @@ interface IAllocationManager is ISignatureUtils {
      * @param effectTimestamp the timestamp at which the pending magnitude will take effect
      */
     struct MagnitudeInfo {
-        int128 pendingMagnitudeDiff;
+        int128 pendingMagnitudeDelta;
         uint64 currentMagnitude;
         uint32 effectTimestamp;
     }
@@ -223,13 +223,13 @@ interface IAllocationManager is ISignatureUtils {
      * @param strategy the strategy to get the pending modification for
      * @param operatorSets the operatorSets to get the pending modification for
      * @return timestamps the timestamps for each pending dealloction
-     * @return pendingMagnitudeDiffs the pending modification diffs for each operatorSet
+     * @return pendingMagnitudeDeltas the pending modification diffs for each operatorSet
      */
     function getPendingModifications(
         address operator,
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
-    ) external view returns (uint32[] memory timestamps, int128[] memory pendingMagnitudeDiffs);
+    ) external view returns (uint32[] memory timestamps, int128[] memory pendingMagnitudeDeltas);
 
     /**
      * @param operator the operator to get the slashable magnitude for

@@ -28,11 +28,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     bytes32 public constant OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH =
         keccak256("OperatorSetForceDeregistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
 
-    /// @notice The EIP-712 typehash for the `MagnitudeAdjustments` struct used by the contract
-    bytes32 public constant MAGNITUDE_ADJUSTMENT_TYPEHASH = keccak256(
-        "MagnitudeAdjustments(address operator,MagnitudeAdjustment(address strategy, OperatorSet(address avs, uint32 operatorSetId)[], uint64[] magnitudeDiffs)[],bytes32 salt,uint256 expiry)"
-    );
-
     /// @dev Index for flag that pauses operator register/deregister to avs when set.
     uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 

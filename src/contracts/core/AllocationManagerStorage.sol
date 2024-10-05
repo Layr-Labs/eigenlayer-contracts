@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/structs/DoubleEndedQueue.sol";
 import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
-    using Snapshots for Snapshots.History;
+    using Snapshots for Snapshots.DefaultWadHistory;
 
     // Constants
 
@@ -43,10 +43,10 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     /// @notice Mapping: operator => strategy => snapshotted totalMagnitude
     /// Note that totalMagnitude is monotonically decreasing and only gets updated upon slashing
-    mapping(address => mapping(IStrategy => Snapshots.History)) internal _totalMagnitudeUpdate;
+    mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _totalMagnitudeUpdate;
 
-    /// @notice Mapping: operator => strategy => the amount of magnitude that is allocatable
-    mapping(address => mapping(IStrategy => uint64)) public allocatableMagnitude;
+    /// @notice Mapping: operator => strategy => the amount of magnitude that is not available for allocation
+    mapping(address => mapping(IStrategy => uint64)) public encumberedMagnitude;
 
     /// @notice Mapping: operator => strategy => operatorSet (encoded) => MagnitudeInfo
     mapping(address => mapping(IStrategy => mapping(bytes32 => MagnitudeInfo))) internal _operatorMagnitudeInfo;
