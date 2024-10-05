@@ -136,13 +136,11 @@ contract AllocationManager is
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
                 bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
                 // Check that there are no pending allocations & deallocations for the operator, operatorSet, strategy
-                (bool noPendingModification, MagnitudeInfo memory mInfo) = 
-                    _completePendingModification(msg.sender, allocation.strategy, operatorSetKey);
+                (bool noPendingModification, MagnitudeInfo memory mInfo) = _completePendingModification(msg.sender, allocation.strategy, operatorSetKey);
                 require(noPendingModification, ModificationAlreadyPending());
 
                 // Calculate the new pending diff with this modification
-                mInfo.pendingMagnitudeDelta =
-                    int128(uint128(allocation.magnitudes[j])) - int128(uint128(mInfo.currentMagnitude));
+                mInfo.pendingMagnitudeDelta = int128(uint128(allocation.magnitudes[j])) - int128(uint128(mInfo.currentMagnitude));
                 require(mInfo.pendingMagnitudeDelta != 0, SameMagnitude());
 
                 // Handle deallocation/allocation and modification effect timestamp
