@@ -376,7 +376,9 @@ contract DelegationManager is
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
-            uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategy);
+            IStrategy[] memory strategies = new IStrategy[](1);
+            strategies[0] = strategy;
+            uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
 
             // add deposit shares to operator's stake shares and update the staker's depositScalingFactor
             _increaseDelegation({
@@ -385,7 +387,7 @@ contract DelegationManager is
                 strategy: strategy,
                 existingDepositShares: existingDepositShares,
                 addedDepositShares: addedDepositShares,
-                totalMagnitude: totalMagnitude
+                totalMagnitude: totalMagnitudes[0]
             });
         }
     }
@@ -407,11 +409,13 @@ contract DelegationManager is
     ) external onlyEigenPodManager {
         // decrease the staker's beaconChainScalingFactor proportionally
         address operator = delegatedTo[staker];
-        uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, beaconChainETHStrategy);
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = beaconChainETHStrategy;
+        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
 
-        uint256 sharesBefore = existingDepositShares.toShares(stakerScalingFactor[staker][beaconChainETHStrategy], totalMagnitude);
+        uint256 sharesBefore = existingDepositShares.toShares(stakerScalingFactor[staker][beaconChainETHStrategy], totalMagnitudes[0]);
         stakerScalingFactor[staker][beaconChainETHStrategy].decreaseBeaconChainScalingFactor(proportionOfOldBalance);
-        uint256 sharesAfter = existingDepositShares.toShares(stakerScalingFactor[staker][beaconChainETHStrategy], totalMagnitude);
+        uint256 sharesAfter = existingDepositShares.toShares(stakerScalingFactor[staker][beaconChainETHStrategy], totalMagnitudes[0]);
 
         // if the staker is delegated to an operators
         if (isDelegated(staker)) {
@@ -826,6 +830,8 @@ contract DelegationManager is
         IStrategy[] memory strategies
     ) public view returns (uint256[] memory withdrawableShares) {
         address operator = delegatedTo[staker];
+        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
+
         for (uint256 i = 0; i < strategies.length; ++i) {
             IShareManager shareManager = _getShareManager(strategies[i]);
             // TODO: batch call for strategyManager shares?
@@ -837,12 +843,11 @@ contract DelegationManager is
             // 2. if the staker is delegated, actual withdrawable shares can be different from what is stored
             // in the StrategyManager/EigenPodManager because they could have been slashed
             if (operator != address(0)) {
-                uint64 totalMagnitude = allocationManager.getTotalMagnitude(operator, strategies[i]);
 
                 // forgefmt: disable-next-item
                 withdrawableShares[i] = depositShares.toShares(
                     stakerScalingFactor[staker][strategies[i]],
-                    totalMagnitude
+                    totalMagnitudes[i]
                 );
             } else {
                 withdrawableShares[i] = depositShares;

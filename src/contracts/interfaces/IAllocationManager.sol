@@ -6,8 +6,8 @@ import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 
 interface IAllocationManager is ISignatureUtils {
-    /// @dev Thrown when `bipsToSlash` is greater than 10,000 bips (100%), or zero.
-    error InvalidBipsToSlash();
+    /// @dev Thrown when `wadToSlash` is zero.
+    error InvalidWadToSlash();
     /// @dev Thrown when `operator` is not a registered operator.
     error OperatorNotRegistered();
     /// @dev Thrown when two array parameters have mismatching lengths.
@@ -152,29 +152,25 @@ interface IAllocationManager is ISignatureUtils {
 
     /**
      * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
-     * @param operator address to modify allocations for
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @param operatorSignature signature of the operator if msg.sender is not the operator
      * @dev updates freeMagnitude for the updated strategies
-     * @dev must be called by the operator
+     * @dev msg.sender is the operator
      */
     function modifyAllocations(
-        address operator,
-        MagnitudeAllocation[] calldata allocations,
-        SignatureWithSaltAndExpiry calldata operatorSignature
+        MagnitudeAllocation[] calldata allocations
     ) external;
 
     /**
-     * @notice For all pending deallocations that have become completable, their pending free magnitude can be
-     * added back to the free magnitude of the (operator, strategy) amount. This function takes a list of strategies
-     * and adds all completable deallocations for each strategy, updating the freeMagnitudes of the operator
+     * @notice This function takes a list of strategies and adds all completable modifications for each strategy, 
+     * updating the freeMagnitudes of the operator as needed.
      *
-     * @param operator address to complete deallocations for
-     * @param strategies a list of strategies to complete deallocations for
+     * @param operator address to complete modifications for
+     * @param strategies a list of strategies to complete modifications for
+     * @param numToComplete a list of number of pending modifications to complete for each strategy
      *
      * @dev can be called permissionlessly by anyone
      */
-    function completePendingDeallocations(
+    function completePendingModifications(
         address operator,
         IStrategy[] calldata strategies,
         uint16[] calldata numToComplete
@@ -188,23 +184,14 @@ interface IAllocationManager is ISignatureUtils {
      * @param operator the address to slash
      * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
      * @param strategies the set of strategies to slash
-     * @param bipsToSlash the number of bips to slash, this will be proportional to the
+     * @param wadToSlash the parts in 1e18 to slash, this will be proportional to the
      * operator's slashable stake allocation for the operatorSet
      */
     function slashOperator(
         address operator,
         uint32 operatorSetId,
         IStrategy[] calldata strategies,
-        uint16 bipsToSlash
-    ) external;
-
-    /**
-     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
-     *
-     * @param salt A unique and single use value associated with the approver signature.
-     */
-    function cancelSalt(
-        bytes32 salt
+        uint256 wadToSlash
     ) external;
 
     /**
@@ -231,36 +218,18 @@ interface IAllocationManager is ISignatureUtils {
     function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64);
 
     /**
-     * @notice Returns the pending allocations of an operator for a given strategy and operatorSets
-     * One of the assumptions here is we don't allow more than one pending allocation for an operatorSet at a time.
-     * If that changes, we would need to change this function to return all pending allocations for an operatorSet.
-     * @param operator the operator to get the pending allocations for
-     * @param strategy the strategy to get the pending allocations for
-     * @param operatorSets the operatorSets to get the pending allocations for
-     * @return pendingMagnitude the pending allocations for each operatorSet
-     * @return timestamps the timestamps for each pending allocation
-     */
-    function getPendingAllocations(
-        address operator,
-        IStrategy strategy,
-        OperatorSet[] calldata operatorSets
-    ) external view returns (uint64[] memory, uint32[] memory);
-
-    /**
-     * @notice Returns the pending deallocations of an operator for a given strategy and operatorSets.
-     * One of the assumptions here is we don't allow more than one pending deallocation for an operatorSet at a time.
-     * If that changes, we would need to change this function to return all pending deallocations for an operatorSet.
-     * @param operator the operator to get the pending deallocations for
-     * @param strategy the strategy to get the pending deallocations for
-     * @param operatorSets the operatorSets to get the pending deallocations for
-     * @return pendingMagnitudeDiffs the pending deallocation diffs for each operatorSet
+     * @notice Returns the pending modifications of an operator for a given strategy and operatorSets.
+     * @param operator the operator to get the pending modification for
+     * @param strategy the strategy to get the pending modification for
+     * @param operatorSets the operatorSets to get the pending modification for
      * @return timestamps the timestamps for each pending dealloction
+     * @return pendingMagnitudeDiffs the pending modification diffs for each operatorSet
      */
-    function getPendingDeallocations(
+    function getPendingModifications(
         address operator,
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
-    ) external view returns (uint64[] memory, uint32[] memory);
+    ) external view returns (uint32[] memory timestamps, int128[] memory pendingMagnitudeDiffs);
 
     /**
      * @param operator the operator to get the slashable magnitude for
@@ -296,30 +265,4 @@ interface IAllocationManager is ISignatureUtils {
         IStrategy[] calldata strategies,
         uint32 timestamp
     ) external view returns (uint64[] memory);
-
-    /**
-     * @notice Returns the current total magnitude of an operator for a given strategy
-     * @param operator the operator to get the total magnitude for
-     * @param strategy the strategy to get the total magnitude for
-     * @return totalMagnitude the total magnitude for the strategy
-     */
-    function getTotalMagnitude(address operator, IStrategy strategy) external view returns (uint64);
-
-    /**
-     * @notice Calculates the digest hash to be signed by an operator to modify magnitude allocations
-     * @param operator The operator to allocate or deallocate magnitude for.
-     * @param allocations The magnitude allocations/deallocations to be made.
-     * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid.
-     */
-    function calculateMagnitudeAllocationDigestHash(
-        address operator,
-        MagnitudeAllocation[] calldata allocations,
-        bytes32 salt,
-        uint256 expiry
-    ) external view returns (bytes32);
-
-    /// @notice Getter function for the current EIP-712 domain separator for this contract.
-    /// @dev The domain separator will change in the event of a fork that changes the ChainID.
-    function domainSeparator() external view returns (bytes32);
 }
