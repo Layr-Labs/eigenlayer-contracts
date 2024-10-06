@@ -520,4 +520,48 @@ interface IDelegationManager is ISignatureUtils {
     function calculateWithdrawalRoot(
         Withdrawal memory withdrawal
     ) external pure returns (bytes32);
+
+    /**
+     * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
+     */
+    function isDelegated(address staker) external view returns (bool);
+
+    /**
+     * @notice Returns true is an operator has previously registered for delegation.
+     */
+    function isOperator(address operator) external view returns (bool);
+
+    /**
+     * @notice Returns the OperatorDetails struct associated with an `operator`.
+     */
+    function operatorDetails(address operator) external view returns (OperatorDetails memory);
+
+    /**
+     * @notice Returns the delegationApprover account for an operator
+     */
+    function delegationApprover(address operator) external view returns (address);
+
+    /**
+     * @notice Returns the stakerOptOutWindowBlocks for an operator
+     */
+    function stakerOptOutWindowBlocks(address operator) external view returns (uint256);
+
+    /**
+     * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal.
+     * This value depends on which operator the staker is delegated to.
+     * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
+     * to each strategy's underlying shares to token ratio).
+     */
+    function getWithdrawableShares(
+        address staker,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory withdrawableShares);
+
+    /**
+     * @notice Returns the number of shares in storage for a staker and all their strategies
+     */
+    function getDepositedShares(
+        address staker
+    ) external view returns (IStrategy[] memory, uint256[] memory);
+
 }
