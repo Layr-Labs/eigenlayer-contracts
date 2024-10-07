@@ -128,23 +128,20 @@ contract StrategyManager is
         uint256 expiry,
         bytes memory signature
     ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 depositedShares) {
+        // Assert that the signature is not expired.
         require(expiry >= block.timestamp, SignatureExpired());
-        // calculate struct hash, then increment `staker`'s nonce
+        // Cache staker's nonce to avoid sloads.
         uint256 nonce = nonces[staker];
-        bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, staker, strategy, token, amount, nonce, expiry));
+        // Assert that the signature is valid.
+        _checkIsValidSignatureNow({
+            signer: staker, 
+            signableDigest: calculateStrategyDepositDigestHash(staker, strategy, token, amount, nonce, expiry), 
+            signature: signature
+        });
+        // Increment the nonce for the staker.
         unchecked {
             nonces[staker] = nonce + 1;
         }
-
-        // calculate the digest hash
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
-
-        _checkIsValidSignatureNow({
-            signer: staker, 
-            signableDigest: digestHash, 
-            signature: signature
-        });
-
         // deposit the tokens (from the `msg.sender`) and credit the new shares to the `staker`
         depositedShares = _depositIntoStrategy(staker, strategy, token, amount);
     }
@@ -383,5 +380,38 @@ contract StrategyManager is
         address staker
     ) external view returns (uint256) {
         return stakerStrategyList[staker].length;
+    }
+
+    /**
+     * @param staker The address of the staker.
+     * @param strategy The strategy to deposit into.
+     * @param token The token to deposit.
+     * @param amount The amount of `token` to deposit.
+     * @param nonce The nonce of the staker.
+     * @param expiry The expiry of the signature.
+     * @return The EIP-712 signable digest hash.
+     */
+    function calculateStrategyDepositDigestHash(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
+        uint256 amount,
+        uint256 nonce,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        /// forgefmt: disable-next-item
+        return _calculateSignableDigest(
+            keccak256(
+                abi.encode(
+                    DEPOSIT_TYPEHASH, 
+                    staker, 
+                    strategy, 
+                    token, 
+                    amount, 
+                    nonce, 
+                    expiry
+                )
+            )
+        );
     }
 }
