@@ -26,8 +26,11 @@ interface IAVSDirectoryErrors {
     error InvalidOperatorSet();
     /// @dev Thrown when `operator` is not a registered operator.
     error OperatorNotRegistered();
+    
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
     error SaltSpent();
+    /// @dev Thrown when an invalid signature is provided by an operator.
+    error InvalidOperatorSignature();
     /// @dev Thrown when attempting to use an expired eip-712 signature.
     error SignatureExpired();
 }

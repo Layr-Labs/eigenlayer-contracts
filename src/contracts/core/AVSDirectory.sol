@@ -4,9 +4,9 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 
 import "../permissions/Pausable.sol";
-import "../libraries/EIP1271SignatureUtils.sol";
 import "./AVSDirectoryStorage.sol";
 
 contract AVSDirectory is
@@ -148,15 +148,18 @@ contract AVSDirectory is
         require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
 
         // Assert that `operatorSignature.signature` is a valid signature for operator set registrations.
-        EIP1271SignatureUtils.checkSignature_EIP1271(
-            operator,
-            calculateOperatorSetRegistrationDigestHash({
-                avs: msg.sender,
-                operatorSetIds: operatorSetIds,
-                salt: operatorSignature.salt,
-                expiry: operatorSignature.expiry
-            }),
-            operatorSignature.signature
+        require(
+            SignatureCheckerUpgradeable.isValidSignatureNow({
+                signer: operator,
+                hash: calculateOperatorSetRegistrationDigestHash({
+                    avs: msg.sender,
+                    operatorSetIds: operatorSetIds,
+                    salt: operatorSignature.salt,
+                    expiry: operatorSignature.expiry
+                }),
+                signature: operatorSignature.signature
+            }), 
+            InvalidOperatorSignature()
         );
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
@@ -191,15 +194,18 @@ contract AVSDirectory is
             require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
 
             // Assert that `operatorSignature.signature` is a valid signature for operator set deregistrations.
-            EIP1271SignatureUtils.checkSignature_EIP1271(
-                operator,
-                calculateOperatorSetForceDeregistrationTypehash({
-                    avs: avs,
-                    operatorSetIds: operatorSetIds,
-                    salt: operatorSignature.salt,
-                    expiry: operatorSignature.expiry
+            require(
+                SignatureCheckerUpgradeable.isValidSignatureNow({
+                    signer: operator,
+                    hash: calculateOperatorSetForceDeregistrationTypehash({
+                        avs: avs,
+                        operatorSetIds: operatorSetIds,
+                        salt: operatorSignature.salt,
+                        expiry: operatorSignature.expiry
+                    }),
+                    signature: operatorSignature.signature
                 }),
-                operatorSignature.signature
+                InvalidOperatorSignature()
             );
 
             // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
@@ -285,16 +291,19 @@ contract AVSDirectory is
         require(delegation.isOperator(operator), OperatorDoesNotExist());
 
         // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
-        EIP1271SignatureUtils.checkSignature_EIP1271({
-            signer: operator,
-            digestHash: calculateOperatorAVSRegistrationDigestHash({
-                operator: operator,
-                avs: msg.sender,
-                salt: operatorSignature.salt,
-                expiry: operatorSignature.expiry
+        require(
+            SignatureCheckerUpgradeable.isValidSignatureNow({
+                signer: operator,
+                hash: calculateOperatorAVSRegistrationDigestHash({
+                    operator: operator,
+                    avs: msg.sender,
+                    salt: operatorSignature.salt,
+                    expiry: operatorSignature.expiry
+                }),
+                signature: operatorSignature.signature
             }),
-            signature: operatorSignature.signature
-        });
+            InvalidOperatorSignature()
+        );
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
