@@ -1,31 +1,40 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "../../utils/ExistingDeploymentParser.sol";
-import "../../utils/TimelockEncoding.sol";
+import "./ExistingDeploymentParser.sol";
+import "./TimelockEncoding.sol";
 
 /**
- * forge script script/upgrade/holesky/Current_Config_Check.s.sol:Current_Config_Check -vvv
- * 
+ * forge script script/utils/Current_Config_Check.s.sol:Current_Config_Check -vvv --sig "run(string)" $NETWORK_NAME
+ * NETWORK_NAME options are currently preprod-holesky, testnet-holesky, or mainnet
  */
 contract Current_Config_Check is ExistingDeploymentParser, TimelockEncoding {
-    // Holesky - testnet
-    // string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
-    // string intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
+    string deployedContractsConfig;
+    string intialDeploymentParams;
+    string forkUrl;  
 
-    // Holesky - preprod
-    // string deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
-    // string intialDeploymentParams = "script/configs/holesky/eigenlayer_preprod.config.json";
+    function run(string memory networkName) external virtual {
+        if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("preprod-holesky"))) {
+            deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
+            intialDeploymentParams = "script/configs/holesky/eigenlayer_preprod.config.json";
+            forkUrl = vm.envString("RPC_HOLESKY");
+        } else if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("testnet-holesky"))) {
+            deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
+            intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
+            forkUrl = vm.envString("RPC_HOLESKY");
+        } else if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("mainnet"))) {
+            deployedContractsConfig = "script/configs/mainnet/mainnet-addresses.config.json";
+            intialDeploymentParams = "script/configs/mainnet/mainnet-config.config.json"; 
+            forkUrl = vm.envString("RPC_MAINNET"); 
+        }
 
-    // mainnet
-    string deployedContractsConfig = "script/configs/mainnet/mainnet-addresses.config.json";
-    string intialDeploymentParams = "script/configs/mainnet/mainnet-config.config.json";    
-
-    function run() external virtual {
-        // holesky
-        // string memory forkUrl = vm.envString("RPC_HOLESKY");
-        // mainnet
-        string memory forkUrl = vm.envString("RPC_MAINNET");
+        string memory emptyString;
+        require(keccak256(abi.encodePacked(deployedContractsConfig)) != keccak256(abi.encodePacked(emptyString)),
+            "deployedContractsConfig cannot be unset");
+        require(keccak256(abi.encodePacked(intialDeploymentParams)) != keccak256(abi.encodePacked(emptyString)),
+            "intialDeploymentParams cannot be unset");
+        require(keccak256(abi.encodePacked(forkUrl)) != keccak256(abi.encodePacked(emptyString)),
+            "forkUrl cannot be unset");
 
         uint256 forkId = vm.createFork(forkUrl);
         vm.selectFork(forkId);
@@ -33,7 +42,8 @@ contract Current_Config_Check is ExistingDeploymentParser, TimelockEncoding {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         emit log_named_uint("You are parsing on ChainID", currentChainId);
-        require(currentChainId == 1 || currentChainId == 17000, "script is only for mainnet or holesky");
+        require(currentChainId == 1 || currentChainId == 17000 || currentChainId == 31337,
+            "script is only for mainnet or holesky or local environment");
 
         _parseDeployedContracts(deployedContractsConfig);
         _parseInitialDeploymentParams(intialDeploymentParams);
