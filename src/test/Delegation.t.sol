@@ -258,7 +258,7 @@ contract DelegationTests is EigenLayerTestHelper {
             signature = abi.encodePacked(r, s, v);
         }
 
-        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEIP1271.selector);
+        cheats.expectRevert(IDelegationManager.InvalidSignature.selector);
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max

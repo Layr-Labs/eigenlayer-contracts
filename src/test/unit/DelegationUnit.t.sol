@@ -1233,7 +1233,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // try to delegate from the `staker` to the operator, and check reversion
         cheats.startPrank(staker);
-        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEOA.selector);
+        cheats.expectRevert(IDelegationManager.InvalidApproverSignature.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
@@ -1738,7 +1738,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         // try to delegate from the `staker` to the operator, and check reversion
         cheats.startPrank(staker);
         // Signature should fail as the wallet will not return EIP1271_MAGICVALUE
-        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEIP1271.selector);
+        cheats.expectRevert(IDelegationManager.InvalidStakerSignature.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
@@ -1885,7 +1885,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         // Should revert from invalid signature as staker is not set as the address of signer
         cheats.startPrank(caller);
-        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEOA.selector);
+        cheats.expectRevert(IDelegationManager.InvalidApproverSignature.selector);
         // use an empty approver signature input since none is needed / the input is unchecked
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateToBySignature(
@@ -1915,7 +1915,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         // Should revert from invalid signature as staker is not set as the address of signer
         cheats.startPrank(caller);
-        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEIP1271.selector);
+        cheats.expectRevert(IDelegationManager.InvalidApproverSignature.selector);
         // use an empty approver signature input since none is needed / the input is unchecked
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateToBySignature(
