@@ -42,7 +42,8 @@ contract UpgradeViaTimelock is OpsTimelockBuilder {
         // steals logic from queue() to perform execute()
         bytes memory executorCalldata = makeExecutorCalldata(
             _queue(addrs, env, params),
-            params.multiSendCallOnly
+            params.multiSendCallOnly,
+            addrs.timelock
         );
 
         // _executorCalls.append(multisigCalls, to, value, data);

@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import "script/Release_Template.s.sol";
 import "src/contracts/pods/EigenPod.sol";
 
-contract DeployEigenPod is EOABuilder {
+contract DeployEigenPod is EOADeployer {
     Deployment[] internal _deployments;
 
     /// @notice deploys an EigenPod and returns the deployed address

@@ -74,21 +74,21 @@ library MultisigCallHelper {
             );
         }
 
-
         return abi.encodeWithSelector(IMultiSend.multiSend.selector, ret);
     }
 }
 
 library TransactionHelper {
     function encodeForExecutor(
-        Transaction memory t
-    ) public returns (bytes memory) {
+        Transaction memory t,
+        address timelock
+    ) public pure returns (bytes memory) {
         bytes1 v = bytes1(uint8(1));
-        bytes32 r = bytes32(uint256(uint160(0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF))); // HARDCODED MAINNET TIMELOCK
+        bytes32 r = bytes32(uint256(uint160(timelock)));
         bytes32 s;
         bytes memory sig = abi.encodePacked(r,s,v);
 
-        bytes memory final_calldata_to_executor_multisig = abi.encodeWithSelector(
+        bytes memory executorCalldata = abi.encodeWithSelector(
             ISafe.execTransaction.selector,
             t.to,
             t.value,
@@ -102,7 +102,7 @@ library TransactionHelper {
             sig
         );
 
-        return final_calldata_to_executor_multisig;
+        return executorCalldata;
     }
 }
 
@@ -110,7 +110,7 @@ library TransactionHelper {
 /// TODO: break all abstract contracts out into their own file in a `template` directory
 
 /// @notice template for an EOA script
-abstract contract EOABuilder is ConfigParser {
+abstract contract EOADeployer is ConfigParser {
 
     function deploy(string memory envPath) public returns (Deployment[] memory) {
         (
@@ -157,7 +157,11 @@ abstract contract MultisigBuilder is ConfigParser {
             Params memory params
         ) = _readConfigFile(envPath);
 
-        execute(envPath);
+        _execute(
+            addrs,
+            env,
+            params
+        );
         _testExecute(
             addrs,
             env,
@@ -190,7 +194,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
         MultisigCall[] memory calls = _queue(addrs, env, params);
 
         // ENCODE CALLS FOR EXECUTOR
-        bytes memory executorCalldata = makeExecutorCalldata(calls, params.multiSendCallOnly);
+        bytes memory executorCalldata = makeExecutorCalldata(calls, params.multiSendCallOnly, addrs.timelock);
 
         // ENCODE EXECUTOR CALLDATA FOR TIMELOCK
         bytes memory timelockCalldata = abi.encodeWithSelector(
@@ -216,7 +220,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
 
     /// @notice helper function to create calldata for executor
     /// can be used for queue or execute
-    function makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly) internal returns (bytes memory) {
+    function makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly, address timelock) internal pure returns (bytes memory) {
         bytes memory data = calls.encodeMultisendTxs();
 
         bytes memory executorCalldata = Transaction({
@@ -224,7 +228,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
             value: 0,
             data: data,
             op: EncGnosisSafe.Operation.DelegateCall
-        }).encodeForExecutor();
+        }).encodeForExecutor(timelock);
 
         return executorCalldata;
     }

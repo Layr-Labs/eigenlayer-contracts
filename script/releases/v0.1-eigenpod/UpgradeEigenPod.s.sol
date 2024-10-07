@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import "script/Release_Template.s.sol";
 import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
 
-contract UpgradeCounter is MultisigBuilder {
+contract UpgradeEigenPod is MultisigBuilder {
 
     using MultisigCallHelper for *;
 
@@ -47,5 +47,7 @@ contract UpgradeCounter is MultisigBuilder {
         vm.startBroadcast(addrs.operationsMultisig);
         params.multiSendCallOnly.delegatecall(data);
         vm.stopBroadcast();
+
+        emit log_bytes(data);
     }
 }
