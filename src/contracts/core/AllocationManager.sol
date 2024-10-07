@@ -82,19 +82,19 @@ contract AllocationManager is
      *
      * @param operator address to complete modifications for
      * @param strategies a list of strategies to complete modifications for
-     * @param numToComplete a list of number of pending modifications to complete for each strategy
+     * @param numToClear a list of number of pending modifications to complete for each strategy
      *
      * @dev can be called permissionlessly by anyone
      */
     function completePendingModifications(
         address operator,
         IStrategy[] calldata strategies,
-        uint16[] calldata numToComplete
+        uint16[] calldata numToClear
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
-        require(strategies.length == numToComplete.length, InputArrayLengthMismatch());
+        require(strategies.length == numToClear.length, InputArrayLengthMismatch());
         require(delegation.isOperator(operator), OperatorNotRegistered());
         for (uint256 i = 0; i < strategies.length; ++i) {
-            _completePendingModifications({operator: operator, strategy: strategies[i], numToComplete: numToComplete[i]});
+            _clearModificationQueue({operator: operator, strategy: strategies[i], numToClear: numToClear[i]});
         }
     }
 
@@ -119,10 +119,10 @@ contract AllocationManager is
             require(avsDirectory.isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
 
             // 1. For the given (operator,strategy) complete any pending modifications to free up encumberedMagnitude
-            _completePendingModifications({
+            _clearModificationQueue({
                 operator: msg.sender,
                 strategy: allocation.strategy,
-                numToComplete: type(uint16).max
+                numToClear: type(uint16).max
             });
             
             // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
@@ -240,14 +240,14 @@ contract AllocationManager is
     }
 
     /**
-     * @notice For a single strategy, complete pending modifications for an operator, strategy
+     * @notice For a single strategy, clear the queue of pending modifications for an operator, strategy by completing them if necessary
      * @param operator address to update allocatableMagnitude for
      * @param strategy the strategy to update allocatableMagnitude for
-     * @param numToComplete the number of pending modifications to complete
+     * @param numToClear the number of pending modifications to complete
      */
-    function _completePendingModifications(address operator, IStrategy strategy, uint16 numToComplete) internal {
+    function _clearModificationQueue(address operator, IStrategy strategy, uint16 numToClear) internal {
         uint256 numCompleted;
-        while (modificationQueue[operator][strategy].length() > 0 && numCompleted < numToComplete) {
+        while (modificationQueue[operator][strategy].length() > 0 && numCompleted < numToClear) {
             bytes32 opsetKey = modificationQueue[operator][strategy].front();
             (bool completed,) = _completePendingModification(operator, strategy, opsetKey);
             if (completed) {
