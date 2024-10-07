@@ -4,9 +4,9 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "../mixins/SignatureUtils.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
@@ -25,7 +25,8 @@ contract StrategyManager is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     Pausable,
-    StrategyManagerStorage
+    StrategyManagerStorage,
+    SignatureUtils
 {
     using SlashingLib for *;
     using SafeERC20 for IERC20;
@@ -75,7 +76,6 @@ contract StrategyManager is
         IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus
     ) external initializer {
-        _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
@@ -137,22 +137,13 @@ contract StrategyManager is
         }
 
         // calculate the digest hash
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
+        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
 
-        /**
-         * check validity of signature:
-         * 1) if `staker` is an EOA, then `signature` must be a valid ECDSA signature from `staker`,
-         * indicating their intention for this action
-         * 2) if `staker` is a contract, then `signature` will be checked according to EIP-1271
-         */
-        require(
-            SignatureCheckerUpgradeable.isValidSignatureNow(
-                staker, 
-                digestHash, 
-                signature
-            ),
-            InvalidStakerSignature()
-        );
+        _checkIsValidSignatureNow({
+            signer: staker, 
+            signableDigest: digestHash, 
+            signature: signature
+        });
 
         // deposit the tokens (from the `msg.sender`) and credit the new shares to the `staker`
         depositedShares = _depositIntoStrategy(staker, strategy, token, amount);
@@ -392,22 +383,5 @@ contract StrategyManager is
         address staker
     ) external view returns (uint256) {
         return stakerStrategyList[staker].length;
-    }
-
-    /**
-     * @notice Getter function for the current EIP-712 domain separator for this contract.
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     */
-    function domainSeparator() public view returns (bytes32) {
-        if (block.chainid == ORIGINAL_CHAIN_ID) {
-            return _DOMAIN_SEPARATOR;
-        } else {
-            return _calculateDomainSeparator();
-        }
-    }
-
-    // @notice Internal function for calculating the current domain separator of this contract
-    function _calculateDomainSeparator() internal view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
 }

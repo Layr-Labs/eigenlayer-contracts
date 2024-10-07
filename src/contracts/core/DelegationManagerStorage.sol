@@ -16,10 +16,6 @@ import "../interfaces/IAllocationManager.sol";
 abstract contract DelegationManagerStorage is IDelegationManager {
     // Constants
 
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-
     /// @notice The EIP-712 typehash for the `StakerDelegation` struct used by the contract
     bytes32 public constant STAKER_DELEGATION_TYPEHASH =
         keccak256("StakerDelegation(address staker,address operator,uint256 nonce,uint256 expiry)");
@@ -67,17 +63,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice Minimum withdrawal delay in seconds until all queued withdrawals can be completed.
     uint32 public immutable MIN_WITHDRAWAL_DELAY;
 
-    /// @dev Chain ID at the time of contract deployment
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-
     // Mutatables
 
-    /**
-     * @notice Original EIP-712 Domain separator for this contract.
-     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
-     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
-     */
-    bytes32 internal _DOMAIN_SEPARATOR;
+    bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
     /**
      * @notice returns the total number of shares of the operator
@@ -159,7 +147,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         eigenPodManager = _eigenPodManager;
         allocationManager = _allocationManager;
         MIN_WITHDRAWAL_DELAY = _MIN_WITHDRAWAL_DELAY;
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**

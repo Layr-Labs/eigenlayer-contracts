@@ -29,8 +29,6 @@ interface IAVSDirectory is ISignatureUtils {
     
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
     error SaltSpent();
-    /// @dev Thrown when an invalid signature is provided by an operator.
-    error InvalidOperatorSignature();
     /// @dev Thrown when attempting to use an expired eip-712 signature.
     error SignatureExpired();
 
@@ -341,10 +339,6 @@ interface IAVSDirectory is ISignatureUtils {
         bytes32 salt,
         uint256 expiry
     ) external view returns (bytes32);
-
-    /// @notice Getter function for the current EIP-712 domain separator for this contract.
-    /// @dev The domain separator will change in the event of a fork that changes the ChainID.
-    function domainSeparator() external view returns (bytes32);
 
     /// @notice The EIP-712 typehash for the Registration struct used by the contract.
     function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32);

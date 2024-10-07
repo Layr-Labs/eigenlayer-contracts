@@ -518,7 +518,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
 
-        cheats.expectRevert(IStrategyManager.InvalidStakerSignature.selector);
+        cheats.expectRevert(ISignatureUtils.InvalidSignature.selector);
         // call with `notStaker` as input instead of `staker` address
         address notStaker = address(3333);
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, notStaker, expiry, signature);
@@ -548,7 +548,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         // not expecting a revert, so input an empty string
         bytes memory signature = _depositIntoStrategyWithSignature(staker, amount, expiry, "");
 
-        cheats.expectRevert(IStrategyManager.InvalidStakerSignature.selector);
+        cheats.expectRevert(IStrategyManager.InvalidSignature.selector);
         strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
     }
 
@@ -588,7 +588,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
             signature = abi.encodePacked(r, s, v);
         }
 
-        cheats.expectRevert(IStrategyManager.InvalidStakerSignature.selector);
+        cheats.expectRevert(IStrategyManager.InvalidSignature.selector);
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
     }
 
