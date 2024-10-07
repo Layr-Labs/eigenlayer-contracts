@@ -86,7 +86,7 @@ contract AllocationManager is
      *
      * @dev can be called permissionlessly by anyone
      */
-    function completePendingModifications(
+    function clearModificationQueue(
         address operator,
         IStrategy[] calldata strategies,
         uint16[] calldata numToClear
