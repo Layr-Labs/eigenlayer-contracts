@@ -250,17 +250,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
-
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager);
+        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, avsDirectory);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
             delegationManager
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
         strategyFactoryImplementation = new StrategyFactory(strategyManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -382,16 +381,15 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager);
-        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, avsDirectory);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
             delegationManager
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -470,16 +468,15 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager);
-        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, avsDirectory);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
             delegationManager
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -560,7 +557,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Whitelist strategy
         IStrategy[] memory strategies = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         strategies[0] = strategy;
 
         if (forkType == MAINNET) {
@@ -570,7 +566,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             StrategyBaseTVLLimits(address(strategy)).setTVLLimits(type(uint256).max, type(uint256).max);
         } else {
             cheats.prank(strategyManager.strategyWhitelister());
-            strategyManager.addStrategiesToDepositWhitelist(strategies, _thirdPartyTransfersForbiddenValues);
+            strategyManager.addStrategiesToDepositWhitelist(strategies);
         }
 
         // Add to lstStrats and allStrats

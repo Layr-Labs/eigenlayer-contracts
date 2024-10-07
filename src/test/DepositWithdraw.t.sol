@@ -8,6 +8,8 @@ import "./mocks/ERC20_OneWeiFeeOnTransfer.sol";
 contract DepositWithdrawTests is EigenLayerTestHelper {
     uint256[] public emptyUintArray;
 
+    uint32 constant MIN_WITHDRAWAL_DELAY = 17.5 days;
+
     /**
      * @notice Verifies that it is possible to deposit WETH
      * @param amountToDeposit Fuzzed input for amount of WETH to deposit
@@ -52,9 +54,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = wethStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         cheats.expectRevert(IStrategy.OnlyUnderlyingToken.selector);
@@ -89,9 +90,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = IStrategy(nonexistentStrategy);
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         cheats.expectRevert();
@@ -103,9 +103,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = wethStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         cheats.expectRevert(IStrategy.NewSharesZero.selector);
@@ -138,12 +137,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
-            shares: shareAmounts,
             staker: staker,
             withdrawer: withdrawer,
             nonce: delegation.cumulativeWithdrawalsQueued(staker),
             delegatedTo: delegation.delegatedTo(staker),
-            startBlock: uint32(block.number)
+            startTimestamp: uint32(block.timestamp),
+            scaledSharesToWithdraw: shareAmounts
         });
 
 
@@ -151,7 +150,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategyArray,
-            shares: shareAmounts,
+            ownedShares: shareAmounts,
             withdrawer: withdrawer
         });
 
@@ -282,13 +281,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         {
             cheats.startPrank(strategyManager.strategyWhitelister());
             IStrategy[] memory _strategy = new IStrategy[](1);
-            bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
             _strategy[0] = oneWeiFeeOnTransferTokenStrategy;
-            strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+            strategyManager.addStrategiesToDepositWhitelist(_strategy);
             cheats.stopPrank();
         }
     
-        uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(sender, oneWeiFeeOnTransferTokenStrategy);
+        uint256 operatorSharesBefore = strategyManager.stakerDepositShares(sender, oneWeiFeeOnTransferTokenStrategy);
         // check the expected output
         uint256 expectedSharesOut = oneWeiFeeOnTransferTokenStrategy.underlyingToShares(amountToDeposit);
 
@@ -311,7 +309,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // the actual transfer in will be lower by 1 wei than expected due to stETH's internal rounding
         // to account for this we check approximate rather than strict equivalence here
         {
-            uint256 actualSharesOut = strategyManager.stakerStrategyShares(sender, oneWeiFeeOnTransferTokenStrategy) - operatorSharesBefore;
+            uint256 actualSharesOut = strategyManager.stakerDepositShares(sender, oneWeiFeeOnTransferTokenStrategy) - operatorSharesBefore;
             require((actualSharesOut * 1000) / expectedSharesOut > 998, "too few shares");
             require((actualSharesOut * 1000) / expectedSharesOut < 1002, "too many shares");
 
@@ -365,11 +363,10 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         pod = new EigenPod(ethPOSDeposit, eigenPodManager, GOERLI_GENESIS_TIME);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
-
+        
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationImplementation = new DelegationManager(strategyManager, eigenPodManager);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager);
-        Slasher slasherImplementation = new Slasher(strategyManager, delegation);
+        DelegationManager delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, avsDirectory);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, delegation);
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -435,13 +432,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         {
             cheats.startPrank(strategyManager.strategyWhitelister());
             IStrategy[] memory _strategy = new IStrategy[](1);
-            bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
             _strategy[0] = stethStrategy;
-            strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+            strategyManager.addStrategiesToDepositWhitelist(_strategy);
             cheats.stopPrank();
         }
 
-        uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(address(this), stethStrategy);
+        uint256 operatorSharesBefore = strategyManager.stakerDepositShares(address(this), stethStrategy);
         // check the expected output
         uint256 expectedSharesOut = stethStrategy.underlyingToShares(amountToDeposit);
 
@@ -464,7 +460,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // the actual transfer in will be lower by 1-2 wei than expected due to stETH's internal rounding
         // to account for this we check approximate rather than strict equivalence here
         {
-            uint256 actualSharesOut = strategyManager.stakerStrategyShares(address(this), stethStrategy) - operatorSharesBefore;
+            uint256 actualSharesOut = strategyManager.stakerDepositShares(address(this), stethStrategy) - operatorSharesBefore;
             require(actualSharesOut >= expectedSharesOut, "too few shares");
             require((actualSharesOut * 1000) / expectedSharesOut < 1003, "too many shares");
 
@@ -480,9 +476,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = IStrategy(_strategyBase);
-        _strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        _strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
         return _strategyManager;

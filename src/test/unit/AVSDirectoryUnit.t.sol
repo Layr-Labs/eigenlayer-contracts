@@ -6,11 +6,10 @@ import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/AVSDirectory.sol";
+import "src/contracts/interfaces/IAVSDirectory.sol";
 
-import "src/test/events/IAVSDirectoryEvents.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
-
-contract EmptyContract {}
+import "src/test/mocks/EmptyContract.sol";
 
 /**
  * @notice Unit testing of the AVSDirectory contract. An AVSs' service manager contract will
@@ -18,7 +17,7 @@ contract EmptyContract {}
  * Contracts tested: AVSDirectory
  * Contracts not mocked: DelegationManager
  */
-contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
+contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, IAVSDirectoryErrors {
     uint256 internal constant MAX_PRIVATE_KEY = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140;
 
     EmptyContract emptyContract;
@@ -80,15 +79,14 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         delegationManagerImplementation = new DelegationManager(
-            strategyManagerMock, 
-            slasherMock, 
-            eigenPodManagerMock, 
-            avsDirectory, 
+            avsDirectory,
+            IStrategyManager(address(strategyManagerMock)), 
+            IEigenPodManager(address(eigenPodManagerMock)),  
             allocationManager,
             MIN_WITHDRAWAL_DELAY
         );
 
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
 
         delegationManager = DelegationManager(
             address(
@@ -263,7 +261,7 @@ contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
         address pauserRegistry,
         uint256 initialPausedStatus
     ) public virtual {
-        AVSDirectory dir = new AVSDirectory(IDelegationManager(delegationManager));
+        AVSDirectory dir = new AVSDirectory(IDelegationManager(delegationManager), DEALLOCATION_DELAY);
 
         assertEq(address(dir.delegation()), delegationManager);
 
@@ -954,6 +952,7 @@ contract AVSDirectoryUnitTests_createOperatorSet is AVSDirectoryUnitTests {
 
 contract AVSDirectoryUnitTests_becomeOperatorSetAVS is AVSDirectoryUnitTests {
     function test_becomeOperatorSetAVS() public {
+
         cheats.expectEmit(true, true, true, true, address(avsDirectory));
         emit AVSMigratedToOperatorSets(address(this));
 
@@ -1123,7 +1122,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
         emit OperatorAddedToOperatorSet(operator, OperatorSet(address(this), 1));
         cheats.expectEmit(true, true, true, true, address(avsDirectory));
         emit OperatorAVSRegistrationStatusUpdated(
-            operator, address(this), IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED
+            operator, address(this), IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED
         );
         cheats.expectEmit(true, true, true, true, address(avsDirectory));
         emit OperatorMigratedToOperatorSets(operator, address(this), operatorSetIds[0]);
@@ -1135,7 +1134,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
         assertTrue(avsDirectory.isMember(operator, OperatorSet(address(this), 1)));
         assertTrue(
             avsDirectory.avsOperatorStatus(address(this), operator)
-                == IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED
+                == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED
         );
         assertEq(avsDirectory.getNumOperatorsInOperatorSet(OperatorSet(address(this), 1)), 1);
     }
@@ -1177,7 +1176,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
             }
             cheats.expectEmit(true, true, true, true, address(avsDirectory));
             emit OperatorAVSRegistrationStatusUpdated(
-                operators[i], address(this), IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED
+                operators[i], address(this), IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED
             );
             cheats.expectEmit(true, true, true, true, address(avsDirectory));
             emit OperatorMigratedToOperatorSets(operators[i], address(this), operatorSetIds[i]);
@@ -1193,7 +1192,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
             }
             assertTrue(
                 avsDirectory.avsOperatorStatus(address(this), operators[i])
-                    == IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED
+                    == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED
             );
 
             OperatorSet[] memory opSets = avsDirectory.getOperatorSetsOfOperator(operators[i], 0, type(uint256).max);
@@ -1274,7 +1273,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
 
         cheats.expectEmit(true, true, true, true, address(avsDirectory));
         emit OperatorAVSRegistrationStatusUpdated(
-            operator, defaultAVS, IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED
+            operator, defaultAVS, IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED
         );
 
         cheats.prank(defaultAVS);
@@ -1282,7 +1281,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
 
         assertTrue(
             avsDirectory.avsOperatorStatus(defaultAVS, operator)
-                == IAVSDirectory.OperatorAVSRegistrationStatus.UNREGISTERED
+                == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.UNREGISTERED
         );
     }
 
@@ -1322,7 +1321,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
 
         cheats.expectEmit(true, true, true, true, address(avsDirectory));
         emit OperatorAVSRegistrationStatusUpdated(
-            operator, defaultAVS, IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+            operator, defaultAVS, IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED
         );
 
         uint256 expiry = type(uint256).max;
@@ -1335,7 +1334,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
 
         assertTrue(
             avsDirectory.avsOperatorStatus(defaultAVS, operator)
-                == IAVSDirectory.OperatorAVSRegistrationStatus.REGISTERED
+                == IAVSDirectoryTypes.OperatorAVSRegistrationStatus.REGISTERED
         );
     }
 

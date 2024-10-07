@@ -185,7 +185,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_HasNoDelegatableShares(User user, string memory err) internal {
         (IStrategy[] memory strategies, uint[] memory shares) = 
-            delegationManager.getDelegatableShares(address(user));
+            delegationManager.getDepositedShares(address(user));
         
         assertEq(strategies.length, 0, err);
         assertEq(strategies.length, shares.length, "assert_HasNoDelegatableShares: return length mismatch");
@@ -231,14 +231,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // This method should only be used for tests that handle positive
                 // balances. Negative balances are an edge case that require
                 // the own tests and helper methods.
-                int shares = eigenPodManager.podOwnerShares(address(user));
+                int shares = eigenPodManager.podOwnerDepositShares(address(user));
                 if (shares < 0) {
                     revert("assert_HasExpectedShares: negative shares");
                 }
 
                 actualShares = uint(shares);
             } else {
-                actualShares = strategyManager.stakerStrategyShares(address(user), strat);
+                actualShares = strategyManager.stakerDepositShares(address(user), strat);
             }
 
             assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
@@ -898,7 +898,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
-        int curPodOwnerShares = eigenPodManager.podOwnerShares(address(staker));
+        int curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
         int newPodOwnerShares = curPodOwnerShares + shareDelta;
 
         if (curPodOwnerShares <= 0) {
@@ -1003,7 +1003,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         //         blocksToRoll = withdrawalDelayBlocks;
         //     }
         // }
-        cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
+        // cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot
@@ -1044,14 +1044,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // This method should only be used for tests that handle positive
                 // balances. Negative balances are an edge case that require
                 // the own tests and helper methods.
-                int shares = eigenPodManager.podOwnerShares(address(staker));
+                int shares = eigenPodManager.podOwnerDepositShares(address(staker));
                 if (shares < 0) {
                     revert("_getStakerShares: negative shares");
                 }
 
                 curShares[i] = uint(shares);
             } else {
-                curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat);
+                curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
             }
         }
 
@@ -1074,9 +1074,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
             IStrategy strat = strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                curShares[i] = eigenPodManager.podOwnerShares(address(staker));
+                curShares[i] = eigenPodManager.podOwnerDepositShares(address(staker));
             } else {
-                curShares[i] = int(strategyManager.stakerStrategyShares(address(staker), strat));
+                curShares[i] = int(strategyManager.stakerDepositShares(address(staker), strat));
             }
         }
 

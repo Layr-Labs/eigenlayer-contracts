@@ -35,7 +35,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        _testRegisterAsOperator(operator, operatorDetails);
+        _testRegisterAsOperator(operator, 0, operatorDetails);
 
         for (uint256 i; i < stakers.length; i++) {
             //initialize weth, eigen and eth balances for staker
@@ -71,11 +71,12 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      */
     function _testRegisterAsOperator(
         address sender,
+        uint32 allocationDelay,
         IDelegationManager.OperatorDetails memory operatorDetails
     ) internal {
         cheats.startPrank(sender);
         string memory emptyStringForMetadataURI;
-        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        delegation.registerAsOperator(operatorDetails, allocationDelay, emptyStringForMetadataURI);
         assertTrue(delegation.isOperator(sender), "testRegisterAsOperator: sender is not a operator");
 
         assertTrue(
@@ -127,13 +128,12 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         {
             cheats.startPrank(strategyManager.strategyWhitelister());
             IStrategy[] memory _strategy = new IStrategy[](1);
-            bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
             _strategy[0] = stratToDepositTo;
-            strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+            strategyManager.addStrategiesToDepositWhitelist(_strategy);
             cheats.stopPrank();
         }
 
-        uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(sender, stratToDepositTo);
+        uint256 operatorSharesBefore = strategyManager.stakerDepositShares(sender, stratToDepositTo);
         // assumes this contract already has the underlying token!
         uint256 contractBalance = underlyingToken.balanceOf(address(this));
         // check the expected output
@@ -163,7 +163,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
             // check that the shares out match the expected amount out
             assertEq(
-                strategyManager.stakerStrategyShares(sender, stratToDepositTo) - operatorSharesBefore,
+                strategyManager.stakerDepositShares(sender, stratToDepositTo) - operatorSharesBefore,
                 expectedSharesOut,
                 "_testDepositToStrategy: actual shares out should match expected shares out"
             );
@@ -277,7 +277,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             });
-            _testRegisterAsOperator(staker, operatorDetails);
+            _testRegisterAsOperator(staker, 0, operatorDetails);
             assertTrue(
                 delegation.isDelegated(staker),
                 "_createQueuedWithdrawal: staker isn't delegated when they should be"
@@ -286,12 +286,12 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
-            shares: shareAmounts,
+            scaledSharesToWithdraw: shareAmounts,
             staker: staker,
             withdrawer: withdrawer,
             nonce: delegation.cumulativeWithdrawalsQueued(staker),
             delegatedTo: delegation.delegatedTo(staker),
-            startBlock: uint32(block.number)
+            startTimestamp: uint32(block.timestamp)
         });
 
         {
@@ -344,7 +344,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             });
-            _testRegisterAsOperator(operator, operatorDetails);
+            _testRegisterAsOperator(operator, 0, operatorDetails);
         }
 
         uint256 amountBefore = delegation.operatorShares(operator, wethStrat);
@@ -375,7 +375,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      * @param tokensArray is the array of tokens to withdraw from said strategies
      * @param shareAmounts is the array of shares to be withdrawn from said strategies
      * @param delegatedTo is the address the staker has delegated their shares to
-     * @param withdrawalStartBlock the block number of the original queued withdrawal
+     * @param withdrawalStartTimestamp the block number of the original queued withdrawal
      * @param middlewareTimesIndex index in the middlewareTimes array used to queue this withdrawal
      */
 
@@ -387,38 +387,31 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         address delegatedTo,
         address withdrawer,
         uint256 nonce,
-        uint32 withdrawalStartBlock,
+        uint32 withdrawalStartTimestamp,
         uint256 middlewareTimesIndex
     ) internal {
         cheats.startPrank(withdrawer);
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
-            sharesBefore.push(strategyManager.stakerStrategyShares(withdrawer, strategyArray[i]));
+            sharesBefore.push(strategyManager.stakerDepositShares(withdrawer, strategyArray[i]));
         }
-        // emit log_named_uint("strategies", strategyArray.length);
-        // emit log_named_uint("tokens", tokensArray.length);
-        // emit log_named_uint("shares", shareAmounts.length);
-        // emit log_named_address("depositor", depositor);
-        // emit log_named_uint("withdrawalStartBlock", withdrawalStartBlock);
-        // emit log_named_address("delegatedAddress", delegatedTo);
-        // emit log("************************************************************************************************");
 
         IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
-            shares: shareAmounts,
+            scaledSharesToWithdraw: shareAmounts,
             staker: depositor,
             withdrawer: withdrawer,
             nonce: nonce,
-            startBlock: withdrawalStartBlock,
+            startTimestamp: withdrawalStartTimestamp,
             delegatedTo: delegatedTo
         });
 
         // complete the queued withdrawal
-        delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, middlewareTimesIndex, false);
+        delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, false);
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
             require(
-                strategyManager.stakerStrategyShares(withdrawer, strategyArray[i]) == sharesBefore[i] + shareAmounts[i],
+                strategyManager.stakerDepositShares(withdrawer, strategyArray[i]) == sharesBefore[i] + shareAmounts[i],
                 "_testCompleteQueuedWithdrawalShares: withdrawer shares not incremented"
             );
         }
@@ -432,7 +425,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      * @param tokensArray is the array of tokens to withdraw from said strategies
      * @param shareAmounts is the array of shares to be withdrawn from said strategies
      * @param delegatedTo is the address the staker has delegated their shares to
-     * @param withdrawalStartBlock the block number of the original queued withdrawal
+     * @param withdrawalStartTimestamp the block number of the original queued withdrawal
      * @param middlewareTimesIndex index in the middlewareTimes array used to queue this withdrawal
      */
     function _testCompleteQueuedWithdrawalTokens(
@@ -443,7 +436,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         address delegatedTo,
         address withdrawer,
         uint256 nonce,
-        uint32 withdrawalStartBlock,
+        uint32 withdrawalStartTimestamp,
         uint256 middlewareTimesIndex
     ) internal {
         cheats.startPrank(withdrawer);
@@ -456,15 +449,15 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
-            shares: shareAmounts,
             staker: depositor,
             withdrawer: withdrawer,
             nonce: nonce,
-            startBlock: withdrawalStartBlock,
-            delegatedTo: delegatedTo
+            startTimestamp: withdrawalStartTimestamp,
+            delegatedTo: delegatedTo,
+            scaledSharesToWithdraw: shareAmounts
         });
         // complete the queued withdrawal
-        delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, middlewareTimesIndex, true);
+        delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, true);
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
             //uint256 strategyTokenBalance = strategyArray[i].underlyingToken().balanceOf(address(strategyArray[i]));
@@ -493,7 +486,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategyArray,
-            shares: shareAmounts,
+            ownedShares: shareAmounts,
             withdrawer: withdrawer
         });
 

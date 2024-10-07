@@ -40,7 +40,7 @@ contract DelegationTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        _testRegisterAsOperator(sender, operatorDetails);
+        _testRegisterAsOperator(sender, 0, operatorDetails);
     }
 
     function testTwoSelfOperatorsRegister() public {
@@ -90,7 +90,7 @@ contract DelegationTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 0
         });
         if (!delegation.isOperator(operator)) {
-            _testRegisterAsOperator(operator, operatorDetails);
+            _testRegisterAsOperator(operator, 0, operatorDetails);
         }
 
         uint256 amountBefore = delegation.operatorShares(operator, wethStrat);
@@ -327,10 +327,7 @@ contract DelegationTests is EigenLayerTestHelper {
         delegation.initialize(
             address(this),
             eigenLayerPauserReg,
-            0,
-            minWithdrawalDelayBlocks,
-            initializeStrategiesToSetDelayBlocks,
-            initializeWithdrawalDelayBlocks
+            0
         );
     }
 
@@ -342,9 +339,9 @@ contract DelegationTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        _testRegisterAsOperator(operator, operatorDetails);
+        _testRegisterAsOperator(operator, 0, operatorDetails);
         cheats.expectRevert(IDelegationManager.AlreadyDelegated.selector);
-        _testRegisterAsOperator(operator, operatorDetails);
+        _testRegisterAsOperator(operator, 0, operatorDetails);
     }
 
     /// @notice This function tests to ensure that a staker cannot delegate to an unregistered operator
@@ -371,10 +368,7 @@ contract DelegationTests is EigenLayerTestHelper {
         delegation.initialize(
             _attacker,
             eigenLayerPauserReg,
-            0,
-            0, // minWithdrawalDelayBLocks
-            initializeStrategiesToSetDelayBlocks,
-            initializeWithdrawalDelayBlocks
+            0
         );
     }
 
@@ -391,9 +385,9 @@ contract DelegationTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 0
         });
         string memory emptyStringForMetadataURI;
-        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        delegation.registerAsOperator(operatorDetails, 0, emptyStringForMetadataURI);
         cheats.expectRevert(IDelegationManager.AlreadyDelegated.selector);
-        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        delegation.registerAsOperator(operatorDetails, 0, emptyStringForMetadataURI);
         cheats.stopPrank();
     }
 
@@ -427,7 +421,7 @@ contract DelegationTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 0
         });
         string memory emptyStringForMetadataURI;
-        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        delegation.registerAsOperator(operatorDetails, 0, emptyStringForMetadataURI);
         vm.prank(_staker);
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(_operator, signatureWithExpiry, bytes32(0));
@@ -463,7 +457,7 @@ contract DelegationTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        _testRegisterAsOperator(sender, operatorDetails);
+        _testRegisterAsOperator(sender, 0, operatorDetails);
         cheats.startPrank(sender);
 
         cheats.stopPrank();
@@ -488,7 +482,7 @@ contract DelegationTests is EigenLayerTestHelper {
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             });
-            _testRegisterAsOperator(operator, operatorDetails);
+            _testRegisterAsOperator(operator, 0, operatorDetails);
         }
 
         //making additional deposits to the strategies

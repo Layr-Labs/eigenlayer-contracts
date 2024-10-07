@@ -21,7 +21,38 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     mapping (address => address) public delegatedTo;
 
-    function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external pure {}
+    function registerAsOperator(
+        OperatorDetails calldata registeringOperatorDetails,
+        uint32 allocationDelay,
+        string calldata metadataURI
+    ) external {}
+
+    function increaseDelegatedShares(
+        address staker,
+        IStrategy strategy,
+        uint256 existingDepositShares,
+        uint256 addedShares
+    ) external {}
+
+    function decreaseOperatorShares(address operator, IStrategy strategy, uint64 previousMagnitude, uint64 newMagnitude) external {}
+
+    function decreaseBeaconChainScalingFactor(
+        address staker,
+        uint256 existingShares,
+        uint64 proportionOfOldBalance
+    ) external {}
+
+    function completeQueuedWithdrawal(
+        Withdrawal calldata withdrawal,
+        IERC20[] calldata tokens,
+        bool receiveAsTokens
+    ) external {}
+
+    function completeQueuedWithdrawals(
+        Withdrawal[] calldata withdrawals,
+        IERC20[][] calldata tokens,
+        bool[] calldata receiveAsTokens
+    ) external {}
     
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
@@ -174,16 +205,16 @@ contract DelegationManagerMock is IDelegationManager, Test {
         IStrategy strategy,
         uint256 shares
     ) external {
-        strategyManager.addShares(staker, token, strategy, shares);
+        strategyManager.addShares(staker, strategy, token, shares);
     }
 
-    function removeShares(
+    function removeDepositShares(
         IStrategyManager strategyManager,
         address staker,
         IStrategy strategy,
         uint256 shares
     ) external {
-        strategyManager.removeShares(staker, strategy, shares);
+        strategyManager.removeDepositShares(staker, strategy, shares);
     }
 
     function withdrawSharesAsTokens(
@@ -193,6 +224,6 @@ contract DelegationManagerMock is IDelegationManager, Test {
         uint256 shares,
         IERC20 token
     ) external {
-        strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);
+        strategyManager.withdrawSharesAsTokens(recipient, strategy, token, shares);
     }
 }

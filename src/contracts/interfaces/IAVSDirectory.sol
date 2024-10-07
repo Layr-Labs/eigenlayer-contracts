@@ -9,7 +9,7 @@ struct OperatorSet {
     uint32 operatorSetId;
 }
 
-interface IAVSDirectory is ISignatureUtils {
+interface IAVSDirectoryErrors {
     /// Operator Status
 
     /// @dev Thrown when an operator does not exist in the DelegationManager
@@ -30,7 +30,9 @@ interface IAVSDirectory is ISignatureUtils {
     error SaltSpent();
     /// @dev Thrown when attempting to use an expired eip-712 signature.
     error SignatureExpired();
+}
 
+interface IAVSDirectoryTypes {
     /// @notice Enum representing the registration status of an operator with an AVS.
     /// @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
     enum OperatorAVSRegistrationStatus {
@@ -49,7 +51,9 @@ interface IAVSDirectory is ISignatureUtils {
         bool registered;
         uint32 lastDeregisteredTimestamp;
     }
+}
 
+interface IAVSDirectoryEvents is IAVSDirectoryTypes {
     /// @notice Emitted when an operator set is created by an AVS.
     event OperatorSetCreated(OperatorSet operatorSet);
 
@@ -76,7 +80,9 @@ interface IAVSDirectory is ISignatureUtils {
 
     /// @notice Emitted when an operator is migrated from M2 registration to operator sets.
     event OperatorMigratedToOperatorSets(address indexed operator, address indexed avs, uint32[] operatorSetIds);
+}
 
+interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtils {
     /**
      *
      *                         EXTERNAL FUNCTIONS

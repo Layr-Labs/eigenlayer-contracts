@@ -85,7 +85,7 @@ contract User is PrintUtils {
             stakerOptOutWindowBlocks: 0
         });
 
-        delegationManager.registerAsOperator(details, "metadata");
+        delegationManager.registerAsOperator(details, 0, "metadata");
     }
 
     /// @dev Delegate to the operator without a signature
@@ -107,7 +107,7 @@ contract User is PrintUtils {
             emit log("expecting withdrawal:");
             emit log_named_uint("nonce: ", expectedWithdrawals[i].nonce);
             emit log_named_address("strat: ", address(expectedWithdrawals[i].strategies[0]));
-            emit log_named_uint("shares: ", expectedWithdrawals[i].shares[0]);
+            emit log_named_uint("shares: ", expectedWithdrawals[i].scaledSharesToWithdraw[0]);
         }
         
         return expectedWithdrawals;
@@ -137,7 +137,7 @@ contract User is PrintUtils {
         IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategies,
-            shares: shares,
+            ownedShares: shares,
             withdrawer: withdrawer
         });
 
@@ -148,9 +148,9 @@ contract User is PrintUtils {
             delegatedTo: operator,
             withdrawer: withdrawer,
             nonce: nonce,
-            startBlock: uint32(block.number),
+            startTimestamp: uint32(block.timestamp),
             strategies: strategies,
-            shares: shares
+            scaledSharesToWithdraw: shares
         });
 
         bytes32[] memory withdrawalRoots = delegationManager.queueWithdrawals(params);
@@ -339,7 +339,7 @@ contract User is PrintUtils {
             }
         }
 
-        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0, receiveAsTokens);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
 
         return tokens;
     }
@@ -468,7 +468,7 @@ contract User is PrintUtils {
     /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
     function _getExpectedWithdrawalStructsForStaker(address staker) internal view returns (IDelegationManager.Withdrawal[] memory) {
         (IStrategy[] memory strategies, uint256[] memory shares)
-            = delegationManager.getDelegatableShares(staker);
+            = delegationManager.getDepositedShares(staker);
 
         IDelegationManager.Withdrawal[] memory expectedWithdrawals = new IDelegationManager.Withdrawal[](strategies.length);
         address delegatedTo = delegationManager.delegatedTo(staker);
@@ -484,9 +484,9 @@ contract User is PrintUtils {
                 delegatedTo: delegatedTo,
                 withdrawer: staker,
                 nonce: (nonce + i),
-                startBlock: uint32(block.number),
+                startTimestamp: uint32(block.timestamp),
                 strategies: singleStrategy,
-                shares: singleShares
+                scaledSharesToWithdraw: singleShares
             });
         }
 
