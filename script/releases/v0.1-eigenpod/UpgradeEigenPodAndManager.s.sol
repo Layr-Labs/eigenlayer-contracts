@@ -5,31 +5,42 @@ import "script/Release_Template.s.sol";
 import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
 
 import "src/contracts/interfaces/IStrategyFactory.sol";
+import "src/contracts/pods/EigenPodManager.sol";
 
-contract UpgradeViaTimelock is OpsTimelockBuilder {
+contract UpgradeEigenPodAndManager is OpsTimelockBuilder {
 
     using MultisigCallHelper for *;
     using TransactionHelper for *;
 
     MultisigCall[] _executorCalls;
-
     MultisigCall[] _opsCalls;
 
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
 
+        // construct initialization data for eigenPodManager
+        bytes memory eigenPodManagerData = abi.encodeWithSelector(
+            EigenPodManager(addrs.eigenPodManager.pendingImpl).initialize.selector,
+            addrs.operationsMultisig, // set opsMultisig as new direct owner
+            addrs.pauserRegistry, // set pauser registry
+            uint256(0) // set all 0 bits, nothing paused
+        );
+
+        // upgrade eigenPodManager
+        _executorCalls.append({
+            to: addrs.proxyAdmin,
+            data: abi.encodeWithSelector(
+                ProxyAdmin.upgradeAndCall.selector,
+                addrs.eigenPodManager.proxy,
+                addrs.eigenPodManager.pendingImpl,
+                eigenPodManagerData // initialize impl here
+            )
+        });
+
+        // upgrade eigenPod beacon implementation
         _executorCalls.append({
             to: addrs.eigenPod.beacon,
             data: abi.encodeWithSelector(
                 IUpgradeableBeacon.upgradeTo.selector,
-                addrs.eigenPod.pendingImpl
-            )
-        });
-
-        _executorCalls.append({
-            to: addrs.proxyAdmin,
-            data: abi.encodeWithSelector(
-                ProxyAdmin.upgrade.selector,
-                addrs.eigenPodManager,
                 addrs.eigenPod.pendingImpl
             )
         });
@@ -40,14 +51,14 @@ contract UpgradeViaTimelock is OpsTimelockBuilder {
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
 
         // steals logic from queue() to perform execute()
+        // likely the first step of any _execute() after a _queue()
         bytes memory executorCalldata = makeExecutorCalldata(
             _queue(addrs, env, params),
             params.multiSendCallOnly,
             addrs.timelock
         );
 
-        // _executorCalls.append(multisigCalls, to, value, data);
-
+        // execute queued transaction upgrading eigenPodManager and eigenPod
         _opsCalls.append({
             to: addrs.timelock,
             value: 0,
@@ -57,12 +68,12 @@ contract UpgradeViaTimelock is OpsTimelockBuilder {
             )
         });
 
+        // after queued transaction, renounce ownership from eigenPodManager
         _opsCalls.append({
-            to: addrs.strategyFactory.proxy,
+            to: addrs.eigenPodManager.proxy,
             value: 0,
             data: abi.encodeWithSelector(
-                IStrategyFactory.deployNewStrategy.selector,
-                address(0xE)
+                EigenPodManager(addrs.eigenPodManager.proxy).renounceOwnership.selector
             )
         });
 
