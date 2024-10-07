@@ -6,7 +6,6 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../permissions/Pausable.sol";
-import "../libraries/EIP1271SignatureUtils.sol";
 import "../libraries/SlashingLib.sol";
 import "./AllocationManagerStorage.sol";
 

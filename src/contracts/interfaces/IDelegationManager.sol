@@ -61,6 +61,11 @@ interface IDelegationManager is ISignatureUtils {
     error StakerOptOutWindowBlocksExceedsMax();
     /// @dev Thrown when provided delay exceeds maximum.
     error WithdrawalDelayExceedsMax();
+    /// @dev Thrown when an invalid staker's signature is provided.
+    error InvalidStakerSignature();
+    /// @dev Thrown when an invalid approver's signature is provided.
+    error InvalidApproverSignature();
+
 
     /// Signatures
 

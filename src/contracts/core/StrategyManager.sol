@@ -4,12 +4,12 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
-import "../libraries/EIP1271SignatureUtils.sol";
 
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
@@ -145,7 +145,14 @@ contract StrategyManager is
          * indicating their intention for this action
          * 2) if `staker` is a contract, then `signature` will be checked according to EIP-1271
          */
-        EIP1271SignatureUtils.checkSignature_EIP1271(staker, digestHash, signature);
+        require(
+            SignatureCheckerUpgradeable.isValidSignatureNow(
+                staker, 
+                digestHash, 
+                signature
+            ),
+            InvalidStakerSignature()
+        );
 
         // deposit the tokens (from the `msg.sender`) and credit the new shares to the `staker`
         depositedShares = _depositIntoStrategy(staker, strategy, token, amount);

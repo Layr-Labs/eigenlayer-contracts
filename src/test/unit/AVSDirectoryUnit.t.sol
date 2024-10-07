@@ -459,7 +459,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
         cheats.startPrank(badAvs);
         avsDirectory.becomeOperatorSetAVS();
-        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
+        cheats.expectRevert(IAVSDirectory.InvalidOperatorSignature.selector);
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
@@ -1363,7 +1363,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
             _getOperatorAVSRegistrationSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
 
-        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
+        cheats.expectRevert(IAVSDirectory.InvalidOperatorSignature.selector);
         cheats.prank(operator);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
