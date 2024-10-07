@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 
+import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "./DelegationManagerStorage.sol";
@@ -25,7 +25,8 @@ contract DelegationManager is
     OwnableUpgradeable,
     Pausable,
     DelegationManagerStorage,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    SignatureUtils
 {
     using SlashingLib for *;
 
@@ -85,7 +86,6 @@ contract DelegationManager is
         uint256 initialPausedStatus
     ) external initializer {
         _initializePauser(_pauserRegistry, initialPausedStatus);
-        _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
     }
 
@@ -202,19 +202,16 @@ contract DelegationManager is
         uint256 currentStakerNonce = stakerNonce[staker];
 
         // actually check that the signature is valid
-        require(
-            SignatureCheckerUpgradeable.isValidSignatureNow({
-                signer: staker, 
-                hash: calculateStakerDelegationDigestHash({
-                    staker: staker, 
-                    nonce: currentStakerNonce, 
-                    operator: operator, 
-                    expiry: stakerSignatureAndExpiry.expiry
-                }), 
-                signature: stakerSignatureAndExpiry.signature
-            }),
-            InvalidStakerSignature()
-        );
+        _checkIsValidSignatureNow({
+            signer: staker, 
+            signableDigest: calculateStakerDelegationDigestHash({
+                staker: staker, 
+                nonce: currentStakerNonce, 
+                operator: operator, 
+                expiry: stakerSignatureAndExpiry.expiry
+            }), 
+            signature: stakerSignatureAndExpiry.signature
+        });
 
         unchecked {
             stakerNonce[staker] = currentStakerNonce + 1;
@@ -517,20 +514,17 @@ contract DelegationManager is
             // check that the salt hasn't been used previously, then mark the salt as spent
             require(!delegationApproverSaltIsSpent[approver][approverSalt], SaltSpent());
             // actually check that the signature is valid
-            require(
-                SignatureCheckerUpgradeable.isValidSignatureNow({
-                    signer: approver, 
-                    hash:  calculateDelegationApprovalDigestHash(
-                        staker, 
-                        operator, 
-                        approver, 
-                        approverSalt, 
-                        approverSignatureAndExpiry.expiry
-                    ), 
-                    signature: approverSignatureAndExpiry.signature
-                }),
-                InvalidApproverSignature()
-            );
+            _checkIsValidSignatureNow({
+                signer: approver, 
+                signableDigest:  calculateDelegationApprovalDigestHash(
+                    staker, 
+                    operator, 
+                    approver, 
+                    approverSalt, 
+                    approverSignatureAndExpiry.expiry
+                ), 
+                signature: approverSignatureAndExpiry.signature
+            });
 
             delegationApproverSaltIsSpent[approver][approverSalt] = true;
         }
@@ -774,21 +768,6 @@ contract DelegationManager is
      */
 
     /**
-     * @notice Getter function for the current EIP-712 domain separator for this contract.
-     *
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     * @dev By introducing a domain separator the DApp developers are guaranteed that there can be no signature collision.
-     * for more detailed information please read EIP-712.
-     */
-    function domainSeparator() public view returns (bytes32) {
-        if (block.chainid == ORIGINAL_CHAIN_ID) {
-            return _DOMAIN_SEPARATOR;
-        } else {
-            return _calculateDomainSeparator();
-        }
-    }
-
-    /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
      */
     function isDelegated(
@@ -945,7 +924,7 @@ contract DelegationManager is
         bytes32 stakerStructHash =
             keccak256(abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, nonce, expiry));
         // calculate the digest hash
-        bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), stakerStructHash));
+        bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), stakerStructHash));
         return stakerDigestHash;
     }
 
@@ -969,14 +948,7 @@ contract DelegationManager is
             abi.encode(DELEGATION_APPROVAL_TYPEHASH, approver, staker, operator, approverSalt, expiry)
         );
         // calculate the digest hash
-        bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
+        bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), approverStructHash));
         return approverDigestHash;
-    }
-
-    /**
-     * @dev Recalculates the domain separator when the chainid changes due to a fork.
-     */
-    function _calculateDomainSeparator() internal view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
 }

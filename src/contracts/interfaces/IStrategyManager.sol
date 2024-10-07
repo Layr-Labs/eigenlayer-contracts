@@ -25,8 +25,6 @@ interface IStrategyManager is IShareManager {
     error SharesAmountTooHigh();
     /// @dev Thrown when provided `shares` amount is zero.
     error SharesAmountZero();
-    /// @dev Thrown when an invalid staker's signature is provided..
-    error InvalidStakerSignature();
     /// @dev Thrown when attempting to use an expired eip-712 signature.
     error SignatureExpired();
     /// @dev Thrown when provided `staker` address is null.

@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 
+import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
 import "./AVSDirectoryStorage.sol";
 
@@ -14,7 +14,8 @@ contract AVSDirectory is
     OwnableUpgradeable,
     Pausable,
     AVSDirectoryStorage,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    SignatureUtils
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -46,7 +47,6 @@ contract AVSDirectory is
         uint256 initialPausedStatus
     ) external initializer {
         _initializePauser(_pauserRegistry, initialPausedStatus);
-        _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
     }
 
@@ -148,19 +148,16 @@ contract AVSDirectory is
         require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
 
         // Assert that `operatorSignature.signature` is a valid signature for operator set registrations.
-        require(
-            SignatureCheckerUpgradeable.isValidSignatureNow({
-                signer: operator,
-                hash: calculateOperatorSetRegistrationDigestHash({
-                    avs: msg.sender,
-                    operatorSetIds: operatorSetIds,
-                    salt: operatorSignature.salt,
-                    expiry: operatorSignature.expiry
-                }),
-                signature: operatorSignature.signature
-            }), 
-            InvalidOperatorSignature()
-        );
+        _checkIsValidSignatureNow({
+            signer: operator,
+            signableDigest: calculateOperatorSetRegistrationDigestHash({
+                avs: msg.sender,
+                operatorSetIds: operatorSetIds,
+                salt: operatorSignature.salt,
+                expiry: operatorSignature.expiry
+            }),
+            signature: operatorSignature.signature
+        });
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
@@ -194,19 +191,16 @@ contract AVSDirectory is
             require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
 
             // Assert that `operatorSignature.signature` is a valid signature for operator set deregistrations.
-            require(
-                SignatureCheckerUpgradeable.isValidSignatureNow({
-                    signer: operator,
-                    hash: calculateOperatorSetForceDeregistrationTypehash({
-                        avs: avs,
-                        operatorSetIds: operatorSetIds,
-                        salt: operatorSignature.salt,
-                        expiry: operatorSignature.expiry
-                    }),
-                    signature: operatorSignature.signature
+            _checkIsValidSignatureNow({
+                signer: operator,
+                signableDigest: calculateOperatorSetForceDeregistrationTypehash({
+                    avs: avs,
+                    operatorSetIds: operatorSetIds,
+                    salt: operatorSignature.salt,
+                    expiry: operatorSignature.expiry
                 }),
-                InvalidOperatorSignature()
-            );
+                signature: operatorSignature.signature
+            });
 
             // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
             operatorSaltIsSpent[operator][operatorSignature.salt] = true;
@@ -291,19 +285,16 @@ contract AVSDirectory is
         require(delegation.isOperator(operator), OperatorDoesNotExist());
 
         // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
-        require(
-            SignatureCheckerUpgradeable.isValidSignatureNow({
-                signer: operator,
-                hash: calculateOperatorAVSRegistrationDigestHash({
-                    operator: operator,
-                    avs: msg.sender,
-                    salt: operatorSignature.salt,
-                    expiry: operatorSignature.expiry
-                }),
-                signature: operatorSignature.signature
+        _checkIsValidSignatureNow({
+            signer: operator,
+            signableDigest: calculateOperatorAVSRegistrationDigestHash({
+                operator: operator,
+                avs: msg.sender,
+                salt: operatorSignature.salt,
+                expiry: operatorSignature.expiry
             }),
-            InvalidOperatorSignature()
-        );
+            signature: operatorSignature.signature
+        });
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
@@ -524,7 +515,7 @@ contract AVSDirectory is
         uint256 expiry
     ) public view override returns (bytes32) {
         return
-            _calculateDigestHash(keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)));
+            _calculateSignableDigest(keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)));
     }
 
     /**
@@ -541,7 +532,7 @@ contract AVSDirectory is
         bytes32 salt,
         uint256 expiry
     ) public view override returns (bytes32) {
-        return _calculateDigestHash(
+        return _calculateSignableDigest(
             keccak256(abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry))
         );
     }
@@ -560,31 +551,9 @@ contract AVSDirectory is
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
-        return _calculateDigestHash(
+        return _calculateSignableDigest(
             keccak256(abi.encode(OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry))
         );
-    }
-
-    /// @notice Getter function for the current EIP-712 domain separator for this contract.
-    /// @dev The domain separator will change in the event of a fork that changes the ChainID.
-    function domainSeparator() public view override returns (bytes32) {
-        return _calculateDomainSeparator();
-    }
-
-    /// @notice Internal function for calculating the current domain separator of this contract
-    function _calculateDomainSeparator() internal view returns (bytes32) {
-        if (block.chainid == ORIGINAL_CHAIN_ID) {
-            return _DOMAIN_SEPARATOR;
-        } else {
-            return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
-        }
-    }
-
-    /// @notice Returns an EIP-712 encoded hash struct.
-    function _calculateDigestHash(
-        bytes32 structHash
-    ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), structHash));
     }
 
     /// @dev Returns an `OperatorSet` encoded into a 32-byte value.
