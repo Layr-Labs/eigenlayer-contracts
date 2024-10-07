@@ -119,9 +119,7 @@ contract EigenPodManager is
             _addShares(podOwner, uint256(sharesDelta));
         } else if (sharesDelta < 0 && podOwnerDepositShares[podOwner] > 0) {
             delegationManager.decreaseBeaconChainScalingFactor(
-                podOwner,
-                uint256(podOwnerDepositShares[podOwner]),
-                proportionOfOldBalance
+                podOwner, uint256(podOwnerDepositShares[podOwner]), proportionOfOldBalance
             );
         }
     }
@@ -134,7 +132,11 @@ contract EigenPodManager is
      * shares from the operator to whom the staker is delegated.
      * @dev The delegation manager validates that the podOwner is not address(0)
      */
-    function removeDepositShares(address staker, IStrategy strategy, uint256 depositSharesToRemove) external onlyDelegationManager {
+    function removeDepositShares(
+        address staker,
+        IStrategy strategy,
+        uint256 depositSharesToRemove
+    ) external onlyDelegationManager {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         int256 updatedShares = podOwnerDepositShares[staker] - int256(depositSharesToRemove);
         require(updatedShares >= 0, SharesNegative());
@@ -151,12 +153,7 @@ contract EigenPodManager is
      * Also returns existingPodShares prior to adding shares, this is returned as 0 if the existing podOwnerDepositShares is negative
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
-    function addShares(
-        address staker,
-        IStrategy strategy,  
-        IERC20, 
-        uint256 shares
-    ) external onlyDelegationManager {
+    function addShares(address staker, IStrategy strategy, IERC20, uint256 shares) external onlyDelegationManager {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         _addShares(staker, shares);
     }
@@ -169,14 +166,14 @@ contract EigenPodManager is
      *      we do not need to update the podOwnerDepositShares if `currentpodOwnerDepositShares` is positive
      */
     function withdrawSharesAsTokens(
-        address staker, 
-        IStrategy strategy,  
-        IERC20, 
+        address staker,
+        IStrategy strategy,
+        IERC20,
         uint256 shares
     ) external onlyDelegationManager {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         require(staker != address(0), InputAddressZero());
-        
+
         int256 currentDepositShares = podOwnerDepositShares[staker];
         uint256 sharesToWithdraw;
         // if there is an existing shares deficit, prioritize decreasing the deficit first
@@ -233,10 +230,7 @@ contract EigenPodManager is
         return pod;
     }
 
-    function _addShares(
-        address staker,
-        uint256 shares
-    ) internal {
+    function _addShares(address staker, uint256 shares) internal {
         require(staker != address(0), InputAddressZero());
 
         int256 sharesToAdd = int256(shares);

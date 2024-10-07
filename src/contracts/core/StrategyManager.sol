@@ -152,12 +152,16 @@ contract StrategyManager is
     }
 
     /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
-    function removeDepositShares(address staker, IStrategy strategy, uint256 depositSharesToRemove) external onlyDelegationManager {
+    function removeDepositShares(
+        address staker,
+        IStrategy strategy,
+        uint256 depositSharesToRemove
+    ) external onlyDelegationManager {
         _removeDepositShares(staker, strategy, depositSharesToRemove);
     }
 
     /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
-    /// @dev    Specifically, this function is called when a withdrawal is completed as shares. 
+    /// @dev    Specifically, this function is called when a withdrawal is completed as shares.
     function addShares(
         address staker,
         IStrategy strategy,
@@ -297,7 +301,11 @@ contract StrategyManager is
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
-    function _removeDepositShares(address staker, IStrategy strategy, uint256 depositSharesToRemove) internal returns (bool) {
+    function _removeDepositShares(
+        address staker,
+        IStrategy strategy,
+        uint256 depositSharesToRemove
+    ) internal returns (bool) {
         // sanity checks on inputs
         require(depositSharesToRemove != 0, SharesAmountZero());
 
@@ -307,7 +315,7 @@ contract StrategyManager is
         require(depositSharesToRemove <= userDepositShares, SharesAmountTooHigh());
 
         userDepositShares = userDepositShares - depositSharesToRemove;
-    
+
         // subtract the shares from the staker's existing shares for this strategy
         stakerDepositShares[staker][strategy] = userDepositShares;
 

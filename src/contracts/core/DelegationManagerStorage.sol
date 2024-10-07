@@ -82,7 +82,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /**
      * @notice returns the total number of shares of the operator
      * @notice Mapping: operator => strategy => total number of shares of the operator
-     * 
+     *
      * @dev By design, the following invariant should hold for each Strategy:
      * (operator's delegatedShares in delegation manager) = sum (delegatedShares above zero of all stakers delegated to operator)
      * = sum (delegateable delegatedShares of all stakers delegated to the operator)

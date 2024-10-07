@@ -29,6 +29,7 @@ struct StakerScalingFactors {
     bool isBeaconChainScalingFactorSet;
     uint64 beaconChainScalingFactor;
 }
+
 using SlashingLib for StakerScalingFactors global;
 
 // TODO: validate order of operations everywhere
@@ -48,35 +49,48 @@ library SlashingLib {
 
     // GETTERS
 
-
-    function getDepositScalingFactor(StakerScalingFactors memory ssf) internal pure returns (uint256) {
+    function getDepositScalingFactor(
+        StakerScalingFactors memory ssf
+    ) internal pure returns (uint256) {
         return ssf.depositScalingFactor == 0 ? WAD : ssf.depositScalingFactor;
     }
-    
-    function getBeaconChainScalingFactor(StakerScalingFactors memory ssf) internal pure returns (uint64) {
-        return !ssf.isBeaconChainScalingFactorSet && ssf.beaconChainScalingFactor == 0 ? WAD : ssf.beaconChainScalingFactor;
+
+    function getBeaconChainScalingFactor(
+        StakerScalingFactors memory ssf
+    ) internal pure returns (uint64) {
+        return
+            !ssf.isBeaconChainScalingFactorSet && ssf.beaconChainScalingFactor == 0 ? WAD : ssf.beaconChainScalingFactor;
     }
 
-
-    function scaleSharesForQueuedWithdrawal(uint256 sharesToWithdraw, StakerScalingFactors memory ssf, uint64 operatorMagnitude) internal pure returns (uint256) {
-        return 
-            sharesToWithdraw
-                .divWad(uint256(ssf.getBeaconChainScalingFactor()))
-                .divWad(uint256(operatorMagnitude));
+    function scaleSharesForQueuedWithdrawal(
+        uint256 sharesToWithdraw,
+        StakerScalingFactors memory ssf,
+        uint64 operatorMagnitude
+    ) internal pure returns (uint256) {
+        return sharesToWithdraw.divWad(uint256(ssf.getBeaconChainScalingFactor())).divWad(uint256(operatorMagnitude));
     }
 
-    function scaleSharesForCompleteWithdrawal(uint256 scaledSharesToWithdraw, StakerScalingFactors memory ssf, uint64 operatorMagnitude) internal pure returns (uint256) {
-        return 
-            scaledSharesToWithdraw
-                .mulWad(uint256(ssf.getBeaconChainScalingFactor()))
-                .mulWad(uint256(operatorMagnitude));
+    function scaleSharesForCompleteWithdrawal(
+        uint256 scaledSharesToWithdraw,
+        StakerScalingFactors memory ssf,
+        uint64 operatorMagnitude
+    ) internal pure returns (uint256) {
+        return
+            scaledSharesToWithdraw.mulWad(uint256(ssf.getBeaconChainScalingFactor())).mulWad(uint256(operatorMagnitude));
     }
 
-    function decreaseOperatorShares(uint256 operatorShares, uint64 previousMagnitude, uint64 newMagnitude) internal pure returns (uint256) {
-        return operatorShares.divWad(previousMagnitude).mulWad(newMagnitude);    
+    function decreaseOperatorShares(
+        uint256 operatorShares,
+        uint64 previousMagnitude,
+        uint64 newMagnitude
+    ) internal pure returns (uint256) {
+        return operatorShares.divWad(previousMagnitude).mulWad(newMagnitude);
     }
 
-    function decreaseBeaconChainScalingFactor(StakerScalingFactors storage ssf, uint64 proportionOfOldBalance) internal {
+    function decreaseBeaconChainScalingFactor(
+        StakerScalingFactors storage ssf,
+        uint64 proportionOfOldBalance
+    ) internal {
         ssf.beaconChainScalingFactor = uint64(uint256(ssf.beaconChainScalingFactor).mulWad(proportionOfOldBalance));
         ssf.isBeaconChainScalingFactorSet = true;
     }
@@ -93,20 +107,20 @@ library SlashingLib {
          * (1) newShares = currentShares + addedDepositShares
          * (2) newOwnedShares = currentOwnedShares + addedDepositShares
          * (3) newOwnedShares = newShares * newStakerDepositScalingFactor * newMagnitude
-         * 
+         *
          * Plugging (3) into (2):
          * (4) newShares * newStakerDepositScalingFactor * newMagnitude = currentOwnedShares + addedDepositShares
-         * 
+         *
          * Solving for newStakerDepositScalingFactor
          * (5) newStakerDepositScalingFactor = (ownedShares + addedDepositShares) / (newShares * newMagnitude)
-         * 
+         *
          * We also know that the magnitude remains constant on deposits, thus
          * (6) newMagnitude = oldMagnitude
-         * 
+         *
          * Plugging in (6) and (1) into (5):
          * (7) newStakerDepositScalingFactor = (ownedShares + addedDepositShares) / ((currentShares + addedDepositShares) * oldMagnitude)
          * Note that magnitudes must be divided by WAD for precision. Thus,
-         * 
+         *
          * (8) newStakerDepositScalingFactor = (ownedShares + addedDepositShares) / ((currentShares + addedDepositShares) * oldMagnitude / WAD)
          * (9) newStakerDepositScalingFactor = (ownedShares + addedDepositShares) / ((currentShares + addedDepositShares) / WAD) * (oldMagnitude / WAD))
          */
@@ -118,13 +132,10 @@ library SlashingLib {
         uint256 newShares = currentShares + addedDepositShares;
 
         // Step 3: Calculate newStakerDepositScalingFactor
-        // Note: We divide by magnitude to preserve 
+        // Note: We divide by magnitude to preserve
 
         //TODO: figure out if we only need to do one divWad here
-        uint256 newStakerDepositScalingFactor = 
-            newShares
-            .divWad(currentShares + addedDepositShares)
-            .divWad(magnitude)
+        uint256 newStakerDepositScalingFactor = newShares.divWad(currentShares + addedDepositShares).divWad(magnitude)
             .divWad(uint256(ssf.getBeaconChainScalingFactor()));
 
         return uint64(newStakerDepositScalingFactor);
@@ -137,19 +148,16 @@ library SlashingLib {
         StakerScalingFactors memory ssf,
         uint64 magnitude
     ) internal pure returns (uint256 depositShares) {
-        depositShares = 
-            shares
-            .divWad(ssf.getDepositScalingFactor())
-            .divWad(uint256(ssf.getBeaconChainScalingFactor()))
+        depositShares = shares.divWad(ssf.getDepositScalingFactor()).divWad(uint256(ssf.getBeaconChainScalingFactor()))
             .divWad(uint256(magnitude));
     }
 
-    function toShares(uint256 depositShares, StakerScalingFactors memory ssf, uint64 magnitude) internal pure returns (uint256 shares) {
-        shares = 
-            depositShares                
-                .mulWad(ssf.getDepositScalingFactor())
-                .mulWad(uint256(ssf.getBeaconChainScalingFactor()))
-                .mulWad(uint256(magnitude));
+    function toShares(
+        uint256 depositShares,
+        StakerScalingFactors memory ssf,
+        uint64 magnitude
+    ) internal pure returns (uint256 shares) {
+        shares = depositShares.mulWad(ssf.getDepositScalingFactor()).mulWad(uint256(ssf.getBeaconChainScalingFactor()))
+            .mulWad(uint256(magnitude));
     }
-
 }

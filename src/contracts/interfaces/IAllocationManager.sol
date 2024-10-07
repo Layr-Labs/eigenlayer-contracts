@@ -161,7 +161,7 @@ interface IAllocationManager is ISignatureUtils {
     ) external;
 
     /**
-     * @notice This function takes a list of strategies and adds all completable modifications for each strategy, 
+     * @notice This function takes a list of strategies and adds all completable modifications for each strategy,
      * updating the freeMagnitudes of the operator as needed.
      *
      * @param operator address to complete modifications for
