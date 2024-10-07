@@ -901,10 +901,7 @@ contract DelegationManager is
         address operator,
         uint256 expiry
     ) external view returns (bytes32) {
-        // fetch the staker's current nonce
-        uint256 currentStakerNonce = stakerNonce[staker];
-        // calculate the digest hash
-        return calculateStakerDelegationDigestHash(staker, currentStakerNonce, operator, expiry);
+        return calculateStakerDelegationDigestHash(staker, stakerNonce[staker], operator, expiry);
     }
 
     /**
@@ -920,12 +917,18 @@ contract DelegationManager is
         address operator,
         uint256 expiry
     ) public view returns (bytes32) {
-        // calculate the struct hash
-        bytes32 stakerStructHash =
-            keccak256(abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, nonce, expiry));
-        // calculate the digest hash
-        bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), stakerStructHash));
-        return stakerDigestHash;
+        /// forgefmt: disable-next-item
+        return _calculateSignableDigest(
+            keccak256(
+                abi.encode(
+                    STAKER_DELEGATION_TYPEHASH, 
+                    staker, 
+                    operator, 
+                    nonce, 
+                    expiry
+                )
+            )
+        );
     }
 
     /**
@@ -943,12 +946,18 @@ contract DelegationManager is
         bytes32 approverSalt,
         uint256 expiry
     ) public view returns (bytes32) {
-        // calculate the struct hash
-        bytes32 approverStructHash = keccak256(
-            abi.encode(DELEGATION_APPROVAL_TYPEHASH, approver, staker, operator, approverSalt, expiry)
+        /// forgefmt: disable-next-item
+        return _calculateSignableDigest(
+            keccak256(
+                abi.encode(
+                    DELEGATION_APPROVAL_TYPEHASH, 
+                    approver, 
+                    staker, 
+                    operator, 
+                    approverSalt, 
+                    expiry
+                )
+            )
         );
-        // calculate the digest hash
-        bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), approverStructHash));
-        return approverDigestHash;
     }
 }
