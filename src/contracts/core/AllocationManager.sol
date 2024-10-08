@@ -347,7 +347,7 @@ contract AllocationManager is
 
         // if this is not a completion, emit events
         // completions have their events emmitted in advance
-        if(!isCompletion) {
+        if (!isCompletion) {
             // if the current magnitude has changed, emit an event
             if (mInfoStored.currentMagnitude != mInfo.currentMagnitude) {
                 emit OperatorSetMagnitudeUpdated(
@@ -356,6 +356,7 @@ contract AllocationManager is
             }
 
             // if the pending magnitude delta has changed, emit an event
+            // forgefmt: disable-next-item
             if(mInfoStored.pendingMagnitudeDelta != mInfo.pendingMagnitudeDelta) {
                 emit OperatorSetMagnitudeUpdated(
                     operator, operatorSet, strategy, _addInt128(mInfoStored.currentMagnitude, mInfo.pendingMagnitudeDelta), mInfo.effectTimestamp
