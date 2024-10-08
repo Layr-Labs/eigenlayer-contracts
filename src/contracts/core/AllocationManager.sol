@@ -130,9 +130,8 @@ contract AllocationManager is
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
                 bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
                 // Check that there are no pending allocations & deallocations for the operator, operatorSet, strategy
-                (bool noPendingModification, MagnitudeInfo memory mInfo) =
-                    _completePendingModification(msg.sender, allocation.strategy, operatorSetKey);
-                require(noPendingModification, ModificationAlreadyPending());
+                (bool pending, MagnitudeInfo memory mInfo) = _completePendingModification(msg.sender, allocation.strategy, operatorSetKey);
+                require(pending, ModificationAlreadyPending());
 
                 // Calculate the new pending diff with this modification
                 mInfo.pendingMagnitudeDelta = _calcDelta(mInfo.currentMagnitude, allocation.magnitudes[j]);
@@ -206,17 +205,22 @@ contract AllocationManager is
         }
 
         for (uint256 i = 0; i < strategies.length; ++i) {
-            // 1. Complete pending modifications for the operator, strategy, and operatorSet
-            (, MagnitudeInfo memory mInfo) = _completePendingModification(operator, strategies[i], operatorSetKey);
+            MagnitudeInfo memory mInfo;
+            uint64 slashedMagnitude;
+            {   
+                bool pending;
+                // 1. Complete pending modifications for the operator, strategy, and operatorSet
+                (pending, mInfo) = _completePendingModification(operator, strategies[i], operatorSetKey);
 
-            // 2. Calculate the slashed magnitude and update operatorMagnitudeInfo
-            uint64 slashedMagnitude = uint64(uint256(mInfo.currentMagnitude).mulWad(wadToSlash));
-            mInfo.currentMagnitude -= slashedMagnitude;
+                // 2. Calculate the slashed magnitude and update operatorMagnitudeInfo
+                slashedMagnitude = uint64(uint256(mInfo.currentMagnitude).mulWad(wadToSlash));
+                mInfo.currentMagnitude -= slashedMagnitude;
 
-            // if there is a pending deallocation, slash pending deallocation proportionally
-            // since the delta is negative, we increase it to make sure they can free less of it when completed
-            if (_isModificationPending(mInfo) && mInfo.pendingMagnitudeDelta < 0) {
-                mInfo.pendingMagnitudeDelta += int128(uint128(uint256(uint128(-mInfo.pendingMagnitudeDelta)).mulWad(wadToSlash)));
+                // if there is a pending deallocation, slash pending deallocation proportionally
+                // since the delta is negative, we increase it to make sure they can free less of it when completed
+                if (pending && mInfo.pendingMagnitudeDelta < 0) {
+                    mInfo.pendingMagnitudeDelta += int128(uint128(uint256(uint128(-mInfo.pendingMagnitudeDelta)).mulWad(wadToSlash)));
+                }
             }
 
             // update operatorMagnitudeInfo
@@ -285,8 +289,8 @@ contract AllocationManager is
         uint256 numCompleted;
         while (modificationQueue[operator][strategy].length() > 0 && numCompleted < numToClear) {
             bytes32 opsetKey = modificationQueue[operator][strategy].front();
-            (bool completed,) = _completePendingModification(operator, strategy, opsetKey);
-            if (completed) {
+            (bool pending,) = _completePendingModification(operator, strategy, opsetKey);
+            if (!pending) {
                 // if the modification was completed, remove it from the queue
                 modificationQueue[operator][strategy].popFront();
                 ++numCompleted;
@@ -297,7 +301,7 @@ contract AllocationManager is
         }
     }
 
-    // returns whether the modification was completed
+    // returns whether the modification is pending
     function _completePendingModification(
         address operator,
         IStrategy strategy,
@@ -306,10 +310,10 @@ contract AllocationManager is
         MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][operatorSetKey];
         // if the effect timestamp is not reached, return false
         if (block.timestamp < mInfo.effectTimestamp) {
-            return (false, mInfo);
+            return (true, mInfo);
         } else if (mInfo.effectTimestamp == 0) {
             // if there is no effect timestamp, return true and continue completing
-            return (true, mInfo);
+            return (false, mInfo);
         }
 
         // update stored magnitudes
@@ -334,7 +338,7 @@ contract AllocationManager is
             isCompletion: true
         });
 
-        return (true, mInfo);
+        return (false, mInfo);
     }
 
     function _setMagnitudeInfo(
