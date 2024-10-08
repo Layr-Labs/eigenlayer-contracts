@@ -14,10 +14,6 @@ import "../interfaces/IStrategyManager.sol";
 abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     // Constants
 
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 internal constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-
     /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
     uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
 
@@ -62,17 +58,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice The cadence at which a snapshot is taken offchain for calculating rewards distributions
     uint32 internal constant SNAPSHOT_CADENCE = 1 days;
 
-    /// @dev Chain ID at the time of contract deployment
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-
     // Mutatables
 
-    /**
-     * @notice Original EIP-712 Domain separator for this contract.
-     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
-     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
-     */
-    bytes32 internal _DOMAIN_SEPARATOR;
+    bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
     /**
      * @notice List of roots submited by the rewardsUpdater
@@ -134,7 +122,6 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         MAX_RETROACTIVE_LENGTH = _MAX_RETROACTIVE_LENGTH;
         MAX_FUTURE_LENGTH = _MAX_FUTURE_LENGTH;
         GENESIS_REWARDS_TIMESTAMP = _GENESIS_REWARDS_TIMESTAMP;
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**

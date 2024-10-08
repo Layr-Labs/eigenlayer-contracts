@@ -6,10 +6,10 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "../mixins/SignatureUtils.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
-import "../libraries/EIP1271SignatureUtils.sol";
 
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
@@ -25,7 +25,8 @@ contract StrategyManager is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     Pausable,
-    StrategyManagerStorage
+    StrategyManagerStorage,
+    SignatureUtils
 {
     using SlashingLib for *;
     using SafeERC20 for IERC20;
@@ -75,7 +76,6 @@ contract StrategyManager is
         IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus
     ) external initializer {
-        _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
@@ -128,25 +128,20 @@ contract StrategyManager is
         uint256 expiry,
         bytes memory signature
     ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 depositedShares) {
+        // Assert that the signature is not expired.
         require(expiry >= block.timestamp, SignatureExpired());
-        // calculate struct hash, then increment `staker`'s nonce
+        // Cache staker's nonce to avoid sloads.
         uint256 nonce = nonces[staker];
-        bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, staker, strategy, token, amount, nonce, expiry));
+        // Assert that the signature is valid.
+        _checkIsValidSignatureNow({
+            signer: staker, 
+            signableDigest: calculateStrategyDepositDigestHash(staker, strategy, token, amount, nonce, expiry), 
+            signature: signature
+        });
+        // Increment the nonce for the staker.
         unchecked {
             nonces[staker] = nonce + 1;
         }
-
-        // calculate the digest hash
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
-
-        /**
-         * check validity of signature:
-         * 1) if `staker` is an EOA, then `signature` must be a valid ECDSA signature from `staker`,
-         * indicating their intention for this action
-         * 2) if `staker` is a contract, then `signature` will be checked according to EIP-1271
-         */
-        EIP1271SignatureUtils.checkSignature_EIP1271(staker, digestHash, signature);
-
         // deposit the tokens (from the `msg.sender`) and credit the new shares to the `staker`
         depositedShares = _depositIntoStrategy(staker, strategy, token, amount);
     }
@@ -396,19 +391,35 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Getter function for the current EIP-712 domain separator for this contract.
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
+     * @param staker The address of the staker.
+     * @param strategy The strategy to deposit into.
+     * @param token The token to deposit.
+     * @param amount The amount of `token` to deposit.
+     * @param nonce The nonce of the staker.
+     * @param expiry The expiry of the signature.
+     * @return The EIP-712 signable digest hash.
      */
-    function domainSeparator() public view returns (bytes32) {
-        if (block.chainid == ORIGINAL_CHAIN_ID) {
-            return _DOMAIN_SEPARATOR;
-        } else {
-            return _calculateDomainSeparator();
-        }
-    }
-
-    // @notice Internal function for calculating the current domain separator of this contract
-    function _calculateDomainSeparator() internal view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
+    function calculateStrategyDepositDigestHash(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
+        uint256 amount,
+        uint256 nonce,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        /// forgefmt: disable-next-item
+        return _calculateSignableDigest(
+            keccak256(
+                abi.encode(
+                    DEPOSIT_TYPEHASH, 
+                    staker, 
+                    strategy, 
+                    token, 
+                    amount, 
+                    nonce, 
+                    expiry
+                )
+            )
+        );
     }
 }

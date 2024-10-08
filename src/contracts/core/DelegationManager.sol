@@ -5,8 +5,8 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
+import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
-import "../libraries/EIP1271SignatureUtils.sol";
 import "../libraries/SlashingLib.sol";
 import "./DelegationManagerStorage.sol";
 
@@ -25,7 +25,8 @@ contract DelegationManager is
     OwnableUpgradeable,
     Pausable,
     DelegationManagerStorage,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    SignatureUtils
 {
     using SlashingLib for *;
 
@@ -85,7 +86,6 @@ contract DelegationManager is
         uint256 initialPausedStatus
     ) external initializer {
         _initializePauser(_pauserRegistry, initialPausedStatus);
-        _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
     }
 
@@ -200,14 +200,22 @@ contract DelegationManager is
 
         // calculate the digest hash, then increment `staker`'s nonce
         uint256 currentStakerNonce = stakerNonce[staker];
-        bytes32 stakerDigestHash =
-            calculateStakerDelegationDigestHash(staker, currentStakerNonce, operator, stakerSignatureAndExpiry.expiry);
+
+        // actually check that the signature is valid
+        _checkIsValidSignatureNow({
+            signer: staker, 
+            signableDigest: calculateStakerDelegationDigestHash({
+                staker: staker, 
+                nonce: currentStakerNonce, 
+                operator: operator, 
+                expiry: stakerSignatureAndExpiry.expiry
+            }), 
+            signature: stakerSignatureAndExpiry.signature
+        });
+
         unchecked {
             stakerNonce[staker] = currentStakerNonce + 1;
         }
-
-        // actually check that the signature is valid
-        EIP1271SignatureUtils.checkSignature_EIP1271(staker, stakerDigestHash, stakerSignatureAndExpiry.signature);
 
         // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
         _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
@@ -494,36 +502,31 @@ contract DelegationManager is
         bytes32 approverSalt
     ) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
         // fetch the operator's `delegationApprover` address and store it in memory in case we need to use it multiple times
-        address _delegationApprover = _operatorDetails[operator].delegationApprover;
+        address approver = _operatorDetails[operator].delegationApprover;
         /**
-         * Check the `_delegationApprover`'s signature, if applicable.
-         * If the `_delegationApprover` is the zero address, then the operator allows all stakers to delegate to them and this verification is skipped.
-         * If the `_delegationApprover` or the `operator` themselves is the caller, then approval is assumed and signature verification is skipped as well.
+         * Check the `approver`'s signature, if applicable.
+         * If the `approver` is the zero address, then the operator allows all stakers to delegate to them and this verification is skipped.
+         * If the `approver` or the `operator` themselves is the caller, then approval is assumed and signature verification is skipped as well.
          */
-        if (_delegationApprover != address(0) && msg.sender != _delegationApprover && msg.sender != operator) {
+        if (approver != address(0) && msg.sender != approver && msg.sender != operator) {
             // check the signature expiry
             require(approverSignatureAndExpiry.expiry >= block.timestamp, SignatureExpired());
             // check that the salt hasn't been used previously, then mark the salt as spent
-            require(!delegationApproverSaltIsSpent[_delegationApprover][approverSalt], SaltSpent());
-            delegationApproverSaltIsSpent[_delegationApprover][approverSalt] = true;
-
-            // forgefmt: disable-next-item
-            // calculate the digest hash
-            bytes32 approverDigestHash = calculateDelegationApprovalDigestHash(
-                staker, 
-                operator, 
-                _delegationApprover, 
-                approverSalt, 
-                approverSignatureAndExpiry.expiry
-            );
-
-            // forgefmt: disable-next-item
+            require(!delegationApproverSaltIsSpent[approver][approverSalt], SaltSpent());
             // actually check that the signature is valid
-            EIP1271SignatureUtils.checkSignature_EIP1271(
-                _delegationApprover, 
-                approverDigestHash, 
-                approverSignatureAndExpiry.signature
-            );
+            _checkIsValidSignatureNow({
+                signer: approver, 
+                signableDigest:  calculateDelegationApprovalDigestHash(
+                    staker, 
+                    operator, 
+                    approver, 
+                    approverSalt, 
+                    approverSignatureAndExpiry.expiry
+                ), 
+                signature: approverSignatureAndExpiry.signature
+            });
+
+            delegationApproverSaltIsSpent[approver][approverSalt] = true;
         }
 
         // record the delegation relation between the staker and operator, and emit an event
@@ -765,21 +768,6 @@ contract DelegationManager is
      */
 
     /**
-     * @notice Getter function for the current EIP-712 domain separator for this contract.
-     *
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     * @dev By introducing a domain separator the DApp developers are guaranteed that there can be no signature collision.
-     * for more detailed information please read EIP-712.
-     */
-    function domainSeparator() public view returns (bytes32) {
-        if (block.chainid == ORIGINAL_CHAIN_ID) {
-            return _DOMAIN_SEPARATOR;
-        } else {
-            return _calculateDomainSeparator();
-        }
-    }
-
-    /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
      */
     function isDelegated(
@@ -913,61 +901,63 @@ contract DelegationManager is
         address operator,
         uint256 expiry
     ) external view returns (bytes32) {
-        // fetch the staker's current nonce
-        uint256 currentStakerNonce = stakerNonce[staker];
-        // calculate the digest hash
-        return calculateStakerDelegationDigestHash(staker, currentStakerNonce, operator, expiry);
+        return calculateStakerDelegationDigestHash(staker, stakerNonce[staker], operator, expiry);
     }
 
     /**
      * @notice Calculates the digest hash to be signed and used in the `delegateToBySignature` function
      * @param staker The signing staker
-     * @param _stakerNonce The nonce of the staker. In practice we use the staker's current nonce, stored at `stakerNonce[staker]`
+     * @param nonce The nonce of the staker. In practice we use the staker's current nonce, stored at `stakerNonce[staker]`
      * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the staker's signature
      */
     function calculateStakerDelegationDigestHash(
         address staker,
-        uint256 _stakerNonce,
+        uint256 nonce,
         address operator,
         uint256 expiry
     ) public view returns (bytes32) {
-        // calculate the struct hash
-        bytes32 stakerStructHash =
-            keccak256(abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, _stakerNonce, expiry));
-        // calculate the digest hash
-        bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), stakerStructHash));
-        return stakerDigestHash;
+        /// forgefmt: disable-next-item
+        return _calculateSignableDigest(
+            keccak256(
+                abi.encode(
+                    STAKER_DELEGATION_TYPEHASH, 
+                    staker, 
+                    operator, 
+                    nonce, 
+                    expiry
+                )
+            )
+        );
     }
 
     /**
      * @notice Calculates the digest hash to be signed by the operator's delegationApprove and used in the `delegateTo` and `delegateToBySignature` functions.
      * @param staker The account delegating their stake
      * @param operator The account receiving delegated stake
-     * @param _delegationApprover the operator's `delegationApprover` who will be signing the delegationHash (in general)
+     * @param approver the operator's `delegationApprover` who will be signing the delegationHash (in general)
      * @param approverSalt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid
      */
     function calculateDelegationApprovalDigestHash(
         address staker,
         address operator,
-        address _delegationApprover,
+        address approver,
         bytes32 approverSalt,
         uint256 expiry
     ) public view returns (bytes32) {
-        // calculate the struct hash
-        bytes32 approverStructHash = keccak256(
-            abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, approverSalt, expiry)
+        /// forgefmt: disable-next-item
+        return _calculateSignableDigest(
+            keccak256(
+                abi.encode(
+                    DELEGATION_APPROVAL_TYPEHASH, 
+                    approver, 
+                    staker, 
+                    operator, 
+                    approverSalt, 
+                    expiry
+                )
+            )
         );
-        // calculate the digest hash
-        bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
-        return approverDigestHash;
-    }
-
-    /**
-     * @dev Recalculates the domain separator when the chainid changes due to a fork.
-     */
-    function _calculateDomainSeparator() internal view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
 }

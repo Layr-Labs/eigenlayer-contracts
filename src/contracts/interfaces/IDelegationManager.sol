@@ -509,23 +509,11 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         uint256 expiry
     ) external view returns (bytes32);
 
-    /// @notice The EIP-712 typehash for the contract's domain
-    function DOMAIN_TYPEHASH() external view returns (bytes32);
-
     /// @notice The EIP-712 typehash for the StakerDelegation struct used by the contract
     function STAKER_DELEGATION_TYPEHASH() external view returns (bytes32);
 
     /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32);
-
-    /**
-     * @notice Getter function for the current EIP-712 domain separator for this contract.
-     *
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     * @dev By introducing a domain separator the DApp developers are guaranteed that there can be no signature collision.
-     * for more detailed information please read EIP-712.
-     */
-    function domainSeparator() external view returns (bytes32);
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.

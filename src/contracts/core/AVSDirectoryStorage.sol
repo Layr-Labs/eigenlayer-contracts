@@ -12,10 +12,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     // Constants
 
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-
     /// @notice The EIP-712 typehash for the `Registration` struct used by the contract
     bytes32 public constant OPERATOR_AVS_REGISTRATION_TYPEHASH =
         keccak256("OperatorAVSRegistration(address operator,address avs,bytes32 salt,uint256 expiry)");
@@ -43,9 +39,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
     uint32 public immutable DEALLOCATION_DELAY;
 
-    /// @dev Returns the chain ID from the time the contract was deployed.
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-
     // Mutatables
 
     /**
@@ -53,7 +46,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
      * Use the getter function `domainSeparator` to get the current domain separator for this contract.
      */
-    bytes32 internal _DOMAIN_SEPARATOR;
+    bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
     /// @notice Mapping: avs => operator => OperatorAVSRegistrationStatus struct
     /// @dev This storage will be deprecated once M2 based deregistration is deprecated.
@@ -84,7 +77,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     constructor(IDelegationManager _delegation, uint32 _DEALLOCATION_DELAY) {
         delegation = _delegation;
         DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**

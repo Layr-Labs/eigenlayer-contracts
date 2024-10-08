@@ -26,6 +26,7 @@ interface IAVSDirectoryErrors {
     error InvalidOperatorSet();
     /// @dev Thrown when `operator` is not a registered operator.
     error OperatorNotRegistered();
+    
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
     error SaltSpent();
     /// @dev Thrown when attempting to use an expired eip-712 signature.
@@ -344,10 +345,6 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
         bytes32 salt,
         uint256 expiry
     ) external view returns (bytes32);
-
-    /// @notice Getter function for the current EIP-712 domain separator for this contract.
-    /// @dev The domain separator will change in the event of a fork that changes the ChainID.
-    function domainSeparator() external view returns (bytes32);
 
     /// @notice The EIP-712 typehash for the Registration struct used by the contract.
     function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32);

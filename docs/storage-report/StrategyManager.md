@@ -10,7 +10,7 @@
 | pauserRegistry                              | contract IPauserRegistry                                   | 151  | 0      | 20    | src/contracts/core/StrategyManager.sol:StrategyManager |
 | _paused                                     | uint256                                                    | 152  | 0      | 32    | src/contracts/core/StrategyManager.sol:StrategyManager |
 | __gap                                       | uint256[48]                                                | 153  | 0      | 1536  | src/contracts/core/StrategyManager.sol:StrategyManager |
-| _DOMAIN_SEPARATOR                           | bytes32                                                    | 201  | 0      | 32    | src/contracts/core/StrategyManager.sol:StrategyManager |
+| __deprecated_DOMAIN_SEPARATOR               | bytes32                                                    | 201  | 0      | 32    | src/contracts/core/StrategyManager.sol:StrategyManager |
 | nonces                                      | mapping(address => uint256)                                | 202  | 0      | 32    | src/contracts/core/StrategyManager.sol:StrategyManager |
 | strategyWhitelister                         | address                                                    | 203  | 0      | 20    | src/contracts/core/StrategyManager.sol:StrategyManager |
 | __deprecated_withdrawalDelayBlocks          | uint256                                                    | 204  | 0      | 32    | src/contracts/core/StrategyManager.sol:StrategyManager |

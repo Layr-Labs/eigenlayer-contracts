@@ -16,9 +16,6 @@ import "../interfaces/IAVSDirectory.sol";
 abstract contract StrategyManagerStorage is IStrategyManager {
     // Constants
 
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
     /// @notice The EIP-712 typehash for the deposit struct used by the contract
     bytes32 public constant DEPOSIT_TYPEHASH =
         keccak256("Deposit(address staker,address strategy,address token,uint256 amount,uint256 nonce,uint256 expiry)");
@@ -37,16 +34,9 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     IAVSDirectory public immutable avsDirectory;
 
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-
     // Mutatables
 
-    /**
-     * @notice Original EIP-712 Domain separator for this contract.
-     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
-     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
-     */
-    bytes32 internal _DOMAIN_SEPARATOR;
+    bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
     // staker => number of signed deposit nonce (used in depositIntoStrategyWithSignature)
     mapping(address => uint256) public nonces;
@@ -101,7 +91,6 @@ abstract contract StrategyManagerStorage is IStrategyManager {
         delegation = _delegation;
         eigenPodManager = _eigenPodManager;
         avsDirectory = _avsDirectory;
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**
