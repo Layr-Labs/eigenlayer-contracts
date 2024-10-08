@@ -161,7 +161,7 @@ interface IDelegationManagerTypes {
         // Array of strategies that the QueuedWithdrawal contains
         IStrategy[] strategies;
         // Array containing the amount of withdrawable shares for withdrawal in each Strategy in the `strategies` array
-        uint256[] ownedShares;
+        uint256[] shares;
         // The address of the withdrawer
         address withdrawer;
     }

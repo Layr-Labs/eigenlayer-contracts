@@ -294,7 +294,7 @@ contract DelegationManager is
 
         for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
             require(
-                queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].ownedShares.length,
+                queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length,
                 InputArrayLengthMismatch()
             );
             require(queuedWithdrawalParams[i].withdrawer == msg.sender, WithdrawerNotStaker());
@@ -309,7 +309,7 @@ contract DelegationManager is
                 staker: msg.sender,
                 operator: operator,
                 strategies: queuedWithdrawalParams[i].strategies,
-                sharesToWithdraw: queuedWithdrawalParams[i].ownedShares,
+                sharesToWithdraw: queuedWithdrawalParams[i].shares,
                 totalMagnitudes: totalMagnitudes
             });
         }
@@ -877,7 +877,7 @@ contract DelegationManager is
         strategies[strategies.length - 1] = beaconChainETHStrategy;
         uint256[] memory shares = new uint256[](strategies.length);
 
-        // Get owned shares for each strategy
+        // Get shares shares for each strategy
         for (uint256 i = 0; i < strategies.length; ++i) {
             IShareManager shareManager = _getShareManager(strategies[i]);
             shares[i] = shareManager.stakerDepositShares(staker, strategies[i]);

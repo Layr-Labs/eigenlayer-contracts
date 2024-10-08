@@ -353,7 +353,7 @@ contract AllocationManager is
         IStrategy strategy,
         bytes32 operatorSetKey,
         PendingMagnitudeInfo memory info
-    ) internal returns (bool, MagnitudeInfo memory) {
+    ) internal {
         _operatorMagnitudeInfo[operator][strategy][operatorSetKey] = MagnitudeInfo({
             currentMagnitude: info.currentMagnitude,
             pendingMagnitudeDelta: info.pendingDiff,

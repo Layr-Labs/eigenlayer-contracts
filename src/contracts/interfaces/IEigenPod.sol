@@ -108,10 +108,6 @@ interface IEigenPod {
         uint64 beaconChainBalanceBeforeGwei;
     }
 
-    struct ExtendedCheckpoint {
-        uint128 beaconChainBalanceBefore;
-    }
-
     /**
      *
      *                                    EVENTS
