@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "script/Release_Template.s.sol";
+import {MultisigCallHelper} from "script/Release_Template.s.sol";
 import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
 import {QueuedTransactions} from "script/releases/v0.1-eigenpod/queued-transactions.sol";
 
@@ -20,8 +21,8 @@ contract Execute is MultisigBuilder {
         ////////////////////////////////
         MultisigCall[] memory txns;
 
-        txns = new QueuedTransactions().getTransactions(addrs, env, params);
-        bytes memory executorCalldata = new OpsTimelockBuilder().makeExecutorCalldata(
+        txns = new QueuedTransactions().get(addrs, env, params);
+        bytes memory executorCalldata = MultisigCallHelper.makeExecutorCalldata(
             txns,
             params.multiSendCallOnly
         );

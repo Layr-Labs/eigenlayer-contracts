@@ -29,6 +29,21 @@ struct MultisigCall {
 
 library MultisigCallHelper {
 
+    /// @notice helper function to create calldata for executor
+    /// can be used for queue or execute
+    function makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly) public pure returns (bytes memory) {
+        bytes memory data = encodeMultisendTxs(calls);
+
+        bytes memory executorCalldata = TransactionHelper.encodeForExecutor(Transaction({
+            to: multiSendCallOnly,
+            value: 0,
+            data: data,
+            op: EncGnosisSafe.Operation.DelegateCall
+        }));
+
+        return executorCalldata;
+    }
+
     function append(
         MultisigCall[] storage multisigCalls,
         address to,
@@ -82,7 +97,7 @@ library MultisigCallHelper {
 library TransactionHelper {
     function encodeForExecutor(
         Transaction memory t
-    ) public returns (bytes memory) {
+    ) public pure returns (bytes memory) {
         bytes1 v = bytes1(uint8(1));
         bytes32 r = bytes32(uint256(uint160(0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF))); // HARDCODED MAINNET TIMELOCK
         bytes32 s;
@@ -180,17 +195,11 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
     using TransactionHelper for *;
 
     /// @return a Transaction object for a Gnosis Safe to ingest
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory) {
-        (
-            Addresses memory addrs,
-            Environment memory env,
-            Params memory params
-        ) = _readConfigFile(envPath);
-
-        MultisigCall[] memory calls = _queue(addrs, env, params);
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override virtual returns (MultisigCall[] memory) {
+        MultisigCall[] memory opsTimelockCalls = _queue(addrs, env, params);
 
         // ENCODE CALLS FOR EXECUTOR
-        bytes memory executorCalldata = makeExecutorCalldata(calls, params.multiSendCallOnly);
+        bytes memory executorCalldata = MultisigCallHelper.makeExecutorCalldata(opsTimelockCalls, params.multiSendCallOnly);
 
         // ENCODE EXECUTOR CALLDATA FOR TIMELOCK
         bytes memory timelockCalldata = abi.encodeWithSelector(
@@ -203,7 +212,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
         );
 
         // ENCODE TIMELOCK DATA FOR OPS MULTISIG
-        Transaction txn = Transaction({
+        Transaction memory txn = Transaction({
             to: addrs.timelock,
             value: 0,
             data: timelockCalldata,
@@ -211,30 +220,16 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
         });
 
         MultisigCall[] memory calls = new MultisigCall[](1); 
-        calls[0] = MultisigCall{
+        calls[0] = MultisigCall({
             to: txn.to,
-            data: txn.data
-        };
+            data: txn.data,
+            value: 0
+        });
         return calls;
     }
 
     // IMPLEMENT: Specify the functions you want to timelock.
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
-
-    /// @notice helper function to create calldata for executor
-    /// can be used for queue or execute
-    function makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly) internal returns (bytes memory) {
-        bytes memory data = calls.encodeMultisendTxs();
-
-        bytes memory executorCalldata = Transaction({
-            to: multiSendCallOnly,
-            value: 0,
-            data: data,
-            op: EncGnosisSafe.Operation.DelegateCall
-        }).encodeForExecutor();
-
-        return executorCalldata;
-    }
 }
 
 /// @notice to be used for CommunityMultisig

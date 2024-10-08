@@ -13,7 +13,7 @@ contract Queue is OpsTimelockBuilder {
     using TransactionHelper for *;
 
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
-        return new QueuedTransactions().getTransactions(addrs, env, params);
+        return new QueuedTransactions().get(addrs, env, params);
     }
 
     function _testExecute(
