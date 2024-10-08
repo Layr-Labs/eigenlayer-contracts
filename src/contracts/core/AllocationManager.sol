@@ -151,6 +151,7 @@ contract AllocationManager is
                     mInfo.effectTimestamp = uint32(block.timestamp) + operatorAllocationDelay;
 
                     // 2. add to the encumbered magnitude and make sure it doesn't exceed the total magnitude
+                    // TODO: update unencumbered magnitude once at the end of the loop
                     _updateEncumberedMagnitude({
                         operator: msg.sender,
                         strategy: allocation.strategy,
