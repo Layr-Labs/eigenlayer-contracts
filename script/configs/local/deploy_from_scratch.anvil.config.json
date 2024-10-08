@@ -1,26 +1,34 @@
 {
   "maintainer": "samlaf@eigenlabs.org",
+  "lastUpdated": "v0.4.3-mainnet-foundation-incentives",
   "multisig_addresses": {
        "operationsMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
        "communityMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+       "foundationMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
        "pauserMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
        "executorMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
        "timelock": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
   },
-  "strategies": [
-       {
-            "token_address": "0x0000000000000000000000000000000000000000",
-            "token_symbol": "WETH",
-            "max_per_deposit": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
-            "max_deposits": 115792089237316195423570985008687907853269984665640564039457584007913129639935
-          }
-  ],
+  "strategies": {
+     "numStrategies": 1,
+     "MAX_PER_DEPOSIT": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
+     "MAX_TOTAL_DEPOSITS": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
+     "strategiesToDeploy": [
+        {
+          "token_address": "0x0000000000000000000000000000000000000000",
+          "token_name": "Wrapped Ether",
+          "token_symbol": "WETH"
+        }
+     ]
+  },
   "strategyManager": {
        "init_paused_status": 0,
-       "init_withdrawal_delay_blocks": 1
+       "init_withdrawal_delay_blocks": 1,
+       "init_strategy_whitelister": "0x0000000000000000000000000000000000000000"
   },
   "eigenPod": {
        "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 1,
+       "GENESIS_TIME": 1695902400,
        "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR": "32000000000"
   },
   "eigenPodManager": {
@@ -33,9 +41,12 @@
   "slasher": {
        "init_paused_status": 0
   },
-  "delegation": {
+  "delegationManager": {
        "init_paused_status": 0,
-       "init_withdrawal_delay_blocks": 1
+       "init_minWithdrawalDelayBlocks": 1
+  },
+  "avsDirectory": {
+     "init_paused_status": 0
   },
   "rewardsCoordinator": {
        "init_paused_status": 0,
@@ -51,5 +62,8 @@
        "OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP": 1720656000,
        "OPERATOR_SET_MAX_RETROACTIVE_LENGTH": 2592000
   },
-  "ethPOSDepositAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+  "ethPOSDepositAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa",
+  "chainInfo": {
+     "chainId": 31337
+  }
 }

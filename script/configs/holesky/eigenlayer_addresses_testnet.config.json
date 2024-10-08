@@ -52,13 +52,16 @@
     "strategyFactoryBeacon": "0xd3c6C6BA4E40dB9288c6a2077e5635344F8aFA4F",
     "strategyFactoryBeaconImplementation": "0xb637caeedfCBf88e0d019E7AE4691b554c994A1e",
     "token": {
-      "tokenProxyAdmin": "0x67482666771e82C9a73BB9e9A22B2B597f448BBf",
+      "eigenTokenProxyAdmin": "0x67482666771e82C9a73BB9e9A22B2B597f448BBf",
+      "beigenTokenProxyAdmin": "0x6B04F84780CdD42d02b079d1e7a36887bBff8679",
       "EIGEN": "0x3B78576F7D6837500bA3De27A60c7f594934027E",
       "bEIGEN": "0x275cCf9Be51f4a6C94aBa6114cdf2a4c45B9cb27",
       "EIGENImpl": "0x01cbB2ae8eFE46EEdB9f7575D91cA1EB38823050",
       "bEIGENImpl": "0x05adA1C66DdDD7c36705bC23a4d50dBa72E4E05c",
       "eigenStrategy": "0x43252609bff8a13dFe5e057097f2f45A24387a84",
-      "eigenStrategyImpl": "0x94650e09a471CEF96e7966cabf26718FBf352697"
+      "eigenStrategyImpl": "0x94650e09a471CEF96e7966cabf26718FBf352697",
+      "eigenTokenTimelockController": "0xf74BAF5e332D4B5F65cB85F863466d745a74918e",
+      "beigenTokenTimelockController": "0x1554003905e391d99126fF6b9f4ef6A425D8004a"
     }
   },
   "chainInfo": {
@@ -70,7 +73,8 @@
     "executorMultisig": "0x28Ade60640fdBDb2609D8d8734D1b5cBeFc0C348",
     "operationsMultisig": "0xfaEF7338b7490b9E272d80A1a39f4657cAf2b97d",
     "pauserMultisig": "0x53410249ec7d3a3F9F1ba3912D50D6A3Df6d10A7",
-    "timelock": "0xcF19CE0561052a7A7Ff21156730285997B350A7D"
+    "timelock": "0xFddd03C169E3FD9Ea4a9548dDC4BedC6502FE239",
+    "foundationMultisig": "0x7Cb5d96A8D67304E51E022979Eb9C63a17484076"
   }
 }
   

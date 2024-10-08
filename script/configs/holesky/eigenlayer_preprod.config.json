@@ -4,11 +4,12 @@
     "chainId": 17000
   },
   "multisig_addresses": {
-    "pauserMultisig": "0x53410249ec7d3a3F9F1ba3912D50D6A3Df6d10A7",
-    "communityMultisig": "0xCb8d2f9e55Bc7B1FA9d089f9aC80C583D2BDD5F7",
-    "operationsMultisig": "0xfaEF7338b7490b9E272d80A1a39f4657cAf2b97d",
-    "executorMultisig": "0x28Ade60640fdBDb2609D8d8734D1b5cBeFc0C348",
-    "timelock": "0xcF19CE0561052a7A7Ff21156730285997B350A7D"
+    "communityMultisig": "0x42789cCdE6486b81c7D41Fa3759A8BB74D7909DB",
+    "pauserMultisig": "0x546D3b66B27dCb94777d7eFC3825b10675FE5D95",
+    "operationsMultisig": "0x6d609cD2812bDA02a75dcABa7DaafE4B20Ff5608",
+    "foundationMultisig": "0x9c36f012585c8bb4247eEe18C01Cdfc5f2e90336",
+    "executorMultisig": "0x84E5e0D6f6c3153057bd5d661Be1ff1766cEac08",
+    "timelock": "0x079D1e99a13EF1D01475c71A2AD43ff1cB971968"
   },
   "strategies": {
     "numStrategies": 0,

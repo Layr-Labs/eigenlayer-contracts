@@ -19,7 +19,7 @@ contract Eigen_Token_Deploy is Script, Test {
     address operationsMultisig = 0xfaEF7338b7490b9E272d80A1a39f4657cAf2b97d;
     EmptyContract public emptyContract = EmptyContract(0x9690d52B1Ce155DB2ec5eCbF5a262ccCc7B3A6D2);
 
-    ProxyAdmin public tokenProxyAdmin;
+    ProxyAdmin public eigenTokenProxyAdmin;
     Eigen public EIGENImpl;
     Eigen public EIGEN;
     BackingEigen public bEIGENImpl;
@@ -38,7 +38,7 @@ contract Eigen_Token_Deploy is Script, Test {
 
         emit log_string("====Deployed Contracts====");
 
-        emit log_named_address("ProxyAdmin", address(tokenProxyAdmin));
+        emit log_named_address("ProxyAdmin", address(eigenTokenProxyAdmin));
         emit log_named_address("EIGEN", address(EIGEN));
         emit log_named_address("bEIGEN", address(bEIGEN));
         emit log_named_address("EIGENImpl", address(EIGENImpl));
@@ -47,14 +47,14 @@ contract Eigen_Token_Deploy is Script, Test {
 
     function _deployToken() internal {
         // Deploy ProxyAdmin, later set admins for all proxies to be executorMultisig
-        tokenProxyAdmin = new ProxyAdmin();
+        eigenTokenProxyAdmin = new ProxyAdmin();
 
         EIGEN = Eigen(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(tokenProxyAdmin), ""))
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenTokenProxyAdmin), ""))
         ); 
 
         bEIGEN = BackingEigen(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(tokenProxyAdmin), ""))
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenTokenProxyAdmin), ""))
         );
 
         // deploy impls
@@ -70,7 +70,7 @@ contract Eigen_Token_Deploy is Script, Test {
         uint256[] memory mintAllowedAfters = new uint256[](1);
 
         // upgrade and initialize proxies
-        tokenProxyAdmin.upgradeAndCall(
+        eigenTokenProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(EIGEN))), 
             address(EIGENImpl), 
             abi.encodeWithSelector(
@@ -84,7 +84,7 @@ contract Eigen_Token_Deploy is Script, Test {
 
         EIGEN.mint();
 
-        tokenProxyAdmin.upgradeAndCall(
+        eigenTokenProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(bEIGEN))), 
             address(bEIGENImpl),
             abi.encodeWithSelector(
@@ -93,7 +93,7 @@ contract Eigen_Token_Deploy is Script, Test {
             )
         );
 
-        tokenProxyAdmin.transferOwnership(operationsMultisig);
+        eigenTokenProxyAdmin.transferOwnership(operationsMultisig);
     }
 
     function _verifyDeployment() internal view {
@@ -106,9 +106,9 @@ contract Eigen_Token_Deploy is Script, Test {
         require(EIGEN.owner() == msg.sender, "Eigen_Token_Deploy: EIGEN owner mismatch");
         require(bEIGEN.owner() == msg.sender, "Eigen_Token_Deploy: bEIGEN owner mismatch");
 
-        require(tokenProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN)))) == address(EIGENImpl), "Eigen_Token_Deploy: EIGEN implementation mismatch");
-        require(tokenProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(bEIGEN)))) == address(bEIGENImpl), "Eigen_Token_Deploy: bEIGEN implementation mismatch");
+        require(eigenTokenProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN)))) == address(EIGENImpl), "Eigen_Token_Deploy: EIGEN implementation mismatch");
+        require(eigenTokenProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(bEIGEN)))) == address(bEIGENImpl), "Eigen_Token_Deploy: bEIGEN implementation mismatch");
 
-        require(tokenProxyAdmin.owner() == operationsMultisig, "Eigen_Token_Deploy: ProxyAdmin owner mismatch");
+        require(eigenTokenProxyAdmin.owner() == operationsMultisig, "Eigen_Token_Deploy: ProxyAdmin owner mismatch");
     }
 }
