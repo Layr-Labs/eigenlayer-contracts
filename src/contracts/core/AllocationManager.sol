@@ -345,22 +345,22 @@ contract AllocationManager is
         MagnitudeInfo memory mInfoStored = _operatorMagnitudeInfo[operator][strategy][operatorSetKey];
         OperatorSet memory operatorSet = _decodeOperatorSet(operatorSetKey);
 
-        // if the current magnitude has been updated, this is a slash, emit an event
-        if (mInfoStored.currentMagnitude != mInfo.currentMagnitude && !isCompletion) {
-            emit OperatorSetMagnitudeUpdated(
-                operator, operatorSet, strategy, mInfo.currentMagnitude, uint32(block.timestamp)
-            );
-        }
+        // if this is not a completion, emit events
+        // completions have their events emmitted in advance
+        if(!isCompletion) {
+            // if the current magnitude has changed, emit an event
+            if (mInfoStored.currentMagnitude != mInfo.currentMagnitude) {
+                emit OperatorSetMagnitudeUpdated(
+                    operator, operatorSet, strategy, mInfo.currentMagnitude, uint32(block.timestamp)
+                );
+            }
 
-        // if the pending magnitude delta has been updated, this is a modification (and not a completion!), emit an event
-        if (mInfoStored.pendingMagnitudeDelta != mInfo.pendingMagnitudeDelta && !isCompletion) {
-            emit OperatorSetMagnitudeUpdated(
-                operator,
-                operatorSet,
-                strategy,
-                _addInt128(mInfoStored.currentMagnitude, mInfo.pendingMagnitudeDelta),
-                mInfo.effectTimestamp
-            );
+            // if the pending magnitude delta has changed, emit an event
+            if(mInfoStored.pendingMagnitudeDelta != mInfo.pendingMagnitudeDelta) {
+                emit OperatorSetMagnitudeUpdated(
+                    operator, operatorSet, strategy, _addInt128(mInfoStored.currentMagnitude, mInfo.pendingMagnitudeDelta), mInfo.effectTimestamp
+                );
+            }
         }
 
         // actually set the magnitude info
