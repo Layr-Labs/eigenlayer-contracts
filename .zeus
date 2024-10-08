@@ -1,0 +1,4 @@
+{
+    "zeusHost": "https://github.com/jbrower95/zeus-example",
+    "migrationDirectory": "script/releases"
+}

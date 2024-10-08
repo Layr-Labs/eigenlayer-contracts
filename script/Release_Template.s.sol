@@ -180,7 +180,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
     using TransactionHelper for *;
 
     /// @return a Transaction object for a Gnosis Safe to ingest
-    function queue(string memory envPath) public returns (Transaction memory) {
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory) {
         (
             Addresses memory addrs,
             Environment memory env,
@@ -203,15 +203,22 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
         );
 
         // ENCODE TIMELOCK DATA FOR OPS MULTISIG
-        return Transaction({
+        Transaction txn = Transaction({
             to: addrs.timelock,
             value: 0,
             data: timelockCalldata,
             op: EncGnosisSafe.Operation.DelegateCall
         });
+
+        MultisigCall[] memory calls = new MultisigCall[](1); 
+        calls[0] = MultisigCall{
+            to: txn.to,
+            data: txn.data
+        };
+        return calls;
     }
 
-
+    // IMPLEMENT: Specify the functions you want to timelock.
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
 
     /// @notice helper function to create calldata for executor
