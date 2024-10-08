@@ -42,7 +42,6 @@ interface IDelegationManagerErrors {
     error OperatorNotRegistered();
     /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
     error OnlyStrategyManagerOrEigenPodManager();
-
     /// @dev Thrown when an account is not actively delegated.
     error NotActivelyDelegated();
     /// @dev Thrown when provided `stakerOptOutWindowBlocks` cannot decrease.
