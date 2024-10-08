@@ -224,6 +224,42 @@ contract AVSDirectory is
     }
 
     /**
+     *  @notice Called by AVSs to add a strategy to a list of operatorSets.
+     *
+     *  @param operator The address of the strategy to be added to the operator set.
+     *  @param operatorSetIds The IDs of the operator sets.
+     *
+     *  @dev msg.sender is used as the AVS.
+     */
+    function addStrategyToOperatorSets(
+        address strategy,
+        uint32[] calldata operatorSetIds
+    ) external override {
+        // TODO: Assert `strategy` is actually a strategy
+        // require(strategymanager.isStrategy(operator), OperatorNotRegistered());
+
+        // Assert that the AVS is an operator set AVS.
+        require(isOperatorSetAVS[msg.sender], InvalidAVS());
+
+        _addStrategyToOperatorSets(strategy, msg.sender, operatorSetIds);
+    }
+
+    /**
+     *  @notice Called by AVSs to remove a strategy from an operator set.
+     *
+     *  @param strategy The address of the strategy to be removed from the operator set.
+     *  @param operatorSetIds The IDs of the operator sets.
+     *
+     *  @dev msg.sender is used as the AVS.
+     */
+    function removeStrategyFromOperatorSets(
+        address strategy,
+        uint32[] calldata operatorSetIds
+    ) external override {
+        _removeStrategyFromOperatorSets(strategy, msg.sender, operatorSetIds);
+    }
+
+    /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
      *  @param metadataURI The URI for metadata associated with an AVS.
@@ -389,6 +425,45 @@ contract AVSDirectory is
     }
 
     /**
+     * @notice Helper function used by migration & registration functions to register a strategy to operator sets.
+     * @param avs The AVS that the operatorSets belongs to.
+     * @param strategy The strategy to add.
+     * @param operatorSetIds The IDs of the operator sets.
+     */
+    function _addStrategyToOperatorSets(address strategy, address avs, uint32[] calldata operatorSetIds) internal {
+        // Loop over `operatorSetIds` array and add `strategy` for each item.
+        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
+
+            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+
+            require(_operatorSetsStrategies[encodedOperatorSet].add(strategy), InvalidStrategyInOperatorSet());
+
+            emit StrategyAddedToOperatorSet(strategy, operatorSet);
+        }
+    }
+
+    /**
+     * @notice Internal function to remove a strategy from an operator set.
+     *
+     * @param avs The AVS that the operatorSets belongs to.
+     * @param strategy The strategy to remove.
+     * @param operatorSetIds The IDs of the operator sets.
+     */
+    function _removeStrategyFromOperatorSets(address strategy, address avs, uint32[] calldata operatorSetIds) internal {
+        // Loop over `operatorSetIds` array and remove `strategy` for each item.
+        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
+
+            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+
+            require(_operatorSetsStrategies[encodedOperatorSet].remove(strategy), InvalidStrategyInOperatorSet());
+
+            emit StrategyRemovedFromOperatorSet(strategy, operatorSet);
+        }
+    }
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
@@ -448,6 +523,26 @@ contract AVSDirectory is
         operators = new address[](length);
         for (uint256 i; i < length; ++i) {
             operators[i] = _operatorSetMembers[encodedOperatorSet].at(start + i);
+        }
+    }
+
+    /**
+     * @notice Returns an array of strategies in the operatorSet.
+     * @param operatorSet The operatorSet to query.
+     * @param start The starting index of the array to query.
+     * @param length The amount of items of the array to return.
+     */
+    function getStrategiesInOperatorSet(
+        OperatorSet memory operatorSet,
+        uint256 start,
+        uint256 length
+    ) external view returns (address[] memory strategies) {
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        uint256 maxLength = _operatorSetStrategies[encodedOperatorSet].length() - start;
+        if (length > maxLength) length = maxLength;
+        strategies = new address[](length);
+        for (uint256 i; i < length; ++i) {
+            strategies[i] = _operatorSetStrategies[encodedOperatorSet].at(start + i);
         }
     }
 

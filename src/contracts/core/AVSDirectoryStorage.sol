@@ -69,6 +69,10 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
     mapping(bytes32 => EnumerableSet.AddressSet) internal _operatorSetMembers;
 
+    /// @notice Mapping: operatorSet => List of strategies that the operatorSet contains
+    /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
+    mapping(bytes32 => EnumerableSet.AddressSet) internal _operatorSetStrategies;
+
     /// @notice Mapping: operator => avs => operatorSetId => operator registration status
     mapping(address => mapping(address => mapping(uint32 => OperatorSetRegistrationStatus))) public operatorSetStatus;
 

@@ -25,6 +25,8 @@ interface IAVSDirectoryErrors {
     /// @dev Thrown when an invalid operator set is provided.
     error InvalidOperatorSet();
     /// @dev Thrown when `operator` is not a registered operator.
+    error InvalidStrategyInOperatorSet();
+    /// @dev Thrown when an invalid operator set is provided.
     error OperatorNotRegistered();
 
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
@@ -71,6 +73,12 @@ interface IAVSDirectoryEvents is IAVSDirectoryTypes {
 
     /// @notice Emitted when an operator is removed from an operator set.
     event OperatorRemovedFromOperatorSet(address indexed operator, OperatorSet operatorSet);
+
+    /// @notice Emitted when a strategy is added to an operator set.
+    event StrategyAddedToOperatorSet(address strategy, OperatorSet operatorSet);
+
+    /// @notice Emitted when a strategy is removed from an operator set.
+    event StrategyRemovedFromOperatorSet(address strategy, OperatorSet operatorSet);
 
     /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
     /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
@@ -168,6 +176,29 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
+
+    /**
+     *  @notice Called by AVSs to add a strategy to list of operatorSets.
+     *
+     *  @param strategy The address of the strategy to be added to the operator set.
+     *  @param operatorSetIds The IDs of the operator sets.
+     *
+     *  @dev msg.sender is used as the AVS.
+     */
+    function addStrategyToOperatorSets(
+        address strategy,
+        uint32[] calldata operatorSetIds
+    ) external;
+
+    /**
+     *  @notice Called by AVSs to remove a strategy from an operator set.
+     *
+     *  @param operator The address of the strategy to be removed from the operator set.
+     *  @param operatorSetIds The IDs of the operator sets.
+     *
+     *  @dev msg.sender is used as the AVS.
+     */
+    function removeStrategyFromOperatorSets(address strategy, uint32[] calldata operatorSetIds) external;
 
     /**
      *  @notice Legacy function called by the AVS's service manager contract
@@ -284,6 +315,18 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
         uint256 start,
         uint256 length
     ) external view returns (address[] memory operators);
+
+    /**
+     * @notice Returns an array of strategies in the operatorSet.
+     * @param operatorSet The operatorSet to query.
+     * @param start The starting index of the array to query.
+     * @param length The amount of items of the array to return.
+     */
+    function getStrategiesInOperatorSet(
+        OperatorSet memory operatorSet,
+        uint256 start,
+        uint256 length
+    ) external view returns (address[] memory strategies);
 
     /**
      * @notice Returns the number of operators registered to an operatorSet.
