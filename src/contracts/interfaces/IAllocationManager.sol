@@ -50,17 +50,6 @@ interface IAllocationManager is ISignatureUtils {
     }
 
     /**
-     * @notice struct used for pending free magnitude. Stored in (operator, strategy, operatorSet) mapping
-     * to be used in completeDeallocations.
-     * @param magnitudeDelta the amount of magnitude to deallocate
-     * @param completableTimestamp the timestamp at which the deallocation can be completed, 21 days from when queued
-     */
-    // struct PendingFreeMagnitude {
-    //     uint64 magnitudeDelta;
-    //     uint32 completableTimestamp;
-    // }
-
-    /**
      * @notice struct used for operator magnitude updates. Stored in _operatorMagnitudeInfo mapping
      * @param currentMagnitude the current magnitude of the operator
      * @param pendingMagnitudeIdff the pending magnitude difference of the operator
@@ -70,16 +59,6 @@ interface IAllocationManager is ISignatureUtils {
         int128 pendingMagnitudeDelta;
         uint64 currentMagnitude;
         uint32 effectTimestamp;
-    }
-
-    /**
-     * @notice Struct containing info regarding free allocatable magnitude.
-     * @param nextPendingIndex The next available update index.
-     * @param freeMagnitude The total amount of free allocatable magnitude.
-     */
-    struct FreeMagnitudeInfo {
-        uint192 nextPendingIndex;
-        uint64 freeMagnitude;
     }
 
     /**
@@ -95,37 +74,32 @@ interface IAllocationManager is ISignatureUtils {
     }
 
     /// @notice Emitted when operator updates their allocation delay.
-    event AllocationDelaySet(address operator, uint32 delay);
+    event AllocationDelaySet(address operator, uint32 delay, uint32 effectTimestamp);
 
-    /// @notice Emitted when an operator set is created by an AVS.
-    event OperatorSetCreated(OperatorSet operatorSet);
-
-    /// @notice Emitted when an operator allocates slashable magnitude to an operator set
-    event MagnitudeAllocated(
-        address operator,
-        IStrategy strategy,
-        OperatorSet operatorSet,
-        uint64 magnitudeToAllocate,
+    /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
+    event OperatorSetMagnitudeUpdated(
+        address operator, 
+        OperatorSet operatorSet, 
+        IStrategy strategy, 
+        uint64 magnitude,
         uint32 effectTimestamp
     );
 
-    /// @notice Emitted when an operator queues deallocations of slashable magnitude from an operator set
-    event MagnitudeQueueDeallocated(
-        address operator,
-        IStrategy strategy,
-        OperatorSet operatorSet,
-        uint64 magnitudeToDeallocate,
-        uint32 completableTimestamp
+    /// @notice Emitted when operator's encumbered magnitude is updated for a given strategy
+    event EncumberedMagnitudeUpdated(
+        address operator, IStrategy strategy, uint64 encumberedMagnitude
     );
 
-    /// @notice Emitted when an operator completes deallocations of slashable magnitude from an operator set
-    /// and adds back magnitude to free allocatable magnitude
-    event MagnitudeDeallocationCompleted(
-        address operator, IStrategy strategy, OperatorSet operatorSet, uint64 freeMagnitudeAdded
+    /// @notice Emitted when an operator's total magnitude is updated for a given strategy
+    event TotalMagnitudeUpdated(
+        address operator, IStrategy strategy, uint64 totalMagnitude
     );
+
 
     /// @notice Emitted when an operator is slashed by an operator set for a strategy
-    event OperatorSlashed(address operator, uint32 operatorSetId, IStrategy strategy, uint16 bipsToSlash);
+    event OperatorSlashed(
+        address operator, OperatorSet operatorSet, string description
+    );
 
     /**
      *
@@ -185,13 +159,15 @@ interface IAllocationManager is ISignatureUtils {
      * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
      * @param strategies the set of strategies to slash
      * @param wadToSlash the parts in 1e18 to slash, this will be proportional to the
+     * @param description the description of the slashing provided by the AVS for legibility
      * operator's slashable stake allocation for the operatorSet
      */
     function slashOperator(
         address operator,
         uint32 operatorSetId,
         IStrategy[] calldata strategies,
-        uint256 wadToSlash
+        uint256 wadToSlash,
+        string calldata description
     ) external;
 
     /**

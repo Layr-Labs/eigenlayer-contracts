@@ -205,6 +205,12 @@ interface IDelegationManager is ISignatureUtils {
     /// @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
     event StakerForceUndelegated(address indexed staker, address indexed operator);
 
+    /// @notice Emitted when a staker's depositScalingFactor is updated
+    event DepositScalingFactorUpdated(address staker, IStrategy strategy, uint256 newDepositScalingFactor);
+
+    /// @notice Emitted when a staker's beaconChainScalingFactor is updated
+    event BeaconChainScalingFactorDecreased(address staker, uint64 newBeaconChainScalingFactor);
+
     /**
      * @notice Emitted when a new withdrawal is queued.
      * @param withdrawalRoot Is the hash of the `withdrawal`.
@@ -389,16 +395,11 @@ interface IDelegationManager is ISignatureUtils {
      * @notice Decreases the operators shares in storage after a slash
      * @param operator The operator to decrease shares for
      * @param strategy The strategy to decrease shares for
-     * @param previousMagnitude The magnitude before the slash
-     * @param newMagnitude The magnitude after the slash
+     * @param previousTotalMagnitude The total magnitude before the slash
+     * @param newTotalMagnitude The total magnitude after the slash
      * @dev Callable only by the AllocationManager
      */
-    function decreaseOperatorShares(
-        address operator,
-        IStrategy strategy,
-        uint64 previousMagnitude,
-        uint64 newMagnitude
-    ) external;
+    function decreaseOperatorShares(address operator, IStrategy strategy, uint64 previousTotalMagnitude, uint64 newTotalMagnitude) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

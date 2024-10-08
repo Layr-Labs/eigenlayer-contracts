@@ -79,12 +79,8 @@ library SlashingLib {
             scaledSharesToWithdraw.mulWad(uint256(ssf.getBeaconChainScalingFactor())).mulWad(uint256(operatorMagnitude));
     }
 
-    function decreaseOperatorShares(
-        uint256 operatorShares,
-        uint64 previousMagnitude,
-        uint64 newMagnitude
-    ) internal pure returns (uint256) {
-        return operatorShares.divWad(previousMagnitude).mulWad(newMagnitude);
+    function getOperatorSharesToDecrease(uint256 operatorShares, uint64 previousTotalMagnitude, uint64 newTotalMagnitude) internal pure returns (uint256) {
+        return operatorShares - operatorShares.divWad(previousTotalMagnitude).mulWad(newTotalMagnitude);    
     }
 
     function decreaseBeaconChainScalingFactor(
@@ -95,50 +91,51 @@ library SlashingLib {
         ssf.isBeaconChainScalingFactorSet = true;
     }
 
-    function calculateNewDepositScalingFactor(
-        uint256 currentDepositShares,
-        uint256 addedDepositShares,
-        StakerScalingFactors memory ssf,
-        uint64 magnitude
-    ) internal pure returns (uint64) {
-        // TODO: update equation for beacon chain scaling factor
+    function updateDepositScalingFactor(
+        StakerScalingFactors storage ssf,
+        uint256 existingDepositShares,
+        uint256 addedShares,
+        uint64 totalMagnitude
+    ) internal {
+        if (existingDepositShares == 0) {
+            // if this is their first deposit for the operator, set the scaling factor to inverse of totalMagnitude
+            ssf.depositScalingFactor = uint256(WAD).divWad(ssf.getBeaconChainScalingFactor()).divWad(totalMagnitude);
+            return;
+        }
         /**
          * Base Equations:
-         * (1) newShares = currentShares + addedDepositShares
-         * (2) newOwnedShares = currentOwnedShares + addedDepositShares
-         * (3) newOwnedShares = newShares * newStakerDepositScalingFactor * newMagnitude
-         *
-         * Plugging (3) into (2):
-         * (4) newShares * newStakerDepositScalingFactor * newMagnitude = currentOwnedShares + addedDepositShares
-         *
+         * (1) newShares = currentShares + addedShares
+         * (2) newDepositShares = existingDepositShares + addedShares
+         * (3) newShares = newDepositShares * newStakerDepositScalingFactor * beaconChainScalingFactor * totalMagnitude
+         * 
+         * Plugging (1) into (3):
+         * (4) newDepositShares * newStakerDepositScalingFactor * beaconChainScalingFactor * totalMagnitude = currentShares + addedShares
+         * 
          * Solving for newStakerDepositScalingFactor
-         * (5) newStakerDepositScalingFactor = (ownedShares + addedDepositShares) / (newShares * newMagnitude)
-         *
-         * We also know that the magnitude remains constant on deposits, thus
-         * (6) newMagnitude = oldMagnitude
-         *
-         * Plugging in (6) and (1) into (5):
-         * (7) newStakerDepositScalingFactor = (ownedShares + addedDepositShares) / ((currentShares + addedDepositShares) * oldMagnitude)
+         * (5) newStakerDepositScalingFactor = (currentShares + addedShares) / (newDepositShares * beaconChainScalingFactor * totalMagnitude)
+         * 
+         * Plugging in (2) into (5):
+         * (7) newStakerDepositScalingFactor = (currentShares + addedShares) / ((existingDepositShares + addedShares) * beaconChainScalingFactor * totalMagnitude)
          * Note that magnitudes must be divided by WAD for precision. Thus,
-         *
-         * (8) newStakerDepositScalingFactor = (ownedShares + addedDepositShares) / ((currentShares + addedDepositShares) * oldMagnitude / WAD)
-         * (9) newStakerDepositScalingFactor = (ownedShares + addedDepositShares) / ((currentShares + addedDepositShares) / WAD) * (oldMagnitude / WAD))
+         * 
+         * (8) newStakerDepositScalingFactor = WAD * (currentShares + addedShares) / ((existingDepositShares + addedShares) * beaconChainScalingFactor / WAD * totalMagnitude / WAD)
+         * (9) newStakerDepositScalingFactor = (currentShares + addedShares) * WAD / (existingDepositShares + addedShares) * WAD / beaconChainScalingFactor * WAD / totalMagnitude
          */
 
         // Step 1: Calculate Numerator
-        uint256 currentShares = currentDepositShares.toShares(ssf, magnitude);
+        uint256 currentShares = existingDepositShares.toShares(ssf, totalMagnitude);
 
         // Step 2: Compute currentShares + addedShares
-        uint256 newShares = currentShares + addedDepositShares;
+        uint256 newShares = currentShares + addedShares;
 
         // Step 3: Calculate newStakerDepositScalingFactor
-        // Note: We divide by magnitude to preserve
-
-        //TODO: figure out if we only need to do one divWad here
-        uint256 newStakerDepositScalingFactor = newShares.divWad(currentShares + addedDepositShares).divWad(magnitude)
+        uint256 newStakerDepositScalingFactor = 
+            newShares
+            .divWad(existingDepositShares + addedShares)
+            .divWad(totalMagnitude)
             .divWad(uint256(ssf.getBeaconChainScalingFactor()));
 
-        return uint64(newStakerDepositScalingFactor);
+        ssf.depositScalingFactor = newStakerDepositScalingFactor;
     }
 
     // CONVERSION
