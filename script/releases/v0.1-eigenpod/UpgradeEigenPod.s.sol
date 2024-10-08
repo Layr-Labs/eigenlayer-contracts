@@ -8,8 +8,6 @@ contract UpgradeEigenPod is MultisigBuilder {
 
     using MultisigCallHelper for *;
 
-    MultisigCall[] _multisigCalls;
-
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
         _multisigCalls.append({
             to: addrs.timelock,

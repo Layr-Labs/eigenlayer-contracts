@@ -12,9 +12,6 @@ contract UpgradeEigenPodAndManager is OpsTimelockBuilder {
     using MultisigCallHelper for *;
     using TransactionHelper for *;
 
-    MultisigCall[] _executorCalls;
-    MultisigCall[] _opsCalls;
-
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
 
         // construct initialization data for eigenPodManager

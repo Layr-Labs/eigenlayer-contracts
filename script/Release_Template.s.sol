@@ -111,6 +111,7 @@ library TransactionHelper {
 
 /// @notice template for an EOA script
 abstract contract EOADeployer is ConfigParser {
+    Deployment[] internal _deployments;
 
     function deploy(string memory envPath) public returns (Deployment[] memory) {
         (
@@ -128,7 +129,8 @@ abstract contract EOADeployer is ConfigParser {
 /// @notice template for a Multisig script
 abstract contract MultisigBuilder is ConfigParser {
 
-    using MultisigCallHelper for *;
+    using MultisigCallHelper for MultisigCall[];
+    MultisigCall[] internal _multisigCalls;
 
     /// @return a Transaction object for a Gnosis Safe to ingest
     function execute(string memory envPath) public returns (Transaction memory) {
@@ -138,13 +140,14 @@ abstract contract MultisigBuilder is ConfigParser {
             Params memory params
         ) = _readConfigFile(envPath);
 
-        MultisigCall[] memory calls = _execute(addrs, env, params);
+        // populate _multisigCalls
+        _execute(addrs, env, params);
 
-        bytes memory data = calls.encodeMultisendTxs();
+        bytes memory data = _multisigCalls.encodeMultisendTxs();
 
         return Transaction({
             to: params.multiSendCallOnly,
-            value: 0,
+            value: 0, // TODO: determine if this should be user-controlled
             data: data,
             op: EncGnosisSafe.Operation.DelegateCall
         });
@@ -157,16 +160,8 @@ abstract contract MultisigBuilder is ConfigParser {
             Params memory params
         ) = _readConfigFile(envPath);
 
-        _execute(
-            addrs,
-            env,
-            params
-        );
-        _testExecute(
-            addrs,
-            env,
-            params
-        );
+        _execute(addrs, env, params);
+        _testExecute(addrs, env, params);
     }
 
     /// @notice to be implemented by inheriting contract
@@ -180,8 +175,11 @@ abstract contract MultisigBuilder is ConfigParser {
 /// @dev writing a script is done from the perspective of the OpsMultisig
 abstract contract OpsTimelockBuilder is MultisigBuilder {
 
-    using MultisigCallHelper for *;
-    using TransactionHelper for *;
+    using MultisigCallHelper for MultisigCall[];
+    using TransactionHelper for Transaction;
+
+    MultisigCall[] _executorCalls;
+    MultisigCall[] _opsCalls;
 
     /// @return a Transaction object for a Gnosis Safe to ingest
     function queue(string memory envPath) public returns (Transaction memory) {
@@ -193,10 +191,10 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
 
         MultisigCall[] memory calls = _queue(addrs, env, params);
 
-        // ENCODE CALLS FOR EXECUTOR
+        // encode calls for executor
         bytes memory executorCalldata = makeExecutorCalldata(calls, params.multiSendCallOnly, addrs.timelock);
 
-        // ENCODE EXECUTOR CALLDATA FOR TIMELOCK
+        // encode executor data for timelock
         bytes memory timelockCalldata = abi.encodeWithSelector(
             ITimelock.queueTransaction.selector,
             addrs.executorMultisig,
@@ -206,7 +204,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
             type(uint256).max
         );
 
-        // ENCODE TIMELOCK DATA FOR OPS MULTISIG
+        // encode timelock data for ops multisig
         return Transaction({
             to: addrs.timelock,
             value: 0,
@@ -214,7 +212,6 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
             op: EncGnosisSafe.Operation.DelegateCall
         });
     }
-
 
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
 

@@ -6,8 +6,10 @@ import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/interfaces/IEigenPodManager.sol";
 
+import "script/utils/StringUtils.sol";
+
 contract DeployEigenPodAndManager is EOADeployer {
-    Deployment[] internal _deployments;
+    using StringUtils for string;
 
     /// @notice deploys an EigenPod and returns the deployed address
     function _deploy(Addresses memory, Environment memory, Params memory params) internal override returns (Deployment[] memory) {
@@ -16,11 +18,11 @@ contract DeployEigenPodAndManager is EOADeployer {
 
         // create a defunct EigenPodManager
         address newEigenPodManager = address(new EigenPodManager(
-            IETHPOSDeposit(address(0)),
-            IBeacon(address(0)),
-            IStrategyManager(address(0)),
-            ISlasher(address(0)),
-            IDelegationManager(address(0))
+            IETHPOSDeposit(address(1)),
+            IBeacon(address(2)),
+            IStrategyManager(address(3)),
+            ISlasher(address(4)),
+            IDelegationManager(address(5))
         ));
 
         // record new deployment
@@ -42,5 +44,34 @@ contract DeployEigenPodAndManager is EOADeployer {
         vm.stopBroadcast();
 
         return _deployments;
+    }
+
+    function setUp() public {
+        (Addresses memory addrs, Environment memory env, Params memory params) = _readConfigFile("script/configs/zipzoop.json");
+        _deploy(addrs, env, params);
+    }
+
+    function test_DeployEigenPodManager() public {
+        Deployment memory eigenPodManager = _deployments[0];
+        require(eigenPodManager.deployedTo != address(0), "eigenPodManager not deployed");
+        require(eigenPodManager.name.eq(type(EigenPodManager).name), "eigenPodManager name mismatch");
+
+        EigenPodManager eigenPodManagerInstance = EigenPodManager(eigenPodManager.deployedTo);
+
+        require(address(eigenPodManagerInstance.ethPOS()) == address(1), "ethPOS incorrectly set");
+        require(address(eigenPodManagerInstance.eigenPodBeacon()) == address(2), "eigenPodBeacon incorrectly set");
+        require(address(eigenPodManagerInstance.strategyManager()) == address(3), "strategyManager incorrectly set");
+        require(address(eigenPodManagerInstance.slasher()) == address(4), "slasher incorrectly set");
+        require(address(eigenPodManagerInstance.delegationManager()) == address(5), "delegation incorrectly set");
+    }
+
+    function test_DeployEigenPod() public {
+        Deployment memory eigenPodManager = _deployments[0];
+        Deployment memory eigenPod = _deployments[1];
+        require(eigenPod.deployedTo != address(0), "eigenPod not deployed");
+        require(eigenPod.name.eq(type(EigenPod).name), "eigenPod name mismatch");
+
+        EigenPod eigenPodInstance = EigenPod(payable(eigenPod.deployedTo));
+        require(address(eigenPodInstance.eigenPodManager()) == eigenPodManager.deployedTo, "eigenPodManager not set");
     }
 }
