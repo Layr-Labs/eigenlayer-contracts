@@ -272,6 +272,7 @@ contract DelegationManager is
                 // all shares and queued withdrawn and no delegated operator
                 // reset staker's depositScalingFactor to default
                 stakerScalingFactor[staker][strategies[i]].depositScalingFactor = WAD;
+                emit DepositScalingFactorUpdated(staker, strategies[i], WAD);
             }
         }
 
@@ -359,7 +360,7 @@ contract DelegationManager is
      * @param strategy The strategy in which to increase the delegated shares.
      * @param existingDepositShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
-     * @param addedDepositShares The number of deposit shares added to the staker's shares in the strategy
+     * @param addedShares The number of shares added to the staker's shares in the strategy
      *
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated delegatedShares in `strategy`.
      * Otherwise does nothing.
@@ -369,7 +370,7 @@ contract DelegationManager is
         address staker,
         IStrategy strategy,
         uint256 existingDepositShares,
-        uint256 addedDepositShares
+        uint256 addedShares
     ) external onlyStrategyManagerOrEigenPodManager {
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
@@ -384,7 +385,7 @@ contract DelegationManager is
                 staker: staker,
                 strategy: strategy,
                 existingDepositShares: existingDepositShares,
-                addedDepositShares: addedDepositShares,
+                addedShares: addedShares,
                 totalMagnitude: totalMagnitudes[0]
             });
         }
@@ -413,7 +414,9 @@ contract DelegationManager is
 
         uint256 sharesBefore =
             existingDepositShares.toShares(stakerScalingFactor[staker][beaconChainETHStrategy], totalMagnitudes[0]);
-        stakerScalingFactor[staker][beaconChainETHStrategy].decreaseBeaconChainScalingFactor(proportionOfOldBalance);
+        StakerScalingFactors storage ssf = stakerScalingFactor[staker][beaconChainETHStrategy];
+        ssf.decreaseBeaconChainScalingFactor(proportionOfOldBalance);
+        emit BeaconChainScalingFactorDecreased(staker, ssf.beaconChainScalingFactor);
         uint256 sharesAfter =
             existingDepositShares.toShares(stakerScalingFactor[staker][beaconChainETHStrategy], totalMagnitudes[0]);
 
@@ -434,18 +437,25 @@ contract DelegationManager is
      * @notice Decreases the operators shares in storage after a slash
      * @param operator The operator to decrease shares for
      * @param strategy The strategy to decrease shares for
-     * @param previousMagnitude The magnitude before the slash
-     * @param newMagnitude The magnitude after the slash
+     * @param previousTotalMagnitude The total magnitude before the slash
+     * @param newTotalMagnitude The total magnitude after the slash
      * @dev Callable only by the AllocationManager
      */
     function decreaseOperatorShares(
         address operator,
         IStrategy strategy,
-        uint64 previousMagnitude,
-        uint64 newMagnitude
+        uint64 previousTotalMagnitude,
+        uint64 newTotalMagnitude
     ) external onlyAllocationManager {
-        operatorShares[operator][strategy] =
-            operatorShares[operator][strategy].decreaseOperatorShares(previousMagnitude, newMagnitude);
+        uint256 operatorSharesToDecrease =
+            operatorShares[operator][strategy].getOperatorSharesToDecrease(previousTotalMagnitude, newTotalMagnitude);
+
+        _decreaseDelegation({
+            operator: operator,
+            staker: address(0), // we treat this as a decrease for the zero address staker
+            strategy: strategy,
+            operatorSharesToDecrease: operatorSharesToDecrease
+        });
     }
 
     /**
@@ -532,7 +542,7 @@ contract DelegationManager is
                 staker: staker, 
                 strategy: strategies[i],
                 existingDepositShares: uint256(0),
-                addedDepositShares: depositedShares[i],
+                addedShares: depositedShares[i],
                 totalMagnitude: totalMagnitudes[i]
             });
         }
@@ -605,7 +615,7 @@ contract DelegationManager is
      * @param staker The staker to increase the depositScalingFactor for
      * @param strategy The strategy to increase the delegated delegatedShares and the depositScalingFactor for
      * @param existingDepositShares The number of deposit shares the staker already has in the strategy.
-     * @param addedDepositShares The shares added to the staker in the StrategyManager/EigenPodManager
+     * @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
      * @param totalMagnitude The current total magnitude of the operator for the strategy
      */
     function _increaseDelegation(
@@ -613,27 +623,17 @@ contract DelegationManager is
         address staker,
         IStrategy strategy,
         uint256 existingDepositShares,
-        uint256 addedDepositShares,
+        uint256 addedShares,
         uint64 totalMagnitude
     ) internal {
         //TODO: double check ordering here
-        operatorShares[operator][strategy] +=
-            addedDepositShares.toShares(stakerScalingFactor[staker][strategy], totalMagnitude);
-
-        uint256 newDepositScalingFactor;
-        if (existingDepositShares == 0) {
-            newDepositScalingFactor = WAD / totalMagnitude;
-        } else {
-            newDepositScalingFactor = SlashingLib.calculateNewDepositScalingFactor(
-                existingDepositShares, addedDepositShares, stakerScalingFactor[staker][strategy], totalMagnitude
-            );
-        }
+        operatorShares[operator][strategy] += addedShares;
+        emit OperatorSharesIncreased(operator, staker, strategy, addedShares);
 
         // update the staker's depositScalingFactor
-        stakerScalingFactor[staker][strategy].depositScalingFactor = newDepositScalingFactor;
-
-        // TODO: What to do about event wrt scaling?
-        emit OperatorSharesIncreased(operator, staker, strategy, addedDepositShares);
+        StakerScalingFactors storage ssf = stakerScalingFactor[staker][strategy];
+        ssf.updateDepositScalingFactor(existingDepositShares, addedShares, totalMagnitude);
+        emit DepositScalingFactorUpdated(staker, strategy, ssf.depositScalingFactor);
     }
 
     /**
