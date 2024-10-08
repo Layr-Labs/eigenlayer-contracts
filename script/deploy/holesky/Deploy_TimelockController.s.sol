@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import "../../utils/ExistingDeploymentParser.sol";
 
 /**
- * forge script script/upgrade/holesky/Deploy_TimelockController.s.sol:Deploy_TimelockController -vvv
+ * forge script script/deploy/holesky/Deploy_TimelockController.s.sol:Deploy_TimelockController -vvv
  * 
  */
 contract Deploy_TimelockController is ExistingDeploymentParser {
