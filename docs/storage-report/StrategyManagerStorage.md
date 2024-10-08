@@ -1,6 +1,6 @@
 | Name                                        | Type                                                       | Slot | Offset | Bytes | Contract                                                             |
 |---------------------------------------------|------------------------------------------------------------|------|--------|-------|----------------------------------------------------------------------|
-| _DOMAIN_SEPARATOR                           | bytes32                                                    | 0    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| __deprecated_DOMAIN_SEPARATOR               | bytes32                                                    | 0    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
 | nonces                                      | mapping(address => uint256)                                | 1    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
 | strategyWhitelister                         | address                                                    | 2    | 0      | 20    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
 | __deprecated_withdrawalDelayBlocks          | uint256                                                    | 3    | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |

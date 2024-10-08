@@ -8,7 +8,11 @@
 | pauserRegistry         | contract IPauserRegistry                                                                                            | 101  | 0      | 20    | src/contracts/core/AllocationManager.sol:AllocationManager |
 | _paused                | uint256                                                                                                             | 102  | 0      | 32    | src/contracts/core/AllocationManager.sol:AllocationManager |
 | __gap                  | uint256[48]                                                                                                         | 103  | 0      | 1536  | src/contracts/core/AllocationManager.sol:AllocationManager |
+<<<<<<< HEAD
 | _maxMagnitudeHistory   | mapping(address => mapping(contract IStrategy => struct Snapshots.DefaultWadHistory))                               | 151  | 0      | 32    | src/contracts/core/AllocationManager.sol:AllocationManager |
+=======
+| _totalMagnitudeUpdate  | mapping(address => mapping(contract IStrategy => struct Snapshots.DefaultWadHistory))                               | 151  | 0      | 32    | src/contracts/core/AllocationManager.sol:AllocationManager |
+>>>>>>> 2116ec8b (feat: make storage report)
 | encumberedMagnitude    | mapping(address => mapping(contract IStrategy => uint64))                                                           | 152  | 0      | 32    | src/contracts/core/AllocationManager.sol:AllocationManager |
 | _operatorMagnitudeInfo | mapping(address => mapping(contract IStrategy => mapping(bytes32 => struct IAllocationManagerTypes.MagnitudeInfo))) | 153  | 0      | 32    | src/contracts/core/AllocationManager.sol:AllocationManager |
 | modificationQueue      | mapping(address => mapping(contract IStrategy => struct DoubleEndedQueue.Bytes32Deque))                             | 154  | 0      | 32    | src/contracts/core/AllocationManager.sol:AllocationManager |

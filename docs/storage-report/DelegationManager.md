@@ -8,7 +8,7 @@
 | pauserRegistry                             | contract IPauserRegistry                                                       | 101  | 0      | 20    | src/contracts/core/DelegationManager.sol:DelegationManager |
 | _paused                                    | uint256                                                                        | 102  | 0      | 32    | src/contracts/core/DelegationManager.sol:DelegationManager |
 | __gap                                      | uint256[48]                                                                    | 103  | 0      | 1536  | src/contracts/core/DelegationManager.sol:DelegationManager |
-| _DOMAIN_SEPARATOR                          | bytes32                                                                        | 151  | 0      | 32    | src/contracts/core/DelegationManager.sol:DelegationManager |
+| __deprecated_DOMAIN_SEPARATOR              | bytes32                                                                        | 151  | 0      | 32    | src/contracts/core/DelegationManager.sol:DelegationManager |
 | operatorShares                             | mapping(address => mapping(contract IStrategy => uint256))                     | 152  | 0      | 32    | src/contracts/core/DelegationManager.sol:DelegationManager |
 | _operatorDetails                           | mapping(address => struct IDelegationManagerTypes.OperatorDetails)             | 153  | 0      | 32    | src/contracts/core/DelegationManager.sol:DelegationManager |
 | delegatedTo                                | mapping(address => address)                                                    | 154  | 0      | 32    | src/contracts/core/DelegationManager.sol:DelegationManager |
