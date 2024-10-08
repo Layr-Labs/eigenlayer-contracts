@@ -18,5 +18,4 @@
 | checkpointBalanceExitedGwei                     | mapping(uint64 => uint64)                          | 59   | 0      | 32    | src/contracts/pods/EigenPod.sol:EigenPod |
 | _currentCheckpoint                              | struct IEigenPod.Checkpoint                        | 60   | 0      | 64    | src/contracts/pods/EigenPod.sol:EigenPod |
 | proofSubmitter                                  | address                                            | 62   | 0      | 20    | src/contracts/pods/EigenPod.sol:EigenPod |
-| beaconChainBalanceBeforeCurrentCheckpoint       | uint128                                            | 63   | 0      | 16    | src/contracts/pods/EigenPod.sol:EigenPod |
-| __gap                                           | uint256[35]                                        | 64   | 0      | 1120  | src/contracts/pods/EigenPod.sol:EigenPod |
+| __gap                                           | uint256[35]                                        | 63   | 0      | 1120  | src/contracts/pods/EigenPod.sol:EigenPod |
