@@ -189,7 +189,7 @@ contract AllocationManager is
         uint256 wadToSlash,
         string calldata description
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
-        require(wadToSlash > 0, InvalidWadToSlash());
+        require(wadToSlash > 0 && wadToSlash <= WAD, InvalidWadToSlash(wadToSlash));
         bytes32 operatorSetKey;
         {
             OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
