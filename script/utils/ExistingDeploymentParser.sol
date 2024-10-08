@@ -270,7 +270,9 @@ contract ExistingDeploymentParser is Script, Test {
         foundationMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.foundationMultisig");
 
         // Strategies to Deploy, load strategy list
+        // TODO: can we get rid of this JSON param?
         numStrategiesToDeploy = stdJson.readUint(initialDeploymentData, ".strategies.numStrategies");
+        // require(numStrategiesToDeploy != 0, "should not deploy zero strategies");
         STRATEGY_MAX_PER_DEPOSIT = stdJson.readUint(initialDeploymentData, ".strategies.MAX_PER_DEPOSIT");
         STRATEGY_MAX_TOTAL_DEPOSITS = stdJson.readUint(initialDeploymentData, ".strategies.MAX_TOTAL_DEPOSITS");
         for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
