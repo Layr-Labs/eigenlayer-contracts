@@ -34,6 +34,8 @@ interface IAllocationManager is ISignatureUtils {
     error SignatureExpired();
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
     error SaltSpent();
+    /// @dev Thrown when attempting to slash an operator that has already been slashed at the given timestamp.
+    error AlreadySlashedForTimestamp();
 
     /**
      * @notice struct used to modify the allocation of slashable magnitude to list of operatorSets

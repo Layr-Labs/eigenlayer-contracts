@@ -205,6 +205,12 @@ contract AllocationManager is
         }
 
         for (uint256 i = 0; i < strategies.length; ++i) {
+            require(
+                lastSlashedTimestamp[operator][strategies[i]][operatorSetKey] != block.timestamp,
+                AlreadySlashedForTimestamp()
+            );
+            lastSlashedTimestamp[operator][strategies[i]][operatorSetKey] = uint32(block.timestamp);
+
             // 1. Complete pending modifications for the operator, strategy, and operatorSet
             (, MagnitudeInfo memory mInfo) = _completePendingModification(operator, strategies[i], operatorSetKey);
 

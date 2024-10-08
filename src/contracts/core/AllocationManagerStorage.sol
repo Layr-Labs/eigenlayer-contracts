@@ -58,6 +58,11 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// This determines how long it takes for allocations to take effect in the future.
     mapping(address => AllocationDelayInfo) internal _allocationDelayInfo;
 
+    /// @notice operator => strategy => operator set (encoded) => last timestamp at which the tuple was slashed
+    /// this is used to make sure at most one slash can happen per time per tuple for indexing purposes
+    /// TODO: use tstore or better solution
+    mapping(address => mapping(IStrategy => mapping(bytes32 => uint32))) lastSlashedTimestamp;
+
     // Construction
 
     constructor(
