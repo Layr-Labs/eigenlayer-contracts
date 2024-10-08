@@ -196,7 +196,7 @@ contract AllocationManager is
         uint256 wadToSlash,
         string calldata description
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
-        require(wadToSlash > 0, InvalidWadToSlash());
+        require(wadToSlash > 0, InvalidWadToSlash(wadToSlash));
         bytes32 operatorSetKey;
         {
             OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: operatorSetId});
@@ -214,11 +214,8 @@ contract AllocationManager is
 
             // if there is a pending deallocation, slash pending deallocation proportionally
             // since the delta is negative, we increase it to make sure they can free less of it when completed
-            if (mInfo.pendingMagnitudeDelta < 0) {
-                uint64 pendingMagnitudeDeltaSlashed =
-                    uint64(uint256(uint128(-mInfo.pendingMagnitudeDelta)).mulWad(wadToSlash));
-                mInfo.pendingMagnitudeDelta += int128(uint128(pendingMagnitudeDeltaSlashed));
-                slashedMagnitude += pendingMagnitudeDeltaSlashed;
+            if (_isModificationPending(mInfo) && mInfo.pendingMagnitudeDelta < 0) {
+                mInfo.pendingMagnitudeDelta += int128(uint128(uint256(uint128(-mInfo.pendingMagnitudeDelta)).mulWad(wadToSlash)));
             }
 
             // update operatorMagnitudeInfo
@@ -309,6 +306,9 @@ contract AllocationManager is
         // if the effect timestamp is not reached, return false
         if (block.timestamp < mInfo.effectTimestamp) {
             return (false, mInfo);
+        } else if (mInfo.effectTimestamp == 0) {
+            // if there is no effect timestamp, return true and continue completing
+            return (true, mInfo);
         }
 
         // update stored magnitudes
@@ -360,7 +360,7 @@ contract AllocationManager is
             // forgefmt: disable-next-item
             if(mInfoStored.pendingMagnitudeDelta != mInfo.pendingMagnitudeDelta) {
                 emit OperatorSetMagnitudeUpdated(
-                    operator, operatorSet, strategy, _addInt128(mInfoStored.currentMagnitude, mInfo.pendingMagnitudeDelta), mInfo.effectTimestamp
+                    operator, operatorSet, strategy, _addInt128(mInfo.currentMagnitude, mInfo.pendingMagnitudeDelta), mInfo.effectTimestamp
                 );
             }
         }
@@ -409,10 +409,9 @@ contract AllocationManager is
         for (uint256 i = 0; i < strategies.length; ++i) {
             slashableMagnitudes[i] = new uint64[](operatorSets.length);
             for (uint256 j = 0; j < operatorSets.length; ++j) {
-                bytes32 operatorSetKey = _encodeOperatorSet(operatorSets[j]);
-                MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategies[i]][operatorSetKey];
+                MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategies[i]][_encodeOperatorSet(operatorSets[j])];
                 slashableMagnitudes[i][j] = mInfo.currentMagnitude;
-                if (block.timestamp >= mInfo.effectTimestamp && mInfo.effectTimestamp != 0) {
+                if (_isModificationCompletable(mInfo)) {
                     slashableMagnitudes[i][j] = _addInt128(slashableMagnitudes[i][j], mInfo.pendingMagnitudeDelta);
                 }
             }
@@ -430,10 +429,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < modificationQueue[operator][strategy].length(); ++i) {
             bytes32 opsetKey = modificationQueue[operator][strategy].at(i);
             MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][opsetKey];
-            if (
-                block.timestamp >= mInfo.effectTimestamp && mInfo.effectTimestamp != 0
-                    && mInfo.pendingMagnitudeDelta < 0
-            ) {
+            if (_isModificationCompletable(mInfo) && mInfo.pendingMagnitudeDelta < 0) {
                 freeableMagnitude += uint64(uint128(-mInfo.pendingMagnitudeDelta));
             } else {
                 break;
@@ -455,12 +451,7 @@ contract AllocationManager is
     ) external view returns (uint64[] memory) {
         uint64[] memory totalMagnitudes = new uint64[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            (bool exists,, uint224 value) = _totalMagnitudeUpdate[operator][strategies[i]].latestSnapshot();
-            if (!exists) {
-                totalMagnitudes[i] = WAD;
-            } else {
-                totalMagnitudes[i] = uint64(value);
-            }
+            totalMagnitudes[i] = uint64(_totalMagnitudeUpdate[operator][strategies[i]].latest());
         }
         return totalMagnitudes;
     }
@@ -501,14 +492,22 @@ contract AllocationManager is
         pendingMagnitudeDeltas = new int128[](operatorSets.length);
 
         for (uint256 i = 0; i < operatorSets.length; ++i) {
-            MagnitudeInfo memory opsetMagnitudeInfo =
+            MagnitudeInfo memory mInfo =
                 _operatorMagnitudeInfo[operator][strategy][_encodeOperatorSet(operatorSets[i])];
 
-            if (opsetMagnitudeInfo.effectTimestamp < block.timestamp && opsetMagnitudeInfo.effectTimestamp != 0) {
-                pendingMagnitudeDeltas[i] = opsetMagnitudeInfo.pendingMagnitudeDelta;
-                timestamps[i] = opsetMagnitudeInfo.effectTimestamp;
+            if (_isModificationPending(mInfo)) {
+                pendingMagnitudeDeltas[i] = mInfo.pendingMagnitudeDelta;
+                timestamps[i] = mInfo.effectTimestamp;
             }
         }
+    }
+
+    function _isModificationPending(MagnitudeInfo memory mInfo) internal view returns (bool) {
+        return mInfo.effectTimestamp != 0 && mInfo.effectTimestamp > block.timestamp;
+    }
+
+    function _isModificationCompletable(MagnitudeInfo memory mInfo) internal view returns (bool) {
+        return mInfo.effectTimestamp != 0 && mInfo.effectTimestamp <= block.timestamp;
     }
 
     function _calcDelta(uint64 currentMagnitude, uint64 newMagnitude) internal pure returns (int128) {

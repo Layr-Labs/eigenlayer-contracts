@@ -6,8 +6,8 @@ import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 
 interface IAllocationManagerErrors {
-    /// @dev Thrown when `wadToSlash` is zero.
-    error InvalidWadToSlash();
+    /// @dev Thrown when `wadToSlash` is zero or greater than 1e18.
+    error InvalidWadToSlash(uint256 wadToSlash);
     /// @dev Thrown when `operator` is not a registered operator.
     error OperatorNotRegistered();
     /// @dev Thrown when two array parameters have mismatching lengths.
