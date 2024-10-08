@@ -171,6 +171,64 @@ abstract contract MultisigBuilder is ConfigParser {
     function _testExecute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual;
 }
 
+abstract contract QueueBuilder is ConfigParser {
+
+        using MultisigCallHelper for MultisigCall[];
+        using TransactionHelper for Transaction;
+
+        MultisigCall[] _executorCalls;
+
+        /// @return a Transaction object for a Gnosis Safe to ingest
+        function queue(string memory envPath) public returns (Transaction memory) {
+            (
+                Addresses memory addrs,
+                Environment memory env,
+                Params memory params
+            ) = _readConfigFile(envPath);
+
+            MultisigCall[] memory calls = _queue(addrs, env, params);
+
+            // encode calls for executor
+            bytes memory executorCalldata = makeExecutorCalldata(calls, params.multiSendCallOnly, addrs.timelock);
+
+            // encode executor data for timelock
+            bytes memory timelockCalldata = abi.encodeWithSelector(
+                ITimelock.queueTransaction.selector,
+                addrs.executorMultisig,
+                0,
+                "",
+                executorCalldata,
+                type(uint256).max
+            );
+
+            // encode timelock data for ops multisig
+            return Transaction({
+                to: addrs.timelock,
+                value: 0,
+                data: timelockCalldata,
+                op: EncGnosisSafe.Operation.DelegateCall
+            });
+        }
+
+        /// @notice to be implemented by inheriting contract
+        function _queue(Addresses memory addrs, Environment memory env, Params memory params) public virtual returns (MultisigCall[] memory);
+
+        /// @notice helper function to create calldata for executor
+        /// can be used for queue or execute
+        function makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly, address timelock) public pure returns (bytes memory) {
+            bytes memory data = calls.encodeMultisendTxs();
+
+            bytes memory executorCalldata = Transaction({
+                to: multiSendCallOnly,
+                value: 0,
+                data: data,
+                op: EncGnosisSafe.Operation.DelegateCall
+            }).encodeForExecutor(timelock);
+
+            return executorCalldata;
+        }
+}
+
 /// @notice template for an OpsMultisig script that goes through the timelock
 /// @dev writing a script is done from the perspective of the OpsMultisig
 abstract contract OpsTimelockBuilder is MultisigBuilder {
