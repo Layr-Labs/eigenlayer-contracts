@@ -41,9 +41,9 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     // Mutatables
 
-    /// @notice Mapping: operator => strategy => snapshotted totalMagnitude
-    /// Note that totalMagnitude is monotonically decreasing and only gets updated upon slashing
-    mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _totalMagnitudeUpdate;
+    /// @notice Mapping: operator => strategy => snapshotted maxMagnitude
+    /// Note that maxMagnitude is monotonically decreasing and is decreased on slashing
+    mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
 
     /// @notice Mapping: operator => strategy => the amount of magnitude that is not available for allocation
     mapping(address => mapping(IStrategy => uint64)) public encumberedMagnitude;

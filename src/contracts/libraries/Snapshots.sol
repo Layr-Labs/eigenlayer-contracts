@@ -28,7 +28,7 @@ library Snapshots {
 
     struct Snapshot {
         uint32 _key;
-        uint224 _value;
+        uint64 _value;
     }
 
     /**
@@ -36,14 +36,14 @@ library Snapshots {
      *
      * Returns previous value and new value.
      */
-    function push(DefaultWadHistory storage self, uint32 key, uint224 value) internal returns (uint224, uint224) {
+    function push(DefaultWadHistory storage self, uint32 key, uint64 value) internal returns (uint64, uint64) {
         return _insert(self._snapshots, key, value);
     }
 
     /**
      * @dev Returns the value in the first (oldest) snapshot with key greater or equal than the search key, or zero if there is none.
      */
-    function lowerLookup(DefaultWadHistory storage self, uint32 key) internal view returns (uint224) {
+    function lowerLookup(DefaultWadHistory storage self, uint32 key) internal view returns (uint64) {
         uint256 len = self._snapshots.length;
         uint256 pos = _lowerBinaryLookup(self._snapshots, key, 0, len);
         return pos == len ? 0 : _unsafeAccess(self._snapshots, pos)._value;
@@ -52,7 +52,7 @@ library Snapshots {
     /**
      * @dev Returns the value in the last (most recent) snapshot with key lower or equal than the search key, or zero if there is none.
      */
-    function upperLookup(DefaultWadHistory storage self, uint32 key) internal view returns (uint224) {
+    function upperLookup(DefaultWadHistory storage self, uint32 key) internal view returns (uint64) {
         uint256 len = self._snapshots.length;
         uint256 pos = _upperBinaryLookup(self._snapshots, key, 0, len);
         return pos == 0 ? WAD : _unsafeAccess(self._snapshots, pos - 1)._value;
@@ -63,7 +63,7 @@ library Snapshots {
      *
      * NOTE: This is a variant of {upperLookup} that is optimised to find "recent" snapshot (snapshots with high keys).
      */
-    function upperLookupRecent(DefaultWadHistory storage self, uint32 key) internal view returns (uint224) {
+    function upperLookupRecent(DefaultWadHistory storage self, uint32 key) internal view returns (uint64) {
         uint256 len = self._snapshots.length;
 
         uint256 low = 0;
@@ -88,7 +88,7 @@ library Snapshots {
      */
     function latest(
         DefaultWadHistory storage self
-    ) internal view returns (uint224) {
+    ) internal view returns (uint64) {
         uint256 pos = self._snapshots.length;
         return pos == 0 ? WAD : _unsafeAccess(self._snapshots, pos - 1)._value;
     }
@@ -99,7 +99,7 @@ library Snapshots {
      */
     function latestSnapshot(
         DefaultWadHistory storage self
-    ) internal view returns (bool exists, uint32 _key, uint224 _value) {
+    ) internal view returns (bool exists, uint32 _key, uint64 _value) {
         uint256 pos = self._snapshots.length;
         if (pos == 0) {
             return (false, 0, WAD);
@@ -122,7 +122,7 @@ library Snapshots {
      * @dev Pushes a (`key`, `value`) pair into an ordered list of snapshots, either by inserting a new snapshot,
      * or by updating the last one.
      */
-    function _insert(Snapshot[] storage self, uint32 key, uint224 value) private returns (uint224, uint224) {
+    function _insert(Snapshot[] storage self, uint32 key, uint64 value) private returns (uint64, uint64) {
         uint256 pos = self.length;
 
         if (pos > 0) {
@@ -211,7 +211,7 @@ library Snapshots {
      * @dev Returns the value in the last (most recent) snapshot with key lower or equal than the search key, or zero if there is none.
      * This function is a linear search for keys that are close to the end of the array.
      */
-    function upperLookupLinear(DefaultWadHistory storage self, uint32 key) internal view returns (uint224) {
+    function upperLookupLinear(DefaultWadHistory storage self, uint32 key) internal view returns (uint64) {
         uint256 len = self._snapshots.length;
         for (uint256 i = len; i > 0; --i) {
             Snapshot storage current = _unsafeAccess(self._snapshots, i - 1);

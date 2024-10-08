@@ -6,8 +6,8 @@ import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 
 interface IAllocationManagerErrors {
-    /// @dev Thrown when `wadToSlash` is zero.
-    error InvalidWadToSlash(uint256 wadToSlash);
+    /// @dev Thrown when `wadToSlash` is zero or greater than 1e18
+    error InvalidWadToSlash();
     /// @dev Thrown when `operator` is not a registered operator.
     error OperatorNotRegistered();
     /// @dev Thrown when two array parameters have mismatching lengths.
@@ -42,13 +42,13 @@ interface IAllocationManagerTypes {
     /**
      * @notice struct used to modify the allocation of slashable magnitude to list of operatorSets
      * @param strategy the strategy to allocate magnitude for
-     * @param expectedTotalMagnitude the expected total magnitude of the operator used to combat against race conditions with slashing
+     * @param expectedMaxMagnitude the expected max magnitude of the operator (used to combat against race conditions with slashing)
      * @param operatorSets the operatorSets to allocate magnitude for
      * @param magnitudes the magnitudes to allocate for each operatorSet
      */
     struct MagnitudeAllocation {
         IStrategy strategy;
-        uint64 expectedTotalMagnitude;
+        uint64 expectedMaxMagnitude;
         OperatorSet[] operatorSets;
         uint64[] magnitudes;
     }
@@ -56,12 +56,12 @@ interface IAllocationManagerTypes {
     /**
      * @notice struct used for operator magnitude updates. Stored in _operatorMagnitudeInfo mapping
      * @param currentMagnitude the current magnitude of the operator
-     * @param pendingMagnitudeIdff the pending magnitude difference of the operator
+     * @param pendingDiff the pending magnitude difference of the operator
      * @param effectTimestamp the timestamp at which the pending magnitude will take effect
      */
     struct MagnitudeInfo {
-        int128 pendingMagnitudeDelta;
         uint64 currentMagnitude;
+        int128 pendingDiff;
         uint32 effectTimestamp;
     }
 
@@ -76,6 +76,23 @@ interface IAllocationManagerTypes {
         uint32 pendingDelay;
         uint32 pendingDelayEffectTimestamp;
     }
+
+    /**
+     * @notice Struct containing parameters to slashing
+     * @param operator the address to slash
+     * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
+     * @param strategies the set of strategies to slash
+     * @param wadToSlash the parts in 1e18 to slash, this will be proportional to the operator's 
+     * slashable stake allocation for the operatorSet
+     * @param description the description of the slashing provided by the AVS for legibility
+     */
+    struct SlashingParams {
+        address operator;
+        uint32 operatorSetId;
+        IStrategy[] strategies;
+        uint256 wadToSlash;
+        string description;
+    }
 }
 
 interface IAllocationManagerEvents is IAllocationManagerTypes {
@@ -85,7 +102,7 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
     event OperatorSetMagnitudeUpdated(
         address operator, 
-        OperatorSet operatorSet, 
+        OperatorSet operatorSet,
         IStrategy strategy, 
         uint64 magnitude,
         uint32 effectTimestamp
@@ -151,24 +168,9 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
-     * @notice Called by an AVS to slash an operator for given operatorSetId, list of strategies, and bipsToSlash.
-     * For each given (operator, operatorSetId, strategy) tuple, bipsToSlash
-     * bips of the operatorSet's slashable stake allocation will be slashed
-     *
-     * @param operator the address to slash
-     * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
-     * @param strategies the set of strategies to slash
-     * @param wadToSlash the parts in 1e18 to slash, this will be proportional to the
-     * @param description the description of the slashing provided by the AVS for legibility
-     * operator's slashable stake allocation for the operatorSet
+     * @notice Called by an AVS to slash an operator in a given operator set
      */
-    function slashOperator(
-        address operator,
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies,
-        uint256 wadToSlash,
-        string calldata description
-    ) external;
+    function slashOperator(SlashingParams calldata params) external;
 
     /**
      *
