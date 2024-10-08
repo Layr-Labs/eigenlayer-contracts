@@ -486,7 +486,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategyArray,
-            ownedShares: shareAmounts,
+            shares: shareAmounts,
             withdrawer: withdrawer
         });
 

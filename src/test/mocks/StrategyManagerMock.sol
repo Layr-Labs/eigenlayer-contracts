@@ -18,7 +18,6 @@ contract StrategyManagerMock is Test {
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
-    mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
 
     function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager) external
     {
@@ -62,12 +61,10 @@ contract StrategyManagerMock is Test {
     }
 
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external {
         for (uint256 i = 0; i < strategiesToWhitelist.length; ++i) {
             strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
-            thirdPartyTransfersForbidden[strategiesToWhitelist[i]] = thirdPartyTransfersForbiddenValues[i];
         }
     }
 

@@ -58,7 +58,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
-        cheats.expectRevert(IStrategy.OnlyUnderlyingToken.selector);
+        cheats.expectRevert(IStrategyErrors.OnlyUnderlyingToken.selector);
         strategyManager.depositIntoStrategy(wethStrat, token, 10);
     }
 
@@ -107,7 +107,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
-        cheats.expectRevert(IStrategy.NewSharesZero.selector);
+        cheats.expectRevert(IStrategyErrors.NewSharesZero.selector);
         strategyManager.depositIntoStrategy(wethStrat, weth, 0);
     }
 
@@ -150,7 +150,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         
         params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategyArray,
-            ownedShares: shareAmounts,
+            shares: shareAmounts,
             withdrawer: withdrawer
         });
 

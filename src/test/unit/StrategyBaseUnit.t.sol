@@ -51,7 +51,7 @@ contract StrategyBaseUnitTests is Test {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
         
-        strategyManager = new StrategyManagerMock();
+        strategyManager = IStrategyManager(address(new StrategyManagerMock()));
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);
 
@@ -77,7 +77,7 @@ contract StrategyBaseUnitTests is Test {
         uint256 amountToDeposit = 0;
 
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(IStrategy.NewSharesZero.selector);
+        cheats.expectRevert(IStrategyErrors.NewSharesZero.selector);
         strategy.deposit(underlyingToken, amountToDeposit);
         cheats.stopPrank();
     }
@@ -147,7 +147,7 @@ contract StrategyBaseUnitTests is Test {
         uint256 amountToDeposit = 1e18;
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
-        cheats.expectRevert(IStrategy.UnauthorizedCaller.selector);
+        cheats.expectRevert(IStrategyErrors.OnlyStrategyManager.selector);
         cheats.startPrank(caller);
         strategy.deposit(underlyingToken, amountToDeposit);
         cheats.stopPrank();
@@ -158,7 +158,7 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 amountToDeposit = 1e18;
 
-        cheats.expectRevert(IStrategy.OnlyUnderlyingToken.selector);
+        cheats.expectRevert(IStrategyErrors.OnlyUnderlyingToken.selector);
         cheats.startPrank(address(strategyManager));
         strategy.deposit(IERC20(notUnderlyingToken), amountToDeposit);
         cheats.stopPrank();
@@ -187,7 +187,7 @@ contract StrategyBaseUnitTests is Test {
 
         // Deposit
         cheats.prank(address(strategyManager));
-        cheats.expectRevert(IStrategy.TotalSharesExceedsMax.selector);
+        cheats.expectRevert(IStrategyErrors.TotalSharesExceedsMax.selector);
         strategy.deposit(underlyingToken, amountToDeposit);
     }
 
@@ -276,7 +276,7 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 amountToWithdraw = 1e18;
 
-        cheats.expectRevert(IStrategy.UnauthorizedCaller.selector);
+        cheats.expectRevert(IStrategyErrors.OnlyStrategyManager.selector);
         cheats.startPrank(caller);
         strategy.withdraw(address(this), underlyingToken, amountToWithdraw);
         cheats.stopPrank();
@@ -287,7 +287,7 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 amountToWithdraw = 1e18;
 
-        cheats.expectRevert(IStrategy.OnlyUnderlyingToken.selector);
+        cheats.expectRevert(IStrategyErrors.OnlyUnderlyingToken.selector);
         cheats.startPrank(address(strategyManager));
         strategy.withdraw(address(this), IERC20(notUnderlyingToken), amountToWithdraw);
         cheats.stopPrank();
@@ -302,7 +302,7 @@ contract StrategyBaseUnitTests is Test {
         // since we are checking strictly greater than in this test
         cheats.assume(sharesToWithdraw > totalSharesBefore);
 
-        cheats.expectRevert(IStrategy.WithdrawalAmountExceedsTotalDeposits.selector);
+        cheats.expectRevert(IStrategyErrors.WithdrawalAmountExceedsTotalDeposits.selector);
         cheats.startPrank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
         cheats.stopPrank();
@@ -344,7 +344,7 @@ contract StrategyBaseUnitTests is Test {
 
     function testDeposit_ZeroAmount() public {
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(IStrategy.NewSharesZero.selector);
+        cheats.expectRevert(IStrategyErrors.NewSharesZero.selector);
         strategy.deposit(underlyingToken, 0);
         cheats.stopPrank();
     }
