@@ -131,11 +131,11 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         uint256[] memory /*strategyIndexes*/,
         address withdrawer
     )
-        internal returns(bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal)
+        internal returns(bytes32 withdrawalRoot, IDelegationManagerTypes.Withdrawal memory queuedWithdrawal)
     {
         require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
 
-        queuedWithdrawal = IDelegationManager.Withdrawal({
+        queuedWithdrawal = IDelegationManagerTypes.Withdrawal({
             strategies: strategyArray,
             staker: staker,
             withdrawer: withdrawer,
@@ -146,9 +146,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         });
 
 
-        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        IDelegationManagerTypes.QueuedWithdrawalParams[] memory params = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
         
-        params[0] = IDelegationManager.QueuedWithdrawalParams({
+        params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategyArray,
             ownedShares: shareAmounts,
             withdrawer: withdrawer

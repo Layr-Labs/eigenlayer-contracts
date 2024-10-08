@@ -79,7 +79,7 @@ contract User is PrintUtils {
     function registerAsOperator() public createSnapshot virtual {
         _logM("registerAsOperator");
 
-        IDelegationManager.OperatorDetails memory details = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory details = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: address(this),
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
@@ -97,10 +97,10 @@ contract User is PrintUtils {
     }
 
     /// @dev Undelegate from operator
-    function undelegate() public createSnapshot virtual returns(IDelegationManager.Withdrawal[] memory){
+    function undelegate() public createSnapshot virtual returns(IDelegationManagerTypes.Withdrawal[] memory){
         _logM("undelegate");
 
-        IDelegationManager.Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
+        IDelegationManagerTypes.Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
         delegationManager.undelegate(address(this));
 
         for (uint i = 0; i < expectedWithdrawals.length; i++) {
@@ -114,10 +114,10 @@ contract User is PrintUtils {
     }
 
     /// @dev Force undelegate staker
-    function forceUndelegate(User staker) public createSnapshot virtual returns(IDelegationManager.Withdrawal[] memory){
+    function forceUndelegate(User staker) public createSnapshot virtual returns(IDelegationManagerTypes.Withdrawal[] memory){
         _logM("forceUndelegate", staker.NAME());
 
-        IDelegationManager.Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(staker));
+        IDelegationManagerTypes.Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(staker));
         delegationManager.undelegate(address(staker));
         return expectedWithdrawals;
     }
@@ -126,7 +126,7 @@ contract User is PrintUtils {
     function queueWithdrawals(
         IStrategy[] memory strategies, 
         uint[] memory shares
-    ) public createSnapshot virtual returns (IDelegationManager.Withdrawal[] memory) {
+    ) public createSnapshot virtual returns (IDelegationManagerTypes.Withdrawal[] memory) {
         _logM("queueWithdrawals");
 
         address operator = delegationManager.delegatedTo(address(this));
@@ -134,16 +134,16 @@ contract User is PrintUtils {
         uint nonce = delegationManager.cumulativeWithdrawalsQueued(address(this));
 
         // Create queueWithdrawals params
-        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
-        params[0] = IDelegationManager.QueuedWithdrawalParams({
+        IDelegationManagerTypes.QueuedWithdrawalParams[] memory params = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
+        params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
             ownedShares: shares,
             withdrawer: withdrawer
         });
 
         // Create Withdrawal struct using same info
-        IDelegationManager.Withdrawal[] memory withdrawals = new IDelegationManager.Withdrawal[](1);
-        withdrawals[0] = IDelegationManager.Withdrawal({
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = new IDelegationManagerTypes.Withdrawal[](1);
+        withdrawals[0] = IDelegationManagerTypes.Withdrawal({
             staker: address(this),
             delegatedTo: operator,
             withdrawer: withdrawer,
@@ -161,7 +161,7 @@ contract User is PrintUtils {
         return (withdrawals);
     }
 
-    function completeWithdrawalsAsTokens(IDelegationManager.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
+    function completeWithdrawalsAsTokens(IDelegationManagerTypes.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
         _logM("completeWithdrawalsAsTokens");
 
         IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
@@ -173,13 +173,13 @@ contract User is PrintUtils {
         return tokens;
     }
     
-    function completeWithdrawalAsTokens(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
+    function completeWithdrawalAsTokens(IDelegationManagerTypes.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
         _logM("completeWithdrawalsAsTokens");
 
         return _completeQueuedWithdrawal(withdrawal, true);
     }
 
-    function completeWithdrawalsAsShares(IDelegationManager.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
+    function completeWithdrawalsAsShares(IDelegationManagerTypes.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
         _logM("completeWithdrawalAsShares");
         
         IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
@@ -191,7 +191,7 @@ contract User is PrintUtils {
         return tokens;
     }
 
-    function completeWithdrawalAsShares(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
+    function completeWithdrawalAsShares(IDelegationManagerTypes.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
         _logM("completeWithdrawalAsShares");
 
         return _completeQueuedWithdrawal(withdrawal, false);
@@ -309,7 +309,7 @@ contract User is PrintUtils {
     *******************************************************************************/
 
     function _completeQueuedWithdrawal(
-        IDelegationManager.Withdrawal memory withdrawal, 
+        IDelegationManagerTypes.Withdrawal memory withdrawal, 
         bool receiveAsTokens
     ) internal virtual returns (IERC20[] memory) {
         IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
@@ -466,11 +466,11 @@ contract User is PrintUtils {
 
     /// @notice Gets the expected withdrawals to be created when the staker is undelegated via a call to `DelegationManager.undelegate()`
     /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
-    function _getExpectedWithdrawalStructsForStaker(address staker) internal view returns (IDelegationManager.Withdrawal[] memory) {
+    function _getExpectedWithdrawalStructsForStaker(address staker) internal view returns (IDelegationManagerTypes.Withdrawal[] memory) {
         (IStrategy[] memory strategies, uint256[] memory shares)
             = delegationManager.getDepositedShares(staker);
 
-        IDelegationManager.Withdrawal[] memory expectedWithdrawals = new IDelegationManager.Withdrawal[](strategies.length);
+        IDelegationManagerTypes.Withdrawal[] memory expectedWithdrawals = new IDelegationManagerTypes.Withdrawal[](strategies.length);
         address delegatedTo = delegationManager.delegatedTo(staker);
         uint256 nonce = delegationManager.cumulativeWithdrawalsQueued(staker);
         
@@ -479,7 +479,7 @@ contract User is PrintUtils {
             uint256[] memory singleShares = new uint256[](1);
             singleStrategy[0] = strategies[i];
             singleShares[0] = shares[i];
-            expectedWithdrawals[i] = IDelegationManager.Withdrawal({
+            expectedWithdrawals[i] = IDelegationManagerTypes.Withdrawal({
                 staker: staker,
                 delegatedTo: delegatedTo,
                 withdrawer: staker,

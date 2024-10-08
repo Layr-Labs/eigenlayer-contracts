@@ -17,7 +17,7 @@ contract PausableUnitTests is Test {
     address public unpauser = address(999);
     uint256 public initPausedStatus = 0;
 
-    mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
+    mapping(address => bool) public isExcludedFuzzAddress;
 
     /// @notice Emitted when the pause is triggered by `account`, and changed to `newPausedStatus`.
     event Paused(address indexed account, uint256 newPausedStatus);

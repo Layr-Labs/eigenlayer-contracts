@@ -32,7 +32,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should not be delegated after deposit");
 
         // 2. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         // 3. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(strategies);
@@ -68,7 +68,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should not be delegated after deposit");
 
         // 2. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         // 3. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(strategies);

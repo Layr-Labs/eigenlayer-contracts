@@ -284,7 +284,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function assert_ValidWithdrawalHashes(
-        IDelegationManager.Withdrawal[] memory withdrawals,
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         string memory err
     ) internal {
@@ -294,7 +294,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function assert_ValidWithdrawalHash(
-        IDelegationManager.Withdrawal memory withdrawal,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
         bytes32 withdrawalRoot,
         string memory err
     ) internal {
@@ -626,7 +626,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawals(
         User staker, 
-        IDelegationManager.Withdrawal[] memory withdrawals,
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         string memory err
     ) internal {
         uint curQueuedWithdrawals = _getCumulativeWithdrawals(staker);
@@ -638,7 +638,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawal(
         User staker, 
-        IDelegationManager.Withdrawal memory /*withdrawal*/,
+        IDelegationManagerTypes.Withdrawal memory /*withdrawal*/,
         string memory err
     ) internal {
         uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
@@ -959,7 +959,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getWithdrawalHashes(
-        IDelegationManager.Withdrawal[] memory withdrawals
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals
     ) internal view returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](withdrawals.length);
 

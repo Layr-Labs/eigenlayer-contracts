@@ -37,7 +37,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
-        strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, slasherMock);
+        strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock);
         strategyManager = StrategyManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -78,7 +78,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         }
         strategyManager.addStrategiesToDepositWhitelist(_strategies, _thirdPartyTransfersForbiddenValues);
 
-        addressIsExcludedFromFuzzedInputs[address(reenterer)] = true;
+        isExcludedFuzzAddress[address(reenterer)] = true;
     }
 
     // INTERNAL / HELPER FUNCTIONS

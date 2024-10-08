@@ -174,8 +174,8 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         rewardsCoordinator.setRewardsUpdater(rewardsUpdater);
 
         // Exclude from fuzzed tests
-        addressIsExcludedFromFuzzedInputs[address(rewardsCoordinator)] = true;
-        addressIsExcludedFromFuzzedInputs[address(rewardsUpdater)] = true;
+        isExcludedFuzzAddress[address(rewardsCoordinator)] = true;
+        isExcludedFuzzAddress[address(rewardsUpdater)] = true;
 
         // Set the timestamp to some time after the genesis rewards timestamp
         cheats.warp(GENESIS_REWARDS_TIMESTAMP + 5 days);

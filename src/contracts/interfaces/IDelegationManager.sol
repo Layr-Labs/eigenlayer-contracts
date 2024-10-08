@@ -5,17 +5,7 @@ import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 import "../libraries/SlashingLib.sol";
 
-/**
- * @title DelegationManager
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice  This is the contract for delegation in EigenLayer. The main functionalities of this contract are
- * - enabling anyone to register as an operator in EigenLayer
- * - allowing operators to specify parameters related to stakers who delegate to them
- * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
- * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
- */
-interface IDelegationManager is ISignatureUtils {
+interface IDelegationManagerErrors {
     /// @dev Thrown when msg.sender is not allowed to call a function
     error UnauthorizedCaller();
     /// @dev Thrown when msg.sender is not the EigenPodManager
@@ -83,7 +73,9 @@ interface IDelegationManager is ISignatureUtils {
     error WithdrawerNotCaller();
     /// @dev Thrown when `withdrawer` is not staker.
     error WithdrawerNotStaker();
+}
 
+interface IDelegationManagerTypes {
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
         /// @notice DEPRECATED -- this field is no longer used, payments are handled in PaymentCoordinator.sol
@@ -173,7 +165,9 @@ interface IDelegationManager is ISignatureUtils {
         // The address of the withdrawer
         address withdrawer;
     }
+}
 
+interface IDelegationManagerEvents is IDelegationManagerTypes {
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 
@@ -221,6 +215,19 @@ interface IDelegationManager is ISignatureUtils {
     /// @notice Emitted when a queued withdrawal is completed
     event WithdrawalCompleted(bytes32 withdrawalRoot);
 
+}
+
+/**
+ * @title DelegationManager
+ * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ * @notice  This is the contract for delegation in EigenLayer. The main functionalities of this contract are
+ * - enabling anyone to register as an operator in EigenLayer
+ * - allowing operators to specify parameters related to stakers who delegate to them
+ * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
+ * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
+ */
+interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDelegationManagerEvents {
     /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.

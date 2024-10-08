@@ -51,7 +51,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator1, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares);
 
@@ -123,7 +123,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator1, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares);
 
@@ -218,7 +218,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             check_Delegation_State(staker, operator1, strategies, halfShares);
 
             // 3. Undelegate from an operator
-            IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+            IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
             bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
             check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, halfShares);
 
@@ -245,7 +245,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         {
             // 7. Queue Withdrawal
             shares = _calculateExpectedShares(strategies, tokenBalances);
-            IDelegationManager.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, shares);
+            IDelegationManagerTypes.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, shares);
             bytes32[] memory newWithdrawalRoots = _getWithdrawalHashes(newWithdrawals);
             check_QueuedWithdrawal_State(staker, operator2, strategies, shares, newWithdrawals, newWithdrawalRoots);
 
@@ -310,7 +310,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             check_Delegation_State(staker, operator1, strategies, halfShares);
 
             // 3. Undelegate from an operator
-            IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+            IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
             bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
             check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, halfShares);
 
@@ -337,7 +337,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         {
             // 7. Queue Withdrawal
             shares = _calculateExpectedShares(strategies, tokenBalances);
-            IDelegationManager.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, shares);
+            IDelegationManagerTypes.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, shares);
             bytes32[] memory newWithdrawalRoots = _getWithdrawalHashes(newWithdrawals);
             check_QueuedWithdrawal_State(staker, operator2, strategies, shares, newWithdrawals, newWithdrawalRoots);
 
@@ -388,7 +388,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator1, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares);
 
@@ -462,7 +462,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator1, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares);
 

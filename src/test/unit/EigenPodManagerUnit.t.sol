@@ -42,9 +42,8 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSMock,
             eigenPodBeacon,
-            strategyManagerMock,
-            slasherMock,
-            delegationManagerMock
+            IStrategyManager(address(strategyManagerMock)),
+            IDelegationManager(address(delegationManagerMock))
         );
         eigenPodManager = EigenPodManager(
             address(
@@ -65,8 +64,8 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
         defaultPod = eigenPodManager.getPod(defaultStaker);
 
         // Exclude the zero address, and the eigenPodManager itself from fuzzed inputs
-        addressIsExcludedFromFuzzedInputs[address(0)] = true;
-        addressIsExcludedFromFuzzedInputs[address(eigenPodManager)] = true;
+        isExcludedFuzzAddress[address(0)] = true;
+        isExcludedFuzzAddress[address(eigenPodManager)] = true;
     }
 
     /*******************************************************************************
@@ -449,7 +448,6 @@ contract EigenPodManagerUnitTests_ShareAdjustmentCalculationTests is EigenPodMan
             ethPOSMock,
             eigenPodBeacon,
             strategyManagerMock,
-            slasherMock,
             delegationManagerMock
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));

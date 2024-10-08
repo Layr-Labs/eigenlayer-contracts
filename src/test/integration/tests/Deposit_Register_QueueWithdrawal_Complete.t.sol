@@ -28,7 +28,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawals, withdrawalRoots);
 
@@ -63,7 +63,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawals, withdrawalRoots);
 

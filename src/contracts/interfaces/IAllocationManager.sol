@@ -5,7 +5,7 @@ import {OperatorSet} from "./IAVSDirectory.sol";
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 
-interface IAllocationManager is ISignatureUtils {
+interface IAllocationManagerErrors {
     /// @dev Thrown when `wadToSlash` is zero.
     error InvalidWadToSlash();
     /// @dev Thrown when `operator` is not a registered operator.
@@ -36,7 +36,9 @@ interface IAllocationManager is ISignatureUtils {
     error SaltSpent();
     /// @dev Thrown when attempting to slash an operator that has already been slashed at the given timestamp.
     error AlreadySlashedForTimestamp();
+}
 
+interface IAllocationManagerTypes {
     /**
      * @notice struct used to modify the allocation of slashable magnitude to list of operatorSets
      * @param strategy the strategy to allocate magnitude for
@@ -74,7 +76,9 @@ interface IAllocationManager is ISignatureUtils {
         uint32 pendingDelay;
         uint32 pendingDelayEffectTimestamp;
     }
+}
 
+interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when operator updates their allocation delay.
     event AllocationDelaySet(address operator, uint32 delay, uint32 effectTimestamp);
 
@@ -99,16 +103,10 @@ interface IAllocationManager is ISignatureUtils {
 
 
     /// @notice Emitted when an operator is slashed by an operator set for a strategy
-    event OperatorSlashed(
-        address operator, OperatorSet operatorSet, string description
-    );
+    event OperatorSlashed(address operator, uint32 operatorSetId, IStrategy strategy, uint16 bipsToSlash);
+}
 
-    /**
-     *
-     *                         EXTERNAL FUNCTIONS
-     *
-     */
-
+interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllocationManagerEvents {
     /**
      * @notice Called by the delagation manager to set delay when operators register.
      * @param operator The operator to set the delay on behalf of.

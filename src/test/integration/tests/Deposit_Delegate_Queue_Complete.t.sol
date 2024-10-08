@@ -51,7 +51,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Queue Withdrawals
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
@@ -113,7 +113,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Queue Withdrawals
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
@@ -184,7 +184,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory withdrawShares
         ) = _randWithdrawal(strategies, shares);
 
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, withdrawStrats, withdrawShares, withdrawals, withdrawalRoots);
 
@@ -249,7 +249,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory withdrawShares
         ) = _randWithdrawal(strategies, shares);
 
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, withdrawStrats, withdrawShares, withdrawals, withdrawalRoots);
 

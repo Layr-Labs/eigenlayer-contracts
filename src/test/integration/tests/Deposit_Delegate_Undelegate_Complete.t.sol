@@ -48,7 +48,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
@@ -111,7 +111,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
@@ -167,7 +167,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Force undelegate
-        IDelegationManager.Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
@@ -224,7 +224,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Force undelegate
-        IDelegationManager.Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 

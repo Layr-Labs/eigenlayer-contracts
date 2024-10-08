@@ -30,7 +30,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         address operator = getOperatorAddress(operatorIndex);
 
         //setting up operator's delegation terms
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
@@ -72,7 +72,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     function _testRegisterAsOperator(
         address sender,
         uint32 allocationDelay,
-        IDelegationManager.OperatorDetails memory operatorDetails
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails
     ) internal {
         cheats.startPrank(sender);
         string memory emptyStringForMetadataURI;
@@ -266,13 +266,13 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256[] memory shareAmounts,
         uint256[] memory strategyIndexes,
         address withdrawer
-    ) internal returns (bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal) {
+    ) internal returns (bytes32 withdrawalRoot, IDelegationManagerTypes.Withdrawal memory queuedWithdrawal) {
         require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
 
         // we do this here to ensure that `staker` is delegated if `registerAsOperator` is true
         if (registerAsOperator) {
             assertTrue(!delegation.isDelegated(staker), "_createQueuedWithdrawal: staker is already delegated");
-            IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
                 __deprecated_earningsReceiver: staker,
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
@@ -284,7 +284,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             );
         }
 
-        queuedWithdrawal = IDelegationManager.Withdrawal({
+        queuedWithdrawal = IDelegationManagerTypes.Withdrawal({
             strategies: strategyArray,
             scaledSharesToWithdraw: shareAmounts,
             staker: staker,
@@ -339,7 +339,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256 eigenAmount
     ) internal {
         if (!delegation.isOperator(operator)) {
-            IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
                 __deprecated_earningsReceiver: operator,
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
@@ -396,7 +396,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             sharesBefore.push(strategyManager.stakerDepositShares(withdrawer, strategyArray[i]));
         }
 
-        IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
+        IDelegationManagerTypes.Withdrawal memory queuedWithdrawal = IDelegationManagerTypes.Withdrawal({
             strategies: strategyArray,
             scaledSharesToWithdraw: shareAmounts,
             staker: depositor,
@@ -447,7 +447,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             strategyTokenBalance.push(strategyArray[i].underlyingToken().balanceOf(address(strategyArray[i])));
         }
 
-        IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
+        IDelegationManagerTypes.Withdrawal memory queuedWithdrawal = IDelegationManagerTypes.Withdrawal({
             strategies: strategyArray,
             staker: depositor,
             withdrawer: withdrawer,
@@ -482,9 +482,9 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     ) internal returns (bytes32) {
         cheats.startPrank(depositor);
 
-        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        IDelegationManagerTypes.QueuedWithdrawalParams[] memory params = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
 
-        params[0] = IDelegationManager.QueuedWithdrawalParams({
+        params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategyArray,
             ownedShares: shareAmounts,
             withdrawer: withdrawer

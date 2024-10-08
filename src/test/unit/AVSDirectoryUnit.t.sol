@@ -122,7 +122,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         );
 
         // Exclude delegation manager from fuzzed tests
-        addressIsExcludedFromFuzzedInputs[address(avsDirectory)] = true;
+        isExcludedFuzzAddress[address(avsDirectory)] = true;
     }
 
     /**
@@ -151,7 +151,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
     }
 
     function _registerOperatorWithBaseDetails(address operator) internal {
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
@@ -160,7 +160,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
     }
 
     function _registerOperatorWithDelegationApprover(address operator) internal {
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: cheats.addr(delegationSignerPrivateKey),
             stakerOptOutWindowBlocks: 0
@@ -176,7 +176,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
          */
         ERC1271WalletMock wallet = new ERC1271WalletMock(delegationSigner);
 
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
@@ -188,7 +188,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
     function _registerOperator(
         address operator,
-        IDelegationManager.OperatorDetails memory operatorDetails,
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails,
         string memory metadataURI
     ) internal filterFuzzedAddressInputs(operator) {
         _filterOperatorDetails(operator, operatorDetails);
@@ -198,7 +198,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
     function _filterOperatorDetails(
         address operator,
-        IDelegationManager.OperatorDetails memory operatorDetails
+        IDelegationManagerTypes.OperatorDetails memory operatorDetails
     ) internal view {
         // filter out zero address since people can't delegate to the zero address and operators are delegated to themselves
         cheats.assume(operator != address(0));
