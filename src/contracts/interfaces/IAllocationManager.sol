@@ -103,7 +103,7 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
 
 
     /// @notice Emitted when an operator is slashed by an operator set for a strategy
-    event OperatorSlashed(address operator, uint32 operatorSetId, IStrategy strategy, uint16 bipsToSlash);
+    event OperatorSlashed(address operator, OperatorSet operatorSet, string description);
 }
 
 interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllocationManagerEvents {
