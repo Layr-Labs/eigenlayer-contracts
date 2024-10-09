@@ -23,7 +23,7 @@ contract Execute is MultisigBuilder {
             addrs.timelock
         );
 
-        // execute queued transaction upgrading eigenPodManager and eigenPod
+        // execute queued transaction
         _opsCalls.append({
             to: addrs.timelock,
             value: 0,
