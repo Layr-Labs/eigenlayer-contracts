@@ -103,22 +103,22 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         // sanity check / filter
         cheats.assume(amount <= token.balanceOf(address(this)));
 
-        uint256 sharesBefore = strategyManager.stakerDepositShares(staker, strategy);
+        uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, strategy);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
 
         // needed for expecting an event with the right parameters
-        uint256 expectedShares = amount;
+        uint256 expectedDepositShares = amount;
 
         cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit Deposit(staker, token, strategy, expectedShares);
+        emit Deposit(staker, token, strategy, expectedDepositShares);
         uint256 shares = strategyManager.depositIntoStrategy(strategy, token, amount);
 
-        uint256 sharesAfter = strategyManager.stakerDepositShares(staker, strategy);
+        uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, strategy);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
 
-        assertEq(sharesAfter, sharesBefore + shares, "sharesAfter != sharesBefore + shares");
-        if (sharesBefore == 0) {
+        assertEq(depositSharesAfter, depositSharesBefore + shares, "depositSharesAfter != depositSharesBefore + shares");
+        if (depositSharesBefore == 0) {
             assertEq(
                 stakerStrategyListLengthAfter,
                 stakerStrategyListLengthBefore + 1,
@@ -158,7 +158,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
             signature = abi.encodePacked(r, s, v);
         }
 
-        uint256 sharesBefore = strategyManager.stakerDepositShares(staker, dummyStrat);
+        uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, dummyStrat);
 
         bool expectedRevertMessageIsempty = expectedRevertMessage == bytes4(0x00000000);
         if (!expectedRevertMessageIsempty) {
@@ -167,9 +167,9 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
             cheats.expectRevert(IStrategyManagerErrors.SignatureExpired.selector);
         } else {
             // needed for expecting an event with the right parameters
-            uint256 expectedShares = amount;
+            uint256 expectedDepositShares = amount;
             cheats.expectEmit(true, true, true, true, address(strategyManager));
-            emit Deposit(staker, dummyToken, dummyStrat, expectedShares);
+            emit Deposit(staker, dummyToken, dummyStrat, expectedDepositShares);
         }
         uint256 shares = strategyManager.depositIntoStrategyWithSignature(
             dummyStrat,
@@ -180,11 +180,11 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
             signature
         );
 
-        uint256 sharesAfter = strategyManager.stakerDepositShares(staker, dummyStrat);
+        uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, dummyStrat);
         uint256 nonceAfter = strategyManager.nonces(staker);
 
         if (expiry >= block.timestamp && expectedRevertMessageIsempty) {
-            assertEq(sharesAfter, sharesBefore + shares, "sharesAfter != sharesBefore + shares");
+            assertEq(depositSharesAfter, depositSharesBefore + shares, "depositSharesAfter != depositSharesBefore + shares");
             assertEq(nonceAfter, nonceBefore + 1, "nonceAfter != nonceBefore + 1");
         }
         return signature;
@@ -270,22 +270,22 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.assume(amount <= token.balanceOf(address(this)));
         cheats.assume(amount >= 1);
 
-        uint256 sharesBefore = strategyManager.stakerDepositShares(staker, strategy);
+        uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, strategy);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
 
         // needed for expecting an event with the right parameters
-        uint256 expectedShares = strategy.underlyingToShares(amount);
+        uint256 expectedDepositShares = strategy.underlyingToShares(amount);
 
         cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit Deposit(staker, token, strategy, expectedShares);
-        uint256 shares = strategyManager.depositIntoStrategy(strategy, token, amount);
+        emit Deposit(staker, token, strategy, expectedDepositShares);
+        uint256 depositedShares = strategyManager.depositIntoStrategy(strategy, token, amount);
 
-        uint256 sharesAfter = strategyManager.stakerDepositShares(staker, strategy);
+        uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, strategy);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
 
-        assertEq(sharesAfter, sharesBefore + shares, "sharesAfter != sharesBefore + shares");
-        if (sharesBefore == 0) {
+        assertEq(depositSharesAfter, depositSharesBefore + depositedShares, "depositSharesAfter != depositSharesBefore + depositedShares");
+        if (depositSharesBefore == 0) {
             assertEq(
                 stakerStrategyListLengthAfter,
                 stakerStrategyListLengthBefore + 1,
@@ -495,17 +495,17 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
             signature = abi.encodePacked(r, s, v);
         }
 
-        uint256 sharesBefore = strategyManager.stakerDepositShares(staker, strategy);
+        uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, strategy);
 
         cheats.expectRevert(ISignatureUtils.InvalidSignature.selector);
         // call with `notStaker` as input instead of `staker` address
         address notStaker = address(3333);
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, notStaker, expiry, signature);
 
-        uint256 sharesAfter = strategyManager.stakerDepositShares(staker, strategy);
+        uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, strategy);
         uint256 nonceAfter = strategyManager.nonces(staker);
 
-        assertEq(sharesAfter, sharesBefore, "sharesAfter != sharesBefore");
+        assertEq(depositSharesAfter, depositSharesBefore, "depositSharesAfter != depositSharesBefore");
         assertEq(nonceAfter, nonceBefore, "nonceAfter != nonceBefore");
     }
 
@@ -731,15 +731,15 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
             signature = abi.encodePacked(r, s, v);
         }
 
-        uint256 sharesBefore = strategyManager.stakerDepositShares(staker, strategy);
+        uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, strategy);
 
         cheats.expectRevert(IStrategyManagerErrors.SignatureExpired.selector);
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
 
-        uint256 sharesAfter = strategyManager.stakerDepositShares(staker, strategy);
+        uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, strategy);
         uint256 nonceAfter = strategyManager.nonces(staker);
 
-        assertEq(sharesAfter, sharesBefore, "sharesAfter != sharesBefore");
+        assertEq(depositSharesAfter, depositSharesBefore, "depositSharesAfter != depositSharesBefore");
         assertEq(nonceAfter, nonceBefore, "nonceAfter != nonceBefore");
     }
 
@@ -754,7 +754,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
     }
 }
 
-contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
+contract StrategyManagerUnitTests_removeDepositShares is StrategyManagerUnitTests {
     /**
      * @notice Should revert if not called by DelegationManager
      */
@@ -812,11 +812,11 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         IStrategy strategy = dummyStrat;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
-        uint256 sharesBefore = strategyManager.stakerDepositShares(staker, strategy);
+        uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, strategy);
         delegationManagerMock.removeDepositShares(strategyManager, staker, strategy, removeSharesAmount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
-        uint256 sharesAfter = strategyManager.stakerDepositShares(staker, strategy);
-        assertEq(sharesBefore, sharesAfter + removeSharesAmount, "Remove incorrect amount of shares");
+        uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, strategy);
+        assertEq(depositSharesBefore, depositSharesAfter + removeSharesAmount, "Remove incorrect amount of shares");
         assertEq(
             stakerStrategyListLengthBefore,
             stakerStrategyListLengthAfter,
@@ -838,18 +838,18 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         _depositIntoStrategySuccessfully(strategy, staker, sharesAmount);
 
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
-        uint256 sharesBefore = strategyManager.stakerDepositShares(staker, strategy);
-        assertEq(sharesBefore, sharesAmount, "Staker has not deposited amount into strategy");
+        uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, strategy);
+        assertEq(depositSharesBefore, sharesAmount, "Staker has not deposited amount into strategy");
 
         delegationManagerMock.removeDepositShares(strategyManager, staker, strategy, sharesAmount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
-        uint256 sharesAfter = strategyManager.stakerDepositShares(staker, strategy);
+        uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, strategy);
         assertEq(
             stakerStrategyListLengthAfter,
             stakerStrategyListLengthBefore - 1,
             "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore - 1"
         );
-        assertEq(sharesAfter, 0, "sharesAfter != 0");
+        assertEq(depositSharesAfter, 0, "depositSharesAfter != 0");
         assertFalse(_isDepositedStrategy(staker, strategy), "strategy should not be part of staker strategy list");
     }
 
@@ -876,22 +876,22 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         uint256 removeAmount = amounts[randStrategy % 3];
 
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
-        uint256[] memory sharesBefore = new uint256[](3);
+        uint256[] memory depositSharesBefore = new uint256[](3);
         for (uint256 i = 0; i < 3; ++i) {
-            sharesBefore[i] = strategyManager.stakerDepositShares(staker, strategies[i]);
-            assertEq(sharesBefore[i], amounts[i], "Staker has not deposited amount into strategy");
+            depositSharesBefore[i] = strategyManager.stakerDepositShares(staker, strategies[i]);
+            assertEq(depositSharesBefore[i], amounts[i], "Staker has not deposited amount into strategy");
             assertTrue(_isDepositedStrategy(staker, strategies[i]), "strategy should be deposited");
         }
 
         delegationManagerMock.removeDepositShares(strategyManager, staker, removeStrategy, removeAmount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
-        uint256 sharesAfter = strategyManager.stakerDepositShares(staker, removeStrategy);
+        uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, removeStrategy);
         assertEq(
             stakerStrategyListLengthAfter,
             stakerStrategyListLengthBefore - 1,
             "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore - 1"
         );
-        assertEq(sharesAfter, 0, "sharesAfter != 0");
+        assertEq(depositSharesAfter, 0, "depositSharesAfter != 0");
         assertFalse(
             _isDepositedStrategy(staker, removeStrategy),
             "strategy should not be part of staker strategy list"
@@ -909,41 +909,41 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         strategies[0] = dummyStrat;
         strategies[1] = dummyStrat2;
         strategies[2] = dummyStrat3;
-        uint256[] memory sharesBefore = new uint256[](3);
+        uint256[] memory depositSharesBefore = new uint256[](3);
         for (uint256 i = 0; i < 3; ++i) {
             depositAmounts[i] = bound(depositAmounts[i], 1, strategies[i].underlyingToken().totalSupply());
             sharesAmounts[i] = bound(sharesAmounts[i], 1, depositAmounts[i]);
             _depositIntoStrategySuccessfully(strategies[i], staker, depositAmounts[i]);
-            sharesBefore[i] = strategyManager.stakerDepositShares(staker, strategies[i]);
-            assertEq(sharesBefore[i], depositAmounts[i], "Staker has not deposited amount into strategy");
+            depositSharesBefore[i] = strategyManager.stakerDepositShares(staker, strategies[i]);
+            assertEq(depositSharesBefore[i], depositAmounts[i], "Staker has not deposited amount into strategy");
             assertTrue(_isDepositedStrategy(staker, strategies[i]), "strategy should be deposited");
         }
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
 
         uint256 numPoppedStrategies = 0;
-        uint256[] memory sharesAfter = new uint256[](3);
+        uint256[] memory depositSharesAfter = new uint256[](3);
         for (uint256 i = 0; i < 3; ++i) {
             delegationManagerMock.removeDepositShares(strategyManager, staker, strategies[i], sharesAmounts[i]);
         }
 
         for (uint256 i = 0; i < 3; ++i) {
-            sharesAfter[i] = strategyManager.stakerDepositShares(staker, strategies[i]);
+            depositSharesAfter[i] = strategyManager.stakerDepositShares(staker, strategies[i]);
             if (sharesAmounts[i] == depositAmounts[i]) {
                 ++numPoppedStrategies;
                 assertFalse(
                     _isDepositedStrategy(staker, strategies[i]),
                     "strategy should not be part of staker strategy list"
                 );
-                assertEq(sharesAfter[i], 0, "sharesAfter != 0");
+                assertEq(depositSharesAfter[i], 0, "depositSharesAfter != 0");
             } else {
                 assertTrue(
                     _isDepositedStrategy(staker, strategies[i]),
                     "strategy should be part of staker strategy list"
                 );
                 assertEq(
-                    sharesAfter[i],
-                    sharesBefore[i] - sharesAmounts[i],
-                    "sharesAfter != sharesBefore - sharesAmounts"
+                    depositSharesAfter[i],
+                    depositSharesBefore[i] - sharesAmounts[i],
+                    "depositSharesAfter != depositSharesBefore - sharesAmounts"
                 );
             }
         }
@@ -979,19 +979,19 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
     ) external filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != address(0) && amount != 0);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
-        uint256 sharesBefore = strategyManager.stakerDepositShares(staker, dummyStrat);
-        assertEq(sharesBefore, 0, "Staker has already deposited into this strategy");
+        uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, dummyStrat);
+        assertEq(depositSharesBefore, 0, "Staker has already deposited into this strategy");
         assertFalse(_isDepositedStrategy(staker, dummyStrat), "strategy should not be deposited");
 
         delegationManagerMock.addShares(strategyManager, staker, dummyToken, dummyStrat, amount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
-        uint256 sharesAfter = strategyManager.stakerDepositShares(staker, dummyStrat);
+        uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, dummyStrat);
         assertEq(
             stakerStrategyListLengthAfter,
             stakerStrategyListLengthBefore + 1,
             "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore + 1"
         );
-        assertEq(sharesAfter, amount, "sharesAfter != amount");
+        assertEq(depositSharesAfter, amount, "depositSharesAfter != amount");
         assertTrue(_isDepositedStrategy(staker, dummyStrat), "strategy should be deposited");
     }
 
@@ -1004,19 +1004,19 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         IStrategy strategy = dummyStrat;
         _depositIntoStrategySuccessfully(strategy, staker, initialAmount);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
-        uint256 sharesBefore = strategyManager.stakerDepositShares(staker, dummyStrat);
-        assertEq(sharesBefore, initialAmount, "Staker has not deposited amount into strategy");
+        uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, dummyStrat);
+        assertEq(depositSharesBefore, initialAmount, "Staker has not deposited amount into strategy");
         assertTrue(_isDepositedStrategy(staker, strategy), "strategy should be deposited");
 
         delegationManagerMock.addShares(strategyManager, staker, dummyToken, dummyStrat, sharesAmount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
-        uint256 sharesAfter = strategyManager.stakerDepositShares(staker, dummyStrat);
+        uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, dummyStrat);
         assertEq(
             stakerStrategyListLengthAfter,
             stakerStrategyListLengthBefore,
             "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore"
         );
-        assertEq(sharesAfter, sharesBefore + sharesAmount, "sharesAfter != sharesBefore + sharesAmount");
+        assertEq(depositSharesAfter, depositSharesBefore + sharesAmount, "depositSharesAfter != depositSharesBefore + sharesAmount");
         assertTrue(_isDepositedStrategy(staker, strategy), "strategy should be deposited");
     }
 
