@@ -9,7 +9,7 @@ import "src/contracts/pods/EigenPodManager.sol";
 
 contract UpgradeEigenPodAndManager is OpsTimelockBuilder {
 
-    using MultisigCallHelper for *;
+    using MultisigCallUtils for MultisigCall[];
     using TransactionHelper for *;
 
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {

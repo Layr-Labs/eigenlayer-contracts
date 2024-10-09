@@ -6,7 +6,7 @@ import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
 
 contract UpgradeEigenPod is MultisigBuilder {
 
-    using MultisigCallHelper for *;
+    using MultisigCallUtils for MultisigCall[];
 
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
         _multisigCalls.append({

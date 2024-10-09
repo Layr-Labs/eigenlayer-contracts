@@ -9,7 +9,7 @@ import "src/contracts/interfaces/IEigenPodManager.sol";
 import "script/utils/StringUtils.sol";
 
 contract QueueEigenPodAndManager is QueueBuilder {
-    using MultisigCallHelper for MultisigCall[];
+    using MultisigCallUtils for MultisigCall[];
 
 
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {

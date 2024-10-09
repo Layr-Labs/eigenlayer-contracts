@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "script/utils/ConfigParser.sol";
 import "script/utils/Encoders.sol";
 import "script/utils/Interfaces.sol";
+import "script/utils/MultisigCallUtils.s.sol";
 
 /// @notice Deployment data struct
 struct Deployment {
@@ -18,64 +19,6 @@ struct Transaction {
     uint256 value;
     bytes data;
     EncGnosisSafe.Operation op;
-}
-
-/// @dev from EncodeSafeMultisendMainnet
-struct MultisigCall {
-    address to;
-    uint256 value;
-    bytes data;
-}
-
-library MultisigCallHelper {
-
-    function append(
-        MultisigCall[] storage multisigCalls,
-        address to,
-        uint256 value,
-        bytes memory data
-    ) internal returns (MultisigCall[] storage) {
-        multisigCalls.push(MultisigCall({
-            to: to,
-            value: value,
-            data: data
-        }));
-
-        return multisigCalls;
-    }
-
-    /// @notice appends a multisig call with a value of 0
-    function append(
-        MultisigCall[] storage multisigCalls,
-        address to,
-        bytes memory data
-    ) internal returns (MultisigCall[] storage) {
-        multisigCalls.push(MultisigCall({
-            to: to,
-            value: 0,
-            data: data
-        }));
-
-        return multisigCalls;
-    }
-
-    function encodeMultisendTxs(MultisigCall[] memory txs) public pure returns (bytes memory) {
-        bytes memory ret = new bytes(0);
-        for (uint256 i = 0; i < txs.length; i++) {
-            ret = abi.encodePacked(
-                ret,
-                abi.encodePacked(
-                    uint8(0),
-                    txs[i].to,
-                    txs[i].value,
-                    uint256(txs[i].data.length),
-                    txs[i].data
-                )
-            );
-        }
-
-        return abi.encodeWithSelector(IMultiSend.multiSend.selector, ret);
-    }
 }
 
 library TransactionHelper {
@@ -129,7 +72,7 @@ abstract contract EOADeployer is ConfigParser {
 /// @notice template for a Multisig script
 abstract contract MultisigBuilder is ConfigParser {
 
-    using MultisigCallHelper for MultisigCall[];
+    using MultisigCallUtils for MultisigCall[];
     MultisigCall[] internal _multisigCalls;
 
     /// @return a Transaction object for a Gnosis Safe to ingest
@@ -173,7 +116,7 @@ abstract contract MultisigBuilder is ConfigParser {
 
 abstract contract QueueBuilder is ConfigParser {
 
-        using MultisigCallHelper for MultisigCall[];
+        using MultisigCallUtils for MultisigCall[];
         using TransactionHelper for Transaction;
 
         MultisigCall[] _executorCalls;
@@ -233,7 +176,7 @@ abstract contract QueueBuilder is ConfigParser {
 /// @dev writing a script is done from the perspective of the OpsMultisig
 abstract contract OpsTimelockBuilder is MultisigBuilder {
 
-    using MultisigCallHelper for MultisigCall[];
+    using MultisigCallUtils for MultisigCall[];
     using TransactionHelper for Transaction;
 
     MultisigCall[] _executorCalls;
