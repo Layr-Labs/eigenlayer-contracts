@@ -30,14 +30,6 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     IDelegationManager public immutable delegation;
 
-<<<<<<< HEAD
-    IEigenPodManager public immutable eigenPodManager;
-
-    IAVSDirectory public immutable avsDirectory;
-=======
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
->>>>>>> c7440c1a (fix: remove immutable EPM & AVSD from SM)
-
     // Mutatables
 
     bytes32 internal __deprecated_DOMAIN_SEPARATOR;
