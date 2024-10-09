@@ -84,7 +84,6 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      */
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**
