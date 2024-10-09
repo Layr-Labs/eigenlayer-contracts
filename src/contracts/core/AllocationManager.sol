@@ -242,7 +242,7 @@ contract AllocationManager is
         }
 
         // TODO: find a solution to connect operatorSlashed to magnitude updates
-        emit OperatorSlashed(params.operator, operatorSet, params.description);
+        emit OperatorSlashed(params.operator, operatorSet, params.strategies, params.wadToSlash, params.description);
     }
 
     /**

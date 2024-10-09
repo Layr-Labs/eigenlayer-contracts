@@ -182,12 +182,12 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
     event OperatorSharesIncreased(
-        address indexed operator, address staker, IStrategy strategy, uint256 delegatedShares
+        address indexed operator, address staker, IStrategy strategy, uint256 shares
     );
 
     /// @notice Emitted whenever an operator's shares are decreased for a given strategy. Note that shares is the delta in the operator's shares.
     event OperatorSharesDecreased(
-        address indexed operator, address staker, IStrategy strategy, uint256 delegatedShares
+        address indexed operator, address staker, IStrategy strategy, uint256 shares
     );
 
     /// @notice Emitted when @param staker delegates to @param operator.
