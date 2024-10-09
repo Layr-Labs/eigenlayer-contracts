@@ -352,6 +352,135 @@ contract AllocationManager is
         emit EncumberedMagnitudeUpdated(operator, strategy, info.encumberedMagnitude);
     }
 
+    /**
+     * @notice Returns the allocation delay of an operator
+     * @param operator The operator to get the allocation delay for
+     */
+    function allocationDelay(
+        address operator
+    ) public view returns (bool isSet, uint32 delay) {
+        AllocationDelayInfo memory info = _allocationDelayInfo[operator];
+        if (info.pendingDelay != 0 && block.timestamp >= info.pendingDelayEffectTimestamp) {
+            return (true, info.pendingDelay);
+        } else {
+            return (info.delay != 0, info.delay);
+        }
+    }
+
+    /**
+     * @param operator the operator to get the slashable magnitude for
+     * @param strategies the strategies to get the slashable magnitude for
+     *
+     * @return operatorSets the operator sets the operator is a member of and the current slashable magnitudes for each strategy
+     */
+    function getSlashableMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (OperatorSet[] memory, uint64[][] memory) {
+        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
+        uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            slashableMagnitudes[i] = new uint64[](operatorSets.length);
+            for (uint256 j = 0; j < operatorSets.length; ++j) {
+                bytes32 operatorSetKey = _encodeOperatorSet(operatorSets[j]);
+                MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategies[i]][operatorSetKey];
+                slashableMagnitudes[i][j] = mInfo.currentMagnitude;
+                if (block.timestamp >= mInfo.effectTimestamp && mInfo.effectTimestamp != 0) {
+                    slashableMagnitudes[i][j] = _addInt128(slashableMagnitudes[i][j], mInfo.pendingDiff);
+                }
+            }
+        }
+        return (operatorSets, slashableMagnitudes);
+    }
+
+    /**
+     * @notice Get the allocatable magnitude for an operator and strategy
+     * @param operator the operator to get the allocatable magnitude for
+     * @param strategy the strategy to get the allocatable magnitude for
+     */
+    function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+        uint64 freeableMagnitude = 0;
+        for (uint256 i = 0; i < modificationQueue[operator][strategy].length(); ++i) {
+            bytes32 opsetKey = modificationQueue[operator][strategy].at(i);
+            MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][opsetKey];
+            if (block.timestamp >= mInfo.effectTimestamp && mInfo.effectTimestamp != 0 && mInfo.pendingDiff < 0) {
+                freeableMagnitude += uint64(uint128(-mInfo.pendingDiff));
+            } else {
+                break;
+            }
+        }
+        return uint64(_maxMagnitudeHistory[operator][strategy].latest()) - encumberedMagnitude[operator][strategy]
+            + freeableMagnitude;
+    }
+
+    /**
+     * @notice Returns the current total magnitudes of an operator for a given set of strategies
+     * @param operator the operator to get the total magnitude for
+     * @param strategies the strategies to get the total magnitudes for
+     * @return totalMagnitudes the total magnitudes for each strategy
+     */
+    function getTotalMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory) {
+        uint64[] memory totalMagnitudes = new uint64[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            (bool exists,, uint64 value) = _maxMagnitudeHistory[operator][strategies[i]].latestSnapshot();
+            if (!exists) {
+                totalMagnitudes[i] = WAD;
+            } else {
+                totalMagnitudes[i] = value;
+            }
+        }
+        return totalMagnitudes;
+    }
+
+    /**
+     * @notice Returns the total magnitudes of an operator for a given set of strategies at a given timestamp
+     * @param operator the operator to get the total magnitude for
+     * @param strategies the strategies to get the total magnitudes for
+     * @param timestamp the timestamp to get the total magnitudes at
+     * @return totalMagnitudes the total magnitudes for each strategy
+     */
+    function getTotalMagnitudesAtTimestamp(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 timestamp
+    ) external view returns (uint64[] memory) {
+        uint64[] memory totalMagnitudes = new uint64[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            totalMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup(timestamp);
+        }
+        return totalMagnitudes;
+    }
+
+    /**
+     * @notice Returns the pending modifications of an operator for a given strategy and operatorSets.
+     * @param operator the operator to get the pending modification for
+     * @param strategy the strategy to get the pending modification for
+     * @param operatorSets the operatorSets to get the pending modification for
+     * @return timestamps the timestamps for each pending dealloction
+     * @return pendingMagnitudeDeltas the pending modification diffs for each operatorSet
+     */
+    function getPendingModifications(
+        address operator,
+        IStrategy strategy,
+        OperatorSet[] calldata operatorSets
+    ) external view returns (uint32[] memory timestamps, int128[] memory pendingMagnitudeDeltas) {
+        timestamps = new uint32[](operatorSets.length);
+        pendingMagnitudeDeltas = new int128[](operatorSets.length);
+
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            MagnitudeInfo memory opsetMagnitudeInfo =
+                _operatorMagnitudeInfo[operator][strategy][_encodeOperatorSet(operatorSets[i])];
+
+            if (opsetMagnitudeInfo.effectTimestamp < block.timestamp && opsetMagnitudeInfo.effectTimestamp != 0) {
+                pendingMagnitudeDeltas[i] = opsetMagnitudeInfo.pendingDiff;
+                timestamps[i] = opsetMagnitudeInfo.effectTimestamp;
+            }
+        }
+    }
+
     function _calcDelta(uint64 currentMagnitude, uint64 newMagnitude) internal pure returns (int128) {
         return int128(uint128(newMagnitude)) - int128(uint128(currentMagnitude));
     }
