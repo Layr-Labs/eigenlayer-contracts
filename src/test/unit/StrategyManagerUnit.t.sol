@@ -329,7 +329,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         reenterer = new Reenterer();
 
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.prank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = IStrategy(address(reenterer));
         for (uint256 i = 0; i < _strategy.length; ++i) {
@@ -337,7 +337,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
             emit StrategyAddedToDepositWhitelist(_strategy[i]);
         }
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
-        cheats.stopPrank();
 
         reenterer.prepareReturnData(abi.encode(amount));
 
@@ -360,12 +359,10 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         dummyStrat = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
 
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.prank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-
         _strategy[0] = dummyStrat;
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
-        cheats.stopPrank();
 
         address staker = address(this);
         IERC20 token = dummyToken;
@@ -383,11 +380,10 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         dummyStrat = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
 
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.prank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
-        cheats.stopPrank();
 
         address staker = address(this);
         IERC20 token = dummyToken;
@@ -404,12 +400,10 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         dummyStrat = StrategyBase(address(new Reverter()));
 
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.prank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-
         _strategy[0] = dummyStrat;
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
-        cheats.stopPrank();
 
         address staker = address(this);
         IERC20 token = dummyToken;
@@ -426,13 +420,10 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         dummyStrat = StrategyBase(address(5678));
 
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.prank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-
-
         _strategy[0] = dummyStrat;
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
-        cheats.stopPrank();
 
         address staker = address(this);
         IERC20 token = dummyToken;
@@ -464,13 +455,10 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         dummyStrat = StrategyBase(address(reenterer));
 
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.prank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
-
-
         _strategy[0] = dummyStrat;
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
-        cheats.stopPrank();
 
         address staker = address(this);
         IStrategy strategy = dummyStrat;
@@ -673,18 +661,15 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         reenterer = new Reenterer();
 
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.prank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
 
-
-        
         _strategy[0] = IStrategy(address(reenterer));
         for (uint256 i = 0; i < _strategy.length; ++i) {
             cheats.expectEmit(true, true, true, true, address(strategyManager));
             emit StrategyAddedToDepositWhitelist(_strategy[i]);
         }
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
-        cheats.stopPrank();
 
         address staker = cheats.addr(privateKey);
         IStrategy strategy = IStrategy(address(reenterer));
@@ -1048,21 +1033,17 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
 
         // loop that deploys a new strategy and deposits into it
         for (uint256 i = 0; i < MAX_STAKER_STRATEGY_LIST_LENGTH; ++i) {
-            cheats.startPrank(staker);
+            cheats.prank(staker);
             strategyManager.depositIntoStrategy(strategy, token, amount);
-            cheats.stopPrank();
 
             dummyStrat = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
             strategy = dummyStrat;
 
             // whitelist the strategy for deposit
-            cheats.startPrank(strategyManager.owner());
+            cheats.prank(strategyManager.owner());
             IStrategy[] memory _strategy = new IStrategy[](1);
-    
-
             _strategy[0] = dummyStrat;
             strategyManager.addStrategiesToDepositWhitelist(_strategy);
-            cheats.stopPrank();
         }
 
         assertEq(
