@@ -35,18 +35,4 @@ contract UpgradeEigenPod is MultisigBuilder {
 
         return _multisigCalls;
     }
-
-    function _testExecute(
-        Addresses memory addrs,
-        Environment memory env,
-        Params memory params
-    ) internal override {
-        bytes memory data = _multisigCalls.encodeMultisendTxs();
-
-        vm.startBroadcast(addrs.operationsMultisig);
-        params.multiSendCallOnly.delegatecall(data);
-        vm.stopBroadcast();
-
-        emit log_bytes(data);
-    }
 }

@@ -31,21 +31,7 @@ abstract contract MultisigBuilder is ConfigParser {
             op: EncGnosisSafe.Operation.DelegateCall
         });
     }
-
-    function testExecute(string memory envPath) public {
-        (
-            Addresses memory addrs,
-            Environment memory env,
-            Params memory params
-        ) = _readConfigFile(envPath);
-
-        _execute(addrs, env, params);
-        _testExecute(addrs, env, params);
-    }
-
+    
     /// @notice to be implemented by inheriting contract
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
-
-    /// @notice to be implemented for testing
-    function _testExecute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual;
 }

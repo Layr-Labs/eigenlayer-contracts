@@ -77,16 +77,4 @@ contract UpgradeEigenPodAndManager is OpsTimelockBuilder {
 
         return _opsCalls;
     }
-
-    function _testExecute(
-        Addresses memory addrs,
-        Environment memory env,
-        Params memory params
-    ) internal override {
-        bytes memory data = _opsCalls.encodeMultisendTxs();
-
-        vm.startBroadcast(addrs.operationsMultisig);
-        params.multiSendCallOnly.delegatecall(data);
-        vm.stopBroadcast();
-    }
 }
