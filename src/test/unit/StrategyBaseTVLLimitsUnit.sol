@@ -64,7 +64,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     function testSetInvalidMaxPerDepositAndMaxDeposits(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput) public {
         cheats.assume(maxTotalDepositsFuzzedInput < maxPerDepositFuzzedInput);
         cheats.startPrank(unpauser);
-        cheats.expectRevert(IStrategy.MaxPerDepositExceedsMax.selector);
+        cheats.expectRevert(IStrategyErrors.MaxPerDepositExceedsMax.selector);
         strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
         cheats.stopPrank();
     }
@@ -74,7 +74,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         _setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
 
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(IStrategy.MaxPerDepositExceedsMax.selector);
+        cheats.expectRevert(IStrategyErrors.MaxPerDepositExceedsMax.selector);
         strategyWithTVLLimits.deposit(underlyingToken, amount);
         cheats.stopPrank();
     }
@@ -98,7 +98,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         require(underlyingToken.balanceOf(address(strategyWithTVLLimits)) > maxTotalDeposits, "bad test setup");
 
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(IStrategy.BalanceExceedsMaxTotalDeposits.selector);
+        cheats.expectRevert(IStrategyErrors.BalanceExceedsMaxTotalDeposits.selector);
         strategyWithTVLLimits.deposit(underlyingToken, maxPerDeposit);
         cheats.stopPrank();
     }
@@ -172,7 +172,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
 
         if (depositAmount > maxPerDepositFuzzedInput) {
             cheats.startPrank(address(strategyManager));
-            cheats.expectRevert(IStrategy.MaxPerDepositExceedsMax.selector);
+            cheats.expectRevert(IStrategyErrors.MaxPerDepositExceedsMax.selector);
             strategyWithTVLLimits.deposit(underlyingToken, depositAmount);
             cheats.stopPrank();
 
@@ -185,7 +185,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
             return true;
         } else if (underlyingToken.balanceOf(address(strategyWithTVLLimits)) > maxTotalDepositsFuzzedInput) {
             cheats.startPrank(address(strategyManager));
-            cheats.expectRevert(IStrategy.MaxPerDepositExceedsMax.selector);
+            cheats.expectRevert(IStrategyErrors.MaxPerDepositExceedsMax.selector);
             strategyWithTVLLimits.deposit(underlyingToken, depositAmount);
             cheats.stopPrank();
 
@@ -200,7 +200,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
             uint256 totalSharesBefore = strategyWithTVLLimits.totalShares();
             if (expectedSharesOut == 0) {
                 cheats.startPrank(address(strategyManager));
-                cheats.expectRevert(IStrategy.NewSharesZero.selector);
+                cheats.expectRevert(IStrategyErrors.NewSharesZero.selector);
                 strategyWithTVLLimits.deposit(underlyingToken, depositAmount);
                 cheats.stopPrank();
 

@@ -6,13 +6,7 @@ import "./IShareManager.sol";
 import "./IDelegationManager.sol";
 import "./IEigenPodManager.sol";
 
-/**
- * @title Interface for the primary entrypoint for funds into EigenLayer.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice See the `StrategyManager` contract itself for implementation details.
- */
-interface IStrategyManager is IShareManager {
+interface IStrategyManagerErrors {
     /// @dev Thrown when total strategies deployed exceeds max.
     error MaxStrategiesExceeded();
     /// @dev Thrown when two array parameters have mismatching lengths.
@@ -33,7 +27,9 @@ interface IStrategyManager is IShareManager {
     error StrategyNotFound();
     /// @dev Thrown when attempting to deposit to a non-whitelisted strategy.
     error StrategyNotWhitelisted();
+}
 
+interface IStrategyManagerEvents {
     /**
      * @notice Emitted when a new deposit occurs on behalf of `staker`.
      * @param staker Is the staker who is depositing funds into EigenLayer.
@@ -51,7 +47,15 @@ interface IStrategyManager is IShareManager {
 
     /// @notice Emitted when a strategy is removed from the approved list of strategies for deposit
     event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
+}
 
+/**
+ * @title Interface for the primary entrypoint for funds into EigenLayer.
+ * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ * @notice See the `StrategyManager` contract itself for implementation details.
+ */
+interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IShareManager {
     /**
      * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
      * @param strategy is the specified strategy where deposit is to be made,

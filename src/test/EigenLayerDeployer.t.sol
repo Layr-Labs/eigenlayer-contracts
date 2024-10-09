@@ -121,6 +121,8 @@ contract EigenLayerDeployer is Operators {
         }
 
         fuzzedAddressMapping[address(0)] = true;
+        fuzzedAddressMapping[address(avsDirectory)] = true;
+        fuzzedAddressMapping[address(allocationManager)] = true;
         fuzzedAddressMapping[address(eigenLayerProxyAdmin)] = true;
         fuzzedAddressMapping[address(strategyManager)] = true;
         fuzzedAddressMapping[address(eigenPodManager)] = true;
@@ -144,9 +146,6 @@ contract EigenLayerDeployer is Operators {
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
         emptyContract = new EmptyContract();
-        avsDirectory = AVSDirectory(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
         avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );

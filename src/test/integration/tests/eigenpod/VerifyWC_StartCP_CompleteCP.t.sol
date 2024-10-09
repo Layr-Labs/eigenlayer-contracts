@@ -111,7 +111,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
-        cheats.expectRevert(IEigenPod.CredentialsAlreadyVerified.selector);
+        cheats.expectRevert(IEigenPodErrors.CredentialsAlreadyVerified.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -132,7 +132,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
 
-        cheats.expectRevert(IEigenPod.CheckpointAlreadyActive.selector);
+        cheats.expectRevert(IEigenPodErrors.CheckpointAlreadyActive.selector);
         staker.startCheckpoint();
     }
 
@@ -157,7 +157,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.completeCheckpoint();
         check_CompleteCheckpoint_State(staker);
 
-        cheats.expectRevert(IEigenPod.CannotCheckpointTwiceInSingleBlock.selector);
+        cheats.expectRevert(IEigenPodErrors.CannotCheckpointTwiceInSingleBlock.selector);
         staker.startCheckpoint();
     }
 
@@ -227,7 +227,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.exitValidators(validators);
         beaconChain.advanceEpoch_NoRewards();
 
-        cheats.expectRevert(IEigenPod.ValidatorIsExitingBeaconChain.selector);
+        cheats.expectRevert(IEigenPodErrors.ValidatorIsExitingBeaconChain.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -312,7 +312,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         // Advance epoch, withdrawing slashed validators to pod
         beaconChain.advanceEpoch_NoRewards();
         
-        cheats.expectRevert(IEigenPod.ValidatorIsExitingBeaconChain.selector);
+        cheats.expectRevert(IEigenPodErrors.ValidatorIsExitingBeaconChain.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 

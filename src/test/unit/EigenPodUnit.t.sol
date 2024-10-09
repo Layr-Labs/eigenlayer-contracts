@@ -12,13 +12,10 @@ import "src/test/mocks/ERC20Mock.sol";
 import "src/test/harnesses/EigenPodHarness.sol";
 import "src/test/utils/ProofParsing.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
-import "src/test/events/IEigenPodEvents.sol";
 
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
-import "src/test/events/IEigenPodEvents.sol";
-
 
 contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants, IEigenPodEvents {
     using Strings for *;
@@ -62,7 +59,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         // Deploy EigenPod
         podImplementation = new EigenPod(
             ethPOSDepositMock,
-            eigenPodManagerMock,
+            IEigenPodManager(address(eigenPodManagerMock)),
             GENESIS_TIME_LOCAL
         );
 
@@ -194,12 +191,12 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
     ) internal {
         bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(addedValidators);
 
-        IEigenPod.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
-        IEigenPod.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
         for (uint i = 0; i < curStatuses.length; i++) {
-            assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.INACTIVE, err);
-            assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(prevStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.INACTIVE, err);
+            assertTrue(curStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, err);
         }
     }
 
@@ -210,18 +207,18 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
     ) internal {
         bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(removedValidators);
 
-        IEigenPod.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
-        IEigenPod.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
         for (uint i = 0; i < curStatuses.length; i++) {
-            assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
-            assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.WITHDRAWN, err);
+            assertTrue(prevStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(curStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.WITHDRAWN, err);
         }
     }
 
-    function _getValidatorStatuses(EigenPodUser staker, bytes32[] memory pubkeyHashes) internal view returns (IEigenPod.VALIDATOR_STATUS[] memory) {
+    function _getValidatorStatuses(EigenPodUser staker, bytes32[] memory pubkeyHashes) internal view returns (IEigenPodTypes.VALIDATOR_STATUS[] memory) {
         EigenPod pod = staker.pod();
-        IEigenPod.VALIDATOR_STATUS[] memory statuses = new IEigenPod.VALIDATOR_STATUS[](pubkeyHashes.length);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory statuses = new IEigenPodTypes.VALIDATOR_STATUS[](pubkeyHashes.length);
 
         for (uint i = 0; i < statuses.length; i++) {
             statuses[i] = pod.validatorStatus(pubkeyHashes[i]);
@@ -230,7 +227,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         return statuses;
     }
 
-    function _getPrevValidatorStatuses(EigenPodUser staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (IEigenPod.VALIDATOR_STATUS[] memory) {
+    function _getPrevValidatorStatuses(EigenPodUser staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (IEigenPodTypes.VALIDATOR_STATUS[] memory) {
         return _getValidatorStatuses(staker, pubkeyHashes);
     }
 
@@ -287,7 +284,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         int256 totalBalanceDeltaGWei = 0;
         uint64 checkpointTimestamp = pod.currentCheckpointTimestamp();
         for (uint i = 0; i < validators.length; i++) {
-            IEigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(proofs[i].pubkeyHash);
+            IEigenPodTypes.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(proofs[i].pubkeyHash);
             uint64 prevBalanceGwei = info.restakedBalanceGwei;
             uint64 newBalanceGwei = BeaconChainProofs.getBalanceAtIndex(proofs[i].balanceRoot, validators[i]);
             int128 balanceDeltaGwei = _calcBalanceDelta({
@@ -328,10 +325,10 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
 contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
 
     function test_constructor() public {
-        EigenPod pod = new EigenPod(ethPOSDepositMock, eigenPodManagerMock, GENESIS_TIME_LOCAL);
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
         assertTrue(pod.ethPOS() == ethPOSDepositMock, "should have set ethPOS correctly");
-        assertTrue(pod.eigenPodManager() == eigenPodManagerMock, "should have set eigenpodmanager correctly");
+        assertTrue(address(pod.eigenPodManager()) == address(eigenPodManagerMock), "should have set eigenpodmanager correctly");
         assertTrue(pod.GENESIS_TIME() == GENESIS_TIME_LOCAL, "should have set genesis time correctly");
     }
 
@@ -356,11 +353,11 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     }
 
     function test_initialize_revert_emptyPodOwner() public {
-        EigenPod pod = new EigenPod(ethPOSDepositMock, eigenPodManagerMock, GENESIS_TIME_LOCAL);
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
         // un-initialize pod
         cheats.store(address(pod), 0, 0);
 
-        cheats.expectRevert(IEigenPod.InputAddressZero.selector);
+        cheats.expectRevert(IEigenPodErrors.InputAddressZero.selector);
         pod.initialize(address(0));
     }
 
@@ -370,7 +367,7 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
 
         cheats.assume(invalidCaller != address(staker));
         cheats.prank(invalidCaller);
-        cheats.expectRevert(IEigenPod.UnauthorizedCaller.selector);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwner.selector);
         pod.setProofSubmitter(invalidCaller);
     }
 
@@ -405,7 +402,7 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         cheats.deal(invalidCaller, 32 ether);
 
         cheats.prank(invalidCaller);
-        cheats.expectRevert(IEigenPod.UnauthorizedCaller.selector);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodManager.selector);
         eigenPod.stake{value: 32 ether}(pubkey, signature, depositDataRoot);
     }
 
@@ -415,7 +412,7 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         cheats.deal(address(eigenPodManagerMock), value);
 
         cheats.prank(address(eigenPodManagerMock));
-        cheats.expectRevert(IEigenPod.MsgValueNot32ETH.selector);
+        cheats.expectRevert(IEigenPodErrors.MsgValueNot32ETH.selector);
         eigenPod.stake{value: value}(pubkey, signature, depositDataRoot);
     }
 
@@ -450,7 +447,7 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         // ensure invalid caller causing revert
         cheats.assume(invalidCaller != address(eigenPodManagerMock));
         cheats.prank(invalidCaller);
-        cheats.expectRevert(IEigenPod.UnauthorizedCaller.selector);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodManager.selector);
         pod.withdrawRestakedBeaconChainETH(recipient, randAmount);
     }
 
@@ -469,7 +466,7 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 
         // ensure amount is not a full gwei
         randAmount = (randAmount % 1 gwei) + bound(randAmount, 1, 1 gwei - 1);
-        cheats.expectRevert(IEigenPod.AmountMustBeMultipleOfGwei.selector);
+        cheats.expectRevert(IEigenPodErrors.AmountMustBeMultipleOfGwei.selector);
         cheats.prank(address(eigenPodManagerMock));
         pod.withdrawRestakedBeaconChainETH(recipient, randAmount);
     }
@@ -492,7 +489,7 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
         randAmountWei = randAmountWei - (randAmountWei % 1 gwei);
         cheats.assume((randAmountWei / 1 gwei) > withdrawableRestakedExecutionLayerGwei);
-        cheats.expectRevert(IEigenPod.InsufficientWithdrawableBalance.selector);
+        cheats.expectRevert(IEigenPodErrors.InsufficientWithdrawableBalance.selector);
         cheats.prank(address(eigenPodManagerMock));
         pod.withdrawRestakedBeaconChainETH(recipient, randAmountWei);
     }
@@ -554,7 +551,7 @@ contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
         amounts[0] = 1;
         
         cheats.prank(invalidCaller);
-        cheats.expectRevert(IEigenPod.UnauthorizedCaller.selector);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwner.selector);
         pod.recoverTokens(tokens, amounts, podOwner);
     }
     
@@ -573,7 +570,7 @@ contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
         eigenPodManagerMock.pause(1 << PAUSED_NON_PROOF_WITHDRAWALS);
 
         cheats.prank(podOwner);
-        cheats.expectRevert(IEigenPod.CurrentlyPaused.selector);
+        cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.recoverTokens(tokens, amounts, podOwner);
     }
 
@@ -589,7 +586,7 @@ contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
         amounts[1] = 1;
 
         cheats.startPrank(podOwner);
-        cheats.expectRevert(IEigenPod.InputArrayLengthMismatch.selector);
+        cheats.expectRevert(IEigenPodErrors.InputArrayLengthMismatch.selector);
         pod.recoverTokens(tokens, amounts, podOwner);
         cheats.stopPrank();
     }
@@ -636,7 +633,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
 
         cheats.assume(invalidCaller != podOwner && invalidCaller != proofSubmitter);
         cheats.prank(invalidCaller);
-        cheats.expectRevert(IEigenPod.UnauthorizedCaller.selector);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwnerOrProofSubmitter.selector);
 
         pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
@@ -655,7 +652,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         cheats.prank(pauser);
         eigenPodManagerMock.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
 
-        cheats.expectRevert(IEigenPod.CurrentlyPaused.selector);
+        cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -675,7 +672,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         staker.startCheckpoint();
 
         // Try to verify withdrawal credentials at the current block
-        cheats.expectRevert(IEigenPod.BeaconTimestampTooFarInPast.selector);
+        cheats.expectRevert(IEigenPodErrors.BeaconTimestampTooFarInPast.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -691,7 +688,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         bytes32[][] memory invalidValidatorFields = new bytes32[][](proofs.validatorFields.length + 1);
 
         cheats.startPrank(address(staker));
-        cheats.expectRevert(IEigenPod.InputArrayLengthMismatch.selector);
+        cheats.expectRevert(IEigenPodErrors.InputArrayLengthMismatch.selector);
         pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -700,7 +697,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
             validatorFields: proofs.validatorFields
         });
 
-        cheats.expectRevert(IEigenPod.InputArrayLengthMismatch.selector);
+        cheats.expectRevert(IEigenPodErrors.InputArrayLengthMismatch.selector);
         pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -709,7 +706,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
             validatorFields: proofs.validatorFields
         });
 
-        cheats.expectRevert(IEigenPod.InputArrayLengthMismatch.selector);
+        cheats.expectRevert(IEigenPodErrors.InputArrayLengthMismatch.selector);
         pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -768,7 +765,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         staker.verifyWithdrawalCredentials(validators);
 
         // now that validators are ACTIVE, ensure we can't verify them again
-        cheats.expectRevert(IEigenPod.CredentialsAlreadyVerified.selector);
+        cheats.expectRevert(IEigenPodErrors.CredentialsAlreadyVerified.selector);
         staker.verifyWithdrawalCredentials(validators);
 
         staker.exitValidators(validators);
@@ -779,7 +776,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         beaconChain.advanceEpoch_NoRewards();
 
         // now that validators are WITHDRAWN, ensure we can't verify them again
-        cheats.expectRevert(IEigenPod.CredentialsAlreadyVerified.selector);
+        cheats.expectRevert(IEigenPodErrors.CredentialsAlreadyVerified.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -794,7 +791,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         beaconChain.advanceEpoch();
 
         // now that validators are exited, ensure we can't verify them
-        cheats.expectRevert(IEigenPod.ValidatorIsExitingBeaconChain.selector);
+        cheats.expectRevert(IEigenPodErrors.ValidatorIsExitingBeaconChain.selector);
         staker.verifyWithdrawalCredentials(validators);
     }
 
@@ -810,7 +807,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         proofs.validatorFields[0][VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] = invalidWithdrawalCredentials;
 
         cheats.startPrank(address(staker));
-        cheats.expectRevert(IEigenPod.WithdrawCredentialsNotForEigenPod.selector);
+        cheats.expectRevert(IEigenPodErrors.WithdrawCredentialsNotForEigenPod.selector);
         pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -858,7 +855,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
             = _toLittleEndianUint64(BeaconChainProofs.FAR_FUTURE_EPOCH);
 
         cheats.startPrank(address(staker));
-        cheats.expectRevert(IEigenPod.ValidatorInactiveOnBeaconChain.selector);
+        cheats.expectRevert(IEigenPodErrors.ValidatorInactiveOnBeaconChain.selector);
         pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -952,9 +949,9 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
             bytes32 pubkeyHash = beaconChain.pubkeyHash(validators[i]);
             bytes memory pubkey = beaconChain.pubkey(validators[i]);
 
-            IEigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(pubkeyHash);
-            IEigenPod.ValidatorInfo memory pkInfo = pod.validatorPubkeyToInfo(pubkey);
-            assertTrue(pod.validatorStatus(pubkey) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "validator status should be active");
+            IEigenPodTypes.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(pubkeyHash);
+            IEigenPodTypes.ValidatorInfo memory pkInfo = pod.validatorPubkeyToInfo(pubkey);
+            assertTrue(pod.validatorStatus(pubkey) == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, "validator status should be active");
             assertEq(keccak256(abi.encode(info)), keccak256(abi.encode(pkInfo)), "validator info should be identical");
             assertEq(info.validatorIndex, validators[i], "should have assigned correct validator index");
             assertEq(info.restakedBalanceGwei, beaconChain.effectiveBalance(validators[i]), "should have restaked full effective balance");
@@ -981,7 +978,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
 
         cheats.assume(invalidCaller != podOwner && invalidCaller != proofSubmitter);
         cheats.prank(invalidCaller);
-        cheats.expectRevert(IEigenPod.UnauthorizedCaller.selector);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwnerOrProofSubmitter.selector);
         pod.startCheckpoint({ revertIfNoBalance: false });
     }
 
@@ -994,7 +991,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
         cheats.prank(pauser);
         eigenPodManagerMock.pause(2 ** PAUSED_START_CHECKPOINT);
 
-        cheats.expectRevert(IEigenPod.CurrentlyPaused.selector);
+        cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         staker.startCheckpoint();
     }
 
@@ -1005,7 +1002,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
         (uint40[] memory validators,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
         staker.startCheckpoint();
-        cheats.expectRevert(IEigenPod.CheckpointAlreadyActive.selector);
+        cheats.expectRevert(IEigenPodErrors.CheckpointAlreadyActive.selector);
         staker.startCheckpoint();
     }
 
@@ -1018,7 +1015,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
         staker.startCheckpoint();
         staker.completeCheckpoint();
 
-        cheats.expectRevert(IEigenPod.CannotCheckpointTwiceInSingleBlock.selector);
+        cheats.expectRevert(IEigenPodErrors.CannotCheckpointTwiceInSingleBlock.selector);
         staker.startCheckpoint();
     }
 
@@ -1032,7 +1029,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
         beaconChain.advanceEpoch_NoRewards();
 
         cheats.prank(pod.podOwner());
-        cheats.expectRevert(IEigenPod.NoBalanceToCheckpoint.selector);
+        cheats.expectRevert(IEigenPodErrors.NoBalanceToCheckpoint.selector);
         pod.startCheckpoint({ revertIfNoBalance: true });
     }
 
@@ -1086,7 +1083,7 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
 
         cheats.prank(pauser);
         eigenPodManagerMock.pause(2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS);
-        cheats.expectRevert(IEigenPod.CurrentlyPaused.selector);
+        cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.verifyCheckpointProofs({
             balanceContainerProof: proofs.balanceContainerProof,
             proofs: proofs.balanceProofs
@@ -1104,7 +1101,7 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
             validators,
             pod.currentCheckpointTimestamp()
         );
-        cheats.expectRevert(IEigenPod.NoActiveCheckpoint.selector);
+        cheats.expectRevert(IEigenPodErrors.NoActiveCheckpoint.selector);
         pod.verifyCheckpointProofs({
             balanceContainerProof: proofs.balanceContainerProof,
             proofs: proofs.balanceProofs
@@ -1337,7 +1334,7 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         for (uint i = 0; i < validators.length; i++) {
             bytes32 pubkeyHash = beaconChain.pubkeyHash(validators[i]);
 
-            IEigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(pubkeyHash);
+            IEigenPodTypes.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(pubkeyHash);
             assertEq(info.restakedBalanceGwei, beaconChain.currentBalance(validators[i]), "should have restaked full current balance");
             assertEq(info.lastCheckpointedAt, pod.lastCheckpointTimestamp(), "should have recorded correct update time");
         }
@@ -1380,10 +1377,10 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         for (uint i = 0; i < validators.length; i++) {
             bytes32 pubkeyHash = beaconChain.pubkeyHash(validators[i]);
 
-            IEigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(pubkeyHash);
+            IEigenPodTypes.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(pubkeyHash);
             assertEq(info.restakedBalanceGwei, 0, "should have 0 restaked balance");
             assertEq(info.lastCheckpointedAt, pod.lastCheckpointTimestamp(), "should have recorded correct update time");
-            assertTrue(info.status == IEigenPod.VALIDATOR_STATUS.WITHDRAWN, "should have recorded correct update time");
+            assertTrue(info.status == IEigenPodTypes.VALIDATOR_STATUS.WITHDRAWN, "should have recorded correct update time");
         }
     }
 
@@ -1431,7 +1428,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
         cheats.prank(pauser);
         eigenPodManagerMock.pause(2 ** PAUSED_VERIFY_STALE_BALANCE);
-        cheats.expectRevert(IEigenPod.CurrentlyPaused.selector);
+        cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.verifyStaleBalance({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -1448,7 +1445,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
         cheats.prank(pauser);
         eigenPodManagerMock.pause(2 ** PAUSED_START_CHECKPOINT);
-        cheats.expectRevert(IEigenPod.CurrentlyPaused.selector);
+        cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.verifyStaleBalance({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -1472,7 +1469,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         uint64 lastCheckpointTimestamp = pod.lastCheckpointTimestamp();
         // proof for given beaconTimestamp is not yet stale, this should revert
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
-        cheats.expectRevert(IEigenPod.BeaconTimestampTooFarInPast.selector);
+        cheats.expectRevert(IEigenPodErrors.BeaconTimestampTooFarInPast.selector);
         pod.verifyStaleBalance({
             beaconTimestamp: lastCheckpointTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -1493,7 +1490,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
         // proof for given beaconTimestamp is not yet stale, this should revert
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
-        cheats.expectRevert(IEigenPod.BeaconTimestampTooFarInPast.selector);
+        cheats.expectRevert(IEigenPodErrors.BeaconTimestampTooFarInPast.selector);
         pod.verifyStaleBalance({
             beaconTimestamp: 0,
             stateRootProof: proofs.stateRootProof,
@@ -1514,7 +1511,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         beaconChain.advanceEpoch();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
-        cheats.expectRevert(IEigenPod.ValidatorNotActiveInPod.selector);
+        cheats.expectRevert(IEigenPodErrors.ValidatorNotActiveInPod.selector);
         pod.verifyStaleBalance({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -1536,7 +1533,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         beaconChain.advanceEpoch();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
-        cheats.expectRevert(IEigenPod.ValidatorNotSlashedOnBeaconChain.selector);
+        cheats.expectRevert(IEigenPodErrors.ValidatorNotSlashedOnBeaconChain.selector);
         pod.verifyStaleBalance({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -1712,7 +1709,7 @@ contract EigenPodHarnessSetup is EigenPodUnitTests {
         // Deploy EP Harness
         eigenPodHarnessImplementation = new EigenPodHarness(
             ethPOSDepositMock,
-            eigenPodManagerMock,
+            IEigenPodManager(address(eigenPodManagerMock)),
             GENESIS_TIME_LOCAL
         );
 
@@ -1736,8 +1733,8 @@ contract EigenPodUnitTests_proofParsingTests is EigenPodHarnessSetup, ProofParsi
     bytes32[] validatorFields;
 
     function _assertWithdrawalCredentialsSet(uint256 restakedBalanceGwei) internal {
-        IEigenPod.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
-        assertEq(uint8(validatorInfo.status), uint8(IEigenPod.VALIDATOR_STATUS.ACTIVE), "Validator status should be active");
+        IEigenPodTypes.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
+        assertEq(uint8(validatorInfo.status), uint8(IEigenPodTypes.VALIDATOR_STATUS.ACTIVE), "Validator status should be active");
         assertEq(validatorInfo.validatorIndex, validatorIndex, "Validator index incorrectly set");
         assertEq(validatorInfo.lastCheckpointedAt, oracleTimestamp, "Last checkpointed at timestamp incorrectly set");
         assertEq(validatorInfo.restakedBalanceGwei, restakedBalanceGwei, "Restaked balance gwei not set correctly");

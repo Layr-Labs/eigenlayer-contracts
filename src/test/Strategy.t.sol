@@ -18,7 +18,7 @@ contract StrategyTests is EigenLayerTestHelper {
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(invalidDepositor);
-        cheats.expectRevert(IStrategy.OnlyStrategyManager.selector);
+        cheats.expectRevert(IStrategyErrors.OnlyStrategyManager.selector);
         wethStrat.deposit(underlyingToken, 1e18);
         cheats.stopPrank();
     }
@@ -34,7 +34,7 @@ contract StrategyTests is EigenLayerTestHelper {
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(invalidWithdrawer);
-        cheats.expectRevert(IStrategy.OnlyStrategyManager.selector);
+        cheats.expectRevert(IStrategyErrors.OnlyStrategyManager.selector);
         wethStrat.withdraw(depositor, underlyingToken, 1e18);
         cheats.stopPrank();
     }
@@ -47,7 +47,7 @@ contract StrategyTests is EigenLayerTestHelper {
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(IStrategy.WithdrawalAmountExceedsTotalDeposits.selector);
+        cheats.expectRevert(IStrategyErrors.WithdrawalAmountExceedsTotalDeposits.selector);
         wethStrat.withdraw(depositor, underlyingToken, shares);
 
         cheats.stopPrank();

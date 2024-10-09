@@ -9,12 +9,7 @@ import "./IShareManager.sol";
 import "./IPausable.sol";
 import "./IStrategy.sol";
 
-/**
- * @title Interface for factory that creates and manages solo staking pods that have their withdrawal credentials pointed to EigenLayer.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- */
-interface IEigenPodManager is IShareManager, IPausable {
+interface IEigenPodManagerErrors{
     /// @dev Thrown when caller is not a EigenPod.
     error OnlyEigenPod();
     /// @dev Thrown when caller is not DelegationManager.
@@ -30,7 +25,9 @@ interface IEigenPodManager is IShareManager, IPausable {
     /// @dev Thrown when the pods shares are negative and a beacon chain balance update is attempted.
     /// The podOwner should complete legacy withdrawal first.
     error LegacyWithdrawalsNotCompleted();
+}
 
+interface IEigenPodManagerEvents {
     /// @notice Emitted to notify the deployment of an EigenPod
     event PodDeployed(address indexed eigenPod, address indexed podOwner);
 
@@ -52,7 +49,14 @@ interface IEigenPodManager is IShareManager, IPausable {
         address withdrawer,
         bytes32 withdrawalRoot
     );
+}
 
+/**
+ * @title Interface for factory that creates and manages solo staking pods that have their withdrawal credentials pointed to EigenLayer.
+ * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ */
+interface IEigenPodManager is IEigenPodManagerErrors, IEigenPodManagerEvents, IShareManager, IPausable {
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.

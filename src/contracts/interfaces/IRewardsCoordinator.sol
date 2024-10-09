@@ -4,16 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
 
-/**
- * @title Interface for the `IRewardsCoordinator` contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice Allows AVSs to make "Rewards Submissions", which get distributed amongst the AVSs' confirmed
- * Operators and the Stakers delegated to those Operators.
- * Calculations are performed based on the completed RewardsSubmission, with the results posted in
- * a Merkle root against which Stakers & Operators can make claims.
- */
-interface IRewardsCoordinator {
+interface IRewardsCoordinatorErrors {
     /// @dev Thrown when msg.sender is not allowed to call a function
     error UnauthorizedCaller();
 
@@ -76,8 +67,9 @@ interface IRewardsCoordinator {
     error RootNotActivated();
     /// @dev Thrown if a root has already been activated.
     error RootAlreadyActivated();
+}
 
-    /// STRUCTS ///
+interface IRewardsCoordinatorTypes {
     /**
      * @notice A linear combination of strategies and multipliers for AVSs to weigh
      * EigenLayer strategies.
@@ -189,9 +181,9 @@ interface IRewardsCoordinator {
         bytes[] tokenTreeProofs;
         TokenTreeMerkleLeaf[] tokenLeaves;
     }
+}
 
-    /// EVENTS ///
-
+interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
     /// @notice emitted when an AVS creates a valid RewardsSubmission
     event AVSRewardsSubmissionCreated(
         address indexed avs,
@@ -199,6 +191,7 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+    
     /// @notice emitted when a valid RewardsSubmission is created for all stakers by a valid submitter
     event RewardsSubmissionForAllCreated(
         address indexed submitter,
@@ -206,6 +199,7 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+    
     /// @notice emitted when a valid RewardsSubmission is created when rewardAllStakersAndOperators is called
     event RewardsSubmissionForAllEarnersCreated(
         address indexed tokenHopper,
@@ -213,14 +207,20 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+    
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
+    
     event RewardsForAllSubmitterSet(
         address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
+    
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
+    
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+    
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
+    
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
@@ -228,7 +228,9 @@ interface IRewardsCoordinator {
         uint32 indexed rewardsCalculationEndTimestamp,
         uint32 activatedAt
     );
+    
     event DistributionRootDisabled(uint32 indexed rootIndex);
+    
     /// @notice root is one of the submitted distribution roots that was claimed against
     event RewardsClaimed(
         bytes32 root,
@@ -238,7 +240,18 @@ interface IRewardsCoordinator {
         IERC20 token,
         uint256 claimedAmount
     );
+}
 
+/**
+ * @title Interface for the `IRewardsCoordinator` contract.
+ * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ * @notice Allows AVSs to make "Rewards Submissions", which get distributed amongst the AVSs' confirmed
+ * Operators and the Stakers delegated to those Operators.
+ * Calculations are performed based on the completed RewardsSubmission, with the results posted in
+ * a Merkle root against which Stakers & Operators can make claims.
+ */
+interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorEvents {
     /**
      *
      *                         VIEW FUNCTIONS

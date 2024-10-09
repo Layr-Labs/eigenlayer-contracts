@@ -137,7 +137,7 @@ contract User is PrintUtils {
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory params = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
-            ownedShares: shares,
+            shares: shares,
             withdrawer: withdrawer
         });
 
