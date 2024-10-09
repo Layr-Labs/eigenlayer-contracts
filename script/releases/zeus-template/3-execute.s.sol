@@ -13,7 +13,7 @@ contract Execute is MultisigBuilder {
 
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
 
-        QueueEigenPodAndManager queue = new QueueEigenPodAndManager();
+        Queue queue = new Queue();
 
         MultisigCall[] memory _executorCalls = queue._queue(addrs, env, params);
 
