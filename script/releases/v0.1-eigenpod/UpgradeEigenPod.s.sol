@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "script/Release_Template.s.sol";
+import "script/templates/MultisigBuilder.sol";
+
 import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
 
 contract UpgradeEigenPod is MultisigBuilder {

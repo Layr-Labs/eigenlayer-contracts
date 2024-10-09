@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "script/Release_Template.s.sol";
+import "script/templates/EOADeployer.sol";
+
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/interfaces/IEigenPodManager.sol";

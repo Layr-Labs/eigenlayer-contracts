@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "script/Release_Template.s.sol";
+import "script/templates/QueueBuilder.sol";
+import "script/utils/MultisigCallUtils.sol";
+
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/interfaces/IEigenPodManager.sol";
@@ -10,7 +12,6 @@ import "script/utils/StringUtils.sol";
 
 contract QueueEigenPodAndManager is QueueBuilder {
     using MultisigCallUtils for MultisigCall[];
-
 
     function _queue(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {
 

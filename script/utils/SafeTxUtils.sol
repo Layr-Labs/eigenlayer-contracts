@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "script/utils/Encoders.sol";
+import {ISafe, EncGnosisSafe} from "script/utils/Encoders.sol";
 
 /// @notice SafeTx data struct
 /// @dev based on <https://docs.safe.global/sdk/api-kit/guides/propose-and-confirm-transactions#propose-a-transaction-to-the-service>
@@ -17,6 +17,7 @@ library SafeTxUtils {
         SafeTx memory t,
         address timelock
     ) public pure returns (bytes memory) {
+        // TODO: validate the correctness of this sig
         bytes1 v = bytes1(uint8(1));
         bytes32 r = bytes32(uint256(uint160(timelock)));
         bytes32 s;
