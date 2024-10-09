@@ -235,7 +235,7 @@ contract DeployFromScratch is Script, Test {
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
 
         delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, avsDirectory);
+        strategyManagerImplementation = new StrategyManager(delegation);
         avsDirectoryImplementation = new AVSDirectory(delegation, DEALLOCATION_DELAY);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
@@ -467,10 +467,6 @@ contract DeployFromScratch is Script, Test {
         require(
             strategyManagerContract.delegation() == delegation,
             "strategyManager: delegation address not set correctly"
-        );
-        require(
-            strategyManagerContract.eigenPodManager() == eigenPodManager,
-            "strategyManager: eigenPodManager address not set correctly"
         );
         require(
             eigenPodManagerContract.ethPOS() == ethPOSDeposit,

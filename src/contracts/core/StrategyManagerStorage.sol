@@ -30,9 +30,13 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     IDelegationManager public immutable delegation;
 
+<<<<<<< HEAD
     IEigenPodManager public immutable eigenPodManager;
 
     IAVSDirectory public immutable avsDirectory;
+=======
+    uint256 internal immutable ORIGINAL_CHAIN_ID;
+>>>>>>> c7440c1a (fix: remove immutable EPM & AVSD from SM)
 
     // Mutatables
 
@@ -85,12 +89,10 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     /**
      * @param _delegation The delegation contract of EigenLayer.
-     * @param _eigenPodManager The contract that keeps track of EigenPod stakes for restaking beacon chain ether.
      */
-    constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, IAVSDirectory _avsDirectory) {
+    constructor(IDelegationManager _delegation) {
         delegation = _delegation;
-        eigenPodManager = _eigenPodManager;
-        avsDirectory = _avsDirectory;
+        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**

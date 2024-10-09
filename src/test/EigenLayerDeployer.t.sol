@@ -179,7 +179,7 @@ contract EigenLayerDeployer is Operators {
             17.5 days // min alloc delay
         );
 
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, avsDirectory);
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegation);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,

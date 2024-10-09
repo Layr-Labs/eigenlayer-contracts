@@ -252,7 +252,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, avsDirectory);
+        strategyManagerImplementation = new StrategyManager(delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
@@ -382,7 +382,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, avsDirectory);
+        strategyManagerImplementation = new StrategyManager(delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
@@ -469,7 +469,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, avsDirectory);
+        strategyManagerImplementation = new StrategyManager(delegationManager);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,

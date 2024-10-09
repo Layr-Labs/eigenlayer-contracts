@@ -366,7 +366,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, avsDirectory);
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegation);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, delegation);
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
