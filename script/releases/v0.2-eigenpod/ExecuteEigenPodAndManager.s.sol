@@ -12,7 +12,7 @@ import "./QueueEigenPodAndManager.s.sol";
 contract ExecuteEigenPodAndManager is MultisigBuilder {
 
     using MultisigCallUtils for MultisigCall[];
-    using TransactionHelper for Transaction;
+    using SafeTxUtils for SafeTx;
 
     MultisigCall[] internal _opsCalls;
 

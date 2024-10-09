@@ -5,50 +5,13 @@ import "script/utils/ConfigParser.sol";
 import "script/utils/Encoders.sol";
 import "script/utils/Interfaces.sol";
 import "script/utils/MultisigCallUtils.s.sol";
+import "script/utils/SafeTxUtils.sol";
 
 /// @notice Deployment data struct
 struct Deployment {
     string name;
     address deployedTo;
 }
-
-/// @notice Tx data struct
-/// @dev based on <https://docs.safe.global/sdk/api-kit/guides/propose-and-confirm-transactions#propose-a-transaction-to-the-service>
-struct Transaction {
-    address to;
-    uint256 value;
-    bytes data;
-    EncGnosisSafe.Operation op;
-}
-
-library TransactionHelper {
-    function encodeForExecutor(
-        Transaction memory t,
-        address timelock
-    ) public pure returns (bytes memory) {
-        bytes1 v = bytes1(uint8(1));
-        bytes32 r = bytes32(uint256(uint160(timelock)));
-        bytes32 s;
-        bytes memory sig = abi.encodePacked(r,s,v);
-
-        bytes memory executorCalldata = abi.encodeWithSelector(
-            ISafe.execTransaction.selector,
-            t.to,
-            t.value,
-            t.data,
-            t.op,
-            0, // safeTxGas
-            0, // baseGas
-            0, // gasPrice
-            address(uint160(0)), // gasToken
-            payable(address(uint160(0))), // refundReceiver
-            sig
-        );
-
-        return executorCalldata;
-    }
-}
-
 
 /// TODO: break all abstract contracts out into their own file in a `template` directory
 
@@ -75,8 +38,8 @@ abstract contract MultisigBuilder is ConfigParser {
     using MultisigCallUtils for MultisigCall[];
     MultisigCall[] internal _multisigCalls;
 
-    /// @return a Transaction object for a Gnosis Safe to ingest
-    function execute(string memory envPath) public returns (Transaction memory) {
+    /// @return a SafeTx object for a Gnosis Safe to ingest
+    function execute(string memory envPath) public returns (SafeTx memory) {
         (
             Addresses memory addrs,
             Environment memory env,
@@ -88,7 +51,7 @@ abstract contract MultisigBuilder is ConfigParser {
 
         bytes memory data = _multisigCalls.encodeMultisendTxs();
 
-        return Transaction({
+        return SafeTx({
             to: params.multiSendCallOnly,
             value: 0, // TODO: determine if this should be user-controlled
             data: data,
@@ -117,12 +80,12 @@ abstract contract MultisigBuilder is ConfigParser {
 abstract contract QueueBuilder is ConfigParser {
 
         using MultisigCallUtils for MultisigCall[];
-        using TransactionHelper for Transaction;
+        using SafeTxUtils for SafeTx;
 
         MultisigCall[] _executorCalls;
 
-        /// @return a Transaction object for a Gnosis Safe to ingest
-        function queue(string memory envPath) public returns (Transaction memory) {
+        /// @return a SafeTx object for a Gnosis Safe to ingest
+        function queue(string memory envPath) public returns (SafeTx memory) {
             (
                 Addresses memory addrs,
                 Environment memory env,
@@ -145,7 +108,7 @@ abstract contract QueueBuilder is ConfigParser {
             );
 
             // encode timelock data for ops multisig
-            return Transaction({
+            return SafeTx({
                 to: addrs.timelock,
                 value: 0,
                 data: timelockCalldata,
@@ -161,7 +124,7 @@ abstract contract QueueBuilder is ConfigParser {
         function makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly, address timelock) public pure returns (bytes memory) {
             bytes memory data = calls.encodeMultisendTxs();
 
-            bytes memory executorCalldata = Transaction({
+            bytes memory executorCalldata = SafeTx({
                 to: multiSendCallOnly,
                 value: 0,
                 data: data,
@@ -177,13 +140,13 @@ abstract contract QueueBuilder is ConfigParser {
 abstract contract OpsTimelockBuilder is MultisigBuilder {
 
     using MultisigCallUtils for MultisigCall[];
-    using TransactionHelper for Transaction;
+    using SafeTxUtils for SafeTx;
 
     MultisigCall[] _executorCalls;
     MultisigCall[] _opsCalls;
 
-    /// @return a Transaction object for a Gnosis Safe to ingest
-    function queue(string memory envPath) public returns (Transaction memory) {
+    /// @return a SafeTx object for a Gnosis Safe to ingest
+    function queue(string memory envPath) public returns (SafeTx memory) {
         (
             Addresses memory addrs,
             Environment memory env,
@@ -206,7 +169,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
         );
 
         // encode timelock data for ops multisig
-        return Transaction({
+        return SafeTx({
             to: addrs.timelock,
             value: 0,
             data: timelockCalldata,
@@ -221,7 +184,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
     function makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly, address timelock) internal pure returns (bytes memory) {
         bytes memory data = calls.encodeMultisendTxs();
 
-        bytes memory executorCalldata = Transaction({
+        bytes memory executorCalldata = SafeTx({
             to: multiSendCallOnly,
             value: 0,
             data: data,
@@ -236,10 +199,10 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
 /// NOTE: WIP
 abstract contract NestedMultisigBuilder is ConfigParser {
 
-    /// @return a Transaction object for a Gnosis Safe to ingest
+    /// @return a SafeTx object for a Gnosis Safe to ingest
     /// @dev this object is intended to hold calldata to be sent to *yet another* Safe
     /// which will contain the actual relevant calldata
-    function execute(string memory envPath) public returns (Transaction memory) {
+    function execute(string memory envPath) public returns (SafeTx memory) {
         (
             Addresses memory addrs,
             Environment memory env,
@@ -250,5 +213,5 @@ abstract contract NestedMultisigBuilder is ConfigParser {
     }
 
     /// @notice to be implemented by inheriting contract
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (Transaction memory);
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (SafeTx memory);
 }
