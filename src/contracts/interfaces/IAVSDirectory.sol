@@ -322,13 +322,9 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     /**
      * @notice Returns an array of strategies in the operatorSet.
      * @param operatorSet The operatorSet to query.
-     * @param start The starting index of the array to query.
-     * @param length The amount of items of the array to return.
      */
     function getStrategiesInOperatorSet(
-        OperatorSet memory operatorSet,
-        uint256 start,
-        uint256 length
+        OperatorSet memory operatorSet
     ) external view returns (address[] memory strategies);
 
     /**

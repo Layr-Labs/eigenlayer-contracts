@@ -529,20 +529,16 @@ contract AVSDirectory is
     /**
      * @notice Returns an array of strategies in the operatorSet.
      * @param operatorSet The operatorSet to query.
-     * @param start The starting index of the array to query.
-     * @param length The amount of items of the array to return.
      */
     function getStrategiesInOperatorSet(
-        OperatorSet memory operatorSet,
-        uint256 start,
-        uint256 length
+        OperatorSet memory operatorSet
     ) external view returns (address[] memory strategies) {
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
-        uint256 maxLength = _operatorSetStrategies[encodedOperatorSet].length() - start;
-        if (length > maxLength) length = maxLength;
+        length = _operatorSetStrategies[encodedOperatorSet].length();
+
         strategies = new address[](length);
         for (uint256 i; i < length; ++i) {
-            strategies[i] = _operatorSetStrategies[encodedOperatorSet].at(start + i);
+            strategies[i] = _operatorSetStrategies[encodedOperatorSet].at(i);
         }
     }
 
