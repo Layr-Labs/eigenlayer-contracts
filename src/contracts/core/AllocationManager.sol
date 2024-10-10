@@ -383,9 +383,20 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function getAllocationInfo(
         address operator,
+        IStrategy strategy
+    ) external view returns (OperatorSet[] memory, MagnitudeInfo[] memory) {
+        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
+        MagnitudeInfo[] memory infos = getAllocationInfo(operator, strategy, operatorSets);
+
+        return (operatorSets, infos);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getAllocationInfo(
+        address operator,
         IStrategy strategy,
-        OperatorSet[] calldata operatorSets
-    ) external view returns (MagnitudeInfo[] memory) {
+        OperatorSet[] memory operatorSets
+    ) public view returns (MagnitudeInfo[] memory) {
         MagnitudeInfo[] memory infos = new MagnitudeInfo[](operatorSets.length);
 
         for (uint256 i = 0; i < operatorSets.length; ++i) {
@@ -403,31 +414,6 @@ contract AllocationManager is
         }
 
         return infos;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getSlashableMagnitudes(
-        address operator,
-        IStrategy[] calldata strategies
-    ) external view returns (OperatorSet[] memory, uint64[][] memory) {
-        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
-        uint64[][] memory slashableMagnitudes = new uint64[][](strategies.length);
-
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            slashableMagnitudes[i] = new uint64[](operatorSets.length);
-
-            for (uint256 j = 0; j < operatorSets.length; ++j) {
-                PendingMagnitudeInfo memory info = _getPendingMagnitudeInfo({
-                    operator: operator,
-                    strategy: strategies[i],
-                    operatorSetKey: _encodeOperatorSet(operatorSets[j])
-                });
-
-                slashableMagnitudes[i][j] = info.currentMagnitude;
-            }
-        }
-
-        return (operatorSets, slashableMagnitudes);
     }
 
     /// @inheritdoc IAllocationManager

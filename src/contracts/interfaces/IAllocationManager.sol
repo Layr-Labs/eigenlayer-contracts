@@ -179,6 +179,21 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      */
 
     /**
+     * @notice Returns the effective magnitude info for each of an operator's operator sets.
+     * This method fetches the complete list of an operator's operator sets, then applies any
+     * completable allocation modifications to return the effective, up-to-date current and
+     * pending magnitude allocations for each operator set.
+     * @param operator the operator to query
+     * @param strategy the strategy to get allocation info for
+     * @return the list of the operator's operator sets
+     * @return the corresponding allocation details for each operator set
+     */
+    function getAllocationInfo(
+        address operator,
+        IStrategy strategy
+    ) external view returns (OperatorSet[] memory, MagnitudeInfo[] memory);
+
+    /**
      * @notice Returns the effective magnitude info for each operator set. This method
      * automatically applies any completable modifications, returning the effective
      * current and pending allocations for each operator set.
@@ -192,20 +207,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
     ) external view returns (MagnitudeInfo[] memory);
-
-    /**
-     * @notice Returns the currently-allocated, slashable magnitude allocated from each strategy to
-     * an operator's operator sets
-     * @param operator the operator to query
-     * @param strategies the strategies to get the slashable magnitude for
-     *
-     * @return operatorSets the operator sets the operator is a member of
-     * @return slashableMagnitudes the current slashable magnitudes for each (operator set, strategy)
-     */
-    function getSlashableMagnitudes(
-        address operator,
-        IStrategy[] calldata strategies
-    ) external view returns (OperatorSet[] memory, uint64[][] memory);
 
     /**
      * @notice For a strategy, get the amount of magnitude not currently allocated to any operator set
