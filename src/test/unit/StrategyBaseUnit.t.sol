@@ -91,11 +91,10 @@ contract StrategyBaseUnitTests is Test {
 
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         cheats.expectEmit(true, true, true, true, address(strategy));
         emit ExchangeRateEmitted(1e18);
         uint256 newShares = strategy.deposit(underlyingToken, amountToDeposit);
-        cheats.stopPrank();
 
         require(newShares == amountToDeposit, "newShares != amountToDeposit");
         uint256 totalSharesAfter = strategy.totalShares();
@@ -115,10 +114,8 @@ contract StrategyBaseUnitTests is Test {
 
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
-        cheats.startPrank(address(strategyManager));
-
+        cheats.prank(address(strategyManager));
         uint256 newShares = strategy.deposit(underlyingToken, amountToDeposit);
-        cheats.stopPrank();
 
         require(newShares == amountToDeposit, "newShares != amountToDeposit");
         uint256 totalSharesAfter = strategy.totalShares();
@@ -127,17 +124,15 @@ contract StrategyBaseUnitTests is Test {
 
     function testDepositFailsWhenDepositsPaused() public {
         // pause deposits
-        cheats.startPrank(pauser);
+        cheats.prank(pauser);
         strategy.pause(1);
-        cheats.stopPrank();
 
         uint256 amountToDeposit = 1e18;
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         strategy.deposit(underlyingToken, amountToDeposit);
-        cheats.stopPrank();
     }
 
 
@@ -148,9 +143,8 @@ contract StrategyBaseUnitTests is Test {
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.expectRevert(IStrategyErrors.OnlyStrategyManager.selector);
-        cheats.startPrank(caller);
+        cheats.prank(caller);
         strategy.deposit(underlyingToken, amountToDeposit);
-        cheats.stopPrank();
     }
 
     function testDepositFailsWhenNotUsingUnderlyingToken(address notUnderlyingToken) public {
@@ -159,9 +153,8 @@ contract StrategyBaseUnitTests is Test {
         uint256 amountToDeposit = 1e18;
 
         cheats.expectRevert(IStrategyErrors.OnlyUnderlyingToken.selector);
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         strategy.deposit(IERC20(notUnderlyingToken), amountToDeposit);
-        cheats.stopPrank();
     }
 
     function testDepositFailForTooManyShares() public {
@@ -199,12 +192,10 @@ contract StrategyBaseUnitTests is Test {
         uint256 strategyBalanceBefore = underlyingToken.balanceOf(address(strategy));
 
         uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         cheats.expectEmit(true, true, true, true, address(strategy));
         emit ExchangeRateEmitted(1e18);
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
-
-        cheats.stopPrank();
 
         uint256 tokenBalanceAfter = underlyingToken.balanceOf(address(this));
         uint256 totalSharesAfter = strategy.totalShares();
@@ -223,9 +214,8 @@ contract StrategyBaseUnitTests is Test {
         uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
 
 
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
-        cheats.stopPrank();
 
         uint256 tokenBalanceAfter = underlyingToken.balanceOf(address(this));
         uint256 totalSharesAfter = strategy.totalShares();
@@ -243,9 +233,8 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 sharesBefore = strategy.totalShares();
         uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, amountToWithdraw);
-        cheats.stopPrank();
 
         require(sharesBefore == strategy.totalShares(), "shares changed");
         require(tokenBalanceBefore == underlyingToken.balanceOf(address(this)), "token balance changed");
@@ -256,16 +245,14 @@ contract StrategyBaseUnitTests is Test {
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
         // pause withdrawals
-        cheats.startPrank(pauser);
+        cheats.prank(pauser);
         strategy.pause(2);
-        cheats.stopPrank();
 
         uint256 amountToWithdraw = 1e18;
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, amountToWithdraw);
-        cheats.stopPrank();
     }
 
     function testWithdrawalFailsWhenCallingFromNotStrategyManager(address caller) public {
@@ -277,9 +264,8 @@ contract StrategyBaseUnitTests is Test {
         uint256 amountToWithdraw = 1e18;
 
         cheats.expectRevert(IStrategyErrors.OnlyStrategyManager.selector);
-        cheats.startPrank(caller);
+        cheats.prank(caller);
         strategy.withdraw(address(this), underlyingToken, amountToWithdraw);
-        cheats.stopPrank();
     }
 
     function testWithdrawalFailsWhenNotUsingUnderlyingToken(address notUnderlyingToken) public {
@@ -288,9 +274,8 @@ contract StrategyBaseUnitTests is Test {
         uint256 amountToWithdraw = 1e18;
 
         cheats.expectRevert(IStrategyErrors.OnlyUnderlyingToken.selector);
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), IERC20(notUnderlyingToken), amountToWithdraw);
-        cheats.stopPrank();
     }
 
     function testWithdrawFailsWhenSharesGreaterThanTotalShares(uint256 amountToDeposit, uint256 sharesToWithdraw) public virtual {
@@ -303,9 +288,8 @@ contract StrategyBaseUnitTests is Test {
         cheats.assume(sharesToWithdraw > totalSharesBefore);
 
         cheats.expectRevert(IStrategyErrors.WithdrawalAmountExceedsTotalDeposits.selector);
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
-        cheats.stopPrank();
     }
 
     function testWithdrawalFailsWhenTokenTransferFails() public {
@@ -328,9 +312,8 @@ contract StrategyBaseUnitTests is Test {
         ERC20_SetTransferReverting_Mock(address(underlyingToken)).setTransfersRevert(true);
 
         cheats.expectRevert();
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, amountToWithdraw);
-        cheats.stopPrank();
     }
 
     // uint240 input to prevent overflow
@@ -343,10 +326,9 @@ contract StrategyBaseUnitTests is Test {
     }
 
     function testDeposit_ZeroAmount() public {
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         cheats.expectRevert(IStrategyErrors.NewSharesZero.selector);
         strategy.deposit(underlyingToken, 0);
-        cheats.stopPrank();
     }
 
 
@@ -406,8 +388,7 @@ contract StrategyBaseUnitTests is Test {
 
         uint256 sharesToWithdraw = totalSharesBefore - sharesToLeave;
 
-        cheats.startPrank(address(strategyManager));
+        cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
-        cheats.stopPrank();
     }
 }

@@ -30,10 +30,6 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     IDelegationManager public immutable delegation;
 
-    IEigenPodManager public immutable eigenPodManager;
-
-    IAVSDirectory public immutable avsDirectory;
-
     // Mutatables
 
     bytes32 internal __deprecated_DOMAIN_SEPARATOR;
@@ -85,12 +81,11 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     /**
      * @param _delegation The delegation contract of EigenLayer.
-     * @param _eigenPodManager The contract that keeps track of EigenPod stakes for restaking beacon chain ether.
      */
-    constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, IAVSDirectory _avsDirectory) {
+    constructor(
+        IDelegationManager _delegation
+    ) {
         delegation = _delegation;
-        eigenPodManager = _eigenPodManager;
-        avsDirectory = _avsDirectory;
     }
 
     /**

@@ -368,10 +368,6 @@ contract ExistingDeploymentParser is Script, Test {
             strategyManager.delegation() == delegationManager,
             "strategyManager: delegationManager address not set correctly"
         );
-        require(
-            strategyManager.eigenPodManager() == eigenPodManager,
-            "strategyManager: eigenPodManager address not set correctly"
-        );
         // EPM
         require(
             address(eigenPodManager.ethPOS()) == ETHPOSDepositAddress,

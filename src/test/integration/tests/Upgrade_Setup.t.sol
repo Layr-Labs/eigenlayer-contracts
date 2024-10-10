@@ -81,10 +81,6 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
             strategyManager.delegation() == delegationManager,
             "strategyManager: delegationManager address not set correctly"
         );
-        require(
-            strategyManager.eigenPodManager() == eigenPodManager,
-            "strategyManager: eigenPodManager address not set correctly"
-        );
         // EPM
         require(
             eigenPodManager.eigenPodBeacon() == eigenPodBeacon,

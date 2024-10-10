@@ -138,9 +138,6 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
 
-    /// @notice Returns the EigenPodManager contract of EigenLayer
-    function eigenPodManager() external view returns (IEigenPodManager);
-
     /// @notice Returns the address of the `strategyWhitelister`
     function strategyWhitelister() external view returns (address);
 

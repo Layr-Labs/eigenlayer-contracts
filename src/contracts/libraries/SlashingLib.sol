@@ -103,7 +103,12 @@ library SlashingLib {
     ) internal {
         if (existingDepositShares == 0) {
             // if this is their first deposit for the operator, set the scaling factor to inverse of totalMagnitude
-            ssf.depositScalingFactor = uint256(WAD).divWad(ssf.getBeaconChainScalingFactor()).divWad(totalMagnitude);
+            /// forgefmt: disable-next-item
+            ssf.depositScalingFactor = 
+                uint256(WAD)
+                .divWad(ssf.getBeaconChainScalingFactor())
+                .divWad(totalMagnitude);
+
             return;
         }
         /**
@@ -133,9 +138,12 @@ library SlashingLib {
         uint256 newShares = currentShares + addedShares;
 
         // Step 3: Calculate newStakerDepositScalingFactor
-        uint256 newStakerDepositScalingFactor = newShares.divWad(existingDepositShares + addedShares).divWad(
-            totalMagnitude
-        ).divWad(uint256(ssf.getBeaconChainScalingFactor()));
+        /// forgefmt: disable-next-item
+        uint256 newStakerDepositScalingFactor = 
+            newShares
+            .divWad(existingDepositShares + addedShares)
+            .divWad(totalMagnitude)
+            .divWad(uint256(ssf.getBeaconChainScalingFactor()));
 
         ssf.depositScalingFactor = newStakerDepositScalingFactor;
     }
@@ -147,7 +155,11 @@ library SlashingLib {
         StakerScalingFactors memory ssf,
         uint64 magnitude
     ) internal pure returns (uint256 depositShares) {
-        depositShares = shares.divWad(ssf.getDepositScalingFactor()).divWad(uint256(ssf.getBeaconChainScalingFactor()))
+        /// forgefmt: disable-next-item
+        depositShares = 
+            shares
+            .divWad(ssf.getDepositScalingFactor())
+            .divWad(uint256(ssf.getBeaconChainScalingFactor()))
             .divWad(uint256(magnitude));
     }
 
@@ -156,7 +168,11 @@ library SlashingLib {
         StakerScalingFactors memory ssf,
         uint64 magnitude
     ) internal pure returns (uint256 shares) {
-        shares = depositShares.mulWad(ssf.getDepositScalingFactor()).mulWad(uint256(ssf.getBeaconChainScalingFactor()))
+        /// forgefmt: disable-next-item
+        shares = 
+            depositShares
+            .mulWad(ssf.getDepositScalingFactor())
+            .mulWad(uint256(ssf.getBeaconChainScalingFactor()))
             .mulWad(uint256(magnitude));
     }
 }

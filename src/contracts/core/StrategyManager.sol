@@ -50,13 +50,10 @@ contract StrategyManager is
 
     /**
      * @param _delegation The delegation contract of EigenLayer.
-     * @param _eigenPodManager The contract that keeps track of EigenPod stakes for restaking beacon chain ether.
      */
     constructor(
-        IDelegationManager _delegation,
-        IEigenPodManager _eigenPodManager,
-        IAVSDirectory _avsDirectory
-    ) StrategyManagerStorage(_delegation, _eigenPodManager, _avsDirectory) {
+        IDelegationManager _delegation
+    ) StrategyManagerStorage(_delegation) {
         _disableInitializers();
     }
 

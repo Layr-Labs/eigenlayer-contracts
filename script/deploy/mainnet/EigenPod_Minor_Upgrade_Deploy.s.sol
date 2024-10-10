@@ -70,7 +70,7 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
         string memory deployment_data = vm.readFile(m2DeploymentOutputPath);
         delegation = DelegationManager(stdJson.readAddress(deployment_data, ".addresses.delegationManager"));
         strategyManager = DelegationManager(address(delegation)).strategyManager();
-        eigenPodManager = strategyManager.eigenPodManager();
+        eigenPodManager = DelegationManager(address(delegation)).eigenPodManager();
         eigenPodBeacon = eigenPodManager.eigenPodBeacon();
         ethPOS = eigenPodManager.ethPOS();
 
