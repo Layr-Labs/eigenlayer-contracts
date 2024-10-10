@@ -51,31 +51,73 @@ contract AllocationManager is
         _transferOwnership(initialOwner);
     }
 
-    /**
-     * @notice This function takes a list of strategies and adds all completable modifications for each strategy,
-     * updating the encumberedMagnitude of the operator as needed.
-     *
-     * @param operator address to complete modifications for
-     * @param strategies a list of strategies to complete modifications for
-     * @param numToClear a list of number of pending modifications to complete for each strategy
-     *
-     * @dev can be called permissionlessly by anyone
-     */
-    function clearModificationQueue(
-        address operator,
-        IStrategy[] calldata strategies,
-        uint16[] calldata numToClear
-    ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
-        require(strategies.length == numToClear.length, InputArrayLengthMismatch());
-        require(delegation.isOperator(operator), OperatorNotRegistered());
+    /// @inheritdoc IAllocationManager
+    function slashOperator(
+        SlashingParams calldata params
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
+        require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
 
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            _clearModificationQueue({
-                operator: operator, 
-                strategy: strategies[i], 
-                numToClear: numToClear[i]
+        // Check that the operator is registered and slashable
+        OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: params.operatorSetId});
+        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        require(avsDirectory.isOperatorSlashable(params.operator, operatorSet), InvalidOperator());
+
+        for (uint256 i = 0; i < params.strategies.length; ++i) {
+            PendingMagnitudeInfo memory info =
+                _getPendingMagnitudeInfo(params.operator, params.strategies[i], operatorSetKey);
+
+            // 1. Calculate slashing amount and update current/ encumbered magnitude
+            uint64 slashedMagnitude = uint64(uint256(info.currentMagnitude).mulWad(params.wadToSlash));
+            info.currentMagnitude -= slashedMagnitude;
+            info.encumberedMagnitude -= slashedMagnitude;
+
+            // 2. If there is a pending deallocation, reduce pending deallocation proportionally.
+            // This ensures that when the deallocation is completed, less magnitude is freed.
+            if (info.pendingDiff < 0) {
+                uint64 slashedPending = uint64(uint256(uint128(-info.pendingDiff)).mulWad(params.wadToSlash));
+                info.pendingDiff += int128(uint128(slashedPending));
+
+                emit OperatorSetMagnitudeUpdated(
+                    params.operator,
+                    operatorSet,
+                    params.strategies[i],
+                    _addInt128(info.currentMagnitude, info.pendingDiff),
+                    info.effectTimestamp
+                );
+            }
+
+            // 3. Update the operator's allocation in storage
+            _updateMagnitudeInfo({
+                operator: params.operator,
+                strategy: params.strategies[i],
+                operatorSetKey: operatorSetKey,
+                info: info
+            });
+
+            emit OperatorSetMagnitudeUpdated(
+                params.operator, operatorSet, params.strategies[i], info.currentMagnitude, uint32(block.timestamp)
+            );
+
+            // 4. Reduce the operator's max magnitude
+            uint64 maxMagnitudeBeforeSlash = _maxMagnitudeHistory[params.operator][params.strategies[i]].latest();
+            uint64 maxMagnitudeAfterSlash = maxMagnitudeBeforeSlash - slashedMagnitude;
+            _maxMagnitudeHistory[params.operator][params.strategies[i]].push({
+                key: uint32(block.timestamp),
+                value: maxMagnitudeAfterSlash
+            });
+            emit TotalMagnitudeUpdated(params.operator, params.strategies[i], maxMagnitudeAfterSlash);
+
+            // 5. Decrease operators shares in the DelegationManager
+            delegation.decreaseOperatorShares({
+                operator: params.operator,
+                strategy: params.strategies[i],
+                previousTotalMagnitude: maxMagnitudeBeforeSlash,
+                newTotalMagnitude: maxMagnitudeAfterSlash
             });
         }
+
+        // TODO: find a solution to connect operatorSlashed to magnitude updates
+        emit OperatorSlashed(params.operator, operatorSet, params.strategies, params.wadToSlash, params.description);
     }
 
     /**
@@ -155,73 +197,31 @@ contract AllocationManager is
         }
     }
 
-    /// @inheritdoc IAllocationManager
-    function slashOperator(
-        SlashingParams calldata params
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
-        require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
+    /**
+     * @notice This function takes a list of strategies and adds all completable modifications for each strategy,
+     * updating the encumberedMagnitude of the operator as needed.
+     *
+     * @param operator address to complete modifications for
+     * @param strategies a list of strategies to complete modifications for
+     * @param numToClear a list of number of pending modifications to complete for each strategy
+     *
+     * @dev can be called permissionlessly by anyone
+     */
+    function clearModificationQueue(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint16[] calldata numToClear
+    ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
+        require(strategies.length == numToClear.length, InputArrayLengthMismatch());
+        require(delegation.isOperator(operator), OperatorNotRegistered());
 
-        // Check that the operator is registered and slashable
-        OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: params.operatorSetId});
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
-        require(avsDirectory.isOperatorSlashable(params.operator, operatorSet), InvalidOperator());
-
-        for (uint256 i = 0; i < params.strategies.length; ++i) {
-            PendingMagnitudeInfo memory info =
-                _getPendingMagnitudeInfo(params.operator, params.strategies[i], operatorSetKey);
-
-            // 1. Calculate slashing amount and update current/ encumbered magnitude
-            uint64 slashedMagnitude = uint64(uint256(info.currentMagnitude).mulWad(params.wadToSlash));
-            info.currentMagnitude -= slashedMagnitude;
-            info.encumberedMagnitude -= slashedMagnitude;
-
-            // 2. If there is a pending deallocation, reduce pending deallocation proportionally.
-            // This ensures that when the deallocation is completed, less magnitude is freed.
-            if (info.pendingDiff < 0) {
-                uint64 slashedPending = uint64(uint256(uint128(-info.pendingDiff)).mulWad(params.wadToSlash));
-                info.pendingDiff += int128(uint128(slashedPending));
-
-                emit OperatorSetMagnitudeUpdated(
-                    params.operator,
-                    operatorSet,
-                    params.strategies[i],
-                    _addInt128(info.currentMagnitude, info.pendingDiff),
-                    info.effectTimestamp
-                );
-            }
-
-            // 3. Update the operator's allocation in storage
-            _updateMagnitudeInfo({
-                operator: params.operator,
-                strategy: params.strategies[i],
-                operatorSetKey: operatorSetKey,
-                info: info
-            });
-
-            emit OperatorSetMagnitudeUpdated(
-                params.operator, operatorSet, params.strategies[i], info.currentMagnitude, uint32(block.timestamp)
-            );
-
-            // 4. Reduce the operator's max magnitude
-            uint64 maxMagnitudeBeforeSlash = _maxMagnitudeHistory[params.operator][params.strategies[i]].latest();
-            uint64 maxMagnitudeAfterSlash = maxMagnitudeBeforeSlash - slashedMagnitude;
-            _maxMagnitudeHistory[params.operator][params.strategies[i]].push({
-                key: uint32(block.timestamp),
-                value: maxMagnitudeAfterSlash
-            });
-            emit TotalMagnitudeUpdated(params.operator, params.strategies[i], maxMagnitudeAfterSlash);
-
-            // 5. Decrease operators shares in the DelegationManager
-            delegation.decreaseOperatorShares({
-                operator: params.operator,
-                strategy: params.strategies[i],
-                previousTotalMagnitude: maxMagnitudeBeforeSlash,
-                newTotalMagnitude: maxMagnitudeAfterSlash
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            _clearModificationQueue({
+                operator: operator, 
+                strategy: strategies[i], 
+                numToClear: numToClear[i]
             });
         }
-
-        // TODO: find a solution to connect operatorSlashed to magnitude updates
-        emit OperatorSlashed(params.operator, operatorSet, params.strategies, params.wadToSlash, params.description);
     }
 
     /// @inheritdoc IAllocationManager
