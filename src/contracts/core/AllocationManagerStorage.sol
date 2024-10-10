@@ -57,7 +57,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
     /// This determines how long it takes for allocations to take effect in the future.
     mapping(address => AllocationDelayInfo) internal _allocationDelayInfo;
-    
+
     // Construction
 
     constructor(

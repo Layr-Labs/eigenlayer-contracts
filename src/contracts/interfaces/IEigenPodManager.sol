@@ -9,7 +9,7 @@ import "./IShareManager.sol";
 import "./IPausable.sol";
 import "./IStrategy.sol";
 
-interface IEigenPodManagerErrors{
+interface IEigenPodManagerErrors {
     /// @dev Thrown when caller is not a EigenPod.
     error OnlyEigenPod();
     /// @dev Thrown when caller is not DelegationManager.

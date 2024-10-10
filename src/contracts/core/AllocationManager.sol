@@ -141,11 +141,7 @@ contract AllocationManager is
             require(avsDirectory.isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
 
             // 1. For the given (operator,strategy) complete any pending modifications to free up encumberedMagnitude
-            _clearModificationQueue({
-                operator: msg.sender, 
-                strategy: allocation.strategy, 
-                numToClear: type(uint16).max
-            });
+            _clearModificationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
 
             // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
             // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
@@ -216,11 +212,7 @@ contract AllocationManager is
         require(delegation.isOperator(operator), OperatorNotRegistered());
 
         for (uint256 i = 0; i < strategies.length; ++i) {
-            _clearModificationQueue({
-                operator: operator, 
-                strategy: strategies[i], 
-                numToClear: numToClear[i]
-            });
+            _clearModificationQueue({operator: operator, strategy: strategies[i], numToClear: numToClear[i]});
         }
     }
 
@@ -231,7 +223,9 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function setAllocationDelay(uint32 delay) external {
+    function setAllocationDelay(
+        uint32 delay
+    ) external {
         require(delegation.isOperator(msg.sender), OperatorNotRegistered());
         _setAllocationDelay(msg.sender, delay);
     }
@@ -298,9 +292,7 @@ contract AllocationManager is
      */
     struct PendingMagnitudeInfo {
         uint64 encumberedMagnitude;
-
         uint64 currentMagnitude;
-
         int128 pendingDiff;
         uint32 effectTimestamp;
     }
@@ -308,7 +300,7 @@ contract AllocationManager is
     /**
      * @dev For an operator set, get the operator's effective allocated magnitude.
      * If the operator set has a pending modification that can be completed at the
-     * current timestamp, this method returns a view of the allocation as if the modification 
+     * current timestamp, this method returns a view of the allocation as if the modification
      * was completed.
      * @return info the effective allocated and pending magnitude for the operator set, and
      * the effective encumbered magnitude for all operator sets belonging to this strategy
@@ -370,14 +362,18 @@ contract AllocationManager is
 
     /// @dev Returns an `OperatorSet` encoded into a 32-byte value.
     /// @param operatorSet The `OperatorSet` to encode.
-    function _encodeOperatorSet(OperatorSet memory operatorSet) internal pure returns (bytes32) {
+    function _encodeOperatorSet(
+        OperatorSet memory operatorSet
+    ) internal pure returns (bytes32) {
         return bytes32(abi.encodePacked(operatorSet.avs, uint96(operatorSet.operatorSetId)));
     }
 
     /// @dev Returns an `OperatorSet` decoded from an encoded 32-byte value.
     /// @param encoded The encoded `OperatorSet` to decode.
     /// @dev Assumes `encoded` is encoded via `_encodeOperatorSet(operatorSet)`.
-    function _decodeOperatorSet(bytes32 encoded) internal pure returns (OperatorSet memory) {
+    function _decodeOperatorSet(
+        bytes32 encoded
+    ) internal pure returns (OperatorSet memory) {
         return OperatorSet({
             avs: address(uint160(uint256(encoded) >> 96)),
             operatorSetId: uint32(uint256(encoded) & type(uint96).max)
@@ -396,7 +392,7 @@ contract AllocationManager is
             PendingMagnitudeInfo memory info = _getPendingMagnitudeInfo({
                 operator: operator,
                 strategy: strategy,
-                operatorSetKey: _encodeOperatorSet(operatorSets[i]) 
+                operatorSetKey: _encodeOperatorSet(operatorSets[i])
             });
 
             infos[i] = MagnitudeInfo({
@@ -467,7 +463,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function getMaxMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory) {
+    function getMaxMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory) {
         uint64[] memory maxMagnitudes = new uint64[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
@@ -501,7 +500,9 @@ contract AllocationManager is
      * @return delay The time in seconds between allocating magnitude and magnitude becoming slashable
      */
     /// @inheritdoc IAllocationManager
-    function getAllocationDelay(address operator) public view returns (bool isSet, uint32 delay) {
+    function getAllocationDelay(
+        address operator
+    ) public view returns (bool isSet, uint32 delay) {
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
         if (info.pendingDelay != 0 && block.timestamp >= info.effectTimestamp) {

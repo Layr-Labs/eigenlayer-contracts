@@ -205,13 +205,13 @@ contract DelegationManager is
 
         // actually check that the signature is valid
         _checkIsValidSignatureNow({
-            signer: staker, 
+            signer: staker,
             signableDigest: calculateStakerDelegationDigestHash({
-                staker: staker, 
-                nonce: currentStakerNonce, 
-                operator: operator, 
+                staker: staker,
+                nonce: currentStakerNonce,
+                operator: operator,
                 expiry: stakerSignatureAndExpiry.expiry
-            }), 
+            }),
             signature: stakerSignatureAndExpiry.signature
         });
 
@@ -517,14 +517,10 @@ contract DelegationManager is
             require(!delegationApproverSaltIsSpent[approver][approverSalt], SaltSpent());
             // actually check that the signature is valid
             _checkIsValidSignatureNow({
-                signer: approver, 
-                signableDigest:  calculateDelegationApprovalDigestHash(
-                    staker, 
-                    operator, 
-                    approver, 
-                    approverSalt, 
-                    approverSignatureAndExpiry.expiry
-                ), 
+                signer: approver,
+                signableDigest: calculateDelegationApprovalDigestHash(
+                    staker, operator, approver, approverSalt, approverSignatureAndExpiry.expiry
+                ),
                 signature: approverSignatureAndExpiry.signature
             });
 

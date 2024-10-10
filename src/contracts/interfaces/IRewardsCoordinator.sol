@@ -191,7 +191,7 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
-    
+
     /// @notice emitted when a valid RewardsSubmission is created for all stakers by a valid submitter
     event RewardsSubmissionForAllCreated(
         address indexed submitter,
@@ -199,7 +199,7 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
-    
+
     /// @notice emitted when a valid RewardsSubmission is created when rewardAllStakersAndOperators is called
     event RewardsSubmissionForAllEarnersCreated(
         address indexed tokenHopper,
@@ -207,20 +207,20 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
-    
+
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
-    
+
     event RewardsForAllSubmitterSet(
         address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
-    
+
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
-    
+
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
-    
+
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
-    
+
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
@@ -228,9 +228,9 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         uint32 indexed rewardsCalculationEndTimestamp,
         uint32 activatedAt
     );
-    
+
     event DistributionRootDisabled(uint32 indexed rootIndex);
-    
+
     /// @notice root is one of the submitted distribution roots that was claimed against
     event RewardsClaimed(
         bytes32 root,

@@ -71,11 +71,7 @@ abstract contract SignatureUtils is ISignatureUtils {
     }
 
     /// @dev Helper for checking if a signature is valid, reverts if not valid.
-    function _checkIsValidSignatureNow(
-        address signer,
-        bytes32 signableDigest,
-        bytes memory signature
-    ) internal view {
+    function _checkIsValidSignatureNow(address signer, bytes32 signableDigest, bytes memory signature) internal view {
         if (!signer.isValidSignatureNow(signableDigest, signature)) {
             revert InvalidSignature();
         }

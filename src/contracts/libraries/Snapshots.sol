@@ -52,7 +52,9 @@ library Snapshots {
     /**
      * @dev Returns the value in the most recent snapshot, or WAD if there are no snapshots.
      */
-    function latest(DefaultWadHistory storage self) internal view returns (uint64) {
+    function latest(
+        DefaultWadHistory storage self
+    ) internal view returns (uint64) {
         uint256 pos = self._snapshots.length;
         return pos == 0 ? WAD : _unsafeAccess(self._snapshots, pos - 1)._value;
     }
@@ -60,7 +62,9 @@ library Snapshots {
     /**
      * @dev Returns the number of snapshots.
      */
-    function length(DefaultWadHistory storage self) internal view returns (uint256) {
+    function length(
+        DefaultWadHistory storage self
+    ) internal view returns (uint256) {
         return self._snapshots.length;
     }
 

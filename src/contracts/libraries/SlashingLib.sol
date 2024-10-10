@@ -79,8 +79,12 @@ library SlashingLib {
             scaledSharesToWithdraw.mulWad(uint256(ssf.getBeaconChainScalingFactor())).mulWad(uint256(operatorMagnitude));
     }
 
-    function getOperatorSharesToDecrease(uint256 operatorShares, uint64 previousTotalMagnitude, uint64 newTotalMagnitude) internal pure returns (uint256) {
-        return operatorShares - operatorShares.divWad(previousTotalMagnitude).mulWad(newTotalMagnitude);    
+    function getOperatorSharesToDecrease(
+        uint256 operatorShares,
+        uint64 previousTotalMagnitude,
+        uint64 newTotalMagnitude
+    ) internal pure returns (uint256) {
+        return operatorShares - operatorShares.divWad(previousTotalMagnitude).mulWad(newTotalMagnitude);
     }
 
     function decreaseBeaconChainScalingFactor(
@@ -107,17 +111,17 @@ library SlashingLib {
          * (1) newShares = currentShares + addedShares
          * (2) newDepositShares = existingDepositShares + addedShares
          * (3) newShares = newDepositShares * newStakerDepositScalingFactor * beaconChainScalingFactor * totalMagnitude
-         * 
+         *
          * Plugging (1) into (3):
          * (4) newDepositShares * newStakerDepositScalingFactor * beaconChainScalingFactor * totalMagnitude = currentShares + addedShares
-         * 
+         *
          * Solving for newStakerDepositScalingFactor
          * (5) newStakerDepositScalingFactor = (currentShares + addedShares) / (newDepositShares * beaconChainScalingFactor * totalMagnitude)
-         * 
+         *
          * Plugging in (2) into (5):
          * (7) newStakerDepositScalingFactor = (currentShares + addedShares) / ((existingDepositShares + addedShares) * beaconChainScalingFactor * totalMagnitude)
          * Note that magnitudes must be divided by WAD for precision. Thus,
-         * 
+         *
          * (8) newStakerDepositScalingFactor = WAD * (currentShares + addedShares) / ((existingDepositShares + addedShares) * beaconChainScalingFactor / WAD * totalMagnitude / WAD)
          * (9) newStakerDepositScalingFactor = (currentShares + addedShares) * WAD / (existingDepositShares + addedShares) * WAD / beaconChainScalingFactor * WAD / totalMagnitude
          */
@@ -129,11 +133,9 @@ library SlashingLib {
         uint256 newShares = currentShares + addedShares;
 
         // Step 3: Calculate newStakerDepositScalingFactor
-        uint256 newStakerDepositScalingFactor = 
-            newShares
-            .divWad(existingDepositShares + addedShares)
-            .divWad(totalMagnitude)
-            .divWad(uint256(ssf.getBeaconChainScalingFactor()));
+        uint256 newStakerDepositScalingFactor = newShares.divWad(existingDepositShares + addedShares).divWad(
+            totalMagnitude
+        ).divWad(uint256(ssf.getBeaconChainScalingFactor()));
 
         ssf.depositScalingFactor = newStakerDepositScalingFactor;
     }

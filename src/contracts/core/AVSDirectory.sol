@@ -514,8 +514,9 @@ contract AVSDirectory is
         bytes32 salt,
         uint256 expiry
     ) public view override returns (bytes32) {
-        return
-            _calculateSignableDigest(keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)));
+        return _calculateSignableDigest(
+            keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry))
+        );
     }
 
     /**

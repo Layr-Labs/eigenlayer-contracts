@@ -134,8 +134,8 @@ contract StrategyManager is
         uint256 nonce = nonces[staker];
         // Assert that the signature is valid.
         _checkIsValidSignatureNow({
-            signer: staker, 
-            signableDigest: calculateStrategyDepositDigestHash(staker, strategy, token, amount, nonce, expiry), 
+            signer: staker,
+            signableDigest: calculateStrategyDepositDigestHash(staker, strategy, token, amount, nonce, expiry),
             signature: signature
         });
         // Increment the nonce for the staker.

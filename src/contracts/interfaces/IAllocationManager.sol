@@ -82,7 +82,7 @@ interface IAllocationManagerTypes {
      * @param operator the address to slash
      * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
      * @param strategies the set of strategies to slash
-     * @param wadToSlash the parts in 1e18 to slash, this will be proportional to the operator's 
+     * @param wadToSlash the parts in 1e18 to slash, this will be proportional to the operator's
      * slashable stake allocation for the operatorSet
      * @param description the description of the slashing provided by the AVS for legibility
      */
@@ -101,34 +101,28 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
 
     /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
     event OperatorSetMagnitudeUpdated(
-        address operator, 
-        OperatorSet operatorSet,
-        IStrategy strategy, 
-        uint64 magnitude,
-        uint32 effectTimestamp
+        address operator, OperatorSet operatorSet, IStrategy strategy, uint64 magnitude, uint32 effectTimestamp
     );
 
     /// @notice Emitted when operator's encumbered magnitude is updated for a given strategy
-    event EncumberedMagnitudeUpdated(
-        address operator, IStrategy strategy, uint64 encumberedMagnitude
-    );
+    event EncumberedMagnitudeUpdated(address operator, IStrategy strategy, uint64 encumberedMagnitude);
 
     /// @notice Emitted when an operator's total magnitude is updated for a given strategy
-    event TotalMagnitudeUpdated(
-        address operator, IStrategy strategy, uint64 totalMagnitude
-    );
-
+    event TotalMagnitudeUpdated(address operator, IStrategy strategy, uint64 totalMagnitude);
 
     /// @notice Emitted when an operator is slashed by an operator set for a strategy
-    event OperatorSlashed(address operator, OperatorSet operatorSet, IStrategy[] strategies, uint256 wadSlashed, string description);
+    event OperatorSlashed(
+        address operator, OperatorSet operatorSet, IStrategy[] strategies, uint256 wadSlashed, string description
+    );
 }
 
 interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllocationManagerEvents {
-    
     /**
      * @notice Called by an AVS to slash an operator in a given operator set
      */
-    function slashOperator(SlashingParams calldata params) external;
+    function slashOperator(
+        SlashingParams calldata params
+    ) external;
 
     /**
      * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
@@ -136,7 +130,9 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @dev updates freeMagnitude for the updated strategies
      * @dev msg.sender is the operator
      */
-    function modifyAllocations(MagnitudeAllocation[] calldata allocations) external;
+    function modifyAllocations(
+        MagnitudeAllocation[] calldata allocations
+    ) external;
 
     /**
      * @notice This function takes a list of strategies and adds all completable modifications for each strategy,
@@ -172,7 +168,9 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * and the operator will be unable to allocate magnitude to any operator set.
      * @param delay the allocation delay in seconds
      */
-    function setAllocationDelay(uint32 delay) external;
+    function setAllocationDelay(
+        uint32 delay
+    ) external;
 
     /**
      *
@@ -225,7 +223,10 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @param strategies the strategies to get the max magnitudes for
      * @return the max magnitudes for each strategy
      */
-    function getMaxMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory);
+    function getMaxMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory);
 
     /**
      * @notice Returns the maximum magnitude an operator can allocate for the given strategies

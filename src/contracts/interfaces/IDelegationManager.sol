@@ -181,14 +181,10 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
     event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
 
     /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesIncreased(
-        address indexed operator, address staker, IStrategy strategy, uint256 shares
-    );
+    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
 
     /// @notice Emitted whenever an operator's shares are decreased for a given strategy. Note that shares is the delta in the operator's shares.
-    event OperatorSharesDecreased(
-        address indexed operator, address staker, IStrategy strategy, uint256 shares
-    );
+    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
 
     /// @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
@@ -214,7 +210,6 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted when a queued withdrawal is completed
     event WithdrawalCompleted(bytes32 withdrawalRoot);
-
 }
 
 /**
@@ -406,7 +401,12 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @param newTotalMagnitude The total magnitude after the slash
      * @dev Callable only by the AllocationManager
      */
-    function decreaseOperatorShares(address operator, IStrategy strategy, uint64 previousTotalMagnitude, uint64 newTotalMagnitude) external;
+    function decreaseOperatorShares(
+        address operator,
+        IStrategy strategy,
+        uint64 previousTotalMagnitude,
+        uint64 newTotalMagnitude
+    ) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

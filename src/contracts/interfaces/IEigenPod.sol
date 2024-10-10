@@ -132,7 +132,7 @@ interface IEigenPodEvents is IEigenPodTypes {
     event ValidatorCheckpointed(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
 
     /// @notice Emitted when a validaor is proven to have 0 balance at a given checkpoint
-    event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);    
+    event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
 }
 
 /**
