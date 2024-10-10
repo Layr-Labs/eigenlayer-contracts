@@ -3,7 +3,8 @@ pragma solidity ^0.8.12;
 
 import "script/templates/MultisigBuilder.sol";
 
-import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {IUpgradeableBeacon, ITimelock} from "script/utils/Interfaces.sol";
 
 contract UpgradeEigenPod is MultisigBuilder {
 

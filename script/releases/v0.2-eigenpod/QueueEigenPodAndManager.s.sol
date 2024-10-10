@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "script/templates/QueueBuilder.sol";
 import "script/utils/MultisigCallUtils.sol";
 
+import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/interfaces/IEigenPodManager.sol";

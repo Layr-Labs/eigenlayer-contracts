@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "./MultisigBuilder.sol";
+import {Addresses, Environment, Params, ConfigParser} from "script/utils/ConfigParser.sol";
+import {MultisigCall, MultisigCallUtils} from "script/utils/MultisigCallUtils.sol";
+import {SafeTx, SafeTxUtils, EncGnosisSafe} from "script/utils/SafeTxUtils.sol";
 
-import "script/utils/SafeTxUtils.sol";
+import {MultisigBuilder} from "./MultisigBuilder.sol";
+
+import {ITimelock} from "script/utils/Interfaces.sol";
 
 /// @notice template for an OpsMultisig script that goes through the timelock
 /// @dev writing a script is done from the perspective of the OpsMultisig
@@ -26,7 +30,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
         MultisigCall[] memory calls = _queue(addrs, env, params);
 
         // encode calls for executor
-        bytes memory executorCalldata = makeExecutorCalldata(calls, params.multiSendCallOnly, addrs.timelock);
+        bytes memory executorCalldata = _makeExecutorCalldata(calls, params.multiSendCallOnly, addrs.timelock);
 
         // encode executor data for timelock
         bytes memory timelockCalldata = abi.encodeWithSelector(
@@ -51,7 +55,7 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
 
     /// @notice helper function to create calldata for executor
     /// can be used for queue or execute
-    function makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly, address timelock) internal pure returns (bytes memory) {
+    function _makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly, address timelock) internal pure returns (bytes memory) {
         bytes memory data = calls.encodeMultisendTxs();
 
         bytes memory executorCalldata = SafeTx({

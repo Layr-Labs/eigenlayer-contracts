@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
@@ -231,7 +232,7 @@ contract ConfigParser is Script, Test {
         vm.serializeAddress(adminKey, "pauserRegistry", addrs.pauserRegistry);
         vm.serializeAddress(adminKey, "proxyAdmin", addrs.proxyAdmin);
         string memory adminObject = vm.serializeAddress(adminKey, "timelock", addrs.timelock);
-        
+
         // Core
         string memory coreKey = "core";
         _writeTUP(coreKey, "avsDirectory", addrs.avsDirectory);
@@ -239,7 +240,7 @@ contract ConfigParser is Script, Test {
         _writeTUP(coreKey, "rewardsCoordinator", addrs.rewardsCoordinator);
         _writeTUP(coreKey, "slasher", addrs.slasher);
         string memory coreObject = _writeTUP(coreKey, "strategyManager", addrs.strategyManager);
-        
+
         // Pods
         string memory podsKey = "pods";
         _writeBeacon(podsKey, "eigenPod", addrs.eigenPod);

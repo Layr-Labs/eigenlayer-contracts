@@ -3,8 +3,8 @@ pragma solidity ^0.8.12;
 
 import "script/templates/OpsTimelockBuilder.sol";
 
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
-
 import "src/contracts/interfaces/IStrategyFactory.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
@@ -50,7 +50,7 @@ contract UpgradeEigenPodAndManager is OpsTimelockBuilder {
 
         // steals logic from queue() to perform execute()
         // likely the first step of any _execute() after a _queue()
-        bytes memory executorCalldata = makeExecutorCalldata(
+        bytes memory executorCalldata = _makeExecutorCalldata(
             _queue(addrs, env, params),
             params.multiSendCallOnly,
             addrs.timelock
