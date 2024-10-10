@@ -41,15 +41,6 @@ library Snapshots {
     }
 
     /**
-     * @dev Returns the value in the first (oldest) snapshot with key greater or equal than the search key, or zero if there is none.
-     */
-    function lowerLookup(DefaultWadHistory storage self, uint32 key) internal view returns (uint64) {
-        uint256 len = self._snapshots.length;
-        uint256 pos = _lowerBinaryLookup(self._snapshots, key, 0, len);
-        return pos == len ? 0 : _unsafeAccess(self._snapshots, pos)._value;
-    }
-
-    /**
      * @dev Returns the value in the last (most recent) snapshot with key lower or equal than the search key, or zero if there is none.
      */
     function upperLookup(DefaultWadHistory storage self, uint32 key) internal view returns (uint64) {
@@ -59,62 +50,17 @@ library Snapshots {
     }
 
     /**
-     * @dev Returns the value in the last (most recent) snapshot with key lower or equal than the search key, or zero if there is none.
-     *
-     * NOTE: This is a variant of {upperLookup} that is optimised to find "recent" snapshot (snapshots with high keys).
+     * @dev Returns the value in the most recent snapshot, or WAD if there are no snapshots.
      */
-    function upperLookupRecent(DefaultWadHistory storage self, uint32 key) internal view returns (uint64) {
-        uint256 len = self._snapshots.length;
-
-        uint256 low = 0;
-        uint256 high = len;
-
-        if (len > 5) {
-            uint256 mid = len - MathUpgradeable.sqrt(len);
-            if (key < _unsafeAccess(self._snapshots, mid)._key) {
-                high = mid;
-            } else {
-                low = mid + 1;
-            }
-        }
-
-        uint256 pos = _upperBinaryLookup(self._snapshots, key, low, high);
-
-        return pos == 0 ? WAD : _unsafeAccess(self._snapshots, pos - 1)._value;
-    }
-
-    /**
-     * @dev Returns the value in the most recent snapshot, or zero if there are no snapshots.
-     */
-    function latest(
-        DefaultWadHistory storage self
-    ) internal view returns (uint64) {
+    function latest(DefaultWadHistory storage self) internal view returns (uint64) {
         uint256 pos = self._snapshots.length;
         return pos == 0 ? WAD : _unsafeAccess(self._snapshots, pos - 1)._value;
     }
 
     /**
-     * @dev Returns whether there is a snapshot in the structure (i.e. it is not empty), and if so the key and value
-     * in the most recent snapshot.
+     * @dev Returns the number of snapshots.
      */
-    function latestSnapshot(
-        DefaultWadHistory storage self
-    ) internal view returns (bool exists, uint32 _key, uint64 _value) {
-        uint256 pos = self._snapshots.length;
-        if (pos == 0) {
-            return (false, 0, WAD);
-        } else {
-            Snapshot memory ckpt = _unsafeAccess(self._snapshots, pos - 1);
-            return (true, ckpt._key, ckpt._value);
-        }
-    }
-
-    /**
-     * @dev Returns the number of snapshot.
-     */
-    function length(
-        DefaultWadHistory storage self
-    ) internal view returns (uint256) {
+    function length(DefaultWadHistory storage self) internal view returns (uint256) {
         return self._snapshots.length;
     }
 
@@ -169,29 +115,6 @@ library Snapshots {
     }
 
     /**
-     * @dev Return the index of the first (oldest) snapshot with key is greater or equal than the search key, or `high` if there is none.
-     * `low` and `high` define a section where to do the search, with inclusive `low` and exclusive `high`.
-     *
-     * WARNING: `high` should not be greater than the array's length.
-     */
-    function _lowerBinaryLookup(
-        Snapshot[] storage self,
-        uint32 key,
-        uint256 low,
-        uint256 high
-    ) private view returns (uint256) {
-        while (low < high) {
-            uint256 mid = MathUpgradeable.average(low, high);
-            if (_unsafeAccess(self, mid)._key < key) {
-                low = mid + 1;
-            } else {
-                high = mid;
-            }
-        }
-        return high;
-    }
-
-    /**
      * @dev Access an element of the array without performing bounds check. The position is assumed to be within bounds.
      */
     function _unsafeAccess(Snapshot[] storage self, uint256 pos) private pure returns (Snapshot storage result) {
@@ -199,26 +122,5 @@ library Snapshots {
             mstore(0, self.slot)
             result.slot := add(keccak256(0, 0x20), pos)
         }
-    }
-
-    /**
-     *
-     *                         ADDITIONAL FUNCTIONS FROM EIGEN-LABS
-     *
-     */
-
-    /**
-     * @dev Returns the value in the last (most recent) snapshot with key lower or equal than the search key, or zero if there is none.
-     * This function is a linear search for keys that are close to the end of the array.
-     */
-    function upperLookupLinear(DefaultWadHistory storage self, uint32 key) internal view returns (uint64) {
-        uint256 len = self._snapshots.length;
-        for (uint256 i = len; i > 0; --i) {
-            Snapshot storage current = _unsafeAccess(self._snapshots, i - 1);
-            if (current._key <= key) {
-                return current._value;
-            }
-        }
-        return 0;
     }
 }

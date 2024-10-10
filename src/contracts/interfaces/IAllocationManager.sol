@@ -69,12 +69,12 @@ interface IAllocationManagerTypes {
      * @notice Struct containing allocation delay metadata for a given operator.
      * @param delay Current allocation delay if `pendingDelay` is non-zero and `pendingDelayEffectTimestamp` has elapsed.
      * @param pendingDelay Current allocation delay if it's non-zero and `pendingDelayEffectTimestamp` has elapsed.
-     * @param pendingDelayEffectTimestamp The timestamp for which `pendingDelay` becomes the curren allocation delay.
+     * @param effectTimestamp The timestamp for which `pendingDelay` becomes the curren allocation delay.
      */
     struct AllocationDelayInfo {
         uint32 delay;
         uint32 pendingDelay;
-        uint32 pendingDelayEffectTimestamp;
+        uint32 effectTimestamp;
     }
 
     /**
@@ -124,22 +124,11 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
 }
 
 interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllocationManagerEvents {
+    
     /**
-     * @notice Called by the delagation manager to set delay when operators register.
-     * @param operator The operator to set the delay on behalf of.
-     * @param delay The allocation delay in seconds.
-     * @dev msg.sender is assumed to be the delegation manager.
+     * @notice Called by an AVS to slash an operator in a given operator set
      */
-    function setAllocationDelay(address operator, uint32 delay) external;
-
-    /**
-     * @notice Called by operators to set their allocation delay.
-     * @param delay the allocation delay in seconds
-     * @dev msg.sender is assumed to be the operator
-     */
-    function setAllocationDelay(
-        uint32 delay
-    ) external;
+    function slashOperator(SlashingParams calldata params) external;
 
     /**
      * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
@@ -147,9 +136,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @dev updates freeMagnitude for the updated strategies
      * @dev msg.sender is the operator
      */
-    function modifyAllocations(
-        MagnitudeAllocation[] calldata allocations
-    ) external;
+    function modifyAllocations(MagnitudeAllocation[] calldata allocations) external;
 
     /**
      * @notice This function takes a list of strategies and adds all completable modifications for each strategy,
@@ -168,9 +155,24 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
-     * @notice Called by an AVS to slash an operator in a given operator set
+     * @notice Called by the delegation manager to set an operator's allocation delay.
+     * This is set when the operator first registers, and is the time between an operator
+     * allocating magnitude to an operator set, and the magnitude becoming slashable.
+     * @dev Note that if an operator's allocation delay is 0, it has not been set yet,
+     * and the operator will be unable to allocate magnitude to any operator set.
+     * @param operator The operator to set the delay on behalf of.
+     * @param delay the allocation delay in seconds
      */
-    function slashOperator(SlashingParams calldata params) external;
+    function setAllocationDelay(address operator, uint32 delay) external;
+
+    /**
+     * @notice Called by an operator to set their allocation delay. This is the time between an operator
+     * allocating magnitude to an operator set, and the magnitude becoming slashable.
+     * @dev Note that if an operator's allocation delay is 0, it has not been set yet,
+     * and the operator will be unable to allocate magnitude to any operator set.
+     * @param delay the allocation delay in seconds
+     */
+    function setAllocationDelay(uint32 delay) external;
 
     /**
      *
@@ -179,41 +181,28 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      */
 
     /**
-     * @notice Returns the allocation delay of an operator
-     * @param operator The operator to get the allocation delay for
-     * @dev Defaults to `DEFAULT_ALLOCATION_DELAY` if none is set
+     * @notice Returns the effective magnitude info for each operator set. This method
+     * automatically applies any completable modifications, returning the effective
+     * current and pending allocations for each operator set.
+     * @param operator the operator to query
+     * @param strategy the strategy to get allocation info for
+     * @param operatorSets the operatorSets to get allocation info for
+     * @return The current effective magnitude info for each operator set, for the given strategy
      */
-    function allocationDelay(
-        address operator
-    ) external view returns (bool isSet, uint32 delay);
-
-    /**
-     * @notice Get the allocatable magnitude for an operator and strategy based on number of pending deallocations
-     * that could be completed at the same time. This is the sum of freeMagnitude and the sum of all pending completable deallocations.
-     * @param operator the operator to get the allocatable magnitude for
-     * @param strategy the strategy to get the allocatable magnitude for
-     */
-    function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64);
-
-    /**
-     * @notice Returns the pending modifications of an operator for a given strategy and operatorSets.
-     * @param operator the operator to get the pending modification for
-     * @param strategy the strategy to get the pending modification for
-     * @param operatorSets the operatorSets to get the pending modification for
-     * @return timestamps the timestamps for each pending dealloction
-     * @return pendingMagnitudeDeltas the pending modification diffs for each operatorSet
-     */
-    function getPendingModifications(
+    function getAllocationInfo(
         address operator,
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
-    ) external view returns (uint32[] memory timestamps, int128[] memory pendingMagnitudeDeltas);
+    ) external view returns (MagnitudeInfo[] memory);
 
     /**
-     * @param operator the operator to get the slashable magnitude for
+     * @notice Returns the currently-allocated, slashable magnitude allocated from each strategy to
+     * an operator's operator sets
+     * @param operator the operator to query
      * @param strategies the strategies to get the slashable magnitude for
      *
-     * @return operatorSets the operator sets the operator is a member of and the current slashable magnitudes for each strategy
+     * @return operatorSets the operator sets the operator is a member of
+     * @return slashableMagnitudes the current slashable magnitudes for each (operator set, strategy)
      */
     function getSlashableMagnitudes(
         address operator,
@@ -221,26 +210,45 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external view returns (OperatorSet[] memory, uint64[][] memory);
 
     /**
-     * @notice Returns the current total magnitudes of an operator for a given set of strategies
-     * @param operator the operator to get the total magnitude for
-     * @param strategies the strategies to get the total magnitudes for
-     * @return totalMagnitudes the total magnitudes for each strategy
+     * @notice For a strategy, get the amount of magnitude not currently allocated to any operator set
+     * @param operator the operator to query
+     * @param strategy the strategy to get allocatable magnitude for
+     * @return magnitude available to be allocated to an operator set
      */
-    function getTotalMagnitudes(
-        address operator,
-        IStrategy[] calldata strategies
-    ) external view returns (uint64[] memory);
+    function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64);
 
     /**
-     * @notice Returns the total magnitudes of an operator for a given set of strategies at a given timestamp
-     * @param operator the operator to get the total magnitude for
-     * @param strategies the strategies to get the total magnitudes for
-     * @param timestamp the timestamp to get the total magnitudes at
-     * @return totalMagnitudes the total magnitudes for each strategy
+     * @notice Returns the maximum magnitude an operator can allocate for the given strategies
+     * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
+     * the operator is slashed. This value acts as a cap on the total magnitude of the operator.
+     * @param operator the operator to query
+     * @param strategies the strategies to get the max magnitudes for
+     * @return the max magnitudes for each strategy
      */
-    function getTotalMagnitudesAtTimestamp(
+    function getMaxMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory);
+
+    /**
+     * @notice Returns the maximum magnitude an operator can allocate for the given strategies
+     * at a given timestamp
+     * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
+     * the operator is slashed. This value acts as a cap on the total magnitude of the operator.
+     * @param operator the operator to query
+     * @param strategies the strategies to get the max magnitudes for
+     * @param timestamp the timestamp at which to check the max magnitudes
+     * @return the max magnitudes for each strategy
+     */
+    function getMaxMagnitudesAtTimestamp(
         address operator,
         IStrategy[] calldata strategies,
         uint32 timestamp
     ) external view returns (uint64[] memory);
+
+    /**
+     * @notice Returns the allocation delay of an operator
+     * @param operator The operator to get the allocation delay for
+     * @dev Defaults to `DEFAULT_ALLOCATION_DELAY` if none is set
+     */
+    function getAllocationDelay(
+        address operator
+    ) external view returns (bool isSet, uint32 delay);
 }

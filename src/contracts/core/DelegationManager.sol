@@ -257,7 +257,7 @@ contract DelegationManager is
             withdrawalRoots = new bytes32[](0);
         } else {
             withdrawalRoots = new bytes32[](strategies.length);
-            uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
+            uint64[] memory totalMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
 
             for (uint256 i = 0; i < strategies.length; i++) {
                 IStrategy[] memory singleStrategy = new IStrategy[](1);
@@ -308,7 +308,7 @@ contract DelegationManager is
             require(queuedWithdrawalParams[i].withdrawer == msg.sender, WithdrawerNotStaker());
 
             uint64[] memory totalMagnitudes =
-                allocationManager.getTotalMagnitudes(operator, queuedWithdrawalParams[i].strategies);
+                allocationManager.getMaxMagnitudes(operator, queuedWithdrawalParams[i].strategies);
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
             // If the staker is delegated to an operator, the operator's delegated shares are also reduced
@@ -385,7 +385,7 @@ contract DelegationManager is
             address operator = delegatedTo[staker];
             IStrategy[] memory strategies = new IStrategy[](1);
             strategies[0] = strategy;
-            uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
+            uint64[] memory totalMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
 
             // add deposit shares to operator's stake shares and update the staker's depositScalingFactor
             _increaseDelegation({
@@ -418,7 +418,7 @@ contract DelegationManager is
         address operator = delegatedTo[staker];
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = beaconChainETHStrategy;
-        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
+        uint64[] memory totalMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
 
         uint256 sharesBefore =
             existingDepositShares.toShares(stakerScalingFactor[staker][beaconChainETHStrategy], totalMagnitudes[0]);
@@ -536,7 +536,7 @@ contract DelegationManager is
         // read staker's deposited shares and strategies to add to operator's shares
         // and also update the staker depositScalingFactor for each strategy
         (IStrategy[] memory strategies, uint256[] memory depositedShares) = getDepositedShares(staker);
-        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
+        uint64[] memory totalMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
             // forgefmt: disable-next-item
@@ -573,7 +573,7 @@ contract DelegationManager is
         uint32 completableTimestamp = getCompletableTimestamp(withdrawal.startTimestamp);
         // read delegated operator's totalMagnitudes at time of withdrawal to convert the delegatedShares to shared
         // factoring in slashing that occured during withdrawal delay
-        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudesAtTimestamp({
+        uint64[] memory totalMagnitudes = allocationManager.getMaxMagnitudesAtTimestamp({
             operator: withdrawal.delegatedTo,
             strategies: withdrawal.strategies,
             timestamp: completableTimestamp
@@ -805,7 +805,7 @@ contract DelegationManager is
         IStrategy[] memory strategies
     ) public view returns (uint256[] memory withdrawableShares) {
         address operator = delegatedTo[staker];
-        uint64[] memory totalMagnitudes = allocationManager.getTotalMagnitudes(operator, strategies);
+        uint64[] memory totalMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
             IShareManager shareManager = _getShareManager(strategies[i]);
