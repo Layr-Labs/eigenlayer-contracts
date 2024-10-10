@@ -198,7 +198,10 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function removeStrategyFromOperatorSets(address strategy, uint32[] calldata operatorSetIds) external;
+    function removeStrategyFromOperatorSets(
+        address strategy,
+        uint32[] calldata operatorSetIds
+    ) external;
 
     /**
      *  @notice Legacy function called by the AVS's service manager contract
