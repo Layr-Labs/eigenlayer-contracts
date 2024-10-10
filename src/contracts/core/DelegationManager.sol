@@ -111,12 +111,14 @@ contract DelegationManager is
         string calldata metadataURI
     ) external {
         require(!isDelegated(msg.sender), ActivelyDelegated());
+
         allocationManager.setAllocationDelay(msg.sender, allocationDelay);
         _setOperatorDetails(msg.sender, registeringOperatorDetails);
-        SignatureWithExpiry memory emptySignatureAndExpiry;
+
         // delegate from the operator to themselves
+        SignatureWithExpiry memory emptySignatureAndExpiry;
         _delegate(msg.sender, msg.sender, emptySignatureAndExpiry, bytes32(0));
-        // emit events
+
         emit OperatorRegistered(msg.sender, registeringOperatorDetails);
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
@@ -832,37 +834,38 @@ contract DelegationManager is
 
     /**
      * @notice Returns the number of shares in storage for a staker and all their strategies
-     * TODO: make cleaner, get rid of assembly
      */
     function getDepositedShares(
         address staker
     ) public view returns (IStrategy[] memory, uint256[] memory) {
-        // Get a list of all the strategies to check
-        IStrategy[] memory strategies = strategyManager.getStakerStrategyList(staker);
+        // Get a list of the staker's deposited strategies in the strategy manager
+        IStrategy[] memory tokenStrategies = strategyManager.getStakerStrategyList(staker);
 
-        // resize and add beaconChainETH to the end
-        assembly {
-            mstore(strategies, add(mload(strategies), 1))
-        }
-        strategies[strategies.length - 1] = beaconChainETHStrategy;
-        uint256[] memory shares = new uint256[](strategies.length);
+        IStrategy[] memory allStrategies;
+        uint256[] memory allDepositShares;
 
-        // Get shares shares for each strategy
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            IShareManager shareManager = _getShareManager(strategies[i]);
-            shares[i] = shareManager.stakerDepositShares(staker, strategies[i]);
-        }
+        // We may need to allocate an additional array element to hold beacon chain ETH shares
+        uint256 podOwnerShares = eigenPodManager.stakerDepositShares(staker, beaconChainETHStrategy);
+        if (podOwnerShares != 0) {
+            allStrategies = new IStrategy[](tokenStrategies.length + 1);
+            allDepositShares = new uint256[](tokenStrategies.length + 1);
 
-        // if the last shares are 0, remove them
-        if (shares[strategies.length - 1] == 0) {
-            // resize the arrays
-            assembly {
-                mstore(strategies, sub(mload(strategies), 1))
-                mstore(shares, sub(mload(shares), 1))
-            }
+            allStrategies[tokenStrategies.length] = beaconChainETHStrategy;
+            allDepositShares[tokenStrategies.length] = podOwnerShares;
+        } else {
+            allStrategies = new IStrategy[](tokenStrategies.length);
+            allDepositShares = new uint256[](tokenStrategies.length);
         }
 
-        return (strategies, shares);
+        // Query deposit shares for remaining strategies
+        for (uint256 i = 0; i < tokenStrategies.length; i++) {
+            allStrategies[i] = tokenStrategies[i];
+
+            IShareManager shareManager = _getShareManager(allStrategies[i]);
+            allDepositShares[i] = shareManager.stakerDepositShares(staker, allStrategies[i]);
+        }
+
+        return (allStrategies, allDepositShares);
     }
 
     /// @notice Returns a completable timestamp given a start timestamp.
