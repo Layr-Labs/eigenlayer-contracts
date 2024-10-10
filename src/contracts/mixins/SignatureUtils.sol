@@ -72,9 +72,6 @@ abstract contract SignatureUtils is ISignatureUtils {
 
     /// @dev Helper for checking if a signature is valid, reverts if not valid.
     function _checkIsValidSignatureNow(address signer, bytes32 signableDigest, bytes memory signature) internal view {
-        require(
-            signer.isValidSignatureNow(signableDigest, signature),
-            InvalidSignature()
-        );
+        require(signer.isValidSignatureNow(signableDigest, signature), InvalidSignature());
     }
 }
