@@ -24,7 +24,7 @@ import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/mocks/EmptyContract.sol";
 
 contract EigenLayerDeployer is Operators {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     // EigenLayer contracts
     ProxyAdmin eigenLayerProxyAdmin;

@@ -8,7 +8,7 @@ import "../harnesses/PausableHarness.sol";
 
 contract PausableUnitTests is Test {
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     PauserRegistry public pauserRegistry;
     PausableHarness public pausable;

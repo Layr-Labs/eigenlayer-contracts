@@ -8,7 +8,7 @@ import "../../contracts/permissions/PauserRegistry.sol";
 
 contract PauserRegistryUnitTests is Test {
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     PauserRegistry public pauserRegistry;
 

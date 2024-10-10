@@ -6,7 +6,7 @@ import "../../utils/TimelockEncoding.sol";
 
 // forge script script/admin/mainnet/Mainnet_Unpause_Deposits.s.sol:Mainnet_Unpause_Deposits --fork-url $RPC_MAINNET -vvvv
 contract Mainnet_Unpause_Deposits is ExistingDeploymentParser, TimelockEncoding {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     // Tues Apr 16 2024 12:00:00 GMT-0700 (Pacific Daylight Time)
     uint256 timelockEta = 1713250800;

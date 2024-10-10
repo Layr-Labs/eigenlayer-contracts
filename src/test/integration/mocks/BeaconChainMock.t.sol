@@ -40,7 +40,7 @@ struct StaleBalanceProofs {
 
 contract BeaconChainMock is PrintUtils {
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     struct Validator {
         bool isDummy;

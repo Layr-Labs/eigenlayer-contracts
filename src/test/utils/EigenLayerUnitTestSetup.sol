@@ -15,7 +15,7 @@ import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
 
 abstract contract EigenLayerUnitTestSetup is Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     address constant pauser = address(555);
     address constant unpauser = address(556);

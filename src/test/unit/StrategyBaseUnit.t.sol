@@ -14,7 +14,7 @@ import "../mocks/ERC20_SetTransferReverting_Mock.sol";
 import "forge-std/Test.sol";
 
 contract StrategyBaseUnitTests is Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
