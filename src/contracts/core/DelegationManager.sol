@@ -246,45 +246,43 @@ contract DelegationManager is
         // Undelegation removes ALL currently-active strategies and shares
         (IStrategy[] memory strategies, uint256[] memory depositedShares) = getDepositedShares(staker);
 
-        // emit an event if this action was not initiated by the staker themselves
+        // Undelegate the staker
+        delegatedTo[staker] = address(0);
+        emit StakerUndelegated(staker, operator);
+        // Emit an event if this action was not initiated by the staker themselves
         if (msg.sender != staker) {
             emit StakerForceUndelegated(staker, operator);
         }
 
-        // undelegate the staker
-        emit StakerUndelegated(staker, operator);
-        delegatedTo[staker] = address(0);
-
         // if no deposited shares, return an empty array, and don't queue a withdrawal
         if (strategies.length == 0) {
-            withdrawalRoots = new bytes32[](0);
-        } else {
-            withdrawalRoots = new bytes32[](strategies.length);
-            uint64[] memory totalMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
+            return withdrawalRoots;
+        }
 
-            for (uint256 i = 0; i < strategies.length; i++) {
-                IStrategy[] memory singleStrategy = new IStrategy[](1);
-                uint256[] memory singleShares = new uint256[](1);
-                uint64[] memory singleTotalMagnitude = new uint64[](1);
-                singleStrategy[0] = strategies[i];
-                // TODO: this part is a bit gross, can we make it better?
-                singleShares[0] =
-                    depositedShares[i].toShares(stakerScalingFactor[staker][strategies[i]], totalMagnitudes[i]);
-                singleTotalMagnitude[0] = totalMagnitudes[i];
+        withdrawalRoots = new bytes32[](strategies.length);
+        uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
 
-                withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
-                    staker: staker,
-                    operator: operator,
-                    strategies: singleStrategy,
-                    sharesToWithdraw: singleShares,
-                    totalMagnitudes: singleTotalMagnitude
-                });
+        for (uint256 i = 0; i < strategies.length; i++) {
+            IStrategy[] memory singleStrategy = new IStrategy[](1);
+            uint256[] memory singleShares = new uint256[](1);
+            uint64[] memory singleMaxMagnitude = new uint64[](1);
+            singleStrategy[0] = strategies[i];
+            // TODO: this part is a bit gross, can we make it better?
+            singleShares[0] = depositedShares[i].toShares(stakerScalingFactor[staker][strategies[i]], maxMagnitudes[i]);
+            singleMaxMagnitude[0] = maxMagnitudes[i];
 
-                // all shares and queued withdrawn and no delegated operator
-                // reset staker's depositScalingFactor to default
-                stakerScalingFactor[staker][strategies[i]].depositScalingFactor = WAD;
-                emit DepositScalingFactorUpdated(staker, strategies[i], WAD);
-            }
+            withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
+                staker: staker,
+                operator: operator,
+                strategies: singleStrategy,
+                sharesToWithdraw: singleShares,
+                maxMagnitudes: singleMaxMagnitude
+            });
+
+            // all shares and queued withdrawn and no delegated operator
+            // reset staker's depositScalingFactor to default
+            stakerScalingFactor[staker][strategies[i]].depositScalingFactor = WAD;
+            emit DepositScalingFactorUpdated(staker, strategies[i], WAD);
         }
 
         return withdrawalRoots;
@@ -298,20 +296,16 @@ contract DelegationManager is
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
     function queueWithdrawals(
-        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+        QueuedWithdrawalParams[] calldata params
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
-        bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
+        bytes32[] memory withdrawalRoots = new bytes32[](params.length);
         address operator = delegatedTo[msg.sender];
 
-        for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
-            require(
-                queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length,
-                InputArrayLengthMismatch()
-            );
-            require(queuedWithdrawalParams[i].withdrawer == msg.sender, WithdrawerNotStaker());
+        for (uint256 i = 0; i < params.length; i++) {
+            require(params[i].strategies.length == params[i].shares.length, InputArrayLengthMismatch());
+            require(params[i].withdrawer == msg.sender, WithdrawerNotStaker());
 
-            uint64[] memory totalMagnitudes =
-                allocationManager.getMaxMagnitudes(operator, queuedWithdrawalParams[i].strategies);
+            uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudes(operator, params[i].strategies);
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
             // If the staker is delegated to an operator, the operator's delegated shares are also reduced
@@ -319,11 +313,12 @@ contract DelegationManager is
             withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
                 staker: msg.sender,
                 operator: operator,
-                strategies: queuedWithdrawalParams[i].strategies,
-                sharesToWithdraw: queuedWithdrawalParams[i].shares,
-                totalMagnitudes: totalMagnitudes
+                strategies: params[i].strategies,
+                sharesToWithdraw: params[i].shares,
+                maxMagnitudes: maxMagnitudes
             });
         }
+
         return withdrawalRoots;
     }
 
@@ -667,26 +662,25 @@ contract DelegationManager is
         address operator,
         IStrategy[] memory strategies,
         uint256[] memory sharesToWithdraw,
-        uint64[] memory totalMagnitudes
+        uint64[] memory maxMagnitudes
     ) internal returns (bytes32) {
         require(staker != address(0), InputAddressZero());
         require(strategies.length != 0, InputArrayLengthZero());
 
         uint256[] memory scaledSharesToWithdraw = new uint256[](strategies.length);
+
         // Remove shares from staker and operator
         // Each of these operations fail if we attempt to remove more shares than exist
         for (uint256 i = 0; i < strategies.length; ++i) {
             IShareManager shareManager = _getShareManager(strategies[i]);
+            StakerScalingFactors memory ssf = stakerScalingFactor[staker][strategies[i]];
 
-            uint256 depositSharesToRemove =
-                sharesToWithdraw[i].toDepositShares(stakerScalingFactor[staker][strategies[i]], totalMagnitudes[i]);
-            // TODO: maybe have a getter to get shares for all strategies,
-            // check sharesToWithdraw is valid
-            // but for inputted strategies
+            // Calculate the deposit shares
+            uint256 depositSharesToRemove = sharesToWithdraw[i].toDepositShares(ssf, maxMagnitudes[i]);
             uint256 depositSharesWithdrawable = shareManager.stakerDepositShares(staker, strategies[i]);
             require(depositSharesToRemove <= depositSharesWithdrawable, WithdrawalExeedsMax());
 
-            // Similar to `isDelegated` logic
+            // Remove delegated shares from the operator
             if (operator != address(0)) {
                 // forgefmt: disable-next-item
                 _decreaseDelegation({
@@ -696,9 +690,8 @@ contract DelegationManager is
                     operatorSharesToDecrease: sharesToWithdraw[i]
                 });
             }
-            scaledSharesToWithdraw[i] = sharesToWithdraw[i].scaleSharesForQueuedWithdrawal(
-                stakerScalingFactor[staker][strategies[i]], totalMagnitudes[i]
-            );
+
+            scaledSharesToWithdraw[i] = sharesToWithdraw[i].scaleSharesForQueuedWithdrawal(ssf, maxMagnitudes[i]);
 
             // Remove active shares from EigenPodManager/StrategyManager
             // EigenPodManager: this call will revert if it would reduce the Staker's virtual beacon chain ETH shares below zero

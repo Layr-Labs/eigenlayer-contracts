@@ -323,7 +323,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
     function queueWithdrawals(
-        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+        QueuedWithdrawalParams[] calldata params
     ) external returns (bytes32[] memory);
 
     /**

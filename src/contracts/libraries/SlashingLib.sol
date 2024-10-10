@@ -58,8 +58,7 @@ library SlashingLib {
     function getBeaconChainScalingFactor(
         StakerScalingFactors memory ssf
     ) internal pure returns (uint64) {
-        return
-            !ssf.isBeaconChainScalingFactorSet && ssf.beaconChainScalingFactor == 0 ? WAD : ssf.beaconChainScalingFactor;
+        return ssf.isBeaconChainScalingFactorSet ? ssf.beaconChainScalingFactor : WAD;
     }
 
     function scaleSharesForQueuedWithdrawal(
@@ -67,7 +66,10 @@ library SlashingLib {
         StakerScalingFactors memory ssf,
         uint64 operatorMagnitude
     ) internal pure returns (uint256) {
-        return sharesToWithdraw.divWad(uint256(ssf.getBeaconChainScalingFactor())).divWad(uint256(operatorMagnitude));
+        /// forgefmt: disable-next-item
+        return sharesToWithdraw
+            .divWad(uint256(ssf.getBeaconChainScalingFactor()))
+            .divWad(uint256(operatorMagnitude));
     }
 
     function scaleSharesForCompleteWithdrawal(
@@ -75,8 +77,10 @@ library SlashingLib {
         StakerScalingFactors memory ssf,
         uint64 operatorMagnitude
     ) internal pure returns (uint256) {
-        return
-            scaledSharesToWithdraw.mulWad(uint256(ssf.getBeaconChainScalingFactor())).mulWad(uint256(operatorMagnitude));
+        /// forgefmt: disable-next-item
+        return scaledSharesToWithdraw
+            .mulWad(uint256(ssf.getBeaconChainScalingFactor()))
+            .mulWad(uint256(operatorMagnitude));
     }
 
     function getOperatorSharesToDecrease(
@@ -104,11 +108,9 @@ library SlashingLib {
         if (existingDepositShares == 0) {
             // if this is their first deposit for the operator, set the scaling factor to inverse of totalMagnitude
             /// forgefmt: disable-next-item
-            ssf.depositScalingFactor = 
-                uint256(WAD)
+            ssf.depositScalingFactor = uint256(WAD)
                 .divWad(ssf.getBeaconChainScalingFactor())
                 .divWad(totalMagnitude);
-
             return;
         }
         /**
@@ -139,8 +141,7 @@ library SlashingLib {
 
         // Step 3: Calculate newStakerDepositScalingFactor
         /// forgefmt: disable-next-item
-        uint256 newStakerDepositScalingFactor = 
-            newShares
+        uint256 newStakerDepositScalingFactor = newShares
             .divWad(existingDepositShares + addedShares)
             .divWad(totalMagnitude)
             .divWad(uint256(ssf.getBeaconChainScalingFactor()));
@@ -156,8 +157,7 @@ library SlashingLib {
         uint64 magnitude
     ) internal pure returns (uint256 depositShares) {
         /// forgefmt: disable-next-item
-        depositShares = 
-            shares
+        depositShares = shares
             .divWad(ssf.getDepositScalingFactor())
             .divWad(uint256(ssf.getBeaconChainScalingFactor()))
             .divWad(uint256(magnitude));
@@ -169,8 +169,7 @@ library SlashingLib {
         uint64 magnitude
     ) internal pure returns (uint256 shares) {
         /// forgefmt: disable-next-item
-        shares = 
-            depositShares
+        shares = depositShares
             .mulWad(ssf.getDepositScalingFactor())
             .mulWad(uint256(ssf.getBeaconChainScalingFactor()))
             .mulWad(uint256(magnitude));
