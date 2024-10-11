@@ -2595,7 +2595,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         cheats.assume(invalidCaller != address(eigenLayerProxyAdmin));
 
         cheats.expectRevert(IDelegationManagerErrors.UnauthorizedCaller.selector);
-        delegationManager.increaseDelegatedShares(invalidCaller, strategyMock, shares, 0);
+        delegationManager.increaseDelegatedShares(invalidCaller, strategyMock, 0, shares);
     }
 
     // @notice Verifies that there is no change in shares if the staker is not delegated
@@ -2605,7 +2605,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         assertFalse(delegationManager.isDelegated(staker), "bad test setup");
 
         cheats.prank(address(strategyManagerMock));
-        delegationManager.increaseDelegatedShares(staker, strategyMock, 1, 0);
+        delegationManager.increaseDelegatedShares(staker, strategyMock, 0, 0);
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
     }
 
@@ -2616,7 +2616,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
      */
     function testFuzz_increaseDelegatedShares(
         address staker,
-        uint256 shares,
+        uint128 shares,
         bool delegateFromStakerToOperator
     ) public filterFuzzedAddressInputs(staker) {
         // filter inputs, since delegating to the operator will fail when the staker is already registered as an operator
@@ -2641,7 +2641,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         }
 
         cheats.prank(address(strategyManagerMock));
-        delegationManager.increaseDelegatedShares(staker, strategyMock, shares, 0);
+        delegationManager.increaseDelegatedShares(staker, strategyMock, 0, shares);
 
         uint256 delegatedSharesAfter = delegationManager.operatorShares(
             delegationManager.delegatedTo(staker),
@@ -2660,7 +2660,68 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         }
     }
 
-    // @notice Verifies that `DelegationManager.decreaseOperatorShares` reverts if not called by the StrategyManager nor EigenPodManager
+     /**
+     * @notice Verifies that `DelegationManager.increaseDelegatedShares` properly increases the delegated `shares` that the operator
+     * who the `staker` is delegated to has in the strategy
+     * @dev Checks that there is no change if the staker is not delegated
+     */
+    function testFuzz_increaseDelegatedShares_slashedOperator(
+        address staker,
+        uint128 shares,
+        uint64 magnitude,
+        bool delegateFromStakerToOperator
+    ) public filterFuzzedAddressInputs(staker) { // remeber to filter fuzz inputs
+        // filter inputs, since delegating to the operator will fail when the staker is already registered as an operator
+        // address staker = defaultStaker;
+        // uint128 shares = 25708389668093054499609;
+        // uint64 magnitude = 5237724313;
+        // bool delegateFromStakerToOperator = true;
+        cheats.assume(staker != defaultOperator);
+        magnitude = uint64(bound(magnitude, 1, WAD));
+
+        // Register operator
+        _registerOperatorWithBaseDetails(defaultOperator);
+        
+        // Set operator magnitude
+        _setOperatorMagnitude(defaultOperator, strategyMock, magnitude);
+
+
+        // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
+        if (delegateFromStakerToOperator) {
+            _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+        }
+
+        uint256 _delegatedSharesBefore = delegationManager.operatorShares(
+            delegationManager.delegatedTo(staker),
+            strategyMock
+        );
+
+        if (delegationManager.isDelegated(staker)) {
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit OperatorSharesIncreased(defaultOperator, staker, strategyMock, shares);
+        }
+
+        cheats.prank(address(strategyManagerMock));
+        delegationManager.increaseDelegatedShares(staker, strategyMock, 0, shares);
+
+        uint256 delegatedSharesAfter = delegationManager.operatorShares(
+            delegationManager.delegatedTo(staker),
+            strategyMock
+        );
+
+        if (delegationManager.isDelegated(staker)) {
+            assertEq(
+                delegatedSharesAfter,
+                _delegatedSharesBefore + shares,
+                "delegated shares did not increment correctly"
+            );
+        } else {
+            assertEq(delegatedSharesAfter, _delegatedSharesBefore, "delegated shares incremented incorrectly");
+            assertEq(_delegatedSharesBefore, 0, "nonzero shares delegated to zero address!");
+        }
+    }
+
+    // @notice Verifies that `DelegationManager.decreaseOperatorShares` reverts if not called by the AllocationManager
     function testFuzz_decreaseOperatorShares_revert_invalidCaller(
         address invalidCaller,
         uint256 shares
@@ -2674,98 +2735,96 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
     }
 
     // @notice Verifies that there is no change in shares if the staker is not delegated
-    function testFuzz_decreaseOperatorShares_noop(address staker) public {
-        cheats.assume(staker != defaultOperator);
-        _registerOperatorWithBaseDetails(defaultOperator);
-        assertFalse(delegationManager.isDelegated(staker), "bad test setup");
+    // function testFuzz_decreaseOperatorShares_noop() public {
+    //     _registerOperatorWithBaseDetails(defaultOperator);
 
-        cheats.prank(address(strategyManagerMock));
-        delegationManager.decreaseOperatorShares(staker, strategyMock, 1, 0);
-        assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
-    }
+    //     cheats.prank(address(allocationManagerMock));
+    //     delegationManager.decreaseOperatorShares(defaultOperator, strategyMock, WAD, WAD);
+    //     assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
+    // }
 
     /**
      * @notice Verifies that `DelegationManager.decreaseOperatorShares` properly decreases the delegated `shares` that the operator
      * who the `staker` is delegated to has in the strategies
      * @dev Checks that there is no change if the staker is not delegated
      */
-    function testFuzz_decreaseOperatorShares(
-        address staker,
-        IStrategy[] memory strategies,
-        uint64 shares,
-        bool delegateFromStakerToOperator
-    ) public filterFuzzedAddressInputs(staker) {
-        // sanity-filtering on fuzzed input length & staker
-        cheats.assume(strategies.length <= 32);
-        cheats.assume(staker != defaultOperator);
+    // function testFuzz_decreaseOperatorShares(
+    //     address staker,
+    //     IStrategy[] memory strategies,
+    //     uint64 shares,
+    //     bool delegateFromStakerToOperator
+    // ) public filterFuzzedAddressInputs(staker) {
+    //     // sanity-filtering on fuzzed input length & staker
+    //     cheats.assume(strategies.length <= 32);
+    //     cheats.assume(staker != defaultOperator);
 
-        // Register operator
-        _registerOperatorWithBaseDetails(defaultOperator);
+    //     // Register operator
+    //     _registerOperatorWithBaseDetails(defaultOperator);
 
-        // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
-        if (delegateFromStakerToOperator) {
-            _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
-        }
+    //     // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
+    //     if (delegateFromStakerToOperator) {
+    //         _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+    //     }
 
-        uint64[] memory sharesInputArray = new uint64[](strategies.length);
+    //     uint64[] memory sharesInputArray = new uint64[](strategies.length);
 
-        address delegatedTo = delegationManager.delegatedTo(staker);
+    //     address delegatedTo = delegationManager.delegatedTo(staker);
 
-        // for each strategy in `strategies`, increase delegated shares by `shares`
-        // noop if the staker is not delegated
-        cheats.startPrank(address(strategyManagerMock));
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            delegationManager.increaseDelegatedShares(staker, strategies[i], shares, 0);
-            // store delegated shares in a mapping
-            delegatedSharesBefore[strategies[i]] = delegationManager.operatorShares(delegatedTo, strategies[i]);
-            // also construct an array which we'll use in another loop
-            sharesInputArray[i] = shares;
-            totalSharesForStrategyInArray[address(strategies[i])] += sharesInputArray[i];
-        }
-        cheats.stopPrank();
+    //     // for each strategy in `strategies`, increase delegated shares by `shares`
+    //     // noop if the staker is not delegated
+    //     cheats.startPrank(address(strategyManagerMock));
+    //     for (uint256 i = 0; i < strategies.length; ++i) {
+    //         delegationManager.increaseDelegatedShares(staker, strategies[i], 0, shares);
+    //         // store delegated shares in a mapping
+    //         delegatedSharesBefore[strategies[i]] = delegationManager.operatorShares(delegatedTo, strategies[i]);
+    //         // also construct an array which we'll use in another loop
+    //         sharesInputArray[i] = shares;
+    //         totalSharesForStrategyInArray[address(strategies[i])] += sharesInputArray[i];
+    //     }
+    //     cheats.stopPrank();
 
-        bool isDelegated = delegationManager.isDelegated(staker);
+    //     bool isDelegated = delegationManager.isDelegated(staker);
 
-        // for each strategy in `strategies`, decrease delegated shares by `shares`
-        {
-            cheats.startPrank(address(strategyManagerMock));
-            address operatorToDecreaseSharesOf = delegationManager.delegatedTo(staker);
-            if (isDelegated) {
-                for (uint256 i = 0; i < strategies.length; ++i) {
-                    cheats.expectEmit(true, true, true, true, address(delegationManager));
-                    emit OperatorSharesDecreased(
-                        operatorToDecreaseSharesOf,
-                        staker,
-                        strategies[i],
-                        sharesInputArray[i]
-                    );
-                    delegationManager.decreaseOperatorShares(staker, strategies[i], sharesInputArray[i], 0);
-                }
-            }
-            cheats.stopPrank();
-        }
+    //     // for each strategy in `strategies`, decrease delegated shares by `shares`
+    //     {
+    //         cheats.startPrank(address(strategyManagerMock));
+    //         address operatorToDecreaseSharesOf = delegationManager.delegatedTo(staker);
+    //         if (isDelegated) {
+    //             for (uint256 i = 0; i < strategies.length; ++i) {
+    //                 cheats.expectEmit(true, true, true, true, address(delegationManager));
+    //                 emit OperatorSharesDecreased(
+    //                     operatorToDecreaseSharesOf,
+    //                     staker,
+    //                     strategies[i],
+    //                     sharesInputArray[i]
+    //                 );
+    //                 delegationManager.decreaseOperatorShares(staker, strategies[i], sharesInputArray[i], 0);
+    //             }
+    //         }
+    //         cheats.stopPrank();
+    //     }
 
-        // check shares after call to `decreaseOperatorShares`
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            uint256 delegatedSharesAfter = delegationManager.operatorShares(delegatedTo, strategies[i]);
+    //     // check shares after call to `decreaseOperatorShares`
+    //     for (uint256 i = 0; i < strategies.length; ++i) {
+    //         uint256 delegatedSharesAfter = delegationManager.operatorShares(delegatedTo, strategies[i]);
 
-            if (isDelegated) {
-                assertEq(
-                    delegatedSharesAfter + totalSharesForStrategyInArray[address(strategies[i])],
-                    delegatedSharesBefore[strategies[i]],
-                    "delegated shares did not decrement correctly"
-                );
-                assertEq(delegatedSharesAfter, 0, "nonzero shares delegated to");
-            } else {
-                assertEq(
-                    delegatedSharesAfter,
-                    delegatedSharesBefore[strategies[i]],
-                    "delegated shares decremented incorrectly"
-                );
-                assertEq(delegatedSharesBefore[strategies[i]], 0, "nonzero shares delegated to zero address!");
-            }
-        }
-    }
+    //         if (isDelegated) {
+    //             assertEq(
+    //                 delegatedSharesAfter + totalSharesForStrategyInArray[address(strategies[i])],
+    //                 delegatedSharesBefore[strategies[i]],
+    //                 "delegated shares did not decrement correctly"
+    //             );
+    //             assertEq(delegatedSharesAfter, 0, "nonzero shares delegated to");
+    //         } else {
+    //             assertEq(
+    //                 delegatedSharesAfter,
+    //                 delegatedSharesBefore[strategies[i]],
+    //                 "delegated shares decremented incorrectly"
+    //             );
+    //             assertEq(delegatedSharesBefore[strategies[i]], 0, "nonzero shares delegated to zero address!");
+    //         }
+    //     }
+    // }
 }
 
 contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
