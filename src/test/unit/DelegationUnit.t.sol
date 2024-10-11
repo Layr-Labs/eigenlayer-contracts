@@ -954,7 +954,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
             "salt somehow spent too early?"
         );
         // Set staker shares in BeaconChainStrategy
-        eigenPodManagerMock.setPodOwnerShares(staker, beaconShares);
+        eigenPodManagerMock.setStakerDepositShares(staker, beaconShares);
         uint256 beaconSharesBefore = delegationManager.operatorShares(staker, beaconChainETHStrategy);
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -1025,7 +1025,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         uint256[] memory sharesToReturn = new uint256[](1);
         sharesToReturn[0] = shares;
         strategyManagerMock.setDeposits(staker, strategiesToReturn, sharesToReturn);
-        eigenPodManagerMock.setPodOwnerShares(staker, beaconShares);
+        eigenPodManagerMock.setStakerDepositShares(staker, beaconShares);
         uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);
         uint256 beaconSharesBefore = delegationManager.operatorShares(staker, beaconChainETHStrategy);
         // delegate from the `staker` to the operator
@@ -1429,7 +1429,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         );
 
         // Set staker shares in BeaconChainStrategy
-        eigenPodManagerMock.setPodOwnerShares(staker, beaconShares);
+        eigenPodManagerMock.setStakerDepositShares(staker, beaconShares);
         uint256 beaconSharesBefore = delegationManager.operatorShares(staker, beaconChainETHStrategy);
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -1529,7 +1529,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
             uint256[] memory sharesToReturn = new uint256[](1);
             sharesToReturn[0] = shares;
             strategyManagerMock.setDeposits(staker, strategiesToReturn, sharesToReturn);
-            eigenPodManagerMock.setPodOwnerShares(staker, beaconShares);
+            eigenPodManagerMock.setStakerDepositShares(staker, beaconShares);
         }
         uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);
         uint256 beaconSharesBefore = delegationManager.operatorShares(staker, beaconChainETHStrategy);
@@ -2079,7 +2079,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
             uint256[] memory sharesToReturn = new uint256[](1);
             sharesToReturn[0] = shares;
             strategyManagerMock.setDeposits(defaultStaker, strategiesToReturn, sharesToReturn);
-            eigenPodManagerMock.setPodOwnerShares(defaultStaker, beaconShares);
+            eigenPodManagerMock.setStakerDepositShares(defaultStaker, beaconShares);
         }
 
         uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);
@@ -2190,7 +2190,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
             uint256[] memory sharesToReturn = new uint256[](1);
             sharesToReturn[0] = shares;
             strategyManagerMock.setDeposits(defaultStaker, strategiesToReturn, sharesToReturn);
-            eigenPodManagerMock.setPodOwnerShares(defaultStaker, beaconShares);
+            eigenPodManagerMock.setStakerDepositShares(defaultStaker, beaconShares);
         }
 
         uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);
@@ -2314,7 +2314,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
             uint256[] memory sharesToReturn = new uint256[](1);
             sharesToReturn[0] = shares;
             strategyManagerMock.setDeposits(defaultStaker, strategiesToReturn, sharesToReturn);
-            eigenPodManagerMock.setPodOwnerShares(defaultStaker, beaconShares);
+            eigenPodManagerMock.setStakerDepositShares(defaultStaker, beaconShares);
         }
 
         uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);

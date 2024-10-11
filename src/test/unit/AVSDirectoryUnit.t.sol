@@ -66,6 +66,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         
         emptyContract = new EmptyContract();
 
+        // Create empty proxys for AVSDirectory, DelegationManager, and AllocationManager.
         avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -76,7 +77,9 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
-        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+
+        // Deploy implementations for AVSDirectory, DelegationManager, and AllocationManager.
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
 
         delegationManagerImplementation = new DelegationManager(
             avsDirectory,
@@ -86,43 +89,53 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
             MIN_WITHDRAWAL_DELAY
         );
 
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(
+            delegationManager, 
+            avsDirectory, 
+            DEALLOCATION_DELAY, 
+            ALLOCATION_CONFIGURATION_DELAY
+        );
 
-        delegationManager = DelegationManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(delegationManagerImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        DelegationManager.initialize.selector,
-                        address(this),
-                        pauserRegistry,
-                        0, // 0 is initialPausedStatus
-                        minWithdrawalDelayBlocks,
-                        initializeStrategiesToSetDelayBlocks,
-                        initializeWithdrawalDelayBlocks
-                    )
-                )
+        // Upgrade the proxies to the implementations
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(delegationManager))),
+            address(delegationManagerImplementation),
+            abi.encodeWithSelector(
+                DelegationManager.initialize.selector,
+                address(this),
+                pauserRegistry,
+                0, // 0 is initialPausedStatus
+                minWithdrawalDelayBlocks,
+                initializeStrategiesToSetDelayBlocks,
+                initializeWithdrawalDelayBlocks
             )
         );
 
-        avsDirectory = AVSDirectory(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(avsDirectoryImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        AVSDirectory.initialize.selector,
-                        address(this),
-                        pauserRegistry,
-                        0 // 0 is initialPausedStatus
-                    )
-                )
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplementation),
+            abi.encodeWithSelector(
+                AVSDirectory.initialize.selector,
+                address(this),
+                pauserRegistry,
+                0 // 0 is initialPausedStatus
             )
         );
 
-        // Exclude delegation manager from fuzzed tests
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation),
+            abi.encodeWithSelector(
+                AllocationManager.initialize.selector,
+                address(this),
+                pauserRegistry,
+                0 // 0 is initialPausedStatus
+            )
+        );
+
         isExcludedFuzzAddress[address(avsDirectory)] = true;
+        isExcludedFuzzAddress[address(delegationManager)] = true;
+        isExcludedFuzzAddress[address(allocationManager)] = true;
     }
 
     /**
@@ -193,7 +206,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
     ) internal filterFuzzedAddressInputs(operator) {
         _filterOperatorDetails(operator, operatorDetails);
         cheats.prank(operator);
-        delegationManager.registerAsOperator(operatorDetails, 0, metadataURI);
+        delegationManager.registerAsOperator(operatorDetails, 1, metadataURI);
     }
 
     function _filterOperatorDetails(
@@ -296,7 +309,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: operator signature expired");
+        cheats.expectRevert(IAVSDirectoryErrors.SignatureExpired.selector);
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
         );
@@ -325,7 +338,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
         _registerOperatorWithBaseDetails(operator);
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: AVS is not an operator set AVS");
+        cheats.expectRevert(IAVSDirectoryErrors.InvalidAVS.selector);
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
@@ -364,7 +377,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
             avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, keccak256(""), expiry)
         );
 
-        cheats.expectRevert("AVSDirectory._registerOperatorToOperatorSets: operator already registered to operator set");
+        cheats.expectRevert(IAVSDirectoryErrors.OperatorAlreadyRegistered.selector);
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), keccak256(""), expiry)
         );
@@ -386,7 +399,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: operator not registered to EigenLayer yet");
+        cheats.expectRevert(IAVSDirectoryErrors.OperatorNotRegistered.selector);
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
         );
@@ -421,7 +434,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToOperatorSets: salt already spent");
+        cheats.expectRevert(IAVSDirectoryErrors.SaltSpent.selector);
         avsDirectory.registerOperatorToOperatorSets(
             operator, new uint32[](0), ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
         );
@@ -486,7 +499,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
 
         _registerOperatorWithBaseDetails(operator);
 
-        cheats.expectRevert("AVSDirectory._registerOperatorToOperatorSets: invalid operator set");
+        cheats.expectRevert(IAVSDirectoryErrors.InvalidOperatorSet.selector);
         avsDirectory.registerOperatorToOperatorSets(
             operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
@@ -666,7 +679,7 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
         cheats.prank(operator);
-        cheats.expectRevert("AVSDirectory._deregisterOperatorFromOperatorSet: operator not registered for operator set");
+        cheats.expectRevert(IAVSDirectoryErrors.InvalidOperator.selector);
 
         avsDirectory.forceDeregisterFromOperatorSets(operator, address(this), oids, emptySig);
     }
@@ -682,7 +695,7 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
-        cheats.expectRevert("AVSDirectory.forceDeregisterFromOperatorSets: caller must be operator");
+        cheats.expectRevert(IAVSDirectoryErrors.InvalidOperator.selector);
         avsDirectory.forceDeregisterFromOperatorSets(operator, address(this), oids, emptySig);
     }
 
@@ -749,7 +762,7 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
             _createForceDeregSignature(operatorPk, address(this), oids, 0, salt);
 
         cheats.warp(type(uint256).max);
-        cheats.expectRevert("AVSDirectory.forceDeregisterFromOperatorSets: operator signature expired");
+        cheats.expectRevert(IAVSDirectoryErrors.SignatureExpired.selector);
         avsDirectory.forceDeregisterFromOperatorSets(operator, address(this), oids, operatorSig);
     }
 
@@ -767,7 +780,7 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSig =
             _createForceDeregSignature(operatorPk, address(this), oids, type(uint256).max, salt);
 
-        cheats.expectRevert("AVSDirectory.forceDeregisterFromOperatorSets: salt already spent");
+        cheats.expectRevert(IAVSDirectoryErrors.SaltSpent.selector);
         avsDirectory.forceDeregisterFromOperatorSets(operator, address(this), oids, operatorSig);
     }
 
@@ -839,7 +852,7 @@ contract AVSDirectoryUnitTests_deregisterOperatorFromOperatorSets is AVSDirector
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
 
-        cheats.expectRevert("AVSDirectory._deregisterOperatorFromOperatorSet: operator not registered for operator set");
+        cheats.expectRevert(IAVSDirectoryErrors.InvalidOperator.selector);
         avsDirectory.deregisterOperatorFromOperatorSets(operator, oids);
     }
 
@@ -945,7 +958,7 @@ contract AVSDirectoryUnitTests_createOperatorSet is AVSDirectoryUnitTests {
 
     function test_revert_operatorSetExists() public {
         _createOperatorSet(1);
-        cheats.expectRevert("AVSDirectory.createOperatorSet: operator set already exists");
+        cheats.expectRevert(IAVSDirectoryErrors.InvalidOperatorSet.selector);
         _createOperatorSet(1);
     }
 }
@@ -963,7 +976,7 @@ contract AVSDirectoryUnitTests_becomeOperatorSetAVS is AVSDirectoryUnitTests {
 
     function test_revert_alreadyOperatorSetAVS() public {
         avsDirectory.becomeOperatorSetAVS();
-        cheats.expectRevert("AVSDirectory.becomeOperatorSetAVS: already an operator set AVS");
+        cheats.expectRevert(IAVSDirectoryErrors.InvalidAVS.selector);
         avsDirectory.becomeOperatorSetAVS();
     }
 }
@@ -979,13 +992,13 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
         operators = new address[](1);
         operatorSetIds = new uint32[][](1);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         cheats.prank(defaultAVS);
         avsDirectory.migrateOperatorsToOperatorSets(operators, operatorSetIds);
     }
 
     function test_revert_notOperatorSetAVS() public {
-        cheats.expectRevert("AVSDirectory.migrateOperatorsToOperatorSets: AVS is not an operator set AVS");
+        cheats.expectRevert(IAVSDirectoryErrors.InvalidAVS.selector);
         cheats.prank(defaultAVS);
         avsDirectory.migrateOperatorsToOperatorSets(operators, operatorSetIds);
     }
@@ -997,7 +1010,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
 
         avsDirectory.becomeOperatorSetAVS();
         cheats.expectRevert(
-            "AVSDirectory.migrateOperatorsToOperatorSets: operator already migrated or not a legacy registered operator"
+            IAVSDirectoryErrors.InvalidOperator.selector
         );
         avsDirectory.migrateOperatorsToOperatorSets(operators, operatorSetIds);
     }
@@ -1022,9 +1035,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
         avsDirectory.migrateOperatorsToOperatorSets(operators, operatorSetIds);
 
         // Revert when trying to migrate operator again
-        cheats.expectRevert(
-            "AVSDirectory.migrateOperatorsToOperatorSets: operator already migrated or not a legacy registered operator"
-        );
+        cheats.expectRevert(IAVSDirectoryErrors.InvalidOperator.selector);
         avsDirectory.migrateOperatorsToOperatorSets(operators, operatorSetIds);
     }
 
@@ -1044,7 +1055,7 @@ contract AVSDirectoryUnitTests_migrateOperatorsToOperatorSets is AVSDirectoryUni
         avsDirectory.becomeOperatorSetAVS();
 
         // Revert
-        cheats.expectRevert("AVSDirectory._registerOperatorToOperatorSets: invalid operator set");
+        cheats.expectRevert(IAVSDirectoryErrors.InvalidOperatorSet.selector);
         avsDirectory.migrateOperatorsToOperatorSets(operators, operatorSetIds);
     }
 
@@ -1223,17 +1234,17 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
         cheats.prank(pauser);
         avsDirectory.pause(2 ** PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         avsDirectory.registerOperatorToAVS(
             address(0), ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(""), 0, 0)
         );
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         avsDirectory.deregisterOperatorFromAVS(address(0));
     }
 
     function test_revert_deregisterOperatorFromAVS_operatorNotRegistered() public {
-        cheats.expectRevert("AVSDirectory.deregisterOperatorFromAVS: operator not registered");
+        cheats.expectRevert(IAVSDirectoryErrors.OperatorNotRegistered.selector);
         avsDirectory.deregisterOperatorFromAVS(address(0));
     }
 
@@ -1348,7 +1359,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
             _getOperatorAVSRegistrationSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet");
+        cheats.expectRevert(IAVSDirectoryErrors.OperatorNotRegistered.selector);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
@@ -1374,7 +1385,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
         address operator = cheats.addr(delegationSignerPrivateKey);
         operatorSignature.expiry = bound(operatorSignature.expiry, 0, block.timestamp - 1);
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: operator signature expired");
+        cheats.expectRevert(IAVSDirectoryErrors.SignatureExpired.selector);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 
@@ -1391,7 +1402,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
         cheats.startPrank(defaultAVS);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: operator already registered");
+        cheats.expectRevert(IAVSDirectoryErrors.OperatorAlreadyRegistered.selector);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
         cheats.stopPrank();
     }
@@ -1440,7 +1451,7 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
         cheats.prank(operator);
         avsDirectory.cancelSalt(salt);
 
-        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: salt already spent");
+        cheats.expectRevert(IAVSDirectoryErrors.SaltSpent.selector);
         cheats.prank(defaultAVS);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }

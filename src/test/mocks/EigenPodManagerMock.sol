@@ -8,18 +8,14 @@ contract EigenPodManagerMock is Test, Pausable {
     receive() external payable {}
     fallback() external payable {}
 
-    mapping(address => int256) public podShares;
+    mapping(address => int256) public stakerDepositShares;
 
     constructor(IPauserRegistry _pauserRegistry) {
         _initializePauser(_pauserRegistry, 0);
     }
 
-    function podOwnerShares(address podOwner) external view returns (int256) {
-        return podShares[podOwner];
-    }
-
-    function setPodOwnerShares(address podOwner, int256 shares) external {
-        podShares[podOwner] = shares;
+    function setStakerDepositShares(address podOwner, int256 shares) external {
+        stakerDepositShares[podOwner] = shares;
     }
 
     function denebForkTimestamp() external pure returns (uint64) {
