@@ -109,6 +109,7 @@ interface IPermissionController {
      * @param operator      the message sender acting as an admin who is changing permissions
      * @param target        the address of the contract that delegation is changing for
      * @param selector      the function selector on the contract that delegation is changing for
+     * @param delegate      the address of the delegate you want to add or revoke perms for
      * @param hasPermission true if the delegation was added, false if it was revoked
      */
     event AccountDelegateStateChange(
@@ -116,6 +117,7 @@ interface IPermissionController {
         address operator,
         address target,
         bytes4 selector,
+        address delegate,
         bool hasPermission);
 
     //////////////////////////////////////////////////

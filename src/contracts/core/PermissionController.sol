@@ -84,6 +84,8 @@ contract PermissionController is PermissionControllerStorage {
         } else {
             info.delegatedContractSelectors[delegate][target].remove(selector);
         }
+
+        emit AccountDelegateStateChange(account, msg.sender, target, selector, delegate, hasPermission); 
     }
     
     //////////////////////////////////////////////////
