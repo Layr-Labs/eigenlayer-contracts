@@ -45,6 +45,22 @@ contract StrategyManagerMock is Test {
         return (strategiesToReturn[staker], sharesToReturn[staker]);
     }
 
+    function stakerDepositShares(address staker, IStrategy strategy) external view returns (uint256) {
+        IStrategy[] memory strategies = strategiesToReturn[staker];
+        uint256 strategyIndex = type(uint256).max;
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            if (strategies[i] == strategy) {
+                strategyIndex = i;
+                break;
+            }
+        }
+        if (strategyIndex == type(uint256).max) {
+            revert ("StrategyManagerMock: strategy not found");
+        }
+        
+        return sharesToReturn[staker][strategyIndex];
+    }
+
     uint256 public stakerStrategyListLengthReturnValue;
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.

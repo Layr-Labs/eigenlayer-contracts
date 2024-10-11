@@ -14,7 +14,7 @@ interface IAVSDirectoryErrors {
     /// Operator Status
 
     /// @dev Thrown when an operator does not exist in the DelegationManager
-    error OperatorDoesNotExist();
+    error OperatorNotRegistered();
     /// @dev Thrown when `operator` is already registered to the AVS.
     error OperatorAlreadyRegistered();
 

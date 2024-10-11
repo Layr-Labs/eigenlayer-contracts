@@ -778,15 +778,6 @@ contract DelegationManager is
     }
 
     /**
-     * @notice Returns the stakerOptOutWindowBlocks for an operator
-     */
-    function stakerOptOutWindowBlocks(
-        address operator
-    ) external view returns (uint256) {
-        return _operatorDetails[operator].stakerOptOutWindowBlocks;
-    }
-
-    /**
      * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal.
      * This value depends on which operator the staker is delegated to.
      * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
@@ -798,6 +789,7 @@ contract DelegationManager is
     ) public view returns (uint256[] memory withdrawableShares) {
         address operator = delegatedTo[staker];
         uint64[] memory totalMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
+        withdrawableShares = new uint256[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
             IShareManager shareManager = _getShareManager(strategies[i]);

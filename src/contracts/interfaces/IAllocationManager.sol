@@ -12,8 +12,6 @@ interface IAllocationManagerErrors {
     error OperatorNotRegistered();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
-    /// @dev Thrown when an operator attempts to set their allocation delay to 0
-    error InvalidDelay();
     /// @dev Thrown when an operator's allocation delay has yet to be set.
     error UninitializedAllocationDelay();
     /// @dev Thrown when provided `expectedTotalMagnitude` for a given allocation does not match `currentTotalMagnitude`.

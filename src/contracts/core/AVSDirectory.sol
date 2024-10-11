@@ -310,7 +310,7 @@ contract AVSDirectory is
         require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
 
         // Assert `operator` is a registered operator.
-        require(delegation.isOperator(operator), OperatorDoesNotExist());
+        require(delegation.isOperator(operator), OperatorNotRegistered());
 
         // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
         _checkIsValidSignatureNow({

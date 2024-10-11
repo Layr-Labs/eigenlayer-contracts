@@ -202,7 +202,8 @@ contract EigenLayerDeployer is Operators {
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
                 eigenLayerReputedMultisig,
-                eigenLayerPauserReg
+                eigenLayerPauserReg,
+                0 /*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -245,7 +246,8 @@ contract EigenLayerDeployer is Operators {
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector,
                 eigenLayerReputedMultisig,
-                eigenLayerPauserReg
+                eigenLayerPauserReg,
+                0 /*initialPausedStatus*/
             )
         );
 
