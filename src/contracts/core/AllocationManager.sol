@@ -184,7 +184,7 @@ contract AllocationManager is
 
                 emit OperatorSetMagnitudeUpdated(
                     msg.sender,
-                    _decodeOperatorSet(operatorSetKey),
+                    allocation.operatorSets[j],
                     allocation.strategy,
                     _addInt128(info.currentMagnitude, info.pendingDiff),
                     info.effectTimestamp

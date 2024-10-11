@@ -5,6 +5,8 @@ import "src/contracts/core/AllocationManager.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManagerErrors, IAllocationManagerEvents{
+    uint8 internal constant PAUSED_MODIFY_ALLOCATIONS = 0;
+    uint8 internal constant PAUSED_OPERATOR_SLASHING = 1;
     uint32 constant DEALLOCATION_DELAY = 17.5 days;
     uint32 constant ALLOCATION_CONFIGURATION_DELAY = 21 days;
 
@@ -158,16 +160,12 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     function testFuzz_SlashOperator_Checks(
         uint256 r
     ) public {
-        // Mock random slashing params.
+        // Mock random slashing params, and operator set.
         IAllocationManagerTypes.SlashingParams memory p = _randomSlashingParams(r, 0);
-
-        // Mock a random operator set.
         OperatorSet memory operatorSet = OperatorSet({avs: _randomAddr(r, 0), operatorSetId: p.operatorSetId});
 
-        // Pretend to be the AVS.
-        cheats.startPrank(operatorSet.avs);
-
         // Assert that operator's cannot be  slashed unless `IAVSDirectory.isOperatorSlashable` returns true.
+        cheats.prank(operatorSet.avs);
         cheats.expectRevert(IAllocationManagerErrors.InvalidOperator.selector);
         allocationManager.slashOperator(p);
 
@@ -176,25 +174,29 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
         // Assert `wadToSlash` cannot be greater than 100% (1e18).
         p.wadToSlash = 1e18 + 1;
+        cheats.prank(operatorSet.avs);
         cheats.expectRevert(IAllocationManagerErrors.InvalidWadToSlash.selector);
         allocationManager.slashOperator(p);
 
         // Assert `wadToSlash` cannot be 0.
         p.wadToSlash = 0;
+        cheats.prank(operatorSet.avs);
         cheats.expectRevert(IAllocationManagerErrors.InvalidWadToSlash.selector);
         allocationManager.slashOperator(p);
 
-        // Stop pretending.
-        cheats.stopPrank();
-
-        allocationManager.pauseAll();
-
-        // Pretend to be the AVS.
-        cheats.prank(operatorSet.avs);
+        // Pause operator slashing.
+        allocationManager.pause(2 ** PAUSED_OPERATOR_SLASHING);
 
         // Assert that fn can only be called when unpaused.
+        cheats.prank(operatorSet.avs);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         allocationManager.slashOperator(p);
+
+        // Unpause operator slashing.
+        cheats.prank(unpauser);
+        allocationManager.unpause(2 ** PAUSED_OPERATOR_SLASHING);
+
+        // TODO
     }
 
     /// -----------------------------------------------------------------------
@@ -208,49 +210,43 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     function testFuzz_modifyAllocations_Checks(
         uint256 r
     ) public {
-        // Mock random operator address.
+        // Mock random operator and allocation delay..
         address operator = _randomAddr(r, 0);
-
-        // Mock random allocation delay.
         uint32 delay = uint32(bound(r, 1, type(uint32).max));
 
         // Mock random magnitude allocation.
         IAllocationManagerTypes.MagnitudeAllocation[] memory a = new IAllocationManagerTypes.MagnitudeAllocation[](1);
         a[0] = _randomMagnitudeAllocation(r, 0);
 
-        // Pretend to be the operator.
-        cheats.startPrank(operator);
-
         // Assert that allocation cannot be made unless allocation delay has been set (aka if the operator has registered).
+        cheats.prank(operator);
         cheats.expectRevert(IAllocationManagerErrors.UninitializedAllocationDelay.selector);
         allocationManager.modifyAllocations(a);
 
         // Mock allocation delay being set and active.
-        cheats.startPrank(address(delegationManagerMock));
+        cheats.prank(address(delegationManagerMock));
         allocationManager.setAllocationDelay(operator, delay);
         cheats.warp(block.timestamp + ALLOCATION_CONFIGURATION_DELAY );
 
-        // Pretend to be the operator.
-        cheats.startPrank(operator);
-
         // Assert that fn can only be called with valid operator sets.
+        cheats.prank(operator);
         cheats.expectRevert(IAllocationManagerErrors.InvalidOperatorSet.selector);
         allocationManager.modifyAllocations(a);
 
         // Mock valid operator sets.
         avsDirectoryMock.setIsOperatorSetBatch(a[0].operatorSets, true);
 
-        // Stop pretending.
-        cheats.stopPrank();
-
-        allocationManager.pauseAll();
-
-        // Pretend to be the AVS.
-        cheats.prank(operator);
+        // Pause allocation modifications.
+        allocationManager.pause(2 ** PAUSED_MODIFY_ALLOCATIONS);
 
         // Assert that fn can only be called when unpaused.
+        cheats.prank(operator);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         allocationManager.modifyAllocations(a);
+
+        // Unpause allocation modifications.
+        cheats.prank(unpauser);
+        allocationManager.unpause(2 ** PAUSED_MODIFY_ALLOCATIONS);
     }
 
     /// -----------------------------------------------------------------------
@@ -262,14 +258,10 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     /// 2. Fn can only be called by registered operator.
     /// 3. Fn can only be called when unpaused.
     function testFuzz_clearModificationQueue_Checks(uint256 r) public {
-        // Mock random operator address.
+        // Mock random operator address, stratgies array, and numToClear array.
         address operator = _randomAddr(r, 0);
-
-        // Create strategies array.
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = strategyMock;
-
-        // Create numToClear array, with non-matching length.
         uint16[] memory numToClear = new uint16[](2);
 
         // Assert that fn inputs arrays match.
@@ -286,11 +278,18 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         // Mock operator being registered.
         delegationManagerMock.setIsOperator(operator, true);
 
-        allocationManager.pauseAll();
+        // Pause allocation modifications.
+        allocationManager.pause(2 ** PAUSED_MODIFY_ALLOCATIONS);
 
         // Assert that fn can only be called when unpaused.
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         allocationManager.clearModificationQueue(operator, strategies, numToClear);
+
+        // Unpause allocation modifications.
+        cheats.prank(unpauser);
+        allocationManager.unpause(2 ** PAUSED_MODIFY_ALLOCATIONS);
+
+        // TODO
     }
 
     /// -----------------------------------------------------------------------
