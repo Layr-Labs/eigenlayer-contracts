@@ -93,6 +93,22 @@ interface IAllocationManagerTypes {
         uint256 wadToSlash;
         string description;
     }
+
+    /**
+     * @param encumberedMagnitude the effective magnitude allocated to all operator sets
+     * for the strategy
+     * @param currentMagnitude the effective current magnitude allocated to a single operator set
+     * for the strategy
+     * @param pendingDiff the pending change in magnitude, if one exists
+     * @param effectTimestamp the time after which `pendingDiff` will take effect
+     */
+    struct PendingMagnitudeInfo {
+        uint64 encumberedMagnitude;
+        uint64 currentMagnitude;
+        int128 pendingDiff;
+        uint32 effectTimestamp;
+    }
+
 }
 
 interface IAllocationManagerEvents is IAllocationManagerTypes {

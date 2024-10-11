@@ -5,8 +5,10 @@ import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 import "src/contracts/permissions/PauserRegistry.sol";
+import "src/contracts/strategies/StrategyBase.sol";
 
 import "src/test/mocks/AVSDirectoryMock.sol";
 import "src/test/mocks/AllocationManagerMock.sol";
@@ -37,8 +39,9 @@ abstract contract EigenLayerUnitTestSetup is Test {
     }
 
     function setUp() public virtual {
-        address[] memory pausers = new address[](1);
+        address[] memory pausers = new address[](2);
         pausers[0] = pauser;
+        pausers[1] = address(this);
 
         pauserRegistry = new PauserRegistry(pausers, unpauser);
         eigenLayerProxyAdmin = new ProxyAdmin();
