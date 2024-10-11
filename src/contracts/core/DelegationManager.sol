@@ -602,7 +602,7 @@ contract DelegationManager is
 
         // Remove `withdrawalRoot` from pending roots
         delete pendingWithdrawals[withdrawalRoot];
-        emit WithdrawalCompleted(withdrawalRoot);
+        emit SlashingWithdrawalCompleted(withdrawalRoot);
     }
 
     /**
@@ -718,7 +718,7 @@ contract DelegationManager is
         // Place withdrawal in queue
         pendingWithdrawals[withdrawalRoot] = true;
 
-        emit WithdrawalQueued(withdrawalRoot, withdrawal);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
         return withdrawalRoot;
     }
 

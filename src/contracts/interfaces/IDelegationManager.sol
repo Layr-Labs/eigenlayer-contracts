@@ -206,10 +206,11 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
      * @param withdrawalRoot Is the hash of the `withdrawal`.
      * @param withdrawal Is the withdrawal itself.
      */
-    event WithdrawalQueued(bytes32 withdrawalRoot, Withdrawal withdrawal);
+    event SlashingWithdrawalQueued(bytes32 withdrawalRoot, Withdrawal withdrawal);
 
     /// @notice Emitted when a queued withdrawal is completed
-    event WithdrawalCompleted(bytes32 withdrawalRoot);
+    event SlashingWithdrawalCompleted(bytes32 withdrawalRoot);
+
 }
 
 /**
