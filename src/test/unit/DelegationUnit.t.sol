@@ -2885,7 +2885,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // queueWithdrawals
         cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit WithdrawalQueued(withdrawalRoot, withdrawal);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
         uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(staker);
@@ -2936,7 +2936,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // queueWithdrawals
         cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit WithdrawalQueued(withdrawalRoot, withdrawal);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
         // Post queueWithdrawal state values
@@ -3155,7 +3155,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         cheats.warp(delegationManager.getCompletableTimestamp(withdrawal.startTimestamp));
         cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit WithdrawalCompleted(withdrawalRoot);
+        emit SlashingWithdrawalCompleted(withdrawalRoot);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  true);
 
         uint256 operatorSharesAfter = delegationManager.operatorShares(defaultOperator, withdrawal.strategies[0]);
@@ -3198,7 +3198,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         cheats.warp(delegationManager.getCompletableTimestamp(withdrawal.startTimestamp));
         cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit WithdrawalCompleted(withdrawalRoot);
+        emit SlashingWithdrawalCompleted(withdrawalRoot);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  false);
 
         uint256 operatorSharesAfter = delegationManager.operatorShares(defaultOperator, withdrawal.strategies[0]);
