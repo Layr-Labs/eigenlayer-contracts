@@ -111,6 +111,23 @@ Completing a deallocation decreases the encumbered magnitude for the strategy, a
 
 ```solidity
 /**
+ * @notice Struct containing parameters to slashing
+ * @param operator the address to slash
+ * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
+ * @param strategies the set of strategies to slash
+ * @param wadToSlash the parts in 1e18 to slash, this will be proportional to the operator's
+ * slashable stake allocation for the operatorSet
+ * @param description the description of the slashing provided by the AVS for legibility
+ */
+struct SlashingParams {
+    address operator;
+    uint32 operatorSetId;
+    IStrategy[] strategies;
+    uint256 wadToSlash;
+    string description;
+}
+
+/**
  * @notice Called by an AVS to slash an operator for given operatorSetId, list of strategies, and bipsToSlash.
  * For each given (operator, operatorSetId, strategy) tuple, bipsToSlash
  * bips of the operatorSet's slashable stake allocation will be slashed
@@ -123,10 +140,7 @@ Completing a deallocation decreases the encumbered magnitude for the strategy, a
  * operator's slashable stake allocation for the operatorSet
  */
 function slashOperator(
-    address operator,
-    uint32 operatorSetId,
-    IStrategy[] calldata strategies,
-    uint256 wadToSlash
+    SlashingParams calldata params
 ) external
 ```
 
