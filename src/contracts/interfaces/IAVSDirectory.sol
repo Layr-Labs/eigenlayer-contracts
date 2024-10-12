@@ -328,7 +328,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      */
     function getStrategiesInOperatorSet(
         OperatorSet memory operatorSet
-    ) external view returns (address[] memory strategies);
+    ) external view returns (IStrategy[] memory strategies);
 
     /**
      * @notice Returns the number of operators registered to an operatorSet.

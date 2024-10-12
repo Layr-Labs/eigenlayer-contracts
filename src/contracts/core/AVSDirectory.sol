@@ -485,13 +485,13 @@ contract AVSDirectory is
      */
     function getStrategiesInOperatorSet(
         OperatorSet memory operatorSet
-    ) external view returns (address[] memory strategies) {
+    ) external view returns (IStrategy[] memory strategies) {
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
         uint256 length = _operatorSetStrategies[encodedOperatorSet].length();
 
-        strategies = new address[](length);
+        strategies = new IStrategy[](length);
         for (uint256 i; i < length; ++i) {
-            strategies[i] = _operatorSetStrategies[encodedOperatorSet].at(i);
+            strategies[i] = IStrategy(_operatorSetStrategies[encodedOperatorSet].at(i));
         }
     }
 
