@@ -291,6 +291,14 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address);
 
     /**
+     * @notice Returns the number of operator sets an operator is registered to.
+     * @param operator the operator address to query
+     */
+    function getNumOperatorSetsOfOperator(
+        address operator
+    ) external view returns (uint256);
+
+    /**
      * @notice Returns an array of operator sets an operator is registered to.
      * @param operator The operator address to query.
      * @param start The starting index of the array to query.
