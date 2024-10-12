@@ -229,6 +229,7 @@ contract AVSDirectory is
         IStrategy[] calldata strategies
     ) external override {
         OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
+        require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
         for (uint256 i = 0; i < strategies.length; i++) {
             require(_operatorSetStrategies[encodedOperatorSet].add(address(strategies[i])), StrategyAlreadyInOperatorSet());
@@ -242,6 +243,7 @@ contract AVSDirectory is
         IStrategy[] calldata strategies
     ) external override {
         OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
+        require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
         for (uint256 i = 0; i < strategies.length; i++) {
             require(_operatorSetStrategies[encodedOperatorSet].remove(address(strategies[i])), StrategyNotInOperatorSet());
