@@ -84,5 +84,23 @@ contract StrategyManagerMock is Test {
         }
     }
 
+    function removeDepositShares(
+        address staker, IStrategy strategy, uint256 sharesToRemove
+    ) external {
+        IStrategy[] memory strategies = strategiesToReturn[staker];
+        uint256 strategyIndex = type(uint256).max;
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            if (strategies[i] == strategy) {
+                strategyIndex = i;
+                break;
+            }
+        }
+        if (strategyIndex == type(uint256).max) {
+            revert ("StrategyManagerMock: strategy not found");
+        }
+        
+        sharesToReturn[staker][strategyIndex] -= sharesToRemove;
+    }
+
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}
 }
