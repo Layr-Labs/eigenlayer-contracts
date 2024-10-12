@@ -78,10 +78,10 @@ interface IAVSDirectoryEvents is IAVSDirectoryTypes {
     event OperatorRemovedFromOperatorSet(address indexed operator, OperatorSet operatorSet);
 
     /// @notice Emitted when a strategy is added to an operator set.
-    event StrategyAddedToOperatorSet(address strategy, OperatorSet operatorSet);
+    event StrategyAddedToOperatorSet(OperatorSet operatorSet, IStrategy strategy);
 
     /// @notice Emitted when a strategy is removed from an operator set.
-    event StrategyRemovedFromOperatorSet(address strategy, OperatorSet operatorSet);
+    event StrategyRemovedFromOperatorSet(OperatorSet operatorSet, IStrategy strategy);
 
     /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
     /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.

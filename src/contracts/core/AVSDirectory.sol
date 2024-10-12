@@ -224,27 +224,27 @@ contract AVSDirectory is
     }
 
     /// @inheritdoc IAVSDirectory
-    function addStrategyToOperatorSets(
+    function addStrategiesToOperatorSet(
         uint32 operatorSetId,
         IStrategy[] calldata strategies
     ) external override {
         OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(_operatorSetStrategies[encodedOperatorSet].add(strategies[i]), StrategyAlreadyInOperatorSet());
+            require(_operatorSetStrategies[encodedOperatorSet].add(address(strategies[i])), StrategyAlreadyInOperatorSet());
             emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
         }
     }
 
     /// @inheritdoc IAVSDirectory
-    function removeStrategyFromOperatorSets(
+    function removeStrategiesFromOperatorSet(
         uint32 operatorSetId,
         IStrategy[] calldata strategies
     ) external override {
         OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(_operatorSetStrategies[encodedOperatorSet].remove(strategies[i]), StrategyNotInOperatorSet());
+            require(_operatorSetStrategies[encodedOperatorSet].remove(address(strategies[i])), StrategyNotInOperatorSet());
             emit StrategyRemovedFromOperatorSet(operatorSet, strategies[i]);
         }
     }
