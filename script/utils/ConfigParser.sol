@@ -5,35 +5,6 @@ import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
 import "./StringUtils.sol";
-import {TUPInfo, BeaconInfo, TokenInfo, Addresses} from "./AddressUtils.sol";
-
-// Admin/Proxies
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import "../../src/contracts/permissions/PauserRegistry.sol";
-import "../../src/test/mocks/EmptyContract.sol";
-
-// Core
-import "../../src/contracts/core/AVSDirectory.sol";
-import "../../src/contracts/core/DelegationManager.sol";
-import "../../src/contracts/core/RewardsCoordinator.sol";
-import "../../src/contracts/core/Slasher.sol";
-import "../../src/contracts/core/StrategyManager.sol";
-
-// Pods
-import "../../src/contracts/pods/EigenPod.sol";
-import "../../src/contracts/pods/EigenPodManager.sol";
-
-// Strategies
-import "../../src/contracts/strategies/EigenStrategy.sol";
-import "../../src/contracts/strategies/StrategyBase.sol";
-import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
-import "../../src/contracts/strategies/StrategyFactory.sol";
-
-// Token
-import "../../src/contracts/interfaces/IBackingEigen.sol";
-import "../../src/contracts/interfaces/IEigen.sol";
 
 struct Environment {
     uint chainid;
@@ -58,21 +29,65 @@ struct Params {
     uint16 GLOBAL_OPERATOR_COMMISSION_BIPS;
 }
 
+struct TUPInfo {
+    address proxy;
+    address impl;
+    address pendingImpl;
+}
+
+struct BeaconInfo {
+    address beacon;
+    address impl;
+    address pendingImpl;
+}
+
+struct TokenInfo {
+    address proxy;
+    address impl;
+    address pendingImpl;
+    address proxyAdmin;
+}
+
+struct Addresses {
+    // admin
+    address communityMultisig;
+    address executorMultisig;
+    address operationsMultisig;
+    address pauserMultisig;
+    address pauserRegistry;
+    address proxyAdmin;
+    address timelock;
+    // core
+    TUPInfo avsDirectory;
+    TUPInfo delegationManager;
+    TUPInfo rewardsCoordinator;
+    TUPInfo slasher;
+    TUPInfo strategyManager;
+    // pods
+    BeaconInfo eigenPod;
+    TUPInfo eigenPodManager;
+    TUPInfo delayedWithdrawalRouter;
+    // strategies
+    TUPInfo strategyFactory;
+    BeaconInfo strategyBeacon;
+    TUPInfo[] preLongtailStrats;
+    // token
+    TokenInfo EIGEN;
+    TokenInfo bEIGEN;
+    TUPInfo eigenStrategy;
+}
+
 contract ConfigParser is Script, Test {
 
     using StringUtils for *;
 
-    // Yes, you can use either one
-    Vm cheats = Vm(HEVM_ADDRESS);
-    // Vm vm = Vm(HEVM_ADDRESS);
+    string private _configPath;
+    string private _configData;
 
-    string configPath;
-    string configData;
-
-    function _readConfigFile(string memory filePath) internal returns (Addresses memory, Environment memory, Params memory) {
-        configPath = filePath;
-        configData = vm.readFile(configPath);
-        emit log_named_string("Reading from config file", configPath);
+    function _readConfigFile(string memory configPath) internal returns (Addresses memory, Environment memory, Params memory) {
+        _configPath = configPath;
+        _configData = vm.readFile(_configPath);
+        emit log_named_string("Reading from config file", _configPath);
 
         Environment memory env = _readEnvironment();
         Params memory params = _readParams();
@@ -82,7 +97,7 @@ contract ConfigParser is Script, Test {
     }
 
     function _writeConfigFile(Addresses memory addrs, Environment memory env, Params memory params) internal {
-        emit log_named_string("Writing to config file", configPath);
+        emit log_named_string("Writing to config file", _configPath);
 
         (string memory configKey, string memory configObject) = _writeConfig(env, params);
         (string memory deploymentKey, string memory deploymentObject) = _writeDeployment(addrs);
@@ -91,7 +106,7 @@ contract ConfigParser is Script, Test {
         vm.serializeString(parentObjectKey, deploymentKey, deploymentObject);
         string memory parentObject = vm.serializeString(parentObjectKey, configKey, configObject);
 
-        vm.writeJson(parentObject, configPath);
+        vm.writeJson(parentObject, _configPath);
     }
 
     function _printEnv(Environment memory env) internal {
@@ -179,7 +194,7 @@ contract ConfigParser is Script, Test {
     }
 
     function _readStrategies(string memory jsonLocation) private returns (TUPInfo[] memory) {
-        address[] memory strategyProxies = stdJson.readAddressArray(configData, jsonLocation.concat(".addrs"));
+        address[] memory strategyProxies = stdJson.readAddressArray(_configData, jsonLocation.concat(".addrs"));
         address strategyImpl = _readAddress(jsonLocation.concat(".impl"));
 
         TUPInfo[] memory strategyInfos = new TUPInfo[](strategyProxies.length);
@@ -205,15 +220,15 @@ contract ConfigParser is Script, Test {
     }
 
     function _readAddress(string memory jsonLocation) private returns (address) {
-        return stdJson.readAddress(configData, jsonLocation);
+        return stdJson.readAddress(_configData, jsonLocation);
     }
 
     function _readUint(string memory jsonLocation) private returns (uint) {
-        return stdJson.readUint(configData, jsonLocation);
+        return stdJson.readUint(_configData, jsonLocation);
     }
 
     function _readString(string memory jsonLocation) private returns (string memory) {
-        return stdJson.readString(configData, jsonLocation);
+        return stdJson.readString(_configData, jsonLocation);
     }
 
     /**
