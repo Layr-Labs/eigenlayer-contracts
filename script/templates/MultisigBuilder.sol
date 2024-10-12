@@ -14,11 +14,6 @@ abstract contract MultisigBuilder is ConfigParser {
     using MultisigCallUtils for MultisigCall[];
 
     /**
-     * @dev To be used in _execute() to craft multisig calls.
-     */
-    MultisigCall[] internal _multisigCalls;
-
-    /**
      * @notice Constructs a SafeTx object for a Gnosis Safe to ingest.
      * @param envPath The path to the relevant environment configuration file.
      * @return A SafeTx struct containing the transaction data to post to the Safe API.
@@ -54,5 +49,5 @@ abstract contract MultisigBuilder is ConfigParser {
      * @param params A struct containing the parameters for the multisig call.
      * @return An array of MultisigCall objects.
      */
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) public virtual returns (MultisigCall[] memory);
 }

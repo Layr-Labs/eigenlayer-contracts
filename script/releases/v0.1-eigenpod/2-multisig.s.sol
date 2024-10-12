@@ -8,12 +8,14 @@ import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
 import "src/contracts/interfaces/IStrategyFactory.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
-contract UpgradeEigenPodAndManager is OpsTimelockBuilder {
+contract QueueEigenPodAndManager is OpsTimelockBuilder {
 
     using MultisigCallUtils for MultisigCall[];
     using SafeTxUtils for *;
 
-    function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
+    MultisigCall[] internal _executorCalls;
+
+    function _queue(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {
 
         // construct initialization data for eigenPodManager
         bytes memory eigenPodManagerData = abi.encodeWithSelector(
@@ -44,37 +46,5 @@ contract UpgradeEigenPodAndManager is OpsTimelockBuilder {
         });
 
         return _executorCalls;
-    }
-
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
-
-        // steals logic from queue() to perform execute()
-        // likely the first step of any _execute() after a _queue()
-        bytes memory executorCalldata = _makeExecutorCalldata(
-            _queue(addrs, env, params),
-            params.multiSendCallOnly,
-            addrs.timelock
-        );
-
-        // execute queued transaction upgrading eigenPodManager and eigenPod
-        _opsCalls.append({
-            to: addrs.timelock,
-            value: 0,
-            data: abi.encodeWithSelector(
-                ITimelock.executeTransaction.selector,
-                executorCalldata
-            )
-        });
-
-        // after queued transaction, renounce ownership from eigenPodManager
-        _opsCalls.append({
-            to: addrs.eigenPodManager.proxy,
-            value: 0,
-            data: abi.encodeWithSelector(
-                EigenPodManager(addrs.eigenPodManager.proxy).renounceOwnership.selector
-            )
-        });
-
-        return _opsCalls;
     }
 }

@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "script/templates/MultisigBuilder.sol";
-import "./QueueEigenPodAndManager.s.sol";
+import "script/templates/OpsTimelockBuilder.sol";
 
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
 import "src/contracts/interfaces/IStrategyFactory.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
+import "./2-multisig.s.sol";
 
 contract ExecuteEigenPodAndManager is MultisigBuilder {
 
     using MultisigCallUtils for MultisigCall[];
-    using SafeTxUtils for SafeTx;
+    using SafeTxUtils for *;
 
-    MultisigCall[] internal _opsCalls;
+    MultisigCall[] private _multisigCalls;
 
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {
 
@@ -22,14 +23,16 @@ contract ExecuteEigenPodAndManager is MultisigBuilder {
 
         MultisigCall[] memory _executorCalls = queue._queue(addrs, env, params);
 
-        bytes memory executorCalldata = queue.makeExecutorCalldata(
+        // steals logic from queue() to perform execute()
+        // likely the first step of any _execute() after a _queue()
+        bytes memory executorCalldata = queue._makeExecutorCalldata(
             _executorCalls,
             params.multiSendCallOnly,
             addrs.timelock
         );
 
         // execute queued transaction upgrading eigenPodManager and eigenPod
-        _opsCalls.append({
+        _multisigCalls.append({
             to: addrs.timelock,
             value: 0,
             data: abi.encodeWithSelector(
@@ -39,7 +42,7 @@ contract ExecuteEigenPodAndManager is MultisigBuilder {
         });
 
         // after queued transaction, renounce ownership from eigenPodManager
-        _opsCalls.append({
+        _multisigCalls.append({
             to: addrs.eigenPodManager.proxy,
             value: 0,
             data: abi.encodeWithSelector(
@@ -47,6 +50,6 @@ contract ExecuteEigenPodAndManager is MultisigBuilder {
             )
         });
 
-        return _opsCalls;
+        return _multisigCalls;
     }
 }

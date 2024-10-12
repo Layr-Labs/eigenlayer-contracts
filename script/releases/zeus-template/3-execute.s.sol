@@ -11,7 +11,7 @@ contract Execute is MultisigBuilder {
 
     MultisigCall[] internal _opsCalls;
 
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {
 
         Queue queue = new Queue();
 

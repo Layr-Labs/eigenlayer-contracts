@@ -16,17 +16,10 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
     using MultisigCallUtils for MultisigCall[];
     using SafeTxUtils for SafeTx;
 
-    MultisigCall[] _executorCalls;
-    MultisigCall[] _opsCalls;
+    MultisigCall[] private _opsCalls;
 
     /// @return a SafeTx object for a Gnosis Safe to ingest
-    function queue(string memory envPath) public returns (SafeTx memory) {
-        (
-            Addresses memory addrs,
-            Environment memory env,
-            Params memory params
-        ) = _readConfigFile(envPath);
-
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {
         MultisigCall[] memory calls = _queue(addrs, env, params);
 
         // encode calls for executor
@@ -42,20 +35,20 @@ abstract contract OpsTimelockBuilder is MultisigBuilder {
             type(uint256).max
         );
 
+        _opsCalls.append(
+            addrs.timelock,
+            timelockCalldata
+        );
+
         // encode timelock data for ops multisig
-        return SafeTx({
-            to: addrs.timelock,
-            value: 0,
-            data: timelockCalldata,
-            op: EncGnosisSafe.Operation.DelegateCall
-        });
+        return _opsCalls;
     }
 
-    function _queue(Addresses memory addrs, Environment memory env, Params memory params) internal virtual returns (MultisigCall[] memory);
+    function _queue(Addresses memory addrs, Environment memory env, Params memory params) public virtual returns (MultisigCall[] memory);
 
     /// @notice helper function to create calldata for executor
     /// can be used for queue or execute
-    function _makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly, address timelock) internal pure returns (bytes memory) {
+    function _makeExecutorCalldata(MultisigCall[] memory calls, address multiSendCallOnly, address timelock) public pure returns (bytes memory) {
         bytes memory data = calls.encodeMultisendTxs();
 
         bytes memory executorCalldata = SafeTx({
