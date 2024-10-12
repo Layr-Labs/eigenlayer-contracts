@@ -223,6 +223,34 @@ contract AVSDirectory is
         _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
+    /// @inheritdoc IAVSDirectory
+    function addStrategiesToOperatorSet(
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies
+    ) external override {
+        OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
+        require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            require(_operatorSetStrategies[encodedOperatorSet].add(address(strategies[i])), StrategyAlreadyInOperatorSet());
+            emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
+        }
+    }
+
+    /// @inheritdoc IAVSDirectory
+    function removeStrategiesFromOperatorSet(
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies
+    ) external override {
+        OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
+        require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            require(_operatorSetStrategies[encodedOperatorSet].remove(address(strategies[i])), StrategyNotInOperatorSet());
+            emit StrategyRemovedFromOperatorSet(operatorSet, strategies[i]);
+        }
+    }
+
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
@@ -448,6 +476,22 @@ contract AVSDirectory is
         operators = new address[](length);
         for (uint256 i; i < length; ++i) {
             operators[i] = _operatorSetMembers[encodedOperatorSet].at(start + i);
+        }
+    }
+
+    /**
+     * @notice Returns an array of strategies in the operatorSet.
+     * @param operatorSet The operatorSet to query.
+     */
+    function getStrategiesInOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (IStrategy[] memory strategies) {
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        uint256 length = _operatorSetStrategies[encodedOperatorSet].length();
+
+        strategies = new IStrategy[](length);
+        for (uint256 i; i < length; ++i) {
+            strategies[i] = IStrategy(_operatorSetStrategies[encodedOperatorSet].at(i));
         }
     }
 
