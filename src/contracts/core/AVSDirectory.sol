@@ -223,40 +223,30 @@ contract AVSDirectory is
         _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
-    /**
-     *  @notice Called by AVSs to add a strategy to a list of operatorSets.
-     *
-     *  @param operator The address of the strategy to be added to the operator set.
-     *  @param operatorSetIds The IDs of the operator sets.
-     *
-     *  @dev msg.sender is used as the AVS.
-     */
+    /// @inheritdoc IAVSDirectory
     function addStrategyToOperatorSets(
-        address strategy,
-        uint32[] calldata operatorSetIds
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies
     ) external override {
-        // TODO: Assert `strategy` is actually a strategy
-        // require(strategymanager.isStrategy(operator), OperatorNotRegistered());
-
-        // Assert that the AVS is an operator set AVS.
-        require(isOperatorSetAVS[msg.sender], InvalidAVS());
-
-        _addStrategyToOperatorSets(strategy, msg.sender, operatorSetIds);
+        OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            require(_operatorSetStrategies[encodedOperatorSet].add(strategies[i]), StrategyAlreadyInOperatorSet());
+            emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
+        }
     }
 
-    /**
-     *  @notice Called by AVSs to remove a strategy from an operator set.
-     *
-     *  @param strategy The address of the strategy to be removed from the operator set.
-     *  @param operatorSetIds The IDs of the operator sets.
-     *
-     *  @dev msg.sender is used as the AVS.
-     */
+    /// @inheritdoc IAVSDirectory
     function removeStrategyFromOperatorSets(
-        address strategy,
-        uint32[] calldata operatorSetIds
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies
     ) external override {
-        _removeStrategyFromOperatorSets(strategy, msg.sender, operatorSetIds);
+        OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            require(_operatorSetStrategies[encodedOperatorSet].remove(strategies[i]), StrategyNotInOperatorSet());
+            emit StrategyRemovedFromOperatorSet(operatorSet, strategies[i]);
+        }
     }
 
     /**
@@ -425,45 +415,6 @@ contract AVSDirectory is
     }
 
     /**
-     * @notice Helper function used by migration & registration functions to register a strategy to operator sets.
-     * @param avs The AVS that the operatorSets belongs to.
-     * @param strategy The strategy to add.
-     * @param operatorSetIds The IDs of the operator sets.
-     */
-    function _addStrategyToOperatorSets(address strategy, address avs, uint32[] calldata operatorSetIds) internal {
-        // Loop over `operatorSetIds` array and add `strategy` for each item.
-        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-            OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
-
-            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
-
-            require(_operatorSetsStrategies[encodedOperatorSet].add(strategy), InvalidStrategyInOperatorSet());
-
-            emit StrategyAddedToOperatorSet(strategy, operatorSet);
-        }
-    }
-
-    /**
-     * @notice Internal function to remove a strategy from an operator set.
-     *
-     * @param avs The AVS that the operatorSets belongs to.
-     * @param strategy The strategy to remove.
-     * @param operatorSetIds The IDs of the operator sets.
-     */
-    function _removeStrategyFromOperatorSets(address strategy, address avs, uint32[] calldata operatorSetIds) internal {
-        // Loop over `operatorSetIds` array and remove `strategy` for each item.
-        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
-            OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
-
-            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
-
-            require(_operatorSetsStrategies[encodedOperatorSet].remove(strategy), InvalidStrategyInOperatorSet());
-
-            emit StrategyRemovedFromOperatorSet(strategy, operatorSet);
-        }
-    }
-
-    /**
      *
      *                         VIEW FUNCTIONS
      *
@@ -534,7 +485,7 @@ contract AVSDirectory is
         OperatorSet memory operatorSet
     ) external view returns (address[] memory strategies) {
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
-        length = _operatorSetStrategies[encodedOperatorSet].length();
+        uint256 length = _operatorSetStrategies[encodedOperatorSet].length();
 
         strategies = new address[](length);
         for (uint256 i; i < length; ++i) {

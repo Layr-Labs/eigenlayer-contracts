@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import "./ISignatureUtils.sol";
+import "./IStrategy.sol";
 
 /// @notice Struct representing an operator set
 struct OperatorSet {
@@ -24,8 +25,10 @@ interface IAVSDirectoryErrors {
     error InvalidOperator();
     /// @dev Thrown when an invalid operator set is provided.
     error InvalidOperatorSet();
-    /// @dev Thrown when `operator` is not a registered operator.
-    error InvalidStrategyInOperatorSet();
+    /// @dev Thrown when a strategy is already added to an operator set.
+    error StrategyAlreadyInOperatorSet();
+    /// @dev Thrown when a strategy is not in an operator set.
+    error StrategyNotInOperatorSet();
     /// @dev Thrown when an invalid operator set is provided.
     error OperatorNotRegistered();
 
@@ -178,29 +181,29 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     ) external;
 
     /**
-     *  @notice Called by AVSs to add a strategy to list of operatorSets.
+     *  @notice Called by AVSs to add a set of strategies to an operator set.
      *
-     *  @param strategy The address of the strategy to be added to the operator set.
-     *  @param operatorSetIds The IDs of the operator sets.
+     *  @param operatorSetId The ID of the operator set.
+     *  @param strategies The addresses of the strategies to be added to the operator set.
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function addStrategyToOperatorSets(
-        address strategy,
-        uint32[] calldata operatorSetIds
+    function addStrategiesToOperatorSet(
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies
     ) external;
 
     /**
-     *  @notice Called by AVSs to remove a strategy from an operator set.
+     *  @notice Called by AVSs to remove a set of strategies from an operator set.
      *
-     *  @param operator The address of the strategy to be removed from the operator set.
-     *  @param operatorSetIds The IDs of the operator sets.
+     *  @param operatorSetId The ID of the operator set.
+     *  @param strategies The addresses of the strategies to be removed from the operator set.
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function removeStrategyFromOperatorSets(
-        address strategy,
-        uint32[] calldata operatorSetIds
+    function removeStrategiesFromOperatorSet(
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies
     ) external;
 
     /**
