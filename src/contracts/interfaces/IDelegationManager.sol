@@ -15,19 +15,17 @@ interface IDelegationManagerErrors {
 
     /// Delegation Status
 
-    /// @dev Thrown when an account is currently delegated.
-    error AlreadyDelegated();
-    /// @dev Thrown when an account is not currently delegated.
-    error NotCurrentlyDelegated();
     /// @dev Thrown when an operator attempts to undelegate.
     error OperatorsCannotUndelegate();
+    /// @dev Thrown when an account is actively delegated.
+    error ActivelyDelegated();
+    /// @dev Thrown when an account is not actively delegated.
+    error NotActivelyDelegated();
     /// @dev Thrown when `operator` is not a registered operator.
-    error OperatorDoesNotExist();
+    error OperatorNotRegistered();
 
     /// Invalid Inputs
 
-    /// @dev Thrown when an account is actively delegated.
-    error ActivelyDelegated();
     /// @dev Thrown when attempting to execute an action that was not queued.
     error WithdrawalNotQueued();
     /// @dev Thrown when provided delay exceeds maximum.
@@ -38,17 +36,9 @@ interface IDelegationManagerErrors {
     error InputArrayLengthMismatch();
     /// @dev Thrown when input arrays length is zero.
     error InputArrayLengthZero();
-    /// @dev Thrown when `operator` is not a registered operator.
-    error OperatorNotRegistered();
     /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
     error OnlyStrategyManagerOrEigenPodManager();
 
-    /// @dev Thrown when an account is not actively delegated.
-    error NotActivelyDelegated();
-    /// @dev Thrown when provided `stakerOptOutWindowBlocks` cannot decrease.
-    error StakerOptOutWindowBlocksCannotDecrease();
-    /// @dev Thrown when provided `stakerOptOutWindowBlocks` exceeds maximum.
-    error StakerOptOutWindowBlocksExceedsMax();
     /// @dev Thrown when provided delay exceeds maximum.
     error WithdrawalDelayExceedsMax();
 
@@ -68,7 +58,7 @@ interface IDelegationManagerErrors {
     /// @dev Thrown when provided delay exceeds maximum.
     error WithdrawalDelayExeedsMax();
     /// @dev Thrown when a withdraw amount larger than max is attempted.
-    error WithdrawalExeedsMax();
+    error WithdrawalExceedsMax();
     /// @dev Thrown when withdrawer is not the current caller.
     error WithdrawerNotCaller();
     /// @dev Thrown when `withdrawer` is not staker.
@@ -88,15 +78,8 @@ interface IDelegationManagerTypes {
          * 3) If this address is a contract (i.e. it has code) then we forward a call to the contract and verify that it returns the correct EIP-1271 "magic value".
          */
         address delegationApprover;
-        /**
-         * @notice A minimum delay -- measured in blocks -- enforced between:
-         * 1) the operator signalling their intent to register for a service, via calling `Slasher.optIntoSlashing`
-         * and
-         * 2) the operator completing registration for the service, via the service ultimately calling `Slasher.recordFirstStakeUpdate`
-         * @dev note that for a specific operator, this value *cannot decrease*, i.e. if the operator wishes to modify their OperatorDetails,
-         * then they are only allowed to either increase this value or keep it the same.
-         */
-        uint32 stakerOptOutWindowBlocks;
+        /// @notice DEPRECATED -- this field is no longer used. An analogous field is the `allocationDelay` stored in the AllocationManager
+        uint32 __deprecated_stakerOptOutWindowBlocks;
     }
 
     /**
@@ -210,7 +193,6 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted when a queued withdrawal is completed
     event SlashingWithdrawalCompleted(bytes32 withdrawalRoot);
-
 }
 
 /**
@@ -431,13 +413,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     function delegationApprover(
         address operator
     ) external view returns (address);
-
-    /**
-     * @notice Returns the stakerOptOutWindowBlocks for an operator
-     */
-    function stakerOptOutWindowBlocks(
-        address operator
-    ) external view returns (uint256);
 
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.

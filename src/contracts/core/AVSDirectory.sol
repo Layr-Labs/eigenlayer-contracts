@@ -224,29 +224,27 @@ contract AVSDirectory is
     }
 
     /// @inheritdoc IAVSDirectory
-    function addStrategiesToOperatorSet(
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies
-    ) external override {
+    function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external override {
         OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
         require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(_operatorSetStrategies[encodedOperatorSet].add(address(strategies[i])), StrategyAlreadyInOperatorSet());
+            require(
+                _operatorSetStrategies[encodedOperatorSet].add(address(strategies[i])), StrategyAlreadyInOperatorSet()
+            );
             emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
         }
     }
 
     /// @inheritdoc IAVSDirectory
-    function removeStrategiesFromOperatorSet(
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies
-    ) external override {
+    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external override {
         OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
         require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(_operatorSetStrategies[encodedOperatorSet].remove(address(strategies[i])), StrategyNotInOperatorSet());
+            require(
+                _operatorSetStrategies[encodedOperatorSet].remove(address(strategies[i])), StrategyNotInOperatorSet()
+            );
             emit StrategyRemovedFromOperatorSet(operatorSet, strategies[i]);
         }
     }
@@ -310,7 +308,7 @@ contract AVSDirectory is
         require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
 
         // Assert `operator` is a registered operator.
-        require(delegation.isOperator(operator), OperatorDoesNotExist());
+        require(delegation.isOperator(operator), OperatorNotRegistered());
 
         // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
         _checkIsValidSignatureNow({

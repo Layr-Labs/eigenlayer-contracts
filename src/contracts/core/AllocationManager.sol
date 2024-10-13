@@ -267,8 +267,6 @@ contract AllocationManager is
      * @param delay The allocation delay in seconds.
      */
     function _setAllocationDelay(address operator, uint32 delay) internal {
-        require(delay != 0, InvalidDelay());
-
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
         if (info.pendingDelay != 0 && block.timestamp >= info.effectTimestamp) {

@@ -167,7 +167,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
     }
@@ -176,7 +176,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: cheats.addr(delegationSignerPrivateKey),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
     }
@@ -192,7 +192,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: address(wallet),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
 

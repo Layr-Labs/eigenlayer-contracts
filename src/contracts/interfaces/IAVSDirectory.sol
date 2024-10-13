@@ -14,7 +14,7 @@ interface IAVSDirectoryErrors {
     /// Operator Status
 
     /// @dev Thrown when an operator does not exist in the DelegationManager
-    error OperatorDoesNotExist();
+    error OperatorNotRegistered();
     /// @dev Thrown when `operator` is already registered to the AVS.
     error OperatorAlreadyRegistered();
 
@@ -29,8 +29,6 @@ interface IAVSDirectoryErrors {
     error StrategyAlreadyInOperatorSet();
     /// @dev Thrown when a strategy is not in an operator set.
     error StrategyNotInOperatorSet();
-    /// @dev Thrown when an invalid operator set is provided.
-    error OperatorNotRegistered();
 
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
     error SaltSpent();
@@ -188,10 +186,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function addStrategiesToOperatorSet(
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies
-    ) external;
+    function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
 
     /**
      *  @notice Called by AVSs to remove a set of strategies from an operator set.
@@ -201,10 +196,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function removeStrategiesFromOperatorSet(
-        uint32 operatorSetId,
-        IStrategy[] calldata strategies
-    ) external;
+    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
 
     /**
      *  @notice Legacy function called by the AVS's service manager contract

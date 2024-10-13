@@ -36,7 +36,7 @@ contract DelegationManagerMock is Test {
         IDelegationManagerTypes.OperatorDetails memory returnValue = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: operator,
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
         return returnValue;
     }

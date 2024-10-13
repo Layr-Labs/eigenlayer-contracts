@@ -33,7 +33,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            __deprecated_stakerOptOutWindowBlocks: 0
         });
         _testRegisterAsOperator(operator, 0, operatorDetails);
 
@@ -275,7 +275,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
                 __deprecated_earningsReceiver: staker,
                 delegationApprover: address(0),
-                stakerOptOutWindowBlocks: 0
+                __deprecated_stakerOptOutWindowBlocks: 0
             });
             _testRegisterAsOperator(staker, 0, operatorDetails);
             assertTrue(
@@ -342,7 +342,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
                 __deprecated_earningsReceiver: operator,
                 delegationApprover: address(0),
-                stakerOptOutWindowBlocks: 0
+                __deprecated_stakerOptOutWindowBlocks: 0
             });
             _testRegisterAsOperator(operator, 0, operatorDetails);
         }
