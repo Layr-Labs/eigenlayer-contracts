@@ -95,7 +95,7 @@ library SlashingLib {
         StakerScalingFactors storage ssf,
         uint64 proportionOfOldBalance
     ) internal {
-        ssf.beaconChainScalingFactor = uint64(uint256(ssf.beaconChainScalingFactor).mulWad(proportionOfOldBalance));
+        ssf.beaconChainScalingFactor = uint64(uint256(ssf.getBeaconChainScalingFactor()).mulWad(proportionOfOldBalance));
         ssf.isBeaconChainScalingFactorSet = true;
     }
 

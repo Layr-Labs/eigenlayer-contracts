@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
+import "../../contracts/interfaces/IStrategy.sol";
 import "../../contracts/permissions/Pausable.sol";
 
 contract EigenPodManagerMock is Test, Pausable {
@@ -9,6 +10,8 @@ contract EigenPodManagerMock is Test, Pausable {
     fallback() external payable {}
 
     mapping(address => int256) public podOwnerDepositShares;
+
+    mapping(address => uint256) public podOwnerSharesWithdrawn;
 
     constructor(IPauserRegistry _pauserRegistry) {
         _initializePauser(_pauserRegistry, 0);
@@ -26,7 +29,15 @@ contract EigenPodManagerMock is Test, Pausable {
         podOwnerDepositShares[podOwner] = shares;
     }
 
+    function removeDepositShares(address podOwner, IStrategy strategy, uint256 shares) external {
+        podOwnerDepositShares[podOwner] -= int256(shares);
+    }
+
     function denebForkTimestamp() external pure returns (uint64) {
         return type(uint64).max;
+    }
+
+    function withdrawSharesAsTokens(address podOwner, address /** strategy */, address /** token */, uint256 shares) external {
+        podOwnerSharesWithdrawn[podOwner] += shares;
     }
 }

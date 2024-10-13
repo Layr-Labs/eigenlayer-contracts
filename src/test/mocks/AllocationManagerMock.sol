@@ -47,5 +47,19 @@ contract AllocationManagerMock is Test {
         return maxMagnitudes;
     }
 
+    function getMaxMagnitudesAtTimestamp(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 timestamp
+    ) external view returns (uint64[] memory) {
+        uint64[] memory maxMagnitudes = new uint64[](strategies.length);
+
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup(timestamp);
+        }
+
+        return maxMagnitudes;
+    }
+
 
 }

@@ -14,16 +14,13 @@ contract StrategyManagerMock is Test {
     mapping(address => IStrategy[]) public strategiesToReturn;
     mapping(address => uint256[]) public sharesToReturn;
 
+    /// @notice Mapping staker => strategy => shares withdrawn after a withdrawal has been completed
+    mapping(address => mapping(IStrategy => uint256)) public strategySharesWithdrawn;
+
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
-
-    function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager) external
-    {
-       delegation = _delegation;
-       eigenPodManager = _eigenPodManager;
-    }
 
     /**
      * @notice mocks the return value of getDeposits
@@ -45,19 +42,8 @@ contract StrategyManagerMock is Test {
         return (strategiesToReturn[staker], sharesToReturn[staker]);
     }
 
-    function stakerDepositShares(address staker, IStrategy strategy) external view returns (uint256) {
-        IStrategy[] memory strategies = strategiesToReturn[staker];
-        uint256 strategyIndex = type(uint256).max;
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            if (strategies[i] == strategy) {
-                strategyIndex = i;
-                break;
-            }
-        }
-        if (strategyIndex == type(uint256).max) {
-            revert ("StrategyManagerMock: strategy not found");
-        }
-        
+    function stakerDepositShares(address staker, IStrategy strategy) public view returns (uint256) {
+        uint256 strategyIndex = _getStrategyIndex(staker, strategy);
         return sharesToReturn[staker][strategyIndex];
     }
 
@@ -87,6 +73,28 @@ contract StrategyManagerMock is Test {
     function removeDepositShares(
         address staker, IStrategy strategy, uint256 sharesToRemove
     ) external {
+        uint256 strategyIndex = _getStrategyIndex(staker, strategy);
+        sharesToReturn[staker][strategyIndex] -= sharesToRemove;
+    }
+
+    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}
+
+
+    function withdrawSharesAsTokens(address staker, IStrategy strategy, address token, uint256 shares) external {
+        strategySharesWithdrawn[staker][strategy] += shares;
+    }
+
+    function addShares(address staker, IStrategy strategy, IERC20 token, uint256 addedShares) external {
+        // Increase the staker's shares
+        uint256 strategyIndex = _getStrategyIndex(staker, strategy);
+        sharesToReturn[staker][strategyIndex] += addedShares;
+
+        // Call increase delegated shared
+        uint256 existingShares = stakerDepositShares(staker, strategy);
+        delegation.increaseDelegatedShares(staker, strategy, existingShares, addedShares);
+    }
+
+    function _getStrategyIndex(address staker, IStrategy strategy) internal view returns (uint256) {
         IStrategy[] memory strategies = strategiesToReturn[staker];
         uint256 strategyIndex = type(uint256).max;
         for (uint256 i = 0; i < strategies.length; ++i) {
@@ -98,9 +106,14 @@ contract StrategyManagerMock is Test {
         if (strategyIndex == type(uint256).max) {
             revert ("StrategyManagerMock: strategy not found");
         }
-        
-        sharesToReturn[staker][strategyIndex] -= sharesToRemove;
+
+        return strategyIndex;
     }
 
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}
+    function setDelegationManager(IDelegationManager _delegation) external {
+        delegation = _delegation;
+    }
+
+    fallback() external payable {}
+    receive() external payable {}
 }
