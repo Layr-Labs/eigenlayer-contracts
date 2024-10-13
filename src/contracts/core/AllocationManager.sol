@@ -370,7 +370,6 @@ contract AllocationManager is
     ) external view returns (OperatorSet[] memory, MagnitudeInfo[] memory) {
         OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
         MagnitudeInfo[] memory infos = getAllocationInfo(operator, strategy, operatorSets);
-
         return (operatorSets, infos);
     }
 
@@ -394,6 +393,32 @@ contract AllocationManager is
                 pendingDiff: info.pendingDiff,
                 effectTimestamp: info.effectTimestamp
             });
+        }
+
+        return infos;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getAllocationInfo(
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies,
+        address[] calldata operators
+    ) public view returns (MagnitudeInfo[][] memory) {
+        MagnitudeInfo[][] memory infos = new MagnitudeInfo[][](operators.length);
+        for (uint256 i = 0; i < operators.length; ++i) {
+            for (uint256 j = 0; j < strategies.length; ++j) {
+                PendingMagnitudeInfo memory info = _getPendingMagnitudeInfo({
+                    operator: operators[i],
+                    strategy: strategies[j],
+                    operatorSetKey: _encodeOperatorSet(operatorSet)
+                });
+
+                infos[i][j] = MagnitudeInfo({
+                    currentMagnitude: info.currentMagnitude,
+                    pendingDiff: info.pendingDiff,
+                    effectTimestamp: info.effectTimestamp
+                });
+            }
         }
 
         return infos;
@@ -484,5 +509,37 @@ contract AllocationManager is
         // set as long as it is nonzero.
         isSet = delay != 0;
         return (isSet, delay);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getMinDelegatedAndSlashableOperatorShares(
+        OperatorSet calldata operatorSet,
+        address[] calldata operators,
+        IStrategy[] calldata strategies,
+        uint32 beforeTimestamp
+    ) external view returns (uint256[][] memory, uint256[][] memory) {
+        require(beforeTimestamp > block.timestamp, InvalidTimestamp());
+        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        uint256[][] memory delegatedShares = delegation.getOperatorsShares(operators, strategies);
+        uint256[][] memory slashableShares = new uint256[][](operators.length);
+
+        for (uint256 i = 0; i < operators.length; ++i) {
+            address operator = operators[i];
+            slashableShares[i] = new uint256[](strategies.length);
+            for (uint256 j = 0; j < strategies.length; ++j) {
+                IStrategy strategy = strategies[j];
+                MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][operatorSetKey];
+                uint64 slashableMagnitude =  mInfo.currentMagnitude;
+                if (mInfo.effectTimestamp <= beforeTimestamp) {
+                    slashableMagnitude = _addInt128(slashableMagnitude, mInfo.pendingDiff);
+                }
+                slashableShares[i][j] = 
+                    delegatedShares[i][j]
+                    .mulWad(slashableMagnitude)
+                    .divWad(_maxMagnitudeHistory[operator][strategy].latest());
+            }
+        }
+
+        return (delegatedShares, slashableShares);
     }
 }
