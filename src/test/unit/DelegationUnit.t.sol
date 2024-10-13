@@ -342,7 +342,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         address staker,
         address withdrawer,
         IStrategy strategy,
-        uint256 scaledSharesToWithdraw
+        uint256 sharesToWithdraw
     ) internal view returns (
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory,
         IDelegationManagerTypes.Withdrawal memory,
@@ -350,15 +350,21 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     ) {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         strategyArray[0] = strategy;
-        uint256[] memory scaledSharesToWithdrawArray = new uint256[](1);
-        scaledSharesToWithdrawArray[0] = scaledSharesToWithdraw;
-
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
-        queuedWithdrawalParams[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
-            strategies: strategyArray,
-            shares: scaledSharesToWithdrawArray,
-            withdrawer: withdrawer
-        });
+        {
+            uint256[] memory withdrawalAmounts = new uint256[](1);
+            withdrawalAmounts[0] = sharesToWithdraw;
+
+            queuedWithdrawalParams[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
+                strategies: strategyArray,
+                shares: withdrawalAmounts,
+                withdrawer: withdrawer
+            });
+        }
+
+        // Get scaled shares to withdraw
+        uint256[] memory scaledSharesToWithdrawArray = new uint256[](1);
+        scaledSharesToWithdrawArray[0] = _getScaledSharesToWithdraw(staker, strategy, sharesToWithdraw);
 
         IDelegationManagerTypes.Withdrawal memory withdrawal = IDelegationManagerTypes.Withdrawal({
             staker: staker,
@@ -385,11 +391,19 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         bytes32
     ) {
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
-        queuedWithdrawalParams[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
-            strategies: strategies,
-            shares: withdrawalAmounts,
-            withdrawer: withdrawer
-        });
+        {
+            queuedWithdrawalParams[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
+                strategies: strategies,
+                shares: withdrawalAmounts,
+                withdrawer: withdrawer
+            });
+        }
+
+        // Get scaled shares to withdraw
+        uint256[] memory scaledSharesToWithdrawArray = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            scaledSharesToWithdrawArray[i] = _getScaledSharesToWithdraw(staker, strategies[i], withdrawalAmounts[i]);
+        }
         
         IDelegationManagerTypes.Withdrawal memory withdrawal = IDelegationManagerTypes.Withdrawal({
             staker: staker,
@@ -398,11 +412,34 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
             startTimestamp: uint32(block.timestamp),
             strategies: strategies,
-            scaledSharesToWithdraw: withdrawalAmounts
+            scaledSharesToWithdraw: scaledSharesToWithdrawArray
         });
         bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
         
         return (queuedWithdrawalParams, withdrawal, withdrawalRoot);
+    }
+
+    function _getScaledSharesToWithdraw(address staker, IStrategy strategy, uint256 sharesToWithdraw) internal view returns (uint256) {
+        // Setup vars
+        address operator = delegationManager.delegatedTo(staker);
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        strategyArray[0] = strategy;
+
+        // Set scaling factors
+        (uint256 depositScalingFactor, bool isBeaconChainScalingFactorSet, uint64 beaconChainScalingFactor) = delegationManager.stakerScalingFactor(staker, strategy);
+        StakerScalingFactors memory stakerScalingFactor = StakerScalingFactors({
+            depositScalingFactor: depositScalingFactor,
+            isBeaconChainScalingFactorSet: isBeaconChainScalingFactorSet,
+            beaconChainScalingFactor: beaconChainScalingFactor
+        });
+
+        uint256 scaledSharesToWithdraw = SlashingLib.scaleSharesForQueuedWithdrawal(
+            sharesToWithdraw,
+            stakerScalingFactor,
+            allocationManagerMock.getMaxMagnitudes(operator, strategyArray)[0]
+        );
+
+        return scaledSharesToWithdraw;
     }
 
     /**
@@ -428,7 +465,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             staker: staker,
             withdrawer: withdrawer,
             strategy: strategies[0],
-            scaledSharesToWithdraw: withdrawalAmount
+            sharesToWithdraw: withdrawalAmount
         });
 
         cheats.prank(staker);
@@ -467,7 +504,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             staker: staker,
             withdrawer: withdrawer,
             strategy: strategies[0],
-            scaledSharesToWithdraw: withdrawalAmount
+            sharesToWithdraw: withdrawalAmount
         });
 
         cheats.prank(staker);
@@ -3021,7 +3058,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
             staker: defaultStaker,
             withdrawer: defaultStaker,
             strategy: strategyMock,
-            scaledSharesToWithdraw: shares
+            sharesToWithdraw: shares
         });
 
         // Undelegate the staker
@@ -3055,7 +3092,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
      * @notice The operator should have its shares slashed prior to the staker's deposit
      * TODO: fuzz magnitude
      */
-    function testFuzz_undelegate_slashedOperator(uint128 shares) public {
+    function testFuzz_undelegate_preSlashedOperator(uint128 shares) public {
         // TODO: remove this assumption & properly handle rounding on division
         cheats.assume(shares % 2 == 0);
         uint64 operatorMagnitude = 5e17;
@@ -3075,17 +3112,8 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
 
         // delegate from the `staker` to them
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
-        (uint256 depositScalingFactor, bool isBeaconChainScalingFactorSet, uint64 beaconChainScalingFactor) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
-        StakerScalingFactors memory ssf = StakerScalingFactors({
-            depositScalingFactor: depositScalingFactor,
-            isBeaconChainScalingFactorSet: isBeaconChainScalingFactorSet,
-            beaconChainScalingFactor: beaconChainScalingFactor
-        });
-        assertTrue(ssf.depositScalingFactor > WAD, "bad test setup");
-
-        // Get withdrawable shares
-        uint256 withdrawableSharesBefore = delegationManager.getWithdrawableShares(defaultStaker, strategies)[0];
-        uint256 scaledSharesToWithdraw = SlashingLib.scaleSharesForQueuedWithdrawal(withdrawableSharesBefore, ssf, operatorMagnitude);
+        (uint256 depositScalingFactor,,) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
+        assertTrue(depositScalingFactor > WAD, "bad test setup");
         
         // Format queued withdrawal
         (
@@ -3096,7 +3124,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
             staker: defaultStaker,
             withdrawer: defaultStaker,
             strategy: strategyMock,
-            scaledSharesToWithdraw: scaledSharesToWithdraw
+            sharesToWithdraw: shares
         });
 
         // Undelegate the staker
@@ -3163,17 +3191,11 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
             assertEq(operatorSharesAfterSlash, operatorSharesBefore / 2, "operator shares not properly updated");
         }
 
-        (uint256 depositScalingFactor, bool isBeaconChainScalingFactorSet, uint64 beaconChainScalingFactor) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
-        StakerScalingFactors memory ssf = StakerScalingFactors({
-            depositScalingFactor: depositScalingFactor,
-            isBeaconChainScalingFactorSet: isBeaconChainScalingFactorSet,
-            beaconChainScalingFactor: beaconChainScalingFactor
-        });
-        assertEq(ssf.depositScalingFactor, WAD, "bad test setup");
+        (uint256 depositScalingFactor,,) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
+        assertEq(depositScalingFactor, WAD, "bad test setup");
 
         // Get withdrawable shares
         uint256 withdrawableSharesBefore = delegationManager.getWithdrawableShares(defaultStaker, strategies)[0];
-        uint256 scaledSharesToWithdraw = SlashingLib.scaleSharesForQueuedWithdrawal(withdrawableSharesBefore, ssf, operatorMagnitude);
         
         // Format queued withdrawal
         (
@@ -3184,7 +3206,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
             staker: defaultStaker,
             withdrawer: defaultStaker,
             strategy: strategyMock,
-            scaledSharesToWithdraw: scaledSharesToWithdraw
+            sharesToWithdraw: withdrawableSharesBefore
         });
 
         // Undelegate the staker
@@ -3224,7 +3246,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             staker: defaultStaker,
             withdrawer: defaultStaker,
             strategy: strategyMock,
-            scaledSharesToWithdraw: 100
+            sharesToWithdraw: 100
         });
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
@@ -3255,7 +3277,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             staker: defaultStaker,
             withdrawer: withdrawer,
             strategy: strategyMock,
-            scaledSharesToWithdraw: 100
+            sharesToWithdraw: 100
         });
         cheats.expectRevert(IDelegationManagerErrors.WithdrawerNotStaker.selector);
         cheats.prank(defaultStaker);
@@ -3286,43 +3308,174 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
      * - Asserts that staker cumulativeWithdrawalsQueued nonce is incremented
      * - Checks that event was emitted with correct withdrawalRoot and withdrawal
      */
-    function testFuzz_queueWithdrawal_SingleStrat(
-        address staker,
-        uint256 depositAmount,
-        uint256 withdrawalAmount
-    ) public filterFuzzedAddressInputs(staker) {
-        cheats.assume(staker != defaultOperator);
+    function testFuzz_queueWithdrawal_SingleStrat_nonSlashedOperator(
+        uint128 depositAmount,
+        uint128 withdrawalAmount
+    ) public {
+        cheats.assume(defaultStaker != defaultOperator);
         cheats.assume(withdrawalAmount > 0 && withdrawalAmount <= depositAmount);
         uint256[] memory sharesAmounts = new uint256[](1);
         sharesAmounts[0] = depositAmount;
         // sharesAmounts is single element so returns single strategy
-        IStrategy[] memory strategies = _deployAndDepositIntoStrategies(staker, sharesAmounts);
+        IStrategy[] memory strategies = _deployAndDepositIntoStrategies(defaultStaker, sharesAmounts);
         _registerOperatorWithBaseDetails(defaultOperator);
-        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
         (
             IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             IDelegationManagerTypes.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
-            staker: staker,
-            withdrawer: staker,
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
             strategy: strategies[0],
-            scaledSharesToWithdraw: withdrawalAmount
+            sharesToWithdraw: withdrawalAmount
         });
-        assertEq(delegationManager.delegatedTo(staker), defaultOperator, "staker should be delegated to operator");
-        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(staker);
+        assertEq(delegationManager.delegatedTo(defaultStaker), defaultOperator, "staker should be delegated to operator");
+        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
         uint256 delegatedSharesBefore = delegationManager.operatorShares(defaultOperator, strategies[0]);
 
         // queueWithdrawals
-        cheats.prank(staker);
+        cheats.prank(defaultStaker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
-        uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(staker);
+        uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
         uint256 delegatedSharesAfter = delegationManager.operatorShares(defaultOperator, strategies[0]);
         assertEq(nonceBefore + 1, nonceAfter, "staker nonce should have incremented");
         assertEq(delegatedSharesBefore - withdrawalAmount, delegatedSharesAfter, "delegated shares not decreased correctly");
+    }
+
+    /**
+     * @notice Verifies that `DelegationManager.queueWithdrawals` properly queues a withdrawal for the `withdrawer`
+     * from the `strategy` for the `sharesAmount`. Operator is slashed prior to the staker's deposit
+     * - Asserts that staker is delegated to the operator
+     * - Asserts that shares for delegatedTo operator are decreased by `sharesAmount`
+     * - Asserts that staker cumulativeWithdrawalsQueued nonce is incremented
+     * - Checks that event was emitted with correct withdrawalRoot and withdrawal
+     */
+    function testFuzz_queueWithdrawal_SingleStrat_preSlashedOperator(
+        uint128 depositAmount,
+        uint128 withdrawalAmount
+    ) public {
+        // TODO: remove these assumptions & properly handle rounding on division
+        cheats.assume(depositAmount % 2 == 0);
+        cheats.assume(withdrawalAmount % 2 == 0);
+        cheats.assume(withdrawalAmount > 0 && withdrawalAmount <= depositAmount);
+
+        // Slash the operator
+        uint64 operatorMagnitude = 5e17;
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, operatorMagnitude);
+
+        // Deposit for staker & delegate
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = strategyMock;
+        {
+            uint256[] memory sharesToSet = new uint256[](1);
+            sharesToSet[0] = depositAmount;
+            strategyManagerMock.setDeposits(defaultStaker, strategies, sharesToSet);
+            _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+        }
+
+        (
+            IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            IDelegationManagerTypes.Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            strategy: strategies[0],
+            sharesToWithdraw: withdrawalAmount
+        });
+
+        assertEq(delegationManager.delegatedTo(defaultStaker), defaultOperator, "staker should be delegated to operator");
+        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
+        uint256 delegatedSharesBefore = delegationManager.operatorShares(defaultOperator, strategies[0]);
+
+        // queueWithdrawals
+        cheats.prank(defaultStaker);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit WithdrawalQueued(withdrawalRoot, withdrawal);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
+        uint256 delegatedSharesAfter = delegationManager.operatorShares(defaultOperator, strategies[0]);
+        assertEq(nonceBefore + 1, nonceAfter, "staker nonce should have incremented");
+        assertEq(delegatedSharesBefore - withdrawalAmount, delegatedSharesAfter, "delegated shares not decreased correctly");
+    }
+
+    /**
+     * @notice Verifies that `DelegationManager.queueWithdrawals` properly queues a withdrawal for the `withdrawer`
+     * from the `strategy` for the `sharesAmount`. Operator is slashed while the staker is deposited
+     * - Asserts that staker is delegated to the operator
+     * - Asserts that shares for delegatedTo operator are decreased by `sharesAmount`
+     * - Asserts that staker cumulativeWithdrawalsQueued nonce is incremented
+     * - Checks that event was emitted with correct withdrawalRoot and withdrawal
+     */
+    function testFuzz_queueWithdrawal_SingleStrat_slashedWhileStaked(
+        uint128 depositAmount,
+        uint128 withdrawalAmount
+    ) public {
+        // TODO: remove these assumptions & properly handle rounding on division
+        cheats.assume(depositAmount % 2 == 0);
+        cheats.assume(withdrawalAmount % 2 == 0);
+        cheats.assume(withdrawalAmount > 0 && withdrawalAmount <= depositAmount);
+
+        // Register operator
+        _registerOperatorWithBaseDetails(defaultOperator);
+
+        // Deposit for staker & delegate
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = strategyMock;
+        {
+            uint256[] memory sharesToSet = new uint256[](1);
+            sharesToSet[0] = depositAmount;
+            strategyManagerMock.setDeposits(defaultStaker, strategies, sharesToSet);
+            _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+        }
+
+        // Slash the operator
+        uint64 operatorMagnitude = 5e17;
+        _setOperatorMagnitude(defaultOperator, strategyMock, operatorMagnitude);
+        cheats.prank(address(allocationManagerMock));
+        delegationManager.decreaseOperatorShares(defaultOperator, strategyMock, WAD, operatorMagnitude);
+
+
+        (
+            IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            IDelegationManagerTypes.Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            strategy: strategies[0],
+            sharesToWithdraw: withdrawalAmount
+        });
+
+        assertEq(delegationManager.delegatedTo(defaultStaker), defaultOperator, "staker should be delegated to operator");
+        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
+        uint256 delegatedSharesBefore = delegationManager.operatorShares(defaultOperator, strategies[0]);
+        uint256 withdrawableShares = delegationManager.getWithdrawableShares(defaultStaker, strategies)[0];
+
+        // queueWithdrawals
+        if (withdrawalAmount > withdrawableShares) {
+            cheats.expectRevert(IDelegationManagerErrors.WithdrawalExceedsMax.selector);
+        } else {
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit WithdrawalQueued(withdrawalRoot, withdrawal);
+        }
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        if (withdrawalAmount > withdrawableShares) {
+            assertEq(delegationManager.cumulativeWithdrawalsQueued(defaultStaker), nonceBefore, "staker nonce should not have incremented");
+        } else {
+            uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
+            uint256 delegatedSharesAfter = delegationManager.operatorShares(defaultOperator, strategies[0]);
+            assertEq(nonceBefore + 1, nonceAfter, "staker nonce should have incremented");
+            assertEq(delegatedSharesBefore - withdrawalAmount, delegatedSharesAfter, "delegated shares not decreased correctly");
+        }
     }
 
     /**
@@ -3335,37 +3488,40 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
      * - Asserts that staker cumulativeWithdrawalsQueued nonce is incremented
      * - Checks that event was emitted with correct withdrawalRoot and withdrawal
      */
-    function testFuzz_queueWithdrawal_MultipleStrats(
-        address staker,
-        uint256[] memory depositAmounts
-    ) public filterFuzzedAddressInputs(staker){
-        cheats.assume(staker != defaultOperator);
-        cheats.assume(depositAmounts.length > 0 && depositAmounts.length <= 32);
+    function testFuzz_queueWithdrawal_MultipleStrats__nonSlashedOperator(
+        uint128[] memory depositAmountsUint128
+    ) public {
+        cheats.assume(depositAmountsUint128.length > 0 && depositAmountsUint128.length <= 32);
+        
+        uint256[] memory depositAmounts = new uint256[](depositAmountsUint128.length);
+        for (uint256 i = 0; i < depositAmountsUint128.length; i++) {
+            depositAmounts[i] = depositAmountsUint128[i];
+        }
         uint256[] memory withdrawalAmounts = _fuzzWithdrawalAmounts(depositAmounts);
 
-        IStrategy[] memory strategies = _deployAndDepositIntoStrategies(staker, depositAmounts);
+        IStrategy[] memory strategies = _deployAndDepositIntoStrategies(defaultStaker, depositAmounts);
         _registerOperatorWithBaseDetails(defaultOperator);
-        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
         (
             IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             IDelegationManagerTypes.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawals({
-            staker: staker,
-            withdrawer: staker,
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
             strategies: strategies,
             withdrawalAmounts: withdrawalAmounts
         });
         // Before queueWithdrawal state values
-        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(staker);
-        assertEq(delegationManager.delegatedTo(staker), defaultOperator, "staker should be delegated to operator");
+        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
+        assertEq(delegationManager.delegatedTo(defaultStaker), defaultOperator, "staker should be delegated to operator");
         uint256[] memory delegatedSharesBefore = new uint256[](strategies.length);
         for (uint256 i = 0; i < strategies.length; i++) {
             delegatedSharesBefore[i] = delegationManager.operatorShares(defaultOperator, strategies[i]);
         }
 
         // queueWithdrawals
-        cheats.prank(staker);
+        cheats.prank(defaultStaker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
@@ -3378,7 +3534,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
                 "delegated shares not decreased correctly"
             );
         }
-        uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(staker);
+        uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
         assertEq(nonceBefore + 1, nonceAfter, "staker nonce should have incremented");
     }
 }

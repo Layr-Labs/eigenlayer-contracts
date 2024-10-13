@@ -59,7 +59,7 @@ interface IDelegationManagerErrors {
     /// @dev Thrown when provided delay exceeds maximum.
     error WithdrawalDelayExeedsMax();
     /// @dev Thrown when a withdraw amount larger than max is attempted.
-    error WithdrawalExeedsMax();
+    error WithdrawalExceedsMax();
     /// @dev Thrown when withdrawer is not the current caller.
     error WithdrawerNotCaller();
     /// @dev Thrown when `withdrawer` is not staker.

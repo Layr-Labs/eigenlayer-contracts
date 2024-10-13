@@ -678,7 +678,7 @@ contract DelegationManager is
             // Calculate the deposit shares
             uint256 depositSharesToRemove = sharesToWithdraw[i].toDepositShares(ssf, maxMagnitudes[i]);
             uint256 depositSharesWithdrawable = shareManager.stakerDepositShares(staker, strategies[i]);
-            require(depositSharesToRemove <= depositSharesWithdrawable, WithdrawalExeedsMax());
+            require(depositSharesToRemove <= depositSharesWithdrawable, WithdrawalExceedsMax());
 
             // Remove delegated shares from the operator
             if (operator != address(0)) {
