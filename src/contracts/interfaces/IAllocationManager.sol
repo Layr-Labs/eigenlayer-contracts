@@ -106,7 +106,6 @@ interface IAllocationManagerTypes {
         int128 pendingDiff;
         uint32 effectTimestamp;
     }
-
 }
 
 interface IAllocationManagerEvents is IAllocationManagerTypes {

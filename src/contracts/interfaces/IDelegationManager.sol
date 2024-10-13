@@ -21,7 +21,7 @@ interface IDelegationManagerErrors {
     error ActivelyDelegated();
     /// @dev Thrown when an account is not actively delegated.
     error NotActivelyDelegated();
-        /// @dev Thrown when `operator` is not a registered operator.
+    /// @dev Thrown when `operator` is not a registered operator.
     error OperatorNotRegistered();
 
     /// Invalid Inputs
@@ -38,7 +38,6 @@ interface IDelegationManagerErrors {
     error InputArrayLengthZero();
     /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
     error OnlyStrategyManagerOrEigenPodManager();
-
 
     /// @dev Thrown when provided delay exceeds maximum.
     error WithdrawalDelayExceedsMax();
@@ -194,7 +193,6 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted when a queued withdrawal is completed
     event SlashingWithdrawalCompleted(bytes32 withdrawalRoot);
-
 }
 
 /**
