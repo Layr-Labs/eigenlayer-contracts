@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "v0.4.2-preprod-longtail",
+  "lastUpdated": "v0.4.3-preprod-rewards-incentives",
   "addresses": {
     "avsDirectory": "0x141d6995556135D4997b2ff72EB443Be300353bC",
     "avsDirectoryImplementation": "0x357978adC03375BD6a3605DE055fABb84695d79A",
@@ -17,7 +17,7 @@
     "eigenPodManagerImplementation": "0x10EBa780CCd9E5e9FFBe529C25046c076Be91048",
     "emptyContract": "0x9690d52B1Ce155DB2ec5eCbF5a262ccCc7B3A6D2",
     "rewardsCoordinator": "0xb22Ef643e1E067c994019A4C19e403253C05c2B0",
-    "rewardsCoordinatorImplementation": "0x7C80B0d3aFBeF9Bbd03Aab72cD2d90a12c11D394",
+    "rewardsCoordinatorImplementation": "0x7523b42b081C30fA245AA4039c645e36746fC400",
     "slasher": "0x12699471dF8dca329C76D72823B1b79d55709384",
     "slasherImplementation": "0x9460fCe11E1e0365419fa860599903B4E5097cf0",
     "numStrategiesDeployed": 0,
