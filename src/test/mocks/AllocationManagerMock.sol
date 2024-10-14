@@ -60,6 +60,4 @@ contract AllocationManagerMock is Test {
 
         return maxMagnitudes;
     }
-
-
 }

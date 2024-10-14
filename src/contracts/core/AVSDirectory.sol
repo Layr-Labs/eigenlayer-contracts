@@ -141,7 +141,7 @@ contract AVSDirectory is
         // Assert operator's signature has not expired.
         require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
         // Assert `operator` is actually an operator.
-        require(delegation.isOperator(operator), OperatorNotRegistered());
+        require(delegation.isOperator(operator), OperatorNotRegisteredToEigenLayer());
         // Assert that the AVS is an operator set AVS.
         require(isOperatorSetAVS[msg.sender], InvalidAVS());
         // Assert operator's signature `salt` has not already been spent.
@@ -302,13 +302,13 @@ contract AVSDirectory is
         require(!isOperatorSetAVS[msg.sender], InvalidAVS());
 
         // Assert that the `operator` is not actively registered to the AVS.
-        require(avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED, InvalidOperator());
+        require(avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED, OperatorAlreadyRegisteredToAVS());
 
         // Assert `operator` has not already spent `operatorSignature.salt`.
         require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
 
         // Assert `operator` is a registered operator.
-        require(delegation.isOperator(operator), OperatorNotRegistered());
+        require(delegation.isOperator(operator), OperatorNotRegisteredToEigenLayer());
 
         // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
         _checkIsValidSignatureNow({
@@ -345,7 +345,7 @@ contract AVSDirectory is
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that operator is registered for the AVS.
         require(
-            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, OperatorNotRegistered()
+            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, OperatorNotRegisteredToAVS()
         );
         // Assert that the AVS is not an operator set AVS.
         require(!isOperatorSetAVS[msg.sender], InvalidAVS());
@@ -377,7 +377,7 @@ contract AVSDirectory is
 
             bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
 
-            require(_operatorSetsMemberOf[operator].add(encodedOperatorSet), InvalidOperator());
+            _operatorSetsMemberOf[operator].add(encodedOperatorSet);
 
             _operatorSetMembers[encodedOperatorSet].add(operator);
 
@@ -406,9 +406,17 @@ contract AVSDirectory is
 
             bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
 
-            require(_operatorSetsMemberOf[operator].remove(encodedOperatorSet), InvalidOperator());
+            _operatorSetsMemberOf[operator].remove(encodedOperatorSet);
 
             _operatorSetMembers[encodedOperatorSet].remove(operator);
+
+            OperatorSetRegistrationStatus storage registrationStatus =
+                operatorSetStatus[avs][operator][operatorSetIds[i]];
+
+            require(registrationStatus.registered, InvalidOperator());
+
+            registrationStatus.registered = false;
+            registrationStatus.lastDeregisteredTimestamp = uint32(block.timestamp);
 
             emit OperatorRemovedFromOperatorSet(operator, operatorSet);
         }
