@@ -778,6 +778,38 @@ contract DelegationManager is
     }
 
     /**
+     * @notice Returns the shares that an operator has delegated to them in a set of strategies
+     * @param operator the operator to get shares for
+     * @param strategies the strategies to get shares for
+     */
+    function getOperatorShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) public view returns (uint256[] memory) {
+        uint256[] memory shares = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            shares[i] = operatorShares[operator][strategies[i]];
+        }
+        return shares;
+    }
+
+    /**
+     * @notice Returns the shares that a set of operators have delegated to them in a set of strategies
+     * @param operators the operators to get shares for
+     * @param strategies the strategies to get shares for
+     */
+    function getOperatorsShares(
+        address[] memory operators,
+        IStrategy[] memory strategies
+    ) public view returns (uint256[][] memory) {
+        uint256[][] memory shares = new uint256[][](operators.length);
+        for (uint256 i = 0; i < operators.length; ++i) {
+            shares[i] = getOperatorShares(operators[i], strategies);
+        }
+        return shares;
+    }
+
+    /**
      * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal.
      * This value depends on which operator the staker is delegated to.
      * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject

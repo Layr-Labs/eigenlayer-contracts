@@ -415,6 +415,26 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external view returns (address);
 
     /**
+     * @notice Returns the shares that an operator has delegated to them in a set of strategies
+     * @param operator the operator to get shares for
+     * @param strategies the strategies to get shares for
+     */
+    function getOperatorShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory);
+
+    /**
+     * @notice Returns the shares that a set of operators have delegated to them in a set of strategies
+     * @param operators the operators to get shares for
+     * @param strategies the strategies to get shares for
+     */
+    function getOperatorsShares(
+        address[] memory operators,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[][] memory);
+
+    /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
      */
     function isDelegated(

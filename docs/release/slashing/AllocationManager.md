@@ -157,21 +157,21 @@ Slashing updates storage in a way that instantly updates all view functions to r
 ```solidity
 /**
  * @notice returns the minimum operatorShares and the slashableOperatorShares for an operator, list of strategies, 
- * and an operatorSet before a given timestamp
- * @param operator the operator to get the shares for
+ * and an operatorSet before a given timestamp. This is used to get the shares to weight operators by given ones slashing window.
  * @param operatorSet the operatorSet to get the shares for
+ * @param operators the operators to get the shares for
  * @param strategies the strategies to get the shares for
  * @param beforeTimestamp the timestamp to get the shares at
  */
 function getMinDelegatedAndSlashableOperatorShares(
-    address operator,
     OperatorSet calldata operatorSet,
+    address[] calldata operators,
     IStrategy[] calldata strategies,
     uint32 beforeTimestamp
-) external view returns (uint256[] memory, uint256[] memory);
+) external view returns (uint256[][] memory, uint256[][] memory)
 ```
 
-This function returns the minimum operator shares and the slashable operator shares for an operator, list of strategies, and an operator set before a given timestamp. This is used by AVSs to pessimistically estimate the operator's slashable stake allocation for a given strategy and operator set within their slashability windows.
+This function returns the minimum operator shares and the slashable operator shares for an operator, list of strategies, and an operator set before a given timestamp. This is used by AVSs to pessimistically estimate the operator's slashable stake allocation for a given strategy and operator set within their slashability windows. If an AVS calls this function every week and creates tasks that are slashable for a week after they're created, then `beforeTimestamp` should be 2 weeks in the future to account for the latest task that may be created against stale stakes. More on this in new docs soon.
 
 ### Additional View Functions
 

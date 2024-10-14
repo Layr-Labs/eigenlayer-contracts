@@ -34,6 +34,8 @@ interface IAllocationManagerErrors {
     error SaltSpent();
     /// @dev Thrown when attempting to slash an operator that has already been slashed at the given timestamp.
     error AlreadySlashedForTimestamp();
+    /// @dev Thrown when calling a view function that requires a valid timestamp.
+    error InvalidTimestamp();
 }
 
 interface IAllocationManagerTypes {
@@ -213,13 +215,28 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @param operator the operator to query
      * @param strategy the strategy to get allocation info for
      * @param operatorSets the operatorSets to get allocation info for
-     * @return The current effective magnitude info for each operator set, for the given strategy
+     * @return The magnitude info for each operator set
      */
     function getAllocationInfo(
         address operator,
         IStrategy strategy,
         OperatorSet[] calldata operatorSets
     ) external view returns (MagnitudeInfo[] memory);
+
+    /**
+     * @notice Returns the effective magnitude info for each operator for each strategy for the operatorSet This method
+     * automatically applies any completable modifications, returning the effective
+     * current and pending allocations for each operator set.
+     * @param operatorSet the operator set to query
+     * @param strategies the strategies to get allocation info for
+     * @param operators the operators to get allocation info for
+     * @return The magnitude info for each operator for each strategy
+     */
+    function getAllocationInfo(
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies,
+        address[] calldata operators
+    ) external view returns (MagnitudeInfo[][] memory);
 
     /**
      * @notice For a strategy, get the amount of magnitude not currently allocated to any operator set
@@ -266,4 +283,19 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function getAllocationDelay(
         address operator
     ) external view returns (bool isSet, uint32 delay);
+
+    /**
+     * @notice returns the minimum operatorShares and the slashableOperatorShares for an operator, list of strategies, 
+     * and an operatorSet before a given timestamp. This is used to get the shares to weight operators by given ones slashing window.
+     * @param operatorSet the operatorSet to get the shares for
+     * @param operators the operators to get the shares for
+     * @param strategies the strategies to get the shares for
+     * @param beforeTimestamp the timestamp to get the shares at
+     */
+    function getMinDelegatedAndSlashableOperatorShares(
+        OperatorSet calldata operatorSet,
+        address[] calldata operators,
+        IStrategy[] calldata strategies,
+        uint32 beforeTimestamp
+    ) external view returns (uint256[][] memory, uint256[][] memory);
 }

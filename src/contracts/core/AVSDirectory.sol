@@ -439,6 +439,16 @@ contract AVSDirectory is
     }
 
     /**
+     * @notice Returns the number of operator sets an operator is registered to.
+     * @param operator the operator address to query
+     */
+    function getNumOperatorSetsOfOperator(
+        address operator
+    ) external view returns (uint256) {
+        return _operatorSetsMemberOf[operator].length();
+    }
+
+    /**
      * @notice Returns an array of operator sets an operator is registered to.
      * @param operator The operator address to query.
      * @param start The starting index of the array to query.
