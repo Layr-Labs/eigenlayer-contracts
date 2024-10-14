@@ -14,6 +14,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     ERC20PresetFixedSupply tokenMock;
     StrategyBase strategyMock;
 
+
     /// -----------------------------------------------------------------------
     /// Setup
     /// -----------------------------------------------------------------------
@@ -117,7 +118,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
             magnitudes: magnitudes
         });
     }
+}
 
+contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerUnitTests {
     /// -----------------------------------------------------------------------
     /// initialize()
     /// -----------------------------------------------------------------------
@@ -143,12 +146,20 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         vm.expectRevert("Initializable: contract is already initialized");
         alm.initialize(expectedInitialOwner, expectedPauserRegistry, r);
 
-        // Assert that the contract state was initialized correctly.
+        // Assert immutable state
+        assertEq(address(alm.delegation()), address(delegationManagerMock));
+        assertEq(address(alm.avsDirectory()), address(avsDirectoryMock));
+        assertEq(alm.DEALLOCATION_DELAY(), DEALLOCATION_DELAY);
+        assertEq(alm.ALLOCATION_CONFIGURATION_DELAY(), ALLOCATION_CONFIGURATION_DELAY);
+
+        // Assert initialiation state
         assertEq(alm.owner(), expectedInitialOwner);
         assertEq(address(alm.pauserRegistry()), address(expectedPauserRegistry));
         assertEq(alm.paused(), r);
     }
+}
 
+contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests {
     /// -----------------------------------------------------------------------
     /// slashOperator()
     /// -----------------------------------------------------------------------
@@ -198,6 +209,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
         // TODO
     }
+}
+
+contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTests {
 
     /// -----------------------------------------------------------------------
     /// modifyAllocations()
@@ -248,7 +262,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         cheats.prank(unpauser);
         allocationManager.unpause(2 ** PAUSED_MODIFY_ALLOCATIONS);
     }
+}
 
+contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerUnitTests {
     /// -----------------------------------------------------------------------
     /// clearModificationQueue()
     /// -----------------------------------------------------------------------
@@ -291,6 +307,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
         // TODO
     }
+}
+
+contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitTests {
 
     /// -----------------------------------------------------------------------
     /// setAllocationDelay() + getAllocationDelay()
