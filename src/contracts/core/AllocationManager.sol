@@ -529,14 +529,13 @@ contract AllocationManager is
             for (uint256 j = 0; j < strategies.length; ++j) {
                 IStrategy strategy = strategies[j];
                 MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][operatorSetKey];
-                uint64 slashableMagnitude =  mInfo.currentMagnitude;
+                uint64 slashableMagnitude = mInfo.currentMagnitude;
                 if (mInfo.effectTimestamp <= beforeTimestamp) {
                     slashableMagnitude = _addInt128(slashableMagnitude, mInfo.pendingDiff);
                 }
-                slashableShares[i][j] = 
-                    delegatedShares[i][j]
-                    .mulWad(slashableMagnitude)
-                    .divWad(_maxMagnitudeHistory[operator][strategy].latest());
+                slashableShares[i][j] = delegatedShares[i][j].mulWad(slashableMagnitude).divWad(
+                    _maxMagnitudeHistory[operator][strategy].latest()
+                );
             }
         }
 

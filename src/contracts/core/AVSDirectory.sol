@@ -302,7 +302,10 @@ contract AVSDirectory is
         require(!isOperatorSetAVS[msg.sender], InvalidAVS());
 
         // Assert that the `operator` is not actively registered to the AVS.
-        require(avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED, OperatorAlreadyRegisteredToAVS());
+        require(
+            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
+            OperatorAlreadyRegisteredToAVS()
+        );
 
         // Assert `operator` has not already spent `operatorSignature.salt`.
         require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
@@ -345,7 +348,8 @@ contract AVSDirectory is
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that operator is registered for the AVS.
         require(
-            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, OperatorNotRegisteredToAVS()
+            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
+            OperatorNotRegisteredToAVS()
         );
         // Assert that the AVS is not an operator set AVS.
         require(!isOperatorSetAVS[msg.sender], InvalidAVS());

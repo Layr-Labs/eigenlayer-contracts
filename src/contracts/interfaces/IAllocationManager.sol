@@ -285,7 +285,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external view returns (bool isSet, uint32 delay);
 
     /**
-     * @notice returns the minimum operatorShares and the slashableOperatorShares for an operator, list of strategies, 
+     * @notice returns the minimum operatorShares and the slashableOperatorShares for an operator, list of strategies,
      * and an operatorSet before a given timestamp. This is used to get the shares to weight operators by given ones slashing window.
      * @param operatorSet the operatorSet to get the shares for
      * @param operators the operators to get the shares for
