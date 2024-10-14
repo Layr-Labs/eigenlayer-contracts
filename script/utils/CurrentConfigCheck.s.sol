@@ -78,10 +78,10 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         // (bool success, /*bytes memory returndata*/) = executorMultisig.call(callToExecutor);
         // require(success, "call to executorMultisig failed");
 
-        vm.startPrank(foundationMultisig);
-        Ownable(address(bEIGEN)).transferOwnership(address(eigenTokenTimelockController));
-        Ownable(address(EIGEN)).transferOwnership(address(eigenTokenTimelockController));
-        vm.stopPrank();
+        // vm.startPrank(foundationMultisig);
+        // Ownable(address(bEIGEN)).transferOwnership(address(eigenTokenTimelockController));
+        // Ownable(address(EIGEN)).transferOwnership(address(eigenTokenTimelockController));
+        // vm.stopPrank();
 
         checkDesiredGovernanceConfiguration();
     }
