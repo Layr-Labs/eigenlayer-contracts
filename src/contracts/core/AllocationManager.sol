@@ -8,7 +8,6 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "./AllocationManagerStorage.sol";
-import "forge-std/console.sol";
 
 contract AllocationManager is
     Initializable,
