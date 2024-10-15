@@ -69,7 +69,9 @@ contract AllocationManager is
             PendingMagnitudeInfo memory info =
                 _getPendingMagnitudeInfo(params.operator, params.strategies[i], operatorSetKey);
 
-            // 1. Calculate slashing amount and update current/ encumbered magnitude
+            require(info.currentMagnitude > 0, OperatorNotAllocated());
+
+            // 1. Calculate slashing amount and update current/encumbered magnitude
             uint64 slashedMagnitude = uint64(uint256(info.currentMagnitude).mulWad(params.wadToSlash));
             info.currentMagnitude -= slashedMagnitude;
             info.encumberedMagnitude -= slashedMagnitude;
@@ -108,7 +110,7 @@ contract AllocationManager is
                 key: uint32(block.timestamp),
                 value: maxMagnitudeAfterSlash
             });
-            emit TotalMagnitudeUpdated(params.operator, params.strategies[i], maxMagnitudeAfterSlash);
+            emit MaxMagnitudeUpdated(params.operator, params.strategies[i], maxMagnitudeAfterSlash);
 
             // 5. Decrease operators shares in the DelegationManager
             delegation.decreaseOperatorShares({
@@ -119,8 +121,7 @@ contract AllocationManager is
             });
 
             // 6. Record the proportion of shares slashed
-            // TODO: use lib?
-            wadSlashed[i] = WAD * slashedMagnitude / maxMagnitudeBeforeSlash;
+            wadSlashed[i] = uint256(slashedMagnitude).divWad(maxMagnitudeBeforeSlash);
         }
 
         emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
