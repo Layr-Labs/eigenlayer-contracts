@@ -390,7 +390,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         IStrategy strategy,
         uint64 previousTotalMagnitude,
         uint64 newTotalMagnitude
-    ) external returns(uint256, uint256);
+    ) external returns (uint256, uint256);
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

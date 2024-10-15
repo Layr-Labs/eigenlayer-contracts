@@ -122,7 +122,9 @@ contract AllocationManager is
         }
 
         // TODO: find a solution to connect operatorSlashed to magnitude updates
-        emit OperatorSlashed(params.operator, operatorSet, params.strategies, sharesBefore, sharesDecreased, params.description);
+        emit OperatorSlashed(
+            params.operator, operatorSet, params.strategies, sharesBefore, sharesDecreased, params.description
+        );
     }
 
     /**
@@ -317,7 +319,7 @@ contract AllocationManager is
         // If the completed change was a deallocation, update encumbered magnitude
         if (mInfo.pendingDiff < 0) {
             info.encumberedMagnitude = _addInt128(_encumberedMagnitude, mInfo.pendingDiff);
-        } 
+        }
 
         return info;
     }
@@ -333,7 +335,7 @@ contract AllocationManager is
             pendingDiff: info.pendingDiff,
             effectTimestamp: info.effectTimestamp
         });
-        
+
         encumberedMagnitude[operator][strategy] = info.encumberedMagnitude;
         emit EncumberedMagnitudeUpdated(operator, strategy, info.encumberedMagnitude);
     }
