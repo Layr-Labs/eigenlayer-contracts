@@ -45,6 +45,8 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
     /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
     uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
+    /// @dev Index for flag that pauses calling createAVSPerformanceRewardsSubmission
+    uint8 internal constant PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION = 5;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -118,11 +120,9 @@ contract RewardsCoordinator is
      */
 
     /// @inheritdoc IRewardsCoordinator
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
-        nonReentrant
-    {
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -139,12 +139,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -161,12 +158,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllEarners(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -178,7 +172,10 @@ contract RewardsCoordinator is
             submissionNonce[msg.sender] = nonce + 1;
 
             emit RewardsSubmissionForAllEarnersCreated(
-                msg.sender, nonce, rewardsSubmissionForAllEarnersHash, rewardsSubmission
+                msg.sender,
+                nonce,
+                rewardsSubmissionForAllEarnersHash,
+                rewardsSubmission
             );
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
@@ -315,8 +312,8 @@ contract RewardsCoordinator is
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp
-                && GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp &&
+                GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
         );
         require(
@@ -430,9 +427,9 @@ contract RewardsCoordinator is
         // forgefmt: disable-next-item
         require(
             Merkle.verifyInclusionKeccak({
-                root: root, 
-                index: earnerLeafIndex, 
-                proof: earnerProof, 
+                root: root,
+                index: earnerLeafIndex,
+                proof: earnerProof,
                 leaf: earnerLeafHash
             }),
             "RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof"
