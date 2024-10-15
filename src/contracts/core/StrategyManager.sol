@@ -78,17 +78,7 @@ contract StrategyManager is
         _setStrategyWhitelister(initialStrategyWhitelister);
     }
 
-    /**
-     * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
-     * @param strategy is the specified strategy where deposit is to be made,
-     * @param token is the denomination in which the deposit is to be made,
-     * @param amount is the amount of token to be deposited in the strategy by the staker
-     * @return depositedShares The amount of new shares in the `strategy` created as part of the action.
-     * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
-     *
-     * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
-     *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
-     */
+    /// @inheritdoc IStrategyManager
     function depositIntoStrategy(
         IStrategy strategy,
         IERC20 token,
@@ -97,26 +87,7 @@ contract StrategyManager is
         depositedShares = _depositIntoStrategy(msg.sender, strategy, token, amount);
     }
 
-    /**
-     * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
-     * who must sign off on the action.
-     * Note that the assets are transferred out/from the `msg.sender`, not from the `staker`; this function is explicitly designed
-     * purely to help one address deposit 'for' another.
-     * @param strategy is the specified strategy where deposit is to be made,
-     * @param token is the denomination in which the deposit is to be made,
-     * @param amount is the amount of token to be deposited in the strategy by the staker
-     * @param staker the staker that the deposited assets will be credited to
-     * @param expiry the timestamp at which the signature expires
-     * @param signature is a valid signature from the `staker`. either an ECDSA signature if the `staker` is an EOA, or data to forward
-     * following EIP-1271 if the `staker` is a contract
-     * @return depositedShares The amount of new shares in the `strategy` created as part of the action.
-     * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
-     * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
-     * targeting stakers who may be attempting to undelegate.
-     *
-     *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
-     *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
-     */
+    /// @inheritdoc IStrategyManager
     function depositIntoStrategyWithSignature(
         IStrategy strategy,
         IERC20 token,
@@ -143,7 +114,7 @@ contract StrategyManager is
         depositedShares = _depositIntoStrategy(staker, strategy, token, amount);
     }
 
-    /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
+    /// @inheritdoc IShareManager
     function removeDepositShares(
         address staker,
         IStrategy strategy,
@@ -152,8 +123,7 @@ contract StrategyManager is
         _removeDepositShares(staker, strategy, depositSharesToRemove);
     }
 
-    /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
-    /// @dev    Specifically, this function is called when a withdrawal is completed as shares.
+    /// @inheritdoc IShareManager
     function addShares(
         address staker,
         IStrategy strategy,
@@ -163,9 +133,7 @@ contract StrategyManager is
         _addShares(staker, token, strategy, shares);
     }
 
-    /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
-    /// Assumes that shares being passed in have already been accounted for any slashing
-    /// and are the `real` shares in the strategy to withdraw
+    /// @inheritdoc IShareManager
     function withdrawSharesAsTokens(
         address staker,
         IStrategy strategy,
@@ -175,20 +143,14 @@ contract StrategyManager is
         strategy.withdraw(staker, token, shares);
     }
 
-    /**
-     * @notice Owner-only function to change the `strategyWhitelister` address.
-     * @param newStrategyWhitelister new address for the `strategyWhitelister`.
-     */
+    /// @inheritdoc IStrategyManager
     function setStrategyWhitelister(
         address newStrategyWhitelister
     ) external onlyOwner {
         _setStrategyWhitelister(newStrategyWhitelister);
     }
 
-    /**
-     * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
-     * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-     */
+    /// @inheritdoc IStrategyManager
     function addStrategiesToDepositWhitelist(
         IStrategy[] calldata strategiesToWhitelist
     ) external onlyStrategyWhitelister {
@@ -202,10 +164,7 @@ contract StrategyManager is
         }
     }
 
-    /**
-     * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
-     * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
-     */
+    /// @inheritdoc IStrategyManager
     function removeStrategiesFromDepositWhitelist(
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external onlyStrategyWhitelister {
@@ -357,11 +316,7 @@ contract StrategyManager is
 
     // VIEW FUNCTIONS
 
-    /**
-     * @notice Get all details on the staker's strategies and shares deposited into
-     * @param staker The staker of interest, whose deposits this function will fetch
-     * @return (staker's strategies, shares in these strategies)
-     */
+    /// @inheritdoc IStrategyManager
     function getDeposits(
         address staker
     ) external view returns (IStrategy[] memory, uint256[] memory) {
@@ -380,22 +335,14 @@ contract StrategyManager is
         return stakerStrategyList[staker];
     }
 
-    /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
+    /// @inheritdoc IStrategyManager
     function stakerStrategyListLength(
         address staker
     ) external view returns (uint256) {
         return stakerStrategyList[staker].length;
     }
 
-    /**
-     * @param staker The address of the staker.
-     * @param strategy The strategy to deposit into.
-     * @param token The token to deposit.
-     * @param amount The amount of `token` to deposit.
-     * @param nonce The nonce of the staker.
-     * @param expiry The expiry of the signature.
-     * @return The EIP-712 signable digest hash.
-     */
+    /// @inheritdoc IStrategyManager
     function calculateStrategyDepositDigestHash(
         address staker,
         IStrategy strategy,

@@ -39,9 +39,7 @@ contract AllocationManager is
         _disableInitializers();
     }
 
-    /**
-     * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
-     */
+    /// @inheritdoc IAllocationManager
     function initialize(
         address initialOwner,
         IPauserRegistry _pauserRegistry,
@@ -127,12 +125,7 @@ contract AllocationManager is
         emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
     }
 
-    /**
-     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
-     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @dev Updates encumberedMagnitude for the updated strategies
-     * @dev msg.sender is used as operator
-     */
+    /// @inheritdoc IAllocationManager
     function modifyAllocations(
         MagnitudeAllocation[] calldata allocations
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
@@ -197,16 +190,7 @@ contract AllocationManager is
         }
     }
 
-    /**
-     * @notice This function takes a list of strategies and adds all completable modifications for each strategy,
-     * updating the encumberedMagnitude of the operator as needed.
-     *
-     * @param operator address to complete modifications for
-     * @param strategies a list of strategies to complete modifications for
-     * @param numToClear a list of number of pending modifications to complete for each strategy
-     *
-     * @dev can be called permissionlessly by anyone
-     */
+    /// @inheritdoc IAllocationManager
     function clearModificationQueue(
         address operator,
         IStrategy[] calldata strategies,
@@ -492,14 +476,6 @@ contract AllocationManager is
         return maxMagnitudes;
     }
 
-    /**
-     * @notice Returns the time in seconds between an operator allocating slashable magnitude
-     * and the magnitude becoming slashable. If the delay has not been set, `isSet` will be false.
-     * @dev The operator must have a configured delay before allocating magnitude
-     * @param operator The operator to query
-     * @return isSet Whether the operator has configured a delay
-     * @return delay The time in seconds between allocating magnitude and magnitude becoming slashable
-     */
     /// @inheritdoc IAllocationManager
     function getAllocationDelay(
         address operator

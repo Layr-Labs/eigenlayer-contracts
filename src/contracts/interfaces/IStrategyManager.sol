@@ -57,6 +57,21 @@ interface IStrategyManagerEvents {
  */
 interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IShareManager {
     /**
+     * @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
+     * and transfers contract ownership to the specified `initialOwner`.
+     * @param _pauserRegistry Used for access control of pausing.
+     * @param initialOwner Ownership of this contract is transferred to this address.
+     * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
+     * @param  initialPausedStatus The initial value of `_paused` to set.
+     */
+    function initialize(
+        address initialOwner,
+        address initialStrategyWhitelister,
+        IPauserRegistry _pauserRegistry,
+        uint256 initialPausedStatus
+    ) external;
+
+    /**
      * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
@@ -100,6 +115,36 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256 shares);
 
     /**
+     * @notice Owner-only function to change the `strategyWhitelister` address.
+     * @param newStrategyWhitelister new address for the `strategyWhitelister`.
+     */
+    function setStrategyWhitelister(
+        address newStrategyWhitelister
+    ) external;
+
+    /**
+     * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
+     * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
+     */
+    function addStrategiesToDepositWhitelist(
+        IStrategy[] calldata strategiesToWhitelist
+    ) external;
+
+    /**
+     * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
+     * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
+     */
+    function removeStrategiesFromDepositWhitelist(
+        IStrategy[] calldata strategiesToRemoveFromWhitelist
+    ) external;
+
+
+    /// @notice Returns bool for whether or not `strategy` is whitelisted for deposit
+    function strategyIsWhitelistedForDeposit(
+        IStrategy strategy
+    ) external view returns (bool);
+
+    /**
      * @notice Get all details on the staker's deposits and corresponding shares
      * @return (staker's strategies, shares in these strategies)
      */
@@ -119,30 +164,27 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     /// @notice Returns the current shares of `user` in `strategy`
     function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 shares);
 
-    /**
-     * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
-     * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-     */
-    function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist
-    ) external;
-
-    /**
-     * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
-     * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
-     */
-    function removeStrategiesFromDepositWhitelist(
-        IStrategy[] calldata strategiesToRemoveFromWhitelist
-    ) external;
-
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
 
     /// @notice Returns the address of the `strategyWhitelister`
     function strategyWhitelister() external view returns (address);
 
-    /// @notice Returns bool for whether or not `strategy` is whitelisted for deposit
-    function strategyIsWhitelistedForDeposit(
-        IStrategy strategy
-    ) external view returns (bool);
+    /**
+     * @param staker The address of the staker.
+     * @param strategy The strategy to deposit into.
+     * @param token The token to deposit.
+     * @param amount The amount of `token` to deposit.
+     * @param nonce The nonce of the staker.
+     * @param expiry The expiry of the signature.
+     * @return The EIP-712 signable digest hash.
+     */
+    function calculateStrategyDepositDigestHash(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
+        uint256 amount,
+        uint256 nonce,
+        uint256 expiry
+    ) external view returns (bytes32);
 }

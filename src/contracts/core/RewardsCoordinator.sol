@@ -87,17 +87,7 @@ contract RewardsCoordinator is
      *
      */
 
-    /**
-     * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
-     * set of stakers delegated to operators who are registered to the `avs`
-     * @param rewardsSubmissions The rewards submissions being created
-     * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
-     * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
-     * @dev The tokens are sent to the `RewardsCoordinator` contract
-     * @dev Strategies must be in ascending order of addresses to check for duplicates
-     * @dev This function will revert if the `rewardsSubmission` is malformed,
-     * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
-     */
+    /// @inheritdoc IRewardsCoordinator
     function createAVSRewardsSubmission(
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
@@ -116,12 +106,7 @@ contract RewardsCoordinator is
         }
     }
 
-    /**
-     * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
-     * rather than just those delegated to operators who are registered to a single avs and is
-     * a permissioned call based on isRewardsForAllSubmitter mapping.
-     * @param rewardsSubmissions The rewards submissions being created
-     */
+    /// @inheritdoc IRewardsCoordinator
     function createRewardsForAllSubmission(
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
@@ -140,13 +125,7 @@ contract RewardsCoordinator is
         }
     }
 
-    /**
-     * @notice Creates a new rewards submission for all earners across all AVSs.
-     * Earners in this case indicating all operators and their delegated stakers. Undelegated stake
-     * is not rewarded from this RewardsSubmission. This interface is only callable
-     * by the token hopper contract from the Eigen Foundation
-     * @param rewardsSubmissions The rewards submissions being created
-     */
+    /// @inheritdoc IRewardsCoordinator
     function createRewardsForAllEarners(
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS) onlyRewardsForAllSubmitter nonReentrant {
@@ -167,18 +146,7 @@ contract RewardsCoordinator is
         }
     }
 
-    /**
-     * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
-     * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
-     * they can simply claim against the latest root and the contract will calculate the difference between
-     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
-     * @param claim The RewardsMerkleClaim to be processed.
-     * Contains the root index, earner, token leaves, and required proofs
-     * @param recipient The address recipient that receives the ERC20 rewards
-     * @dev only callable by the valid claimer, that is
-     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
-     * claimerFor[claim.earner] can claim the rewards.
-     */
+    /// @inheritdoc IRewardsCoordinator
     function processClaim(
         RewardsMerkleClaim calldata claim,
         address recipient
@@ -207,12 +175,7 @@ contract RewardsCoordinator is
         }
     }
 
-    /**
-     * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
-     * @param root The merkle root of the distribution
-     * @param rewardsCalculationEndTimestamp The timestamp until which rewards have been calculated
-     * @dev Only callable by the rewardsUpdater
-     */
+    /// @inheritdoc IRewardsCoordinator
     function submitRoot(
         bytes32 root,
         uint32 rewardsCalculationEndTimestamp
@@ -235,10 +198,7 @@ contract RewardsCoordinator is
         emit DistributionRootSubmitted(rootIndex, root, rewardsCalculationEndTimestamp, activatedAt);
     }
 
-    /**
-     * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
-     * @param rootIndex The index of the root to be disabled
-     */
+    /// @inheritdoc IRewardsCoordinator
     function disableRoot(
         uint32 rootIndex
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
@@ -250,11 +210,7 @@ contract RewardsCoordinator is
         emit DistributionRootDisabled(rootIndex);
     }
 
-    /**
-     * @notice Sets the address of the entity that can call `processClaim` on behalf of the earner (msg.sender)
-     * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
-     * @dev Only callable by the `earner`
-     */
+    /// @inheritdoc IRewardsCoordinator
     function setClaimerFor(
         address claimer
     ) external {
@@ -264,45 +220,28 @@ contract RewardsCoordinator is
         emit ClaimerForSet(earner, prevClaimer, claimer);
     }
 
-    /**
-     * @notice Sets the delay in timestamp before a posted root can be claimed against
-     * @dev Only callable by the contract owner
-     * @param _activationDelay The new value for activationDelay
-     */
+    /// @inheritdoc IRewardsCoordinator
     function setActivationDelay(
         uint32 _activationDelay
     ) external onlyOwner {
         _setActivationDelay(_activationDelay);
     }
 
-    /**
-     * @notice Sets the global commission for all operators across all avss
-     * @dev Only callable by the contract owner
-     * @param _globalCommissionBips The commission for all operators across all avss
-     */
+    /// @inheritdoc IRewardsCoordinator
     function setGlobalOperatorCommission(
         uint16 _globalCommissionBips
     ) external onlyOwner {
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
 
-    /**
-     * @notice Sets the permissioned `rewardsUpdater` address which can post new roots
-     * @dev Only callable by the contract owner
-     * @param _rewardsUpdater The address of the new rewardsUpdater
-     */
+    /// @inheritdoc IRewardsCoordinator
     function setRewardsUpdater(
         address _rewardsUpdater
     ) external onlyOwner {
         _setRewardsUpdater(_rewardsUpdater);
     }
 
-    /**
-     * @notice Sets the permissioned `rewardsForAllSubmitter` address which can submit createRewardsForAllSubmission
-     * @dev Only callable by the contract owner
-     * @param _submitter The address of the rewardsForAllSubmitter
-     * @param _newValue The new value for isRewardsForAllSubmitter
-     */
+    /// @inheritdoc IRewardsCoordinator
     function setRewardsForAllSubmitter(address _submitter, bool _newValue) external onlyOwner {
         bool prevValue = isRewardsForAllSubmitter[_submitter];
         emit RewardsForAllSubmitterSet(_submitter, prevValue, _newValue);
@@ -461,22 +400,21 @@ contract RewardsCoordinator is
      *
      */
 
-    /// @notice return the hash of the earner's leaf
+    /// @inheritdoc IRewardsCoordinator
     function calculateEarnerLeafHash(
         EarnerTreeMerkleLeaf calldata leaf
     ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(EARNER_LEAF_SALT, leaf.earner, leaf.earnerTokenRoot));
     }
 
-    /// @notice returns the hash of the earner's token leaf
+    /// @inheritdoc IRewardsCoordinator
     function calculateTokenLeafHash(
         TokenTreeMerkleLeaf calldata leaf
     ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(TOKEN_LEAF_SALT, leaf.token, leaf.cumulativeEarnings));
     }
 
-    /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
-    /// but will revert if not valid
+    /// @inheritdoc IRewardsCoordinator
     function checkClaim(
         RewardsMerkleClaim calldata claim
     ) public view returns (bool) {
@@ -484,29 +422,29 @@ contract RewardsCoordinator is
         return true;
     }
 
-    /// @notice the commission for a specific operator for a specific avs
-    /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
+    /// @inheritdoc IRewardsCoordinator
     function operatorCommissionBips(address operator, address avs) external view returns (uint16) {
         return globalOperatorCommissionBips;
     }
 
+    /// @inheritdoc IRewardsCoordinator
     function getDistributionRootsLength() public view returns (uint256) {
         return _distributionRoots.length;
     }
 
+    /// @inheritdoc IRewardsCoordinator
     function getDistributionRootAtIndex(
         uint256 index
     ) external view returns (DistributionRoot memory) {
         return _distributionRoots[index];
     }
 
-    /// @notice loop through the distribution roots from reverse and get latest root that is not disabled
+    /// @inheritdoc IRewardsCoordinator
     function getCurrentDistributionRoot() external view returns (DistributionRoot memory) {
         return _distributionRoots[_distributionRoots.length - 1];
     }
 
-    /// @notice loop through the distribution roots from reverse and get latest root that is not disabled and activated
-    /// i.e. a root that can be claimed against
+    /// @inheritdoc IRewardsCoordinator
     function getCurrentClaimableDistributionRoot() external view returns (DistributionRoot memory) {
         for (uint256 i = _distributionRoots.length; i > 0; i--) {
             DistributionRoot memory root = _distributionRoots[i - 1];
@@ -516,7 +454,7 @@ contract RewardsCoordinator is
         }
     }
 
-    /// @notice loop through distribution roots from reverse and return hash
+    /// @inheritdoc IRewardsCoordinator
     function getRootIndexFromHash(
         bytes32 rootHash
     ) public view returns (uint32) {

@@ -76,10 +76,6 @@ contract DelegationManager is
         _disableInitializers();
     }
 
-    /**
-     * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
-     * minWithdrawalDelayBlocks is set only once here
-     */
     function initialize(
         address initialOwner,
         IPauserRegistry _pauserRegistry,
@@ -95,16 +91,7 @@ contract DelegationManager is
      *
      */
 
-    /**
-     * @notice Registers the caller as an operator in EigenLayer.
-     * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
-     * @param allocationDelay The delay before allocations take effect.
-     * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
-     *
-     * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
-     * @dev This function will revert if the caller is already delegated to an operator.
-     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
-     */
+    /// @inheritdoc IDelegationManager
     function registerAsOperator(
         OperatorDetails calldata registeringOperatorDetails,
         uint32 allocationDelay,
@@ -123,12 +110,7 @@ contract DelegationManager is
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
 
-    /**
-     * @notice Updates an operator's stored `OperatorDetails`.
-     * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
-     *
-     * @dev The caller must have previously registered as an operator in EigenLayer.
-     */
+    /// @inheritdoc IDelegationManager
     function modifyOperatorDetails(
         OperatorDetails calldata newOperatorDetails
     ) external {
@@ -136,10 +118,7 @@ contract DelegationManager is
         _setOperatorDetails(msg.sender, newOperatorDetails);
     }
 
-    /**
-     * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
-     * @param metadataURI The URI for metadata associated with an operator
-     */
+    /// @inheritdoc IDelegationManager
     function updateOperatorMetadataURI(
         string calldata metadataURI
     ) external {
@@ -147,19 +126,7 @@ contract DelegationManager is
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
 
-    /**
-     * @notice Caller delegates their stake to an operator.
-     * @param operator The account (`msg.sender`) is delegating its assets to for use in serving applications built on EigenLayer.
-     * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
-     * @param approverSalt A unique single use value tied to an individual signature.
-     * @dev The approverSignatureAndExpiry is used in the event that:
-     *          1) the operator's `delegationApprover` address is set to a non-zero value.
-     *                  AND
-     *          2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator
-     *             or their delegationApprover is the `msg.sender`, then approval is assumed.
-     * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
-     * in this case to save on complexity + gas costs
-     */
+    /// @inheritdoc IDelegationManager
     function delegateTo(
         address operator,
         SignatureWithExpiry memory approverSignatureAndExpiry,
@@ -172,23 +139,7 @@ contract DelegationManager is
         _delegate(msg.sender, operator, approverSignatureAndExpiry, approverSalt);
     }
 
-    /**
-     * @notice Caller delegates a staker's stake to an operator with valid signatures from both parties.
-     * @param staker The account delegating stake to an `operator` account
-     * @param operator The account (`staker`) is delegating its assets to for use in serving applications built on EigenLayer.
-     * @param stakerSignatureAndExpiry Signed data from the staker authorizing delegating stake to an operator
-     * @param approverSignatureAndExpiry is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
-     * @param approverSalt Is a salt used to help guarantee signature uniqueness. Each salt can only be used once by a given approver.
-     *
-     * @dev If `staker` is an EOA, then `stakerSignature` is verified to be a valid ECDSA stakerSignature from `staker`, indicating their intention for this action.
-     * @dev If `staker` is a contract, then `stakerSignature` will be checked according to EIP-1271.
-     * @dev the operator's `delegationApprover` address is set to a non-zero value.
-     * @dev neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
-     * is the `msg.sender`, then approval is assumed.
-     * @dev This function will revert if the current `block.timestamp` is equal to or exceeds the expiry
-     * @dev In the case that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
-     * in this case to save on complexity + gas costs
-     */
+    /// @inheritdoc IDelegationManager
     function delegateToBySignature(
         address staker,
         address operator,
@@ -224,11 +175,7 @@ contract DelegationManager is
         _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
     }
 
-    /**
-     * Allows the staker, the staker's operator, or that operator's delegationApprover to undelegate
-     * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
-     * both the staker and operator, and places the shares and strategies in the withdrawal queue
-     */
+    /// @inheritdoc IDelegationManager
     function undelegate(
         address staker
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
@@ -288,13 +235,7 @@ contract DelegationManager is
         return withdrawalRoots;
     }
 
-    /**
-     * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
-     * from the staker. If the staker is delegated, withdrawn shares/strategies are also removed from
-     * their operator.
-     *
-     * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
-     */
+    /// @inheritdoc IDelegationManager
     function queueWithdrawals(
         QueuedWithdrawalParams[] calldata params
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
@@ -322,17 +263,7 @@ contract DelegationManager is
         return withdrawalRoots;
     }
 
-    /**
-     * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
-     * @param withdrawal The Withdrawal to complete.
-     * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
-     * @param receiveAsTokens If true, the shares specified in the withdrawal will be withdrawn from the specified strategies themselves
-     * and sent to the caller, through calls to `withdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
-     * will simply be transferred to the caller directly.
-     * @dev beaconChainETHStrategy shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
-     * any beaconChainETHStrategy shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
-     * any other strategies, which will be transferred to the withdrawer.
-     */
+    /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
@@ -341,14 +272,7 @@ contract DelegationManager is
         _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
     }
 
-    /**
-     * @notice Array-ified version of `completeQueuedWithdrawal`.
-     * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
-     * @param withdrawals The Withdrawals to complete.
-     * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
-     * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
-     * @dev See `completeQueuedWithdrawal` for relevant dev tags
-     */
+    /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawals(
         Withdrawal[] calldata withdrawals,
         IERC20[][] calldata tokens,
@@ -359,19 +283,7 @@ contract DelegationManager is
         }
     }
 
-    /**
-     * @notice Increases a staker's delegated share balance in a strategy. Note that before adding to operator shares,
-     * the delegated delegatedShares. The staker's depositScalingFactor is updated here.
-     * @param staker The address to increase the delegated shares for their operator.
-     * @param strategy The strategy in which to increase the delegated shares.
-     * @param existingDepositShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
-     * StrategyManager/EigenPodManager for the staker's shares.
-     * @param addedShares The number of shares added to the staker's shares in the strategy
-     *
-     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated delegatedShares in `strategy`.
-     * Otherwise does nothing.
-     * @dev Callable only by the StrategyManager or EigenPodManager.
-     */
+    /// @inheritdoc IDelegationManager
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
@@ -397,16 +309,7 @@ contract DelegationManager is
         }
     }
 
-    /**
-     * @notice Decreases a native restaker's delegated share balance in a strategy due to beacon chain slashing. This updates their beaconChainScalingFactor.
-     * Their operator's stakeShares are also updated (if they are delegated).
-     * @param staker The address to increase the delegated stakeShares for their operator.
-     * @param existingDepositShares The number of shares the staker already has in the EPM. This does not change upon decreasing shares.
-     * @param proportionOfOldBalance The current pod owner shares proportion of the previous pod owner shares
-     *
-     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated stakeShares in `strategy` by `proportionPodBalanceDecrease` proportion. Otherwise does nothing.
-     * @dev Callable only by the EigenPodManager.
-     */
+    /// @inheritdoc IDelegationManager
     function decreaseBeaconChainScalingFactor(
         address staker,
         uint256 existingDepositShares,
@@ -439,14 +342,7 @@ contract DelegationManager is
         }
     }
 
-    /**
-     * @notice Decreases the operators shares in storage after a slash
-     * @param operator The operator to decrease shares for
-     * @param strategy The strategy to decrease shares for
-     * @param previousTotalMagnitude The total magnitude before the slash
-     * @param newTotalMagnitude The total magnitude after the slash
-     * @dev Callable only by the AllocationManager
-     */
+    /// @inheritdoc IDelegationManager
     function decreaseOperatorShares(
         address operator,
         IStrategy strategy,
@@ -741,47 +637,35 @@ contract DelegationManager is
      *
      */
 
-    /**
-     * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
-     */
+    /// @inheritdoc IDelegationManager
     function isDelegated(
         address staker
     ) public view returns (bool) {
         return (delegatedTo[staker] != address(0));
     }
 
-    /**
-     * @notice Returns true is an operator has previously registered for delegation.
-     */
+    /// @inheritdoc IDelegationManager
     function isOperator(
         address operator
     ) public view returns (bool) {
         return operator != address(0) && delegatedTo[operator] == operator;
     }
 
-    /**
-     * @notice Returns the OperatorDetails struct associated with an `operator`.
-     */
+    /// @inheritdoc IDelegationManager
     function operatorDetails(
         address operator
     ) external view returns (OperatorDetails memory) {
         return _operatorDetails[operator];
     }
 
-    /**
-     * @notice Returns the delegationApprover account for an operator
-     */
+    /// @inheritdoc IDelegationManager
     function delegationApprover(
         address operator
     ) external view returns (address) {
         return _operatorDetails[operator].delegationApprover;
     }
 
-    /**
-     * @notice Returns the shares that an operator has delegated to them in a set of strategies
-     * @param operator the operator to get shares for
-     * @param strategies the strategies to get shares for
-     */
+    /// @inheritdoc IDelegationManager
     function getOperatorShares(
         address operator,
         IStrategy[] memory strategies
@@ -793,11 +677,7 @@ contract DelegationManager is
         return shares;
     }
 
-    /**
-     * @notice Returns the shares that a set of operators have delegated to them in a set of strategies
-     * @param operators the operators to get shares for
-     * @param strategies the strategies to get shares for
-     */
+    /// @inheritdoc IDelegationManager
     function getOperatorsShares(
         address[] memory operators,
         IStrategy[] memory strategies
@@ -809,12 +689,7 @@ contract DelegationManager is
         return shares;
     }
 
-    /**
-     * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal.
-     * This value depends on which operator the staker is delegated to.
-     * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
-     * to each strategy's underlying shares to token ratio).
-     */
+    /// @inheritdoc IDelegationManager
     function getWithdrawableShares(
         address staker,
         IStrategy[] memory strategies
@@ -846,9 +721,7 @@ contract DelegationManager is
         return withdrawableShares;
     }
 
-    /**
-     * @notice Returns the number of shares in storage for a staker and all their strategies
-     */
+    /// @inheritdoc IDelegationManager
     function getDepositedShares(
         address staker
     ) public view returns (IStrategy[] memory, uint256[] memory) {
@@ -877,8 +750,7 @@ contract DelegationManager is
         return (strategies, shares);
     }
 
-    /// @notice Returns a completable timestamp given a start timestamp.
-    /// @dev check whether the withdrawal delay has elapsed (handles both legacy and post-slashing-release withdrawals) and returns the completable timestamp
+    /// @inheritdoc IDelegationManager
     function getCompletableTimestamp(
         uint32 startTimestamp
     ) public view returns (uint32 completableTimestamp) {
@@ -896,19 +768,14 @@ contract DelegationManager is
         }
     }
 
-    /// @notice Returns the keccak256 hash of `withdrawal`.
+    /// @inheritdoc IDelegationManager
     function calculateWithdrawalRoot(
         Withdrawal memory withdrawal
     ) public pure returns (bytes32) {
         return keccak256(abi.encode(withdrawal));
     }
 
-    /**
-     * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
-     * @param staker The signing staker
-     * @param operator The operator who is being delegated to
-     * @param expiry The desired expiry time of the staker's signature
-     */
+    /// @inheritdoc IDelegationManager
     function calculateCurrentStakerDelegationDigestHash(
         address staker,
         address operator,
@@ -917,13 +784,7 @@ contract DelegationManager is
         return calculateStakerDelegationDigestHash(staker, stakerNonce[staker], operator, expiry);
     }
 
-    /**
-     * @notice Calculates the digest hash to be signed and used in the `delegateToBySignature` function
-     * @param staker The signing staker
-     * @param nonce The nonce of the staker. In practice we use the staker's current nonce, stored at `stakerNonce[staker]`
-     * @param operator The operator who is being delegated to
-     * @param expiry The desired expiry time of the staker's signature
-     */
+    /// @inheritdoc IDelegationManager
     function calculateStakerDelegationDigestHash(
         address staker,
         uint256 nonce,
@@ -944,14 +805,7 @@ contract DelegationManager is
         );
     }
 
-    /**
-     * @notice Calculates the digest hash to be signed by the operator's delegationApprove and used in the `delegateTo` and `delegateToBySignature` functions.
-     * @param staker The account delegating their stake
-     * @param operator The account receiving delegated stake
-     * @param approver the operator's `delegationApprover` who will be signing the delegationHash (in general)
-     * @param approverSalt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid
-     */
+    /// @inheritdoc IDelegationManager
     function calculateDelegationApprovalDigestHash(
         address staker,
         address operator,

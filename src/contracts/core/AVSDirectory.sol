@@ -37,10 +37,7 @@ contract AVSDirectory is
         _disableInitializers();
     }
 
-    /**
-     * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
-     * minWithdrawalDelayBlocks is set only once here
-     */
+    /// @inheritdoc IAVSDirectory
     function initialize(
         address initialOwner,
         IPauserRegistry _pauserRegistry,
@@ -56,14 +53,7 @@ contract AVSDirectory is
      *
      */
 
-    /**
-     * @notice Called by an AVS to create a list of new operatorSets.
-     *
-     * @param operatorSetIds The IDs of the operator set to initialize.
-     *
-     * @dev msg.sender must be the AVS.
-     * @dev The AVS may create operator sets before it becomes an operator set AVS.
-     */
+    /// @inheritdoc IAVSDirectory
     function createOperatorSets(
         uint32[] calldata operatorSetIds
     ) external {
@@ -74,28 +64,14 @@ contract AVSDirectory is
         }
     }
 
-    /**
-     * @notice Sets the AVS as an operator set AVS, preventing legacy M2 operator registrations.
-     *
-     * @dev msg.sender must be the AVS.
-     */
+    /// @inheritdoc IAVSDirectory
     function becomeOperatorSetAVS() external {
         require(!isOperatorSetAVS[msg.sender], InvalidAVS());
         isOperatorSetAVS[msg.sender] = true;
         emit AVSMigratedToOperatorSets(msg.sender);
     }
 
-    /**
-     * @notice Called by an AVS to migrate operators that have a legacy M2 registration to operator sets.
-     *
-     * @param operators The list of operators to migrate
-     * @param operatorSetIds The list of operatorSets to migrate the operators to
-     *
-     * @dev The msg.sender used is the AVS
-     * @dev The operator can only be migrated at most once per AVS
-     * @dev The AVS can no longer register operators via the legacy M2 registration path once it begins migration
-     * @dev The operator is deregistered from the M2 legacy AVS once migrated
-     */
+    /// @inheritdoc IAVSDirectory
     function migrateOperatorsToOperatorSets(
         address[] calldata operators,
         uint32[][] calldata operatorSetIds
@@ -123,16 +99,7 @@ contract AVSDirectory is
         }
     }
 
-    /**
-     *  @notice Called by AVSs to add an operator to a list of operatorSets.
-     *
-     *  @param operator The address of the operator to be added to the operator set.
-     *  @param operatorSetIds The IDs of the operator sets.
-     *  @param operatorSignature The signature of the operator on their intent to register.
-     *
-     *  @dev msg.sender is used as the AVS.
-     *  @dev The operator must not have a pending deregistration from the operator set.
-     */
+    /// @inheritdoc IAVSDirectory
     function registerOperatorToOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds,
@@ -165,17 +132,7 @@ contract AVSDirectory is
         _registerToOperatorSets(operator, msg.sender, operatorSetIds);
     }
 
-    /**
-     * @notice Called by an operator to deregister from an operator set
-     *
-     * @param operator The operator to deregister from the operatorSets.
-     * @param avs The address of the AVS to deregister the operator from.
-     * @param operatorSetIds The IDs of the operator sets.
-     * @param operatorSignature the signature of the operator on their intent to deregister or empty if the operator itself is calling
-     *
-     * @dev if the operatorSignature is empty, the caller must be the operator
-     * @dev this will likely only be called in case the AVS contracts are in a state that prevents operators from deregistering
-     */
+    /// @inheritdoc IAVSDirectory
     function forceDeregisterFromOperatorSets(
         address operator,
         address avs,
@@ -208,14 +165,7 @@ contract AVSDirectory is
         _deregisterFromOperatorSets(avs, operator, operatorSetIds);
     }
 
-    /**
-     *  @notice Called by AVSs to remove an operator from an operator set.
-     *
-     *  @param operator The address of the operator to be removed from the operator set.
-     *  @param operatorSetIds The IDs of the operator sets.
-     *
-     *  @dev msg.sender is used as the AVS.
-     */
+    /// @inheritdoc IAVSDirectory
     function deregisterOperatorFromOperatorSets(
         address operator,
         uint32[] calldata operatorSetIds
@@ -249,24 +199,14 @@ contract AVSDirectory is
         }
     }
 
-    /**
-     *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
-     *
-     *  @param metadataURI The URI for metadata associated with an AVS.
-     *
-     *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
-     */
+    /// @inheritdoc IAVSDirectory
     function updateAVSMetadataURI(
         string calldata metadataURI
     ) external override {
         emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
-    /**
-     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
-     *
-     * @param salt A unique and single use value associated with the approver signature.
-     */
+    /// @inheritdoc IAVSDirectory
     function cancelSalt(
         bytes32 salt
     ) external override {
@@ -280,17 +220,7 @@ contract AVSDirectory is
      *
      */
 
-    /**
-     *  @notice Legacy function called by the AVS's service manager contract
-     * to register an operator with the AVS. NOTE: this function will be deprecated in a future release
-     * after the slashing release. New AVSs should use `registerOperatorToOperatorSets` instead.
-     *
-     *  @param operator The address of the operator to register.
-     *  @param operatorSignature The signature, salt, and expiry of the operator's signature.
-     *
-     *  @dev msg.sender must be the AVS.
-     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
-     */
+    /// @inheritdoc IAVSDirectory
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
@@ -334,15 +264,7 @@ contract AVSDirectory is
         emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
     }
 
-    /**
-     *  @notice Legacy function called by an AVS to deregister an operator from the AVS.
-     * NOTE: this function will be deprecated in a future release after the slashing release.
-     * New AVSs integrating should use `deregisterOperatorFromOperatorSets` instead.
-     *
-     *  @param operator The address of the operator to deregister.
-     *
-     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
-     */
+    /// @inheritdoc IAVSDirectory
     function deregisterOperatorFromAVS(
         address operator
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
@@ -432,40 +354,24 @@ contract AVSDirectory is
      *
      */
 
-    /**
-     * @notice Returns operatorSet an operator is registered to in the order they were registered.
-     * @param operator The operator address to query.
-     * @param index The index of the enumerated list of operator sets.
-     */
+    /// @inheritdoc IAVSDirectory
     function operatorSetsMemberOfAtIndex(address operator, uint256 index) external view returns (OperatorSet memory) {
         return _decodeOperatorSet(_operatorSetsMemberOf[operator].at(index));
     }
 
-    /**
-     * @notice Returns the operator registered to an operatorSet in the order that it was registered.
-     * @param operatorSet The operatorSet to query.
-     * @param index The index of the enumerated list of operators.
-     */
+    /// @inheritdoc IAVSDirectory
     function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address) {
         return _operatorSetMembers[_encodeOperatorSet(operatorSet)].at(index);
     }
 
-    /**
-     * @notice Returns the number of operator sets an operator is registered to.
-     * @param operator the operator address to query
-     */
+    /// @inheritdoc IAVSDirectory
     function getNumOperatorSetsOfOperator(
         address operator
     ) external view returns (uint256) {
         return _operatorSetsMemberOf[operator].length();
     }
 
-    /**
-     * @notice Returns an array of operator sets an operator is registered to.
-     * @param operator The operator address to query.
-     * @param start The starting index of the array to query.
-     *  @param length The amount of items of the array to return.
-     */
+    /// @inheritdoc IAVSDirectory
     function getOperatorSetsOfOperator(
         address operator,
         uint256 start,
@@ -479,12 +385,7 @@ contract AVSDirectory is
         }
     }
 
-    /**
-     * @notice Returns an array of operators registered to the operatorSet.
-     * @param operatorSet The operatorSet to query.
-     * @param start The starting index of the array to query.
-     * @param length The amount of items of the array to return.
-     */
+    /// @inheritdoc IAVSDirectory
     function getOperatorsInOperatorSet(
         OperatorSet memory operatorSet,
         uint256 start,
@@ -499,10 +400,7 @@ contract AVSDirectory is
         }
     }
 
-    /**
-     * @notice Returns an array of strategies in the operatorSet.
-     * @param operatorSet The operatorSet to query.
-     */
+    /// @inheritdoc IAVSDirectory
     function getStrategiesInOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory strategies) {
@@ -515,36 +413,26 @@ contract AVSDirectory is
         }
     }
 
-    /**
-     * @notice Returns the number of operators registered to an operatorSet.
-     * @param operatorSet The operatorSet to get the member count for
-     */
+    /// @inheritdoc IAVSDirectory
     function getNumOperatorsInOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
         return _operatorSetMembers[_encodeOperatorSet(operatorSet)].length();
     }
 
-    /**
-     *  @notice Returns the total number of operator sets an operator is registered to.
-     *  @param operator The operator address to query.
-     */
+    /// @inheritdoc IAVSDirectory
     function inTotalOperatorSets(
         address operator
     ) external view returns (uint256) {
         return _operatorSetsMemberOf[operator].length();
     }
 
-    /**
-     * @notice Returns whether or not an operator is registered to an operator set.
-     * @param operator The operator address to query.
-     *  @param operatorSet The `OperatorSet` to query.
-     */
+    /// @inheritdoc IAVSDirectory
     function isMember(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
     }
 
-    /// @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
+    /// @inheritdoc IAVSDirectory
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         if (isMember(operator, operatorSet)) return true;
 
@@ -554,7 +442,7 @@ contract AVSDirectory is
         return block.timestamp < status.lastDeregisteredTimestamp + DEALLOCATION_DELAY;
     }
 
-    /// @notice Returns true if all provided operator sets are valid.
+    /// @inheritdoc IAVSDirectory
     function isOperatorSetBatch(
         OperatorSet[] calldata operatorSets
     ) public view returns (bool) {
@@ -564,14 +452,7 @@ contract AVSDirectory is
         return true;
     }
 
-    /**
-     *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
-     *
-     *  @param operator The account registering as an operator.
-     *  @param avs The AVS the operator is registering with.
-     *  @param salt A unique and single-use value associated with the approver's signature.
-     *  @param expiry The time after which the approver's signature becomes invalid.
-     */
+    /// @inheritdoc IAVSDirectory
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
         address avs,
@@ -583,14 +464,7 @@ contract AVSDirectory is
         );
     }
 
-    /**
-     * @notice Calculates the digest hash to be signed by an operator to register with an operator set.
-     *
-     * @param avs The AVS that operator is registering to operator sets for.
-     * @param operatorSetIds An array of operator set IDs the operator is registering to.
-     * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid.
-     */
+    /// @inheritdoc IAVSDirectory
     function calculateOperatorSetRegistrationDigestHash(
         address avs,
         uint32[] calldata operatorSetIds,
@@ -602,14 +476,7 @@ contract AVSDirectory is
         );
     }
 
-    /**
-     * @notice Calculates the digest hash to be signed by an operator to force deregister from an operator set.
-     *
-     * @param avs The AVS that operator is deregistering from.
-     * @param operatorSetIds An array of operator set IDs the operator is deregistering from.
-     * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid.
-     */
+    /// @inheritdoc IAVSDirectory
     function calculateOperatorSetForceDeregistrationTypehash(
         address avs,
         uint32[] calldata operatorSetIds,

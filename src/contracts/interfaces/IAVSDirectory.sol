@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import "./ISignatureUtils.sol";
+import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
 
 /// @notice Struct representing an operator set
@@ -102,6 +103,11 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      */
 
     /**
+     * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
+     */
+    function initialize(address initialOwner, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus) external;
+
+    /**
      * @notice Called by an AVS to create a list of new operatorSets.
      *
      * @param operatorSetIds The IDs of the operator set to initialize.
@@ -137,7 +143,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     ) external;
 
     /**
-     *  @notice Called by AVSs to add an operator to list of operatorSets.
+     *  @notice Called by AVSs to add an operator to a list of operatorSets.
      *
      *  @param operator The address of the operator to be added to the operator set.
      *  @param operatorSetIds The IDs of the operator sets.
@@ -151,16 +157,6 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
-
-    /**
-     *  @notice Called by AVSs to remove an operator from an operator set.
-     *
-     *  @param operator The address of the operator to be removed from the operator set.
-     *  @param operatorSetIds The IDs of the operator sets.
-     *
-     *  @dev msg.sender is used as the AVS.
-     */
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
 
     /**
      * @notice Called by an operator to deregister from an operator set
@@ -181,6 +177,16 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     ) external;
 
     /**
+     *  @notice Called by AVSs to remove an operator from an operator set.
+     *
+     *  @param operator The address of the operator to be removed from the operator set.
+     *  @param operatorSetIds The IDs of the operator sets.
+     *
+     *  @dev msg.sender is used as the AVS.
+     */
+    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
+
+    /**
      *  @notice Called by AVSs to add a set of strategies to an operator set.
      *
      *  @param operatorSetId The ID of the operator set.
@@ -199,6 +205,26 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      *  @dev msg.sender is used as the AVS.
      */
     function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
+
+    /**
+     *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+     *
+     *  @param metadataURI The URI for metadata associated with an AVS.
+     *
+     *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
+     */
+    function updateAVSMetadataURI(
+        string calldata metadataURI
+    ) external;
+
+    /**
+     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
+     *
+     * @param salt A unique and single use value associated with the approver signature.
+     */
+    function cancelSalt(
+        bytes32 salt
+    ) external;
 
     /**
      *  @notice Legacy function called by the AVS's service manager contract
@@ -230,41 +256,11 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     ) external;
 
     /**
-     *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
-     *
-     *  @param metadataURI The URI for metadata associated with an AVS.
-     *
-     *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
-     */
-    function updateAVSMetadataURI(
-        string calldata metadataURI
-    ) external;
-
-    /**
-     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
-     *
-     * @param salt A unique and single use value associated with the approver signature.
-     */
-    function cancelSalt(
-        bytes32 salt
-    ) external;
-
-    /**
      *
      *                         VIEW FUNCTIONS
      *
      */
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
-
-    function isMember(address operator, OperatorSet memory operatorSet) external view returns (bool);
-
-    /**
-     * @notice operator is slashable by operatorSet if currently registered OR last deregistered within 21 days
-     * @param operator the operator to check slashability for
-     * @param operatorSet the operatorSet to check slashability for
-     * @return bool if the operator is slashable by the operatorSet
-     */
-    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
     function isOperatorSetAVS(
         address avs
@@ -272,11 +268,6 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
 
     /// @notice Returns true if the operator set is valid.
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
-
-    /// @notice Returns true if all provided operator sets are valid.
-    function isOperatorSetBatch(
-        OperatorSet[] calldata operatorSets
-    ) external view returns (bool);
 
     /**
      * @notice Returns operator set an operator is registered to in the order they were registered.
@@ -347,6 +338,28 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     function inTotalOperatorSets(
         address operator
     ) external view returns (uint256);
+
+    /**
+     * @notice Returns whether or not an operator is registered to an operator set.
+     * @param operator The operator address to query.
+     * @param operatorSet The `OperatorSet` to query.
+     */
+    function isMember(address operator, OperatorSet memory operatorSet) external view returns (bool);
+
+    /**
+     * @notice Returns whether or not an operator is slashable for an operator set.
+     * @param operator The operator address to query.
+     * @param operatorSet The `OperatorSet` to query.ß
+     */
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
+
+    /**
+     * @notice Returns whether or not an operator is registered to all provided operator sets.
+     * @param operatorSets The list of operator sets to check.
+     */
+    function isOperatorSetBatch(
+        OperatorSet[] calldata operatorSets
+    ) external view returns (bool);
 
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.

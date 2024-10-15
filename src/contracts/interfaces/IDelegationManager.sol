@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
+import "./IPauserRegistry.sol";
 import "./ISignatureUtils.sol";
 import "../libraries/SlashingLib.sol";
 
@@ -207,12 +208,18 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
  */
 interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDelegationManagerEvents {
     /**
+     * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
+     */
+    function initialize(address initialOwner, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus) external;
+
+    /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
      * @param allocationDelay The delay before allocations take effect.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      *
      * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
+     * @dev This function will revert if the caller is already delegated to an operator.
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
     function registerAsOperator(
@@ -392,6 +399,12 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
+
+    /**
      * @notice returns the address of the operator that `staker` is delegated to.
      * @notice Mapping: staker => operator whom the staker is currently delegated to.
      * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
@@ -399,6 +412,38 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     function delegatedTo(
         address staker
     ) external view returns (address);
+
+    /// @notice Mapping: staker => number of signed delegation nonces (used in `delegateToBySignature`) from the staker that the contract has already checked
+    function stakerNonce(
+        address staker
+    ) external view returns (uint256);
+
+    /**
+     * @notice Mapping: delegationApprover => 32-byte salt => whether or not the salt has already been used by the delegationApprover.
+     * @dev Salts are used in the `delegateTo` and `delegateToBySignature` functions. Note that these functions only process the delegationApprover's
+     * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
+     */
+    function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
+
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
+    /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
+    function cumulativeWithdrawalsQueued(
+        address staker
+    ) external view returns (uint256);
+
+    /**
+     * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
+     */
+    function isDelegated(
+        address staker
+    ) external view returns (bool);
+
+    /**
+     * @notice Returns true is an operator has previously registered for delegation.
+     */
+    function isOperator(
+        address operator
+    ) external view returns (bool);
 
     /**
      * @notice Returns the OperatorDetails struct associated with an `operator`.
@@ -435,33 +480,33 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external view returns (uint256[][] memory);
 
     /**
-     * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
+     * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal.
+     * This value depends on which operator the staker is delegated to.
+     * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
+     * to each strategy's underlying shares to token ratio).
      */
-    function isDelegated(
-        address staker
-    ) external view returns (bool);
+    function getWithdrawableShares(
+        address staker,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory withdrawableShares);
 
     /**
-     * @notice Returns true is an operator has previously registered for delegation.
+     * @notice Returns the number of shares in storage for a staker and all their strategies
      */
-    function isOperator(
-        address operator
-    ) external view returns (bool);
-
-    /// @notice Mapping: staker => number of signed delegation nonces (used in `delegateToBySignature`) from the staker that the contract has already checked
-    function stakerNonce(
+    function getDepositedShares(
         address staker
-    ) external view returns (uint256);
+    ) external view returns (IStrategy[] memory, uint256[] memory);
 
-    /**
-     * @notice Mapping: delegationApprover => 32-byte salt => whether or not the salt has already been used by the delegationApprover.
-     * @dev Salts are used in the `delegateTo` and `delegateToBySignature` functions. Note that these functions only process the delegationApprover's
-     * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
-     */
-    function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
+    /// @notice Returns a completable timestamp given a start timestamp.
+    /// @dev check whether the withdrawal delay has elapsed (handles both legacy and post-slashing-release withdrawals) and returns the completable timestamp
+    function getCompletableTimestamp(
+        uint32 startTimestamp
+    ) external view returns (uint32 completableTimestamp);
 
-    /// @notice return address of the beaconChainETHStrategy
-    function beaconChainETHStrategy() external view returns (IStrategy);
+    /// @notice Returns the keccak256 hash of `withdrawal`.
+    function calculateWithdrawalRoot(
+        Withdrawal memory withdrawal
+    ) external pure returns (bytes32);
 
     /**
      * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
@@ -505,20 +550,12 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         uint256 expiry
     ) external view returns (bytes32);
 
+    /// @notice return address of the beaconChainETHStrategy
+    function beaconChainETHStrategy() external view returns (IStrategy);
+
     /// @notice The EIP-712 typehash for the StakerDelegation struct used by the contract
     function STAKER_DELEGATION_TYPEHASH() external view returns (bytes32);
 
     /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32);
-
-    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
-    /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
-    function cumulativeWithdrawalsQueued(
-        address staker
-    ) external view returns (uint256);
-
-    /// @notice Returns the keccak256 hash of `withdrawal`.
-    function calculateWithdrawalRoot(
-        Withdrawal memory withdrawal
-    ) external pure returns (bytes32);
 }

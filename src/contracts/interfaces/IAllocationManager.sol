@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {OperatorSet} from "./IAVSDirectory.sol";
+import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 
@@ -138,6 +139,11 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
 
 interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllocationManagerEvents {
     /**
+     * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
+     */
+    function initialize(address initialOwner, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus) external;
+
+    /**
      * @notice Called by an AVS to slash an operator in a given operator set
      */
     function slashOperator(
@@ -147,8 +153,8 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     /**
      * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
-     * @dev updates freeMagnitude for the updated strategies
-     * @dev msg.sender is the operator
+     * @dev Updates encumberedMagnitude for the updated strategies
+     * @dev msg.sender is used as operator
      */
     function modifyAllocations(
         MagnitudeAllocation[] calldata allocations
@@ -156,7 +162,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
 
     /**
      * @notice This function takes a list of strategies and adds all completable modifications for each strategy,
-     * updating the freeMagnitudes of the operator as needed.
+     * updating the encumberedMagnitude of the operator as needed.
      *
      * @param operator address to complete modifications for
      * @param strategies a list of strategies to complete modifications for
@@ -281,9 +287,12 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external view returns (uint64[] memory);
 
     /**
-     * @notice Returns the allocation delay of an operator
-     * @param operator The operator to get the allocation delay for
-     * @dev Defaults to `DEFAULT_ALLOCATION_DELAY` if none is set
+     * @notice Returns the time in seconds between an operator allocating slashable magnitude
+     * and the magnitude becoming slashable. If the delay has not been set, `isSet` will be false.
+     * @dev The operator must have a configured delay before allocating magnitude
+     * @param operator The operator to query
+     * @return isSet Whether the operator has configured a delay
+     * @return delay The time in seconds between allocating magnitude and magnitude becoming slashable
      */
     function getAllocationDelay(
         address operator
