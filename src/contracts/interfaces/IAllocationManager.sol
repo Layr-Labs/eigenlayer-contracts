@@ -38,6 +38,8 @@ interface IAllocationManagerErrors {
     error InvalidTimestamp();
     /// @dev Thrown when an invalid allocation delay is set
     error InvalidAllocationDelay();
+    /// @dev Thrown when a slash is attempted on an operator who has not allocated to the strategy, operatorSet pair
+    error OperatorNotAllocated();
 }
 
 interface IAllocationManagerTypes {
@@ -125,7 +127,7 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     event EncumberedMagnitudeUpdated(address operator, IStrategy strategy, uint64 encumberedMagnitude);
 
     /// @notice Emitted when an operator's total magnitude is updated for a given strategy
-    event TotalMagnitudeUpdated(address operator, IStrategy strategy, uint64 totalMagnitude);
+    event MaxMagnitudeUpdated(address operator, IStrategy strategy, uint64 totalMagnitude);
 
     /// @notice Emitted when an operator is slashed by an operator set for a strategy
     /// `wadSlashed` is the proportion of the operator's total delegated stake that was slashed

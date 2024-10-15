@@ -27,6 +27,19 @@ contract AVSDirectoryMock is Test {
         _isOperatorSlashable[operator][bytes32(abi.encode(operatorSet))] = value;
     }
 
+    function setIsOperatorSlashable(
+        address operator,
+        address avs,
+        uint32 operatorSetId,
+        bool value
+    ) public virtual {
+        OperatorSet memory operatorSet = OperatorSet({
+            avs: avs,
+            operatorSetId: operatorSetId
+        });
+        setIsOperatorSlashable(operator, operatorSet, value);
+    }
+
     function setIsOperatorSetBatch(OperatorSet[] memory operatorSets, bool value) public virtual {
         _isOperatorSetBatch[keccak256(abi.encode(operatorSets))] = value;
     }
