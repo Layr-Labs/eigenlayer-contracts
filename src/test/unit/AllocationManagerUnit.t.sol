@@ -1796,6 +1796,8 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(secondAllocation);
         mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, secondAllocation[0].operatorSets);
+        console.log("deallocation effect timestamp: ", deallocationEffectTimestamp);
+        console.log("allocation effect timestamp: ", allocationEffectTimestamp);
         assertEq(allocationEffectTimestamp, mInfos[0].effectTimestamp, "effect timestamp not correct");
         assertLt(allocationEffectTimestamp, deallocationEffectTimestamp, "invalid test setup");
 
@@ -1807,7 +1809,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         uint64 allocatableMagnitude = allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock);
         assertEq(WAD - 33e16 - 5e17, allocatableMagnitude, "allocatableMagnitude not correct");
 
-        // Validate that we can allocate again for opset2
+        // Validate that we can allocate again for opset2. This should revert?
         IAllocationManagerTypes.MagnitudeAllocation[] memory thirdAllocation =
             _generateMagnitudeAllocationCalldataForOpSet(defaultAVS, 2, 10e16, 1e18);
         cheats.prank(defaultOperator);
