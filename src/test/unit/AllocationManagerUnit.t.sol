@@ -1759,6 +1759,13 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             "encumberedMagnitude should be updated"
         );
     }
+
+    /**
+     * Allocate
+     */
+    function test_regression_allocate_deallocate_allocate() public {
+        
+    }
 }
 
 contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerUnitTests {
