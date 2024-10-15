@@ -434,7 +434,7 @@ contract DelegationManager is
                 staker: staker,
                 strategy: beaconChainETHStrategy,
                 // TODO: fix this
-                operatorSharesToDecrease: sharesBefore - sharesAfter
+                sharesToDecrease: sharesBefore - sharesAfter
             });
         }
     }
@@ -445,6 +445,7 @@ contract DelegationManager is
      * @param strategy The strategy to decrease shares for
      * @param previousTotalMagnitude The total magnitude before the slash
      * @param newTotalMagnitude The total magnitude after the slash
+     * @return The operator's shares before the decrease and the shares it was decreased by
      * @dev Callable only by the AllocationManager
      */
     function decreaseOperatorShares(
@@ -452,16 +453,19 @@ contract DelegationManager is
         IStrategy strategy,
         uint64 previousTotalMagnitude,
         uint64 newTotalMagnitude
-    ) external onlyAllocationManager {
-        uint256 operatorSharesToDecrease =
+    ) external onlyAllocationManager returns(uint256, uint256) {
+        uint256 sharesBefore = operatorShares[operator][strategy];
+        uint256 sharesToDecrease =
             operatorShares[operator][strategy].getOperatorSharesToDecrease(previousTotalMagnitude, newTotalMagnitude);
 
         _decreaseDelegation({
             operator: operator,
             staker: address(0), // we treat this as a decrease for the zero address staker
             strategy: strategy,
-            operatorSharesToDecrease: operatorSharesToDecrease
+            sharesToDecrease: sharesToDecrease
         });
+
+        return (sharesBefore, sharesToDecrease);
     }
 
     /**
@@ -638,18 +642,18 @@ contract DelegationManager is
      * @param operator The operator to decrease the delegated delegated shares for
      * @param staker The staker to decrease the delegated delegated shares for
      * @param strategy The strategy to decrease the delegated delegated shares for
-     * @param operatorSharesToDecrease The delegatedShares to remove from the operator's delegated shares
+     * @param sharesToDecrease The shares to remove from the operator's delegated shares
      */
     function _decreaseDelegation(
         address operator,
         address staker,
         IStrategy strategy,
-        uint256 operatorSharesToDecrease
+        uint256 sharesToDecrease
     ) internal {
         // Decrement operator shares
-        operatorShares[operator][strategy] -= operatorSharesToDecrease;
+        operatorShares[operator][strategy] -= sharesToDecrease;
 
-        emit OperatorSharesDecreased(operator, staker, strategy, operatorSharesToDecrease);
+        emit OperatorSharesDecreased(operator, staker, strategy, sharesToDecrease);
     }
 
     /**
@@ -687,7 +691,7 @@ contract DelegationManager is
                     operator: operator, 
                     staker: staker, 
                     strategy: strategies[i], 
-                    operatorSharesToDecrease: sharesToWithdraw[i]
+                    sharesToDecrease: sharesToWithdraw[i]
                 });
             }
 

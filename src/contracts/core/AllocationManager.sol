@@ -62,6 +62,11 @@ contract AllocationManager is
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
         require(avsDirectory.isOperatorSlashable(params.operator, operatorSet), InvalidOperator());
 
+        // Record the shares before the operator is slashed
+        uint256[] memory sharesBefore = new uint256[](params.strategies.length);
+        // Record the shares decreased due to slashing
+        uint256[] memory sharesDecreased = new uint256[](params.strategies.length);
+
         for (uint256 i = 0; i < params.strategies.length; ++i) {
             PendingMagnitudeInfo memory info =
                 _getPendingMagnitudeInfo(params.operator, params.strategies[i], operatorSetKey);
@@ -108,7 +113,7 @@ contract AllocationManager is
             emit TotalMagnitudeUpdated(params.operator, params.strategies[i], maxMagnitudeAfterSlash);
 
             // 5. Decrease operators shares in the DelegationManager
-            delegation.decreaseOperatorShares({
+            (sharesBefore[i], sharesDecreased[i]) = delegation.decreaseOperatorShares({
                 operator: params.operator,
                 strategy: params.strategies[i],
                 previousTotalMagnitude: maxMagnitudeBeforeSlash,
@@ -117,7 +122,7 @@ contract AllocationManager is
         }
 
         // TODO: find a solution to connect operatorSlashed to magnitude updates
-        emit OperatorSlashed(params.operator, operatorSet, params.strategies, params.wadToSlash, params.description);
+        emit OperatorSlashed(params.operator, operatorSet, params.strategies, sharesBefore, sharesDecreased, params.description);
     }
 
     /**
