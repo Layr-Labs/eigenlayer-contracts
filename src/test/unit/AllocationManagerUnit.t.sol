@@ -278,10 +278,6 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         });
         return allocations;
     }
-
-    // function _getMockStrategyMagnitudeAllocation(uint256 magnitude) internal view returns (IAllocationManagerTypes.MagnitudeAllocation[] memory) {
-
-    // }
 }
 
 contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerUnitTests {
