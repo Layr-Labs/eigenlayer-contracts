@@ -1761,10 +1761,57 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     }
 
     /**
-     * Allocate
+     * Allocates, deallocates, and then allocates again
      */
     function test_regression_allocate_deallocate_allocate() public {
+        uint32 allocationDelay = 15 days;
+        // Set allocation delay to be 15 days
+        cheats.prank(defaultOperator);
+        allocationManager.setAllocationDelay(allocationDelay);
+        cheats.warp(block.timestamp + ALLOCATION_CONFIGURATION_DELAY);
+        (,uint32 storedDelay) = allocationManager.getAllocationDelay(defaultOperator);
+        assertEq(allocationDelay, storedDelay, "allocation delay not valid");
+
+        // Allocate half of mag to opset1
+        IAllocationManagerTypes.MagnitudeAllocation[] memory firstAllocation =
+            _generateMagnitudeAllocationCalldataForOpSet(defaultAVS, 1, 5e17, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(firstAllocation);
+        cheats.warp(block.timestamp + 15 days);
+
+        // Deallocate half from opset1.
+        uint32 t = uint32(block.timestamp);
+        uint32 deallocationEffectTimestamp = uint32(block.timestamp + DEALLOCATION_DELAY);
+        IAllocationManagerTypes.MagnitudeAllocation[] memory firstDeallocation =
+            _generateMagnitudeAllocationCalldataForOpSet(defaultAVS, 1, 25e16, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(firstDeallocation);
+        MagnitudeInfo[] memory mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, firstDeallocation[0].operatorSets);
+        assertEq(deallocationEffectTimestamp, mInfos[0].effectTimestamp, "effect timestamp not correct");
         
+        // Allocate 33e16 mag to opset2
+        uint32 allocationEffectTimestamp = uint32(block.timestamp + allocationDelay);
+        IAllocationManagerTypes.MagnitudeAllocation[] memory secondAllocation =
+            _generateMagnitudeAllocationCalldataForOpSet(defaultAVS, 2, 33e16, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(secondAllocation);
+        mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, secondAllocation[0].operatorSets);
+        assertEq(allocationEffectTimestamp, mInfos[0].effectTimestamp, "effect timestamp not correct");
+        assertLt(allocationEffectTimestamp, deallocationEffectTimestamp, "invalid test setup");
+
+        // Warp to allocation effect timestamp & clear the queue
+        cheats.warp(allocationEffectTimestamp);
+        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+
+        // Validate `getAllocatableMagnitude`. Allocatable magnitude should be the difference between the total magnitude and the encumbered magnitude
+        uint64 allocatableMagnitude = allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock);
+        assertEq(WAD - 33e16 - 5e17, allocatableMagnitude, "allocatableMagnitude not correct");
+
+        // Validate that we can allocate again for opset2
+        IAllocationManagerTypes.MagnitudeAllocation[] memory thirdAllocation =
+            _generateMagnitudeAllocationCalldataForOpSet(defaultAVS, 2, 10e16, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(thirdAllocation);
     }
 }
 
