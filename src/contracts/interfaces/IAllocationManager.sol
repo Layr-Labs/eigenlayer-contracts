@@ -128,13 +128,9 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     event TotalMagnitudeUpdated(address operator, IStrategy strategy, uint64 totalMagnitude);
 
     /// @notice Emitted when an operator is slashed by an operator set for a strategy
+    /// `wadSlashed` is the proportion of the operator's total delegated stake that was slashed
     event OperatorSlashed(
-        address operator,
-        OperatorSet operatorSet,
-        IStrategy[] strategies,
-        uint256[] sharedBefore,
-        uint256[] sharesDecreased,
-        string description
+        address operator, OperatorSet operatorSet, IStrategy[] strategies, uint256[] wadSlashed, string description
     );
 }
 
