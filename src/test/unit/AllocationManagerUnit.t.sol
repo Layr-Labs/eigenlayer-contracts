@@ -524,7 +524,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         }
     }
 
-    function test_fuzz_allocateMultipleTimes(uint64 firstAlloc, uint64 secondAlloc) public {
+    function testFuzz_allocateMultipleTimes(uint64 firstAlloc, uint64 secondAlloc) public {
         // Assumptions
         cheats.assume(firstAlloc > 0);
         cheats.assume(firstAlloc < secondAlloc);
@@ -810,61 +810,125 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     /// setAllocationDelay() + getAllocationDelay()
     /// -----------------------------------------------------------------------
 
-    /// @dev Asserts the following:
-    ///     Calling as the operator:
-    ///         1. Fn can only be called by registed operators..
-    ///         2. Fn emits `AllocationDelaySet` event.
-    ///         3. Fn properly mutates storage such that getAllocationDelay returns the correct value.
-    ///     Calling as the DM:
-    ///         2. Only the DM can set allocation delay.
-    ///         3. Fn emits `AllocationDelaySet` event.
-    ///         4. Fn properly mutates storage such that getAllocationDelay returns the correct value.
-    function testFuzz_allocationDelay_Checks(uint256 r) public {
-        // Mock random operator address and delay.
-        address operator = _randomAddr(r, 0);
-        uint32 expectedDelay = uint32(bound(r, 1, type(uint32).max));
-        uint32 effectTimestamp = uint32(block.timestamp + ALLOCATION_CONFIGURATION_DELAY);
+    address operatorToSet = address(0x1);
 
-        // If r is even, pretend to be the operator, else pretend to be the DM.
-        if (r % 2 == 0) {
-            // Assert unregister operator cannot set allocation delay.
-            cheats.prank(operator);
-            cheats.expectRevert(IAllocationManagerErrors.OperatorNotRegistered.selector);
-            allocationManager.setAllocationDelay(expectedDelay);
+    function setUp() public override {
+        AllocationManagerUnitTests.setUp();
 
-            // Mock operator being registered.
-            delegationManagerMock.setIsOperator(operator, true);
+        // Register operator
+        delegationManagerMock.setIsOperator(operatorToSet, true);
+    }
 
-            // Assert `AllocationDelaySet` event is emitted.
-            cheats.expectEmit(true, false, false, false);
-            emit AllocationDelaySet(operator, expectedDelay, effectTimestamp);
+    function test_revert_callerNotOperator() public {
+        // Deregister operator
+        delegationManagerMock.setIsOperator(operatorToSet, false);
+        cheats.prank(operatorToSet);
+        cheats.expectRevert(IAllocationManagerErrors.OperatorNotRegistered.selector);
+        allocationManager.setAllocationDelay(1);
+    }
 
-            // Set the allocation delay as the operator.
-            cheats.prank(operator);
-            allocationManager.setAllocationDelay(expectedDelay);            
-        } else {
-            // Assert only the DM can set allocation delay.
-            cheats.expectRevert(IAllocationManagerErrors.OnlyDelegationManager.selector);
-            allocationManager.setAllocationDelay(operator, expectedDelay);
+    function test_revert_zeroAllocationDelay() public {
+        cheats.expectRevert(IAllocationManagerErrors.InvalidAllocationDelay.selector);
+        cheats.prank(operatorToSet);
+        allocationManager.setAllocationDelay(0);
+    }
 
-            // Assert `AllocationDelaySet` event is emitted.
-            cheats.expectEmit(true, false, false, false);
-            emit AllocationDelaySet(operator, expectedDelay, effectTimestamp);
+    function testFuzz_setDelay(uint32 delay) public {
+        delay = uint32(bound(delay, 1, type(uint32).max));
 
-            // Set the allocation delay as the DM.
-            cheats.prank(address(delegationManagerMock));
-            allocationManager.setAllocationDelay(operator, expectedDelay);
-        }
+        // Set delay
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit AllocationDelaySet(operatorToSet, delay, uint32(block.timestamp + ALLOCATION_CONFIGURATION_DELAY));
+        cheats.prank(operatorToSet);
+        allocationManager.setAllocationDelay(delay);
 
-        // Assert that the delay does not change until the allocation config delay has elapsed.
-        (bool isSet, uint32 delay) = allocationManager.getAllocationDelay(operator);
-        assertEq(delay, 0);
-        assertTrue(!isSet);
+        // Check values after set
+        (bool isSet, uint32 returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
+        assertFalse(isSet, "isSet should not be set");
+        assertEq(0, returnedDelay, "returned delay should be 0");        
 
-        // Assert that the delay does not change until the allocation config delay has elapsed.
-        cheats.warp(effectTimestamp);
-        (isSet, delay) = allocationManager.getAllocationDelay(operator);
-        assertEq(delay, expectedDelay);
-        assertTrue(isSet);
+        // Warp to effect timestamp
+        cheats.warp(block.timestamp + ALLOCATION_CONFIGURATION_DELAY);
+
+        // Check values after config delay
+        (isSet, returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
+        assertTrue(isSet, "isSet should be set");
+        assertEq(delay, returnedDelay, "delay not set");
+    }
+
+    function test_fuzz_setDelay_multipleTimesWithinConfigurationDelay(uint32 firstDelay, uint32 secondDelay) public {
+        firstDelay = uint32(bound(firstDelay, 1, type(uint32).max));
+        secondDelay = uint32(bound(secondDelay, 1, type(uint32).max));
+        cheats.assume(firstDelay != secondDelay);
+
+        // Set delay
+        cheats.prank(operatorToSet);
+        allocationManager.setAllocationDelay(firstDelay);
+
+        // Warp just before effect timestamp
+        cheats.warp(block.timestamp + ALLOCATION_CONFIGURATION_DELAY - 1);
+
+        // Set delay again
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit AllocationDelaySet(operatorToSet, secondDelay, uint32(block.timestamp + ALLOCATION_CONFIGURATION_DELAY));
+        cheats.prank(operatorToSet);
+        allocationManager.setAllocationDelay(secondDelay);
+
+        // Warp to effect timestamp of first delay
+        cheats.warp(block.timestamp + 1);
+
+        // Assert that the delay is still not set
+        (bool isSet, uint32 returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
+        assertFalse(isSet, "isSet should not be set");
+        assertEq(0, returnedDelay, "returned delay should be 0");
+
+        // Warp to effect timestamp of second delay
+        cheats.warp(block.timestamp + ALLOCATION_CONFIGURATION_DELAY);
+        (isSet, returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
+        assertTrue(isSet, "isSet should be set");
+        assertEq(secondDelay, returnedDelay, "delay not set");
+    }
+
+    function testFuzz_multipleDelays(uint32 firstDelay, uint32 secondDelay) public {
+        firstDelay = uint32(bound(firstDelay, 1, type(uint32).max));
+        secondDelay = uint32(bound(secondDelay, 1, type(uint32).max));
+        cheats.assume(firstDelay != secondDelay);
+
+        // Set delay
+        cheats.prank(operatorToSet);
+        allocationManager.setAllocationDelay(firstDelay);
+
+        // Warp to effect timestamp of first delay
+        cheats.warp(block.timestamp + ALLOCATION_CONFIGURATION_DELAY);
+
+        // Set delay again
+        cheats.prank(operatorToSet);
+        allocationManager.setAllocationDelay(secondDelay);
+
+        // Assert that first delay is set
+        (bool isSet, uint32 returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
+        assertTrue(isSet, "isSet should be set");
+        assertEq(firstDelay, returnedDelay, "delay not set");
+
+        // Warp to effect timestamp of second delay
+        cheats.warp(block.timestamp + ALLOCATION_CONFIGURATION_DELAY);
+
+        // Check values after second delay
+        (isSet, returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
+        assertTrue(isSet, "isSet should be set");
+        assertEq(secondDelay, returnedDelay, "delay not set");
+    }
+
+    function testFuzz_setDelay_DMCaller(uint32 delay) public {
+        cheats.assume(delay > 0);
+
+        cheats.prank(address(delegationManagerMock));
+        allocationManager.setAllocationDelay(operatorToSet, delay);
+
+        // Warp to effect timestamp
+        cheats.warp(block.timestamp + ALLOCATION_CONFIGURATION_DELAY);
+        (bool isSet, uint32 returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
+        assertTrue(isSet, "isSet should be set");
+        assertEq(delay, returnedDelay, "delay not set");
     }
 }
