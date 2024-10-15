@@ -130,9 +130,6 @@ contract AllocationManager is
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
      * @dev msg.sender is used as operator
-     * @dev For each allocation, allocation.operatorSets MUST be ordered in ascending order according to the
-     * encoding of the operatorSet. This is to prevent duplicate operatorSets being passed in. The easiest way to ensure
-     * ordering is to sort allocated operatorSets by address first, and then sort for each avs by ascending operatorSetIds.
      */
     function modifyAllocations(
         MagnitudeAllocation[] calldata allocations
@@ -261,7 +258,7 @@ contract AllocationManager is
             // Remove the modification from the queue
             modificationQueue[operator][strategy].popFront();
             ++numCompleted;
-            ++length;
+            --length;
         }
     }
 
@@ -313,13 +310,14 @@ contract AllocationManager is
 
         // Pending change can be completed - add delta to current magnitude
         info.currentMagnitude = _addInt128(mInfo.currentMagnitude, mInfo.pendingDiff);
+        info.encumberedMagnitude = _encumberedMagnitude;
         info.effectTimestamp = 0;
         info.pendingDiff = 0;
 
         // If the completed change was a deallocation, update encumbered magnitude
         if (mInfo.pendingDiff < 0) {
             info.encumberedMagnitude = _addInt128(_encumberedMagnitude, mInfo.pendingDiff);
-        }
+        } 
 
         return info;
     }
@@ -335,7 +333,7 @@ contract AllocationManager is
             pendingDiff: info.pendingDiff,
             effectTimestamp: info.effectTimestamp
         });
-
+        
         encumberedMagnitude[operator][strategy] = info.encumberedMagnitude;
         emit EncumberedMagnitudeUpdated(operator, strategy, info.encumberedMagnitude);
     }
