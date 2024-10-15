@@ -1415,10 +1415,10 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     }
 
     function test_fuzz_setDelay_multipleTimesWithinConfigurationDelay(
-        uint256 r
+        uint32 firstDelay, uint32 secondDelay
     ) public {
-        uint32 firstDelay = uint32(bound(r, 1, type(uint32).max));
-        uint32 secondDelay = uint32(bound(r, 1, type(uint32).max));
+        firstDelay = uint32(bound(firstDelay, 1, type(uint32).max));
+        secondDelay = uint32(bound(secondDelay, 1, type(uint32).max));
         cheats.assume(firstDelay != secondDelay);
 
         // Set delay
@@ -1450,10 +1450,10 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     }
 
     function testFuzz_multipleDelays(
-        uint256 r
+        uint32 firstDelay, uint32 secondDelay
     ) public {
-        uint32 firstDelay = uint32(bound(r, 1, type(uint32).max));
-        uint32 secondDelay = uint32(bound(r, 1, type(uint32).max));
+        firstDelay = uint32(bound(firstDelay, 1, type(uint32).max));
+        secondDelay = uint32(bound(secondDelay, 1, type(uint32).max));
         cheats.assume(firstDelay != secondDelay);
 
         // Set delay
