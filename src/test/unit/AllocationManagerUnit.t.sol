@@ -657,13 +657,13 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
      */
     function test_slash_oneCompletedAlloc_onePendingAlloc() public {
         // Generate allocation for `strategyMock`, we allocate half
-        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations = _generateMagnitudeAllocationCalldata(avs, 5e17, 1e18);
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations = _generateMagnitudeAllocationCalldata(defaultAVS, 5e17, 1e18);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(allocations);
         cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
         // Allocate the other half
-        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations2 = _generateMagnitudeAllocationCalldata(avs, 1e18, 1e18);
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations2 = _generateMagnitudeAllocationCalldata(defaultAVS, 1e18, 1e18);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(allocations2);
         uint32 secondAllocEffectTimestamp = uint32(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
