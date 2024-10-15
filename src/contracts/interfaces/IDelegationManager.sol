@@ -382,7 +382,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @param strategy The strategy to decrease shares for
      * @param previousTotalMagnitude The total magnitude before the slash
      * @param newTotalMagnitude The total magnitude after the slash
-     * @return The operator's shares before the decrease and the shares it was decreased by
      * @dev Callable only by the AllocationManager
      */
     function decreaseOperatorShares(
@@ -390,7 +389,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         IStrategy strategy,
         uint64 previousTotalMagnitude,
         uint64 newTotalMagnitude
-    ) external returns (uint256, uint256);
+    ) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

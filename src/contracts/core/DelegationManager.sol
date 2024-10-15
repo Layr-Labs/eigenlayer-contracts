@@ -445,7 +445,6 @@ contract DelegationManager is
      * @param strategy The strategy to decrease shares for
      * @param previousTotalMagnitude The total magnitude before the slash
      * @param newTotalMagnitude The total magnitude after the slash
-     * @return The operator's shares before the decrease and the shares it was decreased by
      * @dev Callable only by the AllocationManager
      */
     function decreaseOperatorShares(
@@ -453,8 +452,7 @@ contract DelegationManager is
         IStrategy strategy,
         uint64 previousTotalMagnitude,
         uint64 newTotalMagnitude
-    ) external onlyAllocationManager returns (uint256, uint256) {
-        uint256 sharesBefore = operatorShares[operator][strategy];
+    ) external onlyAllocationManager {
         uint256 sharesToDecrease =
             operatorShares[operator][strategy].getOperatorSharesToDecrease(previousTotalMagnitude, newTotalMagnitude);
 
@@ -464,8 +462,6 @@ contract DelegationManager is
             strategy: strategy,
             sharesToDecrease: sharesToDecrease
         });
-
-        return (sharesBefore, sharesToDecrease);
     }
 
     /**
