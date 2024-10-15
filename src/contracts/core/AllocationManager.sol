@@ -280,6 +280,7 @@ contract AllocationManager is
      */
     function _setAllocationDelay(address operator, uint32 delay) internal {
         require(delay != 0, InvalidAllocationDelay());
+        require(delay < ALLOCATION_CONFIGURATION_DELAY, InvalidAllocationDelay());
 
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
