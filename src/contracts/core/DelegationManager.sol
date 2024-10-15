@@ -453,7 +453,7 @@ contract DelegationManager is
         IStrategy strategy,
         uint64 previousTotalMagnitude,
         uint64 newTotalMagnitude
-    ) external onlyAllocationManager returns(uint256, uint256) {
+    ) external onlyAllocationManager returns (uint256, uint256) {
         uint256 sharesBefore = operatorShares[operator][strategy];
         uint256 sharesToDecrease =
             operatorShares[operator][strategy].getOperatorSharesToDecrease(previousTotalMagnitude, newTotalMagnitude);
