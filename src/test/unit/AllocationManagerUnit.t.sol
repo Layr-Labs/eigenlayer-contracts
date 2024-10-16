@@ -833,7 +833,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         // Check storage after complete modification
         cheats.warp(deallocationEffectTimestamp);
-        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        allocationManager.clearDeallocationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
         mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, allocations[0].operatorSets);
         assertEq(magnitudeAfterDeallocationSlash, mInfos[0].currentMagnitude, "currentMagnitude not updated");
         assertEq(magnitudeAfterDeallocationSlash, maxMagnitudeAfterSlash / 2, "magnitude after deallocation should be half of max magnitude, since we originally deallocated by half");
@@ -929,8 +929,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
     /**
      * Slashes the operator after deallocation, even if the deallocation has not been cleared. Validates that:
-     * 1. Even if we do not clear modification queue, the deallocation is NOT slashed from since we're passed the deallocationEffectTimestamp
-     * 2. Validates storage post slash & post clearing modification queue
+     * 1. Even if we do not clear deallocation queue, the deallocation is NOT slashed from since we're passed the deallocationEffectTimestamp
+     * 2. Validates storage post slash & post clearing deallocation queue
      * 3. Total magnitude only decreased proportionally by the magnitude set after deallocation
      */
     function test_allocate_deallocate_slashAfterDeallocation() public {
@@ -995,7 +995,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         // Check storage after complete modification. Expect encumberedMag to be emitted again
         cheats.expectEmit(true, true, true, true, address(allocationManager));
         emit EncumberedMagnitudeUpdated(defaultOperator, strategyMock, expectedEncumberedMagnitude);
-        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        allocationManager.clearDeallocationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
         mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, allocations[0].operatorSets);
         assertEq(allocatableMagnitudeAfterSlash, allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock), "allocatable mag after slash shoudl be equal to allocatable mag after clearing queue");
     }
@@ -1213,10 +1213,10 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         assertEq(-int128(uint128(pendingDiff - pendingDiff/2)), mInfos[0].pendingDiff, "pendingDiff should be -secondMod");
         assertEq(deallocationEffectTimestamp, mInfos[0].effectTimestamp, "effectTimestamp should be deallocationEffectTimestamp");
 
-        // Warp to deallocation effect timestamp & clear modification queue
+        // Warp to deallocation effect timestamp & clear deallocation queue
         console.log("encumbered mag before: ", allocationManager.encumberedMagnitude(defaultOperator, strategyMock));
         cheats.warp(deallocationEffectTimestamp);
-        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        allocationManager.clearDeallocationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
         console.log("encumbered mag after: ", allocationManager.encumberedMagnitude(defaultOperator, strategyMock));
 
         // Check expected max and allocatable
@@ -1570,7 +1570,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
      * Validates the storage
      * - 1. After deallocation is alled
      * - 2. After the deallocationd delay is hit
-     * - 3. After the modification queue is cleared
+     * - 3. After the deallocation queue is cleared
      */
     function testFuzz_allocate_deallocate(uint256 r) public {
         // Bound allocation and deallocation
@@ -1633,12 +1633,12 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             "encumberedMagnitude should not be updated"
         );
 
-        // Check storage after clearing modification queue
+        // Check storage after clearing deallocation queue
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = strategyMock;
         uint16[] memory numToClear = new uint16[](1);
         numToClear[0] = 1;
-        allocationManager.clearModificationQueue(defaultOperator, strategies, numToClear);
+        allocationManager.clearDeallocationQueue(defaultOperator, strategies, numToClear);
         assertEq(
             secondMod,
             allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
@@ -1661,13 +1661,13 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(allocations);
 
-        // Warp to completion and clear modification queue
+        // Warp to completion and clear deallocation queue
         cheats.warp(block.timestamp + DEALLOCATION_DELAY);
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = strategyMock;
         uint16[] memory numToClear = new uint16[](1);
         numToClear[0] = 1;
-        allocationManager.clearModificationQueue(defaultOperator, strategies, numToClear);
+        allocationManager.clearDeallocationQueue(defaultOperator, strategies, numToClear);
 
         // Check storage
         assertEq(
@@ -1745,14 +1745,14 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             assertEq(0, mInfos[i].effectTimestamp, "effectTimestamp not updated");
         }
 
-        // Clear modification queue
+        // Clear deallocation queue
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = strategyMock;
         uint16[] memory numToClear = new uint16[](1);
         numToClear[0] = numOpSets;
-        allocationManager.clearModificationQueue(defaultOperator, strategies, numToClear);
+        allocationManager.clearDeallocationQueue(defaultOperator, strategies, numToClear);
 
-        // Check storage after clearing modification queue
+        // Check storage after clearing deallocation queue
         assertEq(
             postDeallocMag,
             allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
@@ -1761,7 +1761,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     }
 }
 
-contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerUnitTests {
+contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerUnitTests {
     /// -----------------------------------------------------------------------
     /// clearModificationQueue()
     /// -----------------------------------------------------------------------
@@ -1769,7 +1769,7 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
     function test_revert_paused() public {
         allocationManager.pause(2 ** PAUSED_MODIFY_ALLOCATIONS);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        allocationManager.clearModificationQueue(defaultOperator, new IStrategy[](0), new uint16[](0));
+        allocationManager.clearDeallocationQueue(defaultOperator, new IStrategy[](0), new uint16[](0));
     }
 
     function test_revert_arrayMismatch() public {
@@ -1777,7 +1777,7 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
         uint16[] memory numToClear = new uint16[](2);
 
         cheats.expectRevert(IAllocationManagerErrors.InputArrayLengthMismatch.selector);
-        allocationManager.clearModificationQueue(defaultOperator, strategies, numToClear);
+        allocationManager.clearDeallocationQueue(defaultOperator, strategies, numToClear);
     }
 
     function test_revert_operatorNotRegistered() public {
@@ -1785,13 +1785,13 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
         delegationManagerMock.setIsOperator(defaultOperator, false);
 
         cheats.expectRevert(IAllocationManagerErrors.OperatorNotRegistered.selector);
-        allocationManager.clearModificationQueue(defaultOperator, new IStrategy[](0), new uint16[](0));
+        allocationManager.clearDeallocationQueue(defaultOperator, new IStrategy[](0), new uint16[](0));
     }
 
     /**
      * @notice Allocates magnitude to an operator and then
-     * - Clears modification queue when nothing can be completed
-     * - Clears modification queue when the alloc can be completed - asserts emit has been emitted
+     * - Clears deallocation queue when only an allocation exists
+     * - Clears deallocation queue when the alloc can be completed - asserts emit has been emitted
      * - Validates storage after the second clear
      */
     function testFuzz_allocate(
@@ -1802,17 +1802,15 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
             _queueRandomAllocation_singleStrat_singleOpSet(defaultOperator, r, 0);
 
         // Attempt to clear queue, assert no events emitted
-        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        allocationManager.clearDeallocationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
         Vm.Log[] memory entries = vm.getRecordedLogs();
         assertEq(0, entries.length, "should not have emitted any events");
 
         // Warp to allocation complete timestamp
         cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
-        // Clear queue
-        cheats.expectEmit(true, true, true, true, address(allocationManager));
-        emit EncumberedMagnitudeUpdated(defaultOperator, strategyMock, allocations[0].magnitudes[0]);
-        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        // Clear queue - this is a noop
+        allocationManager.clearDeallocationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
 
         // Validate storage (although this is technically tested in allocation tests, adding for sanity)
         // TODO: maybe add a harness here to actually introspect storage
@@ -1825,9 +1823,9 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
 
     /**
      * @notice Allocates magnitude to an operator and then
-     * - Clears modification queue when nothing can be completed
+     * - Clears deallocation queue when nothing can be completed
      * - After the first clear, asserts the allocation info takes into account the deallocation
-     * - Clears modification queue when the dealloc can be completed
+     * - Clears deallocation queue when the dealloc can be completed
      * - Assert events & validates storage after the deallocations are completed
      */
     function testFuzz_allocate_deallocate(uint256 r) public {
@@ -1841,7 +1839,7 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
         );
 
         // Clear queue & check storage
-        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        allocationManager.clearDeallocationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
         assertEq(
             allocations[0].magnitudes[0],
             allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
@@ -1862,7 +1860,7 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
         // Clear queue
         cheats.expectEmit(true, true, true, true, address(allocationManager));
         emit EncumberedMagnitudeUpdated(defaultOperator, strategyMock, deallocations[0].magnitudes[0]);
-        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        allocationManager.clearDeallocationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
 
         // Validate storage - encumbered magnitude should just be deallocations (we only have 1 deallocation)
         assertEq(
@@ -1898,7 +1896,6 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
         cheats.warp(block.timestamp + 15 days);
 
         // Deallocate half from opset1.
-        uint32 t = uint32(block.timestamp);
         uint32 deallocationEffectTimestamp = uint32(block.timestamp + DEALLOCATION_DELAY);
         IAllocationManagerTypes.MagnitudeAllocation[] memory firstDeallocation =
             _generateMagnitudeAllocationCalldataForOpSet(defaultAVS, 1, 25e16, 1e18);
@@ -1921,7 +1918,7 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
 
         // Warp to allocation effect timestamp & clear the queue
         cheats.warp(allocationEffectTimestamp);
-        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        allocationManager.clearDeallocationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
 
         // Validate `getAllocatableMagnitude`. Allocatable magnitude should be the difference between the total magnitude and the encumbered magnitude
         uint64 allocatableMagnitude = allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock);
@@ -1979,7 +1976,7 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
 
         // Warp to deallocation effect timestamp & clear the queue
         cheats.warp(deallocationEffectTimestamp);
-        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        allocationManager.clearDeallocationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
 
         // At this point, we should be able to allocate again to opSet1 AND have only 5e17 encumbered magnitude
         assertEq(5e17, allocationManager.encumberedMagnitude(defaultOperator, strategyMock), "encumbered magnitude not correct");

@@ -137,8 +137,8 @@ contract AllocationManager is
             require(allocation.operatorSets.length == allocation.magnitudes.length, InputArrayLengthMismatch());
             require(avsDirectory.isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
 
-            // 1. For the given (operator,strategy) complete any pending modifications to free up encumberedMagnitude
-            _clearModificationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
+            // 1. For the given (operator,strategy) complete any pending deallocation to free up encumberedMagnitude
+            _clearDeallocationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
 
             // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
             // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
@@ -160,9 +160,9 @@ contract AllocationManager is
                 // Calculate the effectTimestamp for the modification
                 if (info.pendingDiff < 0) {
                     info.effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
-                    
-                    // Add the operatorSet to the modification queue
-                    modificationQueue[msg.sender][allocation.strategy].pushBack(operatorSetKey);
+
+                    // Add the operatorSet to the deallocation queue
+                    deallocationQueue[msg.sender][allocation.strategy].pushBack(operatorSetKey);
                 } else if (info.pendingDiff > 0) {
                     info.effectTimestamp = uint32(block.timestamp) + operatorAllocationDelay;
 
@@ -192,7 +192,7 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function clearModificationQueue(
+    function clearDeallocationQueue(
         address operator,
         IStrategy[] calldata strategies,
         uint16[] calldata numToClear
@@ -201,7 +201,7 @@ contract AllocationManager is
         require(delegation.isOperator(operator), OperatorNotRegistered());
 
         for (uint256 i = 0; i < strategies.length; ++i) {
-            _clearModificationQueue({operator: operator, strategy: strategies[i], numToClear: numToClear[i]});
+            _clearDeallocationQueue({operator: operator, strategy: strategies[i], numToClear: numToClear[i]});
         }
     }
 
@@ -220,21 +220,21 @@ contract AllocationManager is
     }
 
     /**
-     * @dev Clear one or more pending modifications to a strategy's allocated magnitude
-     * @param operator the operator whose pending modifications will be cleared
+     * @dev Clear one or more pending deallocations to a strategy's allocated magnitude
+     * @param operator the operator whose pending deallocations will be cleared
      * @param strategy the strategy to update
-     * @param numToClear the number of pending modifications to complete
+     * @param numToClear the number of pending deallocations to complete
      */
-    function _clearModificationQueue(address operator, IStrategy strategy, uint16 numToClear) internal {
+    function _clearDeallocationQueue(address operator, IStrategy strategy, uint16 numToClear) internal {
         uint256 numCompleted;
-        uint256 length = modificationQueue[operator][strategy].length();
+        uint256 length = deallocationQueue[operator][strategy].length();
 
         while (length > 0 && numCompleted < numToClear) {
-            bytes32 operatorSetKey = modificationQueue[operator][strategy].front();
+            bytes32 operatorSetKey = deallocationQueue[operator][strategy].front();
             PendingMagnitudeInfo memory info = _getPendingMagnitudeInfo(operator, strategy, operatorSetKey);
 
-            // If we've reached a pending modification that isn't completable yet,
-            // we can stop. Any subsequent modificaitons will also be uncompletable.
+            // If we've reached a pending deallocation that isn't completable yet,
+            // we can stop. Any subsequent deallocation will also be uncompletable.
             if (block.timestamp < info.effectTimestamp) {
                 break;
             }
@@ -242,8 +242,8 @@ contract AllocationManager is
             // Update the operator's allocation in storage
             _updateMagnitudeInfo(operator, strategy, operatorSetKey, info);
 
-            // Remove the modification from the queue
-            modificationQueue[operator][strategy].popFront();
+            // Remove the deallocation from the queue
+            deallocationQueue[operator][strategy].popFront();
             ++numCompleted;
             --length;
         }
@@ -273,8 +273,8 @@ contract AllocationManager is
 
     /**
      * @dev For an operator set, get the operator's effective allocated magnitude.
-     * If the operator set has a pending modification that can be completed at the
-     * current timestamp, this method returns a view of the allocation as if the modification
+     * If the operator set has a pending deallocation that can be completed at the
+     * current timestamp, this method returns a view of the allocation as if the deallocation
      * was completed.
      * @return info the effective allocated and pending magnitude for the operator set, and
      * the effective encumbered magnitude for all operator sets belonging to this strategy
@@ -418,29 +418,27 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
-        // This method needs to simulate clearing any pending allocation modifications.
-        // This roughly mimics the calculations done in `_clearModificationQueue` and
+        // This method needs to simulate clearing any pending deallocations.
+        // This roughly mimics the calculations done in `_clearDeallocationQueue` and
         // `_getPendingMagnitudeInfo`, while operating on a `curEncumberedMagnitude`
         // rather than continually reading/updating state.
         uint64 curEncumberedMagnitude = encumberedMagnitude[operator][strategy];
 
-        uint256 length = modificationQueue[operator][strategy].length();
+        uint256 length = deallocationQueue[operator][strategy].length();
         for (uint256 i = 0; i < length; ++i) {
-            bytes32 operatorSetKey = modificationQueue[operator][strategy].at(i);
+            bytes32 operatorSetKey = deallocationQueue[operator][strategy].at(i);
             MagnitudeInfo memory info = _operatorMagnitudeInfo[operator][strategy][operatorSetKey];
 
-            // If we've reached a pending modification that isn't completable yet,
+            // If we've reached a pending deallocation that isn't completable yet,
             // we can stop. Any subsequent modificaitons will also be uncompletable.
             if (block.timestamp < info.effectTimestamp) {
                 break;
             }
 
-            // If the diff is a deallocation, add to encumbered magnitude. Allocations
-            // do not need to be considered, because encumbered magnitude is updated as
-            // soon as the allocation is created.
-            if (info.pendingDiff < 0) {
-                curEncumberedMagnitude = _addInt128(curEncumberedMagnitude, info.pendingDiff);
-            }
+            // The diff is a deallocation. Add to encumbered magnitude. Note that this is a deallocation
+            // queue and allocations aren't considered because encumbered magnitude
+            // is updated as soon as the allocation is created.
+            curEncumberedMagnitude = _addInt128(curEncumberedMagnitude, info.pendingDiff);
         }
 
         // The difference between the operator's max magnitude and its encumbered magnitude
