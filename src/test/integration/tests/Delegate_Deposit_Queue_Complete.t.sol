@@ -15,8 +15,6 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         // Create a staker and an operator with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         // 1. Delegate to operator
         staker.delegateTo(operator);
@@ -34,6 +32,9 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
+
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         // 4. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals();
@@ -54,8 +55,6 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         // Create a staker and an operator with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         // 1. Delegate to operator
         staker.delegateTo(operator);
@@ -73,6 +72,9 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
+
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         // 4. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals();

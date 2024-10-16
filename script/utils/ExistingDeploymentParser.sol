@@ -189,6 +189,10 @@ contract ExistingDeploymentParser is Script, Test {
         strategyFactoryImplementation = StrategyFactory(
             stdJson.readAddress(existingDeploymentData, ".addresses.strategyFactoryImplementation")
         );
+        strategyBeacon = UpgradeableBeacon(stdJson.readAddress(existingDeploymentData, ".addresses.strategyFactoryBeacon"));
+        strategyFactoryBeaconImplementation = StrategyBase(
+            stdJson.readAddress(existingDeploymentData, ".addresses.strategyFactoryBeaconImplementation")
+        );
         eigenPodManager = EigenPodManager(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodManager"));
         eigenPodManagerImplementation = EigenPodManager(
             stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodManagerImplementation")
@@ -752,5 +756,28 @@ contract ExistingDeploymentParser is Script, Test {
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
 
         vm.writeJson(finalJson, outputPath);
+    }
+
+    /// @notice used for parsing parameters used in the integration test upgrade
+    function _parseParamsForIntegrationUpgrade(string memory initialDeploymentParamsPath) internal virtual {
+        // read and log the chainID
+        uint256 currentChainId = block.chainid;
+        emit log_named_uint("You are parsing on ChainID", currentChainId);
+
+        // READ JSON CONFIG DATA
+        string memory initialDeploymentData = vm.readFile(initialDeploymentParamsPath);
+
+        // check that the chainID matches the one in the config
+        uint256 configChainId = stdJson.readUint(initialDeploymentData, ".config.environment.chainid");
+        require(configChainId == currentChainId, "You are on the wrong chain for this config");
+
+        emit log_named_string("Using config file", initialDeploymentParamsPath);
+        emit log_named_string("- Last Updated", stdJson.readString(initialDeploymentData, ".config.environment.lastUpdated"));
+
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(stdJson.readUint(initialDeploymentData, ".config.params.CALCULATION_INTERVAL_SECONDS"));
+        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(stdJson.readUint(initialDeploymentData, ".config.params.MAX_REWARDS_DURATION"));
+        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".config.params.MAX_RETROACTIVE_LENGTH"));
+        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".config.params.MAX_FUTURE_LENGTH"));
+        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(stdJson.readUint(initialDeploymentData, ".config.params.GENESIS_REWARDS_TIMESTAMP"));
     }
 }
