@@ -41,7 +41,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     // Legacy withdrawals use block numbers. We expect block number 1 billion in ~370 years
     // Slashing withdrawals use timestamps. The UTC timestmap as of Jan 1st, 2024 is 1_704_067_200 . Thus, when deployed, all
     // withdrawal timestamps are AFTER the `LEGACY_WITHDRAWAL_CHECK_VALUE` timestamp.
-    // This below value is the UTC timestamp at Sunday, September 9th, 2001. 
+    // This below value is the UTC timestamp at Sunday, September 9th, 2001.
     uint32 public constant LEGACY_WITHDRAWAL_CHECK_VALUE = 1_000_000_000;
 
     /// @notice Canonical, virtual beacon chain ETH strategy
