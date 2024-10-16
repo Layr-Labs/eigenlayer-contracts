@@ -754,9 +754,9 @@ contract DelegationManager is
     function getCompletableTimestamp(
         uint32 startTimestamp
     ) public view returns (uint32 completableTimestamp) {
-        if (startTimestamp < LEGACY_WITHDRAWALS_TIMESTAMP) {
+        if (startTimestamp < LEGACY_WITHDRAWAL_CHECK_VALUE) {
             // this is a legacy M2 withdrawal using blocknumbers.
-            // It would take up to 600+ years for the blocknumber to reach the LEGACY_WITHDRAWALS_TIMESTAMP, so this is a safe check.
+            // It would take 370+ years for the blockNumber to reach the LEGACY_WITHDRAWAL_CHECK_VALUE, so this is a safe check.
             require(startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number, WithdrawalDelayNotElapsed());
             // sourcing the magnitudes from time=0, will always give us WAD, which doesn't factor in slashing
             completableTimestamp = 0;
