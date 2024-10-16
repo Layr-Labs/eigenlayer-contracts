@@ -90,7 +90,7 @@ contract DeployFromScratch is Script, Test {
 
     // AllocationManager
     uint32 DEALLOCATION_DELAY;
-    uint32 ALLOCATION_DELAY_CONFIGURATION_DELAY;
+    uint32 ALLOCATION_CONFIGURATION_DELAY;
 
     // RewardsCoordinator
     uint32 REWARDS_COORDINATOR_MAX_REWARDS_DURATION;
@@ -161,8 +161,8 @@ contract DeployFromScratch is Script, Test {
         DEALLOCATION_DELAY = uint32(
             stdJson.readUint(config_data, ".allocationManager.DEALLOCATION_DELAY")
         );
-        ALLOCATION_DELAY_CONFIGURATION_DELAY = uint32(
-            stdJson.readUint(config_data, ".allocationManager.ALLOCATION_DELAY_CONFIGURATION_DELAY")
+        ALLOCATION_CONFIGURATION_DELAY = uint32(
+            stdJson.readUint(config_data, ".allocationManager.ALLOCATION_CONFIGURATION_DELAY")
         );
 
         // tokens to deploy strategies for
@@ -252,7 +252,7 @@ contract DeployFromScratch is Script, Test {
             REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
             REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
         );
-        allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_DELAY_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
