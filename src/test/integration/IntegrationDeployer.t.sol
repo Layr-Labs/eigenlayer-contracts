@@ -368,10 +368,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Create time machine and beacon chain. Set block time to beacon chain genesis time
         // TODO: update if needed to sane timestamp
         // cheats.warp(GENESIS_TIME_LOCAL);
-        cheats.warp(delegationManager.LEGACY_WITHDRAWALS_TIMESTAMP());
+        cheats.warp(delegationManager.LEGACY_WITHDRAWAL_CHECK_VALUE());
         timeMachine = new TimeMachine();
         // beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_LOCAL);
-        beaconChain = new BeaconChainMock(eigenPodManager, delegationManager.LEGACY_WITHDRAWALS_TIMESTAMP());
+        beaconChain = new BeaconChainMock(eigenPodManager, delegationManager.LEGACY_WITHDRAWAL_CHECK_VALUE());
     }
 
     /**

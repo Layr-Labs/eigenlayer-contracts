@@ -37,9 +37,12 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The minimum number of blocks to complete a withdrawal of a strategy. 50400 * 12 seconds = 1 week
     uint256 public constant LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS = 50_400;
 
-    /// @notice Wed Jan 01 2025 17:00:00 GMT+0000, timestamp used to check whether a pending withdrawal
-    /// should be processed as legacy M2 or with slashing considered.
-    uint32 public constant LEGACY_WITHDRAWALS_TIMESTAMP = 1_735_750_800;
+    /// @notice Check against the blockNumber/timestamps to determine if the withdrawal is a legacy or slashing withdrawl.
+    // Legacy withdrawals use block numbers. We expect block number 1 billion in ~370 years
+    // Slashing withdrawals use timestamps. The UTC timestmap as of Jan 1st, 2024 is 1_704_067_200 . Thus, when deployed, all
+    // withdrawal timestamps are AFTER the `LEGACY_WITHDRAWAL_CHECK_VALUE` timestamp.
+    // This below value is the UTC timestamp at Sunday, September 9th, 2001. 
+    uint32 public constant LEGACY_WITHDRAWAL_CHECK_VALUE = 1_000_000_000;
 
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
