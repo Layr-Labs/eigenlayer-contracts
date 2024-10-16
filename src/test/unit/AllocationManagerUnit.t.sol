@@ -1934,11 +1934,14 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
     /**
      * Allocates to opset1, allocates to opset2, deallocates from opset1. Asserts that the allocation, which has a higher
      * effect timestamp is not blocking the deallocation.
-     * The queue looks like (note that the first allocation has been completed):
+     * The allocs/deallocs looks like
      * 1. (allocation, opSet2, mag: 5e17, effectTimestamp: 50th day)
      * 2. (deallocation, opSet1, mag: 0, effectTimestamp: 42.5 day)
+     * 
+     * The deallocation queue looks like
+     * 1. (deallocation, opSet1, mag: 0, effectTimestamp: 42.5 day)
      */
-    function test_regression_allocationBlocksDeallocation() public {
+    function test_regression_deallocationNotBlocked() public {
         uint32 allocationDelay = 25 days;
         // Set allocation delay to be 25 days, greater than the deallocation timestamp
         cheats.prank(defaultOperator);
