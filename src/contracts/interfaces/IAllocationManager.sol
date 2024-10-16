@@ -161,16 +161,16 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
-     * @notice This function takes a list of strategies and adds all completable modifications for each strategy,
+     * @notice This function takes a list of strategies and adds all completable deallocations for each strategy,
      * updating the encumberedMagnitude of the operator as needed.
      *
-     * @param operator address to complete modifications for
-     * @param strategies a list of strategies to complete modifications for
-     * @param numToComplete a list of number of pending modifications to complete for each strategy
+     * @param operator address to complete deallocations for
+     * @param strategies a list of strategies to complete deallocations for
+     * @param numToComplete a list of number of pending deallocations to complete for each strategy
      *
      * @dev can be called permissionlessly by anyone
      */
-    function clearModificationQueue(
+    function clearDeallocationQueue(
         address operator,
         IStrategy[] calldata strategies,
         uint16[] calldata numToComplete
