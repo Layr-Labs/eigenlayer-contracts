@@ -161,8 +161,7 @@ contract AllocationManager is
                 if (info.pendingDiff < 0) {
                     info.effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
                     
-                    // Add the operatorSet to the modification queue and update the allocation
-                    // in storage
+                    // Add the operatorSet to the modification queue
                     modificationQueue[msg.sender][allocation.strategy].pushBack(operatorSetKey);
                 } else if (info.pendingDiff > 0) {
                     info.effectTimestamp = uint32(block.timestamp) + operatorAllocationDelay;
@@ -172,6 +171,8 @@ contract AllocationManager is
                     info.encumberedMagnitude = _addInt128(info.encumberedMagnitude, info.pendingDiff);
                     require(info.encumberedMagnitude <= maxMagnitude, InsufficientAllocatableMagnitude());
                 }
+
+                // Update the modification in storage
                 _updateMagnitudeInfo({
                     operator: msg.sender,
                     strategy: allocation.strategy,
