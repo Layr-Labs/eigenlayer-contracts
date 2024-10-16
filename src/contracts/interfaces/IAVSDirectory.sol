@@ -323,6 +323,15 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory strategies);
 
+    /// @notice Returns whether or not a strategy is allocatable/slashable for an operator set.
+    function isOperatorSetStrategy(OperatorSet calldata operatorSet, IStrategy strategy) external view returns (bool);
+
+    /// @notice Returns whether or not a list of strategies are all allocatable/slashable for an operator set.
+    function isOperatorSetStrategyBatch(
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategy
+    ) external view returns (bool);
+
     /**
      * @notice Returns the number of operators registered to an operatorSet.
      * @param operatorSet The operatorSet to get the member count for

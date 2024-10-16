@@ -53,12 +53,18 @@ contract AllocationManager is
     function slashOperator(
         SlashingParams calldata params
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
+        // Assert that the amount to slash is within bounds of 1 and WAD (1e18).
         require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
 
-        // Check that the operator is registered and slashable
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: params.operatorSetId});
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+
+        // Assert that the provided strategies are all whitelisted for the given operator set.
+        require(avsDirectory.isOperatorSetStrategyBatch(operatorSet, params.strategies), InvalidStrategy());
+        // Asser that the operator is slashable for the given operator set.
         require(avsDirectory.isOperatorSlashable(params.operator, operatorSet), InvalidOperator());
+
+        // Check that the operator is registered and slashable
+        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
 
         // Record the proportion of 1e18 that the operator's total shares that are being slashed
         uint256[] memory wadSlashed = new uint256[](params.strategies.length);
@@ -161,6 +167,11 @@ contract AllocationManager is
                 if (info.pendingDiff < 0) {
                     info.effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
                 } else if (info.pendingDiff > 0) {
+                    require(
+                        avsDirectory.isOperatorSetStrategy(allocation.operatorSets[i], allocation.strategy),
+                        InvalidStrategy()
+                    );
+
                     info.effectTimestamp = uint32(block.timestamp) + operatorAllocationDelay;
 
                     // For allocations, immediately add to encumberedMagnitude to ensure the operator
