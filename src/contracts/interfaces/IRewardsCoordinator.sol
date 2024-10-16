@@ -349,8 +349,7 @@ interface IRewardsCoordinator {
      * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `performanceRewardsSubmissions`, before calling this function.
      * @dev Strategies must be in ascending order of addresses to check for duplicates
      * @dev Operators must be in ascending order of addresses to check for duplicates.
-     * @dev This function will revert if the `performanceRewardsSubmissions` is malformed,
-     * e.g. if the `strategies` and `weights` arrays are of non-equal lengths, or if the `operators` and `operatorRewards` arrays are of non-equal lengths
+     * @dev This function will revert if the `performanceRewardsSubmissions` is malformed.
      */
     function createAVSPerformanceRewardsSubmission(
         PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions

@@ -185,27 +185,26 @@ contract RewardsCoordinator is
     function createAVSPerformanceRewardsSubmission(
         PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION) nonReentrant {
-        // for (uint256 i = 0; i < performanceRewardsSubmissions.length; i++) {
-        //     PerformanceRewardsSubmission calldata performanceRewardsSubmission = performanceRewardsSubmissions[i];
-        //     uint256 nonce = submissionNonce[msg.sender];
-        //     bytes32 performanceRewardsSubmissionHash = keccak256(
-        //         abi.encode(msg.sender, nonce, performanceRewardsSubmission)
-        //     );
-        //     _validateRewardsSubmission(performanceRewardsSubmission);
-        //     isAVSPerformanceRewardsSubmissionHash[msg.sender][performanceRewardsSubmissionHash] = true;
-        //     submissionNonce[msg.sender] = nonce + 1;
-        //     emit AVSPerformanceRewardsSubmissionCreated(
-        //         msg.sender,
-        //         nonce,
-        //         performanceRewardsSubmissionHash,
-        //         performanceRewardsSubmission
-        //     );
-        //     performanceRewardsSubmission.token.safeTransferFrom(
-        //         msg.sender,
-        //         address(this),
-        //         performanceRewardsSubmission.amount
-        //     );
-        // }
+        for (uint256 i = 0; i < performanceRewardsSubmissions.length; i++) {
+            PerformanceRewardsSubmission calldata performanceRewardsSubmission = performanceRewardsSubmissions[i];
+            uint256 nonce = submissionNonce[msg.sender];
+            bytes32 performanceRewardsSubmissionHash = keccak256(
+                abi.encode(msg.sender, nonce, performanceRewardsSubmission)
+            );
+
+            uint256 totalAmount = _validatePerformanceRewardsSubmission(performanceRewardsSubmission);
+
+            isAVSPerformanceRewardsSubmissionHash[msg.sender][performanceRewardsSubmissionHash] = true;
+            submissionNonce[msg.sender] = nonce + 1;
+
+            emit AVSPerformanceRewardsSubmissionCreated(
+                msg.sender,
+                nonce,
+                performanceRewardsSubmissionHash,
+                performanceRewardsSubmission
+            );
+            performanceRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
+        }
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -362,6 +361,83 @@ contract RewardsCoordinator is
             );
             currAddress = address(strategy);
         }
+    }
+
+    /**
+     * @notice Validate a PerformanceRewardsSubmission. Called from `createAVSPerformanceRewardsSubmission`.
+     * @param performanceRewardsSubmission PerformanceRewardsSubmission to validate.
+     * @return total amount to be transferred from the avs to the contract.
+     */
+    function _validatePerformanceRewardsSubmission(
+        PerformanceRewardsSubmission calldata performanceRewardsSubmission
+    ) internal view returns (uint256) {
+        require(
+            performanceRewardsSubmission.strategiesAndMultipliers.length > 0,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: no strategies set"
+        );
+        require(
+            performanceRewardsSubmission.operatorRewards.length > 0,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: no operators rewarded"
+        );
+
+        uint256 totalAmount = 0;
+        address currOperatorAddress = address(0);
+        for (uint256 i = 0; i < performanceRewardsSubmission.operatorRewards.length; ++i) {
+            OperatorReward calldata operatorReward = performanceRewardsSubmission.operatorRewards[i];
+            require(
+                operatorReward.operator != address(0),
+                "RewardsCoordinator._validatePerformanceRewardsSubmission: operator cannot be 0 address"
+            );
+            require(
+                currOperatorAddress < operatorReward.operator,
+                "RewardsCoordinator._validatePerformanceRewardsSubmission: operators must be in ascending order to handle duplicates"
+            );
+            currOperatorAddress = operatorReward.operator;
+            require(
+                operatorReward.amount > 0,
+                "RewardsCoordinator._validatePerformanceRewardsSubmission: operator reward amount cannot be 0"
+            );
+            totalAmount += operatorReward.amount;
+        }
+
+        require(
+            performanceRewardsSubmission.duration <= MAX_REWARDS_DURATION,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
+        );
+        require(
+            performanceRewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
+        );
+        require(
+            performanceRewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
+        );
+        require(
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= performanceRewardsSubmission.startTimestamp &&
+                GENESIS_REWARDS_TIMESTAMP <= performanceRewardsSubmission.startTimestamp,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: startTimestamp too far in the past"
+        );
+        require(
+            performanceRewardsSubmission.startTimestamp + performanceRewardsSubmission.duration < block.timestamp,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: performance rewards submission is not retroactive"
+        );
+
+        // Require performanceRewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
+        address currAddress = address(0);
+        for (uint256 i = 0; i < performanceRewardsSubmission.strategiesAndMultipliers.length; ++i) {
+            IStrategy strategy = performanceRewardsSubmission.strategiesAndMultipliers[i].strategy;
+            require(
+                strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
+                "RewardsCoordinator._validatePerformanceRewardsSubmission: invalid strategy considered"
+            );
+            require(
+                currAddress < address(strategy),
+                "RewardsCoordinator._validatePerformanceRewardsSubmission: strategies must be in ascending order to handle duplicates"
+            );
+            currAddress = address(strategy);
+        }
+
+        return totalAmount;
     }
 
     function _checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root) internal view {
