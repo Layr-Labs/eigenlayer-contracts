@@ -29,7 +29,7 @@ interface IUserDeployer {
 
 contract User is PrintUtils {
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     DelegationManager delegationManager;
     StrategyManager strategyManager;

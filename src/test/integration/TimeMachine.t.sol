@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 contract TimeMachine is Test {
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     bool pastExists = false;
     uint lastSnapshot;

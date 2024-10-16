@@ -7,7 +7,7 @@ import "src/contracts/permissions/PauserRegistry.sol";
 import "forge-std/Test.sol";
 
 abstract contract EigenLayerUnitTestBase is Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     PauserRegistry public pauserRegistry;
     ProxyAdmin public eigenLayerProxyAdmin;

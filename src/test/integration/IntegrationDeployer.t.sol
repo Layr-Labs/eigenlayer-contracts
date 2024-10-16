@@ -30,7 +30,7 @@ import "script/utils/ExistingDeploymentParser.sol";
 
 abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     // Fork ids for specific fork tests
     bool isUpgraded;
