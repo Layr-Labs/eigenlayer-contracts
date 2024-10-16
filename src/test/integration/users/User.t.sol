@@ -76,6 +76,8 @@ contract User is PrintUtils {
                             DELEGATIONMANAGER METHODS
     *******************************************************************************/
 
+    uint32 withdrawalDelay = 1;
+
     function registerAsOperator() public createSnapshot virtual {
         _logM("registerAsOperator");
 
@@ -85,7 +87,7 @@ contract User is PrintUtils {
             __deprecated_stakerOptOutWindowBlocks: 0
         });
 
-        delegationManager.registerAsOperator(details, 0, "metadata");
+        delegationManager.registerAsOperator(details, withdrawalDelay, "metadata");
     }
 
     /// @dev Delegate to the operator without a signature

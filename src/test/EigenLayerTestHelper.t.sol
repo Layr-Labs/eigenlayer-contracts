@@ -344,7 +344,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                 delegationApprover: address(0),
                 __deprecated_stakerOptOutWindowBlocks: 0
             });
-            _testRegisterAsOperator(operator, 0, operatorDetails);
+            _testRegisterAsOperator(operator, 1, operatorDetails);
         }
 
         uint256 amountBefore = delegation.operatorShares(operator, wethStrat);

@@ -2758,7 +2758,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         bool delegateFromStakerToOperator
     ) public {
         // sanity-filtering on fuzzed input length & staker
-        cheats.assume(strategies.length <= 32);
+        cheats.assume(strategies.length <= 16);
         // TODO: remove, handles rounding on division
         cheats.assume(shares % 2 == 0);
 

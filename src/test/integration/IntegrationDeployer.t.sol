@@ -241,6 +241,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         strategyFactory = StrategyFactory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        allocationManager = AllocationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
 
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
@@ -261,6 +264,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
         strategyFactoryImplementation = new StrategyFactory(strategyManager);
+        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
@@ -314,6 +318,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 0 // initialPausedStatus
             )
         );
+        // AllocationManager
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation),
+            abi.encodeWithSelector(
+                AllocationManager.initialize.selector,
+                eigenLayerReputedMultisig, // initialOwner
+                eigenLayerPauserReg,
+                0 // initialPausedStatus
+            )
+        );
         // Create base strategy implementation and deploy a few strategies
         baseStrategyImplementation = new StrategyBase(strategyManager);
 
@@ -351,9 +366,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allTokens.push(NATIVE_ETH);
 
         // Create time machine and beacon chain. Set block time to beacon chain genesis time
-        cheats.warp(GENESIS_TIME_LOCAL);
+        // TODO: update if needed to sane timestamp
+        // cheats.warp(GENESIS_TIME_LOCAL);
+        cheats.warp(delegationManager.LEGACY_WITHDRAWALS_TIMESTAMP());
         timeMachine = new TimeMachine();
-        beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_LOCAL);
+        // beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_LOCAL);
+        beaconChain = new BeaconChainMock(eigenPodManager, delegationManager.LEGACY_WITHDRAWALS_TIMESTAMP());
     }
 
     /**
