@@ -89,6 +89,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// if rewards submission hash for all stakers and operators has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllEarnersHash;
 
+    /// @notice Mapping: avs => avsPerformanceRewardsSubmissionHash => bool to check if performance rewards submission hash has been submitted
+    mapping(address => mapping(bytes32 => bool)) public isAVSPerformanceRewardsSubmissionHash;
+
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
@@ -120,5 +123,5 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[39] private __gap;
 }
