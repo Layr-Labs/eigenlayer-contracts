@@ -2,7 +2,11 @@
 |-------------------------------------------------|---------------------------------------------------------|------|--------|-------|--------------------------------------------------------|
 | podOwner                                        | address                                                 | 0    | 0      | 20    | src/contracts/pods/EigenPodStorage.sol:EigenPodStorage |
 | __deprecated_mostRecentWithdrawalTimestamp      | uint64                                                  | 0    | 20     | 8     | src/contracts/pods/EigenPodStorage.sol:EigenPodStorage |
+<<<<<<< HEAD
 | restakedExecutionLayerGwei                      | uint64                                                  | 1    | 0      | 8     | src/contracts/pods/EigenPodStorage.sol:EigenPodStorage |
+=======
+| withdrawableRestakedExecutionLayerGwei          | uint64                                                  | 1    | 0      | 8     | src/contracts/pods/EigenPodStorage.sol:EigenPodStorage |
+>>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
 | __deprecated_hasRestaked                        | bool                                                    | 1    | 8      | 1     | src/contracts/pods/EigenPodStorage.sol:EigenPodStorage |
 | __deprecated_provenWithdrawal                   | mapping(bytes32 => mapping(uint64 => bool))             | 2    | 0      | 32    | src/contracts/pods/EigenPodStorage.sol:EigenPodStorage |
 | _validatorPubkeyHashToInfo                      | mapping(bytes32 => struct IEigenPodTypes.ValidatorInfo) | 3    | 0      | 32    | src/contracts/pods/EigenPodStorage.sol:EigenPodStorage |

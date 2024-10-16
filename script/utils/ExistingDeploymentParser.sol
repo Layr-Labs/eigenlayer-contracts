@@ -118,7 +118,11 @@ contract ExistingDeploymentParser is Script, Test {
     address REWARDS_COORDINATOR_UPDATER;
     uint32 REWARDS_COORDINATOR_ACTIVATION_DELAY;
     uint32 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+<<<<<<< HEAD
     uint32 REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS;
+=======
+    uint32 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
+>>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
     // EigenPodManager
@@ -339,6 +343,12 @@ contract ExistingDeploymentParser is Script, Test {
         );
         REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS = uint32(
             stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.default_operator_split_bips")
+        );
+        REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP")
+        );
+        REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH")
         );
         REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = uint32(
             stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP")

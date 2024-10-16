@@ -32,7 +32,11 @@ var (
 // BeaconChainProofsMetaData contains all meta data concerning the BeaconChainProofs contract.
 var BeaconChainProofsMetaData = &bind.MetaData{
 	ABI: "[{\"type\":\"error\",\"name\":\"InvalidProof\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidProofLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidValidatorFieldsLength\",\"inputs\":[]}]",
+<<<<<<< HEAD
 	Bin: "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212203c012a067ef0e34ecc8d69f854c4c0d8a6a2e569d2f7a72379b2776c639ee7a064736f6c634300081b0033",
+=======
+	Bin: "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122019674d3bc6da7783434d71aa3e357ce154db5299101142e28cd12eae816e978464736f6c634300081b0033",
+>>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
 }
 
 // BeaconChainProofsABI is the input ABI used to generate the binding from.

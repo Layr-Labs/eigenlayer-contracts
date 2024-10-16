@@ -871,7 +871,13 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
+<<<<<<< HEAD
         cheats.expectRevert(IRewardsCoordinatorErrors.StrategiesNotInAscendingOrder.selector);
+=======
+        cheats.expectRevert(
+            IRewardsCoordinatorErrors.StrategiesNotInAscendingOrder.selector
+        );
+>>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
         rewardsCoordinator.createAVSRewardsSubmission(avs, rewardsSubmissions);
     }
 
@@ -2710,8 +2716,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
-        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
+        IRewardsCoordinatorTypes.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinatorTypes.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
         IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(

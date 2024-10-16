@@ -6,7 +6,11 @@
 | __gap                                           | uint256[49]                                             | 2    | 0      | 1568  | src/contracts/pods/EigenPod.sol:EigenPod |
 | podOwner                                        | address                                                 | 51   | 0      | 20    | src/contracts/pods/EigenPod.sol:EigenPod |
 | __deprecated_mostRecentWithdrawalTimestamp      | uint64                                                  | 51   | 20     | 8     | src/contracts/pods/EigenPod.sol:EigenPod |
+<<<<<<< HEAD
 | restakedExecutionLayerGwei                      | uint64                                                  | 52   | 0      | 8     | src/contracts/pods/EigenPod.sol:EigenPod |
+=======
+| withdrawableRestakedExecutionLayerGwei          | uint64                                                  | 52   | 0      | 8     | src/contracts/pods/EigenPod.sol:EigenPod |
+>>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
 | __deprecated_hasRestaked                        | bool                                                    | 52   | 8      | 1     | src/contracts/pods/EigenPod.sol:EigenPod |
 | __deprecated_provenWithdrawal                   | mapping(bytes32 => mapping(uint64 => bool))             | 53   | 0      | 32    | src/contracts/pods/EigenPod.sol:EigenPod |
 | _validatorPubkeyHashToInfo                      | mapping(bytes32 => struct IEigenPodTypes.ValidatorInfo) | 54   | 0      | 32    | src/contracts/pods/EigenPod.sol:EigenPod |
