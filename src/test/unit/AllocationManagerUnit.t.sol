@@ -13,10 +13,12 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     AllocationManager allocationManager;
     ERC20PresetFixedSupply tokenMock;
     StrategyBase strategyMock;
+    StrategyBase strategyMock2;
 
     address defaultOperator = address(this);
     address defaultAVS = address(0xFEDBAD);
     uint32 constant DEFAULT_OPERATOR_ALLOCATION_DELAY = 1 days;
+    
 
     /// -----------------------------------------------------------------------
     /// Setup
@@ -34,6 +36,16 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         tokenMock = new ERC20PresetFixedSupply("Mock Token", "MOCK", type(uint256).max, address(this));
 
         strategyMock = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(new StrategyBase(IStrategyManager(address(strategyManagerMock)))),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, tokenMock, pauserRegistry)
+                )
+            )
+        );
+
+        strategyMock2 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
                     address(new StrategyBase(IStrategyManager(address(strategyManagerMock)))),
@@ -77,6 +89,70 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
                 )
             )
         );
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Generate calldata for a magnitude allocation
+    /// -----------------------------------------------------------------------
+
+    /**
+     * @notice Generated magnitue allocation calldata for a given `avsToSet`, `strategy`, and `operatorSetId`
+     */
+    function _generateMagnitudeAllocationCalldata_opSetAndStrategy(
+        address avsToSet,
+        IStrategy strategy,
+        uint32 operatorSetId,
+        uint64 magnitudeToSet,
+        uint64 expectedMaxMagnitude
+    ) internal returns (IAllocationManagerTypes.MagnitudeAllocation[] memory) {
+        OperatorSet[] memory operatorSets = new OperatorSet[](1);
+        operatorSets[0] = OperatorSet({avs: avsToSet, operatorSetId: operatorSetId});
+
+        // Set operatorSet to being valid
+        avsDirectoryMock.setIsOperatorSetBatch(operatorSets, true);
+
+        uint64[] memory magnitudes = new uint64[](1);
+        magnitudes[0] = magnitudeToSet;
+
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations =
+            new IAllocationManagerTypes.MagnitudeAllocation[](1);
+        allocations[0] = IAllocationManagerTypes.MagnitudeAllocation({
+            strategy: strategy,
+            expectedMaxMagnitude: expectedMaxMagnitude,
+            operatorSets: operatorSets,
+            magnitudes: magnitudes
+        });
+
+        return allocations;
+    }
+
+    /**
+     * @notice Generates magnitudeAllocation calldata for a given operatorSet and avs for `strategyMock`
+     */
+    function _generateMagnitudeAllocationCalldataForOpSet(
+        address avsToSet,
+        uint32 operatorSetId,
+        uint64 magnitudeToSet,
+        uint64 expectedMaxMagnitude
+    ) internal returns (IAllocationManagerTypes.MagnitudeAllocation[] memory) {
+        return _generateMagnitudeAllocationCalldata_opSetAndStrategy(
+            avsToSet,
+            strategyMock,
+            operatorSetId,
+            magnitudeToSet,
+            expectedMaxMagnitude
+        );
+    }
+
+    /**
+     * @notice Generates magnitudeAllocation calldata for the `strategyMock` on operatorSet 1 with a provided magnitude.
+     */
+    function _generateMagnitudeAllocationCalldata(
+        address avsToSet,
+        uint64 magnitudeToSet,
+        uint64 expectedMaxMagnitude
+    ) internal returns (IAllocationManagerTypes.MagnitudeAllocation[] memory) {
+        return _generateMagnitudeAllocationCalldataForOpSet(avsToSet, 1, magnitudeToSet, expectedMaxMagnitude);
     }
 
     /// -----------------------------------------------------------------------
@@ -356,35 +432,6 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     /// Utils
     /// -----------------------------------------------------------------------
 
-    /**
-     * @notice Generated magnitudeAllocation calldata for the `strategyMock` with a provided magnitude.
-     */
-    function _generateMagnitudeAllocationCalldata(
-        address avsToSet,
-        uint64 magnitudeToSet,
-        uint64 expectedMaxMagnitude
-    ) internal returns (IAllocationManagerTypes.MagnitudeAllocation[] memory) {
-        OperatorSet[] memory operatorSets = new OperatorSet[](1);
-        operatorSets[0] = OperatorSet({avs: avsToSet, operatorSetId: 1});
-
-        // Set operatorSet to being valid
-        avsDirectoryMock.setIsOperatorSetBatch(operatorSets, true);
-
-        uint64[] memory magnitudes = new uint64[](1);
-        magnitudes[0] = magnitudeToSet;
-
-        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations =
-            new IAllocationManagerTypes.MagnitudeAllocation[](1);
-        allocations[0] = IAllocationManagerTypes.MagnitudeAllocation({
-            strategy: strategyMock,
-            expectedMaxMagnitude: expectedMaxMagnitude,
-            operatorSets: operatorSets,
-            magnitudes: magnitudes
-        });
-
-        return allocations;
-    }
-
     function _strategyMockArray() internal view returns (IStrategy[] memory) {
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = strategyMock;
@@ -402,6 +449,12 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
     function _operatorSet(address avs, uint32 operatorSetId) internal pure returns (OperatorSet memory) {
         return OperatorSet({avs: avs, operatorSetId: operatorSetId});
+    }
+
+    function _maxNumToClear() internal pure returns (uint16[] memory) {
+        uint16[] memory numToClear = new uint16[](1);
+        numToClear[0] = type(uint16).max;
+        return numToClear;
     }
 }
 
@@ -647,13 +700,14 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
     }
 
     /**
-     * Allocates half of magnitude to for a single strategy to an operatorSet. Then allocates again. Slashes 50%
+     * Allocates half of magnitude for a single strategy to an operatorSet. Then allocates again. Slashes 50%
      * Asserts that:
      * 1. Events are emitted
      * 2. Encumbered mag is updated
      * 3. Max mag is updated
      * 4. Calculations for `getAllocatableMagnitude` and `getAllocationInfo` are correct
      * 5. The second magnitude allocation is not slashed from
+     * TODO: Fuzz
      */
     function test_slash_oneCompletedAlloc_onePendingAlloc() public {
         // Generate allocation for `strategyMock`, we allocate half
@@ -711,6 +765,474 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         assertEq(75e16, mInfos[0].currentMagnitude, "currentMagnitude not updated");
         assertEq(0, mInfos[0].pendingDiff, "pendingDiff should be 0");
         assertEq(0, mInfos[0].effectTimestamp, "effectTimestamp should be 0");
+    }
+
+    /**
+     * Allocates all of magnitude to a single strategy to an operatorSet. Deallocate half. Finally, slash while deallocation is pending
+     * Asserts that:
+     * 1. Events are emitted, including for deallocation
+     * 2. Encumbered mag is updated
+     * 3. Max mag is updated
+     * 4. Calculations for `getAllocatableMagnitude` and `getAllocationInfo` are correct
+     * 5. The deallocation is slashed from
+     * 6. Pending magnitude updates post deallocation are valid
+     * TODO: Fuzz the allocation & slash amounts
+     */
+    function test_allocateAll_deallocateHalf_slashWhileDeallocPending() public {
+        uint64 initialMagnitude = 1e18;
+        // Generate allocation for `strategyMock`, we allocate half
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations = _generateMagnitudeAllocationCalldata(defaultAVS, initialMagnitude, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+        cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Deallocate half
+        IAllocationManagerTypes.MagnitudeAllocation[] memory deallocations = _generateMagnitudeAllocationCalldata(defaultAVS, initialMagnitude / 2, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(deallocations);
+        uint32 deallocationEffectTimestamp = uint32(block.timestamp + DEALLOCATION_DELAY);
+
+        // Slash operator for 25%
+        SlashingParams memory slashingParams = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: allocations[0].operatorSets[0].operatorSetId,
+            strategies: _strategyMockArray(),
+            wadToSlash: 25e16,
+            description: "test"
+        });
+        avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+        uint64 magnitudeAfterDeallocationSlash = 375e15; // 25% is slashed off of 5e17
+        uint64 expectedEncumberedMagnitude = 75e16; // 25e16 is slashed. 75e16 is encumbered
+        uint64 magnitudeAfterSlash = 75e16;
+        uint64 maxMagnitudeAfterSlash = 75e16; // Operator can only allocate up to 75e16 magnitude since 25% is slashed
+
+        // Slash Operator
+        // First event is emitted because of deallocation
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit OperatorSetMagnitudeUpdated(defaultOperator, allocations[0].operatorSets[0], strategyMock, magnitudeAfterDeallocationSlash, deallocationEffectTimestamp);
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit EncumberedMagnitudeUpdated(defaultOperator, strategyMock, expectedEncumberedMagnitude);
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit OperatorSetMagnitudeUpdated(defaultOperator, allocations[0].operatorSets[0], strategyMock, magnitudeAfterSlash, uint32(block.timestamp));
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit MaxMagnitudeUpdated(defaultOperator, strategyMock, maxMagnitudeAfterSlash);
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        uint256[] memory wadSlashed = new uint256[](1);
+        wadSlashed[0] = 25e16;
+        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), slashingParams.strategies, wadSlashed, slashingParams.description);
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(slashingParams);
+
+        // Check storage post slash
+        assertEq(expectedEncumberedMagnitude, allocationManager.encumberedMagnitude(defaultOperator, strategyMock), "encumberedMagnitude not updated");
+        assertEq(maxMagnitudeAfterSlash, allocationManager.getMaxMagnitudes(defaultOperator, _strategyMockArray())[0], "maxMagnitude not updated");
+        MagnitudeInfo[] memory mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, allocations[0].operatorSets);
+        assertEq(magnitudeAfterSlash, mInfos[0].currentMagnitude, "currentMagnitude not updated");
+        assertEq(-int128(uint128((uint64(magnitudeAfterDeallocationSlash)))), mInfos[0].pendingDiff, "pendingDiff should be decreased after slash");
+        assertEq(deallocationEffectTimestamp, mInfos[0].effectTimestamp, "effectTimestamp should be 0");
+
+        // Check storage after complete modification
+        cheats.warp(deallocationEffectTimestamp);
+        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, allocations[0].operatorSets);
+        assertEq(magnitudeAfterDeallocationSlash, mInfos[0].currentMagnitude, "currentMagnitude not updated");
+        assertEq(magnitudeAfterDeallocationSlash, maxMagnitudeAfterSlash / 2, "magnitude after deallocation should be half of max magnitude, since we originally deallocated by half");
+    }
+
+    /**
+     * Allocates all magnitude to a single opSet. Then slashes the entire magnitude
+     * Asserts that:
+     * 1. The operator cannot allocate again
+     */
+    function testRevert_allocateAfterSlashedEntirely() public {
+        // Allocate all magnitude
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations = _generateMagnitudeAllocationCalldata(defaultAVS, 1e18, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+        cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Slash operator for 100%
+        SlashingParams memory slashingParams = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: allocations[0].operatorSets[0].operatorSetId,
+            strategies: _strategyMockArray(),
+            wadToSlash: 1e18,
+            description: "test"
+        });
+        avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+
+        // Slash Operator
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(slashingParams);
+
+        // Attempt to allocate
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations2 = _generateMagnitudeAllocationCalldata(defaultAVS, 1, 0);
+        cheats.expectRevert(IAllocationManagerErrors.InsufficientAllocatableMagnitude.selector);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations2);
+    }
+
+    /**
+     * Allocates all magnitude to a single opSet. Deallocateas magnitude. Slashes al
+     * Asserts that:
+     * 1. The MagnitudeInfo is 0 after slash
+     * 2. Them sotrage post slash for encumbered and maxMags ais zero
+     */
+    function test_allocateAll_deallocateAll() public {
+        // Allocate all magnitude
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations = _generateMagnitudeAllocationCalldata(defaultAVS, 1e18, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+        cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Deallocate all
+        IAllocationManagerTypes.MagnitudeAllocation[] memory deallocations = _generateMagnitudeAllocationCalldata(defaultAVS, 0, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(deallocations);
+        uint32 deallocationEffectTimestamp = uint32(block.timestamp + DEALLOCATION_DELAY);
+
+        // Slash operator for 100%
+        SlashingParams memory slashingParams = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: allocations[0].operatorSets[0].operatorSetId,
+            strategies: _strategyMockArray(),
+            wadToSlash: 1e18,
+            description: "test"
+        });
+        avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+
+        // Slash Operator
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit OperatorSetMagnitudeUpdated(defaultOperator, allocations[0].operatorSets[0], strategyMock, 0, deallocationEffectTimestamp);
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit EncumberedMagnitudeUpdated(defaultOperator, strategyMock, 0);
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit OperatorSetMagnitudeUpdated(defaultOperator, allocations[0].operatorSets[0], strategyMock, 0, uint32(block.timestamp));
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit MaxMagnitudeUpdated(defaultOperator, strategyMock, 0);
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        uint256[] memory wadSlashed = new uint256[](1);
+        wadSlashed[0] = 1e18;
+        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), slashingParams.strategies, wadSlashed, slashingParams.description);
+
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(slashingParams);
+
+        // Check storage post slash
+        assertEq(0, allocationManager.encumberedMagnitude(defaultOperator, strategyMock), "encumberedMagnitude not updated");
+        assertEq(0, allocationManager.getMaxMagnitudes(defaultOperator, _strategyMockArray())[0], "maxMagnitude not updated");
+        MagnitudeInfo[] memory mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, allocations[0].operatorSets);
+        assertEq(0, mInfos[0].currentMagnitude, "currentMagnitude not updated");
+        assertEq(0, mInfos[0].pendingDiff, "pendingDiff should be zero since everything is slashed");
+        assertEq(deallocationEffectTimestamp, mInfos[0].effectTimestamp, "effectTimestamp should be 0");
+    }
+
+    /**
+     * Slashes the operator after deallocation, even if the deallocation has not been cleared. Validates that:
+     * 1. Even if we do not clear modification queue, the deallocation is NOT slashed from since we're passed the deallocationEffectTimestamp
+     * 2. Validates storage post slash & post clearing modification queue
+     * 3. Total magnitude only decreased proportionally by the magnitude set after deallocation
+     */
+    function test_allocate_deallocate_slashAfterDeallocation() public {
+        // Allocate all magnitude
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations = _generateMagnitudeAllocationCalldata(defaultAVS, 1e18, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+        cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Deallocate half
+        IAllocationManagerTypes.MagnitudeAllocation[] memory deallocations = _generateMagnitudeAllocationCalldata(defaultAVS, 5e17, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(deallocations);
+        uint32 deallocationEffectTimestamp = uint32(block.timestamp + DEALLOCATION_DELAY);
+
+        // Check storage post deallocation
+        MagnitudeInfo[] memory mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, allocations[0].operatorSets);
+        assertEq(1e18, mInfos[0].currentMagnitude, "currentMagnitude not updated");
+        assertEq(-5e17, mInfos[0].pendingDiff, "pendingDiff should be 5e17 after deallocation");
+        assertEq(deallocationEffectTimestamp, mInfos[0].effectTimestamp, "effectTimestamp should be 0");
+
+        // Warp to deallocation effect timestamp
+        cheats.warp(deallocationEffectTimestamp);
+
+
+        // Slash operator for 25%
+        SlashingParams memory slashingParams = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: allocations[0].operatorSets[0].operatorSetId,
+            strategies: _strategyMockArray(),
+            wadToSlash: 25e16,
+            description: "test"
+        });
+        avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+        uint64 expectedEncumberedMagnitude = 375e15; // 25e16 is slashed. 5e17 was previously
+        uint64 magnitudeAfterSlash = 375e15;
+        uint64 maxMagnitudeAfterSlash = 875e15; // Operator can only allocate up to 75e16 magnitude since 25% is slashed
+
+        // Slash Operator, only emit events assuming that there is no deallocation
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit EncumberedMagnitudeUpdated(defaultOperator, strategyMock, expectedEncumberedMagnitude);
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit OperatorSetMagnitudeUpdated(defaultOperator, allocations[0].operatorSets[0], strategyMock, magnitudeAfterSlash, uint32(block.timestamp));
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit MaxMagnitudeUpdated(defaultOperator, strategyMock, maxMagnitudeAfterSlash);
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        uint256[] memory wadSlashed = new uint256[](1);
+        wadSlashed[0] = 125e15;
+        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), slashingParams.strategies, wadSlashed, slashingParams.description);
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(slashingParams);
+
+        // Check storage post slash
+        assertEq(expectedEncumberedMagnitude, allocationManager.encumberedMagnitude(defaultOperator, strategyMock), "encumberedMagnitude not updated");
+        assertEq(maxMagnitudeAfterSlash, allocationManager.getMaxMagnitudes(defaultOperator, _strategyMockArray())[0], "maxMagnitude not updated");
+        mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, allocations[0].operatorSets);
+        assertEq(magnitudeAfterSlash, mInfos[0].currentMagnitude, "currentMagnitude not updated");
+        assertEq(0, mInfos[0].pendingDiff, "pendingDiff should be 0 after slash");
+        assertEq(0, mInfos[0].effectTimestamp, "effectTimestamp should be 0");
+        uint64 allocatableMagnitudeAfterSlash = allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock);
+
+        // Check storage after complete modification. Expect encumberedMag to be emitted again
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit EncumberedMagnitudeUpdated(defaultOperator, strategyMock, expectedEncumberedMagnitude);
+        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, allocations[0].operatorSets);
+        assertEq(allocatableMagnitudeAfterSlash, allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock), "allocatable mag after slash shoudl be equal to allocatable mag after clearing queue");
+    }
+
+    /**
+     * Allocates to multiple operatorSets for a strategy. Only slashes from one operatorSet. Validates
+     * 1. The slashable shares of each operatorSet after magnitude allocation
+     * 2. The first operatorSet has less slashable shares post slash
+     * 3. The second operatorSet has the same number slashable shares post slash
+     * 4. The PROPORTION that is slashable for opSet 2 has increased
+     * 5. Encumbered magnitude, total allocatable magnitude
+     */
+    function test_allocateMultipleOpsets_slashSingleOpset() public {
+        // Set 100e18 shares for operator in DM
+        uint256 operatorShares = 100e18;
+        delegationManagerMock.setOperatorShares(defaultOperator, strategyMock, operatorShares);
+        uint64 magnitudeToAllocate = 4e17;
+
+        // Allocate 40% to firstOperatorSet, 40% to secondOperatorSet
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations = new IAllocationManagerTypes.MagnitudeAllocation[](2);
+        allocations[0] = _generateMagnitudeAllocationCalldataForOpSet(defaultAVS, 1, magnitudeToAllocate, 1e18)[0];
+        allocations[1] = _generateMagnitudeAllocationCalldataForOpSet(defaultAVS, 2, magnitudeToAllocate, 1e18)[0];
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+        cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Get slashable shares for each operatorSet
+        address[] memory operatorArray = new address[](1);
+        operatorArray[0] = defaultOperator;
+        (, uint256[][] memory slashableSharesOpset1_preSlash) = allocationManager.getMinDelegatedAndSlashableOperatorShares(
+            _operatorSet(defaultAVS, 1),
+            operatorArray,
+            _strategyMockArray(),
+            uint32(block.timestamp + 1)
+        );
+        (, uint256[][] memory slashableSharesOpset2_preSlash) = allocationManager.getMinDelegatedAndSlashableOperatorShares(
+            _operatorSet(defaultAVS, 2),
+            operatorArray,
+            _strategyMockArray(),
+            uint32(block.timestamp + 1)
+        );
+        assertEq(40e18, slashableSharesOpset1_preSlash[0][0], "slashableShares of opSet_1 should be 40e18");
+        assertEq(40e18, slashableSharesOpset2_preSlash[0][0], "slashableShares of opSet_2 should be 40e18");
+        uint256 maxMagnitude = allocationManager.getMaxMagnitudes(defaultOperator, _strategyMockArray())[0];
+        uint256 opSet2PortionOfMaxMagnitude = uint256(magnitudeToAllocate) * 1e18 / maxMagnitude;
+
+        // Slash operator on operatorSet1 for 50%
+        SlashingParams memory slashingParams = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: allocations[0].operatorSets[0].operatorSetId,
+            strategies: _strategyMockArray(),
+            wadToSlash: 5e17,
+            description: "test"
+        });
+        avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+
+        // Slash Operator
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(slashingParams);
+
+        // Operator should now have 80e18 shares, since half of 40e18 was slashed
+        delegationManagerMock.setOperatorShares(defaultOperator, strategyMock, 80e18);
+
+        // Check storage
+        (, uint256[][] memory slashableSharesOpset1_postSlash) = allocationManager.getMinDelegatedAndSlashableOperatorShares(
+            _operatorSet(defaultAVS, 1),
+            operatorArray,
+            _strategyMockArray(),
+            uint32(block.timestamp + 1)
+        );
+        (, uint256[][] memory slashableSharesOpset2_postSlash) = allocationManager.getMinDelegatedAndSlashableOperatorShares(
+            _operatorSet(defaultAVS, 2),
+            operatorArray,
+            _strategyMockArray(),
+            uint32(block.timestamp + 1)
+        );
+        
+        assertEq(20e18, slashableSharesOpset1_postSlash[0][0], "slashableShares of opSet_1 should be 20e18");
+        assertEq(slashableSharesOpset2_preSlash[0][0], slashableSharesOpset2_postSlash[0][0], "slashableShares of opSet_2 should remain unchanged");
+
+        // Validate encumbered and total allocatable magnitude
+        uint256 maxMagnitudeAfterSlash = allocationManager.getMaxMagnitudes(defaultOperator, _strategyMockArray())[0];
+        uint256 expectedEncumberedMagnitude = 6e17; // 4e17 from opSet2, 2e17 from opSet1
+        assertEq(expectedEncumberedMagnitude, allocationManager.encumberedMagnitude(defaultOperator, strategyMock), "encumberedMagnitude not updated");
+        assertEq(maxMagnitudeAfterSlash - expectedEncumberedMagnitude, allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock), "allocatableMagnitude should be diff of maxMagnitude and encumberedMagnitude");
+
+        // Check proportion after slash
+        uint256 opSet2PortionOfMaxMagnitudeAfterSlash = uint256(magnitudeToAllocate) * 1e18 / maxMagnitudeAfterSlash;
+        assertGt(opSet2PortionOfMaxMagnitudeAfterSlash, opSet2PortionOfMaxMagnitude, "opSet2 should have a greater proportion to slash from previous");
+    }
+
+    /**
+     * Allocates to multiple strategies for the given operatorSetKey. Slashes from both strategies Validates a slash propogates to both strategies.
+     * Validates that
+     * 1. Proper events are emitted for each strategy slashed
+     * 2. Each strategy is slashed proportional to its allocation
+     * 3. Storage is updated for each strategy, opSet
+     */
+    function test_allocateMultipleStrategies_slashMultiple() public {
+        // Allocate to each strategy
+        uint64 strategy1Magnitude = 5e17;
+        uint64 strategy2Magnitude = 1e18;
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations = new IAllocationManagerTypes.MagnitudeAllocation[](2);
+        allocations[0] = _generateMagnitudeAllocationCalldata_opSetAndStrategy(defaultAVS, strategyMock, 1, strategy1Magnitude, 1e18)[0];
+        allocations[1] = _generateMagnitudeAllocationCalldata_opSetAndStrategy(defaultAVS, strategyMock2, 1, strategy2Magnitude, 1e18)[0];
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+        cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+
+        // Slash operator on both strategies for 60%
+        IStrategy[] memory strategiesToSlash = new IStrategy[](2);
+        strategiesToSlash[0] = strategyMock;
+        strategiesToSlash[1] = strategyMock2;
+        SlashingParams memory slashingParams = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: allocations[0].operatorSets[0].operatorSetId,
+            strategies: strategiesToSlash,
+            wadToSlash: 6e17,
+            description: "test"
+        });
+        avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+
+        uint64[] memory expectedEncumberedMags = new uint64[](2);
+        expectedEncumberedMags[0] = 2e17; // 60% of 5e17
+        expectedEncumberedMags[1] = 4e17; // 60% of 1e18
+
+        uint64[] memory expectedMagnitudeAfterSlash = new uint64[](2);
+        expectedMagnitudeAfterSlash[0] = 2e17;
+        expectedMagnitudeAfterSlash[1] = 4e17; 
+
+        uint64[] memory expectedMaxMagnitudeAfterSlash = new uint64[](2);
+        expectedMaxMagnitudeAfterSlash[0] = 7e17;
+        expectedMaxMagnitudeAfterSlash[1] = 4e17;
+
+        // Expect emits
+        for(uint256 i = 0; i < strategiesToSlash.length; i++) {
+            cheats.expectEmit(true, true, true, true, address(allocationManager));
+            emit EncumberedMagnitudeUpdated(defaultOperator, strategiesToSlash[i], expectedEncumberedMags[i]);
+            cheats.expectEmit(true, true, true, true, address(allocationManager));
+            emit OperatorSetMagnitudeUpdated(defaultOperator, _operatorSet(defaultAVS, slashingParams.operatorSetId), strategiesToSlash[i], expectedMagnitudeAfterSlash[i], uint32(block.timestamp));
+            cheats.expectEmit(true, true, true, true, address(allocationManager));
+            emit MaxMagnitudeUpdated(defaultOperator, strategiesToSlash[i], expectedMaxMagnitudeAfterSlash[i]);
+        }
+        uint256[] memory wadSlashed = new uint256[](2);
+        wadSlashed[0] = 3e17;
+        wadSlashed[1] = 6e17;
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), slashingParams.strategies, wadSlashed, slashingParams.description);
+        
+        // Slash Operator
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(slashingParams);
+
+        // Check storage
+        for(uint256 i = 0; i < strategiesToSlash.length; i++) {
+            assertEq(expectedEncumberedMags[i], allocationManager.encumberedMagnitude(defaultOperator, strategiesToSlash[i]), "encumberedMagnitude not updated");
+            assertEq(expectedMaxMagnitudeAfterSlash[i] - expectedMagnitudeAfterSlash[i], allocationManager.getAllocatableMagnitude(defaultOperator, strategiesToSlash[i]), "allocatableMagnitude not updated");
+            MagnitudeInfo[] memory mInfos = allocationManager.getAllocationInfo(defaultOperator, strategiesToSlash[i], allocations[0].operatorSets);
+            assertEq(expectedMagnitudeAfterSlash[i], mInfos[0].currentMagnitude, "currentMagnitude not updated");
+            assertEq(0, mInfos[0].pendingDiff, "pendingDiff should be 0");
+            assertEq(0, mInfos[0].effectTimestamp, "effectTimestamp should be 0");
+        }
+    }
+
+    /**
+     * Allocates magnitude. Deallocates some. Slashes a portion, and then allocates up to the max available magnitude
+     * TODO: Fuzz the wadsToSlash
+     */
+    function testFuzz_allocate_deallocate_slashWhilePending_allocateMax(uint256 r) public {
+        // Bound allocation and deallocation
+        uint64 firstMod = uint64(bound(r, 3, 1e18));
+        uint64 secondMod = uint64(bound(r, 1, firstMod - 2));
+
+        // TODO: remove these assumptions around even numbers
+        if (firstMod % 2 != 0) {
+            firstMod += 1;
+        }
+        if (secondMod % 2 != 0) {
+            secondMod += 1;
+        }
+        uint64 pendingDiff = firstMod - secondMod;
+
+        // Allocate magnitude
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations = _generateMagnitudeAllocationCalldata(defaultAVS, firstMod, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+        cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Deallocate magnitude
+        IAllocationManagerTypes.MagnitudeAllocation[] memory deallocations = _generateMagnitudeAllocationCalldata(defaultAVS, secondMod, 1e18);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(deallocations);
+        uint32 deallocationEffectTimestamp = uint32(block.timestamp + DEALLOCATION_DELAY);
+
+        // Slash operator for 50%  
+        SlashingParams memory slashingParams = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: allocations[0].operatorSets[0].operatorSetId,
+            strategies: _strategyMockArray(),
+            wadToSlash: 5e17,
+            description: "test"
+        });
+        avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+
+        // Slash Operator
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(slashingParams);
+
+        // Check storage post slash
+        assertEq(firstMod / 2, allocationManager.encumberedMagnitude(defaultOperator, strategyMock), "encumberedMagnitude should be half of firstMod");
+        MagnitudeInfo[] memory mInfos = allocationManager.getAllocationInfo(defaultOperator, strategyMock, allocations[0].operatorSets);
+        assertEq(firstMod / 2, mInfos[0].currentMagnitude, "currentMagnitude should be half of firstMod");
+        console.log("value of pendingDiff: ", pendingDiff - pendingDiff/2);
+        assertEq(-int128(uint128(pendingDiff - pendingDiff/2)), mInfos[0].pendingDiff, "pendingDiff should be -secondMod");
+        assertEq(deallocationEffectTimestamp, mInfos[0].effectTimestamp, "effectTimestamp should be deallocationEffectTimestamp");
+
+        // Warp to deallocation effect timestamp & clear modification queue
+        console.log("encumbered mag before: ", allocationManager.encumberedMagnitude(defaultOperator, strategyMock));
+        cheats.warp(deallocationEffectTimestamp);
+        allocationManager.clearModificationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
+        console.log("encumbered mag after: ", allocationManager.encumberedMagnitude(defaultOperator, strategyMock));
+
+        // Check expected max and allocatable
+        uint64 expectedMaxMagnitude = 1e18 - firstMod / 2;
+        assertEq(expectedMaxMagnitude, allocationManager.getMaxMagnitudes(defaultOperator, _strategyMockArray())[0], "maxMagnitude should be expectedMaxMagnitude");
+        // Allocatable is expectedMax - currentMagPostSlashing - pendingDiffOfDeallocations post slashing
+        uint64 expectedAllocatable = expectedMaxMagnitude - ((firstMod / 2) - (pendingDiff - pendingDiff / 2));
+        assertEq(expectedAllocatable, allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock), "allocatableMagnitude should be expectedAllocatable");
+
+        // Allocate up to max magnitude
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations2 = _generateMagnitudeAllocationCalldata(defaultAVS, expectedMaxMagnitude, expectedMaxMagnitude);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations2);
+
+        // Assert that encumbered is expectedMaxMagnitude
+        assertEq(0, allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock), "allocatableMagnitude should be 0");
     }
 }
 
@@ -1352,12 +1874,6 @@ contract AllocationManagerUnitTests_ClearModificationQueue is AllocationManagerU
         assertEq(deallocations[0].magnitudes[0], mInfos[0].currentMagnitude, "currentMagnitude should be 0");
         assertEq(0, mInfos[0].pendingDiff, "pendingMagnitude should be 0");
         assertEq(0, mInfos[0].effectTimestamp, "effectTimestamp should be 0");
-    }
-
-    function _maxNumToClear() internal view returns (uint16[] memory) {
-        uint16[] memory numToClear = new uint16[](1);
-        numToClear[0] = type(uint16).max;
-        return numToClear;
     }
 }
 

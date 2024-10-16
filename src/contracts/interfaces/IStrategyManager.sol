@@ -138,7 +138,6 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external;
 
-
     /// @notice Returns bool for whether or not `strategy` is whitelisted for deposit
     function strategyIsWhitelistedForDeposit(
         IStrategy strategy

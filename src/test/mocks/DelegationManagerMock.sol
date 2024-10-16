@@ -32,6 +32,17 @@ contract DelegationManagerMock is Test {
         return withdrawalRoot;
     }
 
+    function getOperatorsShares(address[] memory operators, IStrategy[] memory strategies) external view returns (uint256[][] memory) {
+        uint256[][] memory operatorSharesArray = new uint256[][](operators.length);
+        for (uint256 i = 0; i < operators.length; i++) {
+            operatorSharesArray[i] = new uint256[](strategies.length);
+            for (uint256 j = 0; j < strategies.length; j++) {
+                operatorSharesArray[i][j] = operatorShares[operators[i]][strategies[j]];
+            }
+        }
+        return operatorSharesArray;
+    }
+
     function operatorDetails(address operator) external pure returns (IDelegationManagerTypes.OperatorDetails memory) {
         IDelegationManagerTypes.OperatorDetails memory returnValue = IDelegationManagerTypes.OperatorDetails({
             __deprecated_earningsReceiver: operator,
