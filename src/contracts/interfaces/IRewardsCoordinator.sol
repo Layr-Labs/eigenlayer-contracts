@@ -27,6 +27,16 @@ interface IRewardsCoordinator {
     }
 
     /**
+     * @notice A reward struct for an operator
+     * @param operator The operator to be rewarded
+     * @param amount The reward amount for the operator
+     */
+    struct OperatorReward {
+        address operator;
+        uint256 amount;
+    }
+
+    /**
      * Sliding Window for valid RewardsSubmission startTimestamp
      *
      * Scenario A: GENESIS_REWARDS_TIMESTAMP IS WITHIN RANGE
@@ -81,20 +91,19 @@ interface IRewardsCoordinator {
      * See `createAVSPerformanceRewardsSubmission()` for more details.
      * @param strategiesAndMultipliers The strategies and their relative weights
      * cannot have duplicate strategies and need to be sorted in ascending address order
-     * @param token The rewards token to be distributed
+     * @param token The rewards token to be distributed.
+     * @param operatorRewards The rewards for the operators. The sum of all operator rewards equals the total amount of tokens deposited in the submission.
+     * The operators cannot have duplicate addresses and need to be sorted in ascending address order.
      * @param startTimestamp The timestamp (seconds) at which the submission range is considered for distribution
      * It is a retroactive payment and has to be strictly less than `block.timestamp`. See the diagram above.
      * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION.
-     * @param operators The operators to be rewarded. Cannot have duplicate operators and need to be sorted in ascending address order.
-     * @param operatorRewards The reward amounts for the operators. The length of the array must be equal to the length of the operators array.
      */
     struct PerformanceRewardsSubmission {
         StrategyAndMultiplier[] strategiesAndMultipliers;
         IERC20 token;
+        OperatorReward[] operatorRewards;
         uint32 startTimestamp;
         uint32 duration;
-        address[] operators;
-        uint256[] operatorRewards;
     }
 
     /**
