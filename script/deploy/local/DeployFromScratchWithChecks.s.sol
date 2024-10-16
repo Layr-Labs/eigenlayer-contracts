@@ -25,7 +25,7 @@ contract DeployFromScratchWithChecks is CurrentConfigCheck {
         emit log_named_uint("You are deploying on ChainID", chainId);
 
         // READ JSON CONFIG DATA
-        string deployConfigPath = string(bytes(string.concat("script/configs/", configFileName)));
+        string memory deployConfigPath = string(bytes(string.concat("script/configs/", configFileName)));
 
         _parseInitialDeploymentParams(deployConfigPath);
 
@@ -41,7 +41,7 @@ contract DeployFromScratchWithChecks is CurrentConfigCheck {
         // deploy proxy admin for ability to upgrade proxy contracts
         eigenLayerProxyAdmin = new ProxyAdmin();
 
-        //deploy pauser registry
+        // deploy pauser registry
         {
             address[] memory pausers = new address[](3);
             pausers[0] = executorMultisig;

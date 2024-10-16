@@ -14,6 +14,10 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
     string forkUrl;  
     string emptyString;
 
+    address public protocolCouncilMultisig;
+    TimelockController public protocolTimelockController;
+    TimelockController public protocolTimelockController_BEIGEN;
+
     function run(string memory networkName) public virtual {
         if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("preprod-holesky"))) {
             deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
@@ -83,11 +87,11 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         // Ownable(address(EIGEN)).transferOwnership(address(eigenTokenTimelockController));
         // vm.stopPrank();
 
-        checkDesiredGovernanceConfiguration();
+        checkGovernanceConfiguration_Current();
     }
 
     // check governance configuration
-    function checkDesiredGovernanceConfiguration() public {
+    function checkGovernanceConfiguration_Current() public {
         assertEq(eigenLayerProxyAdmin.owner(), executorMultisig,
             "eigenLayerProxyAdmin.owner() != executorMultisig");
         assertEq(delegationManager.owner(), executorMultisig,
@@ -156,5 +160,94 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         assertEq(beigenTokenProxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(bEIGEN)))),
             address(beigenTokenProxyAdmin),
             "beigenTokenProxyAdmin is not actually the admin of the bEIGEN token");
+    }
+
+    function checkGovernanceConfiguration_WithProtocolCouncilMultisig() public {
+        assertEq(eigenLayerProxyAdmin.owner(), protocolCouncilMultisig,
+            "eigenLayerProxyAdmin.owner() != protocolCouncilMultisig");
+        assertEq(delegationManager.owner(), executorMultisig,
+            "delegationManager.owner() != executorMultisig");
+        assertEq(strategyManager.owner(), executorMultisig,
+            "strategyManager.owner() != executorMultisig");
+        assertEq(strategyManager.strategyWhitelister(), address(strategyFactory),
+            "strategyManager.strategyWhitelister() != address(strategyFactory)");
+        assertEq(strategyFactory.owner(), operationsMultisig,
+            "strategyFactory.owner() != operationsMultisig");
+        assertEq(avsDirectory.owner(), executorMultisig,
+            "avsDirectory.owner() != executorMultisig");
+        assertEq(rewardsCoordinator.owner(), operationsMultisig,
+            "rewardsCoordinator.owner() != operationsMultisig");
+        assertEq(eigenLayerPauserReg.unpauser(), executorMultisig,
+            "eigenLayerPauserReg.unpauser() != operationsMultisig");
+        require(eigenLayerPauserReg.isPauser(operationsMultisig),
+            "operationsMultisig does not have pausing permissions");
+        require(eigenLayerPauserReg.isPauser(executorMultisig),
+            "executorMultisig does not have pausing permissions");
+        require(eigenLayerPauserReg.isPauser(pauserMultisig),
+            "pauserMultisig does not have pausing permissions");
+
+        (bool success, bytes memory returndata) = timelock.staticcall(abi.encodeWithSignature("admin()"));
+        require(success, "call to timelock.admin() failed");
+        address timelockAdmin = abi.decode(returndata, (address));
+        assertEq(timelockAdmin, operationsMultisig,
+            "timelockAdmin != operationsMultisig");
+
+        (success, returndata) = executorMultisig.staticcall(abi.encodeWithSignature("getOwners()"));
+        require(success, "call to executorMultisig.getOwners() failed");
+        address[] memory executorMultisigOwners = abi.decode(returndata, (address[]));
+        require(executorMultisigOwners.length == 2,
+            "executorMultisig owners wrong length");
+        bool timelockInOwners;
+        bool communityMultisigInOwners;
+        for (uint256 i = 0; i < 2; ++i) {
+            if (executorMultisigOwners[i] == timelock) {
+                timelockInOwners = true;
+            }
+            if (executorMultisigOwners[i] == communityMultisig) {
+                communityMultisigInOwners = true;
+            }
+        }
+        require(timelockInOwners, "timelock not in executorMultisig owners");
+        require(communityMultisigInOwners, "communityMultisig not in executorMultisig owners");
+
+        require(eigenTokenProxyAdmin != beigenTokenProxyAdmin,
+            "tokens must have different proxy admins to allow different timelock controllers");
+        require(protocolTimelockController != protocolTimelockController_BEIGEN,
+            "tokens must have different timelock controllers");
+
+        // note that proxy admin owners are different but _token_ owners are the same
+        assertEq(Ownable(address(EIGEN)).owner(), address(protocolTimelockController),
+            "EIGEN.owner() != protocolTimelockController");
+        assertEq(Ownable(address(bEIGEN)).owner(), address(protocolTimelockController),
+            "bEIGEN.owner() != protocolTimelockController");
+        assertEq(eigenTokenProxyAdmin.owner(), address(protocolTimelockController),
+            "eigenTokenProxyAdmin.owner() != protocolTimelockController");
+        assertEq(beigenTokenProxyAdmin.owner(), address(protocolTimelockController_BEIGEN),
+            "beigenTokenProxyAdmin.owner() != protocolTimelockController_BEIGEN");
+
+        assertEq(eigenTokenProxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(EIGEN)))),
+            address(eigenTokenProxyAdmin),
+            "eigenTokenProxyAdmin is not actually the admin of the EIGEN token");
+        assertEq(beigenTokenProxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(bEIGEN)))),
+            address(beigenTokenProxyAdmin),
+            "beigenTokenProxyAdmin is not actually the admin of the bEIGEN token");
+
+        require(protocolTimelockController.hasRole(protocolTimelockController.PROPOSER_ROLE(), protocolCouncilMultisig),
+            "protocolCouncilMultisig does not have PROPOSER_ROLE on protocolTimelockController");
+        require(protocolTimelockController.hasRole(protocolTimelockController.EXECUTOR_ROLE(), protocolCouncilMultisig),
+            "protocolCouncilMultisig does not have EXECUTOR_ROLE on protocolTimelockController");
+        require(protocolTimelockController.hasRole(protocolTimelockController.PROPOSER_ROLE(), operationsMultisig),
+            "operationsMultisig does not have PROPOSER_ROLE on protocolTimelockController");
+        require(protocolTimelockController.hasRole(protocolTimelockController.CANCELLER_ROLE(), operationsMultisig),
+            "operationsMultisig does not have CANCELLER_ROLE on protocolTimelockController");
+
+        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.PROPOSER_ROLE(), protocolCouncilMultisig),
+            "protocolCouncilMultisig does not have PROPOSER_ROLE on protocolTimelockController_BEIGEN");
+        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.EXECUTOR_ROLE(), protocolCouncilMultisig),
+            "protocolCouncilMultisig does not have EXECUTOR_ROLE on protocolTimelockController_BEIGEN");
+        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.PROPOSER_ROLE(), operationsMultisig),
+            "operationsMultisig does not have PROPOSER_ROLE on protocolTimelockController_BEIGEN");
+        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.CANCELLER_ROLE(), operationsMultisig),
+            "operationsMultisig does not have CANCELLER_ROLE on protocolTimelockController_BEIGEN");
     }
 }
