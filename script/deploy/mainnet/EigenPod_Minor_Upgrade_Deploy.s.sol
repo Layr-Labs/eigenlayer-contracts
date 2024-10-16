@@ -26,7 +26,7 @@ import "forge-std/Test.sol";
 // # To deploy and verify our contract
 // forge script script/deploy/mainnet/EigenPod_Minor_Upgrade_Deploy.s.sol:EigenPod_Minor_Upgrade_Deploy --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
 contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     string public m2DeploymentOutputPath;
     string public freshOutputPath;

@@ -123,7 +123,7 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
 
 // forge t --mt test_queueUpgrade --fork-url $RPC_MAINNET -vvvv
 contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     // Thurs Apr 08 2024 12:00:00 GMT-0700 (Pacific Daylight Time)
     uint256 timelockEta = 1712559600;

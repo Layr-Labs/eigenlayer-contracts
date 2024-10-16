@@ -37,7 +37,7 @@ contract Upgrade_Preprod_RewardsCoordinator is Deploy_Test_RewardsCoordinator {
         // Sanity Checks
         _verifyContractPointers();
         _verifyImplementations();
-        _verifyContractsInitialized();
+        _verifyContractsInitialized(false);
         _verifyInitializationParams();
 
     }

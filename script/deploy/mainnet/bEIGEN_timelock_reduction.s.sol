@@ -12,7 +12,7 @@ import "forge-std/Test.sol";
 // # To deploy and verify our contract
 // forge script script/deploy/mainnet/bEIGEN_timelock_reduction.s.sol:bEIGEN_timelock_reduction -vvvv --rpc-url $RPC_URL
 contract bEIGEN_timelock_reduction is Script, Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     TimelockController public bEIGEN_TimelockController = TimelockController(payable(0xd6EC41E453C5E7dA5494f4d51A053Ab571712E6f));
     address public bEIGEN_TimelockAdmin = 0xbb00DDa2832850a43840A3A86515E3Fe226865F2;

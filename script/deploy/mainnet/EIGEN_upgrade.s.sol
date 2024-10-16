@@ -17,7 +17,7 @@ import "forge-std/Test.sol";
 // # To deploy and verify our contract
 // forge script script/deploy/mainnet/EIGEN_upgrade.s.sol:EIGEN_upgrade -vvvv --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
 contract EIGEN_upgrade is Script, Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     BackingEigen public bEIGEN_proxy = BackingEigen(0x83E9115d334D248Ce39a6f36144aEaB5b3456e75);
     BackingEigen public bEIGEN_implementation;

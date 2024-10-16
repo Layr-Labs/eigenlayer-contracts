@@ -13,7 +13,7 @@ import "../../../src/contracts/token/Eigen.sol";
 
 // forge script script/deploy/holesky/Preprod_Upgrade_bEIGEN_and_EIGEN.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --verify --etherscan-api-key $ETHERSCAN_API_KEY
 contract Preprod_Upgrade_bEIGEN_and_EIGEN is Script, Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     BackingEigen public bEIGEN_proxy = BackingEigen(0xA72942289a043874249E60469F68f08B8c6ECCe8);
     BackingEigen public bEIGEN_implementation;
