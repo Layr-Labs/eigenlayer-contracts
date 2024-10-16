@@ -1877,7 +1877,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
     /**
      * Allocates, deallocates, and then allocates again. Asserts that
      * - The deallocation does not block state updates from the second allocation, even though the allocation has an earlier
-     *   effect timestamp, but is on the queue before
+     *   effect timestamp
      */
     function test_allocate_deallocate_allocate() public {
         uint32 allocationDelay = 15 days;
