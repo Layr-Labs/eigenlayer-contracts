@@ -182,6 +182,33 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
+    function createAVSPerformanceRewardsSubmission(
+        PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION) nonReentrant {
+        // for (uint256 i = 0; i < performanceRewardsSubmissions.length; i++) {
+        //     PerformanceRewardsSubmission calldata performanceRewardsSubmission = performanceRewardsSubmissions[i];
+        //     uint256 nonce = submissionNonce[msg.sender];
+        //     bytes32 performanceRewardsSubmissionHash = keccak256(
+        //         abi.encode(msg.sender, nonce, performanceRewardsSubmission)
+        //     );
+        //     _validateRewardsSubmission(performanceRewardsSubmission);
+        //     isAVSPerformanceRewardsSubmissionHash[msg.sender][performanceRewardsSubmissionHash] = true;
+        //     submissionNonce[msg.sender] = nonce + 1;
+        //     emit AVSPerformanceRewardsSubmissionCreated(
+        //         msg.sender,
+        //         nonce,
+        //         performanceRewardsSubmissionHash,
+        //         performanceRewardsSubmission
+        //     );
+        //     performanceRewardsSubmission.token.safeTransferFrom(
+        //         msg.sender,
+        //         address(this),
+        //         performanceRewardsSubmission.amount
+        //     );
+        // }
+    }
+
+    /// @inheritdoc IRewardsCoordinator
     function processClaim(
         RewardsMerkleClaim calldata claim,
         address recipient

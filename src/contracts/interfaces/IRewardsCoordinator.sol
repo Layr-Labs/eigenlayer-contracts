@@ -61,6 +61,43 @@ interface IRewardsCoordinator {
     }
 
     /**
+     * Sliding Window for valid RewardsSubmission startTimestamp
+     *
+     * Scenario A: GENESIS_REWARDS_TIMESTAMP IS WITHIN RANGE
+     *         <--------MAX_RETROACTIVE_LENGTH--------> t (block.timestamp)
+     *             <--valid range for startTimestamp--
+     *             ^
+     *         GENESIS_REWARDS_TIMESTAMP
+     *
+     *
+     * Scenario B: GENESIS_REWARDS_TIMESTAMP IS OUT OF RANGE
+     *         <--------MAX_RETROACTIVE_LENGTH--------> t (block.timestamp)
+     *         <----valid range for startTimestamp----
+     *     ^
+     * GENESIS_REWARDS_TIMESTAMP
+     *
+     * @notice PerformanceRewardsSubmission struct submitted by AVSs when making performance-based rewards for their operators and stakers
+     * PerformanceRewardsSubmission can be for a time range within the valid window for startTimestamp and must be within max duration.
+     * See `createAVSPerformanceRewardsSubmission()` for more details.
+     * @param strategiesAndMultipliers The strategies and their relative weights
+     * cannot have duplicate strategies and need to be sorted in ascending address order
+     * @param token The rewards token to be distributed
+     * @param startTimestamp The timestamp (seconds) at which the submission range is considered for distribution
+     * It is a retroactive payment and has to be strictly less than `block.timestamp`. See the diagram above.
+     * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION.
+     * @param operators The operators to be rewarded. Cannot have duplicate operators and need to be sorted in ascending address order.
+     * @param operatorRewards The reward amounts for the operators. The length of the array must be equal to the length of the operators array.
+     */
+    struct PerformanceRewardsSubmission {
+        StrategyAndMultiplier[] strategiesAndMultipliers;
+        IERC20 token;
+        uint32 startTimestamp;
+        uint32 duration;
+        address[] operators;
+        uint256[] operatorRewards;
+    }
+
+    /**
      * @notice A distribution root is a merkle root of the distribution of earnings for a given period.
      * The RewardsCoordinator stores all historical distribution roots so that earners can claim their earnings against older roots
      * if they wish but the merkle tree contains the cumulative earnings of all earners and tokens for a given period so earners (or their claimers if set)
@@ -150,10 +187,19 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+    /// @notice emitted when an AVS creates a valid PerformanceRewardsSubmission
+    event AVSPerformanceRewardsSubmissionCreated(
+        address indexed avs,
+        uint256 indexed submissionNonce,
+        bytes32 indexed performanceRewardsSubmissionHash,
+        PerformanceRewardsSubmission performanceRewardsSubmission
+    );
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
     event RewardsForAllSubmitterSet(
-        address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
+        address indexed rewardsForAllSubmitter,
+        bool indexed oldValue,
+        bool indexed newValue
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
@@ -283,6 +329,23 @@ interface IRewardsCoordinator {
      * @param rewardsSubmissions The rewards submissions being created
      */
     function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions) external;
+
+    /**
+     * @notice Creates a new performance-based rewards submission on behalf of an AVS, to be split amongst the operators and
+     * set of stakers delegated to operators who are registered to the `avs`.
+     * @param performanceRewardsSubmissions The performance rewards submissions being created
+     * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
+     * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The tokens are sent to the `RewardsCoordinator` contract
+     * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `performanceRewardsSubmissions`, before calling this function.
+     * @dev Strategies must be in ascending order of addresses to check for duplicates
+     * @dev Operators must be in ascending order of addresses to check for duplicates.
+     * @dev This function will revert if the `performanceRewardsSubmissions` is malformed,
+     * e.g. if the `strategies` and `weights` arrays are of non-equal lengths, or if the `operators` and `operatorRewards` arrays are of non-equal lengths
+     */
+    function createAVSPerformanceRewardsSubmission(
+        PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
+    ) external;
 
     /**
      * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
