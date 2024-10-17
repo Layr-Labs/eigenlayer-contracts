@@ -370,6 +370,20 @@ interface IRewardsCoordinator {
     function processClaim(RewardsMerkleClaim calldata claim, address recipient) external;
 
     /**
+     * @notice Batch claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
+     * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
+     * they can simply claim against the latest root and the contract will calculate the difference between
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
+     * @param claims The RewardsMerkleClaims to be processed.
+     * Contains the root index, earner, token leaves, and required proofs
+     * @param recipient The address recipient that receives the ERC20 rewards
+     * @dev only callable by the valid claimer, that is
+     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
+     * claimerFor[claim.earner] can claim the rewards.
+     */
+    function processClaims(RewardsMerkleClaim[] calldata claims, address recipient) external;
+
+    /**
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
      * @param root The merkle root of the distribution
      * @param rewardsCalculationEndTimestamp The timestamp until which rewards have been calculated
