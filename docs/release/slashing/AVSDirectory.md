@@ -4,7 +4,7 @@
 
 The AVSDirectory contract is where registration relationships are defined between AVSs, operatorSets, and operators. Registration and deregistration are used in the protocol to activate and deactivate slashable stake allocations. They're also used to make the protocol more legible to external integrations.
 
-The slashing release introduces the concept of operatorSets, which are simply an (address, uint32) pair that the define an AVS and an operator set ID. OperatorSets are used to group operators by different tasks and sets of tokens. For example, EigenDA has an ETH/LST operatorSet and an Eigen operatorSet. A bridge may have on operatorSet for all operators that serve a particular chain. Overall, operatorSets are mainly used for protocol legibility.
+The slashing release introduces the concept of operatorSets, which are simply an (address, uint32) pair that define an AVS and an operator set ID. OperatorSets are used to group operators by different tasks and sets of tokens. For example, EigenDA has an ETH/LST operatorSet and an Eigen operatorSet. A bridge may have on operatorSet for all operators that serve a particular chain. Overall, operatorSets are mainly used for protocol legibility.
 
 Functionality is provided for AVSs to migrate from an pre-operatorSet registration model to an operatorSet model. Direct to AVS registration is still supported for AVSs that have not migrated to the operatorSet model, but is slated to be deprecated soon in the future.
 
@@ -34,7 +34,7 @@ function createOperatorSets(
 ) external;
 ```
 
-AVSs use this function to create a list of new operator sets.They must call this function before they add any operators to the operator sets. The operator set IDs must be not already exist.
+AVSs use this function to create a list of new operator sets.They must call this function before they add any operators to the operator sets. The operator set IDs must not already exist.
 
 This can be called before the AVS becomes an operator set AVS. (TODO: we should make this so that it can only be called after the AVS becomes an operator set AVS?)
 
@@ -57,7 +57,7 @@ function migrateOperatorsToOperatorSets(
 ) external;
 ```
 
-AVSs that launched before the slashing release can use this function to migrate operators that have a legacy M2 registration to operator sets. Each operator can only be migrated once for the AVS and the AVS can no longer register operators via the legacy M2 registration path once it begins migration.
+AVSs that launched before the slashing release can use this function to migrate operators that have a legacy M2 registration to operator sets. Each operator can only be migrated once per AVS and the AVS can no longer register operators via the legacy M2 registration path once it begins migration.
 
 ## `registerOperatorToOperatorSets`
 ```solidity
