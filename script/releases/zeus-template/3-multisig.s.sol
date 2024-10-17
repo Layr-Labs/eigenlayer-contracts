@@ -2,14 +2,9 @@
 pragma solidity ^0.8.12;
 
 import "script/templates/MultisigBuilder.sol";
-import "./QueueEigenPodAndManager.s.sol";
+import "./2-multisig.s.sol";
 
-import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
-import "src/contracts/interfaces/IStrategyFactory.sol";
-import "src/contracts/pods/EigenPodManager.sol";
-
-
-contract ExecuteEigenPodAndManager is MultisigBuilder {
+contract Execute is MultisigBuilder {
 
     using MultisigCallUtils for MultisigCall[];
     using SafeTxUtils for SafeTx;
@@ -18,7 +13,7 @@ contract ExecuteEigenPodAndManager is MultisigBuilder {
 
     function _execute(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {
 
-        QueueEigenPodAndManager queue = new QueueEigenPodAndManager();
+        Queue queue = new Queue();
 
         MultisigCall[] memory _executorCalls = queue._queue(addrs, env, params);
 
@@ -28,7 +23,7 @@ contract ExecuteEigenPodAndManager is MultisigBuilder {
             addrs.timelock
         );
 
-        // execute queued transaction upgrading eigenPodManager and eigenPod
+        // execute queued transaction
         _opsCalls.append({
             to: addrs.timelock,
             value: 0,
@@ -38,14 +33,9 @@ contract ExecuteEigenPodAndManager is MultisigBuilder {
             )
         });
 
-        // after queued transaction, renounce ownership from eigenPodManager
-        _opsCalls.append({
-            to: addrs.eigenPodManager.proxy,
-            value: 0,
-            data: abi.encodeWithSelector(
-                EigenPodManager(addrs.eigenPodManager.proxy).renounceOwnership.selector
-            )
-        });
+        //////////////////////////
+        // add more opsCalls here
+        //////////////////////////
 
         return _opsCalls;
     }
