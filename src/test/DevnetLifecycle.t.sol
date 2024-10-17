@@ -12,6 +12,7 @@ import "../../src/contracts/strategies/StrategyBase.sol";
 import "forge-std/Test.sol";
 
 /// @notice Tests deployed contracts as part of the public devnet
+/// Run with: forge test --mc Devnet_Lifecycle_Test --rpc-url $RPC_HOLESKY
 contract Devnet_Lifecycle_Test is Test {
     
     // Contracts
@@ -83,6 +84,9 @@ contract Devnet_Lifecycle_Test is Test {
 
         // Slash operator
         _slashOperator();
+
+        // Withdraw staker
+        _withdrawStaker();
     }
 
     function _depositIntoStrategy() internal {
