@@ -171,7 +171,7 @@ contract AllocationManager is
                     deallocationQueue[msg.sender][allocation.strategy].pushBack(operatorSetKey);
                 } else if (info.pendingDiff > 0) {
                     require(
-                        avsDirectory.isOperatorSetStrategy(allocation.operatorSets[i], allocation.strategy),
+                        avsDirectory.isOperatorSetStrategy(allocation.operatorSets[j], allocation.strategy),
                         InvalidStrategy()
                     );
 

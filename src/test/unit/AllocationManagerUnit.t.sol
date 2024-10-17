@@ -1152,7 +1152,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.modifyAllocations(allocations);
         cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
-
         // Slash operator on both strategies for 60%
         IStrategy[] memory strategiesToSlash = new IStrategy[](2);
         strategiesToSlash[0] = strategyMock;
@@ -1177,6 +1176,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         uint64[] memory expectedMaxMagnitudeAfterSlash = new uint64[](2);
         expectedMaxMagnitudeAfterSlash[0] = 7e17;
         expectedMaxMagnitudeAfterSlash[1] = 4e17;
+
+        avsDirectoryMock.setIsOperatorSetStrategyBatch(OperatorSet(defaultAVS, slashingParams.operatorSetId), strategiesToSlash, true);
 
         // Expect emits
         for(uint256 i = 0; i < strategiesToSlash.length; i++) {
@@ -1565,6 +1566,8 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocations[1] = _randomMagnitudeAllocation_singleStrat_singleOpSet(1, 1)[0];
         allocations[1].magnitudes[0] = 1e18;
         allocations[1].strategy = IStrategy(address(uint160(2))); // Set a different strategy
+
+        avsDirectoryMock.setIsOperatorSetStrategy(allocations[1].operatorSets[0], allocations[1].strategy, true);
 
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(allocations);
