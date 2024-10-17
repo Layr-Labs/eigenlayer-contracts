@@ -188,7 +188,6 @@ interface IStrategyManager {
      * @notice Returns bool for whether or not `strategy` enables credit transfers. i.e enabling
      * depositIntoStrategyWithSignature calls or queueing withdrawals to a different address than the staker.
      */
-<<<<<<< HEAD
     function thirdPartyTransfersForbidden(IStrategy strategy) external view returns (bool);
 
     /**
@@ -196,9 +195,4 @@ interface IStrategyManager {
      * @dev The domain separator will change in the event of a fork that changes the ChainID.
      */
     function domainSeparator() external view returns (bytes32);
-=======
-    function thirdPartyTransfersForbidden(
-        IStrategy strategy
-    ) external view returns (bool);
->>>>>>> db2ccda5 (feat: storage report (#753))
 }
