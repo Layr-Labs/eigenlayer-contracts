@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "script/templates/OpsTimelockBuilder.sol";
+import "zeus-templates/templates/OpsTimelockBuilder.sol";
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
@@ -15,7 +15,7 @@ contract QueueEigenPodAndManager is OpsTimelockBuilder {
 
     MultisigCall[] internal _executorCalls;
 
-    function _queue(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {
+    function queue(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {
 
         // construct initialization data for eigenPodManager
         bytes memory eigenPodManagerData = abi.encodeWithSelector(

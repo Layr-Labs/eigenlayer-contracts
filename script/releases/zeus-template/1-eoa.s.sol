@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "script/templates/EOADeployer.sol";
+import {Addresses, Environment, Params, Deployment, EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 
 contract Deploy is EOADeployer {
 
@@ -12,7 +12,7 @@ contract Deploy is EOADeployer {
         //////////////////////////
         // deploy your contracts here
         //////////////////////////
-        
+
         vm.stopBroadcast();
 
         return _deployments;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "script/templates/EOADeployer.sol";
+import "zeus-templates/templates/EOADeployer.sol";
 
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodManager.sol";
@@ -29,7 +29,8 @@ contract DeployEigenPodAndManager is EOADeployer {
         // record new deployment
         _deployments.push(Deployment({
             name: type(EigenPodManager).name,
-            deployedTo: newEigenPodManager
+            deployedTo: newEigenPodManager,
+            envToUpdate: "eigenPodManager.pendingImpl"
         }));
 
         // create and record new EigenPod pointing to defunct EigenPodManager
@@ -39,7 +40,8 @@ contract DeployEigenPodAndManager is EOADeployer {
                 IETHPOSDeposit(params.ethPOS),
                 IEigenPodManager(newEigenPodManager), // update EigenPodManager address
                 params.EIGENPOD_GENESIS_TIME
-            ))
+            )),
+            envToUpdate: "eigenPod.pendingImpl"
         }));
 
         vm.stopBroadcast();

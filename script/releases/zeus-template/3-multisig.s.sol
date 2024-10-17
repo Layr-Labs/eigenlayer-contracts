@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "script/templates/MultisigBuilder.sol";
-import "./2-multisig.s.sol";
+import {Addresses, Environment, Params, MultisigCall, MultisigCallUtils, MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
+import {SafeTx, SafeTxUtils} from "zeus-templates/utils/SafeTxUtils.sol";
+import {ITimelock} from "zeus-templates/interfaces/ITimelock.sol";
+import {Queue} from "./2-multisig.s.sol";
 
 contract Execute is MultisigBuilder {
 
@@ -11,11 +13,11 @@ contract Execute is MultisigBuilder {
 
     MultisigCall[] internal _opsCalls;
 
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
 
         Queue queue = new Queue();
 
-        MultisigCall[] memory _executorCalls = queue._queue(addrs, env, params);
+        MultisigCall[] memory _executorCalls = queue.queue(addrs, env, params);
 
         bytes memory executorCalldata = queue.makeExecutorCalldata(
             _executorCalls,

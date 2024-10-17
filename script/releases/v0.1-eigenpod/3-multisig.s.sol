@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "script/templates/OpsTimelockBuilder.sol";
+import "zeus-templates/templates/OpsTimelockBuilder.sol";
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IUpgradeableBeacon} from "script/utils/Interfaces.sol";
@@ -15,17 +15,15 @@ contract ExecuteEigenPodAndManager is MultisigBuilder {
     using MultisigCallUtils for MultisigCall[];
     using SafeTxUtils for *;
 
-    MultisigCall[] private _multisigCalls;
-
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) public override returns (MultisigCall[] memory) {
+    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
 
         QueueEigenPodAndManager queue = new QueueEigenPodAndManager();
 
-        MultisigCall[] memory _executorCalls = queue._queue(addrs, env, params);
+        MultisigCall[] memory _executorCalls = queue.queue(addrs, env, params);
 
         // steals logic from queue() to perform execute()
         // likely the first step of any _execute() after a _queue()
-        bytes memory executorCalldata = queue._makeExecutorCalldata(
+        bytes memory executorCalldata = queue.makeExecutorCalldata(
             _executorCalls,
             params.multiSendCallOnly,
             addrs.timelock
