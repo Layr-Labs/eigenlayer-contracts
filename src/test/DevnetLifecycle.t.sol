@@ -255,7 +255,7 @@ contract Devnet_Lifecycle_Test is Test {
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
             startTimestamp: uint32(block.timestamp),
             strategies: strategies,
-            scaledSharesToWithdraw: scaledShares
+            scaledShares: scaledShares
         });
         bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
         // Generate complete withdrawal params

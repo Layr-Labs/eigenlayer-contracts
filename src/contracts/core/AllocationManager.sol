@@ -114,8 +114,8 @@ contract AllocationManager is
             delegation.decreaseOperatorShares({
                 operator: params.operator,
                 strategy: params.strategies[i],
-                previousTotalMagnitude: maxMagnitudeBeforeSlash,
-                newTotalMagnitude: maxMagnitudeAfterSlash
+                previousMaxMagnitude: maxMagnitudeBeforeSlash,
+                newMaxMagnitude: maxMagnitudeAfterSlash
             });
 
             // 6. Record the proportion of shares slashed
@@ -140,11 +140,11 @@ contract AllocationManager is
             // 1. For the given (operator,strategy) complete any pending deallocation to free up encumberedMagnitude
             _clearDeallocationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
 
-            // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
+            // 2. Check current maxMagnitude matches expected value. This is to check for slashing race conditions
             // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
             // proprtional magnitudes relative to each other.
             uint64 maxMagnitude = _maxMagnitudeHistory[msg.sender][allocation.strategy].latest();
-            require(maxMagnitude == allocation.expectedMaxMagnitude, InvalidExpectedTotalMagnitude());
+            require(maxMagnitude == allocation.expectedMaxMagnitude, InvalidExpectedMaxMagnitude());
 
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
                 bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
@@ -311,6 +311,7 @@ contract AllocationManager is
         return info;
     }
 
+    /// @notice Update the operator's magnitude info in storage and their encumbered magnitude.
     function _updateMagnitudeInfo(
         address operator,
         IStrategy strategy,

@@ -286,7 +286,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         queuedWithdrawal = IDelegationManagerTypes.Withdrawal({
             strategies: strategyArray,
-            scaledSharesToWithdraw: shareAmounts,
+            scaledShares: shareAmounts,
             staker: staker,
             withdrawer: withdrawer,
             nonce: delegation.cumulativeWithdrawalsQueued(staker),
@@ -398,7 +398,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         IDelegationManagerTypes.Withdrawal memory queuedWithdrawal = IDelegationManagerTypes.Withdrawal({
             strategies: strategyArray,
-            scaledSharesToWithdraw: shareAmounts,
+            scaledShares: shareAmounts,
             staker: depositor,
             withdrawer: withdrawer,
             nonce: nonce,
@@ -454,7 +454,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             nonce: nonce,
             startTimestamp: withdrawalStartTimestamp,
             delegatedTo: delegatedTo,
-            scaledSharesToWithdraw: shareAmounts
+            scaledShares: shareAmounts
         });
         // complete the queued withdrawal
         delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, true);

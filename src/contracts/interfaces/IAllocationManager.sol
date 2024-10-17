@@ -15,8 +15,8 @@ interface IAllocationManagerErrors {
     error InputArrayLengthMismatch();
     /// @dev Thrown when an operator's allocation delay has yet to be set.
     error UninitializedAllocationDelay();
-    /// @dev Thrown when provided `expectedTotalMagnitude` for a given allocation does not match `currentTotalMagnitude`.
-    error InvalidExpectedTotalMagnitude();
+    /// @dev Thrown when provided `expectedMaxMagnitude` for a given allocation does not match`currentMaxMagnitude`.
+    error InvalidExpectedMaxMagnitude();
     /// @dev Thrown when an invalid operator set is provided.
     error InvalidOperatorSet();
     /// @dev Thrown when an invalid operator is provided.
@@ -127,8 +127,8 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when operator's encumbered magnitude is updated for a given strategy
     event EncumberedMagnitudeUpdated(address operator, IStrategy strategy, uint64 encumberedMagnitude);
 
-    /// @notice Emitted when an operator's total magnitude is updated for a given strategy
-    event MaxMagnitudeUpdated(address operator, IStrategy strategy, uint64 totalMagnitude);
+    /// @notice Emitted when an operator's max magnitude is updated for a given strategy
+    event MaxMagnitudeUpdated(address operator, IStrategy strategy, uint64 maxMagnitude);
 
     /// @notice Emitted when an operator is slashed by an operator set for a strategy
     /// `wadSlashed` is the proportion of the operator's total delegated stake that was slashed
@@ -260,7 +260,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     /**
      * @notice Returns the maximum magnitude an operator can allocate for the given strategies
      * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
-     * the operator is slashed. This value acts as a cap on the total magnitude of the operator.
+     * the operator is slashed. This value acts as a cap on the max magnitude of the operator.
      * @param operator the operator to query
      * @param strategies the strategies to get the max magnitudes for
      * @return the max magnitudes for each strategy
@@ -274,7 +274,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @notice Returns the maximum magnitude an operator can allocate for the given strategies
      * at a given timestamp
      * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
-     * the operator is slashed. This value acts as a cap on the total magnitude of the operator.
+     * the operator is slashed. This value acts as a cap on the max magnitude of the operator.
      * @param operator the operator to query
      * @param strategies the strategies to get the max magnitudes for
      * @param timestamp the timestamp at which to check the max magnitudes

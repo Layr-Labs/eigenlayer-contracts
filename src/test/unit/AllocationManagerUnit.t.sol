@@ -931,7 +931,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
      * Slashes the operator after deallocation, even if the deallocation has not been cleared. Validates that:
      * 1. Even if we do not clear deallocation queue, the deallocation is NOT slashed from since we're passed the deallocationEffectTimestamp
      * 2. Validates storage post slash & post clearing deallocation queue
-     * 3. Total magnitude only decreased proportionally by the magnitude set after deallocation
+     * 3. Max magnitude only decreased proportionally by the magnitude set after deallocation
      */
     function test_allocate_deallocate_slashAfterDeallocation() public {
         // Allocate all magnitude
@@ -1275,12 +1275,12 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocationManager.modifyAllocations(allocations);
     }
 
-    function test_revert_invalidExpectedTotalMagnitude() public {
+    function test_revert_invalidExpectedMaxMagnitude() public {
         IAllocationManagerTypes.MagnitudeAllocation[] memory allocations =
             _randomMagnitudeAllocation_singleStrat_singleOpSet(0, 0);
         allocations[0].expectedMaxMagnitude = 1e18 + 1;
 
-        cheats.expectRevert(IAllocationManagerErrors.InvalidExpectedTotalMagnitude.selector);
+        cheats.expectRevert(IAllocationManagerErrors.InvalidExpectedMaxMagnitude.selector);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(allocations);
     }
@@ -1920,7 +1920,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         cheats.warp(allocationEffectTimestamp);
         allocationManager.clearDeallocationQueue(defaultOperator, _strategyMockArray(), _maxNumToClear());
 
-        // Validate `getAllocatableMagnitude`. Allocatable magnitude should be the difference between the total magnitude and the encumbered magnitude
+        // Validate `getAllocatableMagnitude`. Allocatable magnitude should be the difference between the max magnitude and the encumbered magnitude
         uint64 allocatableMagnitude = allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock);
         assertEq(WAD - 33e16 - 5e17, allocatableMagnitude, "allocatableMagnitude not correct");
 
