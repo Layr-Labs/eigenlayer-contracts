@@ -329,7 +329,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     /// @notice Returns whether or not a list of strategies are all allocatable/slashable for an operator set.
     function isOperatorSetStrategyBatch(
         OperatorSet calldata operatorSet,
-        IStrategy[] calldata strategy
+        IStrategy[] calldata strategies
     ) external view returns (bool);
 
     /**
