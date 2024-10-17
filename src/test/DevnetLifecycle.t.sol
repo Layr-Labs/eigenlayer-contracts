@@ -46,10 +46,7 @@ contract Devnet_Lifecycle_Test is Test {
         wethStrategy = StrategyBase(0x4f812633943022fA97cb0881683aAf9f318D5Caa);
         weth = IERC20(0x94373a4919B3240D86eA41593D5eBa789FEF3848);
 
-        // Seed staker with WETH
-        StdCheats.deal(address(weth), address(staker), wethAmount);
-
-        // Set operaetor
+        // Set operator
         operator = cheats.addr(operatorPk);
     }
 
@@ -67,6 +64,8 @@ contract Devnet_Lifecycle_Test is Test {
 
     function test() public {
         if (block.chainid == 17000) {
+            // Seed staker with WETH
+            StdCheats.deal(address(weth), address(staker), wethAmount);
             _run_lifecycle();
         }
     }
