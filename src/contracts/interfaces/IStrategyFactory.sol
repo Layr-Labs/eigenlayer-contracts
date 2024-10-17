@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.5.0;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -50,14 +50,8 @@ interface IStrategyFactory {
      * @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
      */
     function whitelistStrategies(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external;
-
-    /**
-     * @notice Owner-only function to pass through a call to `StrategyManager.setThirdPartyTransfersForbidden`
-     */
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external;
 
     /**
      * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`

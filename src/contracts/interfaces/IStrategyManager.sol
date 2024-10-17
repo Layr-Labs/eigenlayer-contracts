@@ -2,47 +2,34 @@
 pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
-import "./ISlasher.sol";
+import "./IShareManager.sol";
 import "./IDelegationManager.sol";
 import "./IEigenPodManager.sol";
 
-/**
- * @title Interface for the primary entrypoint for funds into EigenLayer.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice See the `StrategyManager` contract itself for implementation details.
- */
-interface IStrategyManager {
-    /// @dev Thrown when msg.sender is not allowed to call a function
-    error UnauthorizedCaller();
-    /// @dev Thrown when attempting to use an expired eip-712 signature.
-    error SignatureExpired();
-
-    /// Invalid Inputs
-
-    /// @dev Thrown when two array parameters have mismatching lengths.
-    error InputArrayLengthMismatch();
-
-    /// Adding and Removing Shares
-
-    /// @dev Thrown when provided `staker` address is null.
-    error StakerAddressZero();
-    /// @dev Thrown when provided `shares` amount is zero.
-    error SharesAmountZero();
-    /// @dev Thrown when staker does not have enough shares
-    error InsufficientShares();
-
-    /// Strategy-Specific
-
-    /// @dev Thrown when provided `strategy` not found.
-    error StrategyNotFound();
+interface IStrategyManagerErrors {
     /// @dev Thrown when total strategies deployed exceeds max.
     error MaxStrategiesExceeded();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+    /// @dev Thrown when call attempted from address that's not delegation manager.
+    error OnlyDelegationManager();
+    /// @dev Thrown when call attempted from address that's not strategy whitelister.
+    error OnlyStrategyWhitelister();
+    /// @dev Thrown when provided `shares` amount is too high.
+    error SharesAmountTooHigh();
+    /// @dev Thrown when provided `shares` amount is zero.
+    error SharesAmountZero();
+    /// @dev Thrown when attempting to use an expired eip-712 signature.
+    error SignatureExpired();
+    /// @dev Thrown when provided `staker` address is null.
+    error StakerAddressZero();
+    /// @dev Thrown when provided `strategy` not found.
+    error StrategyNotFound();
     /// @dev Thrown when attempting to deposit to a non-whitelisted strategy.
     error StrategyNotWhitelisted();
-    /// @dev Thrown when attempting a third party transfer from a strategy that's disabled it.
-    error ThirdPartyTransfersDisabled();
+}
 
+interface IStrategyManagerEvents {
     /**
      * @notice Emitted when a new deposit occurs on behalf of `staker`.
      * @param staker Is the staker who is depositing funds into EigenLayer.
@@ -52,9 +39,6 @@ interface IStrategyManager {
      */
     event Deposit(address staker, IERC20 token, IStrategy strategy, uint256 shares);
 
-    /// @notice Emitted when `thirdPartyTransfersForbidden` is updated for a strategy and value by the owner
-    event UpdatedThirdPartyTransfersForbidden(IStrategy strategy, bool value);
-
     /// @notice Emitted when the `strategyWhitelister` is changed
     event StrategyWhitelisterChanged(address previousAddress, address newAddress);
 
@@ -63,6 +47,29 @@ interface IStrategyManager {
 
     /// @notice Emitted when a strategy is removed from the approved list of strategies for deposit
     event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
+}
+
+/**
+ * @title Interface for the primary entrypoint for funds into EigenLayer.
+ * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ * @notice See the `StrategyManager` contract itself for implementation details.
+ */
+interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IShareManager {
+    /**
+     * @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
+     * and transfers contract ownership to the specified `initialOwner`.
+     * @param _pauserRegistry Used for access control of pausing.
+     * @param initialOwner Ownership of this contract is transferred to this address.
+     * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
+     * @param  initialPausedStatus The initial value of `_paused` to set.
+     */
+    function initialize(
+        address initialOwner,
+        address initialStrategyWhitelister,
+        IPauserRegistry _pauserRegistry,
+        uint256 initialPausedStatus
+    ) external;
 
     /**
      * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
@@ -94,7 +101,6 @@ interface IStrategyManager {
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
-     * @dev Cannot be called if thirdPartyTransfersForbidden is set to true for this strategy
      *
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
@@ -108,40 +114,20 @@ interface IStrategyManager {
         bytes memory signature
     ) external returns (uint256 shares);
 
-    /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
-    function removeShares(address staker, IStrategy strategy, uint256 shares) external;
-
-    /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
-    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external;
-
-    /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
-    function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external;
-
-    /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
-
     /**
-     * @notice Get all details on the staker's deposits and corresponding shares
-     * @param staker The staker of interest, whose deposits this function will fetch
-     * @return (staker's strategies, shares in these strategies)
+     * @notice Owner-only function to change the `strategyWhitelister` address.
+     * @param newStrategyWhitelister new address for the `strategyWhitelister`.
      */
-    function getDeposits(
-        address staker
-    ) external view returns (IStrategy[] memory, uint256[] memory);
-
-    /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
-    function stakerStrategyListLength(
-        address staker
-    ) external view returns (uint256);
+    function setStrategyWhitelister(
+        address newStrategyWhitelister
+    ) external;
 
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-     * @param thirdPartyTransfersForbiddenValues bool values to set `thirdPartyTransfersForbidden` to for each strategy
      */
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external;
 
     /**
@@ -152,47 +138,52 @@ interface IStrategyManager {
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external;
 
-    /**
-     * If true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
-     * and also when performing DelegationManager.queueWithdrawals, a staker can only withdraw to themselves.
-     * Defaulted to false for all existing strategies.
-     * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
-     * @param value bool value to set `thirdPartyTransfersForbidden` to
-     */
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external;
-
-    /// @notice Returns the single, central Delegation contract of EigenLayer
-    function delegation() external view returns (IDelegationManager);
-
-    /// @notice Returns the single, central Slasher contract of EigenLayer
-    function slasher() external view returns (ISlasher);
-
-    /// @notice Returns the EigenPodManager contract of EigenLayer
-    function eigenPodManager() external view returns (IEigenPodManager);
-
-    /// @notice Returns the address of the `strategyWhitelister`
-    function strategyWhitelister() external view returns (address);
-
     /// @notice Returns bool for whether or not `strategy` is whitelisted for deposit
     function strategyIsWhitelistedForDeposit(
         IStrategy strategy
     ) external view returns (bool);
 
     /**
-     * @notice Owner-only function to change the `strategyWhitelister` address.
-     * @param newStrategyWhitelister new address for the `strategyWhitelister`.
+     * @notice Get all details on the staker's deposits and corresponding shares
+     * @return (staker's strategies, shares in these strategies)
      */
-    function setStrategyWhitelister(address newStrategyWhitelister) external;
+    function getDeposits(
+        address staker
+    ) external view returns (IStrategy[] memory, uint256[] memory);
+
+    function getStakerStrategyList(
+        address staker
+    ) external view returns (IStrategy[] memory);
+
+    /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
+    function stakerStrategyListLength(
+        address staker
+    ) external view returns (uint256);
+
+    /// @notice Returns the current shares of `user` in `strategy`
+    function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 shares);
+
+    /// @notice Returns the single, central Delegation contract of EigenLayer
+    function delegation() external view returns (IDelegationManager);
+
+    /// @notice Returns the address of the `strategyWhitelister`
+    function strategyWhitelister() external view returns (address);
 
     /**
-     * @notice Returns bool for whether or not `strategy` enables credit transfers. i.e enabling
-     * depositIntoStrategyWithSignature calls or queueing withdrawals to a different address than the staker.
+     * @param staker The address of the staker.
+     * @param strategy The strategy to deposit into.
+     * @param token The token to deposit.
+     * @param amount The amount of `token` to deposit.
+     * @param nonce The nonce of the staker.
+     * @param expiry The expiry of the signature.
+     * @return The EIP-712 signable digest hash.
      */
-    function thirdPartyTransfersForbidden(IStrategy strategy) external view returns (bool);
-
-    /**
-     * @notice Getter function for the current EIP-712 domain separator for this contract.
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     */
-    function domainSeparator() external view returns (bytes32);
+    function calculateStrategyDepositDigestHash(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
+        uint256 amount,
+        uint256 nonce,
+        uint256 expiry
+    ) external view returns (bytes32);
 }

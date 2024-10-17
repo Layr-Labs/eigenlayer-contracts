@@ -20,7 +20,7 @@ This document provides an overview of system components, contracts, and user rol
     * [Depositing Into EigenLayer](#depositing-into-eigenlayer)
     * [Delegating to an Operator](#delegating-to-an-operator)
     * [Undelegating or Queueing a Withdrawal](#undelegating-or-queueing-a-withdrawal)
-    * [Completing a Withdrawal as Shares](#completing-a-withdrawal-as-shares)
+    * [Completing a Withdrawal as OwnedShares](#completing-a-withdrawal-as-shares)
     * [Completing a Withdrawal as Tokens](#completing-a-withdrawal-as-tokens)
     * [Withdrawal Processing: Validator Exits](#withdrawal-processing-validator-exits)
     * [Withdrawal Processing: Partial Beacon Chain Withdrawals](#withdrawal-processing-partial-beacon-chain-withdrawals)
@@ -156,7 +156,7 @@ Undelegating from an Operator automatically queues a withdrawal that needs to go
 
 ![.](./images/Staker%20Flow%20Diagrams/Queue%20Withdrawal.png)
 
-##### Completing a Withdrawal as Shares
+##### Completing a Withdrawal as OwnedShares
 
 This flow is mostly useful if a Staker wants to change which Operator they are delegated to. The Staker first needs to undelegate (see above). At this point, they can delegate to a different Operator. However, the new Operator will only be awarded shares once the Staker completes their queued withdrawal "as shares":
 

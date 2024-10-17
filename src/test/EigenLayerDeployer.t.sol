@@ -1,76 +1,74 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "forge-std/Test.sol";
+
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import "../contracts/interfaces/IDelegationManager.sol";
-import "../contracts/core/DelegationManager.sol";
+import "src/contracts/core/AVSDirectory.sol";
+import "src/contracts/core/AllocationManager.sol";
+import "src/contracts/core/DelegationManager.sol";
+import "src/contracts/core/StrategyManager.sol";
+import "src/contracts/strategies/StrategyBase.sol";
+import "src/contracts/pods/EigenPod.sol";
+import "src/contracts/pods/EigenPodManager.sol";
+import "src/contracts/permissions/PauserRegistry.sol";
+import "src/contracts/interfaces/IETHPOSDeposit.sol";
 
-import "../contracts/interfaces/IETHPOSDeposit.sol";
-
-import "../contracts/core/StrategyManager.sol";
-import "../contracts/strategies/StrategyBase.sol";
-import "../contracts/core/Slasher.sol";
-
-import "../contracts/pods/EigenPod.sol";
-import "../contracts/pods/EigenPodManager.sol";
-
-import "../contracts/permissions/PauserRegistry.sol";
-
-import "./utils/Operators.sol";
-
-import "./mocks/LiquidStakingToken.sol";
-import "./mocks/EmptyContract.sol";
-import "./mocks/ETHDepositMock.sol";
-
-import "forge-std/Test.sol";
+import "src/test/utils/Operators.sol";
+import "src/test/mocks/ETHDepositMock.sol";
+import "src/test/mocks/EmptyContract.sol";
 
 contract EigenLayerDeployer is Operators {
     Vm cheats = Vm(VM_ADDRESS);
 
     // EigenLayer contracts
-    ProxyAdmin public eigenLayerProxyAdmin;
-    PauserRegistry public eigenLayerPauserReg;
+    ProxyAdmin eigenLayerProxyAdmin;
+    PauserRegistry eigenLayerPauserReg;
 
-    Slasher public slasher;
-    DelegationManager public delegation;
-    StrategyManager public strategyManager;
-    EigenPodManager public eigenPodManager;
-    IEigenPod public pod;
-    IETHPOSDeposit public ethPOSDeposit;
-    IBeacon public eigenPodBeacon;
+    AVSDirectory avsDirectory;
+    AllocationManager allocationManager;
+    DelegationManager delegation;
+    StrategyManager strategyManager;
+    EigenPodManager eigenPodManager;
+    IEigenPod pod;
+    IETHPOSDeposit ethPOSDeposit;
+    IBeacon eigenPodBeacon;
 
     // testing/mock contracts
-    IERC20 public eigenToken;
-    IERC20 public weth;
-    StrategyBase public wethStrat;
-    StrategyBase public eigenStrat;
-    StrategyBase public baseStrategyImplementation;
-    EmptyContract public emptyContract;
+    IERC20 eigenToken;
+    IERC20 weth;
+    StrategyBase wethStrat;
+    StrategyBase eigenStrat;
+    StrategyBase baseStrategyImplementation;
+    EmptyContract emptyContract;
 
-    mapping(uint256 => IStrategy) public strategies;
+    mapping(uint256 => IStrategy) strategies;
+
+    uint32 DEALLOCATION_DELAY = 17.5 days;
+    uint32 ALLOCATION_CONFIGURATION_DELAY = 21 days;
 
     //from testing seed phrase
     bytes32 priv_key_0 = 0x1234567812345678123456781234567812345678123456781234567812345678;
     bytes32 priv_key_1 = 0x1234567812345678123456781234567812345698123456781234567812348976;
 
     //strategy indexes for undelegation (see commitUndelegation function)
-    uint256[] public strategyIndexes;
-    address[2] public stakers;
+    uint256[] strategyIndexes;
+    address[2] stakers;
     address sample_registrant = cheats.addr(436364636);
 
-    address[] public slashingContracts;
+    address[] slashingContracts;
 
     uint256 wethInitialSupply = 10e50;
-    uint256 public constant eigenTotalSupply = 1000e18;
+    uint256 constant eigenTotalSupply = 1000e18;
     uint256 nonce = 69;
-    uint256 public gasLimit = 750000;
-    IStrategy[] public initializeStrategiesToSetDelayBlocks;
-    uint256[] public initializeWithdrawalDelayBlocks;
+    uint256 gasLimit = 750000;
+    IStrategy[] initializeStrategiesToSetDelayBlocks;
+    uint256[] initializeWithdrawalDelayBlocks;
     uint256 minWithdrawalDelayBlocks = 0;
     uint32 PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
     uint256 REQUIRED_BALANCE_WEI = 32 ether;
@@ -84,11 +82,10 @@ contract EigenLayerDeployer is Operators {
     address acct_0 = cheats.addr(uint256(priv_key_0));
     address acct_1 = cheats.addr(uint256(priv_key_1));
     address _challenger = address(0x6966904396bF2f8b173350bCcec5007A52669873);
-    address public eigenLayerReputedMultisig = address(this);
+    address eigenLayerReputedMultisig = address(this);
 
     address eigenLayerProxyAdminAddress;
     address eigenLayerPauserRegAddress;
-    address slasherAddress;
     address delegationAddress;
     address strategyManagerAddress;
     address eigenPodManagerAddress;
@@ -97,7 +94,6 @@ contract EigenLayerDeployer is Operators {
     address emptyContractAddress;
     address operationsMultisig;
     address executorMultisig;
-
 
     // addresses excluded from fuzzing due to abnormal behavior. TODO: @Sidu28 define this better and give it a clearer name
     mapping(address => bool) fuzzedAddressMapping;
@@ -125,11 +121,13 @@ contract EigenLayerDeployer is Operators {
         }
 
         fuzzedAddressMapping[address(0)] = true;
+        fuzzedAddressMapping[address(avsDirectory)] = true;
+        fuzzedAddressMapping[address(allocationManager)] = true;
         fuzzedAddressMapping[address(eigenLayerProxyAdmin)] = true;
         fuzzedAddressMapping[address(strategyManager)] = true;
         fuzzedAddressMapping[address(eigenPodManager)] = true;
         fuzzedAddressMapping[address(delegation)] = true;
-        fuzzedAddressMapping[address(slasher)] = true;
+        fuzzedAddressMapping[address(eigenLayerPauserReg)] = true;
     }
 
     function _deployEigenLayerContractsLocal() internal {
@@ -148,13 +146,16 @@ contract EigenLayerDeployer is Operators {
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
         emptyContract = new EmptyContract();
+        avsDirectory = AVSDirectory(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        allocationManager = AllocationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
         delegation = DelegationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
         strategyManager = StrategyManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        slasher = Slasher(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
         eigenPodManager = EigenPodManager(
@@ -170,18 +171,41 @@ contract EigenLayerDeployer is Operators {
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
-        Slasher slasherImplementation = new Slasher(strategyManager, delegation);
+        DelegationManager delegationImplementation = new DelegationManager(
+            avsDirectory, 
+            strategyManager, 
+            eigenPodManager, 
+            allocationManager, 
+            17.5 days // min alloc delay
+        );
+
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegation);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            slasher,
             delegation
         );
 
+
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(
+            delegation,
+            DEALLOCATION_DELAY
+        );
+
+        AllocationManager allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplementation),
+            abi.encodeWithSelector(
+                AVSDirectory.initialize.selector,
+                eigenLayerReputedMultisig,
+                eigenLayerPauserReg,
+                0 /*initialPausedStatus*/
+            )
+        );
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(delegation))),
             address(delegationImplementation),
@@ -207,20 +231,20 @@ contract EigenLayerDeployer is Operators {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
-                Slasher.initialize.selector,
+                EigenPodManager.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0 /*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
-            address(eigenPodManagerImplementation),
+            ITransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation),
             abi.encodeWithSelector(
-                EigenPodManager.initialize.selector,
+                AllocationManager.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0 /*initialPausedStatus*/
@@ -263,7 +287,6 @@ contract EigenLayerDeployer is Operators {
         eigenLayerPauserRegAddress = stdJson.readAddress(config, ".addresses.eigenLayerPauserReg");
         delegationAddress = stdJson.readAddress(config, ".addresses.delegation");
         strategyManagerAddress = stdJson.readAddress(config, ".addresses.strategyManager");
-        slasherAddress = stdJson.readAddress(config, ".addresses.slasher");
         eigenPodManagerAddress = stdJson.readAddress(config, ".addresses.eigenPodManager");
         emptyContractAddress = stdJson.readAddress(config, ".addresses.emptyContract");
         operationsMultisig = stdJson.readAddress(config, ".parameters.operationsMultisig");

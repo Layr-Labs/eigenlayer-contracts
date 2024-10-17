@@ -58,7 +58,9 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
      *
      * See {ERC20-_burn}.
      */
-    function burn(uint256 amount) public virtual {
+    function burn(
+        uint256 amount
+    ) public virtual {
         _burn(_msgSender(), amount);
     }
 
@@ -83,7 +85,7 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
 
         // Mint the entire supply of EIGEN - this is a one-time event that
         // ensures bEIGEN fully backs EIGEN.
-        _mint(address(EIGEN), 1673646668284660000000000000);
+        _mint(address(EIGEN), 1_673_646_668_284_660_000_000_000_000);
         emit Backed();
     }
 

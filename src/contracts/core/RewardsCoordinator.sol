@@ -5,7 +5,9 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "../libraries/Merkle.sol";
+import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
 import "./RewardsCoordinatorStorage.sol";
 
@@ -27,33 +29,6 @@ contract RewardsCoordinator is
 {
     using SafeERC20 for IERC20;
 
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 internal constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-    /// @dev Chain ID at the time of contract deployment
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-    /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
-    uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
-
-    /// @dev Index for flag that pauses calling createAVSRewardsSubmission
-    uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
-    /// @dev Index for flag that pauses calling createRewardsForAllSubmission
-    uint8 internal constant PAUSED_REWARDS_FOR_ALL_SUBMISSION = 1;
-    /// @dev Index for flag that pauses calling processClaim
-    uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
-    /// @dev Index for flag that pauses submitRoots and disableRoot
-    uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
-    /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
-    uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
-
-    /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
-    uint8 internal constant EARNER_LEAF_SALT = 0;
-    /// @dev Salt for the token leaf, meant to distinguish from earnerLeaf since they have the same sized data
-    uint8 internal constant TOKEN_LEAF_SALT = 1;
-
-    /// @notice Canonical, virtual beacon chain ETH strategy
-    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
     modifier onlyRewardsUpdater() {
         require(msg.sender == rewardsUpdater, UnauthorizedCaller());
         _;
@@ -72,7 +47,7 @@ contract RewardsCoordinator is
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
         uint32 _MAX_FUTURE_LENGTH,
-        uint32 __GENESIS_REWARDS_TIMESTAMP
+        uint32 _GENESIS_REWARDS_TIMESTAMP
     )
         RewardsCoordinatorStorage(
             _delegationManager,
@@ -81,11 +56,10 @@ contract RewardsCoordinator is
             _MAX_REWARDS_DURATION,
             _MAX_RETROACTIVE_LENGTH,
             _MAX_FUTURE_LENGTH,
-            __GENESIS_REWARDS_TIMESTAMP
+            _GENESIS_REWARDS_TIMESTAMP
         )
     {
         _disableInitializers();
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /**
@@ -100,7 +74,6 @@ contract RewardsCoordinator is
         uint32 _activationDelay,
         uint16 _globalCommissionBips
     ) external initializer {
-        _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setRewardsUpdater(_rewardsUpdater);
@@ -115,11 +88,9 @@ contract RewardsCoordinator is
      */
 
     /// @inheritdoc IRewardsCoordinator
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
-        nonReentrant
-    {
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -136,12 +107,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -158,12 +126,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllEarners(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -234,8 +199,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function disableRoot(uint32 rootIndex) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
-        require(rootIndex < _distributionRoots.length, "RewardsCoordinator.disableRoot: invalid rootIndex");
+    function disableRoot(
+        uint32 rootIndex
+    ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
+        require(rootIndex < _distributionRoots.length, InvalidRootIndex());
         DistributionRoot storage root = _distributionRoots[rootIndex];
         require(!root.disabled, RootDisabled());
         require(block.timestamp < root.activatedAt, RootAlreadyActivated());
@@ -244,7 +211,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setClaimerFor(address claimer) external {
+    function setClaimerFor(
+        address claimer
+    ) external {
         address earner = msg.sender;
         address prevClaimer = claimerFor[earner];
         claimerFor[earner] = claimer;
@@ -252,17 +221,23 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setActivationDelay(uint32 _activationDelay) external onlyOwner {
+    function setActivationDelay(
+        uint32 _activationDelay
+    ) external onlyOwner {
         _setActivationDelay(_activationDelay);
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external onlyOwner {
+    function setGlobalOperatorCommission(
+        uint16 _globalCommissionBips
+    ) external onlyOwner {
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setRewardsUpdater(address _rewardsUpdater) external onlyOwner {
+    function setRewardsUpdater(
+        address _rewardsUpdater
+    ) external onlyOwner {
         _setRewardsUpdater(_rewardsUpdater);
     }
 
@@ -426,23 +401,29 @@ contract RewardsCoordinator is
      */
 
     /// @inheritdoc IRewardsCoordinator
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+    function calculateEarnerLeafHash(
+        EarnerTreeMerkleLeaf calldata leaf
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(EARNER_LEAF_SALT, leaf.earner, leaf.earnerTokenRoot));
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+    function calculateTokenLeafHash(
+        TokenTreeMerkleLeaf calldata leaf
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(TOKEN_LEAF_SALT, leaf.token, leaf.cumulativeEarnings));
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function checkClaim(RewardsMerkleClaim calldata claim) public view returns (bool) {
+    function checkClaim(
+        RewardsMerkleClaim calldata claim
+    ) public view returns (bool) {
         _checkClaim(claim, _distributionRoots[claim.rootIndex]);
         return true;
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function operatorCommissionBips(address /* operator */, address /* avs */) external view returns (uint16) {
+    function operatorCommissionBips(address operator, address avs) external view returns (uint16) {
         return globalOperatorCommissionBips;
     }
 
@@ -452,7 +433,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory) {
+    function getDistributionRootAtIndex(
+        uint256 index
+    ) external view returns (DistributionRoot memory) {
         return _distributionRoots[index];
     }
 
@@ -474,28 +457,14 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function getRootIndexFromHash(bytes32 rootHash) public view returns (uint32) {
+    function getRootIndexFromHash(
+        bytes32 rootHash
+    ) public view returns (uint32) {
         for (uint32 i = uint32(_distributionRoots.length); i > 0; i--) {
             if (_distributionRoots[i - 1].root == rootHash) {
                 return i - 1;
             }
         }
         revert InvalidRoot();
-    }
-
-    /// @inheritdoc IRewardsCoordinator
-    function domainSeparator() public view returns (bytes32) {
-        if (block.chainid == ORIGINAL_CHAIN_ID) {
-            return _DOMAIN_SEPARATOR;
-        } else {
-            return _calculateDomainSeparator();
-        }
-    }
-
-    /**
-     * @dev Recalculates the domain separator when the chainid changes due to a fork.
-     */
-    function _calculateDomainSeparator() internal view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
 }

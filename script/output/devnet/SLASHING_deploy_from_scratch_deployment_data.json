@@ -1,0 +1,52 @@
+{
+  "addresses": {
+    "allocationManager": "0xAbD5Dd30CaEF8598d4EadFE7D45Fd582EDEade15",
+    "allocationManagerImplementation": "0xBFF7154bAa41e702E78Fb082a8Ce257Ce13E6f55",
+    "avsDirectory": "0xCa839541648D3e23137457b1Fd4A06bccEADD33a",
+    "avsDirectoryImplementation": "0x1362e9Cb37831C433095f1f1568215B7FDeD37Ef",
+    "baseStrategyImplementation": "0x61C6A250AEcAbf6b5e4611725b4f99C4DC85DB34",
+    "delegationManager": "0x3391eBafDD4b2e84Eeecf1711Ff9FC06EF9Ed182",
+    "delegationManagerImplementation": "0x4073a9B0fb0f31420C2A2263fB6E9adD33ea6F2A",
+    "eigenLayerPauserReg": "0xBb02ACE793e921D6a454062D2933064F31Fae0B2",
+    "eigenLayerProxyAdmin": "0xBf0c97a7df334BD83e0912c1218E44FD7953d122",
+    "eigenPodBeacon": "0x8ad244c2a986e48862c5bE1FdCA27cef0aaa6E15",
+    "eigenPodImplementation": "0x93cecf40F05389E99e163539F8d1CCbd4267f9A7",
+    "eigenPodManager": "0x8C9781FD55c67CE4DC08e3035ECbdB2B67a07307",
+    "eigenPodManagerImplementation": "0x3013B13BF3a464ff9078EFa40b7dbfF8fA67138d",
+    "emptyContract": "0x689CEE9134e4234caEF6c15Bf1D82779415daFAe",
+    "rewardsCoordinator": "0xa7DB7B0E63B5B75e080924F9C842758711177c07",
+    "rewardsCoordinatorImplementation": "0x0e93df1A21CA53F93160AbDee19A92A20f8b397B",
+    "strategies": [
+      {
+           "strategy_address": "0x4f812633943022fA97cb0881683aAf9f318D5Caa",
+           "token_address": "0x94373a4919B3240D86eA41593D5eBa789FEF3848",
+           "token_symbol": "WETH"
+      }
+    ],
+    "strategyBeacon": "0x957c04A5666079255fD75220a15918ecBA6039c6",
+    "strategyFactory": "0x09F8f1c1ca1815083a8a05E1b4A0c65EFB509141",
+    "strategyFactoryImplementation": "0x8b1F09f8292fd658Da35b9b3b1d4F7d1C0F3F592",
+    "strategyManager": "0x70f8bC2Da145b434de66114ac539c9756eF64fb3",
+    "strategyManagerImplementation": "0x1562BfE7Cb4644ff030C1dE4aA5A9aBb88a61aeC",
+    "token": {
+      "tokenProxyAdmin": "0x0000000000000000000000000000000000000000",
+      "EIGEN": "0x0000000000000000000000000000000000000000",
+      "bEIGEN": "0x0000000000000000000000000000000000000000",
+      "EIGENImpl": "0x0000000000000000000000000000000000000000",
+      "bEIGENImpl": "0x0000000000000000000000000000000000000000",
+      "eigenStrategy": "0x0000000000000000000000000000000000000000",
+      "eigenStrategyImpl": "0x0000000000000000000000000000000000000000"
+    }
+  },
+  "chainInfo": {
+    "chainId": 17000,
+    "deploymentBlock": 2548240
+  },
+  "parameters": {
+    "communityMultisig": "0xBB37b72F67A410B76Ce9b9aF9e37aa561B1C5B07",
+    "executorMultisig": "0xBB37b72F67A410B76Ce9b9aF9e37aa561B1C5B07",
+    "operationsMultisig": "0xBB37b72F67A410B76Ce9b9aF9e37aa561B1C5B07",
+    "pauserMultisig": "0xBB37b72F67A410B76Ce9b9aF9e37aa561B1C5B07",
+    "timelock": "0x0000000000000000000000000000000000000000"
+  }
+}

@@ -275,9 +275,9 @@ For each strategy/share pair in the `Withdrawal`:
 
 `Withdrawals` concerning `EigenPodManager` shares have some additional nuance depending on whether a withdrawal is specified to be received as tokens vs shares (read more about "why" in [`EigenPodManager.md`](./EigenPodManager.md)):
 * `EigenPodManager` withdrawals received as shares: 
-    * Shares ALWAYS go back to the originator of the withdrawal (rather than the `withdrawer` address). 
-    * Shares are also delegated to the originator's Operator, rather than the `withdrawer's` Operator.
-    * Shares received by the originator may be lower than the shares originally withdrawn if the originator has debt.
+    * OwnedShares ALWAYS go back to the originator of the withdrawal (rather than the `withdrawer` address). 
+    * OwnedShares are also delegated to the originator's Operator, rather than the `withdrawer's` Operator.
+    * OwnedShares received by the originator may be lower than the shares originally withdrawn if the originator has debt.
 * `EigenPodManager` withdrawals received as tokens:
     * Before the withdrawal can be completed, the originator needs to prove that a withdrawal occurred on the beacon chain (see [`EigenPod.verifyAndProcessWithdrawals`](./EigenPodManager.md#eigenpodverifyandprocesswithdrawals)).
 
@@ -288,10 +288,10 @@ For each strategy/share pair in the `Withdrawal`:
     * See [`EigenPodManager.withdrawSharesAsTokens`](./EigenPodManager.md#eigenpodmanagerwithdrawsharesastokens)
 * If `!receiveAsTokens`:
     * For `StrategyManager` strategies:
-        * Shares are awarded to the `withdrawer` and delegated to the `withdrawer's` Operator
+        * OwnedShares are awarded to the `withdrawer` and delegated to the `withdrawer's` Operator
         * See [`StrategyManager.addShares`](./StrategyManager.md#addshares)
     * For the native beacon chain ETH strategy (`EigenPodManager`):
-        * Shares are awarded to `withdrawal.staker`, and delegated to the Staker's Operator
+        * OwnedShares are awarded to `withdrawal.staker`, and delegated to the Staker's Operator
         * See [`EigenPodManager.addShares`](./EigenPodManager.md#eigenpodmanageraddshares)
 
 *Requirements*:

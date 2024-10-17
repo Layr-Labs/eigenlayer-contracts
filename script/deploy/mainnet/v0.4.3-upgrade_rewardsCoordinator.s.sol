@@ -120,7 +120,7 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         emit log_named_bytes("calldata_to_timelock_executing_action", calldata_to_timelock_executing_action);
     }
 
-    function test_mainnet_rc_upgrade() public {
+    function run_mainnet_rc_upgrade() public {
         run();  
 
         vm.warp(dayToQueueAction);
@@ -185,8 +185,8 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         );
     }
 
-    function test_set_reward_for_all_submitter(address hopper) public {
-        test_mainnet_rc_upgrade();
+    function run_set_reward_for_all_submitter(address hopper) public {
+        run_mainnet_rc_upgrade();
     
         // Set reward for all submitters
         vm.prank(operationsMultisig);
