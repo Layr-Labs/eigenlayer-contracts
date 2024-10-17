@@ -110,25 +110,30 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     /**
      * @notice Called by an AVS to create a list of new operatorSets.
      *
+     * @param avs The address of the AVS creating the operator sets.
      * @param operatorSetIds The IDs of the operator set to initialize.
      *
      * @dev msg.sender must be the AVS.
      * @dev The AVS may create operator sets before it becomes an operator set AVS.
      */
     function createOperatorSets(
+        address avs,
         uint32[] calldata operatorSetIds
     ) external;
 
     /**
      * @notice Sets the AVS as an operator set AVS, preventing legacy M2 operator registrations.
      *
+     * @param avs The address of the AVS to set as an operator set AVS.
+     * 
      * @dev msg.sender must be the AVS.
      */
-    function becomeOperatorSetAVS() external;
+    function becomeOperatorSetAVS(address avs) external;
 
     /**
      * @notice Called by an AVS to migrate operators that have a legacy M2 registration to operator sets.
      *
+     * @param avs The address of the AVS to migrate operators for
      * @param operators The list of operators to migrate
      * @param operatorSetIds The list of operatorSets to migrate the operators to
      *
@@ -138,6 +143,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      * @dev The operator is deregistered from the M2 legacy AVS once migrated
      */
     function migrateOperatorsToOperatorSets(
+        address avs,
         address[] calldata operators,
         uint32[][] calldata operatorSetIds
     ) external;
@@ -145,6 +151,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     /**
      *  @notice Called by AVSs to add an operator to a list of operatorSets.
      *
+     *  @param avs The address of the AVS adding the operator to the operator sets.
      *  @param operator The address of the operator to be added to the operator set.
      *  @param operatorSetIds The IDs of the operator sets.
      *  @param operatorSignature The signature of the operator on their intent to register.
@@ -153,6 +160,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      *  @dev The operator must not have a pending deregistration from the operator set.
      */
     function registerOperatorToOperatorSets(
+        address avs,
         address operator,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
@@ -179,50 +187,57 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     /**
      *  @notice Called by AVSs to remove an operator from an operator set.
      *
+     *  @param avs The address of the AVS removing the operator from the operator sets.
      *  @param operator The address of the operator to be removed from the operator set.
      *  @param operatorSetIds The IDs of the operator sets.
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
+    function deregisterOperatorFromOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) external;
 
     /**
      *  @notice Called by AVSs to add a set of strategies to an operator set.
      *
+     *  @param avs The address of the AVS adding the strategies to the operator set.
      *  @param operatorSetId The ID of the operator set.
      *  @param strategies The addresses of the strategies to be added to the operator set.
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
+    function addStrategiesToOperatorSet(address avs, uint32 operatorSetId, IStrategy[] calldata strategies) external;
 
     /**
      *  @notice Called by AVSs to remove a set of strategies from an operator set.
      *
+     *  @param avs The address of the AVS removing the strategies from the operator set.
      *  @param operatorSetId The ID of the operator set.
      *  @param strategies The addresses of the strategies to be removed from the operator set.
      *
      *  @dev msg.sender is used as the AVS.
      */
-    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
+    function removeStrategiesFromOperatorSet(address avs, uint32 operatorSetId, IStrategy[] calldata strategies) external;
 
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      *
+     *  @param avs The address of the AVS updating the metadata URI.
      *  @param metadataURI The URI for metadata associated with an AVS.
      *
      *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
      */
     function updateAVSMetadataURI(
+        address avs,
         string calldata metadataURI
     ) external;
 
     /**
      * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
      *
+     * @param operator The address of the operator to cancel the salt for.
      * @param salt A unique and single use value associated with the approver signature.
      */
     function cancelSalt(
+        address operator
         bytes32 salt
     ) external;
 

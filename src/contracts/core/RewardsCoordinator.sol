@@ -6,6 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "../mixins/PermissionControllerMixin.sol";
 import "../libraries/Merkle.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
@@ -25,7 +26,8 @@ contract RewardsCoordinator is
     OwnableUpgradeable,
     Pausable,
     ReentrancyGuardUpgradeable,
-    RewardsCoordinatorStorage
+    RewardsCoordinatorStorage,
+    PermissionControllerMixin
 {
     using SafeERC20 for IERC20;
 
@@ -43,6 +45,7 @@ contract RewardsCoordinator is
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
+        IPermissionController _permissionController,
         uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
@@ -58,6 +61,7 @@ contract RewardsCoordinator is
             _MAX_FUTURE_LENGTH,
             _GENESIS_REWARDS_TIMESTAMP
         )
+        PermissionControllerMixin(_permissionController)
     {
         _disableInitializers();
     }
@@ -89,8 +93,10 @@ contract RewardsCoordinator is
 
     /// @inheritdoc IRewardsCoordinator
     function createAVSRewardsSubmission(
+        address avs,
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
+        require msg.sender == avs;
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -110,6 +116,7 @@ contract RewardsCoordinator is
     function createRewardsForAllSubmission(
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
+        require msg.sender == avs;
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -129,6 +136,7 @@ contract RewardsCoordinator is
     function createRewardsForAllEarners(
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS) onlyRewardsForAllSubmitter nonReentrant {
+        require msg.sender == avs;
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
