@@ -9,6 +9,7 @@ import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "./DelegationManagerStorage.sol";
+import "../libraries/PermissionControllerLib.sol";
 
 /**
  * @title DelegationManager
@@ -29,6 +30,7 @@ contract DelegationManager is
     SignatureUtils
 {
     using SlashingLib for *;
+    using PermissionControllerLib for *;
 
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
     modifier onlyStrategyManagerOrEigenPodManager() {
@@ -112,6 +114,7 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function modifyOperatorDetails(
+        address operator,
         OperatorDetails calldata newOperatorDetails
     ) external {
         require(isOperator(msg.sender), OperatorNotRegistered());
