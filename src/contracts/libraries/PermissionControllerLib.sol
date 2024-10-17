@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.0;
-
 import "../interfaces/IPermissionController.sol";
 
 library PermissionControllerLib {
+    /// @dev Thrown when the caller is not allowed to call a function on behalf of an account.
+    error InvalidCaller();
+    
     function canCall(IPermissionController permissionController, address account, address caller) internal view returns (bool) {
-        return permissionController.canCall(account, caller);
+        require(permissionController.canCall(account, caller), InvalidCaller());
     }
 }
