@@ -109,7 +109,7 @@ contract User is PrintUtils {
             emit log("expecting withdrawal:");
             emit log_named_uint("nonce: ", expectedWithdrawals[i].nonce);
             emit log_named_address("strat: ", address(expectedWithdrawals[i].strategies[0]));
-            emit log_named_uint("shares: ", expectedWithdrawals[i].scaledSharesToWithdraw[0]);
+            emit log_named_uint("shares: ", expectedWithdrawals[i].scaledShares[0]);
         }
         
         return expectedWithdrawals;
@@ -152,7 +152,7 @@ contract User is PrintUtils {
             nonce: nonce,
             startTimestamp: uint32(block.timestamp),
             strategies: strategies,
-            scaledSharesToWithdraw: shares
+            scaledShares: shares
         });
 
         bytes32[] memory withdrawalRoots = delegationManager.queueWithdrawals(params);
@@ -488,7 +488,7 @@ contract User is PrintUtils {
                 nonce: (nonce + i),
                 startTimestamp: uint32(block.timestamp),
                 strategies: singleStrategy,
-                scaledSharesToWithdraw: singleShares
+                scaledShares: singleShares
             });
         }
 

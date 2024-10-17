@@ -266,7 +266,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             if (operator != staker) {
                 assert_Snap_Unchanged_TokenBalances(User(operator), "operator should not have any change in underlying token balances");
             }
-            assert_Snap_Added_OperatorShares(User(operator), withdrawal.strategies, withdrawal.scaledSharesToWithdraw, "operator should have received shares");
+            assert_Snap_Added_OperatorShares(User(operator), withdrawal.strategies, withdrawal.scaledShares, "operator should have received shares");
         }
     }
 
