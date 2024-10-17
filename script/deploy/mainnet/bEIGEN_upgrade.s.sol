@@ -96,7 +96,7 @@ contract bEIGEN_upgrade is Script, Test {
 
     function checkUpgradeCorrectness() public {
         vm.prank(address(bEIGEN_TimelockController));
-        require(bEIGEN_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(bEIGEN_proxy)))) == address(bEIGEN_implementation),
+        require(bEIGEN_ProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(bEIGEN_proxy)))) == address(bEIGEN_implementation),
             "implementation set incorrectly");
         require(bEIGEN_proxy.EIGEN() == EIGEN_addressBefore,
             "EIGEN address changed unexpectedly");

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
@@ -34,14 +34,14 @@ contract PausableUnitTests is Test {
     }
 
     function testCannotReinitialize(address _pauserRegistry, uint256 _initPausedStatus) public {
-        cheats.expectRevert(bytes("Pausable._initializePauser: _initializePauser() can only be called once"));
+        cheats.expectRevert(IPausable.InputAddressZero.selector);
         pausable.initializePauser(PauserRegistry(_pauserRegistry), _initPausedStatus);
     }
 
     function testCannotInitializeWithZeroAddress(uint256 _initPausedStatus) public {
         address _pauserRegistry = address(0);
         pausable = new PausableHarness();
-        cheats.expectRevert(bytes("Pausable._initializePauser: _initializePauser() can only be called once"));
+        cheats.expectRevert(IPausable.InputAddressZero.selector);
         pausable.initializePauser(PauserRegistry(_pauserRegistry), _initPausedStatus);
     }
 
@@ -70,7 +70,7 @@ contract PausableUnitTests is Test {
         cheats.assume(notPauser != pauser);
 
         cheats.startPrank(notPauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as pauser"));
+        cheats.expectRevert(IPausable.OnlyPauser.selector);
         pausable.pause(newPausedStatus);
         cheats.stopPrank();
     }
@@ -97,7 +97,7 @@ contract PausableUnitTests is Test {
         cheats.assume(notPauser != pauser);
 
         cheats.startPrank(notPauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as pauser"));
+        cheats.expectRevert(IPausable.OnlyPauser.selector);
         pausable.pauseAll();
         cheats.stopPrank();
     }
@@ -115,7 +115,7 @@ contract PausableUnitTests is Test {
         require(pausable.paused() == previousPausedStatus, "previousPausedStatus not set correctly");
 
         cheats.startPrank(pauser);
-        cheats.expectRevert(bytes("Pausable.pause: invalid attempt to unpause functionality"));
+        cheats.expectRevert(IPausable.InvalidNewPausedStatus.selector);
         pausable.pause(newPausedStatus);
         cheats.stopPrank();
     }
@@ -151,7 +151,7 @@ contract PausableUnitTests is Test {
         cheats.assume(notUnpauser != pausable.pauserRegistry().unpauser());
 
         cheats.startPrank(notUnpauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
         pausable.unpause(newPausedStatus);
         cheats.stopPrank();
     }
@@ -168,7 +168,7 @@ contract PausableUnitTests is Test {
         require(pausable.paused() == previousPausedStatus, "previousPausedStatus not set correctly");
 
         cheats.startPrank(pausable.pauserRegistry().unpauser());
-        cheats.expectRevert(bytes("Pausable.unpause: invalid attempt to pause functionality"));
+        cheats.expectRevert(IPausable.InvalidNewPausedStatus.selector);
         pausable.unpause(newPausedStatus);
         cheats.stopPrank();
     }

@@ -50,7 +50,7 @@ jobs:
       - name: Install solc
         run: |
           pip install solc-select
-          solc-select use 0.8.12 --always-install
+          solc-select use 0.8.27 --always-install
       - name: Verify rule ${{ matrix.params }}
         run: |
           bash ${{ matrix.params }}

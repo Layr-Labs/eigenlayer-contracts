@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
@@ -147,7 +147,7 @@ contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests, IEi
     }
 
     function test_createPod_revert_alreadyCreated() public deployPodForStaker(defaultStaker) {
-        cheats.expectRevert("EigenPodManager.createPod: Sender already has a pod");
+        cheats.expectRevert(IEigenPodManager.EigenPodAlreadyExists.selector);
         eigenPodManager.createPod();
     }
 }
@@ -193,20 +193,20 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     function testFuzz_addShares_revert_notDelegationManager(address notDelegationManager) public filterFuzzedAddressInputs(notDelegationManager){
         cheats.assume(notDelegationManager != address(delegationManagerMock));
         cheats.prank(notDelegationManager);
-        cheats.expectRevert("EigenPodManager.onlyDelegationManager: not the DelegationManager");
+        cheats.expectRevert(IEigenPodManager.UnauthorizedCaller.selector);
         eigenPodManager.addShares(defaultStaker, 0);
     }
     
     function test_addShares_revert_podOwnerZeroAddress() public {
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.addShares: podOwner cannot be zero address");
+        cheats.expectRevert(IEigenPod.InputAddressZero.selector);
         eigenPodManager.addShares(address(0), 0);
     }
 
     function testFuzz_addShares_revert_sharesNegative(int256 shares) public {
         cheats.assume(shares < 0);
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.addShares: shares cannot be negative");
+        cheats.expectRevert(IEigenPodManager.SharesNegative.selector);
         eigenPodManager.addShares(defaultStaker, uint256(shares));
     }
 
@@ -214,7 +214,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         cheats.assume(int256(shares) >= 0);
         cheats.assume(shares % GWEI_TO_WEI != 0);
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.addShares: shares must be a whole Gwei amount");
+        cheats.expectRevert(IEigenPodManager.SharesNotMultipleOfGwei.selector);
         eigenPodManager.addShares(defaultStaker, shares);
     }
 
@@ -239,14 +239,14 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     function testFuzz_removeShares_revert_notDelegationManager(address notDelegationManager) public filterFuzzedAddressInputs(notDelegationManager) {
         cheats.assume(notDelegationManager != address(delegationManagerMock));
         cheats.prank(notDelegationManager);
-        cheats.expectRevert("EigenPodManager.onlyDelegationManager: not the DelegationManager");
+        cheats.expectRevert(IEigenPodManager.UnauthorizedCaller.selector);
         eigenPodManager.removeShares(defaultStaker, 0);
     }
 
     function testFuzz_removeShares_revert_sharesNegative(int256 shares) public {
         cheats.assume(shares < 0);
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.removeShares: shares cannot be negative");
+        cheats.expectRevert(IEigenPodManager.SharesNegative.selector);
         eigenPodManager.removeShares(defaultStaker, uint256(shares));
     }
     
@@ -254,7 +254,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         cheats.assume(int256(shares) >= 0);
         cheats.assume(shares % GWEI_TO_WEI != 0);
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.removeShares: shares must be a whole Gwei amount");
+        cheats.expectRevert(IEigenPodManager.SharesNotMultipleOfGwei.selector);
         eigenPodManager.removeShares(defaultStaker, shares);
     }
 
@@ -269,7 +269,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
         // Remove shares
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.removeShares: cannot result in pod owner having negative shares");
+        cheats.expectRevert(IEigenPodManager.SharesNegative.selector);
         eigenPodManager.removeShares(defaultStaker, sharesRemoved);
     }
 
@@ -314,20 +314,20 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
     function test_withdrawSharesAsTokens_revert_podOwnerZeroAddress() public {
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.withdrawSharesAsTokens: podOwner cannot be zero address");
+        cheats.expectRevert(IEigenPod.InputAddressZero.selector);
         eigenPodManager.withdrawSharesAsTokens(address(0), address(0), 0);
     }
 
     function test_withdrawSharesAsTokens_revert_destinationZeroAddress() public {
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.withdrawSharesAsTokens: destination cannot be zero address");
+        cheats.expectRevert(IEigenPod.InputAddressZero.selector);
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, address(0), 0);  
     }
 
     function testFuzz_withdrawSharesAsTokens_revert_sharesNegative(int256 shares) public {
         cheats.assume(shares < 0);
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");
+        cheats.expectRevert(IEigenPodManager.SharesNegative.selector);
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, defaultStaker, uint256(shares));
     }
 
@@ -336,7 +336,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         cheats.assume(shares % GWEI_TO_WEI != 0);
 
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert("EigenPodManager.withdrawSharesAsTokens: shares must be a whole Gwei amount");
+        cheats.expectRevert(IEigenPodManager.SharesNotMultipleOfGwei.selector);
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, defaultStaker, shares);
     }
 
@@ -399,21 +399,21 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
     function testFuzz_recordBalanceUpdate_revert_notPod(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) deployPodForStaker(defaultStaker) {
         cheats.assume(invalidCaller != address(defaultPod));
         cheats.prank(invalidCaller);
-        cheats.expectRevert("EigenPodManager.onlyEigenPod: not a pod");
+        cheats.expectRevert(IEigenPodManager.UnauthorizedCaller.selector);
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, 0);
     }
 
     function test_recordBalanceUpdate_revert_zeroAddress() public {
         IEigenPod zeroAddressPod = _deployAndReturnEigenPodForStaker(address(0));
         cheats.prank(address(zeroAddressPod));
-        cheats.expectRevert("EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address");
+        cheats.expectRevert(IEigenPod.InputAddressZero.selector);
         eigenPodManager.recordBeaconChainETHBalanceUpdate(address(0), 0);
     }
 
     function testFuzz_recordBalanceUpdate_revert_nonWholeGweiAmount(int256 sharesDelta) public deployPodForStaker(defaultStaker) {
         cheats.assume(sharesDelta % int256(GWEI_TO_WEI) != 0);
         cheats.prank(address(defaultPod));
-        cheats.expectRevert("EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount");
+        cheats.expectRevert(IEigenPodManager.SharesNotMultipleOfGwei.selector);
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, sharesDelta);
     }
 
@@ -453,7 +453,7 @@ contract EigenPodManagerUnitTests_ShareAdjustmentCalculationTests is EigenPodMan
             slasherMock,
             delegationManagerMock
         );
-        eigenLayerProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
+        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
 
     function testFuzz_shareAdjustment_negativeToNegative(int256 sharesBefore, int256 sharesAfter) public {

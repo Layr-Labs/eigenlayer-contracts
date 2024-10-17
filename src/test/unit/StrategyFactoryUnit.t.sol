@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -121,7 +121,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
     function test_deployNewStrategy_revert_StrategyAlreadyExists() public {
         test_deployNewStrategy();
-        cheats.expectRevert("StrategyFactory.deployNewStrategy: Strategy already exists for token");
+        cheats.expectRevert(IStrategyFactory.StrategyAlreadyExists.selector);
         strategyFactory.deployNewStrategy(underlyingToken);
     }
 
@@ -134,7 +134,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         emit TokenBlacklisted(token);
         strategyFactory.blacklistTokens(tokens);
 
-        cheats.expectRevert("StrategyFactory.deployNewStrategy: Token is blacklisted");
+        cheats.expectRevert(IStrategyFactory.BlacklistedToken.selector);
         strategyFactory.deployNewStrategy(token);
     }
 

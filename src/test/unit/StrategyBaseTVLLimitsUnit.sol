@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "./StrategyBaseUnit.t.sol";
 
@@ -56,7 +56,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         cheats.assume(notUnpauser != address(proxyAdmin));
         cheats.assume(notUnpauser != unpauser);
         cheats.startPrank(notUnpauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
         strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
         cheats.stopPrank();
     }
@@ -64,7 +64,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     function testSetInvalidMaxPerDepositAndMaxDeposits(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput) public {
         cheats.assume(maxTotalDepositsFuzzedInput < maxPerDepositFuzzedInput);
         cheats.startPrank(unpauser);
-        cheats.expectRevert(bytes("StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits"));
+        cheats.expectRevert(IStrategy.MaxPerDepositExceedsMax.selector);
         strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
         cheats.stopPrank();
     }
@@ -74,7 +74,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         _setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
 
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(bytes("StrategyBaseTVLLimits: max per deposit exceeded"));
+        cheats.expectRevert(IStrategy.MaxPerDepositExceedsMax.selector);
         strategyWithTVLLimits.deposit(underlyingToken, amount);
         cheats.stopPrank();
     }
@@ -98,7 +98,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         require(underlyingToken.balanceOf(address(strategyWithTVLLimits)) > maxTotalDeposits, "bad test setup");
 
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(bytes("StrategyBaseTVLLimits: max deposits exceeded"));
+        cheats.expectRevert(IStrategy.BalanceExceedsMaxTotalDeposits.selector);
         strategyWithTVLLimits.deposit(underlyingToken, maxPerDeposit);
         cheats.stopPrank();
     }
@@ -172,7 +172,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
 
         if (depositAmount > maxPerDepositFuzzedInput) {
             cheats.startPrank(address(strategyManager));
-            cheats.expectRevert("StrategyBaseTVLLimits: max per deposit exceeded");
+            cheats.expectRevert(IStrategy.MaxPerDepositExceedsMax.selector);
             strategyWithTVLLimits.deposit(underlyingToken, depositAmount);
             cheats.stopPrank();
 
@@ -185,7 +185,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
             return true;
         } else if (underlyingToken.balanceOf(address(strategyWithTVLLimits)) > maxTotalDepositsFuzzedInput) {
             cheats.startPrank(address(strategyManager));
-            cheats.expectRevert("StrategyBaseTVLLimits: max deposits exceeded");
+            cheats.expectRevert(IStrategy.MaxPerDepositExceedsMax.selector);
             strategyWithTVLLimits.deposit(underlyingToken, depositAmount);
             cheats.stopPrank();
 
@@ -200,7 +200,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
             uint256 totalSharesBefore = strategyWithTVLLimits.totalShares();
             if (expectedSharesOut == 0) {
                 cheats.startPrank(address(strategyManager));
-                cheats.expectRevert("StrategyBase.deposit: newShares cannot be zero");
+                cheats.expectRevert(IStrategy.NewSharesZero.selector);
                 strategyWithTVLLimits.deposit(underlyingToken, depositAmount);
                 cheats.stopPrank();
 

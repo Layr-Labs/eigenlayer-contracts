@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
@@ -386,7 +386,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_AVS_REWARDS_SUBMISSION);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
@@ -456,7 +456,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: no strategies set");
+        cheats.expectRevert(IRewardsCoordinator.InputArrayLengthZero.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -493,7 +493,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. Call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: amount too large");
+        cheats.expectRevert(IRewardsCoordinator.AmountExceedsMax.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -534,7 +534,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(
-            "RewardsCoordinator._validateRewardsSubmission: strategies must be in ascending order to handle duplicates"
+            IRewardsCoordinator.StrategiesNotInAscendingOrder.selector
         );
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
@@ -574,7 +574,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION");
+        cheats.expectRevert(IRewardsCoordinator.DurationExceedsMax.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -614,9 +614,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
-        );
+        cheats.expectRevert(IRewardsCoordinator.InvalidDurationRemainder.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -660,7 +658,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past");
+        cheats.expectRevert(IRewardsCoordinator.StartTimestampTooFarInPast.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -698,7 +696,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the future");
+        cheats.expectRevert(IRewardsCoordinator.StartTimestampTooFarInFuture.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -739,7 +737,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected event emitted
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: invalid strategy considered");
+        cheats.expectRevert(IRewardsCoordinator.StrategyNotWhitelisted.selector);
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -906,7 +904,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_REWARDS_FOR_ALL_SUBMISSION);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
         rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
     }
@@ -944,7 +942,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
     ) public filterFuzzedAddressInputs(invalidSubmitter) {
         cheats.assume(invalidSubmitter != rewardsForAllSubmitter);
 
-        cheats.expectRevert("RewardsCoordinator: caller is not a valid createRewardsForAllSubmission submitter");
+        cheats.expectRevert(IRewardsCoordinator.UnauthorizedCaller.selector);
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
         rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
     }
@@ -1119,7 +1117,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
         rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
     }
@@ -1157,7 +1155,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
     ) public filterFuzzedAddressInputs(invalidSubmitter) {
         cheats.assume(invalidSubmitter != rewardsForAllSubmitter);
 
-        cheats.expectRevert("RewardsCoordinator: caller is not a valid createRewardsForAllSubmission submitter");
+        cheats.expectRevert(IRewardsCoordinator.UnauthorizedCaller.selector);
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
         rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
     }
@@ -1333,7 +1331,7 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
     ) public filterFuzzedAddressInputs(invalidRewardsUpdater) {
         cheats.prank(invalidRewardsUpdater);
 
-        cheats.expectRevert("RewardsCoordinator: caller is not the rewardsUpdater");
+        cheats.expectRevert(IRewardsCoordinator.UnauthorizedCaller.selector);
         rewardsCoordinator.submitRoot(bytes32(0), 0);
     }
 
@@ -1341,7 +1339,7 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_ROOTS);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         rewardsCoordinator.submitRoot(bytes32(0), 0);
     }
 
@@ -1681,7 +1679,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         cheats.startPrank(claimer);
         // rootIndex in claim is 0, which is disabled
         IRewardsCoordinator.RewardsMerkleClaim memory claim;
-        cheats.expectRevert("RewardsCoordinator._checkClaim: root is disabled");
+        cheats.expectRevert(IRewardsCoordinator.RootDisabled.selector);
         rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
@@ -1748,9 +1746,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             cheats.startPrank(claimer);
             assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
-            cheats.expectRevert(
-                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
-            );
+            cheats.expectRevert(IRewardsCoordinator.EarningsNotGreaterThanClaimed.selector);
             rewardsCoordinator.processClaim(claim, claimer);
 
             cheats.stopPrank();
@@ -1788,10 +1784,10 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // Check claim is not valid from both checkClaim() and processClaim() throwing a revert
         cheats.startPrank(claimer);
 
-        cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid token claim proof");
+        cheats.expectRevert(IRewardsCoordinator.InvalidClaimProof.selector);
         assertFalse(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
-        cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid token claim proof");
+        cheats.expectRevert(IRewardsCoordinator.InvalidClaimProof.selector);
         rewardsCoordinator.processClaim(claim, claimer);
 
         cheats.stopPrank();
@@ -1828,10 +1824,10 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // Check claim is not valid from both checkClaim() and processClaim() throwing a revert
         cheats.startPrank(claimer);
 
-        cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
+        cheats.expectRevert(IRewardsCoordinator.InvalidClaimProof.selector);
         assertFalse(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
-        cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
+        cheats.expectRevert(IRewardsCoordinator.InvalidClaimProof.selector);
         rewardsCoordinator.processClaim(claim, claimer);
 
         cheats.stopPrank();
@@ -1871,7 +1867,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             .with_key(address(claim.tokenLeaves[0].token))
             .checked_write(type(uint256).max);
         cheats.startPrank(claimer);
-        cheats.expectRevert("RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed");
+        cheats.expectRevert(IRewardsCoordinator.EarningsNotGreaterThanClaimed.selector);
         rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
@@ -1909,7 +1905,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         uint8 proofLength = uint8(claim.tokenTreeProofs[0].length);
         claim.tokenIndices[0] = claim.tokenIndices[0] | uint32(1 << (numShift + proofLength / 32));
         cheats.startPrank(claimer);
-        cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid tokenLeafIndex");
+        cheats.expectRevert(IRewardsCoordinator.InvalidTokenLeafIndex.selector);
         rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
@@ -1947,7 +1943,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         uint8 proofLength = uint8(claim.earnerTreeProof.length);
         claim.earnerIndex = claim.earnerIndex | uint32(1 << (numShift + proofLength / 32));
         cheats.startPrank(claimer);
-        cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex");
+        cheats.expectRevert(IRewardsCoordinator.InvalidEarnerLeafIndex.selector);
         rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }

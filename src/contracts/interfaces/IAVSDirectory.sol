@@ -4,6 +4,22 @@ pragma solidity >=0.5.0;
 import "./ISignatureUtils.sol";
 
 interface IAVSDirectory is ISignatureUtils {
+    /// Operator Status
+
+    /// @dev Thrown when an operator does not exist in the DelegationManager
+    error OperatorDoesNotExist();
+    /// @dev Thrown when `operator` is not registered to the AVS.
+    error OperatorNotRegistered();
+    /// @dev Thrown when `operator` is already registered to the AVS.
+    error OperatorAlreadyRegistered();
+
+    /// Signatures
+
+    /// @dev Thrown when attempting to spend a spent eip-712 salt.
+    error SignatureSaltSpent();
+    /// @dev Thrown when attempting to use an expired eip-712 signature.
+    error SignatureExpired();
+
     /// @notice Enum representing the status of an operator's registration with an AVS
     enum OperatorAVSRegistrationStatus {
         UNREGISTERED, // Operator not registered to AVS
@@ -36,14 +52,18 @@ interface IAVSDirectory is ISignatureUtils {
      * @notice Called by an avs to deregister an operator with the avs.
      * @param operator The address of the operator to deregister.
      */
-    function deregisterOperatorFromAVS(address operator) external;
+    function deregisterOperatorFromAVS(
+        address operator
+    ) external;
 
     /**
      * @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
      * @param metadataURI The URI for metadata associated with an AVS
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `AVSMetadataURIUpdated` event
      */
-    function updateAVSMetadataURI(string calldata metadataURI) external;
+    function updateAVSMetadataURI(
+        string calldata metadataURI
+    ) external;
 
     /**
      * @notice Returns whether or not the salt has already been used by the operator.

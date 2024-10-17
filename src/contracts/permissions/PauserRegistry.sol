@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../interfaces/IPauserRegistry.sol";
 
@@ -16,7 +16,7 @@ contract PauserRegistry is IPauserRegistry {
     address public unpauser;
 
     modifier onlyUnpauser() {
-        require(msg.sender == unpauser, "msg.sender is not permissioned as unpauser");
+        require(msg.sender == unpauser, OnlyUnpauser());
         _;
     }
 
@@ -35,18 +35,22 @@ contract PauserRegistry is IPauserRegistry {
     }
 
     /// @notice Sets new unpauser - only callable by unpauser, as the unpauser is expected to be kept more secure, e.g. being a multisig with a higher threshold
-    function setUnpauser(address newUnpauser) external onlyUnpauser {
+    function setUnpauser(
+        address newUnpauser
+    ) external onlyUnpauser {
         _setUnpauser(newUnpauser);
     }
 
     function _setIsPauser(address pauser, bool canPause) internal {
-        require(pauser != address(0), "PauserRegistry._setPauser: zero address input");
+        require(pauser != address(0), InputAddressZero());
         isPauser[pauser] = canPause;
         emit PauserStatusChanged(pauser, canPause);
     }
 
-    function _setUnpauser(address newUnpauser) internal {
-        require(newUnpauser != address(0), "PauserRegistry._setUnpauser: zero address input");
+    function _setUnpauser(
+        address newUnpauser
+    ) internal {
+        require(newUnpauser != address(0), InputAddressZero());
         emit UnpauserChanged(unpauser, newUnpauser);
         unpauser = newUnpauser;
     }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
@@ -564,7 +564,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
         cheats.assume(newMinWithdrawalDelayBlocks > delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS());
 
         // attempt to set the `minWithdrawalDelayBlocks` variable
-        cheats.expectRevert("DelegationManager._setMinWithdrawalDelayBlocks: _minWithdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS");
+        cheats.expectRevert(IDelegationManager.WithdrawalDelayExceedsMax.selector);
         delegationManager.setMinWithdrawalDelayBlocks(newMinWithdrawalDelayBlocks);
     }
 
@@ -586,9 +586,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
 
         // Deploy DelegationManager implmentation and proxy
         delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
-        cheats.expectRevert(
-            "DelegationManager._setStrategyWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
-        );
+        cheats.expectRevert(IDelegationManager.WithdrawalDelayExceedsMax.selector);
         delegationManager = DelegationManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -615,7 +613,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         cheats.prank(pauser);
         delegationManager.pause(2 ** PAUSED_NEW_DELEGATION);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.registerAsOperator(
             IDelegationManager.OperatorDetails({
                 __deprecated_earningsReceiver: defaultOperator,
@@ -638,7 +636,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         // Expect revert when register again
-        cheats.expectRevert("DelegationManager.registerAsOperator: caller is already actively delegated");
+        cheats.expectRevert(IDelegationManager.AlreadyDelegated.selector);
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
     }
@@ -653,7 +651,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         cheats.assume(operatorDetails.stakerOptOutWindowBlocks > delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
 
         cheats.prank(defaultOperator);
-        cheats.expectRevert("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS");
+        cheats.expectRevert(IDelegationManager.StakerOptOutWindowBlocksExceedsMax.selector);
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
     }
 
@@ -717,7 +715,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);
 
         // expect revert if attempt to register as operator
-        cheats.expectRevert("DelegationManager.registerAsOperator: caller is already actively delegated");
+        cheats.expectRevert(IDelegationManager.AlreadyDelegated.selector);
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         cheats.stopPrank();
@@ -742,9 +740,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 
         // either it fails for trying to set the stakerOptOutWindowBlocks
         if (modifiedOperatorDetails.stakerOptOutWindowBlocks > delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS()) {
-            cheats.expectRevert(
-                "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS"
-            );
+            cheats.expectRevert(IDelegationManager.StakerOptOutWindowBlocksExceedsMax.selector);
             delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
             // or the transition is allowed,
         } else if (
@@ -767,7 +763,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
             assertEq(delegationManager.delegatedTo(defaultOperator), defaultOperator, "operator not delegated to self");
             // or else the transition is disallowed
         } else {
-            cheats.expectRevert("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be decreased");
+            cheats.expectRevert(IDelegationManager.StakerOptOutWindowBlocksCannotDecrease.selector);
             delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
         }
 
@@ -779,7 +775,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         assertFalse(delegationManager.isOperator(defaultOperator), "bad test setup");
 
         cheats.prank(defaultOperator);
-        cheats.expectRevert("DelegationManager.updateOperatorMetadataURI: caller must be an operator");
+        cheats.expectRevert(IDelegationManager.OperatorDoesNotExist.selector);
         delegationManager.updateOperatorMetadataURI(emptyStringForMetadataURI);
     }
 
@@ -791,7 +787,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
     function testFuzz_updateOperatorMetadataUri_revert_notOperator(
         IDelegationManager.OperatorDetails memory operatorDetails
     ) public {
-        cheats.expectRevert("DelegationManager.modifyOperatorDetails: caller must be an operator");
+        cheats.expectRevert(IDelegationManager.OperatorDoesNotExist.selector);
         delegationManager.modifyOperatorDetails(operatorDetails);
     }
 
@@ -826,7 +822,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         cheats.prank(defaultStaker);
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);
     }
 
@@ -849,7 +845,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // try to delegate again and check that the call reverts
         cheats.startPrank(staker);
-        cheats.expectRevert("DelegationManager.delegateTo: staker is already actively delegated");
+        cheats.expectRevert(IDelegationManager.AlreadyDelegated.selector);
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
     }
@@ -863,7 +859,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // try to delegate and check that the call reverts
         cheats.startPrank(staker);
-        cheats.expectRevert("DelegationManager.delegateTo: operator is not registered in EigenLayer");
+        cheats.expectRevert(IDelegationManager.OperatorDoesNotExist.selector);
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
@@ -1146,7 +1142,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
-        cheats.expectRevert("DelegationManager._delegate: approver signature expired");
+        cheats.expectRevert(IDelegationManager.SignatureExpired.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
     }
@@ -1199,7 +1195,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
             "salt somehow spent not spent?"
         );
         delegationManager.undelegate(staker);
-        cheats.expectRevert("DelegationManager._delegate: approverSalt already spent");
+        cheats.expectRevert(IDelegationManager.SignatureSaltSpent.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
     }
@@ -1237,7 +1233,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // try to delegate from the `staker` to the operator, and check reversion
         cheats.startPrank(staker);
-        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
+        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEOA.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
@@ -1613,7 +1609,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // try to delegate from the `staker` to the operator, and check reversion
         cheats.startPrank(staker);
-        cheats.expectRevert("DelegationManager._delegate: approver signature expired");
+        cheats.expectRevert(IDelegationManager.SignatureExpired.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
@@ -1652,7 +1648,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, salt);
         delegationManager.undelegate(staker);
         // Reusing same signature should revert with salt already being used
-        cheats.expectRevert("DelegationManager._delegate: approverSalt already spent");
+        cheats.expectRevert(IDelegationManager.SignatureSaltSpent.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
     }
@@ -1742,7 +1738,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         // try to delegate from the `staker` to the operator, and check reversion
         cheats.startPrank(staker);
         // Signature should fail as the wallet will not return EIP1271_MAGICVALUE
-        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed");
+        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEIP1271.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
@@ -1845,7 +1841,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
             expiry
         );
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.delegateToBySignature(
             defaultStaker,
             defaultOperator,
@@ -1863,7 +1859,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         bytes memory signature
     ) public filterFuzzedAddressInputs(staker) filterFuzzedAddressInputs(operator) {
         expiry = bound(expiry, 0, block.timestamp - 1);
-        cheats.expectRevert("DelegationManager.delegateToBySignature: staker signature expired");
+        cheats.expectRevert(IDelegationManager.SignatureExpired.selector);
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
             expiry: expiry
@@ -1888,7 +1884,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         // Should revert from invalid signature as staker is not set as the address of signer
         cheats.startPrank(caller);
-        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
+        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEOA.selector);
         // use an empty approver signature input since none is needed / the input is unchecked
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateToBySignature(
@@ -1918,7 +1914,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         // Should revert from invalid signature as staker is not set as the address of signer
         cheats.startPrank(caller);
-        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed");
+        cheats.expectRevert(EIP1271SignatureUtils.InvalidSignatureEIP1271.selector);
         // use an empty approver signature input since none is needed / the input is unchecked
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateToBySignature(
@@ -1949,7 +1945,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         // Should revert as `staker` has already delegated to `operator`
         cheats.startPrank(caller);
-        cheats.expectRevert("DelegationManager.delegateToBySignature: staker is already actively delegated");
+        cheats.expectRevert(IDelegationManager.AlreadyDelegated.selector);
         // use an empty approver signature input since none is needed / the input is unchecked
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateToBySignature(
@@ -1977,7 +1973,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         // Should revert as `operator` is not registered
         cheats.startPrank(caller);
-        cheats.expectRevert("DelegationManager.delegateToBySignature: operator is not registered in EigenLayer");
+        cheats.expectRevert(IDelegationManager.OperatorDoesNotExist.selector);
         // use an empty approver signature input since none is needed / the input is unchecked
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateToBySignature(
@@ -2034,7 +2030,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
 
         // try delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`, and check for reversion
         cheats.startPrank(caller);
-        cheats.expectRevert("DelegationManager._delegate: approver signature expired");
+        cheats.expectRevert(IDelegationManager.SignatureExpired.selector);
         delegationManager.delegateToBySignature(
             defaultStaker,
             defaultOperator,
@@ -2463,7 +2459,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         cheats.assume(invalidCaller != address(eigenPodManagerMock));
         cheats.assume(invalidCaller != address(eigenLayerProxyAdmin));
 
-        cheats.expectRevert("DelegationManager: onlyStrategyManagerOrEigenPodManager");
+        cheats.expectRevert(IDelegationManager.UnauthorizedCaller.selector);
         delegationManager.increaseDelegatedShares(invalidCaller, strategyMock, shares);
     }
 
@@ -2538,7 +2534,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         cheats.assume(invalidCaller != address(eigenPodManagerMock));
 
         cheats.startPrank(invalidCaller);
-        cheats.expectRevert("DelegationManager: onlyStrategyManagerOrEigenPodManager");
+        cheats.expectRevert(IDelegationManager.UnauthorizedCaller.selector);
         delegationManager.decreaseDelegatedShares(invalidCaller, strategyMock, shares);
     }
 
@@ -2645,7 +2641,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
 
         cheats.prank(staker);
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.undelegate(staker);
     }
 
@@ -2656,7 +2652,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         assertFalse(delegationManager.isDelegated(undelegatedStaker), "bad test setup");
 
         cheats.prank(undelegatedStaker);
-        cheats.expectRevert("DelegationManager.undelegate: staker must be delegated to undelegate");
+        cheats.expectRevert(IDelegationManager.NotCurrentlyDelegated.selector);
         delegationManager.undelegate(undelegatedStaker);
     }
 
@@ -2665,7 +2661,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         _registerOperatorWithBaseDetails(operator);
 
         cheats.prank(operator);
-        cheats.expectRevert("DelegationManager.undelegate: operators cannot be undelegated");
+        cheats.expectRevert(IDelegationManager.OperatorsCannotUndelegate.selector);
         delegationManager.undelegate(operator);
     }
 
@@ -2689,17 +2685,16 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
 
         // try to call the `undelegate` function and check for reversion
         cheats.prank(caller);
-        cheats.expectRevert("DelegationManager.undelegate: operators cannot be undelegated");
+        cheats.expectRevert(IDelegationManager.OperatorsCannotUndelegate.selector);
         delegationManager.undelegate(defaultOperator);
     }
 
-    //TODO: verify that this check is even needed
     function test_undelegate_revert_zeroAddress() public {
         _registerOperatorWithBaseDetails(defaultOperator);
         _delegateToOperatorWhoAcceptsAllStakers(address(0), defaultOperator);
 
         cheats.prank(address(0));
-        cheats.expectRevert("DelegationManager.undelegate: cannot undelegate zero address");
+        cheats.expectRevert(IPausable.InputAddressZero.selector);
         delegationManager.undelegate(address(0));
     }
 
@@ -2720,7 +2715,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         _delegateToOperatorWhoRequiresSig(staker, defaultOperator);
 
         cheats.prank(invalidCaller);
-        cheats.expectRevert("DelegationManager.undelegate: caller cannot undelegate staker");
+        cheats.expectRevert(IDelegationManager.UnauthorizedCaller.selector);
         delegationManager.undelegate(staker);
     }
 
@@ -2799,7 +2794,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             strategy: strategyMock,
             withdrawalAmount: 100
         });
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
 
@@ -2817,7 +2812,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             withdrawer: defaultStaker
         });
 
-        cheats.expectRevert("DelegationManager.queueWithdrawal: input length mismatch");
+        cheats.expectRevert(IDelegationManager.InputArrayLengthMismatch.selector);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
 
@@ -2830,7 +2825,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             strategy: strategyMock,
             withdrawalAmount: 100
         });
-        cheats.expectRevert("DelegationManager.queueWithdrawal: withdrawer must be staker");
+        cheats.expectRevert(IDelegationManager.WithdrawerNotStaker.selector);
         cheats.prank(defaultStaker);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
@@ -2847,7 +2842,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             withdrawer: withdrawer
         });
 
-        cheats.expectRevert("DelegationManager._removeSharesAndQueueWithdrawal: strategies cannot be empty");
+        cheats.expectRevert(IDelegationManager.InputArrayLengthZero.selector);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
 
@@ -3053,7 +3048,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // if third party transfers were forbidden. Now, withdrawing to a different address is forbidden regardless
         // of third party transfer status.
         cheats.expectRevert(
-            "DelegationManager.queueWithdrawal: withdrawer must be staker"
+            IDelegationManager.WithdrawerNotStaker.selector
         );
         cheats.prank(staker);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
@@ -3077,7 +3072,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         });
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
-        cheats.expectRevert("Pausable: index is paused");
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
     }
 
@@ -3102,7 +3097,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
 
         cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
-        cheats.expectRevert("DelegationManager._completeQueuedWithdrawal: action is not in queue");
+        cheats.expectRevert(IDelegationManager.WithdrawalDoesNotExist.selector);
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
     }
@@ -3133,18 +3128,13 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         // prank as withdrawer address
         cheats.startPrank(defaultStaker);
-
-        cheats.expectRevert(
-            "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelayBlocks period has not yet passed"
-        );
+        cheats.expectRevert(IDelegationManager.WithdrawalDelayNotElapsed.selector);
         cheats.roll(block.number + minWithdrawalDelayBlocks - 1);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, receiveAsTokens);
 
         uint256 validBlockNumber = delegationManager.getWithdrawalDelay(withdrawal.strategies);
         if (validBlockNumber > minWithdrawalDelayBlocks) {
-            cheats.expectRevert(
-                "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
-            );
+            cheats.expectRevert(IDelegationManager.WithdrawalDelayNotElapsed.selector);
             cheats.roll(validBlockNumber - 1);
             delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, receiveAsTokens);
         }
@@ -3183,16 +3173,14 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         // prank as withdrawer address
         cheats.startPrank(defaultStaker);
 
-        cheats.expectRevert(
-            "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelayBlocks period has not yet passed"
-        );
+        cheats.expectRevert(IDelegationManager.WithdrawalDelayNotElapsed.selector);
         cheats.roll(block.number + minWithdrawalDelayBlocks - 1);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
 
         uint256 validBlockNumber = delegationManager.getWithdrawalDelay(withdrawal.strategies);
         if (validBlockNumber > minWithdrawalDelayBlocks) {
             cheats.expectRevert(
-                "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
+                IDelegationManager.WithdrawalDelayNotElapsed.selector
             );
             cheats.roll(validBlockNumber - 1);
             delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
@@ -3216,7 +3204,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
         cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
-        cheats.expectRevert("DelegationManager._completeQueuedWithdrawal: only withdrawer can complete action");
+        cheats.expectRevert(IDelegationManager.UnauthorizedCaller.selector);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
     }
 
@@ -3232,7 +3220,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         IERC20[] memory tokens = new IERC20[](0);
         cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
-        cheats.expectRevert("DelegationManager._completeQueuedWithdrawal: input length mismatch");
+        cheats.expectRevert(IDelegationManager.InputArrayLengthMismatch.selector);
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, true);
     }

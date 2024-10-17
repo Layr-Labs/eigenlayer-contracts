@@ -39,7 +39,7 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
         // Create Upgrade Tx via Community Multisig
         bytes memory calldata_to_proxy_admin = abi.encodeWithSelector(
             ProxyAdmin.upgrade.selector,
-            TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
+            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
             rewardsCoordinatorImplementation
         );
         

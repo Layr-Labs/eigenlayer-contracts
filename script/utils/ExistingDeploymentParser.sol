@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -391,36 +391,36 @@ contract ExistingDeploymentParser is Script, Test {
     /// @notice verify implementations for Transparent Upgradeable Proxies
     function _verifyImplementations() internal view virtual {
         require(
-            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(avsDirectory)))) ==
+            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(avsDirectory)))) ==
                 address(avsDirectoryImplementation),
             "avsDirectory: implementation set incorrectly"
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
+                ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
             ) == address(rewardsCoordinatorImplementation),
             "rewardsCoordinator: implementation set incorrectly"
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(delegationManager)))
+                ITransparentUpgradeableProxy(payable(address(delegationManager)))
             ) == address(delegationManagerImplementation),
             "delegationManager: implementation set incorrectly"
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(strategyManager)))
+                ITransparentUpgradeableProxy(payable(address(strategyManager)))
             ) == address(strategyManagerImplementation),
             "strategyManager: implementation set incorrectly"
         );
         require(
-            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(slasher)))) ==
+            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(slasher)))) ==
                 address(slasherImplementation),
             "slasher: implementation set incorrectly"
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(eigenPodManager)))
+                ITransparentUpgradeableProxy(payable(address(eigenPodManager)))
             ) == address(eigenPodManagerImplementation),
             "eigenPodManager: implementation set incorrectly"
         );
@@ -428,7 +428,7 @@ contract ExistingDeploymentParser is Script, Test {
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
             require(
                 eigenLayerProxyAdmin.getProxyImplementation(
-                    TransparentUpgradeableProxy(payable(address(deployedStrategyArray[i])))
+                    ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i])))
                 ) == address(baseStrategyImplementation),
                 "strategy: implementation set incorrectly"
             );

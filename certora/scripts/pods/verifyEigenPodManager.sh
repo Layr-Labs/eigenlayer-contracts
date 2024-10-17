@@ -3,7 +3,7 @@ then
     RULE="--rule $2"
 fi
 
-# solc-select use 0.8.12
+# solc-select use 0.8.27
 
 # certoraRun certora/harnesses/EigenPodManagerHarness.sol \
 #     src/contracts/core/DelegationManager.sol src/contracts/pods/EigenPod.sol src/contracts/strategies/StrategyBase.sol src/contracts/core/StrategyManager.sol \

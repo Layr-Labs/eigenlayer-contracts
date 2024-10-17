@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/libraries/Endian.sol";

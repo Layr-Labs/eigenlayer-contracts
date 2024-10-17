@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "./EigenLayerTestHelper.t.sol";
 
@@ -40,7 +40,7 @@ contract PausableTests is EigenLayerTestHelper {
     {
         cheats.assume(!eigenLayerPauserReg.isPauser(unauthorizedPauser));
         cheats.startPrank(unauthorizedPauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as pauser"));
+        cheats.expectRevert(IPausable.OnlyPauser.selector);
         strategyManager.pause(type(uint256).max);
         cheats.stopPrank();
     }
@@ -64,7 +64,7 @@ contract PausableTests is EigenLayerTestHelper {
     {
         cheats.assume(fakePauser != eigenLayerPauserReg.unpauser());
         cheats.startPrank(fakePauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
         eigenLayerPauserReg.setIsPauser(newPauser, true);
         cheats.stopPrank();
     }
@@ -84,7 +84,7 @@ contract PausableTests is EigenLayerTestHelper {
         cheats.assume(notUnpauser != eigenLayerPauserReg.unpauser());
         
         cheats.prank(notUnpauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
         strategyManager.setPauserRegistry(newPauserRegistry);
     }
 }

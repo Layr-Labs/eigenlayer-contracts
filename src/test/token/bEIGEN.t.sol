@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
@@ -39,8 +39,8 @@ contract bEIGENTest is Test {
         bEIGENImpl = new BackingEigen(IERC20(address(eigen)));
 
         // upgrade proxies
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(eigen))), address(eigenImpl));
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(bEIGEN))), address(bEIGENImpl));
+        proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigen))), address(eigenImpl));
+        proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(bEIGEN))), address(bEIGENImpl));
 
         vm.stopPrank();
     }

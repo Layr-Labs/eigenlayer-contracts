@@ -31,12 +31,16 @@ interface IEigen is IERC20 {
     /**
      * @notice This function allows bEIGEN holders to wrap their tokens into Eigen
      */
-    function wrap(uint256 amount) external;
+    function wrap(
+        uint256 amount
+    ) external;
 
     /**
      * @notice This function allows Eigen holders to unwrap their tokens into bEIGEN
      */
-    function unwrap(uint256 amount) external;
+    function unwrap(
+        uint256 amount
+    ) external;
 
     // @notice Burns EIGEN tokens held by the EIGEN token address itself
     function burnExtraTokens() external;

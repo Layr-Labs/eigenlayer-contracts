@@ -13,7 +13,9 @@ interface IDelegationFaucet {
         uint256 _depositAmount
     ) external;
 
-    function getStaker(address operator) external returns (address);
+    function getStaker(
+        address operator
+    ) external returns (address);
 
     function depositIntoStrategy(
         address staker,

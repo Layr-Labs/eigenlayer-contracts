@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -45,10 +45,7 @@ contract DelegationManager is
 
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
     modifier onlyStrategyManagerOrEigenPodManager() {
-        require(
-            msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager),
-            "DelegationManager: onlyStrategyManagerOrEigenPodManager"
-        );
+        require(msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager), UnauthorizedCaller());
         _;
     }
 
@@ -100,7 +97,7 @@ contract DelegationManager is
         OperatorDetails calldata registeringOperatorDetails,
         string calldata metadataURI
     ) external {
-        require(!isDelegated(msg.sender), "DelegationManager.registerAsOperator: caller is already actively delegated");
+        require(!isDelegated(msg.sender), AlreadyDelegated());
         _setOperatorDetails(msg.sender, registeringOperatorDetails);
         SignatureWithExpiry memory emptySignatureAndExpiry;
         // delegate from the operator to themselves
@@ -128,8 +125,8 @@ contract DelegationManager is
         SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 approverSalt
     ) external {
-        require(!isDelegated(msg.sender), "DelegationManager.delegateTo: staker is already actively delegated");
-        require(isOperator(operator), "DelegationManager.delegateTo: operator is not registered in EigenLayer");
+        require(!isDelegated(msg.sender), AlreadyDelegated());
+        require(isOperator(operator), OperatorDoesNotExist());
         // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
         _delegate(msg.sender, operator, approverSignatureAndExpiry, approverSalt);
     }
@@ -143,14 +140,9 @@ contract DelegationManager is
         bytes32 approverSalt
     ) external {
         // check the signature expiry
-        require(
-            stakerSignatureAndExpiry.expiry >= block.timestamp,
-            "DelegationManager.delegateToBySignature: staker signature expired"
-        );
-        require(!isDelegated(staker), "DelegationManager.delegateToBySignature: staker is already actively delegated");
-        require(
-            isOperator(operator), "DelegationManager.delegateToBySignature: operator is not registered in EigenLayer"
-        );
+        require(stakerSignatureAndExpiry.expiry >= block.timestamp, SignatureExpired());
+        require(!isDelegated(staker), AlreadyDelegated());
+        require(isOperator(operator), OperatorDoesNotExist());
 
         // calculate the digest hash, then increment `staker`'s nonce
         uint256 currentStakerNonce = stakerNonce[staker];
@@ -180,7 +172,7 @@ contract DelegationManager is
         require(
             msg.sender == staker || msg.sender == operator
                 || msg.sender == _operatorDetails[operator].delegationApprover,
-            "DelegationManager.undelegate: caller cannot undelegate staker"
+            UnauthorizedCaller()
         );
 
         // Gather strategies and shares to remove from staker/operator during undelegation
@@ -232,12 +224,9 @@ contract DelegationManager is
         for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
             require(
                 queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length,
-                "DelegationManager.queueWithdrawal: input length mismatch"
+                InputArrayLengthMismatch()
             );
-            require(
-                queuedWithdrawalParams[i].withdrawer == msg.sender,
-                "DelegationManager.queueWithdrawal: withdrawer must be staker"
-            );
+            require(queuedWithdrawalParams[i].withdrawer == msg.sender, WithdrawerNotStaker());
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
             // If the staker is delegated to an operator, the operator's delegated shares are also reduced
@@ -338,11 +327,11 @@ contract DelegationManager is
     function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
         require(
             newOperatorDetails.stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS,
-            "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS"
+            StakerOptOutWindowBlocksExceedsMax()
         );
         require(
             newOperatorDetails.stakerOptOutWindowBlocks >= _operatorDetails[operator].stakerOptOutWindowBlocks,
-            "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be decreased"
+            StakerOptOutWindowBlocksCannotDecrease()
         );
         _operatorDetails[operator] = newOperatorDetails;
         emit OperatorDetailsModified(msg.sender, newOperatorDetails);
@@ -376,15 +365,9 @@ contract DelegationManager is
          */
         if (_delegationApprover != address(0) && msg.sender != _delegationApprover && msg.sender != operator) {
             // check the signature expiry
-            require(
-                approverSignatureAndExpiry.expiry >= block.timestamp,
-                "DelegationManager._delegate: approver signature expired"
-            );
+            require(approverSignatureAndExpiry.expiry >= block.timestamp, SignatureExpired());
             // check that the salt hasn't been used previously, then mark the salt as spent
-            require(
-                !delegationApproverSaltIsSpent[_delegationApprover][approverSalt],
-                "DelegationManager._delegate: approverSalt already spent"
-            );
+            require(!delegationApproverSaltIsSpent[_delegationApprover][approverSalt], SignatureSaltSpent());
             delegationApproverSaltIsSpent[_delegationApprover][approverSalt] = true;
 
             // forgefmt: disable-next-item
@@ -439,25 +422,14 @@ contract DelegationManager is
     ) internal {
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
-        require(
-            pendingWithdrawals[withdrawalRoot], "DelegationManager._completeQueuedWithdrawal: action is not in queue"
-        );
+        require(pendingWithdrawals[withdrawalRoot], WithdrawalDoesNotExist());
 
-        require(
-            withdrawal.startBlock + minWithdrawalDelayBlocks <= block.number,
-            "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelayBlocks period has not yet passed"
-        );
+        require(withdrawal.startBlock + minWithdrawalDelayBlocks <= block.number, WithdrawalDelayNotElapsed());
 
-        require(
-            msg.sender == withdrawal.withdrawer,
-            "DelegationManager._completeQueuedWithdrawal: only withdrawer can complete action"
-        );
+        require(msg.sender == withdrawal.withdrawer, UnauthorizedCaller());
 
         if (receiveAsTokens) {
-            require(
-                tokens.length == withdrawal.strategies.length,
-                "DelegationManager._completeQueuedWithdrawal: input length mismatch"
-            );
+            require(tokens.length == withdrawal.strategies.length, InputArrayLengthMismatch());
         }
 
         // Remove `withdrawalRoot` from pending roots
@@ -469,7 +441,7 @@ contract DelegationManager is
             for (uint256 i = 0; i < withdrawal.strategies.length;) {
                 require(
                     withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
-                    "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
+                    WithdrawalDelayNotElapsed()
                 );
 
                 _withdrawSharesAsTokens({
@@ -490,7 +462,7 @@ contract DelegationManager is
             for (uint256 i = 0; i < withdrawal.strategies.length;) {
                 require(
                     withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
-                    "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
+                    WithdrawalDelayNotElapsed()
                 );
 
                 /**
@@ -563,10 +535,8 @@ contract DelegationManager is
         IStrategy[] memory strategies,
         uint256[] memory shares
     ) internal returns (bytes32) {
-        require(
-            staker != address(0), "DelegationManager._removeSharesAndQueueWithdrawal: staker cannot be zero address"
-        );
-        require(strategies.length != 0, "DelegationManager._removeSharesAndQueueWithdrawal: strategies cannot be empty");
+        require(staker != address(0), InputAddressZero());
+        require(strategies.length != 0, InputArrayLengthZero());
 
         // Remove shares from staker and operator
         // Each of these operations fail if we attempt to remove more shares than exist
@@ -592,9 +562,10 @@ contract DelegationManager is
                  */
                 eigenPodManager.removeShares(staker, shares[i]);
             } else {
+                // If thirdPartyTransfersForbidden is set, withdrawer and staker must be the same address
                 require(
                     staker == withdrawer || !strategyManager.thirdPartyTransfersForbidden(strategies[i]),
-                    "DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if thirdPartyTransfersForbidden are set"
+                    WithdrawerNotStaker()
                 );
                 // this call will revert if `shares[i]` exceeds the Staker's current shares in `strategies[i]`
                 strategyManager.removeShares(staker, strategies[i], shares[i]);
@@ -646,11 +617,10 @@ contract DelegationManager is
         }
     }
 
-    function _setMinWithdrawalDelayBlocks(uint256 _minWithdrawalDelayBlocks) internal {
-        require(
-            _minWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
-            "DelegationManager._setMinWithdrawalDelayBlocks: _minWithdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
-        );
+    function _setMinWithdrawalDelayBlocks(
+        uint256 _minWithdrawalDelayBlocks
+    ) internal {
+        require(_minWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS, WithdrawalDelayExceedsMax());
         emit MinWithdrawalDelayBlocksSet(minWithdrawalDelayBlocks, _minWithdrawalDelayBlocks);
         minWithdrawalDelayBlocks = _minWithdrawalDelayBlocks;
     }
@@ -663,19 +633,13 @@ contract DelegationManager is
         IStrategy[] calldata _strategies,
         uint256[] calldata _withdrawalDelayBlocks
     ) internal {
-        require(
-            _strategies.length == _withdrawalDelayBlocks.length,
-            "DelegationManager._setStrategyWithdrawalDelayBlocks: input length mismatch"
-        );
+        require(_strategies.length == _withdrawalDelayBlocks.length, InputArrayLengthMismatch());
         uint256 numStrats = _strategies.length;
         for (uint256 i = 0; i < numStrats; ++i) {
             IStrategy strategy = _strategies[i];
             uint256 prevStrategyWithdrawalDelayBlocks = strategyWithdrawalDelayBlocks[strategy];
             uint256 newStrategyWithdrawalDelayBlocks = _withdrawalDelayBlocks[i];
-            require(
-                newStrategyWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
-                "DelegationManager._setStrategyWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
-            );
+            require(newStrategyWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS, WithdrawalDelayExceedsMax());
 
             // set the new withdrawal delay blocks
             strategyWithdrawalDelayBlocks[strategy] = newStrategyWithdrawalDelayBlocks;
