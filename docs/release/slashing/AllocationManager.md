@@ -12,9 +12,11 @@ The AllocationManager contract manages the allocation and reallocation of operat
 - `ALLOCATION_CONFIGURATION_DELAY`: The delay in seconds before allocations take effect.
     - Mainnet: `21 days`. Very TBD
     - Testnet: `1 hour`. Very TBD
+    - Public Devnet: `10 minutes`
 - `DEALLOCATION_DELAY`: The delay in seconds before deallocations take effect.
     - Mainnet: `17.5 days`. Slightly TBD
     - Testnet: `3 days`. Very TBD
+    - Public Devnet: `1 days` 
 
 ## `setAllocationDelay` 
 
@@ -81,29 +83,27 @@ Any _allocations_ (i.e. increases in the proportion of slashable stake allocated
 
 Any _deallocations_ (i.e. decreases in the proportion of slashable stake allocated to an AVS) take after `DEALLOCATION_DELAY` seconds. This enables AVSs enough time to update their view of stakes to the new proportions and have any tasks created against previous stakes to expire.
 
-## `clearPendingModifications`
+## `clearDeallocationQueue`
 
 ```solidity
 /**
- * @notice This function takes a list of strategies and adds all completable modifications for each strategy, 
+ * @notice This function takes a list of strategies and adds all completable deallocations for each strategy,
  * updating the encumberedMagnitude of the operator as needed.
  *
- * @param operator address to complete modifications for
- * @param strategies a list of strategies to complete modifications for
- * @param numToClear a list of number of pending modifications to complete for each strategy
+ * @param operator address to complete deallocations for
+ * @param strategies a list of strategies to complete deallocations for
+ * @param numToComplete a list of number of pending deallocations to complete for each strategy
  *
  * @dev can be called permissionlessly by anyone
  */
-function clearModificationQueue(
+function clearDeallocationQueue(
     address operator,
     IStrategy[] calldata strategies,
-    uint16[] calldata numToClear
+    uint16[] calldata numToComplete
 ) external;
 ```
 
-This function is used to complete pending modifications for a list of strategies for an operator. The function takes a list of strategies and the number of pending modifications to complete for each strategy. For each strategy, the function completes a modification if its effect timestamp has passed. 
-
-Completing an allocation doesn't have any material change to the protocol other than cleaning up some state and increasing code readability. 
+This function is used to complete pending deallocations for a list of strategies for an operator. The function takes a list of strategies and the number of pending deallocations to complete for each strategy. For each strategy, the function completes a modification if its effect timestamp has passed. 
 
 Completing a deallocation decreases the encumbered magnitude for the strategy, allowing them to make allocations with that magnitude. Encumbered magnitude must be decreased only upon completion because pending deallocations can be slashed before they are completable.
 
@@ -128,7 +128,7 @@ struct SlashingParams {
 }
 
 /**
- * @notice Called by an AVS to slash an operator for given operatorSetId, list of strategies, and bipsToSlash.
+ * @notice Called by an AVS to slash an operator for given operatorSetId, list of strategies, and wadToSlash.
  * For each given (operator, operatorSetId, strategy) tuple, bipsToSlash
  * bips of the operatorSet's slashable stake allocation will be slashed
  *
@@ -136,8 +136,8 @@ struct SlashingParams {
  * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
  * @param strategies the set of strategies to slash
  * @param wadToSlash the parts in 1e18 to slash, this will be proportional to the
- * @param description the description of the slashing provided by the AVS for legibility
  * operator's slashable stake allocation for the operatorSet
+ * @param description the description of the slashing provided by the AVS for legibility
  */
 function slashOperator(
     SlashingParams calldata params
