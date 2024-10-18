@@ -151,7 +151,9 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
-     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
+     * @notice Modifies the proportions of slashable stake allocated to a list of operatorSets for a set of strategies.
+     * Note that deallocations remain slashable for DEALLOCATION_DELAY amount of time therefore when they are cleared they may
+     * free up less allocatable magnitude than initially deallocated.
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
      * @dev msg.sender is used as operator

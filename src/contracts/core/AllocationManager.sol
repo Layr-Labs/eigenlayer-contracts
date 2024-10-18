@@ -137,14 +137,14 @@ contract AllocationManager is
             require(allocation.operatorSets.length == allocation.magnitudes.length, InputArrayLengthMismatch());
             require(avsDirectory.isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
 
-            // 1. For the given (operator,strategy) clear any clearable pending deallocations to free up encumberedMagnitude
-            _clearDeallocationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
-
-            // 2. Check current maxMagnitude matches expected value. This is to check for slashing race conditions
+            // 1. Check current maxMagnitude matches expected value. This is to check for slashing race conditions
             // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
             // proprtional magnitudes relative to each other.
             uint64 maxMagnitude = _maxMagnitudeHistory[msg.sender][allocation.strategy].latest();
             require(maxMagnitude == allocation.expectedMaxMagnitude, InvalidExpectedMaxMagnitude());
+
+            // 2. For the given (operator,strategy) clear any clearable pending deallocations to free up encumberedMagnitude
+            _clearDeallocationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
 
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
                 bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
