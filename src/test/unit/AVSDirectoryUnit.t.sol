@@ -1618,3 +1618,30 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 }
+
+contract AVSDirectoryUnitTests_isOperatorSetStrategy is AVSDirectoryUnitTests {
+    function test_revert_InvalidOperatorSet() public {
+        // Mock inputs.
+        OperatorSet memory operatorSet = OperatorSet(address(this), 1);
+        uint32[] memory operatorSetsIds = new uint32[](1);
+        operatorSetsIds[0] = 1;
+
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = IStrategy(cheats.addr(1));
+
+        // Make the operator set valid.
+        avsDirectory.createOperatorSets(operatorSetsIds);
+
+        // Only add `strategies[0]` as a valid strategy for the operator set.
+        avsDirectory.addStrategiesToOperatorSet(1, strategies);
+
+        // Add invalid strategy the list.
+        strategies = new IStrategy[](2);
+        strategies[0] = IStrategy(cheats.addr(1));
+        strategies[1] = IStrategy(cheats.addr(2));
+
+        // Assert invalid strategy results in false.
+        assertTrue(!avsDirectory.isOperatorSetStrategy(operatorSet, strategies[1]));
+        assertTrue(!avsDirectory.isOperatorSetStrategyBatch(operatorSet, strategies));
+    }
+}
