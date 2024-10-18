@@ -37,7 +37,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     uint32 public immutable DEALLOCATION_DELAY;
 
     /// @dev Delay before alloaction delay modifications take effect.
-    uint32 public immutable ALLOCATION_CONFIGURATION_DELAY; // QUESTION: 21 days?
+    uint32 public immutable ALLOCATION_CONFIGURATION_DELAY;
 
     // Mutatables
 

@@ -220,6 +220,12 @@ contract AllocationManager is
     }
 
     /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
+
+    /**
      * @dev Clear one or more pending deallocations to a strategy's allocated magnitude
      * @param operator the operator whose pending deallocations will be cleared
      * @param strategy the strategy to update
@@ -356,12 +362,22 @@ contract AllocationManager is
         });
     }
 
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
+
     /// @inheritdoc IAllocationManager
     function getAllocationInfo(
         address operator,
         IStrategy strategy
     ) external view returns (OperatorSet[] memory, MagnitudeInfo[] memory) {
-        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
+        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator({
+            operator: operator,
+            start: 0,
+            length: type(uint256).max
+        });
         MagnitudeInfo[] memory infos = getAllocationInfo(operator, strategy, operatorSets);
         return (operatorSets, infos);
     }

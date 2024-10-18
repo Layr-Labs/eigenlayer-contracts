@@ -263,8 +263,9 @@ contract StrategyManager is
         //check that the user has sufficient shares
         uint256 userDepositShares = stakerDepositShares[staker][strategy];
 
+        // This check technically shouldn't actually ever revert because depositSharesToRemove is already
+        // checked to not exceed max amount of shares when the withdrawal was queued in the DelegationManager
         require(depositSharesToRemove <= userDepositShares, SharesAmountTooHigh());
-
         userDepositShares = userDepositShares - depositSharesToRemove;
 
         // subtract the shares from the staker's existing shares for this strategy
