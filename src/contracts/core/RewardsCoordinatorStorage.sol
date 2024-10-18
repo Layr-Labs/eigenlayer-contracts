@@ -57,7 +57,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      */
     DistributionRoot[] internal _distributionRoots;
 
-    /// Slot 3
+    /// Slot 2
     /// @notice The address of the entity that can update the contract with new merkle roots
     address public rewardsUpdater;
     /// @notice Delay in timestamp (seconds) before a posted root can be claimed against
@@ -88,6 +88,12 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Mapping: avs => rewardsSubmissionForAllEarnersHash => bool to check
     /// if rewards submission hash for all stakers and operators has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllEarnersHash;
+
+    /// @notice Mapping: avs => avsPerformanceRewardsSubmissionHash => bool to check if performance rewards submission hash has been submitted
+    mapping(address => mapping(bytes32 => bool)) public isAVSPerformanceRewardsSubmissionHash;
+
+    /// @notice Mapping: operator => avs => OperatorAVSCommission. The commission an operator takes for a specific AVS.
+    mapping(address => mapping(address => OperatorAVSCommission)) public operatorAVSCommissionBips;
 
     constructor(
         IDelegationManager _delegationManager,
@@ -120,5 +126,5 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[38] private __gap;
 }

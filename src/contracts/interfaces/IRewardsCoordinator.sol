@@ -27,6 +27,26 @@ interface IRewardsCoordinator {
     }
 
     /**
+     * @notice A reward struct for an operator
+     * @param operator The operator to be rewarded
+     * @param amount The reward amount for the operator
+     */
+    struct OperatorReward {
+        address operator;
+        uint256 amount;
+    }
+
+    /**
+     * @notice A commission struct for an Operator per AVS
+     * @param initialized Whether the commission per AVS has been initialized
+     * @param commissionBips The commission in basis points
+     */
+    struct OperatorAVSCommission {
+        bool initialized;
+        uint16 commissionBips;
+    }
+
+    /**
      * Sliding Window for valid RewardsSubmission startTimestamp
      *
      * Scenario A: GENESIS_REWARDS_TIMESTAMP IS WITHIN RANGE
@@ -56,6 +76,42 @@ interface IRewardsCoordinator {
         StrategyAndMultiplier[] strategiesAndMultipliers;
         IERC20 token;
         uint256 amount;
+        uint32 startTimestamp;
+        uint32 duration;
+    }
+
+    /**
+     * Sliding Window for valid PerformanceRewardsSubmission startTimestamp
+     *
+     * Scenario A: GENESIS_REWARDS_TIMESTAMP IS WITHIN RANGE
+     *         <--------MAX_RETROACTIVE_LENGTH--------> t (block.timestamp)
+     *             <--valid range for startTimestamp--
+     *             ^
+     *         GENESIS_REWARDS_TIMESTAMP
+     *
+     *
+     * Scenario B: GENESIS_REWARDS_TIMESTAMP IS OUT OF RANGE
+     *         <--------MAX_RETROACTIVE_LENGTH--------> t (block.timestamp)
+     *         <----valid range for startTimestamp----
+     *     ^
+     * GENESIS_REWARDS_TIMESTAMP
+     *
+     * @notice PerformanceRewardsSubmission struct submitted by AVSs when making performance-based rewards for their operators and stakers
+     * PerformanceRewardsSubmission can be for a time range within the valid window for startTimestamp and must be within max duration.
+     * See `createAVSPerformanceRewardsSubmission()` for more details.
+     * @param strategiesAndMultipliers The strategies and their relative weights
+     * cannot have duplicate strategies and need to be sorted in ascending address order
+     * @param token The rewards token to be distributed.
+     * @param operatorRewards The rewards for the operators. The sum of all operator rewards equals the total amount of tokens deposited in the submission.
+     * The operators cannot have duplicate addresses and need to be sorted in ascending address order.
+     * @param startTimestamp The timestamp (seconds) at which the submission range is considered for distribution
+     * It is a retroactive payment and has to be strictly less than `block.timestamp`. See the diagram above.
+     * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION.
+     */
+    struct PerformanceRewardsSubmission {
+        StrategyAndMultiplier[] strategiesAndMultipliers;
+        IERC20 token;
+        OperatorReward[] operatorRewards;
         uint32 startTimestamp;
         uint32 duration;
     }
@@ -150,13 +206,28 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+    /// @notice emitted when an AVS creates a valid PerformanceRewardsSubmission
+    event AVSPerformanceRewardsSubmissionCreated(
+        address indexed avs,
+        uint256 indexed submissionNonce,
+        bytes32 indexed performanceRewardsSubmissionHash,
+        PerformanceRewardsSubmission performanceRewardsSubmission
+    );
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
     event RewardsForAllSubmitterSet(
-        address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
+        address indexed rewardsForAllSubmitter,
+        bool indexed oldValue,
+        bool indexed newValue
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+    event OperatorAVSCommissionBipsSet(
+        address indexed operator,
+        address indexed avs,
+        uint16 oldOperatorAVSCommissionBips,
+        uint16 newOperatorAVSCommissionBips
+    );
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
@@ -285,6 +356,24 @@ interface IRewardsCoordinator {
     function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions) external;
 
     /**
+     * @notice Creates a new performance-based rewards submission on behalf of an AVS, to be split amongst the operators and
+     * set of stakers delegated to operators who are registered to the `avs`.
+     * @param avs The AVS on behalf of which the reward is being submitted
+     * @param performanceRewardsSubmissions The performance rewards submissions being created
+     * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
+     * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The tokens are sent to the `RewardsCoordinator` contract
+     * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `performanceRewardsSubmissions`, before calling this function.
+     * @dev Strategies must be in ascending order of addresses to check for duplicates
+     * @dev Operators must be in ascending order of addresses to check for duplicates.
+     * @dev This function will revert if the `performanceRewardsSubmissions` is malformed.
+     */
+    function createAVSPerformanceRewardsSubmission(
+        address avs,
+        PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
+    ) external;
+
+    /**
      * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
@@ -297,6 +386,20 @@ interface IRewardsCoordinator {
      * claimerFor[claim.earner] can claim the rewards.
      */
     function processClaim(RewardsMerkleClaim calldata claim, address recipient) external;
+
+    /**
+     * @notice Batch claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
+     * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
+     * they can simply claim against the latest root and the contract will calculate the difference between
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
+     * @param claims The RewardsMerkleClaims to be processed.
+     * Contains the root index, earner, token leaves, and required proofs
+     * @param recipient The address recipient that receives the ERC20 rewards
+     * @dev only callable by the valid claimer, that is
+     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
+     * claimerFor[claim.earner] can claim the rewards.
+     */
+    function processClaims(RewardsMerkleClaim[] calldata claims, address recipient) external;
 
     /**
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
@@ -332,6 +435,15 @@ interface IRewardsCoordinator {
      * @dev Only callable by the contract owner
      */
     function setGlobalOperatorCommission(uint16 _globalCommissionBips) external;
+
+    /**
+     * @notice Sets the commission for a specific operator for a specific avs
+     * @param operator The operator who is setting the commission
+     * @param avs The avs for which the commission is being set by the operator
+     * @param commission The commission for the operator for the specific avs
+     * @dev Only callable by the operator
+     */
+    function setOperatorAVSCommission(address operator, address avs, uint16 commission) external;
 
     /**
      * @notice Sets the permissioned `rewardsUpdater` address which can post new roots

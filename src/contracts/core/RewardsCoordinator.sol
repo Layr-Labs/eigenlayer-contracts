@@ -45,6 +45,8 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
     /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
     uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
+    /// @dev Index for flag that pauses calling createAVSPerformanceRewardsSubmission
+    uint8 internal constant PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION = 5;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -118,11 +120,9 @@ contract RewardsCoordinator is
      */
 
     /// @inheritdoc IRewardsCoordinator
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION)
-        nonReentrant
-    {
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -139,12 +139,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -161,12 +158,9 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions)
-        external
-        onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS)
-        onlyRewardsForAllSubmitter
-        nonReentrant
-    {
+    function createRewardsForAllEarners(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -178,9 +172,41 @@ contract RewardsCoordinator is
             submissionNonce[msg.sender] = nonce + 1;
 
             emit RewardsSubmissionForAllEarnersCreated(
-                msg.sender, nonce, rewardsSubmissionForAllEarnersHash, rewardsSubmission
+                msg.sender,
+                nonce,
+                rewardsSubmissionForAllEarnersHash,
+                rewardsSubmission
             );
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+        }
+    }
+
+    /// @inheritdoc IRewardsCoordinator
+    function createAVSPerformanceRewardsSubmission(
+        address avs,
+        PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION) nonReentrant {
+        require(msg.sender == avs, "RewardsCoordinator.createAVSPerformanceRewardsSubmission: caller is not the AVS");
+
+        for (uint256 i = 0; i < performanceRewardsSubmissions.length; i++) {
+            PerformanceRewardsSubmission calldata performanceRewardsSubmission = performanceRewardsSubmissions[i];
+            uint256 nonce = submissionNonce[msg.sender];
+            bytes32 performanceRewardsSubmissionHash = keccak256(
+                abi.encode(msg.sender, nonce, performanceRewardsSubmission)
+            );
+
+            uint256 totalAmount = _validatePerformanceRewardsSubmission(performanceRewardsSubmission);
+
+            isAVSPerformanceRewardsSubmissionHash[msg.sender][performanceRewardsSubmissionHash] = true;
+            submissionNonce[msg.sender] = nonce + 1;
+
+            emit AVSPerformanceRewardsSubmissionCreated(
+                msg.sender,
+                nonce,
+                performanceRewardsSubmissionHash,
+                performanceRewardsSubmission
+            );
+            performanceRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
     }
 
@@ -189,30 +215,16 @@ contract RewardsCoordinator is
         RewardsMerkleClaim calldata claim,
         address recipient
     ) external onlyWhenNotPaused(PAUSED_PROCESS_CLAIM) nonReentrant {
-        DistributionRoot memory root = _distributionRoots[claim.rootIndex];
-        _checkClaim(claim, root);
-        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address earner = claim.earnerLeaf.earner;
-        address claimer = claimerFor[earner];
-        if (claimer == address(0)) {
-            claimer = earner;
-        }
-        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
-        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
-            TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
+        _processClaim(claim, recipient);
+    }
 
-            uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
-            require(
-                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
-                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
-            );
-
-            // Calculate amount to claim and update cumulativeClaimed
-            uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
-            cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
-
-            tokenLeaf.token.safeTransfer(recipient, claimAmount);
-            emit RewardsClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
+    /// @inheritdoc IRewardsCoordinator
+    function processClaims(
+        RewardsMerkleClaim[] calldata claims,
+        address recipient
+    ) external onlyWhenNotPaused(PAUSED_PROCESS_CLAIM) nonReentrant {
+        for (uint256 i = 0; i < claims.length; i++) {
+            _processClaim(claims[i], recipient);
         }
     }
 
@@ -272,6 +284,19 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
+    function setOperatorAVSCommission(address operator, address avs, uint16 commission) external {
+        require(msg.sender == operator, "RewardsCoordinator.setOperatorAVSCommission: caller is not the operator");
+        //TODO: Add a check to ensure that the operator is registered to the AVS.
+        //TODO: Add a 7 day delay.
+
+        OperatorAVSCommission storage operatorAVSCommission = operatorAVSCommissionBips[operator][avs];
+
+        emit OperatorAVSCommissionBipsSet(operator, avs, operatorAVSCommission.commissionBips, commission);
+        operatorAVSCommission.initialized = true;
+        operatorAVSCommission.commissionBips = commission;
+    }
+
+    /// @inheritdoc IRewardsCoordinator
     function setRewardsUpdater(address _rewardsUpdater) external onlyOwner {
         _setRewardsUpdater(_rewardsUpdater);
     }
@@ -315,8 +340,8 @@ contract RewardsCoordinator is
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp
-                && GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp &&
+                GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
         );
         require(
@@ -338,6 +363,85 @@ contract RewardsCoordinator is
             );
             currAddress = address(strategy);
         }
+    }
+
+    /**
+     * @notice Validate a PerformanceRewardsSubmission. Called from `createAVSPerformanceRewardsSubmission`.
+     * @dev Not checking for `MAX_FUTURE_LENGTH` (Since Performance based reward submissions are retroactive)
+     * or `MAX_REWARDS_AMOUNT` (Since we no longer have the `1e38 - 1` limitation in the offchain rewards calculation)
+     * @param performanceRewardsSubmission PerformanceRewardsSubmission to validate.
+     * @return total amount to be transferred from the avs to the contract.
+     */
+    function _validatePerformanceRewardsSubmission(
+        PerformanceRewardsSubmission calldata performanceRewardsSubmission
+    ) internal view returns (uint256) {
+        require(
+            performanceRewardsSubmission.strategiesAndMultipliers.length > 0,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: no strategies set"
+        );
+        require(
+            performanceRewardsSubmission.operatorRewards.length > 0,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: no operators rewarded"
+        );
+
+        uint256 totalAmount = 0;
+        address currOperatorAddress = address(0);
+        for (uint256 i = 0; i < performanceRewardsSubmission.operatorRewards.length; ++i) {
+            OperatorReward calldata operatorReward = performanceRewardsSubmission.operatorRewards[i];
+            require(
+                operatorReward.operator != address(0),
+                "RewardsCoordinator._validatePerformanceRewardsSubmission: operator cannot be 0 address"
+            );
+            require(
+                currOperatorAddress < operatorReward.operator,
+                "RewardsCoordinator._validatePerformanceRewardsSubmission: operators must be in ascending order to handle duplicates"
+            );
+            currOperatorAddress = operatorReward.operator;
+            require(
+                operatorReward.amount > 0,
+                "RewardsCoordinator._validatePerformanceRewardsSubmission: operator reward amount cannot be 0"
+            );
+            totalAmount += operatorReward.amount;
+        }
+
+        require(
+            performanceRewardsSubmission.duration <= MAX_REWARDS_DURATION,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
+        );
+        require(
+            performanceRewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
+        );
+        require(
+            performanceRewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
+        );
+        require(
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= performanceRewardsSubmission.startTimestamp &&
+                GENESIS_REWARDS_TIMESTAMP <= performanceRewardsSubmission.startTimestamp,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: startTimestamp too far in the past"
+        );
+        require(
+            performanceRewardsSubmission.startTimestamp + performanceRewardsSubmission.duration < block.timestamp,
+            "RewardsCoordinator._validatePerformanceRewardsSubmission: performance rewards submission is not retroactive"
+        );
+
+        // Require performanceRewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
+        address currAddress = address(0);
+        for (uint256 i = 0; i < performanceRewardsSubmission.strategiesAndMultipliers.length; ++i) {
+            IStrategy strategy = performanceRewardsSubmission.strategiesAndMultipliers[i].strategy;
+            require(
+                strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
+                "RewardsCoordinator._validatePerformanceRewardsSubmission: invalid strategy considered"
+            );
+            require(
+                currAddress < address(strategy),
+                "RewardsCoordinator._validatePerformanceRewardsSubmission: strategies must be in ascending order to handle duplicates"
+            );
+            currAddress = address(strategy);
+        }
+
+        return totalAmount;
     }
 
     function _checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root) internal view {
@@ -430,13 +534,46 @@ contract RewardsCoordinator is
         // forgefmt: disable-next-item
         require(
             Merkle.verifyInclusionKeccak({
-                root: root, 
-                index: earnerLeafIndex, 
-                proof: earnerProof, 
+                root: root,
+                index: earnerLeafIndex,
+                proof: earnerProof,
                 leaf: earnerLeafHash
             }),
             "RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof"
         );
+    }
+
+    /**
+     * @notice Internal helper to process reward claims.
+     * @param claim The RewardsMerkleClaims to be processed.
+     * @param recipient The address recipient that receives the ERC20 rewards
+     */
+    function _processClaim(RewardsMerkleClaim calldata claim, address recipient) internal {
+        DistributionRoot memory root = _distributionRoots[claim.rootIndex];
+        _checkClaim(claim, root);
+        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
+        address earner = claim.earnerLeaf.earner;
+        address claimer = claimerFor[earner];
+        if (claimer == address(0)) {
+            claimer = earner;
+        }
+        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
+        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
+            TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
+
+            uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
+            require(
+                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
+                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
+            );
+
+            // Calculate amount to claim and update cumulativeClaimed
+            uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
+            cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
+
+            tokenLeaf.token.safeTransfer(recipient, claimAmount);
+            emit RewardsClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
+        }
     }
 
     function _setActivationDelay(uint32 _activationDelay) internal {

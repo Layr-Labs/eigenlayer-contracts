@@ -8,7 +8,7 @@ import "./Deploy_Test_RewardsCoordinator.s.sol";
  * anvil --fork-url $RPC_HOLESKY
  *
  * Holesky testnet: Deploy/Upgrade RewardsCoordinator
- * forge script script/deploy/holesky/upgrade_preprod_rewardsCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv 
+ * forge script script/deploy/holesky/upgrade_preprod_rewardsCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv
  *
  */
 contract Upgrade_Preprod_RewardsCoordinator is Deploy_Test_RewardsCoordinator {
@@ -39,6 +39,5 @@ contract Upgrade_Preprod_RewardsCoordinator is Deploy_Test_RewardsCoordinator {
         _verifyImplementations();
         _verifyContractsInitialized(false);
         _verifyInitializationParams();
-
     }
 }
