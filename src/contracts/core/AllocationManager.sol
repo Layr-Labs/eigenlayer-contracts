@@ -75,7 +75,7 @@ contract AllocationManager is
             info.encumberedMagnitude -= slashedMagnitude;
 
             // 2. If there is a pending deallocation, reduce pending deallocation proportionally.
-            // This ensures that when the deallocation is completed, less magnitude is freed.
+            // This ensures that when the deallocation is cleared, less magnitude is freed.
             if (info.pendingDiff < 0) {
                 uint64 slashedPending = uint64(uint256(uint128(-info.pendingDiff)).mulWad(params.wadToSlash));
                 info.pendingDiff += int128(uint128(slashedPending));
@@ -137,7 +137,7 @@ contract AllocationManager is
             require(allocation.operatorSets.length == allocation.magnitudes.length, InputArrayLengthMismatch());
             require(avsDirectory.isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
 
-            // 1. For the given (operator,strategy) complete any pending deallocation to free up encumberedMagnitude
+            // 1. For the given (operator,strategy) clear any clearable pending deallocations to free up encumberedMagnitude
             _clearDeallocationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
 
             // 2. Check current maxMagnitude matches expected value. This is to check for slashing race conditions
@@ -223,18 +223,18 @@ contract AllocationManager is
      * @dev Clear one or more pending deallocations to a strategy's allocated magnitude
      * @param operator the operator whose pending deallocations will be cleared
      * @param strategy the strategy to update
-     * @param numToClear the number of pending deallocations to complete
+     * @param numToClear the number of pending deallocations to clear
      */
     function _clearDeallocationQueue(address operator, IStrategy strategy, uint16 numToClear) internal {
-        uint256 numCompleted;
+        uint256 numCleared;
         uint256 length = deallocationQueue[operator][strategy].length();
 
-        while (length > 0 && numCompleted < numToClear) {
+        while (length > 0 && numCleared < numToClear) {
             bytes32 operatorSetKey = deallocationQueue[operator][strategy].front();
             PendingMagnitudeInfo memory info = _getPendingMagnitudeInfo(operator, strategy, operatorSetKey);
 
-            // If we've reached a pending deallocation that isn't completable yet,
-            // we can stop. Any subsequent deallocation will also be uncompletable.
+            // If we've reached a pending deallocation that isn't clearable yet,
+            // we can stop. Any subsequent deallocation will also be unclearable.
             if (block.timestamp < info.effectTimestamp) {
                 break;
             }
@@ -244,7 +244,7 @@ contract AllocationManager is
 
             // Remove the deallocation from the queue
             deallocationQueue[operator][strategy].popFront();
-            ++numCompleted;
+            ++numCleared;
             --length;
         }
     }
@@ -273,9 +273,9 @@ contract AllocationManager is
 
     /**
      * @dev For an operator set, get the operator's effective allocated magnitude.
-     * If the operator set has a pending deallocation that can be completed at the
+     * If the operator set has a pending deallocation that can be cleared at the
      * current timestamp, this method returns a view of the allocation as if the deallocation
-     * was completed.
+     * was cleared.
      * @return info the effective allocated and pending magnitude for the operator set, and
      * the effective encumbered magnitude for all operator sets belonging to this strategy
      */
@@ -287,7 +287,7 @@ contract AllocationManager is
         MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][operatorSetKey];
         uint64 _encumberedMagnitude = encumberedMagnitude[operator][strategy];
 
-        // If the pending change can't be completed yet
+        // If the pending change can't be cleared yet
         if (block.timestamp < mInfo.effectTimestamp) {
             return PendingMagnitudeInfo({
                 encumberedMagnitude: _encumberedMagnitude,
@@ -297,13 +297,13 @@ contract AllocationManager is
             });
         }
 
-        // Pending change can be completed - add delta to current magnitude
+        // Pending change can be cleared - add delta to current magnitude
         info.currentMagnitude = _addInt128(mInfo.currentMagnitude, mInfo.pendingDiff);
         info.encumberedMagnitude = _encumberedMagnitude;
         info.effectTimestamp = 0;
         info.pendingDiff = 0;
 
-        // If the completed change was a deallocation, update encumbered magnitude
+        // If the cleared change was a deallocation, update encumbered magnitude
         if (mInfo.pendingDiff < 0) {
             info.encumberedMagnitude = _addInt128(_encumberedMagnitude, mInfo.pendingDiff);
         }

@@ -32,7 +32,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @notice The AVSDirectory contract for EigenLayer
     IAVSDirectory public immutable avsDirectory;
 
-    /// @notice Delay before deallocations are completable and can be added back into freeMagnitude
+    /// @notice Delay before deallocations are clearable and can be added back into freeMagnitude
     /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
     uint32 public immutable DEALLOCATION_DELAY;
 
