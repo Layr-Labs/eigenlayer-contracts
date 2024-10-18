@@ -1626,11 +1626,11 @@ contract AVSDirectoryUnitTests_isOperatorSetStrategy is AVSDirectoryUnitTests {
         uint32[] memory operatorSetsIds = new uint32[](1);
         operatorSetsIds[0] = 1;
 
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = IStrategy(cheats.addr(1));
-
         // Make the operator set valid.
         avsDirectory.createOperatorSets(operatorSetsIds);
+
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = IStrategy(cheats.addr(1));
 
         // Only add `strategies[0]` as a valid strategy for the operator set.
         avsDirectory.addStrategiesToOperatorSet(1, strategies);
@@ -1643,5 +1643,17 @@ contract AVSDirectoryUnitTests_isOperatorSetStrategy is AVSDirectoryUnitTests {
         // Assert invalid strategy results in false.
         assertTrue(!avsDirectory.isOperatorSetStrategy(operatorSet, strategies[1]));
         assertTrue(!avsDirectory.isOperatorSetStrategyBatch(operatorSet, strategies));
+
+        // Create a list of two new strategies.
+        strategies = new IStrategy[](2);
+        strategies[0] = IStrategy(cheats.addr(3));
+        strategies[1] = IStrategy(cheats.addr(4));
+
+        // Make both strategies valid for the operator set.
+        avsDirectory.addStrategiesToOperatorSet(1, strategies);
+
+        // Assert valid strategy results in true.
+        assertTrue(avsDirectory.isOperatorSetStrategy(operatorSet, strategies[0]));
+        assertTrue(avsDirectory.isOperatorSetStrategyBatch(operatorSet, strategies));
     }
 }
