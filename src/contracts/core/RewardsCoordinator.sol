@@ -222,10 +222,19 @@ contract RewardsCoordinator is
     function setClaimerFor(
         address claimer
     ) external {
+        // Use the setClaimerFor function for operators
+        require(!delegationManager.isOperator(msg.sender), InvalidOperator());
         address earner = msg.sender;
-        address prevClaimer = claimerFor[earner];
-        claimerFor[earner] = claimer;
-        emit ClaimerForSet(earner, prevClaimer, claimer);
+        _setClaimer(earner, claimer);
+    }
+
+    function setClaimerForOperator(
+        address operator,
+        address claimer
+    ) external {
+        require(delegationManager.isOperator(operator), InvalidOperator());
+        _checkCanCall(operator, msg.sender);
+        _setClaimer(operator, claimer);
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -400,6 +409,15 @@ contract RewardsCoordinator is
     ) internal {
         emit RewardsUpdaterSet(rewardsUpdater, _rewardsUpdater);
         rewardsUpdater = _rewardsUpdater;
+    }
+
+    function _setClaimer(
+        address earner,
+        address claimer
+    ) internal {
+        address prevClaimer = claimerFor[earner];
+        claimerFor[earner] = claimer;
+        emit ClaimerForSet(earner, prevClaimer, claimer);
     }
 
     /**

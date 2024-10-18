@@ -112,32 +112,33 @@ contract AVSDirectory is
         address avs,
         address operator,
         uint32[] calldata operatorSetIds,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory adminSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
+        address admin = permissionController.getAdmin(operator);
         require(msg.sender == avs, InvalidCaller());
         // Assert operator's signature has not expired.
-        require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
+        require(adminSignature.expiry >= block.timestamp, SignatureExpired());
         // Assert `operator` is actually an operator.
         require(delegation.isOperator(operator), OperatorNotRegisteredToEigenLayer());
         // Assert that the AVS is an operator set AVS.
         require(isOperatorSetAVS[msg.sender], InvalidAVS());
         // Assert operator's signature `salt` has not already been spent.
-        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
+        require(!adminSaltIsSpent[admin][adminSignature.salt], SaltSpent());
 
         // Assert that `operatorSignature.signature` is a valid signature for operator set registrations.
         _checkIsValidSignatureNow({
-            signer: operator,
+            signer: admin,
             signableDigest: calculateOperatorSetRegistrationDigestHash({
                 avs: msg.sender,
                 operatorSetIds: operatorSetIds,
-                salt: operatorSignature.salt,
-                expiry: operatorSignature.expiry
+                salt: adminSignature.salt,
+                expiry: adminSignature.expiry
             }),
-            signature: operatorSignature.signature
+            signature: adminSignature.signature
         });
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
-        operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+        operatorSaltIsSpent[admin][adminSignature.salt] = true;
 
         _registerToOperatorSets(operator, msg.sender, operatorSetIds);
     }
@@ -147,30 +148,31 @@ contract AVSDirectory is
         address operator,
         address avs,
         uint32[] calldata operatorSetIds,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory adminSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
         if (operatorSignature.signature.length == 0) {
             _checkCanCall(operator, msg.sender);
         } else {
+            address admin = permissionController.getAdmin(operator);
             // Assert operator's signature has not expired.
-            require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
+            require(adminSignature.expiry >= block.timestamp, SignatureExpired());
             // Assert operator's signature `salt` has not already been spent.
-            require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
+            require(!operatorSaltIsSpent[admin][adminSignature.salt], SaltSpent());
 
-            // Assert that `operatorSignature.signature` is a valid signature for operator set deregistrations.
+            // Assert that `adminSignature.signature` is a valid signature for operator set deregistrations.
             _checkIsValidSignatureNow({
-                signer: operator,
+                signer: admin,
                 signableDigest: calculateOperatorSetForceDeregistrationTypehash({
                     avs: avs,
                     operatorSetIds: operatorSetIds,
-                    salt: operatorSignature.salt,
-                    expiry: operatorSignature.expiry
+                    salt: adminSignature.salt,
+                    expiry: adminSignature.expiry
                 }),
-                signature: operatorSignature.signature
+                signature: adminSignature.signature
             });
 
             // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
-            operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+            operatorSaltIsSpent[admin][adminSignature.salt] = true;
         }
         _deregisterFromOperatorSets(avs, operator, operatorSetIds);
     }
