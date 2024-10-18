@@ -21,6 +21,8 @@ interface IAllocationManagerErrors {
     error InvalidOperatorSet();
     /// @dev Thrown when an invalid operator is provided.
     error InvalidOperator();
+    /// @dev Thrown when an invalid strategy is provided.
+    error InvalidStrategy();
     /// @dev Thrown when caller is not the delegation manager.
     error OnlyDelegationManager();
     /// @dev Thrown when an operator attempts to set their allocation for an operatorSet to the same value

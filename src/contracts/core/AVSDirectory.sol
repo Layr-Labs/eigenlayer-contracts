@@ -414,6 +414,25 @@ contract AVSDirectory is
     }
 
     /// @inheritdoc IAVSDirectory
+    function isOperatorSetStrategy(OperatorSet calldata operatorSet, IStrategy strategy) external view returns (bool) {
+        return _operatorSetStrategies[_encodeOperatorSet(operatorSet)].contains(address(strategy));
+    }
+
+    /// @inheritdoc IAVSDirectory
+    function isOperatorSetStrategyBatch(
+        OperatorSet calldata operatorSet,
+        IStrategy[] calldata strategies
+    ) external view returns (bool) {
+        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        for (uint256 i; i < strategies.length; ++i) {
+            if (!_operatorSetStrategies[operatorSetKey].contains(address(strategies[i]))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// @inheritdoc IAVSDirectory
     function getNumOperatorsInOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
