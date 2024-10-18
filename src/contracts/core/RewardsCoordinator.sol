@@ -351,6 +351,8 @@ contract RewardsCoordinator is
 
     /**
      * @notice Validate a PerformanceRewardsSubmission. Called from `createAVSPerformanceRewardsSubmission`.
+     * @dev Not checking for `MAX_FUTURE_LENGTH` (Since Performance based reward submissions are retroactive)
+     * or `MAX_REWARDS_AMOUNT` (Since we no longer have the `1e38 - 1` limitation in the offchain rewards calculation)
      * @param performanceRewardsSubmission PerformanceRewardsSubmission to validate.
      * @return total amount to be transferred from the avs to the contract.
      */

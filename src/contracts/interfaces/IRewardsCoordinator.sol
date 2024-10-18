@@ -37,6 +37,16 @@ interface IRewardsCoordinator {
     }
 
     /**
+     * @notice A commission struct for an Operator per AVS
+     * @param initialized Whether the commission per AVS has been initialized
+     * @param commissionBips The commission in basis points
+     */
+    struct OperatorAVSCommission {
+        bool initialized;
+        uint16 commissionBips;
+    }
+
+    /**
      * Sliding Window for valid RewardsSubmission startTimestamp
      *
      * Scenario A: GENESIS_REWARDS_TIMESTAMP IS WITHIN RANGE
