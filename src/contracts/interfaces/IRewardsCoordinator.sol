@@ -222,6 +222,12 @@ interface IRewardsCoordinator {
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+    event OperatorAVSCommissionBipsSet(
+        address indexed operator,
+        address indexed avs,
+        uint16 oldOperatorAVSCommissionBips,
+        uint16 newOperatorAVSCommissionBips
+    );
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
@@ -427,6 +433,15 @@ interface IRewardsCoordinator {
      * @dev Only callable by the contract owner
      */
     function setGlobalOperatorCommission(uint16 _globalCommissionBips) external;
+
+    /**
+     * @notice Sets the commission for a specific operator for a specific avs
+     * @param operator The operator who is setting the commission
+     * @param avs The avs for which the commission is being set by the operator
+     * @param commission The commission for the operator for the specific avs
+     * @dev Only callable by the operator
+     */
+    function setOperatorAVSCommission(address operator, address avs, uint16 commission) external;
 
     /**
      * @notice Sets the permissioned `rewardsUpdater` address which can post new roots

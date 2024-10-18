@@ -281,6 +281,18 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
+    function setOperatorAVSCommission(address operator, address avs, uint16 commission) external {
+        require(msg.sender == operator, "RewardsCoordinator.setOperatorAVSCommission: caller is not the operator");
+        //TODO: Add a check to ensure that the operator is registered to the AVS
+
+        OperatorAVSCommission storage operatorAVSCommission = operatorAVSCommissionBips[operator][avs];
+
+        emit OperatorAVSCommissionBipsSet(operator, avs, operatorAVSCommission.commissionBips, commission);
+        operatorAVSCommission.initialized = true;
+        operatorAVSCommission.commissionBips = commission;
+    }
+
+    /// @inheritdoc IRewardsCoordinator
     function setRewardsUpdater(address _rewardsUpdater) external onlyOwner {
         _setRewardsUpdater(_rewardsUpdater);
     }
