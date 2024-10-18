@@ -70,14 +70,14 @@ contract AllocationManager is
             require(info.currentMagnitude > 0, OperatorNotAllocated());
 
             // 1. Calculate slashing amount and update current/encumbered magnitude
-            uint64 slashedMagnitude = uint64(uint256(info.currentMagnitude).mulWad(params.wadToSlash));
+            uint64 slashedMagnitude = uint64(uint256(info.currentMagnitude).mulWadRoundUp(params.wadToSlash));
             info.currentMagnitude -= slashedMagnitude;
             info.encumberedMagnitude -= slashedMagnitude;
 
             // 2. If there is a pending deallocation, reduce pending deallocation proportionally.
             // This ensures that when the deallocation is cleared, less magnitude is freed.
             if (info.pendingDiff < 0) {
-                uint64 slashedPending = uint64(uint256(uint128(-info.pendingDiff)).mulWad(params.wadToSlash));
+                uint64 slashedPending = uint64(uint256(uint128(-info.pendingDiff)).mulWadRoundUp(params.wadToSlash));
                 info.pendingDiff += int128(uint128(slashedPending));
 
                 emit OperatorSetMagnitudeUpdated(
