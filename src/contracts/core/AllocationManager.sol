@@ -6,6 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../permissions/Pausable.sol";
+import "../mixins/PermissionControllerMixin.sol";
 import "../libraries/SlashingLib.sol";
 import "./AllocationManagerStorage.sol";
 
@@ -14,7 +15,8 @@ contract AllocationManager is
     OwnableUpgradeable,
     Pausable,
     AllocationManagerStorage,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    PermissionControllerMixin
 {
     using Snapshots for Snapshots.DefaultWadHistory;
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
@@ -33,9 +35,10 @@ contract AllocationManager is
     constructor(
         IDelegationManager _delegation,
         IAVSDirectory _avsDirectory,
+        IPermissionController _permissionController,
         uint32 _DEALLOCATION_DELAY,
         uint32 _ALLOCATION_CONFIGURATION_DELAY
-    ) AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY) {
+    ) AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY) PermissionControllerMixin(_permissionController) {
         _disableInitializers();
     }
 
@@ -51,8 +54,10 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function slashOperator(
+        address avs,
         SlashingParams calldata params
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
+        require (msg.sender == avs, InvalidCaller());
         require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
 
         // Check that the operator is registered and slashable
@@ -127,9 +132,11 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function modifyAllocations(
+        address operator,
         MagnitudeAllocation[] calldata allocations
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
-        (bool isSet, uint32 operatorAllocationDelay) = getAllocationDelay(msg.sender);
+        _checkCanCall(operator, msg.sender);
+        (bool isSet, uint32 operatorAllocationDelay) = getAllocationDelay(operator);
         require(isSet, UninitializedAllocationDelay());
 
         for (uint256 i = 0; i < allocations.length; ++i) {
@@ -138,12 +145,12 @@ contract AllocationManager is
             require(avsDirectory.isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
 
             // 1. For the given (operator,strategy) complete any pending deallocation to free up encumberedMagnitude
-            _clearDeallocationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
+            _clearDeallocationQueue({operator: operator, strategy: allocation.strategy, numToClear: type(uint16).max});
 
             // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
             // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
             // proprtional magnitudes relative to each other.
-            uint64 maxMagnitude = _maxMagnitudeHistory[msg.sender][allocation.strategy].latest();
+            uint64 maxMagnitude = _maxMagnitudeHistory[operator][allocation.strategy].latest();
             require(maxMagnitude == allocation.expectedMaxMagnitude, InvalidExpectedTotalMagnitude());
 
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
@@ -151,7 +158,7 @@ contract AllocationManager is
 
                 // Ensure there is not already a pending modification
                 PendingMagnitudeInfo memory info =
-                    _getPendingMagnitudeInfo(msg.sender, allocation.strategy, operatorSetKey);
+                    _getPendingMagnitudeInfo(operator, allocation.strategy, operatorSetKey);
                 require(info.pendingDiff == 0, ModificationAlreadyPending());
 
                 info.pendingDiff = _calcDelta(info.currentMagnitude, allocation.magnitudes[j]);
@@ -162,7 +169,7 @@ contract AllocationManager is
                     info.effectTimestamp = uint32(block.timestamp) + DEALLOCATION_DELAY;
 
                     // Add the operatorSet to the deallocation queue
-                    deallocationQueue[msg.sender][allocation.strategy].pushBack(operatorSetKey);
+                    deallocationQueue[operator][allocation.strategy].pushBack(operatorSetKey);
                 } else if (info.pendingDiff > 0) {
                     info.effectTimestamp = uint32(block.timestamp) + operatorAllocationDelay;
 
@@ -174,14 +181,14 @@ contract AllocationManager is
 
                 // Update the modification in storage
                 _updateMagnitudeInfo({
-                    operator: msg.sender,
+                    operator: operator,
                     strategy: allocation.strategy,
                     operatorSetKey: operatorSetKey,
                     info: info
                 });
 
                 emit OperatorSetMagnitudeUpdated(
-                    msg.sender,
+                    operator,
                     allocation.operatorSets[j],
                     allocation.strategy,
                     _addInt128(info.currentMagnitude, info.pendingDiff),
@@ -207,16 +214,9 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function setAllocationDelay(address operator, uint32 delay) external {
-        require(msg.sender == address(delegation), OnlyDelegationManager());
+        // TODO: fix error
+        require(msg.sender == address(delegation) || _checkCanCall(operator, msg.sender), OnlyDelegationManager());
         _setAllocationDelay(operator, delay);
-    }
-
-    /// @inheritdoc IAllocationManager
-    function setAllocationDelay(
-        uint32 delay
-    ) external {
-        require(delegation.isOperator(msg.sender), OperatorNotRegistered());
-        _setAllocationDelay(msg.sender, delay);
     }
 
     /**

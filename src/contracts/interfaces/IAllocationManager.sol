@@ -147,16 +147,19 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @notice Called by an AVS to slash an operator in a given operator set
      */
     function slashOperator(
+        address avs
         SlashingParams calldata params
     ) external;
 
     /**
      * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
+     * @param operator the operator to modify the allocation for
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
      * @dev msg.sender is used as operator
      */
     function modifyAllocations(
+        address operator,
         MagnitudeAllocation[] calldata allocations
     ) external;
 
@@ -177,7 +180,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
-     * @notice Called by the delegation manager to set an operator's allocation delay.
+     * @notice Called by the delegation manager or an operator to set an operator's allocation delay.
      * This is set when the operator first registers, and is the time between an operator
      * allocating magnitude to an operator set, and the magnitude becoming slashable.
      * @dev Note that if an operator's allocation delay is 0, it has not been set yet,
@@ -186,17 +189,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @param delay the allocation delay in seconds
      */
     function setAllocationDelay(address operator, uint32 delay) external;
-
-    /**
-     * @notice Called by an operator to set their allocation delay. This is the time between an operator
-     * allocating magnitude to an operator set, and the magnitude becoming slashable.
-     * @dev Note that if an operator's allocation delay is 0, it has not been set yet,
-     * and the operator will be unable to allocate magnitude to any operator set.
-     * @param delay the allocation delay in seconds
-     */
-    function setAllocationDelay(
-        uint32 delay
-    ) external;
 
     /**
      *

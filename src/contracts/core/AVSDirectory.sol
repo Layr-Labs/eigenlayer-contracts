@@ -6,6 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../mixins/SignatureUtils.sol";
+import "../mixins/PermissionControllerMixin.sol";
 import "../permissions/Pausable.sol";
 import "./AVSDirectoryStorage.sol";
 
@@ -15,7 +16,8 @@ contract AVSDirectory is
     Pausable,
     AVSDirectoryStorage,
     ReentrancyGuardUpgradeable,
-    SignatureUtils
+    SignatureUtils,
+    PermissionControllerMixin
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -32,8 +34,9 @@ contract AVSDirectory is
      */
     constructor(
         IDelegationManager _delegation,
+        IPermissionController _permissionController
         uint32 _DEALLOCATION_DELAY
-    ) AVSDirectoryStorage(_delegation, _DEALLOCATION_DELAY) {
+    ) AVSDirectoryStorage(_delegation, _DEALLOCATION_DELAY) PermissionControllerMixin(_permissionController) {
         _disableInitializers();
     }
 
@@ -55,8 +58,10 @@ contract AVSDirectory is
 
     /// @inheritdoc IAVSDirectory
     function createOperatorSets(
+        address avs,
         uint32[] calldata operatorSetIds
     ) external {
+        require(msg.sender == avs, InvalidCaller());
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             require(!isOperatorSet[msg.sender][operatorSetIds[i]], InvalidOperatorSet());
             isOperatorSet[msg.sender][operatorSetIds[i]] = true;
@@ -65,7 +70,8 @@ contract AVSDirectory is
     }
 
     /// @inheritdoc IAVSDirectory
-    function becomeOperatorSetAVS() external {
+    function becomeOperatorSetAVS(address avs) external {
+        require(msg.sender == avs, InvalidCaller());
         require(!isOperatorSetAVS[msg.sender], InvalidAVS());
         isOperatorSetAVS[msg.sender] = true;
         emit AVSMigratedToOperatorSets(msg.sender);
@@ -73,9 +79,11 @@ contract AVSDirectory is
 
     /// @inheritdoc IAVSDirectory
     function migrateOperatorsToOperatorSets(
+        address avs,
         address[] calldata operators,
         uint32[][] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
+        require(msg.sender == avs, InvalidCaller());
         // Assert that the AVS is an operator set AVS.
         require(isOperatorSetAVS[msg.sender], InvalidAVS());
 
@@ -101,10 +109,12 @@ contract AVSDirectory is
 
     /// @inheritdoc IAVSDirectory
     function registerOperatorToOperatorSets(
+        address avs,
         address operator,
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
+        require(msg.sender == avs, InvalidCaller());
         // Assert operator's signature has not expired.
         require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
         // Assert `operator` is actually an operator.
@@ -140,7 +150,7 @@ contract AVSDirectory is
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
         if (operatorSignature.signature.length == 0) {
-            require(msg.sender == operator, InvalidOperator());
+            _checkCanCall(operator, msg.sender);
         } else {
             // Assert operator's signature has not expired.
             require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
@@ -167,14 +177,17 @@ contract AVSDirectory is
 
     /// @inheritdoc IAVSDirectory
     function deregisterOperatorFromOperatorSets(
+        address avs,
         address operator,
         uint32[] calldata operatorSetIds
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
+        require(msg.sender == avs, InvalidCaller());
         _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
     }
 
     /// @inheritdoc IAVSDirectory
-    function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external override {
+    function addStrategiesToOperatorSet(address avs, uint32 operatorSetId, IStrategy[] calldata strategies) external override {
+        require(msg.sender == avs, InvalidCaller());
         OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
         require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
@@ -187,7 +200,8 @@ contract AVSDirectory is
     }
 
     /// @inheritdoc IAVSDirectory
-    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external override {
+    function removeStrategiesFromOperatorSet(address avs, uint32 operatorSetId, IStrategy[] calldata strategies) external override {
+        require(msg.sender == avs, InvalidCaller());
         OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
         require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
         bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
@@ -201,17 +215,21 @@ contract AVSDirectory is
 
     /// @inheritdoc IAVSDirectory
     function updateAVSMetadataURI(
+        address avs,
         string calldata metadataURI
     ) external override {
+        require(msg.sender == avs, InvalidCaller());
         emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /// @inheritdoc IAVSDirectory
     function cancelSalt(
+        address operator,
         bytes32 salt
     ) external override {
+        _checkCanCall(operator, msg.sender);
         // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
-        operatorSaltIsSpent[msg.sender][salt] = true;
+        operatorSaltIsSpent[operator][salt] = true;
     }
 
     /**

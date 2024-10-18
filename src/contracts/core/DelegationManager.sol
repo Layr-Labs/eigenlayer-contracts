@@ -6,6 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../mixins/SignatureUtils.sol";
+import "../mixins/PermissionControllerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "./DelegationManagerStorage.sol";
@@ -26,7 +27,8 @@ contract DelegationManager is
     Pausable,
     DelegationManagerStorage,
     ReentrancyGuardUpgradeable,
-    SignatureUtils
+    SignatureUtils,
+    PermissionControllerMixin
 {
     using SlashingLib for *;
 
@@ -63,6 +65,7 @@ contract DelegationManager is
         IStrategyManager _strategyManager,
         IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
+        IPermissionController _permissionController,
         uint32 _MIN_WITHDRAWAL_DELAY
     )
         DelegationManagerStorage(
@@ -71,6 +74,9 @@ contract DelegationManager is
             _eigenPodManager,
             _allocationManager,
             _MIN_WITHDRAWAL_DELAY
+        )
+        PermissionControllerMixin(
+            _permissionController
         )
     {
         _disableInitializers();
@@ -112,16 +118,20 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function modifyOperatorDetails(
+        address operator,
         OperatorDetails calldata newOperatorDetails
     ) external {
-        require(isOperator(msg.sender), OperatorNotRegistered());
-        _setOperatorDetails(msg.sender, newOperatorDetails);
+        _checkCanCall(operator, msg.sender);        
+        require(isOperator(operator), OperatorNotRegistered());
+        _setOperatorDetails(operator, newOperatorDetails);
     }
 
     /// @inheritdoc IDelegationManager
     function updateOperatorMetadataURI(
+        address operator,
         string calldata metadataURI
     ) external {
+        _checkCanCall(operator, msg.sender);
         require(isOperator(msg.sender), OperatorNotRegistered());
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
