@@ -63,7 +63,6 @@ contract AllocationManager is
         // Asser that the operator is slashable for the given operator set.
         require(avsDirectory.isOperatorSlashable(params.operator, operatorSet), InvalidOperator());
 
-        // Check that the operator is registered and slashable
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
 
         // Record the proportion of 1e18 that the operator's total shares that are being slashed

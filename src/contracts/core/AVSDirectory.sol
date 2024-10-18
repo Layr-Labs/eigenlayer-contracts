@@ -423,8 +423,9 @@ contract AVSDirectory is
         OperatorSet calldata operatorSet,
         IStrategy[] calldata strategies
     ) external view returns (bool) {
+        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
         for (uint256 i; i < strategies.length; ++i) {
-            if (!_operatorSetStrategies[_encodeOperatorSet(operatorSet)].contains(address(strategies[i]))) {
+            if (!_operatorSetStrategies[operatorSetKey].contains(address(strategies[i]))) {
                 return false;
             }
         }
