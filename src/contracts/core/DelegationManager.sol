@@ -362,6 +362,35 @@ contract DelegationManager is
 
     /**
      *
+     *                         BACKWARDS COMPATIBLE LEGACY FUNCTIONS
+     *                         TO BE DEPRECATED IN FUTURE
+     *
+     */
+
+    /// @inheritdoc IDelegationManager
+    function completeQueuedWithdrawal(
+        Withdrawal calldata withdrawal,
+        IERC20[] calldata tokens,
+        uint256 middlewareTimesIndex,
+        bool receiveAsTokens
+    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
+        _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
+    }
+
+    /// @inheritdoc IDelegationManager
+    function completeQueuedWithdrawals(
+        Withdrawal[] calldata withdrawals,
+        IERC20[][] calldata tokens,
+        uint256[] calldata middlewareTimesIndexes,
+        bool[] calldata receiveAsTokens
+    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            _completeQueuedWithdrawal(withdrawals[i], tokens[i], receiveAsTokens[i]);
+        }
+    }
+
+    /**
+     *
      *                         INTERNAL FUNCTIONS
      *
      */
@@ -443,7 +472,7 @@ contract DelegationManager is
 
     /**
      * @dev This function completes a queued withdrawal for a staker.
-     * This will apply any slashing that has occurred since the the withdrawal was queued. By multiplying the withdrawal's
+     * This will apply any slashing that has occurred since the the withdrawal was queued by multiplying the withdrawal's
      * scaledShares by the operator's maxMagnitude for each strategy. This ensures that any slashing that has occurred
      * during the period the withdrawal was queued until its completable timestamp is applied to the withdrawal amount.
      * If receiveAsTokens is true, then these shares will be withdrawn as tokens.
@@ -461,8 +490,8 @@ contract DelegationManager is
         require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
 
         uint32 completableTimestamp = getCompletableTimestamp(withdrawal.startTimestamp);
-        // read delegated operator's maxMagnitudes at time of withdrawal to convert the delegatedShares to shared
-        // factoring in slashing that occured during withdrawal delay
+        // read delegated operator's maxMagnitudes at the earliest time that the withdrawal could be completed
+        // to convert the delegatedShares to shares factoring in slashing that occured during withdrawal delay
         uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudesAtTimestamp({
             operator: withdrawal.delegatedTo,
             strategies: withdrawal.strategies,
@@ -567,7 +596,6 @@ contract DelegationManager is
      * Upon completion the `scaledShares` are then multiplied by the maxMagnitude of the operator at completion time. This is how we factor in any slashing events
      * that occurred during the withdrawal delay period. Shares in a withdrawal are no longer slashable once the withdrawal is completable.
      * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
-     * @dev If `withdrawer` is not the same address as `staker`
      */
     function _removeSharesAndQueueWithdrawal(
         address staker,
@@ -606,8 +634,6 @@ contract DelegationManager is
             scaledShares[i] = sharesToWithdraw[i].scaleSharesForQueuedWithdrawal(ssf, maxMagnitudes[i]);
 
             // Remove active shares from EigenPodManager/StrategyManager
-            // EigenPodManager: this call will revert if it would reduce the Staker's virtual beacon chain ETH shares below zero
-            // StrategyManager: this call will revert if `sharesToDecrement` exceeds the Staker's current deposit shares in `strategies[i]`
             shareManager.removeDepositShares(staker, strategies[i], depositSharesToRemove);
         }
 

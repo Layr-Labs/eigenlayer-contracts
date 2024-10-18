@@ -408,6 +408,31 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
 
     /**
      *
+     *                         BACKWARDS COMPATIBLE LEGACY FUNCTIONS
+     *                         TO BE DEPRECATED IN FUTURE
+     *
+     */
+
+    /// @notice Overloaded version of `completeQueuedWithdrawal` that includes a `middlewareTimesIndex` parameter
+    /// for backwards compatibility with the M2 release. To be deprecated in a future release.
+    function completeQueuedWithdrawal(
+        Withdrawal calldata withdrawal,
+        IERC20[] calldata tokens,
+        uint256 middlewareTimesIndex,
+        bool receiveAsTokens
+    ) external;
+
+    /// @notice Overloaded version of `completeQueuedWithdrawals` that includes a `middlewareTimesIndexes` parameter
+    /// for backwards compatibility with the M2 release. To be deprecated in a future release.
+    function completeQueuedWithdrawals(
+        Withdrawal[] calldata withdrawals,
+        IERC20[][] calldata tokens,
+        uint256[] calldata middlewareTimesIndexes,
+        bool[] calldata receiveAsTokens
+    ) external;
+
+    /**
+     *
      *                         VIEW FUNCTIONS
      *
      */
