@@ -81,7 +81,7 @@ interface IRewardsCoordinator {
     }
 
     /**
-     * Sliding Window for valid RewardsSubmission startTimestamp
+     * Sliding Window for valid PerformanceRewardsSubmission startTimestamp
      *
      * Scenario A: GENESIS_REWARDS_TIMESTAMP IS WITHIN RANGE
      *         <--------MAX_RETROACTIVE_LENGTH--------> t (block.timestamp)
@@ -358,6 +358,7 @@ interface IRewardsCoordinator {
     /**
      * @notice Creates a new performance-based rewards submission on behalf of an AVS, to be split amongst the operators and
      * set of stakers delegated to operators who are registered to the `avs`.
+     * @param avs The AVS on behalf of which the reward is being submitted
      * @param performanceRewardsSubmissions The performance rewards submissions being created
      * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
@@ -368,6 +369,7 @@ interface IRewardsCoordinator {
      * @dev This function will revert if the `performanceRewardsSubmissions` is malformed.
      */
     function createAVSPerformanceRewardsSubmission(
+        address avs,
         PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
     ) external;
 

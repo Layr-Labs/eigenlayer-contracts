@@ -183,8 +183,11 @@ contract RewardsCoordinator is
 
     /// @inheritdoc IRewardsCoordinator
     function createAVSPerformanceRewardsSubmission(
+        address avs,
         PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION) nonReentrant {
+        require(msg.sender == avs, "RewardsCoordinator.createAVSPerformanceRewardsSubmission: caller is not the AVS");
+
         for (uint256 i = 0; i < performanceRewardsSubmissions.length; i++) {
             PerformanceRewardsSubmission calldata performanceRewardsSubmission = performanceRewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -283,7 +286,8 @@ contract RewardsCoordinator is
     /// @inheritdoc IRewardsCoordinator
     function setOperatorAVSCommission(address operator, address avs, uint16 commission) external {
         require(msg.sender == operator, "RewardsCoordinator.setOperatorAVSCommission: caller is not the operator");
-        //TODO: Add a check to ensure that the operator is registered to the AVS
+        //TODO: Add a check to ensure that the operator is registered to the AVS.
+        //TODO: Add a 7 day delay.
 
         OperatorAVSCommission storage operatorAVSCommission = operatorAVSCommissionBips[operator][avs];
 
