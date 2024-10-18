@@ -272,14 +272,14 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     /**
      * @notice Returns operator set an operator is registered to in the order they were registered.
      * @param operator The operator address to query.
-     * @param index The index of the enumerated list of operator sets.
+     * @param index The index in the enumerated list of operator sets.
      */
     function operatorSetsMemberOfAtIndex(address operator, uint256 index) external view returns (OperatorSet memory);
 
     /**
      * @notice Retursn the operator registered to an operatorSet in the order that it was registered.
      *  @param operatorSet The operatorSet to query.
-     *  @param index The index of the enumerated list of operators.
+     *  @param index The index in the enumerated list of operators.
      */
     function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address);
 
@@ -294,7 +294,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     /**
      * @notice Returns an array of operator sets an operator is registered to.
      * @param operator The operator address to query.
-     * @param start The starting index of the array to query.
+     * @param start The starting index in the array to query.
      *  @param length The amount of items of the array to return.
      */
     function getOperatorSetsOfOperator(
@@ -306,7 +306,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     /**
      * @notice Returns an array of operators registered to the operatorSet.
      * @param operatorSet The operatorSet to query.
-     * @param start The starting index of the array to query.
+     * @param start The starting index in the array to query.
      * @param length The amount of items of the array to return.
      */
     function getOperatorsInOperatorSet(

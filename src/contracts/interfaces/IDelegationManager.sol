@@ -511,6 +511,9 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         uint32 startTimestamp
     ) external view returns (uint32 completableTimestamp);
 
+    /// @notice Return the M2 minimum withdrawal delay in blocks for backwards compatability
+    function minWithdrawalDelayBlocks() external view returns (uint256);
+
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(
         Withdrawal memory withdrawal

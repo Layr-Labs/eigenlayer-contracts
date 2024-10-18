@@ -787,6 +787,11 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
+    function minWithdrawalDelayBlocks() public view returns (uint256) {
+        return LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS;
+    }
+
+    /// @inheritdoc IDelegationManager
     function calculateWithdrawalRoot(
         Withdrawal memory withdrawal
     ) public pure returns (bytes32) {
