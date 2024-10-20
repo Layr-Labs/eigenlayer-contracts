@@ -5,6 +5,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
+import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "./AllocationManagerStorage.sol";
@@ -14,10 +15,13 @@ contract AllocationManager is
     OwnableUpgradeable,
     Pausable,
     AllocationManagerStorage,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    SignatureUtils
 {
-    using Snapshots for Snapshots.DefaultWadHistory;
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using Snapshots for Snapshots.DefaultWadHistory;
     using SlashingLib for uint256;
 
     /**
@@ -58,7 +62,7 @@ contract AllocationManager is
         // Check that the operator is registered and slashable
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: params.operatorSetId});
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
-        require(avsDirectory.isOperatorSlashable(params.operator, operatorSet), InvalidOperator());
+        require(isOperatorSlashable(params.operator, operatorSet), InvalidOperator());
 
         // Record the proportion of 1e18 that the operator's total shares that are being slashed
         uint256[] memory wadSlashed = new uint256[](params.strategies.length);
@@ -135,7 +139,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < allocations.length; ++i) {
             MagnitudeAllocation calldata allocation = allocations[i];
             require(allocation.operatorSets.length == allocation.magnitudes.length, InputArrayLengthMismatch());
-            require(avsDirectory.isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
+            require(isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
 
             // 1. For the given (operator,strategy) complete any pending deallocation to free up encumberedMagnitude
             _clearDeallocationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
@@ -217,6 +221,126 @@ contract AllocationManager is
     ) external {
         require(delegation.isOperator(msg.sender), OperatorNotRegistered());
         _setAllocationDelay(msg.sender, delay);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function createOperatorSets(
+        uint32[] calldata operatorSetIds
+    ) external {
+        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            require(!isOperatorSet[msg.sender][operatorSetIds[i]], InvalidOperatorSet());
+            isOperatorSet[msg.sender][operatorSetIds[i]] = true;
+            emit OperatorSetCreated(OperatorSet({avs: msg.sender, operatorSetId: operatorSetIds[i]}));
+        }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function becomeOperatorSetAVS() external {
+        require(!isOperatorSetAVS[msg.sender], InvalidAVS());
+        isOperatorSetAVS[msg.sender] = true;
+        emit AVSMigratedToOperatorSets(msg.sender);
+    }
+
+ 
+
+    /// @inheritdoc IAllocationManager
+    function registerOperatorToOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
+        // Assert operator's signature has not expired.
+        require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
+        // Assert `operator` is actually an operator.
+        require(delegation.isOperator(operator), OperatorNotRegisteredToEigenLayer());
+        // Assert that the AVS is an operator set AVS.
+        require(isOperatorSetAVS[msg.sender], InvalidAVS());
+        // Assert operator's signature `salt` has not already been spent.
+        require(!isSaltSpent[operator][operatorSignature.salt], SaltSpent());
+
+        // Assert that `operatorSignature.signature` is a valid signature for operator set registrations.
+        _checkIsValidSignatureNow({
+            signer: operator,
+            signableDigest: calculateOperatorSetRegistrationDigestHash({
+                avs: msg.sender,
+                operatorSetIds: operatorSetIds,
+                salt: operatorSignature.salt,
+                expiry: operatorSignature.expiry
+            }),
+            signature: operatorSignature.signature
+        });
+
+        // Mutate `isSaltSpent` to `true` to prevent future respending.
+        isSaltSpent[operator][operatorSignature.salt] = true;
+
+        _registerToOperatorSets(operator, msg.sender, operatorSetIds);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function forceDeregisterFromOperatorSets(
+        address operator,
+        address avs,
+        uint32[] calldata operatorSetIds,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
+        if (operatorSignature.signature.length == 0) {
+            require(msg.sender == operator, InvalidOperator());
+        } else {
+            // Assert operator's signature has not expired.
+            require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
+            // Assert operator's signature `salt` has not already been spent.
+            require(!isSaltSpent[operator][operatorSignature.salt], SaltSpent());
+
+            // Assert that `operatorSignature.signature` is a valid signature for operator set deregistrations.
+            _checkIsValidSignatureNow({
+                signer: operator,
+                signableDigest: calculateOperatorSetForceDeregistrationTypehash({
+                    avs: avs,
+                    operatorSetIds: operatorSetIds,
+                    salt: operatorSignature.salt,
+                    expiry: operatorSignature.expiry
+                }),
+                signature: operatorSignature.signature
+            });
+
+            // Mutate `isSaltSpent` to `true` to prevent future respending.
+            isSaltSpent[operator][operatorSignature.salt] = true;
+        }
+        _deregisterFromOperatorSets(avs, operator, operatorSetIds);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] calldata operatorSetIds
+    ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
+        _deregisterFromOperatorSets(msg.sender, operator, operatorSetIds);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external override {
+        OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
+        require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            require(
+                _operatorSetStrategies[encodedOperatorSet].add(address(strategies[i])), StrategyAlreadyInOperatorSet()
+            );
+            emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
+        }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external override {
+        OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
+        require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            require(
+                _operatorSetStrategies[encodedOperatorSet].remove(address(strategies[i])), StrategyNotInOperatorSet()
+            );
+            emit StrategyRemovedFromOperatorSet(operatorSet, strategies[i]);
+        }
     }
 
     /**
@@ -327,6 +451,66 @@ contract AllocationManager is
         emit EncumberedMagnitudeUpdated(operator, strategy, info.encumberedMagnitude);
     }
 
+    /**
+     * @notice Helper function used by migration & registration functions to register an operator to operator sets.
+     * @param avs The AVS that the operator is registering to.
+     * @param operator The operator to register.
+     * @param operatorSetIds The IDs of the operator sets.
+     */
+    function _registerToOperatorSets(address operator, address avs, uint32[] calldata operatorSetIds) internal {
+        // Loop over `operatorSetIds` array and register `operator` for each item.
+        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
+
+            require(isOperatorSet[avs][operatorSetIds[i]], InvalidOperatorSet());
+
+            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+
+            _operatorSetsMemberOf[operator].add(encodedOperatorSet);
+
+            _operatorSetMembers[encodedOperatorSet].add(operator);
+
+            OperatorSetRegistrationStatus storage registrationStatus =
+                operatorSetStatus[avs][operator][operatorSetIds[i]];
+
+            require(!registrationStatus.registered, InvalidOperator());
+
+            registrationStatus.registered = true;
+
+            emit OperatorAddedToOperatorSet(operator, operatorSet);
+        }
+    }
+
+    /**
+     * @notice Internal function to deregister an operator from an operator set.
+     *
+     * @param avs The AVS that the operator is deregistering from.
+     * @param operator The operator to deregister.
+     * @param operatorSetIds The IDs of the operator sets.
+     */
+    function _deregisterFromOperatorSets(address avs, address operator, uint32[] calldata operatorSetIds) internal {
+        // Loop over `operatorSetIds` array and deregister `operator` for each item.
+        for (uint256 i = 0; i < operatorSetIds.length; ++i) {
+            OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
+
+            bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+
+            _operatorSetsMemberOf[operator].remove(encodedOperatorSet);
+
+            _operatorSetMembers[encodedOperatorSet].remove(operator);
+
+            OperatorSetRegistrationStatus storage registrationStatus =
+                operatorSetStatus[avs][operator][operatorSetIds[i]];
+
+            require(registrationStatus.registered, InvalidOperator());
+
+            registrationStatus.registered = false;
+            registrationStatus.lastDeregisteredTimestamp = uint32(block.timestamp);
+
+            emit OperatorRemovedFromOperatorSet(operator, operatorSet);
+        }
+    }
+
     function _calcDelta(uint64 currentMagnitude, uint64 newMagnitude) internal pure returns (int128) {
         return int128(uint128(newMagnitude)) - int128(uint128(currentMagnitude));
     }
@@ -360,7 +544,7 @@ contract AllocationManager is
         address operator,
         IStrategy strategy
     ) external view returns (OperatorSet[] memory, MagnitudeInfo[] memory) {
-        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
+        OperatorSet[] memory operatorSets = getOperatorSetsOfOperator(operator, 0, type(uint256).max);
         MagnitudeInfo[] memory infos = getAllocationInfo(operator, strategy, operatorSets);
         return (operatorSets, infos);
     }
@@ -522,5 +706,127 @@ contract AllocationManager is
         }
 
         return (delegatedShares, slashableShares);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function operatorSetsMemberOfAtIndex(address operator, uint256 index) external view returns (OperatorSet memory) {
+        return _decodeOperatorSet(_operatorSetsMemberOf[operator].at(index));
+    }
+
+    /// @inheritdoc IAllocationManager
+    function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address) {
+        return _operatorSetMembers[_encodeOperatorSet(operatorSet)].at(index);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getNumOperatorSetsOfOperator(
+        address operator
+    ) external view returns (uint256) {
+        return _operatorSetsMemberOf[operator].length();
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getOperatorSetsOfOperator(
+        address operator,
+        uint256 start,
+        uint256 length
+    ) public view returns (OperatorSet[] memory operatorSets) {
+        uint256 maxLength = _operatorSetsMemberOf[operator].length() - start;
+        if (length > maxLength) length = maxLength;
+        operatorSets = new OperatorSet[](length);
+        for (uint256 i; i < length; ++i) {
+            operatorSets[i] = _decodeOperatorSet(_operatorSetsMemberOf[operator].at(start + i));
+        }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getOperatorsInOperatorSet(
+        OperatorSet memory operatorSet,
+        uint256 start,
+        uint256 length
+    ) external view returns (address[] memory operators) {
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        uint256 maxLength = _operatorSetMembers[encodedOperatorSet].length() - start;
+        if (length > maxLength) length = maxLength;
+        operators = new address[](length);
+        for (uint256 i; i < length; ++i) {
+            operators[i] = _operatorSetMembers[encodedOperatorSet].at(start + i);
+        }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getStrategiesInOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (IStrategy[] memory strategies) {
+        bytes32 encodedOperatorSet = _encodeOperatorSet(operatorSet);
+        uint256 length = _operatorSetStrategies[encodedOperatorSet].length();
+
+        strategies = new IStrategy[](length);
+        for (uint256 i; i < length; ++i) {
+            strategies[i] = IStrategy(_operatorSetStrategies[encodedOperatorSet].at(i));
+        }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getNumOperatorsInOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256) {
+        return _operatorSetMembers[_encodeOperatorSet(operatorSet)].length();
+    }
+
+    /// @inheritdoc IAllocationManager
+    function inTotalOperatorSets(
+        address operator
+    ) external view returns (uint256) {
+        return _operatorSetsMemberOf[operator].length();
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isMember(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        if (isMember(operator, operatorSet)) return true;
+
+        OperatorSetRegistrationStatus memory status =
+            operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
+
+        return block.timestamp < status.lastDeregisteredTimestamp + DEALLOCATION_DELAY;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isOperatorSetBatch(
+        OperatorSet[] calldata operatorSets
+    ) public view returns (bool) {
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            if (!isOperatorSet[operatorSets[i].avs][operatorSets[i].operatorSetId]) return false;
+        }
+        return true;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function calculateOperatorSetRegistrationDigestHash(
+        address avs,
+        uint32[] calldata operatorSetIds,
+        bytes32 salt,
+        uint256 expiry
+    ) public view override returns (bytes32) {
+        return _calculateSignableDigest(
+            keccak256(abi.encode(OPERATOR_SET_REGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry))
+        );
+    }
+
+    /// @inheritdoc IAllocationManager
+    function calculateOperatorSetForceDeregistrationTypehash(
+        address avs,
+        uint32[] calldata operatorSetIds,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        return _calculateSignableDigest(
+            keccak256(abi.encode(OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH, avs, operatorSetIds, salt, expiry))
+        );
     }
 }
