@@ -550,14 +550,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      */
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
-    /**
-     * @notice Returns whether or not an operator is registered to all provided operator sets.
-     * @param operatorSets The list of operator sets to check.
-     */
-    function isOperatorSetBatch(
-        OperatorSet[] calldata operatorSets
-    ) external view returns (bool);
-
     function operatorSetStatus(
         address avs,
         address operator,

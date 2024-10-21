@@ -139,7 +139,6 @@ contract AllocationManager is
         for (uint256 i = 0; i < allocations.length; ++i) {
             MagnitudeAllocation calldata allocation = allocations[i];
             require(allocation.operatorSets.length == allocation.magnitudes.length, InputArrayLengthMismatch());
-            require(isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
 
             // 1. For the given (operator,strategy) complete any pending deallocation to free up encumberedMagnitude
             _clearDeallocationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
@@ -151,6 +150,10 @@ contract AllocationManager is
             require(maxMagnitude == allocation.expectedMaxMagnitude, InvalidExpectedTotalMagnitude());
 
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
+                OperatorSet calldata operatorSet = allocation.operatorSets[j];
+                
+                require(isOperatorSet[operatorSet.avs][operatorSet.operatorSetId], InvalidOperatorSet());
+                
                 bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
 
                 // Ensure there is not already a pending modification
@@ -241,7 +244,32 @@ contract AllocationManager is
         emit AVSMigratedToOperatorSets(msg.sender);
     }
 
- 
+    // TODO: Refactor migrations
+    // /// @inheritdoc IAllocationManager
+    // function migrateOperatorsToOperatorSets(
+    //     address[] calldata operators,
+    //     uint32[][] calldata operatorSetIds
+    // ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
+    //     // Assert that the AVS is an operator set AVS.
+    //     require(allocationManager.isOperatorSetAVS(msg.sender), InvalidAVS());
+
+    //     for (uint256 i = 0; i < operators.length; ++i) {
+    //         // Assert that the operator is registered & has not been migrated.
+    //         require(
+    //             avsOperatorStatus[msg.sender][operators[i]] == OperatorAVSRegistrationStatus.REGISTERED,
+    //             InvalidOperator()
+    //         );
+
+    //         // Migrate operator to operator sets.
+    //         _registerToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
+
+    //         // Deregister operator from AVS - this prevents the operator from being migrated again since
+    //         // the AVS can no longer use the legacy M2 registration path
+    //         _deregisterOperatorFromAVS(msg.sender, operator);
+
+    //         emit OperatorMigratedToOperatorSets(operators[i], msg.sender, operatorSetIds[i]);
+    //     }
+    // }
 
     /// @inheritdoc IAllocationManager
     function registerOperatorToOperatorSets(
@@ -794,16 +822,6 @@ contract AllocationManager is
             operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
 
         return block.timestamp < status.lastDeregisteredTimestamp + DEALLOCATION_DELAY;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function isOperatorSetBatch(
-        OperatorSet[] calldata operatorSets
-    ) public view returns (bool) {
-        for (uint256 i = 0; i < operatorSets.length; ++i) {
-            if (!isOperatorSet[operatorSets[i].avs][operatorSets[i].operatorSetId]) return false;
-        }
-        return true;
     }
 
     /// @inheritdoc IAllocationManager
