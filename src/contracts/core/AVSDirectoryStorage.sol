@@ -48,33 +48,33 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      */
     bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
-    /// @notice Mapping: avs => operator => OperatorAVSRegistrationStatus struct
-    /// @dev This storage will be deprecated once M2 based deregistration is deprecated.
-    mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
+    /// @notice Returns the registration status of each `operator` for a given `avs`.
+    /// @dev This storage will be deprecated once M2-based deregistration is removed.
+    mapping(address avs => mapping(address operator => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 
-    /// @notice Mapping: operator => salt => Whether the salt has been used or not.
-    mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
+    /// @notice Returns whether a `salt` has been used by a given `operator`.
+    mapping(address operator => mapping(bytes32 salt => bool)) public operatorSaltIsSpent;
 
-    /// @notice Mapping: avs => Whether it is a an operator set AVS or not.
-    mapping(address => bool) public isOperatorSetAVS;
+    /// @notice Returns whether a given `avs` is an operator set avs.
+    mapping(address avs => bool) public isOperatorSetAVS;
 
-    /// @notice Mapping: avs => operatorSetId => Whether or not an operator set is valid.
-    mapping(address => mapping(uint32 => bool)) public isOperatorSet;
+    /// @notice Returns whether an `operatorSetId` has been created for a given `avs`.
+    mapping(address avs => mapping(uint32 operatorSetId => bool)) public isOperatorSet;
 
-    /// @notice Mapping: operator => List of operator sets that operator is registered to.
-    /// @dev Each item is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
-    mapping(address => EnumerableSet.Bytes32Set) internal _operatorSetsMemberOf;
+    /// @notice Returns the list of operator sets that an `operator` is registered to.
+    /// @dev Each item is formatted as `bytes32(abi.encodePacked(avs, uint96(operatorSetId)))`.
+    mapping(address operator => EnumerableSet.Bytes32Set) internal _operatorSetsMemberOf;
 
-    /// @notice Mapping: operatorSet => List of operators that are registered to the operatorSet
-    /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
-    mapping(bytes32 => EnumerableSet.AddressSet) internal _operatorSetMembers;
+    /// @notice Returns the list of `operators` that are members of a given operator set.
+    /// @dev Each key is formatted as `bytes32(abi.encodePacked(avs, uint96(operatorSetId)))`.
+    mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet) internal _operatorSetMembers;
 
-    /// @notice Mapping: operatorSet => List of strategies that the operatorSet contains
-    /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
-    mapping(bytes32 => EnumerableSet.AddressSet) internal _operatorSetStrategies;
+    /// @notice Returns the list of `strategies` associated with a given operator set.
+    /// @dev Each key is formatted as `bytes32(abi.encodePacked(avs, uint96(operatorSetId)))`.
+    mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet) internal _operatorSetStrategies;
 
-    /// @notice Mapping: operator => avs => operatorSetId => operator registration status
-    mapping(address => mapping(address => mapping(uint32 => OperatorSetRegistrationStatus))) public operatorSetStatus;
+    /// @notice Returns the registration status of an `operator` for a given `avs` and `operatorSetId`.
+    mapping(address operator => mapping(address avs => mapping(uint32 operatorSetId => OperatorSetRegistrationStatus))) public operatorSetStatus;
 
     // Construction
 

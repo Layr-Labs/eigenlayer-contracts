@@ -47,35 +47,35 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     uint256 private __deprecated_withdrawalDelayBlocks;
     /// @notice Mapping: staker => Strategy => number of shares which they have deposited. All of these shares
     ///         may not be withdrawable if the staker has delegated to an operator that has been slashed.
-    mapping(address => mapping(IStrategy => uint256)) public stakerDepositShares;
+    mapping(address staker => mapping(IStrategy strategy => uint256)) public stakerDepositShares;
     /// @notice Mapping: staker => array of strategies in which they have nonzero shares
-    mapping(address => IStrategy[]) public stakerStrategyList;
+    mapping(address staker => IStrategy[]) public stakerStrategyList;
 
     /// @notice *Deprecated* mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     /// @dev This mapping is preserved to allow the migration of withdrawals to the DelegationManager contract.
-    mapping(bytes32 => bool) private __deprecated_withdrawalRootPending;
+    mapping(bytes32 withdrawalRoot => bool) private __deprecated_withdrawalRootPending;
     /*
      * Reserved space previously used by the deprecated mapping(address => uint256) numWithdrawalsQueued.
      * This mapping tracked the cumulative number of queued withdrawals initiated by a staker.
      * Withdrawals are now initiated in the DlegationManager, so the mapping has moved to that contract.
      */
-    mapping(address => uint256) private __deprecated_numWithdrawalsQueued;
+    mapping(address staker => uint256) private __deprecated_numWithdrawalsQueued;
 
     /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
-    mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
+    mapping(IStrategy strategy => bool) public strategyIsWhitelistedForDeposit;
     /*
      * Reserved space previously used by the deprecated mapping(address => uint256) beaconChainETHSharesToDecrementOnWithdrawal.
      * This mapping tracked beaconChainETH "deficit" in cases where updates were made to shares retroactively.  However, this construction was
      * moved into the EigenPodManager contract itself.
      */
-    mapping(address => uint256) internal beaconChainETHSharesToDecrementOnWithdrawal;
+    mapping(address avs => uint256) internal beaconChainETHSharesToDecrementOnWithdrawal;
 
     /**
      * @notice Mapping: strategy => whether or not stakers are allowed to transfer strategy shares to another address
      * if true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
      * and also when performing queueWithdrawals, a staker can only withdraw to themselves
      */
-    mapping(IStrategy => bool) private __deprecated_thirdPartyTransfersForbidden;
+    mapping(IStrategy strategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
     // Construction
 

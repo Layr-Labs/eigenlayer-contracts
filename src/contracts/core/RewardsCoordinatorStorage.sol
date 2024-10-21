@@ -79,26 +79,26 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint16 public globalOperatorCommissionBips;
 
     /// @notice Mapping: earner => the address of the entity who can call `processClaim` on behalf of the earner
-    mapping(address => address) public claimerFor;
+    mapping(address earner => address) public claimerFor;
 
     /// @notice Mapping: earner => token => total amount claimed
-    mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
+    mapping(address earner => mapping(IERC20 token => uint256)) public cumulativeClaimed;
 
     /// @notice Used for unique rewardsSubmissionHashes per AVS and for RewardsForAllSubmitters and the tokenHopper
-    mapping(address => uint256) public submissionNonce;
+    mapping(address avs => uint256) public submissionNonce;
 
     /// @notice Mapping: avs => avsRewardsSubmissionHash => bool to check if rewards submission hash has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isAVSRewardsSubmissionHash;
+    mapping(address avs => mapping(bytes32 avsRewardsSubmissionHash => bool)) public isAVSRewardsSubmissionHash;
 
     /// @notice Mapping: avs => rewardsSubmissionForAllHash => bool to check if rewards submission hash for all has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllHash;
+    mapping(address avs => mapping(bytes32 rewardsSubmissionForAllHash => bool)) public isRewardsSubmissionForAllHash;
 
     /// @notice Mapping: address => bool to check if the address is permissioned to call createRewardsForAllSubmission
-    mapping(address => bool) public isRewardsForAllSubmitter;
+    mapping(address rewardsForAllSubmitter => bool) public isRewardsForAllSubmitter;
 
     /// @notice Mapping: avs => rewardsSubmissionForAllEarnersHash => bool to check
     /// if rewards submission hash for all stakers and operators has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllEarnersHash;
+    mapping(address avs => mapping(bytes32 rewardsSubmissionForAllEarnersHash => bool)) public isRewardsSubmissionForAllEarnersHash;
 
     // Construction
 
