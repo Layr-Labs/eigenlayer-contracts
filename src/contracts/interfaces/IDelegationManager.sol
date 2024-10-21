@@ -69,7 +69,7 @@ interface IDelegationManagerErrors {
 interface IDelegationManagerTypes {
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
-        /// @notice DEPRECATED -- this field is no longer used, payments are handled in PaymentCoordinator.sol
+        /// @notice DEPRECATED -- this field is no longer used, payments are handled in RewardsCoordinator.sol
         address __deprecated_earningsReceiver;
         /**
          * @notice Address to verify signatures when a staker wishes to delegate to the operator, as well as controlling "forced undelegations".

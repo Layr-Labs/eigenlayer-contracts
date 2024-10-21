@@ -373,11 +373,8 @@ contract AllocationManager is
         address operator,
         IStrategy strategy
     ) external view returns (OperatorSet[] memory, MagnitudeInfo[] memory) {
-        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator({
-            operator: operator,
-            start: 0,
-            length: type(uint256).max
-        });
+        OperatorSet[] memory operatorSets =
+            avsDirectory.getOperatorSetsOfOperator({operator: operator, start: 0, length: type(uint256).max});
         MagnitudeInfo[] memory infos = getAllocationInfo(operator, strategy, operatorSets);
         return (operatorSets, infos);
     }
