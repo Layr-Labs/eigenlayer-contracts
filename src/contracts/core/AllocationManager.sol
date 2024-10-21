@@ -262,12 +262,12 @@ contract AllocationManager is
      * @param delay The allocation delay in seconds.
      */
     function _setAllocationDelay(address operator, uint32 delay) internal {
-        require(delay != 0, InvalidAllocationDelay());
-
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
-        if (info.pendingDelay != 0 && block.timestamp >= info.effectTimestamp) {
+        // If there is a pending delay that can be applied now, set it
+        if (info.effectTimestamp != 0 && block.timestamp >= info.effectTimestamp) {
             info.delay = info.pendingDelay;
+            info.isSet = true;
         }
 
         info.pendingDelay = delay;
@@ -498,15 +498,17 @@ contract AllocationManager is
     ) public view returns (bool isSet, uint32 delay) {
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
-        if (info.pendingDelay != 0 && block.timestamp >= info.effectTimestamp) {
+        if (info.effectTimestamp != 0 && block.timestamp >= info.effectTimestamp) {
             delay = info.pendingDelay;
         } else {
             delay = info.delay;
         }
 
-        // Operators cannot configure their allocation delay to be zero, so the delay has been
-        // set as long as it is nonzero.
-        isSet = delay != 0;
+        // Check that the operator has a configured delay that has taken effect.
+        // This is true if isSet is true OR block.timestamp >= effectTimestamp
+        // meaning either a delay has been applied or there is a delay set and
+        // the effectTimestamp has been reached
+        isSet = info.isSet == true || (info.effectTimestamp != 0 && block.timestamp >= info.effectTimestamp);
         return (isSet, delay);
     }
 

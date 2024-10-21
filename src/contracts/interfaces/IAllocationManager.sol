@@ -73,11 +73,14 @@ interface IAllocationManagerTypes {
     /**
      * @notice Struct containing allocation delay metadata for a given operator.
      * @param delay Current allocation delay if `pendingDelay` is non-zero and `pendingDelayEffectTimestamp` has elapsed.
+     * @param isSet Whether the operator has initially set an allocation delay. Note that this could be false but the
+     * block.timestamp >= effectTimestamp in which we consider their delay to be configured and active.
      * @param pendingDelay Current allocation delay if it's non-zero and `pendingDelayEffectTimestamp` has elapsed.
      * @param effectTimestamp The timestamp for which `pendingDelay` becomes the curren allocation delay.
      */
     struct AllocationDelayInfo {
         uint32 delay;
+        bool isSet;
         uint32 pendingDelay;
         uint32 effectTimestamp;
     }
@@ -183,8 +186,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @notice Called by the delegation manager to set an operator's allocation delay.
      * This is set when the operator first registers, and is the time between an operator
      * allocating magnitude to an operator set, and the magnitude becoming slashable.
-     * @dev Note that if an operator's allocation delay is 0, it has not been set yet,
-     * and the operator will be unable to allocate magnitude to any operator set.
      * @param operator The operator to set the delay on behalf of.
      * @param delay the allocation delay in seconds
      */

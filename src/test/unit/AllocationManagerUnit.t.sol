@@ -651,7 +651,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             slashingParams.operator, defaultAVS, allocations[0].operatorSets[0].operatorSetId, true
         );
         uint64 expectedSlashedMagnitude =
-            uint64(SlashingLib.mulWad(allocations[0].magnitudes[0], slashingParams.wadToSlash));
+            uint64(SlashingLib.mulWadRoundUp(allocations[0].magnitudes[0], slashingParams.wadToSlash));
         uint64 expectedEncumberedMagnitude = allocations[0].magnitudes[0] - expectedSlashedMagnitude;
         uint64 maxMagnitudeAfterSlash = WAD - expectedSlashedMagnitude;
         uint256[] memory wadSlashed = new uint256[](1);
@@ -1249,6 +1249,18 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     function test_revert_allocationDelayNotSet() public {
         address invalidOperator = address(0x2);
         cheats.prank(invalidOperator);
+        cheats.expectRevert(IAllocationManagerErrors.UninitializedAllocationDelay.selector);
+        allocationManager.modifyAllocations(new IAllocationManagerTypes.MagnitudeAllocation[](0));
+    }
+
+    function test_revert_allocationDelayNotInEffect() public {
+        address operator = address(0x2);
+        delegationManagerMock.setIsOperator(operator, true);
+
+        cheats.startPrank(operator);
+        allocationManager.setAllocationDelay(5);
+        // even though the operator has an allocation delay set, it is not in effect
+        // and modifyAllocations should still be blocked
         cheats.expectRevert(IAllocationManagerErrors.UninitializedAllocationDelay.selector);
         allocationManager.modifyAllocations(new IAllocationManagerTypes.MagnitudeAllocation[](0));
     }
@@ -2012,16 +2024,10 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         allocationManager.setAllocationDelay(1);
     }
 
-    function test_revert_zeroAllocationDelay() public {
-        cheats.expectRevert(IAllocationManagerErrors.InvalidAllocationDelay.selector);
-        cheats.prank(operatorToSet);
-        allocationManager.setAllocationDelay(0);
-    }
-
     function testFuzz_setDelay(
         uint256 r
     ) public {
-        uint32 delay = uint32(bound(r, 1, type(uint32).max));
+        uint32 delay = uint32(bound(r, 0, type(uint32).max));
 
         // Set delay
         cheats.expectEmit(true, true, true, true, address(allocationManager));
