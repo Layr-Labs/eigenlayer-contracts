@@ -228,8 +228,10 @@ contract DelegationManager is
                 maxMagnitudes: singleMaxMagnitude
             });
 
-            // all shares and queued withdrawn and no delegated operator
-            // reset staker's depositScalingFactor to default
+            // all shares are queued withdrawn with no delegated operator, so
+            // reset staker's depositScalingFactor back to WAD default.
+            // If this is not reset, the depositScalingFactor would be incorrect
+            // when the staker deposits and queue withdraws in the future.
             ssf.depositScalingFactor = WAD;
             emit DepositScalingFactorUpdated(staker, strategies[i], WAD);
         }
