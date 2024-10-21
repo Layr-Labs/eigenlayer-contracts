@@ -89,16 +89,16 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Returns the submission `nonce` for an `avs`.
     mapping(address avs => uint256 nonce) public submissionNonce;
 
-    /// @notice Returns whether a `hash` is a `valid` rewards submission hash for a given `avs`. 
+    /// @notice Returns whether a `hash` is a `valid` rewards submission hash for a given `avs`.
     mapping(address avs => mapping(bytes32 hash => bool valid)) public isAVSRewardsSubmissionHash;
 
-    /// @notice Returns whether a `hash` is a `valid` rewards submission for all hash for a given `avs`. 
+    /// @notice Returns whether a `hash` is a `valid` rewards submission for all hash for a given `avs`.
     mapping(address avs => mapping(bytes32 hash => bool valid)) public isRewardsSubmissionForAllHash;
 
     /// @notice Returns whether a `submitter` is a `valid` rewards for all submitter.
     mapping(address submitter => bool valid) public isRewardsForAllSubmitter;
 
-    /// @notice Returns whether a `hash` is a `valid` rewards submission for all earners hash for a given `avs`. 
+    /// @notice Returns whether a `hash` is a `valid` rewards submission for all earners hash for a given `avs`.
     mapping(address avs => mapping(bytes32 hash => bool valid)) public isRewardsSubmissionForAllEarnersHash;
 
     // Construction
