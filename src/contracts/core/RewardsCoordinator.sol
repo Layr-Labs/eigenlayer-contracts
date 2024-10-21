@@ -231,9 +231,8 @@ contract RewardsCoordinator is
     function setClaimerForOperator(
         address operator,
         address claimer
-    ) external {
+    ) external checkCanCall(operator) {
         require(delegationManager.isOperator(operator), InvalidOperator());
-        _checkCanCall(operator, msg.sender);
         _setClaimer(operator, claimer);
     }
 

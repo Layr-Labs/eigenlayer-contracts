@@ -151,7 +151,7 @@ contract AVSDirectory is
         ISignatureUtils.SignatureWithSaltAndExpiry memory adminSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
         if (operatorSignature.signature.length == 0) {
-            _checkCanCall(operator, msg.sender);
+            _checkCanCall(operator);
         } else {
             address admin = permissionController.getAdmin(operator);
             // Assert operator's signature has not expired.
@@ -228,8 +228,7 @@ contract AVSDirectory is
     function cancelSalt(
         address operator,
         bytes32 salt
-    ) external override {
-        _checkCanCall(operator, msg.sender);
+    ) external override checkCanCall(operator) {
         // Mutate `operatorSaltIsSpent` to `true` to prevent future spending.
         operatorSaltIsSpent[operator][salt] = true;
     }

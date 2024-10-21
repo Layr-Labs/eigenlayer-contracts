@@ -120,8 +120,7 @@ contract DelegationManager is
     function modifyOperatorDetails(
         address operator,
         OperatorDetails calldata newOperatorDetails
-    ) external {
-        _checkCanCall(operator, msg.sender);        
+    ) external checkCanCall(operator) {
         require(isOperator(operator), OperatorNotRegistered());
         _setOperatorDetails(operator, newOperatorDetails);
     }
@@ -130,10 +129,9 @@ contract DelegationManager is
     function updateOperatorMetadataURI(
         address operator,
         string calldata metadataURI
-    ) external {
-        _checkCanCall(operator, msg.sender);
-        require(isOperator(msg.sender), OperatorNotRegistered());
-        emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
+    ) external checkCanCall(operator) {
+        require(isOperator(operator), OperatorNotRegistered());
+        emit OperatorMetadataURIUpdated(operator, metadataURI);
     }
 
     /// @inheritdoc IDelegationManager

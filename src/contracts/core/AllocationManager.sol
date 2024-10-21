@@ -134,8 +134,7 @@ contract AllocationManager is
     function modifyAllocations(
         address operator,
         MagnitudeAllocation[] calldata allocations
-    ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
-        _checkCanCall(operator, msg.sender);
+    ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) checkCanCall(operator) {
         (bool isSet, uint32 operatorAllocationDelay) = getAllocationDelay(operator);
         require(isSet, UninitializedAllocationDelay());
 
@@ -215,7 +214,7 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function setAllocationDelay(address operator, uint32 delay) external {
         // TODO: fix error
-        require(msg.sender == address(delegation) || _checkCanCall(operator, msg.sender), OnlyDelegationManager());
+        require(msg.sender == address(delegation) || _checkCanCall(operator), InvalidCaller());
         _setAllocationDelay(operator, delay);
     }
 
