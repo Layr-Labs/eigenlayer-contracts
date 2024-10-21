@@ -614,7 +614,7 @@ contract DelegationManager is
         // Place withdrawal in queue
         pendingWithdrawals[withdrawalRoot] = true;
 
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, sharesToWithdraw);
         return withdrawalRoot;
     }
 
