@@ -151,9 +151,9 @@ contract AllocationManager is
 
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
                 OperatorSet calldata operatorSet = allocation.operatorSets[j];
-                
+
                 require(isOperatorSet[operatorSet.avs][operatorSet.operatorSetId], InvalidOperatorSet());
-                
+
                 bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
 
                 // Ensure there is not already a pending modification
