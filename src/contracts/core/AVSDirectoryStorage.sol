@@ -41,11 +41,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     // Mutatables
 
-    /**
-     * @notice Original EIP-712 Domain separator for this contract.
-     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
-     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
-     */
+    /// @dev Do not remove, deprecated storage.
     bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
     /// @notice Returns the registration status of each `operator` for a given `avs`.
@@ -74,7 +70,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet) internal _operatorSetStrategies;
 
     /// @notice Returns the registration status of an `operator` for a given `avs` and `operatorSetId`.
-    mapping(address operator => mapping(address avs => mapping(uint32 operatorSetId => OperatorSetRegistrationStatus))) public operatorSetStatus;
+    mapping(address operator => mapping(address avs => mapping(uint32 operatorSetId => OperatorSetRegistrationStatus)))
+        public operatorSetStatus;
 
     // Construction
 

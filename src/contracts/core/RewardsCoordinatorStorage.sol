@@ -98,7 +98,8 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
 
     /// @notice Mapping: avs => rewardsSubmissionForAllEarnersHash => bool to check
     /// if rewards submission hash for all stakers and operators has been submitted
-    mapping(address avs => mapping(bytes32 rewardsSubmissionForAllEarnersHash => bool)) public isRewardsSubmissionForAllEarnersHash;
+    mapping(address avs => mapping(bytes32 rewardsSubmissionForAllEarnersHash => bool)) public
+        isRewardsSubmissionForAllEarnersHash;
 
     // Construction
 
