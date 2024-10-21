@@ -590,6 +590,15 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.slashOperator(slashingParams);
     }
 
+    function test_revert_InvalidOperatorSetStrategy() public {
+        SlashingParams memory slashingParams = _randomSlashingParams(defaultOperator, 0, 0);
+        avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+
+        cheats.expectRevert(IAllocationManagerErrors.InvalidStrategy.selector);
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(slashingParams);
+    }
+
     function test_revert_operatorAllocated_notActive() public {
         // Queue allocation
         IAllocationManagerTypes.MagnitudeAllocation[] memory allocations =
@@ -1320,6 +1329,38 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         avsDirectoryMock.setIsOperatorSetBatch(allocations[0].operatorSets, false);
 
         cheats.expectRevert(IAllocationManagerErrors.InvalidOperatorSet.selector);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+    }
+
+    function test_revert_invalidOperatorSetStrategy() public {
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations =
+            _randomMagnitudeAllocation_singleStrat_singleOpSet(0, 0);
+
+        // Set strategy to being invalid
+        avsDirectoryMock.setIsOperatorSetStrategy(allocations[0].operatorSets[0], allocations[0].strategy, false);
+
+        cheats.expectRevert(IAllocationManagerErrors.InvalidStrategy.selector);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+    }
+
+    function test_canDeallocateInvalidOperatorSetStrategy() public {
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations =
+            _randomMagnitudeAllocation_singleStrat_singleOpSet(0, 0);
+
+        // Create allocation and warp to effect timestamp.
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+        cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Set strategy to being invalid.
+        avsDirectoryMock.setIsOperatorSetStrategy(allocations[0].operatorSets[0], allocations[0].strategy, false);
+
+        // Set magnitude to a full deallocation.
+        allocations[0].magnitudes[0] = 0;
+
+        // Should not revert...
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(allocations);
     }
@@ -2180,6 +2221,12 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         assertEq(delay, returnedDelay, "delay not set");
     }
 }
+
+// contract AllocationManagerUnitTests_isOperatorSetStrategy is AllocationManagerUnitTests {
+// // Revert when you try to slash for a strategy that does not exist. The operator should have allocated to the strategy, but then the AVS removes the strategy from their list of strategies we should revert the slash
+// // Revert when the operator tries to allocate for a strategy not added to the operatorSet
+// // Validate that we can deallocate, even if the strategy is not part of the operator set    
+// }
 
 /**
  * @notice TODO Lifecycle tests - These tests combine multiple functionalities of the AllocationManager
