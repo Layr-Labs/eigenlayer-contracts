@@ -16,6 +16,11 @@ abstract contract PermissionControllerMixin {
         permissionController = _permissionController;
     }
 
+    modifier checkCanCall(address caller) {
+        _checkCanCall(msg.sender, caller);
+        _;
+    }
+
     /**
      * @notice Checks if the caller is allowed to call a function on behalf of an account.
      * @param account the account to check
