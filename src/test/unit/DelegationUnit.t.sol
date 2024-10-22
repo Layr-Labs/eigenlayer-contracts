@@ -2836,7 +2836,6 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
     /**
      * @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts when operator slashed 100% for a strategy
      * and the staker has deposits in that strategy
-     * @dev Checks that there is no change if the staker is not delegated
      */
     function testFuzz_Revert_increaseDelegatedShares_slashedOperator100Percent(
         address staker,
@@ -2946,9 +2945,8 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
     }
 
     /**
-     * @notice Verifies that `DelegationManager.increaseDelegatedShares` doesn't when operator slashed 100% for a strategy
+     * @notice Verifies that `DelegationManager.increaseDelegatedShares` doesn't revert when operator slashed 100% for a strategy
      * and the staker has deposits in a separate strategy
-     * @dev Checks that there is no change if the staker is not delegated
      */
     function testFuzz_increaseDelegatedShares_slashedOperator100Percent(
         address staker,
@@ -3491,7 +3489,6 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
     /**
      * @notice Verifies that the `undelegate` function properly undelegates a staker even though their shares
      * were slashed entirely.
-     * @notice The operator should have its shares slashed prior to the staker's deposit
      */
     function testFuzz_undelegate_slashedOperator100PercentWhileStaked(uint128 shares) public {
         // register *this contract* as an operator
@@ -3800,13 +3797,11 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
     }
 
     /**
-     * @notice Verifies that `DelegationManager.queueWithdrawals` properly queues a withdrawal for the `withdrawer`
-     * from the `strategy` for the `sharesAmount`. Operator is slashed while the staker is deposited
-     * - Asserts that staker is delegated to the operator
-     * - Asserts that shares for delegatedTo operator are decreased by `sharesAmount`
-     * - Asserts that staker cumulativeWithdrawalsQueued nonce is incremented
+     * @notice Verifies that `DelegationManager.queueWithdrawals` reverts when queuing a withdrawal for the `withdrawer`
+     * from the `strategy` for the `sharesAmount` since the Operator is slashed 100% while the staker is deposited
+     * - Asserts that queuing a withdrawal reverts when the operator is slashed 100%
+     * - Asserts that staker withdrawableShares after is 0
      * - Checks that event was emitted with correct withdrawalRoot and withdrawal
-     * TODO: fuzz magnitude
      */
     function testFuzz_Revert_queueWithdrawal_SingleStrat_slashed100PercentWhileStaked(
         uint128 depositAmount,
