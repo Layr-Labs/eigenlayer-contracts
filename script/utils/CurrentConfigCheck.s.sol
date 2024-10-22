@@ -566,7 +566,7 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         vm.stopPrank();
     }
 
-    function checkGovernanceConfiguration_WithProtocolCouncilMultisig() public {
+    function checkGovernanceConfiguration_WithProtocolCouncil() public {
         assertEq(eigenLayerProxyAdmin.owner(), protocolCouncilMultisig,
             "eigenLayerProxyAdmin.owner() != protocolCouncilMultisig");
         assertEq(delegationManager.owner(), executorMultisig,
@@ -601,17 +601,17 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         address[] memory executorMultisigOwners = abi.decode(returndata, (address[]));
         require(executorMultisigOwners.length == 2,
             "executorMultisig owners wrong length");
-        bool timelockInOwners;
+        bool protocolTimelockInOwners;
         bool communityMultisigInOwners;
         for (uint256 i = 0; i < 2; ++i) {
-            if (executorMultisigOwners[i] == timelock) {
-                timelockInOwners = true;
+            if (executorMultisigOwners[i] == address(protocolTimelockController)) {
+                protocolTimelockInOwners = true;
             }
             if (executorMultisigOwners[i] == communityMultisig) {
                 communityMultisigInOwners = true;
             }
         }
-        require(timelockInOwners, "timelock not in executorMultisig owners");
+        require(protocolTimelockInOwners, "timelock not in executorMultisig owners");
         require(communityMultisigInOwners, "communityMultisig not in executorMultisig owners");
 
         require(eigenTokenProxyAdmin != beigenTokenProxyAdmin,
@@ -644,6 +644,10 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
             "operationsMultisig does not have PROPOSER_ROLE on protocolTimelockController");
         require(protocolTimelockController.hasRole(protocolTimelockController.CANCELLER_ROLE(), operationsMultisig),
             "operationsMultisig does not have CANCELLER_ROLE on protocolTimelockController");
+        require(protocolTimelockController.hasRole(protocolTimelockController.TIMELOCK_ADMIN_ROLE(), executorMultisig),
+            "executorMultisig does not have TIMELOCK_ADMIN_ROLE on protocolTimelockController");
+        require(protocolTimelockController.hasRole(protocolTimelockController.TIMELOCK_ADMIN_ROLE(), address(protocolTimelockController)),
+            "protocolTimelockController does not have TIMELOCK_ADMIN_ROLE on itself");
 
         require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.PROPOSER_ROLE(), protocolCouncilMultisig),
             "protocolCouncilMultisig does not have PROPOSER_ROLE on protocolTimelockController_BEIGEN");
@@ -653,5 +657,158 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
             "operationsMultisig does not have PROPOSER_ROLE on protocolTimelockController_BEIGEN");
         require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.CANCELLER_ROLE(), operationsMultisig),
             "operationsMultisig does not have CANCELLER_ROLE on protocolTimelockController_BEIGEN");
+        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.TIMELOCK_ADMIN_ROLE(), executorMultisig),
+            "executorMultisig does not have TIMELOCK_ADMIN_ROLE on protocolTimelockController_BEIGEN");
+        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.TIMELOCK_ADMIN_ROLE(), address(protocolTimelockController_BEIGEN)),
+            "beigenTokenTimelockController does not have TIMELOCK_ADMIN_ROLE on itself");
+    }
+
+    // forge script script/utils/CurrentConfigCheck.s.sol:CurrentConfigCheck -vvv --sig "simulateProtocolCouncilUpgrade(string)" $NETWORK_NAME
+    function simulateProtocolCouncilUpgrade(string memory networkName) public virtual {
+        run(networkName);
+        simulateTimelockControllerDeploy();
+        checkGovernanceConfiguration_WithProtocolCouncil();
+    }
+
+    function simulateTimelockControllerDeploy() public {
+        // set up initially with sender and foundation being proposers/executor/canceller on timelock controller 
+        // so that team can be added as only canceller
+        address[] memory proposers = new address[](3);
+        proposers[0] = protocolCouncilMultisig;
+        proposers[1] = msg.sender;
+        proposers[2] = operationsMultisig;
+
+        address[] memory executors = new address[](2);
+        executors[0] = protocolCouncilMultisig;
+        executors[1] = msg.sender;
+
+        vm.startBroadcast();
+        protocolTimelockController = 
+            new TimelockController(
+                0, // no delay for setup
+                proposers, 
+                executors
+            );
+        protocolTimelockController_BEIGEN = 
+            new TimelockController(
+                0, // no delay for setup
+                proposers, 
+                executors
+            );
+
+        uint256 tx_array_length = 6;
+        address[] memory targets = new address[](tx_array_length);
+        for (uint256 i = 0; i < targets.length; ++i) {
+            targets[i] = address(protocolTimelockController);
+        }
+
+        uint256[] memory values = new uint256[](tx_array_length);
+
+        bytes[] memory payloads = new bytes[](tx_array_length);
+        // 1. add operationsMultisig as canceller
+        payloads[0] = abi.encodeWithSelector(AccessControl.grantRole.selector, protocolTimelockController.CANCELLER_ROLE(), operationsMultisig);
+        // 2. remove sender as canceller
+        payloads[1] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController.CANCELLER_ROLE(), msg.sender);
+        // 3. remove sender as executor
+        payloads[2] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController.EXECUTOR_ROLE(), msg.sender);
+        // 4. remove sender as proposer
+        payloads[3] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController.PROPOSER_ROLE(), msg.sender);
+        // 5. remove sender as admin
+        payloads[4] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController.PROPOSER_ROLE(), msg.sender);
+        // 6. set min delay to appropriate length
+        payloads[5] = abi.encodeWithSelector(protocolTimelockController.updateDelay.selector, 10 days);
+
+        // schedule the batch
+        protocolTimelockController.scheduleBatch(
+            targets, 
+            values, 
+            payloads, 
+            bytes32(0), // no predecessor needed
+            bytes32(0), // no salt 
+            0 // 0 enforced delay
+        );
+
+        // execute the batch
+        protocolTimelockController.executeBatch(
+            targets, 
+            values, 
+            payloads, 
+            bytes32(0), // no predecessor needed
+            bytes32(0) // no salt
+        );
+
+        for (uint256 i = 0; i < targets.length; ++i) {
+            targets[i] = address(protocolTimelockController_BEIGEN);
+        }
+
+        // schedule the batch
+        protocolTimelockController_BEIGEN.scheduleBatch(
+            targets, 
+            values, 
+            payloads, 
+            bytes32(0), // no predecessor needed
+            bytes32(0), // no salt 
+            0 // 0 enforced delay
+        );
+
+        // execute the batch
+        protocolTimelockController_BEIGEN.executeBatch(
+            targets, 
+            values, 
+            payloads, 
+            bytes32(0), // no predecessor needed
+            bytes32(0) // no salt
+        );
+        vm.stopBroadcast();
+
+        // TODO
+        // give proxy admin ownership to timelock controller
+        // eigenTokenProxyAdmin.transferOwnership(address(timelockController));
+
+        // // TODO: fix this
+        // bytes memory data_transferOwnershipToExecutorMultisig = abi.encodeWithSelector(Ownable.transferOwnership.selector, address(executorMultisig));
+        // bytes memory callToExecutor = encodeForExecutor({
+        //     from: timelock,
+        //     to: address(eigenTokenProxyAdmin),
+        //     value: 0,
+        //     data: data_transferOwnershipToExecutorMultisig,
+        //     operation: ISafe.Operation.Call 
+        // });
+        // // uint256 timelockEta = block.timestamp + timelock.delay();
+        // uint256 timelockEta = block.timestamp + 10 days;
+        // (bytes memory calldata_to_timelock_queuing_action, bytes memory calldata_to_timelock_executing_action) =
+        //     encodeForTimelock({
+        //         to: address(executorMultisig),
+        //         value: 0,
+        //         data: callToExecutor,
+        //         timelockEta: timelockEta
+        //     });
+        // vm.startPrank(operationsMultisig);
+
+        // (bool success, /*bytes memory returndata*/) = timelock.call(calldata_to_timelock_queuing_action);
+        // require(success, "call to timelock queuing action failed");
+        // callToExecutor = encodeForExecutor({
+        //     from: timelock,
+        //     to: address(beigenTokenProxyAdmin),
+        //     value: 0,
+        //     data: data_transferOwnershipToExecutorMultisig,
+        //     operation: ISafe.Operation.Call 
+        // });
+        // (bytes memory calldata_to_timelock_queuing_action_2, bytes memory calldata_to_timelock_executing_action_2) =
+        //     encodeForTimelock({
+        //         to: address(executorMultisig),
+        //         value: 0,
+        //         data: callToExecutor,
+        //         timelockEta: timelockEta
+        //     });
+        // (success, /*bytes memory returndata*/) = timelock.call(calldata_to_timelock_queuing_action_2);
+        // require(success, "call to timelock queuing action 2 failed");
+
+        // vm.warp(timelockEta);
+        // vm.prank(operationsMultisig);
+        // (success, /*bytes memory returndata*/) = timelock.call(calldata_to_timelock_executing_action);
+        // require(success, "call to timelock executing action failed");
+        // (success, /*bytes memory returndata*/) = timelock.call(calldata_to_timelock_executing_action_2);
+        // require(success, "call to timelock executing action 2 failed");
     }
 }
