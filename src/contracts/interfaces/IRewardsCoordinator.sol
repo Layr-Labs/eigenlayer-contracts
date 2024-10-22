@@ -269,6 +269,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     /**
      * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
      * set of stakers delegated to operators who are registered to the `avs`
+     * @param avs The AVS on behalf of which the rewards submission is being made. It is assumed to be the msg.sender
      * @param rewardsSubmissions The rewards submissions being created
      * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
@@ -278,6 +279,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
     function createAVSRewardsSubmission(
+        address avs,
         RewardsSubmission[] calldata rewardsSubmissions
     ) external;
 

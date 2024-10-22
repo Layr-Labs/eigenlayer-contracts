@@ -52,8 +52,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @dev This storage will be deprecated once M2 based deregistration is deprecated.
     mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 
-    /// @notice Mapping: operator => salt => Whether the salt has been used or not.
-    mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
+    /// @notice Mapping: admin => salt => Whether the salt has been used or not.
+    mapping(address => mapping(bytes32 => bool)) public adminSaltIsSpent;
 
     /// @notice Mapping: avs => Whether it is a an operator set AVS or not.
     mapping(address => bool) public isOperatorSetAVS;
