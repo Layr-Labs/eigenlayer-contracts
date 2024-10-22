@@ -173,13 +173,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     ) internal view returns (IAllocationManagerTypes.SlashingParams memory) {
         r = uint256(keccak256(abi.encodePacked(r, salt)));
 
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = strategyMock;
-
         return IAllocationManagerTypes.SlashingParams({
             operator: operator,
             operatorSetId: uint32(r),
-            strategies: strategies,
             wadToSlash: bound(r, 1, 1e18),
             description: "test"
         });
@@ -193,13 +189,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     ) internal view returns (IAllocationManagerTypes.SlashingParams memory) {
         r = uint256(keccak256(abi.encodePacked(r, salt)));
 
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = strategyMock;
-
         return IAllocationManagerTypes.SlashingParams({
             operator: operator,
             operatorSetId: operatorSetId,
-            strategies: strategies,
             wadToSlash: bound(r, 1, 1e18),
             description: "test"
         });
@@ -608,7 +600,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocations[0].operatorSets[0].operatorSetId,
-            strategies: _strategyMockArray(),
             wadToSlash: 1e18,
             description: "test"
         });
@@ -643,7 +634,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocations[0].operatorSets[0].operatorSetId,
-            strategies: _strategyMockArray(),
             wadToSlash: 25e16,
             description: "test"
         });
@@ -664,7 +654,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         emit OperatorSlashed(
             slashingParams.operator,
             _operatorSet(defaultAVS, slashingParams.operatorSetId),
-            slashingParams.strategies,
+            _strategyMockArray(),
             wadSlashed,
             slashingParams.description
         );
@@ -730,7 +720,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         emit OperatorSlashed(
             slashingParams.operator,
             _operatorSet(defaultAVS, slashingParams.operatorSetId),
-            slashingParams.strategies,
+            _strategyMockArray(),
             wadSlashed,
             slashingParams.description
         );
@@ -782,7 +772,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocations[0].operatorSets[0].operatorSetId,
-            strategies: _strategyMockArray(),
             wadToSlash: 50e16,
             description: "test"
         });
@@ -801,7 +790,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.expectEmit(true, true, true, true, address(allocationManager));
         emit MaxMagnitudeUpdated(defaultOperator, strategyMock, maxMagnitudeAfterSlash);
         cheats.expectEmit(true, true, true, true, address(allocationManager));
-        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), slashingParams.strategies, wadSlashed, slashingParams.description);
+        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId),_strategyMockArray(), wadSlashed, slashingParams.description);
         cheats.prank(defaultAVS);
         allocationManager.slashOperator(slashingParams);
 
@@ -852,7 +841,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocations[0].operatorSets[0].operatorSetId,
-            strategies: _strategyMockArray(),
             wadToSlash: 25e16,
             description: "test"
         });
@@ -875,7 +863,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.expectEmit(true, true, true, true, address(allocationManager));
         uint256[] memory wadSlashed = new uint256[](1);
         wadSlashed[0] = 25e16;
-        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), slashingParams.strategies, wadSlashed, slashingParams.description);
+        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), _strategyMockArray(), wadSlashed, slashingParams.description);
         cheats.prank(defaultAVS);
         allocationManager.slashOperator(slashingParams);
 
@@ -911,7 +899,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocations[0].operatorSets[0].operatorSetId,
-            strategies: _strategyMockArray(),
             wadToSlash: 1e18,
             description: "test"
         });
@@ -951,7 +938,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocations[0].operatorSets[0].operatorSetId,
-            strategies: _strategyMockArray(),
             wadToSlash: 1e18,
             description: "test"
         });
@@ -969,7 +955,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.expectEmit(true, true, true, true, address(allocationManager));
         uint256[] memory wadSlashed = new uint256[](1);
         wadSlashed[0] = 1e18;
-        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), slashingParams.strategies, wadSlashed, slashingParams.description);
+        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), _strategyMockArray(), wadSlashed, slashingParams.description);
 
         cheats.prank(defaultAVS);
         allocationManager.slashOperator(slashingParams);
@@ -1016,7 +1002,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocations[0].operatorSets[0].operatorSetId,
-            strategies: _strategyMockArray(),
             wadToSlash: 25e16,
             description: "test"
         });
@@ -1035,7 +1020,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.expectEmit(true, true, true, true, address(allocationManager));
         uint256[] memory wadSlashed = new uint256[](1);
         wadSlashed[0] = 125e15;
-        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), slashingParams.strategies, wadSlashed, slashingParams.description);
+        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), _strategyMockArray(), wadSlashed, slashingParams.description);
         cheats.prank(defaultAVS);
         allocationManager.slashOperator(slashingParams);
 
@@ -1102,7 +1087,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocations[0].operatorSets[0].operatorSetId,
-            strategies: _strategyMockArray(),
             wadToSlash: 5e17,
             description: "test"
         });
@@ -1168,7 +1152,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocations[0].operatorSets[0].operatorSetId,
-            strategies: strategiesToSlash,
             wadToSlash: 6e17,
             description: "test"
         });
@@ -1201,7 +1184,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         wadSlashed[0] = 3e17;
         wadSlashed[1] = 6e17;
         cheats.expectEmit(true, true, true, true, address(allocationManager));
-        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), slashingParams.strategies, wadSlashed, slashingParams.description);
+        emit OperatorSlashed(slashingParams.operator, _operatorSet(defaultAVS, slashingParams.operatorSetId), _strategyMockArray(), wadSlashed, slashingParams.description);
         
         // Slash Operator
         cheats.prank(defaultAVS);
@@ -1252,7 +1235,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocations[0].operatorSets[0].operatorSetId,
-            strategies: _strategyMockArray(),
             wadToSlash: 5e17,
             description: "test"
         });

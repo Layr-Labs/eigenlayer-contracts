@@ -57,20 +57,22 @@ contract AllocationManager is
         require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
 
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: params.operatorSetId});
-
+        IStrategy[] memory strategies = avsDirectory.getStrategiesInOperatorSet(operatorSet);
+        
         // Assert that the provided strategies are all whitelisted for the given operator set.
-        require(avsDirectory.isOperatorSetStrategyBatch(operatorSet, params.strategies), InvalidStrategy());
+        require(avsDirectory.isOperatorSetStrategyBatch(operatorSet, strategies), InvalidStrategy());
         // Asser that the operator is slashable for the given operator set.
         require(avsDirectory.isOperatorSlashable(params.operator, operatorSet), InvalidOperator());
 
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        uint256 strategiesLength = strategies.length;
 
         // Record the proportion of 1e18 that the operator's total shares that are being slashed
-        uint256[] memory wadSlashed = new uint256[](params.strategies.length);
+        uint256[] memory wadSlashed = new uint256[](strategiesLength);
 
-        for (uint256 i = 0; i < params.strategies.length; ++i) {
+        for (uint256 i = 0; i < strategiesLength; ++i) {
             PendingMagnitudeInfo memory info =
-                _getPendingMagnitudeInfo(params.operator, params.strategies[i], operatorSetKey);
+                _getPendingMagnitudeInfo(params.operator, strategies[i], operatorSetKey);
 
             require(info.currentMagnitude > 0, OperatorNotAllocated());
 
@@ -88,7 +90,7 @@ contract AllocationManager is
                 emit OperatorSetMagnitudeUpdated(
                     params.operator,
                     operatorSet,
-                    params.strategies[i],
+                    strategies[i],
                     _addInt128(info.currentMagnitude, info.pendingDiff),
                     info.effectTimestamp
                 );
@@ -97,28 +99,28 @@ contract AllocationManager is
             // 3. Update the operator's allocation in storage
             _updateMagnitudeInfo({
                 operator: params.operator,
-                strategy: params.strategies[i],
+                strategy: strategies[i],
                 operatorSetKey: operatorSetKey,
                 info: info
             });
 
             emit OperatorSetMagnitudeUpdated(
-                params.operator, operatorSet, params.strategies[i], info.currentMagnitude, uint32(block.timestamp)
+                params.operator, operatorSet, strategies[i], info.currentMagnitude, uint32(block.timestamp)
             );
-
+            
             // 4. Reduce the operator's max magnitude
-            uint64 maxMagnitudeBeforeSlash = _maxMagnitudeHistory[params.operator][params.strategies[i]].latest();
+            uint64 maxMagnitudeBeforeSlash = _maxMagnitudeHistory[params.operator][strategies[i]].latest();
             uint64 maxMagnitudeAfterSlash = maxMagnitudeBeforeSlash - slashedMagnitude;
-            _maxMagnitudeHistory[params.operator][params.strategies[i]].push({
+            _maxMagnitudeHistory[params.operator][strategies[i]].push({
                 key: uint32(block.timestamp),
                 value: maxMagnitudeAfterSlash
             });
-            emit MaxMagnitudeUpdated(params.operator, params.strategies[i], maxMagnitudeAfterSlash);
+            emit MaxMagnitudeUpdated(params.operator, strategies[i], maxMagnitudeAfterSlash);
 
             // 5. Decrease operators shares in the DelegationManager
             delegation.decreaseOperatorShares({
                 operator: params.operator,
-                strategy: params.strategies[i],
+                strategy: strategies[i],
                 previousTotalMagnitude: maxMagnitudeBeforeSlash,
                 newTotalMagnitude: maxMagnitudeAfterSlash
             });
@@ -127,7 +129,7 @@ contract AllocationManager is
             wadSlashed[i] = uint256(slashedMagnitude).divWad(maxMagnitudeBeforeSlash);
         }
 
-        emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
+        emit OperatorSlashed(params.operator, operatorSet, strategies, wadSlashed, params.description);
     }
 
     /// @inheritdoc IAllocationManager

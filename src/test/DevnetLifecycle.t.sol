@@ -213,13 +213,9 @@ contract Devnet_Lifecycle_Test is Test {
     }
 
     function _slashOperator() public {
-        // Get slashing params
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = wethStrategy;
         IAllocationManagerTypes.SlashingParams memory slashingParams = IAllocationManagerTypes.SlashingParams({
             operator: operator,
             operatorSetId: 1,
-            strategies: strategies,
             wadToSlash: 5e17,
             description: "test"
         });
