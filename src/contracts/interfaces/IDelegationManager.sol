@@ -135,10 +135,11 @@ interface IDelegationManagerTypes {
         // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
         // Array containing the amount of staker's scaledShares for withdrawal in each Strategy in the `strategies` array
-        // Note that these scaledShares need to be multiplied by the operator's maxMagnitude at completion to include
-        // slashing occurring during the queue withdrawal delay. This is because scaledShares = sharesToWithdraw / maxMagnitude at queue time.
-        // to account for slashing, we later multiply scaledShares * maxMagnitude at completion time to get the withdrawn shares
-        // after applying slashing during the delay period.
+        // Note that these scaledShares need to be multiplied by the operator's maxMagnitude and beaconChainScalingFactor at completion to include
+        // slashing occurring during the queue withdrawal delay. This is because scaledShares = sharesToWithdraw / (maxMagnitude * beaconChainScalingFactor)
+        // at queue time. beaconChainScalingFactor is simply equal to 1 if the strategy is not the beaconChainStrategy.
+        // To account for slashing, we later multiply scaledShares * maxMagnitude * beaconChainScalingFactor at the earliest possible completion time
+        // to get the withdrawn shares after applying slashing during the delay period.
         uint256[] scaledShares;
     }
 

@@ -37,8 +37,6 @@ interface IAllocationManagerErrors {
     error AlreadySlashedForTimestamp();
     /// @dev Thrown when calling a view function that requires a valid timestamp.
     error InvalidTimestamp();
-    /// @dev Thrown when an invalid allocation delay is set
-    error InvalidAllocationDelay();
     /// @dev Thrown when a slash is attempted on an operator who has not allocated to the strategy, operatorSet pair
     error OperatorNotAllocated();
 }

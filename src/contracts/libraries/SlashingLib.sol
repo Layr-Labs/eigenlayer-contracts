@@ -50,7 +50,7 @@ library SlashingLib {
     /**
      * @notice Used explicitly for calculating slashed magnitude, we want to ensure even in the
      * situation where an operator is slashed several times and precision has been lost over time,
-     * an incoming slashing request isn't rounded down to 0 and an operator is able to avoided slashing penalties.
+     * an incoming slashing request isn't rounded down to 0 and an operator is able to avoid slashing penalties.
      */
     function mulWadRoundUp(uint256 x, uint256 y) internal pure returns (uint256) {
         return x.mulDiv(y, WAD, Math.Rounding.Up);

@@ -591,7 +591,7 @@ contract DelegationManager is
      * out of the amount withdrawable for the staker has to also be decremented from the staker's deposit shares.
      * Ex. Suppose as a staker, I have 100 depositShares for a strategy thats sitting in the StrategyManager in the `stakerDepositShares` mapping but I actually have been slashed 50%
      * and my real withdrawable amount is 50 shares.
-     * Now when I go to withdraw 20 shares, I'm propotionally withdrawing 40% of my withdrawable shares. We calculate below via the `toDepositShares()` function to
+     * Now when I go to withdraw 20 shares, I'm proportionally withdrawing 40% of my withdrawable shares. We calculate below via the `toDepositShares()` function to
      * decrement 40 shares from my 100 depositShares in storage. The end state is that I have 30 withdrawable shares now and 60 depositShares, this still accurately reflects a 50% slashing
      * that has occurred on my existing stake.
      * @dev sharesToWithdraw are divided by the current maxMagnitude of the operator (at queue time) and this value is stored in the Withdrawal struct as `scaledShares`.
