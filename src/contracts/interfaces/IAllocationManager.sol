@@ -5,11 +5,7 @@ import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 
-/// @notice Struct representing an operator set
-struct OperatorSet {
-    address avs;
-    uint32 operatorSetId;
-}
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
 interface IAllocationManagerErrors {
     /// @dev Thrown when `wadToSlash` is zero or greater than 1e18
@@ -282,10 +278,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      *  @dev msg.sender is used as the AVS.
      *  @dev The operator must not have a pending deregistration from the operator set.
      */
-    function addOperatorToSets(
-        address operator,
-        uint32[] calldata operatorSetIds
-    ) external;
+    function addOperatorToSets(address operator, uint32[] calldata operatorSetIds) external;
 
     /**
      * @notice Called by an operator to deregister from an operator set
@@ -296,11 +289,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      *
      * @dev this will likely only be called in case the AVS contracts are in a state that prevents operators from deregistering
      */
-    function removeOperatorFromSets(
-        address operator,
-        address avs,
-        uint32[] calldata operatorSetIds
-    ) external;
+    function removeOperatorFromSets(address operator, address avs, uint32[] calldata operatorSetIds) external;
 
     /**
      *  @notice Called by AVSs to add a set of strategies to an operator set.
@@ -455,10 +444,10 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address);
 
     /**
-     * @notice Returns the number of operator sets an operator is registered to.
-     * @param operator the operator address to query
+     *  @notice Returns the total number of operator sets an operator is registered to.
+     *  @param operator The operator address to query.
      */
-    function getNumOperatorSetsOfOperator(
+    function inTotalOperatorSets(
         address operator
     ) external view returns (uint256);
 
@@ -500,14 +489,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      */
     function getNumOperatorsInOperatorSet(
         OperatorSet memory operatorSet
-    ) external view returns (uint256);
-
-    /**
-     *  @notice Returns the total number of operator sets an operator is registered to.
-     *  @param operator The operator address to query.
-     */
-    function inTotalOperatorSets(
-        address operator
     ) external view returns (uint256);
 
     /**

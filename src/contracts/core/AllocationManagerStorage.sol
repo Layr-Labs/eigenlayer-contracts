@@ -12,7 +12,7 @@ import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
     // Constants
-    
+
     /// @dev Index for flag that pauses operator allocations/deallocations when set.
     uint8 internal constant PAUSED_MODIFY_ALLOCATIONS = 0;
 
@@ -64,7 +64,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     /// @notice Mapping: operator => List of operator sets that operator is registered to.
     /// @dev Each item is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))
-    mapping(address => EnumerableSet.Bytes32Set) internal _operatorSetsMemberOf;
+    mapping(address => EnumerableSet.Bytes32Set) internal _memberOfSets;
 
     /// @notice Mapping: operatorSet => List of operators that are registered to the operatorSet
     /// @dev Each key is formatted as such: bytes32(abi.encodePacked(avs, uint96(operatorSetId)))

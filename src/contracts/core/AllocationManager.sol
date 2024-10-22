@@ -5,9 +5,9 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
+import "../libraries/OperatorSetLib.sol";
 import "./AllocationManagerStorage.sol";
 
 contract AllocationManager is
@@ -15,14 +15,14 @@ contract AllocationManager is
     OwnableUpgradeable,
     Pausable,
     AllocationManagerStorage,
-    ReentrancyGuardUpgradeable,
-    SignatureUtils
+    ReentrancyGuardUpgradeable
 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
     using Snapshots for Snapshots.DefaultWadHistory;
     using SlashingLib for uint256;
+    using OperatorSetLib for OperatorSet;
 
     /**
      *
@@ -60,8 +60,7 @@ contract AllocationManager is
         require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
 
         // Check that the operator is registered and slashable
-        OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: params.operatorSetId});
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, id: params.operatorSetId});
         require(isOperatorSlashable(params.operator, operatorSet), InvalidOperator());
 
         // Record the proportion of 1e18 that the operator's total shares that are being slashed
@@ -69,7 +68,7 @@ contract AllocationManager is
 
         for (uint256 i = 0; i < params.strategies.length; ++i) {
             PendingMagnitudeInfo memory info =
-                _getPendingMagnitudeInfo(params.operator, params.strategies[i], operatorSetKey);
+                _getPendingMagnitudeInfo(params.operator, params.strategies[i], operatorSet.key());
 
             require(info.currentMagnitude > 0, OperatorNotAllocated());
 
@@ -97,7 +96,7 @@ contract AllocationManager is
             _updateMagnitudeInfo({
                 operator: params.operator,
                 strategy: params.strategies[i],
-                operatorSetKey: operatorSetKey,
+                operatorSetKey: operatorSet.key(),
                 info: info
             });
 
@@ -151,10 +150,9 @@ contract AllocationManager is
 
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
                 OperatorSet calldata operatorSet = allocation.operatorSets[j];
+                require(isOperatorSet[operatorSet.avs][operatorSet.id], InvalidOperatorSet());
 
-                require(isOperatorSet[operatorSet.avs][operatorSet.operatorSetId], InvalidOperatorSet());
-
-                bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
+                bytes32 operatorSetKey = allocation.operatorSets[j].key();
 
                 // Ensure there is not already a pending modification
                 PendingMagnitudeInfo memory info =
@@ -233,7 +231,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < operatorSetIds.length; ++i) {
             require(!isOperatorSet[msg.sender][operatorSetIds[i]], InvalidOperatorSet());
             isOperatorSet[msg.sender][operatorSetIds[i]] = true;
-            emit OperatorSetCreated(OperatorSet({avs: msg.sender, operatorSetId: operatorSetIds[i]}));
+            emit OperatorSetCreated(OperatorSet({avs: msg.sender, id: operatorSetIds[i]}));
         }
     }
 
@@ -291,11 +289,9 @@ contract AllocationManager is
         OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
         require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
 
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        bytes32 operatorSetKey = operatorSet.key();
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(
-                _operatorSetStrategies[operatorSetKey].add(address(strategies[i])), StrategyAlreadyInOperatorSet()
-            );
+            require(_operatorSetStrategies[operatorSetKey].add(address(strategies[i])), StrategyAlreadyInOperatorSet());
             emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
         }
     }
@@ -305,11 +301,9 @@ contract AllocationManager is
         OperatorSet memory operatorSet = OperatorSet(msg.sender, operatorSetId);
         require(isOperatorSet[msg.sender][operatorSetId], InvalidOperatorSet());
 
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        bytes32 operatorSetKey = operatorSet.key();
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(
-                _operatorSetStrategies[operatorSetKey].remove(address(strategies[i])), StrategyNotInOperatorSet()
-            );
+            require(_operatorSetStrategies[operatorSetKey].remove(address(strategies[i])), StrategyNotInOperatorSet());
             emit StrategyRemovedFromOperatorSet(operatorSet, strategies[i]);
         }
     }
@@ -434,16 +428,15 @@ contract AllocationManager is
             OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
             require(isOperatorSet[avs][operatorSetIds[i]], InvalidOperatorSet());
 
-            bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+            bytes32 operatorSetKey = operatorSet.key();
 
-            _operatorSetsMemberOf[operator].add(operatorSetKey);
+            _memberOfSets[operator].add(operatorSetKey);
             _operatorSetMembers[operatorSetKey].add(operator);
 
             OperatorSetRegistrationStatus storage registrationStatus =
                 operatorSetStatus[avs][operator][operatorSetIds[i]];
 
             require(!registrationStatus.registered, InvalidOperator());
-
             registrationStatus.registered = true;
 
             emit OperatorAddedToOperatorSet(operator, operatorSet);
@@ -463,16 +456,15 @@ contract AllocationManager is
             OperatorSet memory operatorSet = OperatorSet(avs, operatorSetIds[i]);
             require(isOperatorSet[avs][operatorSetIds[i]], InvalidOperatorSet());
 
-            bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+            bytes32 operatorSetKey = operatorSet.key();
 
-            _operatorSetsMemberOf[operator].remove(operatorSetKey);
+            _memberOfSets[operator].remove(operatorSetKey);
             _operatorSetMembers[operatorSetKey].remove(operator);
 
             OperatorSetRegistrationStatus storage registrationStatus =
                 operatorSetStatus[avs][operator][operatorSetIds[i]];
 
             require(registrationStatus.registered, InvalidOperator());
-
             registrationStatus.registered = false;
             registrationStatus.lastDeregisteredTimestamp = uint32(block.timestamp);
 
@@ -486,26 +478,6 @@ contract AllocationManager is
 
     function _addInt128(uint64 a, int128 b) internal pure returns (uint64) {
         return uint64(uint128(int128(uint128(a)) + b));
-    }
-
-    /// @dev Returns an `OperatorSet` encoded into a 32-byte value.
-    /// @param operatorSet The `OperatorSet` to encode.
-    function _encodeOperatorSet(
-        OperatorSet memory operatorSet
-    ) internal pure returns (bytes32) {
-        return bytes32(abi.encodePacked(operatorSet.avs, uint96(operatorSet.operatorSetId)));
-    }
-
-    /// @dev Returns an `OperatorSet` decoded from an encoded 32-byte value.
-    /// @param encoded The encoded `OperatorSet` to decode.
-    /// @dev Assumes `encoded` is encoded via `_encodeOperatorSet(operatorSet)`.
-    function _decodeOperatorSet(
-        bytes32 encoded
-    ) internal pure returns (OperatorSet memory) {
-        return OperatorSet({
-            avs: address(uint160(uint256(encoded) >> 96)),
-            operatorSetId: uint32(uint256(encoded) & type(uint96).max)
-        });
     }
 
     /// @inheritdoc IAllocationManager
@@ -530,7 +502,7 @@ contract AllocationManager is
             PendingMagnitudeInfo memory info = _getPendingMagnitudeInfo({
                 operator: operator,
                 strategy: strategy,
-                operatorSetKey: _encodeOperatorSet(operatorSets[i])
+                operatorSetKey: operatorSets[i].key()
             });
 
             infos[i] = MagnitudeInfo({
@@ -555,7 +527,7 @@ contract AllocationManager is
                 PendingMagnitudeInfo memory info = _getPendingMagnitudeInfo({
                     operator: operators[i],
                     strategy: strategies[j],
-                    operatorSetKey: _encodeOperatorSet(operatorSet)
+                    operatorSetKey: operatorSet.key()
                 });
 
                 infos[i][j] = MagnitudeInfo({
@@ -654,7 +626,7 @@ contract AllocationManager is
         uint32 beforeTimestamp
     ) external view returns (uint256[][] memory, uint256[][] memory) {
         require(beforeTimestamp > block.timestamp, InvalidTimestamp());
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        bytes32 operatorSetKey = operatorSet.key();
         uint256[][] memory delegatedShares = delegation.getOperatorsShares(operators, strategies);
         uint256[][] memory slashableShares = new uint256[][](operators.length);
 
@@ -679,19 +651,19 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function operatorSetsMemberOfAtIndex(address operator, uint256 index) external view returns (OperatorSet memory) {
-        return _decodeOperatorSet(_operatorSetsMemberOf[operator].at(index));
+        return OperatorSetLib.decode(_memberOfSets[operator].at(index));
     }
 
     /// @inheritdoc IAllocationManager
     function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address) {
-        return _operatorSetMembers[_encodeOperatorSet(operatorSet)].at(index);
+        return _operatorSetMembers[operatorSet.key()].at(index);
     }
 
     /// @inheritdoc IAllocationManager
-    function getNumOperatorSetsOfOperator(
+    function inTotalOperatorSets(
         address operator
     ) external view returns (uint256) {
-        return _operatorSetsMemberOf[operator].length();
+        return _memberOfSets[operator].length();
     }
 
     /// @inheritdoc IAllocationManager
@@ -700,11 +672,11 @@ contract AllocationManager is
         uint256 start,
         uint256 length
     ) public view returns (OperatorSet[] memory operatorSets) {
-        uint256 maxLength = _operatorSetsMemberOf[operator].length() - start;
+        uint256 maxLength = _memberOfSets[operator].length() - start;
         if (length > maxLength) length = maxLength;
         operatorSets = new OperatorSet[](length);
         for (uint256 i; i < length; ++i) {
-            operatorSets[i] = _decodeOperatorSet(_operatorSetsMemberOf[operator].at(start + i));
+            operatorSets[i] = OperatorSetLib.decode(_memberOfSets[operator].at(start + i));
         }
     }
 
@@ -714,7 +686,7 @@ contract AllocationManager is
         uint256 start,
         uint256 length
     ) external view returns (address[] memory operators) {
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        bytes32 operatorSetKey = operatorSet.key();
         uint256 maxLength = _operatorSetMembers[operatorSetKey].length() - start;
         if (length > maxLength) length = maxLength;
         operators = new address[](length);
@@ -724,10 +696,17 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
+    function getNumOperatorsInOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256) {
+        return _operatorSetMembers[operatorSet.key()].length();
+    }
+
+    /// @inheritdoc IAllocationManager
     function getStrategiesInOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory strategies) {
-        bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
+        bytes32 operatorSetKey = operatorSet.key();
         uint256 length = _operatorSetStrategies[operatorSetKey].length();
 
         strategies = new IStrategy[](length);
@@ -737,30 +716,15 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function getNumOperatorsInOperatorSet(
-        OperatorSet memory operatorSet
-    ) external view returns (uint256) {
-        return _operatorSetMembers[_encodeOperatorSet(operatorSet)].length();
-    }
-
-    /// @inheritdoc IAllocationManager
-    function inTotalOperatorSets(
-        address operator
-    ) external view returns (uint256) {
-        return _operatorSetsMemberOf[operator].length();
-    }
-
-    /// @inheritdoc IAllocationManager
     function isMember(address operator, OperatorSet memory operatorSet) public view returns (bool) {
-        return _operatorSetsMemberOf[operator].contains(_encodeOperatorSet(operatorSet));
+        return _memberOfSets[operator].contains(operatorSet.key());
     }
 
     /// @inheritdoc IAllocationManager
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         if (isMember(operator, operatorSet)) return true;
 
-        OperatorSetRegistrationStatus memory status =
-            operatorSetStatus[operatorSet.avs][operator][operatorSet.operatorSetId];
+        OperatorSetRegistrationStatus memory status = operatorSetStatus[operatorSet.avs][operator][operatorSet.id];
 
         return block.timestamp < status.lastDeregisteredTimestamp + DEALLOCATION_DELAY;
     }
