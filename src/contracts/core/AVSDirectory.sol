@@ -76,25 +76,18 @@ contract AVSDirectory is
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        // Assert `operatorSignature.expiry` has not elapsed.
-        require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
-
-        // Assert that the AVS is not an operator set AVS.
-        require(!allocationManager.isOperatorSetAVS(msg.sender), InvalidAVS());
-
-        // Assert that the `operator` is not actively registered to the AVS.
+        // Check that the operator is not already registered to the AVS
         require(
             avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
             OperatorAlreadyRegisteredToAVS()
         );
 
-        // Assert `operator` has not already spent `operatorSignature.salt`.
-        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
-
-        // Assert `operator` is a registered operator.
+        // Check operator exists and has valid signature
         require(delegationManager.isOperator(operator), OperatorNotRegisteredToEigenLayer());
+        require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
+        require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
 
-        // Assert that `operatorSignature.signature` is a valid signature for the operator AVS registration.
+        // Validate signature
         _checkIsValidSignatureNow({
             signer: operator,
             signableDigest: calculateOperatorAVSRegistrationDigestHash({
@@ -106,10 +99,8 @@ contract AVSDirectory is
             signature: operatorSignature.signature
         });
 
-        // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
+        // Spend salt and mark operator registered
         operatorSaltIsSpent[operator][operatorSignature.salt] = true;
-
-        // Set the operator as registered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
 
         emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
@@ -119,13 +110,11 @@ contract AVSDirectory is
     function deregisterOperatorFromAVS(
         address operator
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        // Assert that operator is registered for the AVS.
+        // Check that the operator is currently registered to the AVS
         require(
             avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
             OperatorNotRegisteredToAVS()
         );
-        // Assert that the AVS is not an operator set AVS.
-        require(!allocationManager.isOperatorSetAVS(msg.sender), InvalidAVS());
 
         // Set the operator as deregistered
         avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;

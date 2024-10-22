@@ -12,15 +12,7 @@ import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
     // Constants
-
-    /// @notice The EIP-712 typehash for the `OperatorSetRegistration` struct used by the contract
-    bytes32 public constant OPERATOR_SET_REGISTRATION_TYPEHASH =
-        keccak256("OperatorSetRegistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
-
-    /// @notice The EIP-712 typehash for the `OperatorSetMembership` struct used by the contract
-    bytes32 public constant OPERATOR_SET_FORCE_DEREGISTRATION_TYPEHASH =
-        keccak256("OperatorSetForceDeregistration(address avs,uint32[] operatorSetIds,bytes32 salt,uint256 expiry)");
-
+    
     /// @dev Index for flag that pauses operator allocations/deallocations when set.
     uint8 internal constant PAUSED_MODIFY_ALLOCATIONS = 0;
 
@@ -50,9 +42,6 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     // Mutatables
 
-    /// @notice Mapping: signer => salt => Whether the salt has been used or not by the signer.
-    mapping(address => mapping(bytes32 => bool)) public isSaltSpent;
-
     /// @notice Mapping: operator => strategy => snapshotted maxMagnitude
     /// Note that maxMagnitude is monotonically decreasing and is decreased on slashing
     mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
@@ -69,9 +58,6 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
     /// This determines how long it takes for allocations to take effect in the future.
     mapping(address => AllocationDelayInfo) internal _allocationDelayInfo;
-
-    /// @notice Mapping: avs => Whether it is a an operator set AVS or not.
-    mapping(address => bool) public isOperatorSetAVS;
 
     /// @notice Mapping: avs => operatorSetId => Whether or not an operator set is valid.
     mapping(address => mapping(uint32 => bool)) public isOperatorSet;
@@ -110,5 +96,5 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[45] private __gap;
+    uint256[47] private __gap;
 }
