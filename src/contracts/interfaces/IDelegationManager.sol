@@ -189,8 +189,9 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
      * @notice Emitted when a new withdrawal is queued.
      * @param withdrawalRoot Is the hash of the `withdrawal`.
      * @param withdrawal Is the withdrawal itself.
+     * @param sharesToWithdraw Is an array of the shares that were queued for withdrawal corresponding to the strategies in the `withdrawal`.
      */
-    event SlashingWithdrawalQueued(bytes32 withdrawalRoot, Withdrawal withdrawal);
+    event SlashingWithdrawalQueued(bytes32 withdrawalRoot, Withdrawal withdrawal, uint256[] sharesToWithdraw);
 
     /// @notice Emitted when a queued withdrawal is completed
     event SlashingWithdrawalCompleted(bytes32 withdrawalRoot);

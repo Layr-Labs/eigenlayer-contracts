@@ -3040,7 +3040,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorSharesDecreased(defaultOperator, defaultStaker, strategyMock, shares);
         cheats.expectEmit(true, true, true, true, address(delegationManager));  
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, queuedWithdrawalParams[0].shares);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit DepositScalingFactorUpdated(defaultStaker, strategyMock, WAD);
         cheats.prank(defaultStaker);
@@ -3090,7 +3090,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         
         // Format queued withdrawal
         (
-            ,
+            IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             IDelegationManagerTypes.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
@@ -3106,7 +3106,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorSharesDecreased(defaultOperator, defaultStaker, strategyMock, shares);
         cheats.expectEmit(true, true, true, true, address(delegationManager));  
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, queuedWithdrawalParams[0].shares);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit DepositScalingFactorUpdated(defaultStaker, strategyMock, WAD);
         cheats.prank(defaultStaker);
@@ -3172,7 +3172,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         
         // Format queued withdrawal
         (
-            ,
+            IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             IDelegationManagerTypes.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
@@ -3188,7 +3188,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorSharesDecreased(defaultOperator, defaultStaker, strategyMock, operatorSharesAfterSlash);
         cheats.expectEmit(true, true, true, true, address(delegationManager));  
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, queuedWithdrawalParams[0].shares);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit DepositScalingFactorUpdated(defaultStaker, strategyMock, WAD);
         cheats.prank(defaultStaker);
@@ -3310,7 +3310,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // queueWithdrawals
         cheats.prank(defaultStaker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, queuedWithdrawalParams[0].shares);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
         uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
@@ -3370,7 +3370,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // queueWithdrawals
         cheats.prank(defaultStaker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, queuedWithdrawalParams[0].shares);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
         uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
@@ -3438,7 +3438,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             cheats.expectRevert(IDelegationManagerErrors.WithdrawalExceedsMax.selector);
         } else {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
-            emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
+            emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, queuedWithdrawalParams[0].shares);
         }
         cheats.prank(defaultStaker);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
@@ -3498,7 +3498,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // queueWithdrawals
         cheats.prank(defaultStaker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, queuedWithdrawalParams[0].shares);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
         // Post queueWithdrawal state values
