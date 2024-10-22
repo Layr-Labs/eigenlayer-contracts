@@ -49,7 +49,7 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     mapping(address avs => mapping(address operator => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 
     /// @notice Returns whether a `salt` has been used by a given `operator`.
-    mapping(address operator => mapping(bytes32 salt => bool)) public operatorSaltIsSpent;
+    mapping(address operator => mapping(bytes32 salt => bool isSpent)) public operatorSaltIsSpent;
 
     /// @notice Returns whether a given `avs` is an operator set avs.
     mapping(address avs => bool) public isOperatorSetAVS;
@@ -59,15 +59,15 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     /// @notice Returns the list of operator sets that an `operator` is registered to.
     /// @dev Each item is formatted as `bytes32(abi.encodePacked(avs, uint96(operatorSetId)))`.
-    mapping(address operator => EnumerableSet.Bytes32Set) internal _operatorSetsMemberOf;
+    mapping(address operator => EnumerableSet.Bytes32Set operatorSets) internal _operatorSetsMemberOf;
 
     /// @notice Returns the list of `operators` that are members of a given operator set.
     /// @dev Each key is formatted as `bytes32(abi.encodePacked(avs, uint96(operatorSetId)))`.
-    mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet) internal _operatorSetMembers;
+    mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet operators) internal _operatorSetMembers;
 
     /// @notice Returns the list of `strategies` associated with a given operator set.
     /// @dev Each key is formatted as `bytes32(abi.encodePacked(avs, uint96(operatorSetId)))`.
-    mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet) internal _operatorSetStrategies;
+    mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet strategies) internal _operatorSetStrategies;
 
     /// @notice Returns the registration status of an `operator` for a given `avs` and `operatorSetId`.
     mapping(address operator => mapping(address avs => mapping(uint32 operatorSetId => OperatorSetRegistrationStatus)))

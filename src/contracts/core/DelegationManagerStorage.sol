@@ -101,7 +101,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice Returns the total number of withdrawals that have been queued for a given `staker`.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
-    mapping(address staker => uint256 total) public cumulativeWithdrawalsQueued;
+    mapping(address staker => uint256 totalQueued) public cumulativeWithdrawalsQueued;
 
     /// @dev Do not remove, deprecated storage.
     /// See conversation here: https://github.com/Layr-Labs/eigenlayer-contracts/pull/365/files#r1417525270

@@ -84,7 +84,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     mapping(address earner => address claimer) public claimerFor;
 
     /// @notice Returns the total claimed amount for an `earner` for a given `token`.
-    mapping(address earner => mapping(IERC20 token => uint256 claimed)) public cumulativeClaimed;
+    mapping(address earner => mapping(IERC20 token => uint256 totalClaimed)) public cumulativeClaimed;
 
     /// @notice Returns the submission `nonce` for an `avs`.
     mapping(address avs => uint256 nonce) public submissionNonce;
