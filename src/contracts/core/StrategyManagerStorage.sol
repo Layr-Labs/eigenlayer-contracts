@@ -32,50 +32,39 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     // Mutatables
 
+    /// @dev Do not remove, deprecated storage.
     bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
-    // staker => number of signed deposit nonce (used in depositIntoStrategyWithSignature)
-    mapping(address => uint256) public nonces;
+    /// @notice Returns the signature `nonce` for each `signer`.
+    mapping(address signer => uint256 nonce) public nonces;
 
-    /// @notice Permissioned role, which can be changed by the contract owner. Has the ability to edit the strategy whitelist
+    /// @notice Returns the permissioned address that can whitelist strategies.
     address public strategyWhitelister;
 
-    /*
-     * Reserved space previously used by the deprecated storage variable `withdrawalDelayBlocks.
-     * This variable was migrated to the DelegationManager instead.
-     */
+    /// @dev Do not remove, deprecated storage.
     uint256 private __deprecated_withdrawalDelayBlocks;
-    /// @notice Mapping: staker => Strategy => number of shares which they have deposited. All of these shares
-    ///         may not be withdrawable if the staker has delegated to an operator that has been slashed.
-    mapping(address => mapping(IStrategy => uint256)) public stakerDepositShares;
-    /// @notice Mapping: staker => array of strategies in which they have nonzero shares
-    mapping(address => IStrategy[]) public stakerStrategyList;
 
-    /// @notice *Deprecated* mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
-    /// @dev This mapping is preserved to allow the migration of withdrawals to the DelegationManager contract.
-    mapping(bytes32 => bool) private __deprecated_withdrawalRootPending;
-    /*
-     * Reserved space previously used by the deprecated mapping(address => uint256) numWithdrawalsQueued.
-     * This mapping tracked the cumulative number of queued withdrawals initiated by a staker.
-     * Withdrawals are now initiated in the DlegationManager, so the mapping has moved to that contract.
-     */
-    mapping(address => uint256) private __deprecated_numWithdrawalsQueued;
+    /// @notice Returns the number of deposited `shares` for a `staker` for a given `strategy`.
+    /// @dev All of these shares may not be withdrawable if the staker has delegated to an operator that has been slashed.
+    mapping(address staker => mapping(IStrategy strategy => uint256 shares)) public stakerDepositShares;
 
-    /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
-    mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
-    /*
-     * Reserved space previously used by the deprecated mapping(address => uint256) beaconChainETHSharesToDecrementOnWithdrawal.
-     * This mapping tracked beaconChainETH "deficit" in cases where updates were made to shares retroactively.  However, this construction was
-     * moved into the EigenPodManager contract itself.
-     */
-    mapping(address => uint256) internal beaconChainETHSharesToDecrementOnWithdrawal;
+    /// @notice Returns a list of the `strategies` that a `staker` is currently staking in.
+    mapping(address staker => IStrategy[] strategies) public stakerStrategyList;
 
-    /**
-     * @notice Mapping: strategy => whether or not stakers are allowed to transfer strategy shares to another address
-     * if true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
-     * and also when performing queueWithdrawals, a staker can only withdraw to themselves
-     */
-    mapping(IStrategy => bool) private __deprecated_thirdPartyTransfersForbidden;
+    /// @dev Do not remove, deprecated storage.
+    mapping(bytes32 withdrawalRoot => bool pending) private __deprecated_withdrawalRootPending;
+
+    /// @dev Do not remove, deprecated storage.
+    mapping(address staker => uint256 totalQueued) private __deprecated_numWithdrawalsQueued;
+
+    /// @notice Returns whether a `strategy` is `whitelisted` for deposits.
+    mapping(IStrategy strategy => bool whitelisted) public strategyIsWhitelistedForDeposit;
+
+    /// @dev Do not remove, deprecated storage.
+    mapping(address avs => uint256 shares) private __deprecated_beaconChainETHSharesToDecrementOnWithdrawal;
+
+    /// @dev Do not remove, deprecated storage.
+    mapping(IStrategy strategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
     // Construction
 

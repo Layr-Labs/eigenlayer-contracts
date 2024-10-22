@@ -53,7 +53,7 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     address internal __deprecated_beaconChainOracle;
 
     /// @notice Pod owner to deployed EigenPod address
-    mapping(address => IEigenPod) public ownerToPod;
+    mapping(address podOwner => IEigenPod) public ownerToPod;
 
     // BEGIN STORAGE VARIABLES ADDED AFTER FIRST TESTNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /// @notice The number of EigenPods that have been deployed
@@ -73,7 +73,7 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
      * as the withdrawal "paying off the deficit".
      */
-    mapping(address => int256) public podOwnerDepositShares;
+    mapping(address podOwner => int256 shares) public podOwnerDepositShares;
 
     uint64 internal __deprecated_denebForkTimestamp;
 

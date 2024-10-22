@@ -60,6 +60,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
 
     // Mutatables
 
+    /// @dev Do not remove, deprecated storage.
     bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
     /**
@@ -78,27 +79,27 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice the commission for all operators across all avss
     uint16 public globalOperatorCommissionBips;
 
-    /// @notice Mapping: earner => the address of the entity who can call `processClaim` on behalf of the earner
-    mapping(address => address) public claimerFor;
+    /// @notice Returns the `claimer` for a given `earner`.
+    /// @dev The claimer is able to call `processClaim` on behalf of the `earner`.
+    mapping(address earner => address claimer) public claimerFor;
 
-    /// @notice Mapping: earner => token => total amount claimed
-    mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
+    /// @notice Returns the total claimed amount for an `earner` for a given `token`.
+    mapping(address earner => mapping(IERC20 token => uint256 totalClaimed)) public cumulativeClaimed;
 
-    /// @notice Used for unique rewardsSubmissionHashes per AVS and for RewardsForAllSubmitters and the tokenHopper
-    mapping(address => uint256) public submissionNonce;
+    /// @notice Returns the submission `nonce` for an `avs`.
+    mapping(address avs => uint256 nonce) public submissionNonce;
 
-    /// @notice Mapping: avs => avsRewardsSubmissionHash => bool to check if rewards submission hash has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isAVSRewardsSubmissionHash;
+    /// @notice Returns whether a `hash` is a `valid` rewards submission hash for a given `avs`.
+    mapping(address avs => mapping(bytes32 hash => bool valid)) public isAVSRewardsSubmissionHash;
 
-    /// @notice Mapping: avs => rewardsSubmissionForAllHash => bool to check if rewards submission hash for all has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllHash;
+    /// @notice Returns whether a `hash` is a `valid` rewards submission for all hash for a given `avs`.
+    mapping(address avs => mapping(bytes32 hash => bool valid)) public isRewardsSubmissionForAllHash;
 
-    /// @notice Mapping: address => bool to check if the address is permissioned to call createRewardsForAllSubmission
-    mapping(address => bool) public isRewardsForAllSubmitter;
+    /// @notice Returns whether a `submitter` is a `valid` rewards for all submitter.
+    mapping(address submitter => bool valid) public isRewardsForAllSubmitter;
 
-    /// @notice Mapping: avs => rewardsSubmissionForAllEarnersHash => bool to check
-    /// if rewards submission hash for all stakers and operators has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllEarnersHash;
+    /// @notice Returns whether a `hash` is a `valid` rewards submission for all earners hash for a given `avs`.
+    mapping(address avs => mapping(bytes32 hash => bool valid)) public isRewardsSubmissionForAllEarnersHash;
 
     // Construction
 

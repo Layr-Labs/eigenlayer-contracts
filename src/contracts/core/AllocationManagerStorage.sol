@@ -36,27 +36,29 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
     uint32 public immutable DEALLOCATION_DELAY;
 
-    /// @dev Delay before alloaction delay modifications take effect.
-    uint32 public immutable ALLOCATION_CONFIGURATION_DELAY; // QUESTION: 21 days?
+    /// @notice Delay before alloaction delay modifications take effect.
+    uint32 public immutable ALLOCATION_CONFIGURATION_DELAY;
 
     // Mutatables
 
-    /// @notice Mapping: operator => strategy => snapshotted maxMagnitude
-    /// Note that maxMagnitude is monotonically decreasing and is decreased on slashing
-    mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
+    /// @notice Returns snapshots of max magnitude for each `operator` for a given `strategy`.
+    /// @dev This value starts at 100% (1e18) and decreases with slashing.
+    mapping(address operator => mapping(IStrategy strategy => Snapshots.DefaultWadHistory)) internal
+        _maxMagnitudeHistory;
 
-    /// @notice Mapping: operator => strategy => the amount of magnitude that is not available for allocation
-    mapping(address => mapping(IStrategy => uint64)) public encumberedMagnitude;
+    /// @notice Returns the amount of magnitude that is not available for allocation for each `operator` for a given `strategy`.
+    /// @dev This value increases with allocations and slashing, and decreases with deallocations; should never exceed 100% (1e18).
+    mapping(address operator => mapping(IStrategy strategy => uint64)) public encumberedMagnitude;
 
-    /// @notice Mapping: operator => strategy => operatorSet (encoded) => MagnitudeInfo
-    mapping(address => mapping(IStrategy => mapping(bytes32 => MagnitudeInfo))) internal _operatorMagnitudeInfo;
+    /// @notice Returns the magnitude info for each `operator` for a given `strategy` and operator set (`operatorSetKey`).
+    mapping(address operator => mapping(IStrategy strategy => mapping(bytes32 operatorSetKey => MagnitudeInfo)))
+        internal _operatorMagnitudeInfo;
 
-    /// @notice Mapping: operator => strategy => operatorSet[] (encoded) to keep track of pending deallocations
-    mapping(address => mapping(IStrategy => DoubleEndedQueue.Bytes32Deque)) internal deallocationQueue;
+    /// @notice Returns pending deallocations for each `operator` for a given `strategy`.
+    mapping(address operator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal deallocationQueue;
 
-    /// @notice Mapping: operator => allocation delay (in seconds) for the operator.
-    /// This determines how long it takes for allocations to take effect in the future.
-    mapping(address => AllocationDelayInfo) internal _allocationDelayInfo;
+    /// @notice Returns the allocation delay info for each `operator`; the delay and whether or not it's previously been set.
+    mapping(address operator => AllocationDelayInfo) internal _allocationDelayInfo;
 
     // Construction
 

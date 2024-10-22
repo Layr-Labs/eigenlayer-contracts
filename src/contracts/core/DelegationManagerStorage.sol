@@ -68,73 +68,51 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     // Mutatables
 
+    /// @dev Do not remove, deprecated storage.
     bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
     /**
-     * @notice returns the total number of shares of the operator
-     * @notice Mapping: operator => strategy => total number of shares of the operator
+     * @notice Returns the total number of shares owned by an `operator` for a given `strategy`.
      *
      * @dev By design, the following invariant should hold for each Strategy:
+     *
      * (operator's delegatedShares in delegation manager) = sum (delegatedShares above zero of all stakers delegated to operator)
      * = sum (delegateable delegatedShares of all stakers delegated to the operator)
      */
-    mapping(address => mapping(IStrategy => uint256)) public operatorShares;
+    mapping(address operator => mapping(IStrategy strategy => uint256 shares)) public operatorShares;
 
-    /**
-     * @notice Mapping: operator => OperatorDetails struct
-     * @dev This struct is internal with an external getter so we can return an `OperatorDetails memory` object
-     */
-    mapping(address => OperatorDetails) internal _operatorDetails;
+    /// @notice Returns the operator details for a given `operator`.
+    mapping(address operator => OperatorDetails) internal _operatorDetails;
 
-    /**
-     * @notice Mapping: staker => operator whom the staker is currently delegated to.
-     * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
-     */
-    mapping(address => address) public delegatedTo;
+    /// @notice Returns the `operator` a `staker` is delgated to, address(0) if not delegated.
+    mapping(address staker => address operator) public delegatedTo;
 
-    /// @notice Mapping: staker => number of signed messages (used in `delegateToBySignature`) from the staker that this contract has already checked.
-    mapping(address => uint256) public stakerNonce;
+    /// @notice Returns the number of EIP-712 signatures validated via `delegateToBySignature` for a given `staker`.
+    mapping(address staker => uint256 nonce) public stakerNonce;
 
-    /**
-     * @notice Mapping: delegationApprover => 32-byte salt => whether or not the salt has already been used by the delegationApprover.
-     * @dev Salts are used in the `delegateTo` and `delegateToBySignature` functions. Note that these functions only process the delegationApprover's
-     * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
-     */
-    mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
+    /// @notice Returns whether `delegationApprover` has already used the given `salt`.
+    mapping(address delegationApprover => mapping(bytes32 salt => bool spent)) public delegationApproverSaltIsSpent;
 
-    /**
-     * @notice Global minimum withdrawal delay for all strategy withdrawals.
-     * In a prior Goerli release, we only had a global min withdrawal delay across all strategies.
-     * In addition, we now also configure withdrawal delays on a per-strategy basis.
-     * To withdraw from a strategy, max(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy]) number of blocks must have passed.
-     * See mapping strategyWithdrawalDelayBlocks below for per-strategy withdrawal delays.
-     */
+    /// @dev Do not remove, deprecated storage.
     uint256 private __deprecated_minWithdrawalDelayBlocks;
 
-    /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
-    mapping(bytes32 => bool) public pendingWithdrawals;
+    /// @notice Returns whether a given `withdrawalRoot` has a pending withdrawal.
+    mapping(bytes32 withdrawalRoot => bool pending) public pendingWithdrawals;
 
-    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
+    /// @notice Returns the total number of withdrawals that have been queued for a given `staker`.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
-    mapping(address => uint256) public cumulativeWithdrawalsQueued;
+    mapping(address staker => uint256 totalQueued) public cumulativeWithdrawalsQueued;
 
-    /// @notice Deprecated from an old Goerli release
+    /// @dev Do not remove, deprecated storage.
     /// See conversation here: https://github.com/Layr-Labs/eigenlayer-contracts/pull/365/files#r1417525270
     address private __deprecated_stakeRegistry;
 
-    /**
-     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
-     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     */
-    mapping(IStrategy => uint256) private __deprecated_strategyWithdrawalDelayBlocks;
+    /// @dev Do not remove, deprecated storage.
+    mapping(IStrategy strategy => uint256 delayBlocks) private __deprecated_strategyWithdrawalDelayBlocks;
 
-    /// @notice Mapping: staker => strategy =>
-    ///    (
-    ///       scaling factor used to calculate the staker's shares in the strategy,
-    ///       beacon chain scaling factor used to calculate the staker's withdrawable shares in the strategy.
-    ///    )
-    /// Note that we don't need the beaconChainScalingFactor for non beaconChainETHStrategy strategies, but it's nicer syntactically to keep it.
-    mapping(address => mapping(IStrategy => StakerScalingFactors)) public stakerScalingFactor;
+    /// @notice Returns the scaling factors for a `staker` for a given `strategy`.
+    /// @dev We do not need the `beaconChainScalingFactor` for non-beaconchain strategies, but it's nicer syntactically to keep it.
+    mapping(address staker => mapping(IStrategy strategy => StakerScalingFactors)) public stakerScalingFactor;
 
     // Construction
 
