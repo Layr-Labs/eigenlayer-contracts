@@ -7,7 +7,7 @@ import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/interfaces/IEigenPodManager.sol";
 
-import "script/utils/StringUtils.sol";
+import "zeus-templates/utils/StringUtils.sol";
 
 contract DeployEigenPodAndManager is EOADeployer {
     using StringUtils for string;
