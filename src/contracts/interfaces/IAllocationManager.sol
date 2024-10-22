@@ -5,11 +5,7 @@ import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 
-/// @notice Struct representing an operator set
-struct OperatorSet {
-    address avs;
-    uint32 operatorSetId;
-}
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
 interface IAllocationManagerErrors {
     /// @dev Thrown when `wadToSlash` is zero or greater than 1e18
@@ -26,6 +22,9 @@ interface IAllocationManagerErrors {
     error InvalidOperatorSet();
     /// @dev Thrown when an invalid operator is provided.
     error InvalidOperator();
+
+    error InvalidCaller();
+
     /// @dev Thrown when caller is not the delegation manager.
     error OnlyDelegationManager();
     /// @dev Thrown when an operator attempts to set their allocation for an operatorSet to the same value
@@ -177,9 +176,6 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when a strategy is removed from an operator set.
     event StrategyRemovedFromOperatorSet(OperatorSet operatorSet, IStrategy strategy);
 
-    /// @notice Emitted when an AVS migrates to using operator sets.
-    event AVSMigratedToOperatorSets(address indexed avs);
-
     /// @notice Emitted when an operator is migrated from M2 registration to operator sets.
     event OperatorMigratedToOperatorSets(address indexed operator, address indexed avs, uint32[] operatorSetIds);
 }
@@ -257,13 +253,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
         uint32[] calldata operatorSetIds
     ) external;
 
-    /**
-     * @notice Sets the AVS as an operator set AVS, preventing legacy M2 operator registrations.
-     *
-     * @dev msg.sender must be the AVS.
-     */
-    function becomeOperatorSetAVS() external;
-
     // /**
     //  * @notice Called by an AVS to migrate operators that have a legacy M2 registration to operator sets.
     //  *
@@ -285,16 +274,11 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      *
      *  @param operator The address of the operator to be added to the operator set.
      *  @param operatorSetIds The IDs of the operator sets.
-     *  @param operatorSignature The signature of the operator on their intent to register.
      *
      *  @dev msg.sender is used as the AVS.
      *  @dev The operator must not have a pending deregistration from the operator set.
      */
-    function registerOperatorToOperatorSets(
-        address operator,
-        uint32[] calldata operatorSetIds,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external;
+    function addOperatorToSets(address operator, uint32[] calldata operatorSetIds) external;
 
     /**
      * @notice Called by an operator to deregister from an operator set
@@ -302,27 +286,10 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @param operator The operator to deregister from the operatorSets.
      * @param avs The address of the AVS to deregister the operator from.
      * @param operatorSetIds The IDs of the operator sets.
-     * @param operatorSignature the signature of the operator on their intent to deregister or empty if the operator itself is calling
      *
-     * @dev if the operatorSignature is empty, the caller must be the operator
      * @dev this will likely only be called in case the AVS contracts are in a state that prevents operators from deregistering
      */
-    function forceDeregisterFromOperatorSets(
-        address operator,
-        address avs,
-        uint32[] calldata operatorSetIds,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external;
-
-    /**
-     *  @notice Called by AVSs to remove an operator from an operator set.
-     *
-     *  @param operator The address of the operator to be removed from the operator set.
-     *  @param operatorSetIds The IDs of the operator sets.
-     *
-     *  @dev msg.sender is used as the AVS.
-     */
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
+    function removeOperatorFromSets(address operator, address avs, uint32[] calldata operatorSetIds) external;
 
     /**
      *  @notice Called by AVSs to add a set of strategies to an operator set.
@@ -459,10 +426,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
         uint32 beforeTimestamp
     ) external view returns (uint256[][] memory, uint256[][] memory);
 
-    function isOperatorSetAVS(
-        address avs
-    ) external view returns (bool);
-
     /// @notice Returns true if the operator set is valid.
     function isOperatorSet(address avs, uint32 operatorSetId) external view returns (bool);
 
@@ -481,10 +444,10 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function operatorSetMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address);
 
     /**
-     * @notice Returns the number of operator sets an operator is registered to.
-     * @param operator the operator address to query
+     *  @notice Returns the total number of operator sets an operator is registered to.
+     *  @param operator The operator address to query.
      */
-    function getNumOperatorSetsOfOperator(
+    function inTotalOperatorSets(
         address operator
     ) external view returns (uint256);
 
@@ -529,14 +492,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external view returns (uint256);
 
     /**
-     *  @notice Returns the total number of operator sets an operator is registered to.
-     *  @param operator The operator address to query.
-     */
-    function inTotalOperatorSets(
-        address operator
-    ) external view returns (uint256);
-
-    /**
      * @notice Returns whether or not an operator is registered to an operator set.
      * @param operator The operator address to query.
      * @param operatorSet The `OperatorSet` to query.
@@ -555,37 +510,4 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
         address operator,
         uint32 operatorSetId
     ) external view returns (bool registered, uint32 lastDeregisteredTimestamp);
-
-    /**
-     * @notice Calculates the digest hash to be signed by an operator to register with an operator set.
-     *
-     * @param avs The AVS that operator is registering to operator sets for.
-     * @param operatorSetIds An array of operator set IDs the operator is registering to.
-     * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid.
-     */
-    function calculateOperatorSetRegistrationDigestHash(
-        address avs,
-        uint32[] calldata operatorSetIds,
-        bytes32 salt,
-        uint256 expiry
-    ) external view returns (bytes32);
-
-    /**
-     * @notice Calculates the digest hash to be signed by an operator to force deregister from an operator set.
-     *
-     * @param avs The AVS that operator is deregistering from.
-     * @param operatorSetIds An array of operator set IDs the operator is deregistering from.
-     * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid.
-     */
-    function calculateOperatorSetForceDeregistrationTypehash(
-        address avs,
-        uint32[] calldata operatorSetIds,
-        bytes32 salt,
-        uint256 expiry
-    ) external view returns (bytes32);
-
-    /// @notice The EIP-712 typehash for the OperatorSetRegistration struct used by the contract.
-    function OPERATOR_SET_REGISTRATION_TYPEHASH() external view returns (bytes32);
 }
