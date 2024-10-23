@@ -3,11 +3,11 @@ pragma solidity ^0.8.27;
 
 import "../../contracts/permissions/Pausable.sol";
 
-// wrapper around the Pausable contract that exposes the internal `_initializePauser` function.
+// wrapper around the Pausable contract that exposes the internal `_setPausedStatus` function.
 contract PausableHarness is Pausable {
     constructor(IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {}
 
     function initializePauser(uint256 initPausedStatus) external {
-        _initializePauser(initPausedStatus);
+        _setPausedStatus(initPausedStatus);
     }
 }

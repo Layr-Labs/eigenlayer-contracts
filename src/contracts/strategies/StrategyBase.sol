@@ -85,7 +85,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         IERC20 _underlyingToken
     ) internal onlyInitializing {
         underlyingToken = _underlyingToken;
-        _initializePauser(_UNPAUSE_ALL);
+        _setPausedStatus(_UNPAUSE_ALL);
         emit StrategyTokenSet(underlyingToken, IERC20Metadata(address(_underlyingToken)).decimals());
     }
 

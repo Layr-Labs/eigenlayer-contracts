@@ -79,7 +79,7 @@ contract DelegationManager is
     }
 
     function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
-        _initializePauser(initialPausedStatus);
+        _setPausedStatus(initialPausedStatus);
         _transferOwnership(initialOwner);
     }
 
