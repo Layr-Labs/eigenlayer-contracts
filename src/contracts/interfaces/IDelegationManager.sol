@@ -504,6 +504,11 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         uint32 startTimestamp
     ) external view returns (uint32 completableTimestamp);
 
+    /// @notice Returns a list of pending queued withdrawals for a `staker`.
+    function getQueuedWithdrawals(
+        address staker
+    ) external view returns (Withdrawal[] memory);
+
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(
         Withdrawal memory withdrawal

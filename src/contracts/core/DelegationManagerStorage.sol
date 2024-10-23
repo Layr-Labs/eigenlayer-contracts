@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 import "../libraries/SlashingLib.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
@@ -96,8 +98,8 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev Do not remove, deprecated storage.
     uint256 private __deprecated_minWithdrawalDelayBlocks;
 
-    /// @notice Returns whether a given `withdrawalRoot` has a pending withdrawal.
-    mapping(bytes32 withdrawalRoot => bool pending) public pendingWithdrawals;
+    /// @dev Do not remove, deprecated storage.
+    mapping(bytes32 withdrawalRoot => bool pending) private __deprecated_pendingWithdrawals;
 
     /// @notice Returns the total number of withdrawals that have been queued for a given `staker`.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
@@ -113,6 +115,13 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice Returns the scaling factors for a `staker` for a given `strategy`.
     /// @dev We do not need the `beaconChainScalingFactor` for non-beaconchain strategies, but it's nicer syntactically to keep it.
     mapping(address staker => mapping(IStrategy strategy => StakerScalingFactors)) public stakerScalingFactor;
+
+    /// @notice Returns a list of  queued withdrawals for a given `staker`.
+    /// @dev Entrys are removed when the withdrawal is completed.
+    mapping(address staker => EnumerableSet.Bytes32Set withdrawalRoots) internal _stakerQueuedWithdrawalRoots;
+
+    /// @notice Returns the details of a queued withdrawal for a given `staker` and `withdrawalRoot`.
+    mapping(address staker => mapping(bytes32 withdrawalRoot => Withdrawal withdrawal)) public stakerQueuedWithdrawals;
 
     // Construction
 

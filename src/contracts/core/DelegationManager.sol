@@ -29,6 +29,7 @@ contract DelegationManager is
     SignatureUtils
 {
     using SlashingLib for *;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
     modifier onlyStrategyManagerOrEigenPodManager() {
@@ -457,7 +458,7 @@ contract DelegationManager is
         require(tokens.length == withdrawal.strategies.length, InputArrayLengthMismatch());
         require(msg.sender == withdrawal.withdrawer, WithdrawerNotCaller());
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
-        require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
+        require(_stakerQueuedWithdrawalRoots[withdrawal.staker].contains(withdrawalRoot), WithdrawalNotQueued());
 
         // TODO: is there a cleaner way to do this?
         uint32 completableTimestamp = getCompletableTimestamp(withdrawal.startTimestamp);
@@ -496,8 +497,10 @@ contract DelegationManager is
             }
         }
 
-        // Remove `withdrawalRoot` from pending roots
-        delete pendingWithdrawals[withdrawalRoot];
+        _stakerQueuedWithdrawalRoots[withdrawal.staker].remove(withdrawalRoot);
+
+        delete stakerQueuedWithdrawals[withdrawal.staker][withdrawalRoot];
+
         emit SlashingWithdrawalCompleted(withdrawalRoot);
     }
 
@@ -611,10 +614,11 @@ contract DelegationManager is
 
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
-        // Place withdrawal in queue
-        pendingWithdrawals[withdrawalRoot] = true;
+        _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
+        stakerQueuedWithdrawals[staker][withdrawalRoot] = withdrawal;
 
         emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, sharesToWithdraw);
+
         return withdrawalRoot;
     }
 
@@ -766,6 +770,24 @@ contract DelegationManager is
             // source magnitudes from the time of completability
             completableTimestamp = startTimestamp + MIN_WITHDRAWAL_DELAY;
         }
+    }
+
+    /// @inheritdoc IDelegationManager
+    function getQueuedWithdrawals(
+        address staker
+    ) external view returns (Withdrawal[] memory withdrawals) {
+        // Load all withdrawal roots into memory.
+        bytes32[] memory withdrawalRoots = _stakerQueuedWithdrawalRoots[staker].values();
+        uint256 n = withdrawalRoots.length;
+        withdrawals = new Withdrawal[](n);
+        for (uint256 i; i < n; ++i) {
+            withdrawals[i] = stakerQueuedWithdrawals[staker][withdrawalRoots[i]];
+        }
+    }
+
+    /// @inheritdoc IDelegationManager
+    function isWithdrawalPending(address staker, bytes32 withdrawalRoot) public view returns (bool) {
+        return _stakerQueuedWithdrawalRoots[staker].contains(withdrawalRoot);
     }
 
     /// @inheritdoc IDelegationManager
