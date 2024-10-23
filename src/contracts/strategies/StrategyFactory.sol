@@ -50,8 +50,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         IStrategy strategy = IStrategy(
             address(
                 new BeaconProxy(
-                    address(strategyBeacon),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, token)
+                    address(strategyBeacon), abi.encodeWithSelector(StrategyBase.initialize.selector, token)
                 )
             )
         );
