@@ -363,8 +363,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         }
 
         // Get scaled shares to withdraw
-        uint256[] memory scaledSharesToWithdrawArray = new uint256[](1);
-        scaledSharesToWithdrawArray[0] = _getScaledSharesToWithdraw(staker, strategy, sharesToWithdraw);
+        uint256[] memory scaledSharesArray = new uint256[](1);
+        scaledSharesArray[0] = _getScaledShares(staker, strategy, sharesToWithdraw);
 
         IDelegationManagerTypes.Withdrawal memory withdrawal = IDelegationManagerTypes.Withdrawal({
             staker: staker,
@@ -373,7 +373,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
             startTimestamp: uint32(block.timestamp),
             strategies: strategyArray,
-            scaledSharesToWithdraw: scaledSharesToWithdrawArray
+            scaledShares: scaledSharesArray
         });
         bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
         
@@ -400,9 +400,9 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         }
 
         // Get scaled shares to withdraw
-        uint256[] memory scaledSharesToWithdrawArray = new uint256[](strategies.length);
+        uint256[] memory scaledSharesArray = new uint256[](strategies.length);
         for (uint256 i = 0; i < strategies.length; i++) {
-            scaledSharesToWithdrawArray[i] = _getScaledSharesToWithdraw(staker, strategies[i], withdrawalAmounts[i]);
+            scaledSharesArray[i] = _getScaledShares(staker, strategies[i], withdrawalAmounts[i]);
         }
         
         IDelegationManagerTypes.Withdrawal memory withdrawal = IDelegationManagerTypes.Withdrawal({
@@ -412,14 +412,14 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
             startTimestamp: uint32(block.timestamp),
             strategies: strategies,
-            scaledSharesToWithdraw: scaledSharesToWithdrawArray
+            scaledShares: scaledSharesArray
         });
         bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
         
         return (queuedWithdrawalParams, withdrawal, withdrawalRoot);
     }
 
-    function _getScaledSharesToWithdraw(address staker, IStrategy strategy, uint256 sharesToWithdraw) internal view returns (uint256) {
+    function _getScaledShares(address staker, IStrategy strategy, uint256 sharesToWithdraw) internal view returns (uint256) {
         // Setup vars
         address operator = delegationManager.delegatedTo(staker);
         IStrategy[] memory strategyArray = new IStrategy[](1);
@@ -433,13 +433,13 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             beaconChainScalingFactor: beaconChainScalingFactor
         });
 
-        uint256 scaledSharesToWithdraw = SlashingLib.scaleSharesForQueuedWithdrawal(
+        uint256 scaledShares = SlashingLib.scaleSharesForQueuedWithdrawal(
             sharesToWithdraw,
             stakerScalingFactor,
             allocationManagerMock.getMaxMagnitudes(operator, strategyArray)[0]
         );
 
-        return scaledSharesToWithdraw;
+        return scaledShares;
     }
 
     /**

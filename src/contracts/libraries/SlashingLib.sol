@@ -19,7 +19,7 @@ uint64 constant WAD = 1e18;
  *          - For a staker, this is the amount of shares that they can withdraw
  *          - For an operator, this is the sum of its staker's withdrawable shares       
  * 
- * Note that `withdrawal.scaledSharesToWithdraw` is scaled for the beaconChainETHStrategy to divide by the beaconChainScalingFactor upon queueing
+ * Note that `withdrawal.scaledShares` is scaled for the beaconChainETHStrategy to divide by the beaconChainScalingFactor upon queueing
  * and multiply by the beaconChainScalingFactor upon withdrawal
  */
 
@@ -45,6 +45,15 @@ library SlashingLib {
 
     function divWad(uint256 x, uint256 y) internal pure returns (uint256) {
         return x.mulDiv(WAD, y);
+    }
+
+    /**
+     * @notice Used explicitly for calculating slashed magnitude, we want to ensure even in the
+     * situation where an operator is slashed several times and precision has been lost over time,
+     * an incoming slashing request isn't rounded down to 0 and an operator is able to avoid slashing penalties.
+     */
+    function mulWadRoundUp(uint256 x, uint256 y) internal pure returns (uint256) {
+        return x.mulDiv(y, WAD, Math.Rounding.Up);
     }
 
     // GETTERS
@@ -73,22 +82,22 @@ library SlashingLib {
     }
 
     function scaleSharesForCompleteWithdrawal(
-        uint256 scaledSharesToWithdraw,
+        uint256 scaledShares,
         StakerScalingFactors memory ssf,
         uint64 operatorMagnitude
     ) internal pure returns (uint256) {
         /// forgefmt: disable-next-item
-        return scaledSharesToWithdraw
+        return scaledShares
             .mulWad(uint256(ssf.getBeaconChainScalingFactor()))
             .mulWad(uint256(operatorMagnitude));
     }
 
     function getOperatorSharesToDecrease(
         uint256 operatorShares,
-        uint64 previousTotalMagnitude,
-        uint64 newTotalMagnitude
+        uint64 previousMaxMagnitude,
+        uint64 newMaxMagnitude
     ) internal pure returns (uint256) {
-        return operatorShares - operatorShares.divWad(previousTotalMagnitude).mulWad(newTotalMagnitude);
+        return operatorShares - operatorShares.divWad(previousMaxMagnitude).mulWad(newMaxMagnitude);
     }
 
     function decreaseBeaconChainScalingFactor(
@@ -103,38 +112,38 @@ library SlashingLib {
         StakerScalingFactors storage ssf,
         uint256 existingDepositShares,
         uint256 addedShares,
-        uint64 totalMagnitude
+        uint64 maxMagnitude
     ) internal {
         if (existingDepositShares == 0) {
-            // if this is their first deposit for the operator, set the scaling factor to inverse of totalMagnitude
+            // if this is their first deposit for the operator, set the scaling factor to inverse of maxMagnitude
             /// forgefmt: disable-next-item
             ssf.depositScalingFactor = uint256(WAD)
                 .divWad(ssf.getBeaconChainScalingFactor())
-                .divWad(totalMagnitude);
+                .divWad(maxMagnitude);
             return;
         }
         /**
          * Base Equations:
          * (1) newShares = currentShares + addedShares
          * (2) newDepositShares = existingDepositShares + addedShares
-         * (3) newShares = newDepositShares * newStakerDepositScalingFactor * beaconChainScalingFactor * totalMagnitude
+         * (3) newShares = newDepositShares * newStakerDepositScalingFactor * beaconChainScalingFactor * maxMagnitude
          *
          * Plugging (1) into (3):
-         * (4) newDepositShares * newStakerDepositScalingFactor * beaconChainScalingFactor * totalMagnitude = currentShares + addedShares
+         * (4) newDepositShares * newStakerDepositScalingFactor * beaconChainScalingFactor * maxMagnitude = currentShares + addedShares
          *
          * Solving for newStakerDepositScalingFactor
-         * (5) newStakerDepositScalingFactor = (currentShares + addedShares) / (newDepositShares * beaconChainScalingFactor * totalMagnitude)
+         * (5) newStakerDepositScalingFactor = (currentShares + addedShares) / (newDepositShares * beaconChainScalingFactor * maxMagnitude)
          *
          * Plugging in (2) into (5):
-         * (7) newStakerDepositScalingFactor = (currentShares + addedShares) / ((existingDepositShares + addedShares) * beaconChainScalingFactor * totalMagnitude)
+         * (7) newStakerDepositScalingFactor = (currentShares + addedShares) / ((existingDepositShares + addedShares) * beaconChainScalingFactor * maxMagnitude)
          * Note that magnitudes must be divided by WAD for precision. Thus,
          *
-         * (8) newStakerDepositScalingFactor = WAD * (currentShares + addedShares) / ((existingDepositShares + addedShares) * beaconChainScalingFactor / WAD * totalMagnitude / WAD)
-         * (9) newStakerDepositScalingFactor = (currentShares + addedShares) * WAD / (existingDepositShares + addedShares) * WAD / beaconChainScalingFactor * WAD / totalMagnitude
+         * (8) newStakerDepositScalingFactor = WAD * (currentShares + addedShares) / ((existingDepositShares + addedShares) * beaconChainScalingFactor / WAD * maxMagnitude / WAD)
+         * (9) newStakerDepositScalingFactor = (currentShares + addedShares) * WAD / (existingDepositShares + addedShares) * WAD / beaconChainScalingFactor * WAD / maxMagnitude
          */
 
         // Step 1: Calculate Numerator
-        uint256 currentShares = existingDepositShares.toShares(ssf, totalMagnitude);
+        uint256 currentShares = existingDepositShares.toShares(ssf, maxMagnitude);
 
         // Step 2: Compute currentShares + addedShares
         uint256 newShares = currentShares + addedShares;
@@ -143,7 +152,7 @@ library SlashingLib {
         /// forgefmt: disable-next-item
         uint256 newStakerDepositScalingFactor = newShares
             .divWad(existingDepositShares + addedShares)
-            .divWad(totalMagnitude)
+            .divWad(maxMagnitude)
             .divWad(uint256(ssf.getBeaconChainScalingFactor()));
 
         ssf.depositScalingFactor = newStakerDepositScalingFactor;

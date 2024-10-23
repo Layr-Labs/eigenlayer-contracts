@@ -15,8 +15,8 @@ interface IAllocationManagerErrors {
     error InputArrayLengthMismatch();
     /// @dev Thrown when an operator's allocation delay has yet to be set.
     error UninitializedAllocationDelay();
-    /// @dev Thrown when provided `expectedTotalMagnitude` for a given allocation does not match `currentTotalMagnitude`.
-    error InvalidExpectedTotalMagnitude();
+    /// @dev Thrown when provided `expectedMaxMagnitude` for a given allocation does not match`currentMaxMagnitude`.
+    error InvalidExpectedMaxMagnitude();
     /// @dev Thrown when an invalid operator set is provided.
     error InvalidOperatorSet();
     /// @dev Thrown when an invalid operator is provided.
@@ -37,8 +37,6 @@ interface IAllocationManagerErrors {
     error AlreadySlashedForTimestamp();
     /// @dev Thrown when calling a view function that requires a valid timestamp.
     error InvalidTimestamp();
-    /// @dev Thrown when an invalid allocation delay is set
-    error InvalidAllocationDelay();
     /// @dev Thrown when a slash is attempted on an operator who has not allocated to the strategy, operatorSet pair
     error OperatorNotAllocated();
 }
@@ -73,11 +71,14 @@ interface IAllocationManagerTypes {
     /**
      * @notice Struct containing allocation delay metadata for a given operator.
      * @param delay Current allocation delay if `pendingDelay` is non-zero and `pendingDelayEffectTimestamp` has elapsed.
+     * @param isSet Whether the operator has initially set an allocation delay. Note that this could be false but the
+     * block.timestamp >= effectTimestamp in which we consider their delay to be configured and active.
      * @param pendingDelay Current allocation delay if it's non-zero and `pendingDelayEffectTimestamp` has elapsed.
      * @param effectTimestamp The timestamp for which `pendingDelay` becomes the curren allocation delay.
      */
     struct AllocationDelayInfo {
         uint32 delay;
+        bool isSet;
         uint32 pendingDelay;
         uint32 effectTimestamp;
     }
@@ -127,8 +128,8 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when operator's encumbered magnitude is updated for a given strategy
     event EncumberedMagnitudeUpdated(address operator, IStrategy strategy, uint64 encumberedMagnitude);
 
-    /// @notice Emitted when an operator's total magnitude is updated for a given strategy
-    event MaxMagnitudeUpdated(address operator, IStrategy strategy, uint64 totalMagnitude);
+    /// @notice Emitted when an operator's max magnitude is updated for a given strategy
+    event MaxMagnitudeUpdated(address operator, IStrategy strategy, uint64 maxMagnitude);
 
     /// @notice Emitted when an operator is slashed by an operator set for a strategy
     /// `wadSlashed` is the proportion of the operator's total delegated stake that was slashed
@@ -151,7 +152,9 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
-     * @notice Modifies the propotions of slashable stake allocated to a list of operatorSets for a set of strategies
+     * @notice Modifies the proportions of slashable stake allocated to a list of operatorSets for a set of strategies.
+     * Note that deallocations remain slashable for DEALLOCATION_DELAY amount of time therefore when they are cleared they may
+     * free up less allocatable magnitude than initially deallocated.
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
      * @dev msg.sender is used as operator
@@ -161,27 +164,26 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
-     * @notice This function takes a list of strategies and adds all completable deallocations for each strategy,
-     * updating the encumberedMagnitude of the operator as needed.
+     * @notice This function takes a list of strategies and for each strategy, removes from the deallocationQueue
+     * all clearable deallocations up to max `numToClear` number of deallocations, updating the encumberedMagnitude
+     * of the operator as needed.
      *
-     * @param operator address to complete deallocations for
-     * @param strategies a list of strategies to complete deallocations for
-     * @param numToComplete a list of number of pending deallocations to complete for each strategy
+     * @param operator address to clear deallocations for
+     * @param strategies a list of strategies to clear deallocations for
+     * @param numToClear a list of number of pending deallocations to clear for each strategy
      *
      * @dev can be called permissionlessly by anyone
      */
     function clearDeallocationQueue(
         address operator,
         IStrategy[] calldata strategies,
-        uint16[] calldata numToComplete
+        uint16[] calldata numToClear
     ) external;
 
     /**
      * @notice Called by the delegation manager to set an operator's allocation delay.
      * This is set when the operator first registers, and is the time between an operator
      * allocating magnitude to an operator set, and the magnitude becoming slashable.
-     * @dev Note that if an operator's allocation delay is 0, it has not been set yet,
-     * and the operator will be unable to allocate magnitude to any operator set.
      * @param operator The operator to set the delay on behalf of.
      * @param delay the allocation delay in seconds
      */
@@ -260,7 +262,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     /**
      * @notice Returns the maximum magnitude an operator can allocate for the given strategies
      * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
-     * the operator is slashed. This value acts as a cap on the total magnitude of the operator.
+     * the operator is slashed. This value acts as a cap on the max magnitude of the operator.
      * @param operator the operator to query
      * @param strategies the strategies to get the max magnitudes for
      * @return the max magnitudes for each strategy
@@ -274,7 +276,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @notice Returns the maximum magnitude an operator can allocate for the given strategies
      * at a given timestamp
      * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
-     * the operator is slashed. This value acts as a cap on the total magnitude of the operator.
+     * the operator is slashed. This value acts as a cap on the max magnitude of the operator.
      * @param operator the operator to query
      * @param strategies the strategies to get the max magnitudes for
      * @param timestamp the timestamp at which to check the max magnitudes

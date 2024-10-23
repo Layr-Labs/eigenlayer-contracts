@@ -142,7 +142,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             nonce: delegation.cumulativeWithdrawalsQueued(staker),
             delegatedTo: delegation.delegatedTo(staker),
             startTimestamp: uint32(block.timestamp),
-            scaledSharesToWithdraw: shareAmounts
+            scaledShares: shareAmounts
         });
 
 

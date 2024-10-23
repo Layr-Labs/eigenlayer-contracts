@@ -59,9 +59,9 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
     //     // Complete withdrawal
     //     for (uint256 i = 0; i < withdrawals.length; ++i) {
-    //         uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledSharesToWithdraw);
+    //         uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
     //         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-    //         check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledSharesToWithdraw, tokens, expectedTokens);
+    //         check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens);
     //     }
 
     //     // Check Final State
@@ -123,7 +123,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
     //     for (uint256 i = 0; i < withdrawals.length; ++i) {
     //         staker.completeWithdrawalAsShares(withdrawals[i]);
 
-    //         check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledSharesToWithdraw);
+    //         check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares);
     //     }
 
     //     // Check final state:
@@ -179,9 +179,9 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
     //     _rollBlocksForCompleteWithdrawals(strategies);
 
     //     for (uint256 i = 0; i < withdrawals.length; ++i) {
-    //         uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledSharesToWithdraw);
+    //         uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
     //         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-    //         check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledSharesToWithdraw, tokens, expectedTokens);
+    //         check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens);
     //     }
 
     //     // Check Final State
@@ -237,7 +237,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
     //     _rollBlocksForCompleteWithdrawals(strategies);
     //     for (uint256 i = 0; i < withdrawals.length; ++i) {
     //         staker.completeWithdrawalAsShares(withdrawals[i]);
-    //         check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledSharesToWithdraw);
+    //         check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares);
     //     }
 
     //     // Check final state:

@@ -51,13 +51,13 @@ The allocation delay's primary purpose is to give stakers delegated to an operat
 /**
  * @notice struct used to modify the allocation of slashable magnitude to list of operatorSets
  * @param strategy the strategy to allocate magnitude for
- * @param expectedTotalMagnitude the expected total magnitude of the operator used to combat against race conditions with slashing
+ * @param expectedMaxMagnitude the expected max magnitude of the operator used to combat against race conditions with slashing
  * @param operatorSets the operatorSets to allocate magnitude for
  * @param magnitudes the magnitudes to allocate for each operatorSet
  */
 struct MagnitudeAllocation {
     IStrategy strategy;
-    uint64 expectedTotalMagnitude;
+    uint64 expectedMaxMagnitude;
     OperatorSet[] operatorSets;
     uint64[] magnitudes;
 }
@@ -73,15 +73,15 @@ function modifyAllocations(MagnitudeAllocation[] calldata allocations) external
 
 This function is called by operators to adjust the proportions of their slashable stake allocated to different operator sets for different strategies.
 
-The operator provides their expected total magnitude for each strategy they're adjusting the allocation for. This is used to combat race conditions with slashings for the strategy, which may result in larger than expected slashable proportions allocated to operator sets.
+The operator provides their expected max magnitude for each strategy they're adjusting the allocation for. This is used to combat race conditions with slashings for the strategy, which may result in larger than expected slashable proportions allocated to operator sets.
 
 Each `(operator, operatorSet, strategy)` tuple can have at most 1 pending modification at a time. The function will revert is there is a pending modification for any of the tuples in the input. 
 
-The contract limits keeps track of the total magnitude in pending allocations, active allocations, and pending deallocations. This is called the **_encumbered magnitude_** for a strategy. The contract verifies that the allocations made in this call do not make the encumbered magnitude exceed the operator's total magnitude for the strategy. If the encumbered magnitude exceeds the total magnitude, the function reverts.
+The contract keeps track of the total magnitude in pending allocations, active allocations, and pending deallocations. This is called the **_encumbered magnitude_** for a strategy. The contract verifies that the allocations made in this call do not make the encumbered magnitude exceed the operator's max magnitude for the strategy. If the encumbered magnitude exceeds the max magnitude, the function reverts.
 
 Any _allocations_ (i.e. increases in the proportion of slashable stake allocated to an AVS) take effect after the operator's allocation delay. The allocation delay must be set for the operator before they can call this function.
 
-Any _deallocations_ (i.e. decreases in the proportion of slashable stake allocated to an AVS) take after `DEALLOCATION_DELAY` seconds. This enables AVSs enough time to update their view of stakes to the new proportions and have any tasks created against previous stakes to expire.
+Any _deallocations_ (i.e. decreases in the proportion of slashable stake allocated to an AVS) take effect after `DEALLOCATION_DELAY` seconds. This enables AVSs enough time to update their view of stakes to the new proportions and have any tasks created against previous stakes to expire.
 
 ## `clearDeallocationQueue`
 
@@ -103,7 +103,7 @@ function clearDeallocationQueue(
 ) external;
 ```
 
-This function is used to complete pending deallocations for a list of strategies for an operator. The function takes a list of strategies and the number of pending deallocations to complete for each strategy. For each strategy, the function completes a modification if its effect timestamp has passed. 
+This function is used to complete pending deallocations for a list of strategies for an operator. The function takes a list of strategies and the number of pending deallocations to complete for each strategy. For each strategy, the function completes pending deallocations if their effect timestamps have passed. 
 
 Completing a deallocation decreases the encumbered magnitude for the strategy, allowing them to make allocations with that magnitude. Encumbered magnitude must be decreased only upon completion because pending deallocations can be slashed before they are completable.
 

@@ -70,14 +70,14 @@ contract AllocationManager is
             require(info.currentMagnitude > 0, OperatorNotAllocated());
 
             // 1. Calculate slashing amount and update current/encumbered magnitude
-            uint64 slashedMagnitude = uint64(uint256(info.currentMagnitude).mulWad(params.wadToSlash));
+            uint64 slashedMagnitude = uint64(uint256(info.currentMagnitude).mulWadRoundUp(params.wadToSlash));
             info.currentMagnitude -= slashedMagnitude;
             info.encumberedMagnitude -= slashedMagnitude;
 
             // 2. If there is a pending deallocation, reduce pending deallocation proportionally.
-            // This ensures that when the deallocation is completed, less magnitude is freed.
+            // This ensures that when the deallocation is cleared, less magnitude is freed.
             if (info.pendingDiff < 0) {
-                uint64 slashedPending = uint64(uint256(uint128(-info.pendingDiff)).mulWad(params.wadToSlash));
+                uint64 slashedPending = uint64(uint256(uint128(-info.pendingDiff)).mulWadRoundUp(params.wadToSlash));
                 info.pendingDiff += int128(uint128(slashedPending));
 
                 emit OperatorSetMagnitudeUpdated(
@@ -114,8 +114,8 @@ contract AllocationManager is
             delegation.decreaseOperatorShares({
                 operator: params.operator,
                 strategy: params.strategies[i],
-                previousTotalMagnitude: maxMagnitudeBeforeSlash,
-                newTotalMagnitude: maxMagnitudeAfterSlash
+                previousMaxMagnitude: maxMagnitudeBeforeSlash,
+                newMaxMagnitude: maxMagnitudeAfterSlash
             });
 
             // 6. Record the proportion of shares slashed
@@ -137,14 +137,14 @@ contract AllocationManager is
             require(allocation.operatorSets.length == allocation.magnitudes.length, InputArrayLengthMismatch());
             require(avsDirectory.isOperatorSetBatch(allocation.operatorSets), InvalidOperatorSet());
 
-            // 1. For the given (operator,strategy) complete any pending deallocation to free up encumberedMagnitude
-            _clearDeallocationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
-
-            // 2. Check current totalMagnitude matches expected value. This is to check for slashing race conditions
+            // 1. Check current maxMagnitude matches expected value. This is to check for slashing race conditions
             // where an operator gets slashed from an operatorSet and as a result all the configured allocations have larger
             // proprtional magnitudes relative to each other.
             uint64 maxMagnitude = _maxMagnitudeHistory[msg.sender][allocation.strategy].latest();
-            require(maxMagnitude == allocation.expectedMaxMagnitude, InvalidExpectedTotalMagnitude());
+            require(maxMagnitude == allocation.expectedMaxMagnitude, InvalidExpectedMaxMagnitude());
+
+            // 2. For the given (operator,strategy) clear any clearable pending deallocations to free up encumberedMagnitude
+            _clearDeallocationQueue({operator: msg.sender, strategy: allocation.strategy, numToClear: type(uint16).max});
 
             for (uint256 j = 0; j < allocation.operatorSets.length; ++j) {
                 bytes32 operatorSetKey = _encodeOperatorSet(allocation.operatorSets[j]);
@@ -220,21 +220,27 @@ contract AllocationManager is
     }
 
     /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
+
+    /**
      * @dev Clear one or more pending deallocations to a strategy's allocated magnitude
      * @param operator the operator whose pending deallocations will be cleared
      * @param strategy the strategy to update
-     * @param numToClear the number of pending deallocations to complete
+     * @param numToClear the number of pending deallocations to clear
      */
     function _clearDeallocationQueue(address operator, IStrategy strategy, uint16 numToClear) internal {
-        uint256 numCompleted;
+        uint256 numCleared;
         uint256 length = deallocationQueue[operator][strategy].length();
 
-        while (length > 0 && numCompleted < numToClear) {
+        while (length > 0 && numCleared < numToClear) {
             bytes32 operatorSetKey = deallocationQueue[operator][strategy].front();
             PendingMagnitudeInfo memory info = _getPendingMagnitudeInfo(operator, strategy, operatorSetKey);
 
-            // If we've reached a pending deallocation that isn't completable yet,
-            // we can stop. Any subsequent deallocation will also be uncompletable.
+            // If we've reached a pending deallocation that isn't clearable yet,
+            // we can stop. Any subsequent deallocation will also be unclearable.
             if (block.timestamp < info.effectTimestamp) {
                 break;
             }
@@ -244,7 +250,7 @@ contract AllocationManager is
 
             // Remove the deallocation from the queue
             deallocationQueue[operator][strategy].popFront();
-            ++numCompleted;
+            ++numCleared;
             --length;
         }
     }
@@ -256,12 +262,12 @@ contract AllocationManager is
      * @param delay The allocation delay in seconds.
      */
     function _setAllocationDelay(address operator, uint32 delay) internal {
-        require(delay != 0, InvalidAllocationDelay());
-
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
-        if (info.pendingDelay != 0 && block.timestamp >= info.effectTimestamp) {
+        // If there is a pending delay that can be applied now, set it
+        if (info.effectTimestamp != 0 && block.timestamp >= info.effectTimestamp) {
             info.delay = info.pendingDelay;
+            info.isSet = true;
         }
 
         info.pendingDelay = delay;
@@ -273,9 +279,9 @@ contract AllocationManager is
 
     /**
      * @dev For an operator set, get the operator's effective allocated magnitude.
-     * If the operator set has a pending deallocation that can be completed at the
+     * If the operator set has a pending deallocation that can be cleared at the
      * current timestamp, this method returns a view of the allocation as if the deallocation
-     * was completed.
+     * was cleared.
      * @return info the effective allocated and pending magnitude for the operator set, and
      * the effective encumbered magnitude for all operator sets belonging to this strategy
      */
@@ -287,7 +293,7 @@ contract AllocationManager is
         MagnitudeInfo memory mInfo = _operatorMagnitudeInfo[operator][strategy][operatorSetKey];
         uint64 _encumberedMagnitude = encumberedMagnitude[operator][strategy];
 
-        // If the pending change can't be completed yet
+        // If the pending change can't be cleared yet
         if (block.timestamp < mInfo.effectTimestamp) {
             return PendingMagnitudeInfo({
                 encumberedMagnitude: _encumberedMagnitude,
@@ -297,13 +303,13 @@ contract AllocationManager is
             });
         }
 
-        // Pending change can be completed - add delta to current magnitude
+        // Pending change can be cleared - add delta to current magnitude
         info.currentMagnitude = _addInt128(mInfo.currentMagnitude, mInfo.pendingDiff);
         info.encumberedMagnitude = _encumberedMagnitude;
         info.effectTimestamp = 0;
         info.pendingDiff = 0;
 
-        // If the completed change was a deallocation, update encumbered magnitude
+        // If the cleared change was a deallocation, update encumbered magnitude
         if (mInfo.pendingDiff < 0) {
             info.encumberedMagnitude = _addInt128(_encumberedMagnitude, mInfo.pendingDiff);
         }
@@ -311,6 +317,7 @@ contract AllocationManager is
         return info;
     }
 
+    /// @notice Update the operator's magnitude info in storage and their encumbered magnitude.
     function _updateMagnitudeInfo(
         address operator,
         IStrategy strategy,
@@ -355,12 +362,19 @@ contract AllocationManager is
         });
     }
 
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
+
     /// @inheritdoc IAllocationManager
     function getAllocationInfo(
         address operator,
         IStrategy strategy
     ) external view returns (OperatorSet[] memory, MagnitudeInfo[] memory) {
-        OperatorSet[] memory operatorSets = avsDirectory.getOperatorSetsOfOperator(operator, 0, type(uint256).max);
+        OperatorSet[] memory operatorSets =
+            avsDirectory.getOperatorSetsOfOperator({operator: operator, start: 0, length: type(uint256).max});
         MagnitudeInfo[] memory infos = getAllocationInfo(operator, strategy, operatorSets);
         return (operatorSets, infos);
     }
@@ -481,15 +495,17 @@ contract AllocationManager is
     ) public view returns (bool isSet, uint32 delay) {
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
-        if (info.pendingDelay != 0 && block.timestamp >= info.effectTimestamp) {
+        if (info.effectTimestamp != 0 && block.timestamp >= info.effectTimestamp) {
             delay = info.pendingDelay;
         } else {
             delay = info.delay;
         }
 
-        // Operators cannot configure their allocation delay to be zero, so the delay has been
-        // set as long as it is nonzero.
-        isSet = delay != 0;
+        // Check that the operator has a configured delay that has taken effect.
+        // This is true if isSet is true OR block.timestamp >= effectTimestamp
+        // meaning either a delay has been applied or there is a delay set and
+        // the effectTimestamp has been reached
+        isSet = info.isSet == true || (info.effectTimestamp != 0 && block.timestamp >= info.effectTimestamp);
         return (isSet, delay);
     }
 
