@@ -43,6 +43,12 @@ interface IDelegationManagerErrors {
     /// @dev Thrown when provided delay exceeds maximum.
     error WithdrawalDelayExceedsMax();
 
+    /// Slashing
+
+    /// @dev Thrown when an operator has been fully slashed(maxMagnitude is 0) for a strategy.
+    /// or if the staker has had been natively slashed to the point of their beaconChainScalingFactor equalling 0.
+    error FullySlashed();
+
     /// Signatures
 
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
