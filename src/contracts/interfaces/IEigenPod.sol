@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import "../libraries/BeaconChainProofs.sol";
-import "./IEigenPodManager.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/**
- * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
- *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
- */
-interface IEigenPod {
-    /// @dev Thrown when msg.sender is not allowed to call a function
-    error UnauthorizedCaller();
+import "../libraries/BeaconChainProofs.sol";
+import "./IEigenPodManager.sol";
+
+interface IEigenPodErrors {
+    /// @dev Thrown when msg.sender is not the EPM.
+    error OnlyEigenPodManager();
+    /// @dev Thrown when msg.sender is not the pod owner.
+    error OnlyEigenPodOwner();
+    /// @dev Thrown when msg.sender is not owner or the proof submitter.
+    error OnlyEigenPodOwnerOrProofSubmitter();
     /// @dev Thrown when attempting an action that is currently paused.
     error CurrentlyPaused();
 
@@ -70,12 +68,9 @@ interface IEigenPod {
     error MsgValueNot32ETH();
     /// @dev Thrown when provided `beaconTimestamp` is too far in the past.
     error BeaconTimestampTooFarInPast();
+}
 
-    /**
-     *
-     *                                STRUCTS / ENUMS
-     *
-     */
+interface IEigenPodTypes {
     enum VALIDATOR_STATUS {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
@@ -98,15 +93,14 @@ interface IEigenPod {
         bytes32 beaconBlockRoot;
         uint24 proofsRemaining;
         uint64 podBalanceGwei;
-        int128 balanceDeltasGwei;
+        // this used to be an int128 before the slashing release
+        // now it is an int64. (2^63 - 1) gwei * 1e-9 eth/gwei = 9_223_372_036.85 eth = 9 billion eth
+        int64 balanceDeltasGwei;
+        uint64 beaconChainBalanceBeforeGwei;
     }
+}
 
-    /**
-     *
-     *                                    EVENTS
-     *
-     */
-
+interface IEigenPodEvents is IEigenPodTypes {
     /// @notice Emitted when an ETH validator stakes via this eigenPod
     event EigenPodStaked(bytes pubkey);
 
@@ -139,13 +133,16 @@ interface IEigenPod {
 
     /// @notice Emitted when a validaor is proven to have 0 balance at a given checkpoint
     event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
+}
 
-    /**
-     *
-     *                       EXTERNAL STATE-CHANGING METHODS
-     *
-     */
-
+/**
+ * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
+ * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
+ *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
+ */
+interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
     function initialize(
         address owner

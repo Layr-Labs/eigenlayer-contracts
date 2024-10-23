@@ -5,6 +5,7 @@ import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPod.sol";
 import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPodManager.sol";
 import "src/test/integration/deprecatedInterfaces/mainnet/IStrategyManager.sol";
 import "src/test/integration/users/User.t.sol";
+import "src/contracts/mixins/SignatureUtils.sol";
 
 interface IUserMainnetForkDeployer {
     function delegationManager() external view returns (DelegationManager);
@@ -68,6 +69,11 @@ contract User_M1 is User {
 }
 
 contract User_M1_AltMethods is User_M1 {
+    /// @notice The EIP-712 typehash for the contract's domain.
+    bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+
+
     mapping(bytes32 => bool) public signedHashes;
 
     constructor(string memory name) User_M1(name) {}
@@ -103,7 +109,7 @@ contract User_M1_AltMethods is User_M1 {
                     expiry
                 )
             );
-            bytes32 domain_separator = keccak256(abi.encode(strategyManager.DOMAIN_TYPEHASH(), keccak256(bytes("EigenLayer")), block.chainid, address(strategyManager)));
+            bytes32 domain_separator = strategyManager.domainSeparator();
             bytes32 digestHash =
                 keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
             bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data

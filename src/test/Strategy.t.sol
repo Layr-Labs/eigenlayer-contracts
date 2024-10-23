@@ -18,7 +18,7 @@ contract StrategyTests is EigenLayerTestHelper {
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(invalidDepositor);
-        cheats.expectRevert(IStrategy.UnauthorizedCaller.selector);
+        cheats.expectRevert(IStrategyErrors.OnlyStrategyManager.selector);
         wethStrat.deposit(underlyingToken, 1e18);
         cheats.stopPrank();
     }
@@ -34,7 +34,7 @@ contract StrategyTests is EigenLayerTestHelper {
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(invalidWithdrawer);
-        cheats.expectRevert(IStrategy.UnauthorizedCaller.selector);
+        cheats.expectRevert(IStrategyErrors.OnlyStrategyManager.selector);
         wethStrat.withdraw(depositor, underlyingToken, 1e18);
         cheats.stopPrank();
     }
@@ -43,11 +43,11 @@ contract StrategyTests is EigenLayerTestHelper {
     ///         actually deposited fails.
     ///@param depositor is the depositor for which the shares are being withdrawn
     function testWithdrawalExceedsTotalShares(address depositor, uint256 shares) public fuzzedAddress(depositor) {
-        cheats.assume(shares > strategyManager.stakerStrategyShares(depositor, wethStrat));
+        cheats.assume(shares > strategyManager.stakerDepositShares(depositor, wethStrat));
         IERC20 underlyingToken = wethStrat.underlyingToken();
 
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(IStrategy.WithdrawalAmountExceedsTotalDeposits.selector);
+        cheats.expectRevert(IStrategyErrors.WithdrawalAmountExceedsTotalDeposits.selector);
         wethStrat.withdraw(depositor, underlyingToken, shares);
 
         cheats.stopPrank();

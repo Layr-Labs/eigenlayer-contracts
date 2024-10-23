@@ -58,11 +58,9 @@ contract Eigen_Strategy_Deploy is ExistingDeploymentParser {
     function _verifyDeployment() internal {
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = eigenStrategy;
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
-        thirdPartyTransfersForbiddenValues[0] = true;
 
         vm.prank(executorMultisig);
-        strategyManager.addStrategiesToDepositWhitelist(strategies, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategies);
 
         vm.startPrank(msg.sender);
         EIGEN.approve(address(strategyManager), type(uint256).max);
