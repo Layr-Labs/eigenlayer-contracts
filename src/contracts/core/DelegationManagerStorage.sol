@@ -121,7 +121,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     mapping(address staker => EnumerableSet.Bytes32Set withdrawalRoots) internal _stakerQueuedWithdrawalRoots;
 
     /// @notice Returns the details of a queued withdrawal for a given `staker` and `withdrawalRoot`.
-    mapping(address staker => mapping(bytes32 withdrawalRoot => Withdrawal withdrawal)) public stakerQueuedWithdrawals;
+    mapping(bytes32 withdrawalRoot => Withdrawal withdrawal) public queuedWithdrawals;
 
     // Construction
 

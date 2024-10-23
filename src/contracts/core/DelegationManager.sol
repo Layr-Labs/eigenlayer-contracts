@@ -499,7 +499,7 @@ contract DelegationManager is
 
         _stakerQueuedWithdrawalRoots[withdrawal.staker].remove(withdrawalRoot);
 
-        delete stakerQueuedWithdrawals[withdrawal.staker][withdrawalRoot];
+        delete queuedWithdrawals[withdrawalRoot];
 
         emit SlashingWithdrawalCompleted(withdrawalRoot);
     }
@@ -615,7 +615,7 @@ contract DelegationManager is
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
         _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
-        stakerQueuedWithdrawals[staker][withdrawalRoot] = withdrawal;
+        queuedWithdrawals[withdrawalRoot] = withdrawal;
 
         emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, sharesToWithdraw);
 
@@ -781,13 +781,15 @@ contract DelegationManager is
         uint256 n = withdrawalRoots.length;
         withdrawals = new Withdrawal[](n);
         for (uint256 i; i < n; ++i) {
-            withdrawals[i] = stakerQueuedWithdrawals[staker][withdrawalRoots[i]];
+            withdrawals[i] = queuedWithdrawals[withdrawalRoots[i]];
         }
     }
 
     /// @inheritdoc IDelegationManager
-    function isWithdrawalPending(address staker, bytes32 withdrawalRoot) public view returns (bool) {
-        return _stakerQueuedWithdrawalRoots[staker].contains(withdrawalRoot);
+    function pendingWithdrawals(
+        bytes32 withdrawalRoot
+    ) public view returns (bool) {
+        return queuedWithdrawals[withdrawalRoot].staker != address(0);
     }
 
     /// @inheritdoc IDelegationManager
