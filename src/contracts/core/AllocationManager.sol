@@ -499,7 +499,8 @@ contract AllocationManager is
         address[] calldata operators,
         IStrategy[] calldata strategies
     ) external view returns (uint256[][] memory, uint256[][] memory) {
-        return getMinDelegatedAndSlashableOperatorSharesBefore(operatorSet, operators, strategies, uint32(block.timestamp));
+        return
+            getMinDelegatedAndSlashableOperatorSharesBefore(operatorSet, operators, strategies, uint32(block.timestamp));
     }
 
     /// @inheritdoc IAllocationManager

@@ -298,7 +298,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
         address operator
     ) external view returns (bool isSet, uint32 delay);
 
-    /** 
+    /**
      * @notice returns the current operatorShares and the slashableOperatorShares for an operator, list of strategies,
      * and an operatorSet
      * @param operatorSet the operatorSet to get the shares for
