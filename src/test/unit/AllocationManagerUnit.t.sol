@@ -111,6 +111,10 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         // Set operatorSet to being valid
         avsDirectoryMock.setIsOperatorSetBatch(operatorSets, true);
 
+        // Set strategy to being valid for operator set
+        avsDirectoryMock.setIsOperatorSetStrategy(operatorSets[0], strategy, true);
+        avsDirectoryMock.setIsOperatorSetStrategyBatch(operatorSets[0], _strategyMockArray(), true);
+
         uint64[] memory magnitudes = new uint64[](1);
         magnitudes[0] = magnitudeToSet;
 
@@ -285,6 +289,10 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         OperatorSet[] memory operatorSets = new OperatorSet[](1);
         operatorSets[0] = OperatorSet({avs: avs, operatorSetId: uint32(r)});
 
+        // set strategy to being valid for operator set
+        avsDirectoryMock.setIsOperatorSetStrategy(operatorSets[0], strategyMock, true);
+        avsDirectoryMock.setIsOperatorSetStrategyBatch(operatorSets[0], _strategyMockArray(), true);
+
         // Set operatorSet to being valid
         avsDirectoryMock.setIsOperatorSetBatch(operatorSets, true);
 
@@ -307,6 +315,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     /// Generate a random allocation for a single strategy and multiple operatorSets
     /// -----------------------------------------------------------------------
 
+    // TODO: optmize for compile/test time
     function _randomMagnitudeAllocation_singleStrat_multipleOpSets(
         uint256 r,
         uint256 salt,
@@ -343,12 +352,18 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         // Create magnitude allocation
         IAllocationManagerTypes.MagnitudeAllocation[] memory allocations =
             new IAllocationManagerTypes.MagnitudeAllocation[](1);
+
         allocations[0] = IAllocationManagerTypes.MagnitudeAllocation({
             strategy: strategyMock,
             expectedMaxMagnitude: 1e18, // magnitude starts at 100%
             operatorSets: operatorSets,
             magnitudes: magnitudes
         });
+
+        for (uint8 i = 0; i < numOpSets; i++) {
+            avsDirectoryMock.setIsOperatorSetStrategy(allocations[0].operatorSets[i], strategyMock, true);
+        }
+
         return allocations;
     }
 
@@ -374,6 +389,16 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     {
         (MagnitudeAllocation[] memory allocations, MagnitudeAllocation[] memory deallocations) =
             _randomAllocationAndDeallocation_singleStrat_multipleOpSets(numOpSets, r, salt);
+
+        for (uint256 i; i < allocations.length; ++i) {
+            for (uint256 j; j < numOpSets; ++j) {
+                avsDirectoryMock.setIsOperatorSetStrategy(
+                    allocations[i].operatorSets[j], 
+                    allocations[i].strategy, 
+                    true
+                );
+            }
+        }
 
         // Allocate
         cheats.prank(operator);
@@ -418,12 +443,23 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         // Create deallocations
         IAllocationManagerTypes.MagnitudeAllocation[] memory deallocations =
             new IAllocationManagerTypes.MagnitudeAllocation[](1);
+
         deallocations[0] = IAllocationManagerTypes.MagnitudeAllocation({
             strategy: strategyMock,
             expectedMaxMagnitude: 1e18, // magnitude starts at 100%
             operatorSets: allocations[0].operatorSets,
             magnitudes: newMags
         });
+
+        for (uint256 i; i < allocations.length; ++i) {
+            for (uint256 j; j < numOpSets; ++j) {
+                avsDirectoryMock.setIsOperatorSetStrategy(
+                    allocations[i].operatorSets[j], 
+                    allocations[i].strategy, 
+                    true
+                );
+            }
+        }
 
         return (allocations, deallocations);
     }
@@ -532,6 +568,10 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             slashingParams.operator, defaultAVS, slashingParams.operatorSetId, false
         );
 
+        avsDirectoryMock.setIsOperatorSetStrategyBatch(
+            _operatorSet(defaultAVS, slashingParams.operatorSetId), _strategyMockArray(), true
+        );
+
         cheats.expectRevert(IAllocationManagerErrors.InvalidOperator.selector);
         cheats.prank(defaultAVS);
         allocationManager.slashOperator(slashingParams);
@@ -541,7 +581,20 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = _randomSlashingParams(defaultOperator, 0, 0);
         avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
 
+        avsDirectoryMock.setIsOperatorSetStrategyBatch(
+            _operatorSet(defaultAVS, slashingParams.operatorSetId), _strategyMockArray(), true
+        );
+
         cheats.expectRevert(IAllocationManagerErrors.OperatorNotAllocated.selector);
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(slashingParams);
+    }
+
+    function test_revert_InvalidOperatorSetStrategy() public {
+        SlashingParams memory slashingParams = _randomSlashingParams(defaultOperator, 0, 0);
+        avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+
+        cheats.expectRevert(IAllocationManagerErrors.InvalidStrategy.selector);
         cheats.prank(defaultAVS);
         allocationManager.slashOperator(slashingParams);
     }
@@ -560,6 +613,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             description: "test"
         });
         avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+        avsDirectoryMock.setIsOperatorSetStrategyBatch(
+            _operatorSet(defaultAVS, slashingParams.operatorSetId), _strategyMockArray(), true
+        );
 
         // Expect revert
         cheats.expectRevert(IAllocationManagerErrors.OperatorNotAllocated.selector);
@@ -1105,7 +1161,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.modifyAllocations(allocations);
         cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
-
         // Slash operator on both strategies for 60%
         IStrategy[] memory strategiesToSlash = new IStrategy[](2);
         strategiesToSlash[0] = strategyMock;
@@ -1130,6 +1185,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         uint64[] memory expectedMaxMagnitudeAfterSlash = new uint64[](2);
         expectedMaxMagnitudeAfterSlash[0] = 7e17;
         expectedMaxMagnitudeAfterSlash[1] = 4e17;
+
+        avsDirectoryMock.setIsOperatorSetStrategyBatch(OperatorSet(defaultAVS, slashingParams.operatorSetId), strategiesToSlash, true);
 
         // Expect emits
         for(uint256 i = 0; i < strategiesToSlash.length; i++) {
@@ -1200,6 +1257,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             description: "test"
         });
         avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+        avsDirectoryMock.setIsOperatorSetStrategyBatch(OperatorSet(defaultAVS, slashingParams.operatorSetId), _strategyMockArray(), true);
 
         // Slash Operator
         cheats.prank(defaultAVS);
@@ -1271,6 +1329,38 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         avsDirectoryMock.setIsOperatorSetBatch(allocations[0].operatorSets, false);
 
         cheats.expectRevert(IAllocationManagerErrors.InvalidOperatorSet.selector);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+    }
+
+    function test_revert_invalidOperatorSetStrategy() public {
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations =
+            _randomMagnitudeAllocation_singleStrat_singleOpSet(0, 0);
+
+        // Set strategy to being invalid
+        avsDirectoryMock.setIsOperatorSetStrategy(allocations[0].operatorSets[0], allocations[0].strategy, false);
+
+        cheats.expectRevert(IAllocationManagerErrors.InvalidStrategy.selector);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+    }
+
+    function test_canDeallocateInvalidOperatorSetStrategy() public {
+        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations =
+            _randomMagnitudeAllocation_singleStrat_singleOpSet(0, 0);
+
+        // Create allocation and warp to effect timestamp.
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocations);
+        cheats.warp(block.timestamp + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Set strategy to being invalid.
+        avsDirectoryMock.setIsOperatorSetStrategy(allocations[0].operatorSets[0], allocations[0].strategy, false);
+
+        // Set magnitude to a full deallocation.
+        allocations[0].magnitudes[0] = 0;
+
+        // Should not revert...
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(allocations);
     }
@@ -1498,6 +1588,10 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
         allocations[0].magnitudes[numOpSets - 1] = 1e18 + 1;
 
+        for (uint256 i; i < numOpSets; i++) {
+            avsDirectoryMock.setIsOperatorSetStrategy(allocations[0].operatorSets[i], allocations[0].strategy, true);
+        }
+
         // Overallocate
         cheats.expectRevert(IAllocationManagerErrors.InsufficientAllocatableMagnitude.selector);
         cheats.prank(defaultOperator);
@@ -1513,6 +1607,8 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocations[1] = _randomMagnitudeAllocation_singleStrat_singleOpSet(1, 1)[0];
         allocations[1].magnitudes[0] = 1e18;
         allocations[1].strategy = IStrategy(address(uint160(2))); // Set a different strategy
+
+        avsDirectoryMock.setIsOperatorSetStrategy(allocations[1].operatorSets[0], allocations[1].strategy, true);
 
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(allocations);
@@ -2125,6 +2221,12 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         assertEq(delay, returnedDelay, "delay not set");
     }
 }
+
+// contract AllocationManagerUnitTests_isOperatorSetStrategy is AllocationManagerUnitTests {
+// // Revert when you try to slash for a strategy that does not exist. The operator should have allocated to the strategy, but then the AVS removes the strategy from their list of strategies we should revert the slash
+// // Revert when the operator tries to allocate for a strategy not added to the operatorSet
+// // Validate that we can deallocate, even if the strategy is not part of the operator set    
+// }
 
 /**
  * @notice TODO Lifecycle tests - These tests combine multiple functionalities of the AllocationManager
