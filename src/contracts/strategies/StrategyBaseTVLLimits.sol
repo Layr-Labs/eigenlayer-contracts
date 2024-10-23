@@ -25,17 +25,17 @@ contract StrategyBaseTVLLimits is StrategyBase {
 
     // solhint-disable-next-line no-empty-blocks
     constructor(
-        IStrategyManager _strategyManager
-    ) StrategyBase(_strategyManager) {}
+        IStrategyManager _strategyManager,
+        IPauserRegistry _pauserRegistry
+    ) StrategyBase(_strategyManager, _pauserRegistry) {}
 
     function initialize(
         uint256 _maxPerDeposit,
         uint256 _maxTotalDeposits,
-        IERC20 _underlyingToken,
-        IPauserRegistry _pauserRegistry
+        IERC20 _underlyingToken
     ) public virtual initializer {
         _setTVLLimits(_maxPerDeposit, _maxTotalDeposits);
-        _initializeStrategyBase(_underlyingToken, _pauserRegistry);
+        _initializeStrategyBase(_underlyingToken);
     }
 
     /**

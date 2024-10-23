@@ -58,7 +58,8 @@ contract MainnetPEPEDeploy is ExistingDeploymentParser {
             IETHPOSDeposit(ETHPOSDepositAddress),
             eigenPodBeacon,
             strategyManager,
-            delegationManager
+            delegationManager,
+            eigenLayerPauserReg
         );
     }
 

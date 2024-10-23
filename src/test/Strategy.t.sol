@@ -8,7 +8,7 @@ contract StrategyTests is EigenLayerTestHelper {
     /// @notice This function tests to ensure that a delegation contract
     ///         cannot be intitialized multiple times
     function testCannotInitMultipleTimesDelegation() public cannotReinit {
-        wethStrat.initialize(weth, eigenLayerPauserReg);
+        wethStrat.initialize(weth);
     }
 
     ///@notice This function tests to ensure that only the strategyManager

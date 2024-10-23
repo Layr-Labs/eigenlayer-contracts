@@ -86,7 +86,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             IStrategyManager(address(strategyManagerMock)), 
             IEigenPodManager(address(eigenPodManagerMock)), 
             IAllocationManager(address(allocationManagerMock)), 
-            MIN_WITHDRAWAL_DELAY_BLOCKS
+            pauserRegistry,
+            MIN_WITHDRAWAL_DELAY
         );
         delegationManager = DelegationManager(
             address(
@@ -96,7 +97,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                     abi.encodeWithSelector(
                         DelegationManager.initialize.selector,
                         address(this),
-                        pauserRegistry,
                         0, // 0 is initialPausedStatus
                         minWithdrawalDelayBlocks,
                         initializeStrategiesToSetDelayBlocks,
@@ -108,13 +108,13 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
         // Deploy mock token and strategy
         mockToken = new ERC20PresetFixedSupply("Mock Token", "MOCK", mockTokenInitialSupply, address(this));
-        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)));
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
         strategyMock = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, mockToken, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, mockToken)
                 )
             )
         );
@@ -153,7 +153,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                     new TransparentUpgradeableProxy(
                         address(strategyImplementation),
                         address(eigenLayerProxyAdmin),
-                        abi.encodeWithSelector(StrategyBase.initialize.selector, token, pauserRegistry)
+                        abi.encodeWithSelector(StrategyBase.initialize.selector, token)
                     )
                 )
             );
@@ -555,11 +555,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
     /// @notice Verifies that the DelegationManager cannot be iniitalized multiple times
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        delegationManager.initialize(
-            address(this),
-            pauserRegistry,
-            0
-        );
+        delegationManager.initialize(address(this), 0);
     }
 }
 

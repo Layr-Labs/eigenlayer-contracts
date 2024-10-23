@@ -33,19 +33,19 @@ contract AllocationManager is
     constructor(
         IDelegationManager _delegation,
         IAVSDirectory _avsDirectory,
+        IPauserRegistry _pauserRegistry,
         uint32 _DEALLOCATION_DELAY,
         uint32 _ALLOCATION_CONFIGURATION_DELAY
-    ) AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY) {
+    )
+        AllocationManagerStorage(_delegation, _avsDirectory, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY)
+        Pausable(_pauserRegistry)
+    {
         _disableInitializers();
     }
 
     /// @inheritdoc IAllocationManager
-    function initialize(
-        address initialOwner,
-        IPauserRegistry _pauserRegistry,
-        uint256 initialPausedStatus
-    ) external initializer {
-        _initializePauser(_pauserRegistry, initialPausedStatus);
+    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+        _initializePauser(initialPausedStatus);
         _transferOwnership(initialOwner);
     }
 

@@ -229,7 +229,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                     new TransparentUpgradeableProxy(
                         address(baseStrategyImplementation),
                         address(eigenLayerProxyAdmin),
-                        abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
+                        abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                     )
                 )
             );

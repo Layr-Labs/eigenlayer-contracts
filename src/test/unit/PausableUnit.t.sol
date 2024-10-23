@@ -29,22 +29,10 @@ contract PausableUnitTests is Test {
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
-        pausable = new PausableHarness();
-        pausable.initializePauser(pauserRegistry, initPausedStatus);
+        pausable = new PausableHarness(pauserRegistry);
+        pausable.initializePauser(initPausedStatus);
     }
-
-    function testCannotReinitialize(address _pauserRegistry, uint256 _initPausedStatus) public {
-        cheats.expectRevert(IPausable.InputAddressZero.selector);
-        pausable.initializePauser(PauserRegistry(_pauserRegistry), _initPausedStatus);
-    }
-
-    function testCannotInitializeWithZeroAddress(uint256 _initPausedStatus) public {
-        address _pauserRegistry = address(0);
-        pausable = new PausableHarness();
-        cheats.expectRevert(IPausable.InputAddressZero.selector);
-        pausable.initializePauser(PauserRegistry(_pauserRegistry), _initPausedStatus);
-    }
-
+    
     function testPause(uint256 previousPausedStatus, uint256 newPausedStatus) public {
         // filter out any fuzzed inputs which would (improperly) flip any bits to '0'.
         cheats.assume(previousPausedStatus & newPausedStatus == previousPausedStatus);

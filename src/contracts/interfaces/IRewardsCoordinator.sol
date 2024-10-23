@@ -254,12 +254,11 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
  */
 interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorEvents {
     /**
-     * @dev Initializes the addresses of the initial owner, pauser registry, rewardsUpdater and
+     * @dev Initializes the addresses of the initial owner, rewardsUpdater, and
      * configures the initial paused status, activationDelay, and globalOperatorCommissionBips.
      */
     function initialize(
         address initialOwner,
-        IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus,
         address _rewardsUpdater,
         uint32 _activationDelay,

@@ -39,8 +39,8 @@ contract Longtail_Upgrade_Preprod is ExistingDeploymentParser {
 
     function _deployLongtail() internal {
         // Deploy implementations
-        strategyFactoryImplementation = new StrategyFactory(strategyManager);
-        strategyFactoryBeaconImplementation = new StrategyBase(strategyManager);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
+        strategyFactoryBeaconImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Deploy and initialize proxies
         strategyBeacon = new UpgradeableBeacon(address(strategyFactoryBeaconImplementation));

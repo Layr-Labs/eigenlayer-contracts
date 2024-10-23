@@ -63,6 +63,7 @@ contract DelegationManager is
         IStrategyManager _strategyManager,
         IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
+        IPauserRegistry _pauserRegistry,
         uint32 _MIN_WITHDRAWAL_DELAY
     )
         DelegationManagerStorage(
@@ -72,17 +73,13 @@ contract DelegationManager is
             _allocationManager,
             _MIN_WITHDRAWAL_DELAY
         )
+        Pausable(_pauserRegistry)
     {
         _disableInitializers();
     }
 
-    /// @inheritdoc IDelegationManager
-    function initialize(
-        address initialOwner,
-        IPauserRegistry _pauserRegistry,
-        uint256 initialPausedStatus
-    ) external initializer {
-        _initializePauser(_pauserRegistry, initialPausedStatus);
+    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+        _initializePauser(initialPausedStatus);
         _transferOwnership(initialOwner);
     }
 

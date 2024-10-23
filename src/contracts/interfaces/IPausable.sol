@@ -31,9 +31,6 @@ interface IPausable {
     /// @dev Thrown when a null address input is provided.
     error InputAddressZero();
 
-    /// @notice Emitted when the `pauserRegistry` is set to `newPauserRegistry`.
-    event PauserRegistrySet(IPauserRegistry pauserRegistry, IPauserRegistry newPauserRegistry);
-
     /// @notice Emitted when the pause is triggered by `account`, and changed to `newPausedStatus`.
     event Paused(address indexed account, uint256 newPausedStatus);
 
@@ -75,9 +72,4 @@ interface IPausable {
     function paused(
         uint8 index
     ) external view returns (bool);
-
-    /// @notice Allows the unpauser to set a new pauser registry
-    function setPauserRegistry(
-        IPauserRegistry newPauserRegistry
-    ) external;
 }
