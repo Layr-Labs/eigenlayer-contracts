@@ -299,6 +299,19 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external view returns (bool isSet, uint32 delay);
 
     /**
+     * @notice returns the current operatorShares and the slashableOperatorShares for an operator, list of strategies,
+     * and an operatorSet
+     * @param operatorSet the operatorSet to get the shares for
+     * @param operators the operators to get the shares for
+     * @param strategies the strategies to get the shares for
+     */
+    function getCurrentDelegatedAndSlashableOperatorShares(
+        OperatorSet calldata operatorSet,
+        address[] calldata operators,
+        IStrategy[] calldata strategies
+    ) external view returns (uint256[][] memory, uint256[][] memory);
+
+    /**
      * @notice returns the minimum operatorShares and the slashableOperatorShares for an operator, list of strategies,
      * and an operatorSet before a given timestamp. This is used to get the shares to weight operators by given ones slashing window.
      * @param operatorSet the operatorSet to get the shares for
@@ -306,7 +319,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @param strategies the strategies to get the shares for
      * @param beforeTimestamp the timestamp to get the shares at
      */
-    function getMinDelegatedAndSlashableOperatorShares(
+    function getMinDelegatedAndSlashableOperatorSharesBefore(
         OperatorSet calldata operatorSet,
         address[] calldata operators,
         IStrategy[] calldata strategies,

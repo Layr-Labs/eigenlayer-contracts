@@ -494,13 +494,23 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function getMinDelegatedAndSlashableOperatorShares(
+    function getCurrentDelegatedAndSlashableOperatorShares(
+        OperatorSet calldata operatorSet,
+        address[] calldata operators,
+        IStrategy[] calldata strategies
+    ) external view returns (uint256[][] memory, uint256[][] memory) {
+        return
+            getMinDelegatedAndSlashableOperatorSharesBefore(operatorSet, operators, strategies, uint32(block.timestamp));
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getMinDelegatedAndSlashableOperatorSharesBefore(
         OperatorSet calldata operatorSet,
         address[] calldata operators,
         IStrategy[] calldata strategies,
         uint32 beforeTimestamp
-    ) external view returns (uint256[][] memory, uint256[][] memory) {
-        require(beforeTimestamp > block.timestamp, InvalidTimestamp());
+    ) public view returns (uint256[][] memory, uint256[][] memory) {
+        require(beforeTimestamp >= block.timestamp, InvalidTimestamp());
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
         uint256[][] memory delegatedShares = delegation.getOperatorsShares(operators, strategies);
         uint256[][] memory slashableShares = new uint256[][](operators.length);

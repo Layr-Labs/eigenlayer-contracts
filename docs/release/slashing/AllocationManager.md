@@ -152,7 +152,7 @@ Slashing updates storage in a way that instantly updates all view functions to r
 
 ## View Functions 
 
-### `getMinDelegatedAndSlashableOperatorShares`
+### `getMinDelegatedAndSlashableOperatorSharesBefore`
 
 ```solidity
 /**
@@ -163,7 +163,7 @@ Slashing updates storage in a way that instantly updates all view functions to r
  * @param strategies the strategies to get the shares for
  * @param beforeTimestamp the timestamp to get the shares at
  */
-function getMinDelegatedAndSlashableOperatorShares(
+function getMinDelegatedAndSlashableOperatorSharesBefore(
     OperatorSet calldata operatorSet,
     address[] calldata operators,
     IStrategy[] calldata strategies,

@@ -1025,13 +1025,13 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         // Get slashable shares for each operatorSet
         address[] memory operatorArray = new address[](1);
         operatorArray[0] = defaultOperator;
-        (, uint256[][] memory slashableSharesOpset1_preSlash) = allocationManager.getMinDelegatedAndSlashableOperatorShares(
+        (, uint256[][] memory slashableSharesOpset1_preSlash) = allocationManager.getMinDelegatedAndSlashableOperatorSharesBefore(
             _operatorSet(defaultAVS, 1),
             operatorArray,
             _strategyMockArray(),
             uint32(block.timestamp + 1)
         );
-        (, uint256[][] memory slashableSharesOpset2_preSlash) = allocationManager.getMinDelegatedAndSlashableOperatorShares(
+        (, uint256[][] memory slashableSharesOpset2_preSlash) = allocationManager.getMinDelegatedAndSlashableOperatorSharesBefore(
             _operatorSet(defaultAVS, 2),
             operatorArray,
             _strategyMockArray(),
@@ -1060,13 +1060,13 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         delegationManagerMock.setOperatorShares(defaultOperator, strategyMock, 80e18);
 
         // Check storage
-        (, uint256[][] memory slashableSharesOpset1_postSlash) = allocationManager.getMinDelegatedAndSlashableOperatorShares(
+        (, uint256[][] memory slashableSharesOpset1_postSlash) = allocationManager.getMinDelegatedAndSlashableOperatorSharesBefore(
             _operatorSet(defaultAVS, 1),
             operatorArray,
             _strategyMockArray(),
             uint32(block.timestamp + 1)
         );
-        (, uint256[][] memory slashableSharesOpset2_postSlash) = allocationManager.getMinDelegatedAndSlashableOperatorShares(
+        (, uint256[][] memory slashableSharesOpset2_postSlash) = allocationManager.getMinDelegatedAndSlashableOperatorSharesBefore(
             _operatorSet(defaultAVS, 2),
             operatorArray,
             _strategyMockArray(),
