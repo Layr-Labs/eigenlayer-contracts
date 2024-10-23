@@ -5,13 +5,12 @@ import "zeus-templates/templates/OpsTimelockBuilder.sol";
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IUpgradeableBeacon} from "script/interfaces/IUpgradeableBeacon.sol";
-import "src/contracts/interfaces/IStrategyFactory.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
 contract QueueEigenPodAndManager is OpsTimelockBuilder {
 
     using MultisigCallUtils for MultisigCall[];
-    using SafeTxUtils for *;
+    using SafeTxUtils for SafeTx;
 
     MultisigCall[] internal _executorCalls;
 

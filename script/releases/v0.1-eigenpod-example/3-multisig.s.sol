@@ -3,9 +3,6 @@ pragma solidity ^0.8.12;
 
 import "zeus-templates/templates/OpsTimelockBuilder.sol";
 
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {IUpgradeableBeacon} from "script/interfaces/IUpgradeableBeacon.sol";
-import "src/contracts/interfaces/IStrategyFactory.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
 import "./2-multisig.s.sol";
