@@ -47,18 +47,18 @@ contract EigenPodManager is
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
         IStrategyManager _strategyManager,
-        IDelegationManager _delegationManager
-    ) EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _strategyManager, _delegationManager) {
+        IDelegationManager _delegationManager,
+        IPauserRegistry _pauserRegistry
+    )
+        EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _strategyManager, _delegationManager)
+        Pausable(_pauserRegistry)
+    {
         _disableInitializers();
     }
 
-    function initialize(
-        address initialOwner,
-        IPauserRegistry _pauserRegistry,
-        uint256 _initPausedStatus
-    ) external initializer {
+    function initialize(address initialOwner, uint256 _initPausedStatus) external initializer {
         _transferOwnership(initialOwner);
-        _initializePauser(_pauserRegistry, _initPausedStatus);
+        _initializePauser(_initPausedStatus);
     }
 
     /**

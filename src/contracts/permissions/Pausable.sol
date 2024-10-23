@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: BUSL-1.1
-
 pragma solidity ^0.8.27;
 
 import "../interfaces/IPausable.sol";
@@ -20,17 +19,26 @@ import "../interfaces/IPausable.sol";
  * @dev We note as well that we have chosen to identify flags by their *bit index* as opposed to their numerical value, so, e.g. defining `DEPOSITS_PAUSED = 3`
  * indicates specifically that if the *third bit* of `_paused` is flipped -- i.e. it is a '1' -- then deposits should be paused
  */
-contract Pausable is IPausable {
-    /// @notice Address of the `PauserRegistry` contract that this contract defers to for determining access control (for pausing).
-    IPauserRegistry public pauserRegistry;
+abstract contract Pausable is IPausable {
+    /// Constants
 
-    /// @dev whether or not the contract is currently paused
+    uint256 internal constant _UNPAUSE_ALL = 0;
+
+    uint256 internal constant _PAUSE_ALL = type(uint256).max;
+
+    /// @notice Address of the `PauserRegistry` contract that this contract defers to for determining access control (for pausing).
+    IPauserRegistry public immutable pauserRegistry;
+
+    /// Storage
+
+    /// @dev Do not remove, deprecated storage.
+    IPauserRegistry private __deprecated_pauserRegistry;
+
+    /// @dev Returns a bitmap representing the paused status of the contract.
     uint256 private _paused;
 
-    uint256 internal constant UNPAUSE_ALL = 0;
-    uint256 internal constant PAUSE_ALL = type(uint256).max;
+    /// Modifiers
 
-    /// @notice
     modifier onlyPauser() {
         require(pauserRegistry.isPauser(msg.sender), OnlyPauser());
         _;
@@ -55,12 +63,20 @@ contract Pausable is IPausable {
         _;
     }
 
+    /// Construction
+
+    constructor(
+        IPauserRegistry _pauserRegistry
+    ) {
+        pauserRegistry = IPauserRegistry(_pauserRegistry);
+    }
+
     /// @notice One-time function for setting the `pauserRegistry` and initializing the value of `_paused`.
-    function _initializePauser(IPauserRegistry _pauserRegistry, uint256 initPausedStatus) internal {
-        require(address(pauserRegistry) == address(0) && address(_pauserRegistry) != address(0), InputAddressZero());
+    function _initializePauser(
+        uint256 initPausedStatus
+    ) internal {
         _paused = initPausedStatus;
         emit Paused(msg.sender, initPausedStatus);
-        _setPauserRegistry(_pauserRegistry);
     }
 
     /**
@@ -112,22 +128,6 @@ contract Pausable is IPausable {
     ) public view virtual returns (bool) {
         uint256 mask = 1 << index;
         return ((_paused & mask) == mask);
-    }
-
-    /// @notice Allows the unpauser to set a new pauser registry
-    function setPauserRegistry(
-        IPauserRegistry newPauserRegistry
-    ) external onlyUnpauser {
-        _setPauserRegistry(newPauserRegistry);
-    }
-
-    /// internal function for setting pauser registry
-    function _setPauserRegistry(
-        IPauserRegistry newPauserRegistry
-    ) internal {
-        require(address(newPauserRegistry) != address(0), InputAddressZero());
-        emit PauserRegistrySet(pauserRegistry, newPauserRegistry);
-        pauserRegistry = newPauserRegistry;
     }
 
     /**

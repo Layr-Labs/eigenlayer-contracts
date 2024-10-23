@@ -55,14 +55,14 @@ contract StrategyBaseUnitTests is Test {
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);
 
-        strategyImplementation = new StrategyBase(strategyManager);
+        strategyImplementation = new StrategyBase(strategyManager, pauserRegistry);
 
         strategy = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                 )
             )
         );
@@ -70,7 +70,7 @@ contract StrategyBaseUnitTests is Test {
 
     function testCannotReinitialize() public {
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        strategy.initialize(underlyingToken, pauserRegistry);
+        strategy.initialize(underlyingToken);
     }
 
     function testCannotReceiveZeroShares() public {
@@ -161,14 +161,14 @@ contract StrategyBaseUnitTests is Test {
         // Deploy token with 1e39 total supply
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", 1e39, initialOwner);
 
-        strategyImplementation = new StrategyBase(strategyManager);
+        strategyImplementation = new StrategyBase(strategyManager, pauserRegistry);
 
         strategy = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                 )
             )
         );
@@ -300,7 +300,7 @@ contract StrategyBaseUnitTests is Test {
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                 )
             )
         );

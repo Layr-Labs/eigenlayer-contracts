@@ -209,9 +209,9 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
  */
 interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDelegationManagerEvents {
     /**
-     * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
+     * @dev Initializes the initial owner and paused status.
      */
-    function initialize(address initialOwner, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus) external;
+    function initialize(address initialOwner, uint256 initialPausedStatus) external;
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.

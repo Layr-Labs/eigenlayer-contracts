@@ -32,18 +32,15 @@ contract AVSDirectory is
      */
     constructor(
         IDelegationManager _delegation,
+        IPauserRegistry _pauserRegistry,
         uint32 _DEALLOCATION_DELAY
-    ) AVSDirectoryStorage(_delegation, _DEALLOCATION_DELAY) {
+    ) AVSDirectoryStorage(_delegation, _DEALLOCATION_DELAY) Pausable(_pauserRegistry) {
         _disableInitializers();
     }
 
     /// @inheritdoc IAVSDirectory
-    function initialize(
-        address initialOwner,
-        IPauserRegistry _pauserRegistry,
-        uint256 initialPausedStatus
-    ) external initializer {
-        _initializePauser(_pauserRegistry, initialPausedStatus);
+    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+        _initializePauser(initialPausedStatus);
         _transferOwnership(initialOwner);
     }
 

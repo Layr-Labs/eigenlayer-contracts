@@ -46,12 +46,12 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);
 
-        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)));
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
 
         strategyBeacon = new UpgradeableBeacon(address(strategyImplementation));
         strategyBeacon.transferOwnership(beaconProxyOwner);
 
-        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)));
+        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
 
         strategyFactory = StrategyFactory(
             address(
@@ -60,7 +60,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(StrategyFactory.initialize.selector,
                         initialOwner,
-                        pauserRegistry,
                         initialPausedStatus,
                         strategyBeacon
                     )
@@ -99,7 +98,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         cheats.expectRevert("Initializable: contract is already initialized");
         strategyFactory.initialize({
             _initialOwner: initialOwner,
-            _pauserRegistry: pauserRegistry,
             _initialPausedStatus: initialPausedStatus,
             _strategyBeacon: strategyBeacon
         });
@@ -195,7 +193,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                 )
             )
         );

@@ -52,7 +52,7 @@ contract MainnetStrategyFactoryDeploy is ExistingDeploymentParser {
 
     function _deployStrategyFactory() internal {
         strategyFactoryImplementation = new StrategyFactory(
-            strategyManager
+            strategyManager, eigenLayerPauserReg
         );
 
         

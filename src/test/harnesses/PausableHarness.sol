@@ -5,7 +5,9 @@ import "../../contracts/permissions/Pausable.sol";
 
 // wrapper around the Pausable contract that exposes the internal `_initializePauser` function.
 contract PausableHarness is Pausable {
-    function initializePauser(IPauserRegistry _pauserRegistry, uint256 initPausedStatus) external {
-        _initializePauser(_pauserRegistry, initPausedStatus);
+    constructor(IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {}
+
+    function initializePauser(uint256 initPausedStatus) external {
+        _initializePauser(initPausedStatus);
     }
 }

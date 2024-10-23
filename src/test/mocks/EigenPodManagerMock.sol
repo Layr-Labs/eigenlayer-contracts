@@ -13,8 +13,8 @@ contract EigenPodManagerMock is Test, Pausable {
 
     mapping(address => uint256) public podOwnerSharesWithdrawn;
 
-    constructor(IPauserRegistry _pauserRegistry) {
-        _initializePauser(_pauserRegistry, 0);
+    constructor(IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {
+        _initializePauser(0);
     }
 
     function podOwnerShares(address podOwner) external view returns (int256) {
