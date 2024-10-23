@@ -32,7 +32,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         IBeacon _strategyBeacon
     ) public virtual initializer {
         _transferOwnership(_initialOwner);
-        _initializePauser(_initialPausedStatus);
+        _setPausedStatus(_initialPausedStatus);
         _setStrategyBeacon(_strategyBeacon);
     }
 

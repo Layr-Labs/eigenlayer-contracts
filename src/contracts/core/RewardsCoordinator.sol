@@ -75,7 +75,7 @@ contract RewardsCoordinator is
         uint32 _activationDelay,
         uint16 _globalCommissionBips
     ) external initializer {
-        _initializePauser(initialPausedStatus);
+        _setPausedStatus(initialPausedStatus);
         _transferOwnership(initialOwner);
         _setRewardsUpdater(_rewardsUpdater);
         _setActivationDelay(_activationDelay);

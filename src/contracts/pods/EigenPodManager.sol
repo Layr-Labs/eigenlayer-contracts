@@ -58,7 +58,7 @@ contract EigenPodManager is
 
     function initialize(address initialOwner, uint256 _initPausedStatus) external initializer {
         _transferOwnership(initialOwner);
-        _initializePauser(_initPausedStatus);
+        _setPausedStatus(_initPausedStatus);
     }
 
     /**

@@ -71,7 +71,7 @@ contract StrategyManager is
         address initialStrategyWhitelister,
         uint256 initialPausedStatus
     ) external initializer {
-        _initializePauser(initialPausedStatus);
+        _setPausedStatus(initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
     }

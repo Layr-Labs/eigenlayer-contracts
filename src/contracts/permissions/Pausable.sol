@@ -39,23 +39,25 @@ abstract contract Pausable is IPausable {
 
     /// Modifiers
 
+    /// @dev Thrown if the caller is not a valid pauser according to the pauser registry.
     modifier onlyPauser() {
         require(pauserRegistry.isPauser(msg.sender), OnlyPauser());
         _;
     }
 
+    /// @dev Thrown if the caller is not a valid unpauser according to the pauser registry.
     modifier onlyUnpauser() {
         require(msg.sender == pauserRegistry.unpauser(), OnlyUnpauser());
         _;
     }
 
-    /// @notice Throws if the contract is paused, i.e. if any of the bits in `_paused` is flipped to 1.
+    /// @dev Thrown if the contract is paused, i.e. if any of the bits in `_paused` is flipped to 1.
     modifier whenNotPaused() {
         require(_paused == 0, CurrentlyPaused());
         _;
     }
 
-    /// @notice Throws if the `indexed`th bit of `_paused` is 1, i.e. if the `index`th pause switch is flipped.
+    /// @dev Thrown if the `indexed`th bit of `_paused` is 1, i.e. if the `index`th pause switch is flipped.
     modifier onlyWhenNotPaused(
         uint8 index
     ) {
@@ -68,66 +70,54 @@ abstract contract Pausable is IPausable {
     constructor(
         IPauserRegistry _pauserRegistry
     ) {
-        pauserRegistry = IPauserRegistry(_pauserRegistry);
+        pauserRegistry = _pauserRegistry;
     }
 
-    /// @notice One-time function for setting the `pauserRegistry` and initializing the value of `_paused`.
-    function _initializePauser(
-        uint256 initPausedStatus
-    ) internal {
-        _paused = initPausedStatus;
-        emit Paused(msg.sender, initPausedStatus);
-    }
-
-    /**
-     * @notice This function is used to pause an EigenLayer contract's functionality.
-     * It is permissioned to the `pauser` address, which is expected to be a low threshold multisig.
-     * @param newPausedStatus represents the new value for `_paused` to take, which means it may flip several bits at once.
-     * @dev This function can only pause functionality, and thus cannot 'unflip' any bit in `_paused` from 1 to 0.
-     */
+    /// @inheritdoc IPausable
     function pause(
         uint256 newPausedStatus
     ) external onlyPauser {
+        uint256 currentPausedStatus = _paused;
         // verify that the `newPausedStatus` does not *unflip* any bits (i.e. doesn't unpause anything, all 1 bits remain)
-        require((_paused & newPausedStatus) == _paused, InvalidNewPausedStatus());
-        _paused = newPausedStatus;
-        emit Paused(msg.sender, newPausedStatus);
+        require((currentPausedStatus & newPausedStatus) == currentPausedStatus, InvalidNewPausedStatus());
+        _setPausedStatus(newPausedStatus);
     }
 
-    /**
-     * @notice Alias for `pause(type(uint256).max)`.
-     */
+    /// @inheritdoc IPausable
     function pauseAll() external onlyPauser {
-        _paused = type(uint256).max;
-        emit Paused(msg.sender, type(uint256).max);
+        _setPausedStatus(_PAUSE_ALL);
     }
 
-    /**
-     * @notice This function is used to unpause an EigenLayer contract's functionality.
-     * It is permissioned to the `unpauser` address, which is expected to be a high threshold multisig or governance contract.
-     * @param newPausedStatus represents the new value for `_paused` to take, which means it may flip several bits at once.
-     * @dev This function can only unpause functionality, and thus cannot 'flip' any bit in `_paused` from 0 to 1.
-     */
+    /// @inheritdoc IPausable
     function unpause(
         uint256 newPausedStatus
     ) external onlyUnpauser {
+        uint256 currentPausedStatus = _paused;
         // verify that the `newPausedStatus` does not *flip* any bits (i.e. doesn't pause anything, all 0 bits remain)
-        require(((~_paused) & (~newPausedStatus)) == (~_paused), InvalidNewPausedStatus());
+        require(((~currentPausedStatus) & (~newPausedStatus)) == (~currentPausedStatus), InvalidNewPausedStatus());
         _paused = newPausedStatus;
         emit Unpaused(msg.sender, newPausedStatus);
     }
 
-    /// @notice Returns the current paused status as a uint256.
+    /// @inheritdoc IPausable
     function paused() public view virtual returns (uint256) {
         return _paused;
     }
 
-    /// @notice Returns 'true' if the `indexed`th bit of `_paused` is 1, and 'false' otherwise
+    /// @inheritdoc IPausable
     function paused(
         uint8 index
     ) public view virtual returns (bool) {
         uint256 mask = 1 << index;
         return ((_paused & mask) == mask);
+    }
+
+    /// @dev Internal helper for setting the paused status, and emitting the corresponding event.
+    function _setPausedStatus(
+        uint256 pausedStatus
+    ) internal {
+        _paused = pausedStatus;
+        emit Paused(msg.sender, pausedStatus);
     }
 
     /**
