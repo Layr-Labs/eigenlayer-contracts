@@ -25,6 +25,6 @@ contract Operator is RolesAuthority {
     /// of the function that is validating the signature. This way, users with a given role
     /// can sign for the given (target, selector).
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue) {
-        return bytes32(IERC1271.isValidSignature.selector)
+        return IERC1271.isValidSignature.selector;
     }
 }
