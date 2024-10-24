@@ -69,7 +69,7 @@ interface IDelegationManagerErrors {
 interface IDelegationManagerTypes {
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
-        /// @notice DEPRECATED -- this field is no longer used, payments are handled in PaymentCoordinator.sol
+        /// @notice DEPRECATED -- this field is no longer used, payments are handled in RewardsCoordinator.sol
         address __deprecated_earningsReceiver;
         /**
          * @notice Address to verify signatures when a staker wishes to delegate to the operator, as well as controlling "forced undelegations".
@@ -134,11 +134,13 @@ interface IDelegationManagerTypes {
         uint32 startTimestamp;
         // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
-        // TODO: Find a better name for this
-        // Array containing the amount of staker's scaledSharesToWithdraw for withdrawal in each Strategy in the `strategies` array
-        // Note that these shares need to be multiplied by the operator's totalMagnitude at completion to include
-        // slashing occurring during the queue withdrawal delay
-        uint256[] scaledSharesToWithdraw;
+        // Array containing the amount of staker's scaledShares for withdrawal in each Strategy in the `strategies` array
+        // Note that these scaledShares need to be multiplied by the operator's maxMagnitude and beaconChainScalingFactor at completion to include
+        // slashing occurring during the queue withdrawal delay. This is because scaledShares = sharesToWithdraw / (maxMagnitude * beaconChainScalingFactor)
+        // at queue time. beaconChainScalingFactor is simply equal to 1 if the strategy is not the beaconChainStrategy.
+        // To account for slashing, we later multiply scaledShares * maxMagnitude * beaconChainScalingFactor at the earliest possible completion time
+        // to get the withdrawn shares after applying slashing during the delay period.
+        uint256[] scaledShares;
     }
 
     struct QueuedWithdrawalParams {
@@ -293,10 +295,10 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
-     * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
-     * and queues a withdrawal of all of the staker's shares in the StrategyManager (to the staker), if necessary.
+     * @notice Undelegates the staker from the operator who they are delegated to.
+     * Queues withdrawals of all of the staker's withdrawable shares in the StrategyManager (to the staker) and/or EigenPodManager, if necessary.
      * @param staker The account to be undelegated.
-     * @return withdrawalRoot The root of the newly queued withdrawal, if a withdrawal was queued. Otherwise just bytes32(0).
+     * @return withdrawalRoots The roots of the newly queued withdrawals, if a withdrawal was queued. Otherwise just bytes32(0).
      *
      * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
      * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
@@ -304,14 +306,18 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      */
     function undelegate(
         address staker
-    ) external returns (bytes32[] memory withdrawalRoot);
+    ) external returns (bytes32[] memory withdrawalRoots);
 
     /**
-     * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
+     * @notice Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
      * from the staker. If the staker is delegated, withdrawn shares/strategies are also removed from
      * their operator.
      *
-     * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
+     * All withdrawn shares/strategies are placed in a queue and can be withdrawn after a delay. Withdrawals
+     * are still subject to slashing during the delay period so the amount withdrawn on completion may actually be less
+     * than what was queued if slashing has occurred in that period.
+     *
+     * @dev To view what the staker is able to queue withdraw, see `getWithdrawableShares()`
      */
     function queueWithdrawals(
         QueuedWithdrawalParams[] calldata params
@@ -319,9 +325,11 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
 
     /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
+     * Withdrawals remain slashable during the withdrawal delay period and the actual withdrawn shares are calculated
+     * based off the scaledShares.
      * @param withdrawal The Withdrawal to complete.
      * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
-     * @param receiveAsTokens If true, the shares specified in the withdrawal will be withdrawn from the specified strategies themselves
+     * @param receiveAsTokens If true, the shares calculated to be withdrawn will be withdrawn from the specified strategies themselves
      * and sent to the caller, through calls to `withdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
      * will simply be transferred to the caller directly.
      * @dev beaconChainETHStrategy shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
@@ -388,15 +396,40 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @notice Decreases the operators shares in storage after a slash
      * @param operator The operator to decrease shares for
      * @param strategy The strategy to decrease shares for
-     * @param previousTotalMagnitude The total magnitude before the slash
-     * @param newTotalMagnitude The total magnitude after the slash
+     * @param previousMaxMagnitude The max magnitude before the slash
+     * @param newMaxMagnitude The max magnitude after the slash
      * @dev Callable only by the AllocationManager
      */
     function decreaseOperatorShares(
         address operator,
         IStrategy strategy,
-        uint64 previousTotalMagnitude,
-        uint64 newTotalMagnitude
+        uint64 previousMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) external;
+
+    /**
+     *
+     *                         BACKWARDS COMPATIBLE LEGACY FUNCTIONS
+     *                         TO BE DEPRECATED IN FUTURE
+     *
+     */
+
+    /// @notice Overloaded version of `completeQueuedWithdrawal` that includes a `middlewareTimesIndex` parameter
+    /// for backwards compatibility with the M2 release. To be deprecated in a future release.
+    function completeQueuedWithdrawal(
+        Withdrawal calldata withdrawal,
+        IERC20[] calldata tokens,
+        uint256 middlewareTimesIndex,
+        bool receiveAsTokens
+    ) external;
+
+    /// @notice Overloaded version of `completeQueuedWithdrawals` that includes a `middlewareTimesIndexes` parameter
+    /// for backwards compatibility with the M2 release. To be deprecated in a future release.
+    function completeQueuedWithdrawals(
+        Withdrawal[] calldata withdrawals,
+        IERC20[][] calldata tokens,
+        uint256[] calldata middlewareTimesIndexes,
+        bool[] calldata receiveAsTokens
     ) external;
 
     /**
@@ -498,11 +531,14 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         address staker
     ) external view returns (IStrategy[] memory, uint256[] memory);
 
-    /// @notice Returns a completable timestamp given a start timestamp.
+    /// @notice Returns a completable timestamp given a start timestamp for a withdrawal
     /// @dev check whether the withdrawal delay has elapsed (handles both legacy and post-slashing-release withdrawals) and returns the completable timestamp
     function getCompletableTimestamp(
         uint32 startTimestamp
     ) external view returns (uint32 completableTimestamp);
+
+    /// @notice Return the M2 minimum withdrawal delay in blocks for backwards compatability
+    function minWithdrawalDelayBlocks() external view returns (uint256);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(

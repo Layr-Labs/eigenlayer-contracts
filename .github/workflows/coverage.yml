@@ -53,6 +53,9 @@ jobs:
         version: nightly
     - name: Run coverage
       run: forge coverage --report lcov
+      env:
+        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
     - name: Prune coverage report
       run: lcov --remove ./lcov.info -o ./lcov.info.pruned 'src/test/*' 'script/*' '*Storage.sol' --ignore-errors inconsistent
     - name: Generate reports
