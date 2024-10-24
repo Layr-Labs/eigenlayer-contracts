@@ -323,10 +323,20 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory strategies);
 
-    /// @notice Returns whether or not a strategy is allocatable/slashable for an operator set.
+    /**
+     * @notice Returns whether or not a strategy is allocatable/slashable for an operator set.
+     * @param operatorSet The operatorSet to query.
+     * @param strategy The strategy to query.
+     * @return bool True if the `strategy` is allocatable/slashable for the `operatorSet`.
+     */
     function isOperatorSetStrategy(OperatorSet calldata operatorSet, IStrategy strategy) external view returns (bool);
 
-    /// @notice Returns whether or not a list of strategies are all allocatable/slashable for an operator set.
+    /**
+     * @notice Returns whether or not a list of strategies are all allocatable/slashable for an operator set.
+     * @param operatorSet The operatorSet to query.
+     * @param strategies The list of strategies to query.
+     * @return bool True if all `strategies` are allocatable/slashable for the provided `operatorSet`.
+     */
     function isOperatorSetStrategyBatch(
         OperatorSet calldata operatorSet,
         IStrategy[] calldata strategies
