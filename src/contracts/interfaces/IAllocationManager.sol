@@ -155,6 +155,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
      * @dev msg.sender is used as operator
+     * @dev Can only allocate to strategies that are allowed for the given operator sets, deallocations aren't restricted.
      */
     function modifyAllocations(
         MagnitudeAllocation[] calldata allocations
