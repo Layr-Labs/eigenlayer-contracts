@@ -92,6 +92,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IDelegationManager(address(delegationManagerMock)),
             IStrategyManager(address(strategyManagerMock)),
+            pauserRegistry,
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
@@ -106,7 +107,6 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
                     abi.encodeWithSelector(
                         RewardsCoordinator.initialize.selector,
                         address(this), // initOwner
-                        pauserRegistry,
                         0, // 0 is initialPausedStatus
                         rewardsUpdater,
                         activationDelay,
@@ -121,13 +121,13 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         token2 = new ERC20PresetFixedSupply("jeo boden", "MOCK2", mockTokenInitialSupply, address(this));
         token3 = new ERC20PresetFixedSupply("pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this));
 
-        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)));
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
         strategyMock1 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, token1, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, token1)
                 )
             )
         );
@@ -136,7 +136,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, token2, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, token2)
                 )
             )
         );
@@ -145,7 +145,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
                 new TransparentUpgradeableProxy(
                     address(strategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, token3, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, token3)
                 )
             )
         );

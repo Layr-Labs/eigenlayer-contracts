@@ -446,12 +446,11 @@ contract ExistingDeploymentParser is Script, Test {
     function _verifyContractsInitialized(bool /** isInitialDeployment **/) internal virtual {
         // AVSDirectory
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        avsDirectory.initialize(address(0), eigenLayerPauserReg, AVS_DIRECTORY_INIT_PAUSED_STATUS);
+        avsDirectory.initialize(address(0),  AVS_DIRECTORY_INIT_PAUSED_STATUS);
         // RewardsCoordinator
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         rewardsCoordinator.initialize(
             address(0),
-            eigenLayerPauserReg,
             0, // initialPausedStatus
             address(0), // rewardsUpdater
             0, // activationDelay
@@ -463,17 +462,15 @@ contract ExistingDeploymentParser is Script, Test {
         uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManager.initialize(
             address(0),
-            eigenLayerPauserReg,
             0
         );
         // StrategyManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        strategyManager.initialize(address(0), address(0), eigenLayerPauserReg, STRATEGY_MANAGER_INIT_PAUSED_STATUS);
+        strategyManager.initialize(address(0), address(0), STRATEGY_MANAGER_INIT_PAUSED_STATUS);
         // EigenPodManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         eigenPodManager.initialize(
             address(0),
-            eigenLayerPauserReg,
             EIGENPOD_MANAGER_INIT_PAUSED_STATUS
         );
         // Strategies
@@ -482,8 +479,7 @@ contract ExistingDeploymentParser is Script, Test {
             StrategyBaseTVLLimits(address(deployedStrategyArray[i])).initialize(
                 0,
                 0,
-                IERC20(address(0)),
-                eigenLayerPauserReg
+                IERC20(address(0))
             );
         }
     }

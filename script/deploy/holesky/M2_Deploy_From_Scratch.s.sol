@@ -76,16 +76,17 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
-        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY);
+        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             IETHPOSDeposit(ETHPOSDepositAddress),
             eigenPodBeacon,
             strategyManager,
-            delegationManager
+            delegationManager,
+            eigenLayerPauserReg
         );
-        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to point to the implementations
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
@@ -151,7 +152,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         );
 
         // Deploy Strategies
-        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
+        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg);
         uint256 numStrategiesToDeploy = strategiesToDeploy.length;
         // whitelist params
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](numStrategiesToDeploy);
@@ -170,8 +171,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
                     StrategyBaseTVLLimits.initialize.selector,
                     STRATEGY_MAX_PER_DEPOSIT,
                     STRATEGY_MAX_TOTAL_DEPOSITS,
-                    IERC20(strategyConfig.tokenAddress),
-                    eigenLayerPauserReg
+                    IERC20(strategyConfig.tokenAddress)
                 )
             );
 

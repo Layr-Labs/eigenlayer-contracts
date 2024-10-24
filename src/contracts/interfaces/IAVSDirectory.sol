@@ -103,9 +103,9 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      */
 
     /**
-     * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
+     * @dev Initializes the addresses of the initial owner and paused status.
      */
-    function initialize(address initialOwner, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus) external;
+    function initialize(address initialOwner, uint256 initialPausedStatus) external;
 
     /**
      * @notice Called by an AVS to create a list of new operatorSets.

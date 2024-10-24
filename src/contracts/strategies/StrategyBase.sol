@@ -69,24 +69,23 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     }
 
     /// @notice Since this contract is designed to be initializable, the constructor simply sets `strategyManager`, the only immutable variable.
-    constructor(
-        IStrategyManager _strategyManager
-    ) {
+    constructor(IStrategyManager _strategyManager, IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {
         strategyManager = _strategyManager;
         _disableInitializers();
     }
 
-    function initialize(IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) public virtual initializer {
-        _initializeStrategyBase(_underlyingToken, _pauserRegistry);
+    function initialize(
+        IERC20 _underlyingToken
+    ) public virtual initializer {
+        _initializeStrategyBase(_underlyingToken);
     }
 
     /// @notice Sets the `underlyingToken` and `pauserRegistry` for the strategy.
     function _initializeStrategyBase(
-        IERC20 _underlyingToken,
-        IPauserRegistry _pauserRegistry
+        IERC20 _underlyingToken
     ) internal onlyInitializing {
         underlyingToken = _underlyingToken;
-        _initializePauser(_pauserRegistry, UNPAUSE_ALL);
+        _setPausedStatus(_UNPAUSE_ALL);
         emit StrategyTokenSet(underlyingToken, IERC20Metadata(address(_underlyingToken)).decimals());
     }
 

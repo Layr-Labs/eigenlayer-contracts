@@ -21,21 +21,18 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     IStrategyManager public immutable strategyManager;
 
     /// @notice Since this contract is designed to be initializable, the constructor simply sets the immutable variables.
-    constructor(
-        IStrategyManager _strategyManager
-    ) {
+    constructor(IStrategyManager _strategyManager, IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {
         strategyManager = _strategyManager;
         _disableInitializers();
     }
 
     function initialize(
         address _initialOwner,
-        IPauserRegistry _pauserRegistry,
         uint256 _initialPausedStatus,
         IBeacon _strategyBeacon
     ) public virtual initializer {
         _transferOwnership(_initialOwner);
-        _initializePauser(_pauserRegistry, _initialPausedStatus);
+        _setPausedStatus(_initialPausedStatus);
         _setStrategyBeacon(_strategyBeacon);
     }
 
@@ -53,8 +50,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         IStrategy strategy = IStrategy(
             address(
                 new BeaconProxy(
-                    address(strategyBeacon),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, token, pauserRegistry)
+                    address(strategyBeacon), abi.encodeWithSelector(StrategyBase.initialize.selector, token)
                 )
             )
         );

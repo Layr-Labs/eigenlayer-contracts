@@ -269,7 +269,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                     new TransparentUpgradeableProxy(
                         address(baseStrategyImplementation),
                         address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                     )
                 )
             );
@@ -365,17 +365,15 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
         
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegation);
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, delegation);
+        DelegationManager delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg);
+        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, delegation, eigenLayerPauserReg);
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(delegation))),
             address(delegationImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
-                eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
                 0 /*initialPausedStatus*/,
                 minWithdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
@@ -389,7 +387,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 StrategyManager.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
                 0/*initialPausedStatus*/
             )
         );
@@ -399,7 +396,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
                 0/*initialPausedStatus*/
             )
         );
@@ -414,13 +410,13 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         }
 
         // deploy StrategyBase contract implementation, then create upgradeable proxy that points to implementation and initialize it
-        baseStrategyImplementation = new StrategyBase(strategyManager);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
         IStrategy stethStrategy = StrategyBase(
                 address(
                     new TransparentUpgradeableProxy(
                         address(baseStrategyImplementation),
                         address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                     )
                 )
             );

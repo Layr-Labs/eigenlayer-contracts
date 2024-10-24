@@ -59,15 +59,13 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     /**
      * @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
      * and transfers contract ownership to the specified `initialOwner`.
-     * @param _pauserRegistry Used for access control of pausing.
      * @param initialOwner Ownership of this contract is transferred to this address.
      * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
-     * @param  initialPausedStatus The initial value of `_paused` to set.
+     * @param initialPausedStatus The initial value of `_paused` to set.
      */
     function initialize(
         address initialOwner,
         address initialStrategyWhitelister,
-        IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus
     ) external;
 

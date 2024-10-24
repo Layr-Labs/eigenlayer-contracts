@@ -16,7 +16,7 @@ contract Upgrade is ExistingDeploymentParser {
         _parseDeployedContracts("script/output/holesky/pre_preprod_slashing.holesky.json");
 
         vm.startBroadcast();
-        AVSDirectory newAVSDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
+        AVSDirectory newAVSDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY);
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(avsDirectory))), address(newAVSDirectoryImplementation));
         vm.stopBroadcast();
 

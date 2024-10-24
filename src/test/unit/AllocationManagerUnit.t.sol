@@ -38,9 +38,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         strategyMock = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
-                    address(new StrategyBase(IStrategyManager(address(strategyManagerMock)))),
+                    address(new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry)),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, tokenMock, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, tokenMock)
                 )
             )
         );
@@ -48,9 +48,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         strategyMock2 = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
-                    address(new StrategyBase(IStrategyManager(address(strategyManagerMock)))),
+                    address(new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry)),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, tokenMock, pauserRegistry)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, tokenMock)
                 )
             )
         );
@@ -78,13 +78,14 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
                         new AllocationManager(
                             IDelegationManager(address(delegationManagerMock)),
                             IAVSDirectory(address(avsDirectoryMock)),
+                            _pauserRegistry,
                             DEALLOCATION_DELAY,
                             ALLOCATION_CONFIGURATION_DELAY
                         )
                     ),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
-                        AllocationManager.initialize.selector, _initialOwner, _pauserRegistry, _initialPausedStatus
+                        AllocationManager.initialize.selector, _initialOwner, _initialPausedStatus
                     )
                 )
             )
@@ -482,7 +483,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
 
         // Assert that the contract can only be initialized once.
         vm.expectRevert("Initializable: contract is already initialized");
-        alm.initialize(expectedInitialOwner, expectedPauserRegistry, r);
+        alm.initialize(expectedInitialOwner, r);
 
         // Assert immutable state
         assertEq(address(alm.delegation()), address(delegationManagerMock));

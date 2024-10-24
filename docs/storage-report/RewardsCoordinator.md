@@ -5,7 +5,7 @@
 | __gap                                | uint256[50]                                             | 1    | 0      | 1600  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | _owner                               | address                                                 | 51   | 0      | 20    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | __gap                                | uint256[49]                                             | 52   | 0      | 1568  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
-| pauserRegistry                       | contract IPauserRegistry                                | 101  | 0      | 20    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
+| __deprecated_pauserRegistry          | contract IPauserRegistry                                | 101  | 0      | 20    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | _paused                              | uint256                                                 | 102  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | __gap                                | uint256[48]                                             | 103  | 0      | 1536  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | _status                              | uint256                                                 | 151  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
