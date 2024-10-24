@@ -58,7 +58,7 @@ contract AllocationManager is
 
         OperatorSet memory operatorSet = OperatorSet({avs: msg.sender, operatorSetId: params.operatorSetId});
         IStrategy[] memory strategies = avsDirectory.getStrategiesInOperatorSet(operatorSet);
-        
+
         // Assert that the provided strategies are all whitelisted for the given operator set.
         require(avsDirectory.isOperatorSetStrategyBatch(operatorSet, strategies), InvalidStrategy());
         // Asser that the operator is slashable for the given operator set.
@@ -71,8 +71,7 @@ contract AllocationManager is
         uint256[] memory wadSlashed = new uint256[](strategiesLength);
 
         for (uint256 i = 0; i < strategiesLength; ++i) {
-            PendingMagnitudeInfo memory info =
-                _getPendingMagnitudeInfo(params.operator, strategies[i], operatorSetKey);
+            PendingMagnitudeInfo memory info = _getPendingMagnitudeInfo(params.operator, strategies[i], operatorSetKey);
 
             require(info.currentMagnitude > 0, OperatorNotAllocated());
 
@@ -107,7 +106,7 @@ contract AllocationManager is
             emit OperatorSetMagnitudeUpdated(
                 params.operator, operatorSet, strategies[i], info.currentMagnitude, uint32(block.timestamp)
             );
-            
+
             // 4. Reduce the operator's max magnitude
             uint64 maxMagnitudeBeforeSlash = _maxMagnitudeHistory[params.operator][strategies[i]].latest();
             uint64 maxMagnitudeAfterSlash = maxMagnitudeBeforeSlash - slashedMagnitude;
