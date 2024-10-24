@@ -60,7 +60,7 @@ contract AllocationManager is
 
         // Assert that the provided strategies are all whitelisted for the given operator set.
         require(avsDirectory.isOperatorSetStrategyBatch(operatorSet, params.strategies), InvalidStrategy());
-        // Asser that the operator is slashable for the given operator set.
+        // Assert that the operator is slashable for the given operator set.
         require(avsDirectory.isOperatorSlashable(params.operator, operatorSet), InvalidOperator());
 
         bytes32 operatorSetKey = _encodeOperatorSet(operatorSet);
