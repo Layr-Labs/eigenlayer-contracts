@@ -38,12 +38,12 @@ interface IRewardsCoordinator {
 
     /**
      * @notice A commission struct for an Operator per AVS
-     * @param initialized Whether the commission per AVS has been initialized
      * @param commissionBips The commission in basis points
+     * @param activatedAt The timestamp at which the commission will be activated
      */
     struct OperatorAVSCommission {
-        bool initialized;
         uint16 commissionBips;
+        uint32 activatedAt;
     }
 
     /**
@@ -214,13 +214,25 @@ interface IRewardsCoordinator {
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
-    /// @notice emitted when the operator commission for an AVS is set
+
+    /**
+     * @notice Emitted when the operator commission for an AVS is set.
+     * @param caller The address calling `setOperatorAVSCommission`.
+     * @param operator The operator on behalf of which the commission is being set.
+     * @param avs The avs for which the commission is being set by the operator.
+     * @param activatedAt The timestamp at which the commission will be activated.
+     * @param oldOperatorAVSCommissionBips The old commission for the operator for the AVS.
+     * @param newOperatorAVSCommissionBips The new commission for the operator for the AVS.
+     */
     event OperatorAVSCommissionBipsSet(
+        address indexed caller,
         address indexed operator,
         address indexed avs,
+        uint32 activatedAt,
         uint16 oldOperatorAVSCommissionBips,
         uint16 newOperatorAVSCommissionBips
     );
+
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
@@ -435,6 +447,7 @@ interface IRewardsCoordinator {
      * @param avs The avs for which the commission is being set by the operator
      * @param commission The commission for the operator for the specific avs
      * @dev Only callable by the operator
+     * @dev The commission will be activated after the activation delay
      */
     function setOperatorAVSCommission(address operator, address avs, uint16 commission) external;
 

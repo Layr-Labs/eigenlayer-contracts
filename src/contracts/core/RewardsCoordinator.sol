@@ -34,6 +34,8 @@ contract RewardsCoordinator is
     uint256 internal immutable ORIGINAL_CHAIN_ID;
     /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
     uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
+    /// @notice Equivalent to 100%, but in basis points.
+    uint16 internal constant ONE_HUNDRED_IN_BIPS = 10_000;
 
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
@@ -287,15 +289,24 @@ contract RewardsCoordinator is
     /// @inheritdoc IRewardsCoordinator
     function setOperatorAVSCommission(address operator, address avs, uint16 commission) external {
         require(msg.sender == operator, "RewardsCoordinator.setOperatorAVSCommission: caller is not the operator");
-        // TODO: Check that commission is <= 10000
-        //TODO: Add a check to ensure that the operator is registered to the AVS. Do we need this??
-        //TODO: Add a 7 day delay.
+        require(
+            commission <= ONE_HUNDRED_IN_BIPS,
+            "RewardsCoordinator.setOperatorAVSCommission: commission must be <= 10000 bips"
+        );
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
 
         OperatorAVSCommission storage operatorAVSCommission = operatorAVSCommissionBips[operator][avs];
 
-        emit OperatorAVSCommissionBipsSet(operator, avs, operatorAVSCommission.commissionBips, commission);
-        operatorAVSCommission.initialized = true;
+        emit OperatorAVSCommissionBipsSet(
+            msg.sender,
+            operator,
+            avs,
+            activatedAt,
+            operatorAVSCommission.commissionBips,
+            commission
+        );
         operatorAVSCommission.commissionBips = commission;
+        operatorAVSCommission.activatedAt = activatedAt;
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -432,6 +443,7 @@ contract RewardsCoordinator is
         address currAddress = address(0);
         for (uint256 i = 0; i < performanceRewardsSubmission.strategiesAndMultipliers.length; ++i) {
             IStrategy strategy = performanceRewardsSubmission.strategiesAndMultipliers[i].strategy;
+            // TODO: Check if this strategy whitelist check is necessary.
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
                 "RewardsCoordinator._validatePerformanceRewardsSubmission: invalid strategy considered"
