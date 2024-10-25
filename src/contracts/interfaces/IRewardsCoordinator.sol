@@ -81,32 +81,13 @@ interface IRewardsCoordinator {
     }
 
     /**
-     * Sliding Window for valid PerformanceRewardsSubmission startTimestamp
-     *
-     * Scenario A: GENESIS_REWARDS_TIMESTAMP IS WITHIN RANGE
-     *         <--------MAX_RETROACTIVE_LENGTH--------> t (block.timestamp)
-     *             <--valid range for startTimestamp--
-     *             ^
-     *         GENESIS_REWARDS_TIMESTAMP
-     *
-     *
-     * Scenario B: GENESIS_REWARDS_TIMESTAMP IS OUT OF RANGE
-     *         <--------MAX_RETROACTIVE_LENGTH--------> t (block.timestamp)
-     *         <----valid range for startTimestamp----
-     *     ^
-     * GENESIS_REWARDS_TIMESTAMP
-     *
-     * @notice PerformanceRewardsSubmission struct submitted by AVSs when making performance-based rewards for their operators and stakers
-     * PerformanceRewardsSubmission can be for a time range within the valid window for startTimestamp and must be within max duration.
-     * See `createAVSPerformanceRewardsSubmission()` for more details.
-     * @param strategiesAndMultipliers The strategies and their relative weights
-     * cannot have duplicate strategies and need to be sorted in ascending address order
+     * @notice PerformanceRewardsSubmission struct submitted by AVSs when making performance-based rewards for their operators and stakers.
+     * @param strategiesAndMultipliers The strategies and their relative weights.
      * @param token The rewards token to be distributed.
-     * @param operatorRewards The rewards for the operators. The sum of all operator rewards equals the total amount of tokens deposited in the submission.
-     * The operators cannot have duplicate addresses and need to be sorted in ascending address order.
-     * @param startTimestamp The timestamp (seconds) at which the submission range is considered for distribution
-     * It is a retroactive payment and has to be strictly less than `block.timestamp`. See the diagram above.
-     * @param duration The duration of the submission range in seconds. Must be <= MAX_REWARDS_DURATION.
+     * @param operatorRewards The rewards for the operators.
+     * @param startTimestamp The timestamp (seconds) at which the submission range is considered for distribution.
+     * @param duration The duration of the submission range in seconds.
+     * @param description Describes what the rewards submission is for.
      */
     struct PerformanceRewardsSubmission {
         StrategyAndMultiplier[] strategiesAndMultipliers;
@@ -114,6 +95,7 @@ interface IRewardsCoordinator {
         OperatorReward[] operatorRewards;
         uint32 startTimestamp;
         uint32 duration;
+        string description;
     }
 
     /**
@@ -206,13 +188,23 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
-    /// @notice emitted when an AVS creates a valid PerformanceRewardsSubmission
+
+    /**
+     * @notice Emitted when an AVS creates a valid `PerformanceRewardsSubmission`
+     * @param caller The address calling `createAVSPerformanceRewardsSubmission`.
+     * @param avs The avs on behalf of which the performance rewards are being submitted.
+     * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
+     * @param performanceRewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `performanceRewardsSubmission`).
+     * @param performanceRewardsSubmission The Performance Rewards Submission. Contains the token, start timestamp, duration, operator rewards, description and, strategy and multipliers.
+     */
     event AVSPerformanceRewardsSubmissionCreated(
+        address indexed caller,
         address indexed avs,
-        uint256 indexed submissionNonce,
+        uint256 submissionNonce,
         bytes32 indexed performanceRewardsSubmissionHash,
         PerformanceRewardsSubmission performanceRewardsSubmission
     );
+
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
     event RewardsForAllSubmitterSet(
@@ -222,6 +214,7 @@ interface IRewardsCoordinator {
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+    /// @notice emitted when the operator commission for an AVS is set
     event OperatorAVSCommissionBipsSet(
         address indexed operator,
         address indexed avs,

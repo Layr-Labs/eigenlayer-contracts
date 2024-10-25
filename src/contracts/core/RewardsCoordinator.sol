@@ -187,25 +187,26 @@ contract RewardsCoordinator is
         PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION) nonReentrant {
         require(msg.sender == avs, "RewardsCoordinator.createAVSPerformanceRewardsSubmission: caller is not the AVS");
+        // TODO: Should we check if this is a registered AVS?
 
         for (uint256 i = 0; i < performanceRewardsSubmissions.length; i++) {
             PerformanceRewardsSubmission calldata performanceRewardsSubmission = performanceRewardsSubmissions[i];
-            uint256 nonce = submissionNonce[msg.sender];
-            bytes32 performanceRewardsSubmissionHash = keccak256(
-                abi.encode(msg.sender, nonce, performanceRewardsSubmission)
-            );
+            uint256 nonce = submissionNonce[avs];
+            bytes32 performanceRewardsSubmissionHash = keccak256(abi.encode(avs, nonce, performanceRewardsSubmission));
 
             uint256 totalAmount = _validatePerformanceRewardsSubmission(performanceRewardsSubmission);
 
-            isAVSPerformanceRewardsSubmissionHash[msg.sender][performanceRewardsSubmissionHash] = true;
-            submissionNonce[msg.sender] = nonce + 1;
+            isAVSPerformanceRewardsSubmissionHash[avs][performanceRewardsSubmissionHash] = true;
+            submissionNonce[avs] = nonce + 1;
 
             emit AVSPerformanceRewardsSubmissionCreated(
                 msg.sender,
+                avs,
                 nonce,
                 performanceRewardsSubmissionHash,
                 performanceRewardsSubmission
             );
+            // TODO: Figure out if avs or msg.sender should be sender here.
             performanceRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
     }
@@ -286,7 +287,8 @@ contract RewardsCoordinator is
     /// @inheritdoc IRewardsCoordinator
     function setOperatorAVSCommission(address operator, address avs, uint16 commission) external {
         require(msg.sender == operator, "RewardsCoordinator.setOperatorAVSCommission: caller is not the operator");
-        //TODO: Add a check to ensure that the operator is registered to the AVS.
+        // TODO: Check that commission is <= 10000
+        //TODO: Add a check to ensure that the operator is registered to the AVS. Do we need this??
         //TODO: Add a 7 day delay.
 
         OperatorAVSCommission storage operatorAVSCommission = operatorAVSCommissionBips[operator][avs];
