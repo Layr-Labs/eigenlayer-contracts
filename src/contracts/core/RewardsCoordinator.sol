@@ -295,18 +295,18 @@ contract RewardsCoordinator is
         );
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
 
-        OperatorAVSCommission storage operatorAVSCommission = operatorAVSCommissionBips[operator][avs];
+        OperatorCommission storage operatorCommission = operatorAVSCommissionBips[operator][avs];
 
         emit OperatorAVSCommissionBipsSet(
             msg.sender,
             operator,
             avs,
             activatedAt,
-            operatorAVSCommission.commissionBips,
+            operatorCommission.commissionBips,
             commission
         );
-        operatorAVSCommission.commissionBips = commission;
-        operatorAVSCommission.activatedAt = activatedAt;
+        operatorCommission.commissionBips = commission;
+        operatorCommission.activatedAt = activatedAt;
     }
 
     /// @inheritdoc IRewardsCoordinator

@@ -37,11 +37,11 @@ interface IRewardsCoordinator {
     }
 
     /**
-     * @notice A commission struct for an Operator per AVS
+     * @notice A commission struct for an Operator
      * @param commissionBips The commission in basis points
      * @param activatedAt The timestamp at which the commission will be activated
      */
-    struct OperatorAVSCommission {
+    struct OperatorCommission {
         uint16 commissionBips;
         uint32 activatedAt;
     }

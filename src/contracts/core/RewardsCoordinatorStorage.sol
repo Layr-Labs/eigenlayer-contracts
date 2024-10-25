@@ -92,8 +92,8 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Mapping: avs => avsPerformanceRewardsSubmissionHash => bool to check if performance rewards submission hash has been submitted
     mapping(address => mapping(bytes32 => bool)) public isAVSPerformanceRewardsSubmissionHash;
 
-    /// @notice Mapping: operator => avs => OperatorAVSCommission. The commission an operator takes for a specific AVS.
-    mapping(address => mapping(address => OperatorAVSCommission)) public operatorAVSCommissionBips;
+    /// @notice Mapping: operator => avs => OperatorCommission. The commission an operator takes for a specific AVS.
+    mapping(address => mapping(address => OperatorCommission)) public operatorAVSCommissionBips;
 
     constructor(
         IDelegationManager _delegationManager,
