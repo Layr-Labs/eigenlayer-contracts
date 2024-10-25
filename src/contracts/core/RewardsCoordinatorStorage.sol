@@ -95,6 +95,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Mapping: operator => avs => OperatorCommission. The commission an operator takes for a specific AVS.
     mapping(address => mapping(address => OperatorCommission)) public operatorAVSCommissionBips;
 
+    /// @notice Mapping: operator => OperatorPICommission. The commission an operator takes for Programmatic Incentives.
+    mapping(address => OperatorCommission) public operatorPICommissionBips;
+
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,

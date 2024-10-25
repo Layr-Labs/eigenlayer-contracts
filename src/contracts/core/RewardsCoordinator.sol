@@ -36,6 +36,8 @@ contract RewardsCoordinator is
     uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
     /// @notice Equivalent to 100%, but in basis points.
     uint16 internal constant ONE_HUNDRED_IN_BIPS = 10_000;
+    /// @notice Minimum commission for operators for Programmatic Incentives in basis points
+    uint16 internal constant MIN_PI_COMMISSION_BIPS = 1_000;
 
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
@@ -301,6 +303,32 @@ contract RewardsCoordinator is
             msg.sender,
             operator,
             avs,
+            activatedAt,
+            operatorCommission.commissionBips,
+            commission
+        );
+        operatorCommission.commissionBips = commission;
+        operatorCommission.activatedAt = activatedAt;
+    }
+
+    /// @inheritdoc IRewardsCoordinator
+    function setOperatorPICommission(address operator, uint16 commission) external {
+        require(msg.sender == operator, "RewardsCoordinator.setOperatorPICommission: caller is not the operator");
+        require(
+            commission <= ONE_HUNDRED_IN_BIPS,
+            "RewardsCoordinator.setOperatorPICommission: commission must be <= 10000 bips"
+        );
+        require(
+            commission >= MIN_PI_COMMISSION_BIPS,
+            "RewardsCoordinator.setOperatorPICommission: commission must be >= 1000 bips"
+        );
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
+
+        OperatorCommission storage operatorCommission = operatorPICommissionBips[operator];
+
+        emit OperatorPICommissionBipsSet(
+            msg.sender,
+            operator,
             activatedAt,
             operatorCommission.commissionBips,
             commission

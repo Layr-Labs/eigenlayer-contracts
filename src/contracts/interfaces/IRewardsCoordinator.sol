@@ -233,6 +233,22 @@ interface IRewardsCoordinator {
         uint16 newOperatorAVSCommissionBips
     );
 
+    /**
+     * @notice Emitted when the operator commission for Programmatic Incentives is set.
+     * @param caller The address calling `setOperatorPICommission`.
+     * @param operator The operator on behalf of which the commission is being set.
+     * @param activatedAt The timestamp at which the commission will be activated.
+     * @param oldOperatorPICommissionBips The old commission for the operator for Programmatic Incentives.
+     * @param newOperatorPICommissionBips The new commission for the operator for Programmatic Incentives.
+     */
+    event OperatorPICommissionBipsSet(
+        address indexed caller,
+        address indexed operator,
+        uint32 activatedAt,
+        uint16 oldOperatorPICommissionBips,
+        uint16 newOperatorPICommissionBips
+    );
+
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
@@ -447,9 +463,20 @@ interface IRewardsCoordinator {
      * @param avs The avs for which the commission is being set by the operator
      * @param commission The commission for the operator for the specific avs
      * @dev Only callable by the operator
+     * @dev Commission has to be between 0 and 10000 bips (inclusive)
      * @dev The commission will be activated after the activation delay
      */
     function setOperatorAVSCommission(address operator, address avs, uint16 commission) external;
+
+    /**
+     * @notice Sets the commission for a specific operator for Programmatic Incentives.
+     * @param operator The operator on behalf of which the commission is being set.
+     * @param commission The commission for the operator for Programmatic Incentives.
+     * @dev Only callable by the operator
+     * @dev Commission has to be between 1000 and 10000 bips (inclusive)
+     * @dev The commission will be activated after the activation delay
+     */
+    function setOperatorPICommission(address operator, uint16 commission) external;
 
     /**
      * @notice Sets the permissioned `rewardsUpdater` address which can post new roots
