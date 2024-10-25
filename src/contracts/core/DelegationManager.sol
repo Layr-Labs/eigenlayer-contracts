@@ -458,7 +458,7 @@ contract DelegationManager is
         require(tokens.length == withdrawal.strategies.length, InputArrayLengthMismatch());
         require(msg.sender == withdrawal.withdrawer, WithdrawerNotCaller());
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
-        require(_stakerQueuedWithdrawalRoots[withdrawal.staker].contains(withdrawalRoot), WithdrawalNotQueued());
+        require(pendingWithdrawals(withdrawalRoot), WithdrawalNotQueued());
 
         // TODO: is there a cleaner way to do this?
         uint32 completableTimestamp = getCompletableTimestamp(withdrawal.startTimestamp);
@@ -500,6 +500,9 @@ contract DelegationManager is
         _stakerQueuedWithdrawalRoots[withdrawal.staker].remove(withdrawalRoot);
 
         delete queuedWithdrawals[withdrawalRoot];
+
+        // This storage is actively being deprecated, values are only being read or deleted.
+        delete _legacyPendingWithdrawals[withdrawalRoot];
 
         emit SlashingWithdrawalCompleted(withdrawalRoot);
     }
@@ -786,10 +789,13 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function pendingWithdrawals(
-        bytes32 withdrawalRoot
-    ) public view returns (bool) {
-        return queuedWithdrawals[withdrawalRoot].staker != address(0);
+    function pendingWithdrawals(bytes32 withdrawalRoot) public view returns (bool) {
+        // Check if a non-legacy withdrawal is pending.
+        bool isWithdrawalPending = queuedWithdrawals[withdrawalRoot].staker != address(0);
+
+        // NOTE: We must also check legacy storage to ensure that 
+        // withdrawals queued before the slashing release are completable.
+        return isWithdrawalPending || _legacyPendingWithdrawals[withdrawalRoot];
     }
 
     /// @inheritdoc IDelegationManager

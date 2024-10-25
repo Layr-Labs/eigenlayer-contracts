@@ -94,12 +94,13 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice Returns whether `delegationApprover` has already used the given `salt`.
     mapping(address delegationApprover => mapping(bytes32 salt => bool spent)) public delegationApproverSaltIsSpent;
-
+ 
     /// @dev Do not remove, deprecated storage.
     uint256 private __deprecated_minWithdrawalDelayBlocks;
 
-    /// @dev Do not remove, deprecated storage.
-    mapping(bytes32 withdrawalRoot => bool pending) private __deprecated_pendingWithdrawals;
+    /// @dev Returns whether a withdrawal is pending for a given `withdrawalRoot`.
+    /// @dev This variable is actively being deprecated, values should only be read or deleted.
+    mapping(bytes32 withdrawalRoot => bool pending) internal _legacyPendingWithdrawals;
 
     /// @notice Returns the total number of withdrawals that have been queued for a given `staker`.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
