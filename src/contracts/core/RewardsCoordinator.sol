@@ -52,6 +52,10 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
     /// @dev Index for flag that pauses calling createAVSPerformanceRewardsSubmission
     uint8 internal constant PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION = 5;
+    /// @dev Index for flag that pauses calling setOperatorAVSCommission
+    uint8 internal constant PAUSED_OPERATOR_AVS_COMMISSION = 6;
+    /// @dev Index for flag that pauses calling setOperatorPICommission
+    uint8 internal constant PAUSED_OPERATOR_PI_COMMISSION = 7;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -211,7 +215,7 @@ contract RewardsCoordinator is
                 performanceRewardsSubmissionHash,
                 performanceRewardsSubmission
             );
-            // TODO: Figure out if avs or msg.sender should be sender here.
+            // TODO: Figure out if avs or msg.sender should be sender here in the context of delegated accounts.
             performanceRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
     }
@@ -290,7 +294,11 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setOperatorAVSCommission(address operator, address avs, uint16 commission) external {
+    function setOperatorAVSCommission(
+        address operator,
+        address avs,
+        uint16 commission
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_AVS_COMMISSION) {
         require(msg.sender == operator, "RewardsCoordinator.setOperatorAVSCommission: caller is not the operator");
         require(
             commission <= ONE_HUNDRED_IN_BIPS,
@@ -320,7 +328,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setOperatorPICommission(address operator, uint16 commission) external {
+    function setOperatorPICommission(
+        address operator,
+        uint16 commission
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_PI_COMMISSION) {
         require(msg.sender == operator, "RewardsCoordinator.setOperatorPICommission: caller is not the operator");
         require(
             commission <= ONE_HUNDRED_IN_BIPS,
