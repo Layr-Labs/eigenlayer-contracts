@@ -671,8 +671,35 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function operatorCommissionBips(address /* operator */, address /* avs */) external view returns (uint16) {
-        return globalOperatorCommissionBips;
+    function getOperatorAVSCommission(address operator, address avs) external view returns (uint16) {
+        OperatorCommission memory operatorCommission = operatorAVSCommissionBips[operator][avs];
+
+        if (operatorCommission.activatedAt == 0) {
+            // Return the Global Operator Commission if the operator commission has not been initialized.
+            return globalOperatorCommissionBips;
+        } else {
+            // Return the new commission if the new commission has been activated, else return the old commission.
+            return
+                (block.timestamp >= operatorCommission.activatedAt)
+                    ? operatorCommission.newCommissionBips
+                    : operatorCommission.oldCommissionBips;
+        }
+    }
+
+    /// @inheritdoc IRewardsCoordinator
+    function getOperatorPICommission(address operator) external view returns (uint16) {
+        OperatorCommission memory operatorCommission = operatorPICommissionBips[operator];
+
+        if (operatorCommission.activatedAt == 0) {
+            // Return the Global Operator Commission if the operator commission has not been initialized.
+            return globalOperatorCommissionBips;
+        } else {
+            // Return the new commission if the new commission has been activated, else return the old commission.
+            return
+                (block.timestamp >= operatorCommission.activatedAt)
+                    ? operatorCommission.newCommissionBips
+                    : operatorCommission.oldCommissionBips;
+        }
     }
 
     /// @inheritdoc IRewardsCoordinator

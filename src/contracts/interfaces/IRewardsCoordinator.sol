@@ -310,8 +310,10 @@ interface IRewardsCoordinator {
     function globalOperatorCommissionBips() external view returns (uint16);
 
     /// @notice the commission for a specific operator for a specific avs
-    /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16);
+    function getOperatorAVSCommission(address operator, address avs) external view returns (uint16);
+
+    /// @notice the commission for a specific operator for Programmatic Incentives
+    function getOperatorPICommission(address operator) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
