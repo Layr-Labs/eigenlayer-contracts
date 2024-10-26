@@ -300,16 +300,23 @@ contract RewardsCoordinator is
 
         OperatorCommission storage operatorCommission = operatorAVSCommissionBips[operator][avs];
 
+        // If, the earlier 'new' commission is activated, we update the 'old' commission with the earlier 'new' commission.
+        // Else, the earlier 'old' commission remains the same. This is essentially resetting the activation delay window
+        // since the earlier commission setting didn't complete.
+        if (block.timestamp >= operatorCommission.activatedAt) {
+            operatorCommission.oldCommissionBips = operatorCommission.newCommissionBips;
+        }
+        operatorCommission.newCommissionBips = commission;
+        operatorCommission.activatedAt = activatedAt;
+
         emit OperatorAVSCommissionBipsSet(
             msg.sender,
             operator,
             avs,
             activatedAt,
-            operatorCommission.commissionBips,
+            operatorCommission.oldCommissionBips,
             commission
         );
-        operatorCommission.commissionBips = commission;
-        operatorCommission.activatedAt = activatedAt;
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -327,15 +334,22 @@ contract RewardsCoordinator is
 
         OperatorCommission storage operatorCommission = operatorPICommissionBips[operator];
 
+        // If, the earlier 'new' commission is activated, we update the 'old' commission with the earlier 'new' commission.
+        // Else, the earlier 'old' commission remains the same. This is essentially resetting the activation delay window
+        // since the earlier commission setting didn't complete.
+        if (block.timestamp >= operatorCommission.activatedAt) {
+            operatorCommission.oldCommissionBips = operatorCommission.newCommissionBips;
+        }
+        operatorCommission.newCommissionBips = commission;
+        operatorCommission.activatedAt = activatedAt;
+
         emit OperatorPICommissionBipsSet(
             msg.sender,
             operator,
             activatedAt,
-            operatorCommission.commissionBips,
+            operatorCommission.oldCommissionBips,
             commission
         );
-        operatorCommission.commissionBips = commission;
-        operatorCommission.activatedAt = activatedAt;
     }
 
     /// @inheritdoc IRewardsCoordinator

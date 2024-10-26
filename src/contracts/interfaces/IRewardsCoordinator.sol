@@ -38,11 +38,13 @@ interface IRewardsCoordinator {
 
     /**
      * @notice A commission struct for an Operator
-     * @param commissionBips The commission in basis points
+     * @param oldCommissionBips The old commission in basis points. This is the commission that is active if `block.timestamp < activatedAt`
+     * @param commissionBips The new commission in basis points. This is the commission that is active if `block.timestamp >= activatedAt`
      * @param activatedAt The timestamp at which the commission will be activated
      */
     struct OperatorCommission {
-        uint16 commissionBips;
+        uint16 oldCommissionBips;
+        uint16 newCommissionBips;
         uint32 activatedAt;
     }
 
