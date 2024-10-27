@@ -125,7 +125,7 @@ contract EigenPodManager is
     }
 
     /**
-     * @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue.
+     * @notice Used by the DelegationManager to remove a pod owner's deposit shares when they enter the withdrawal queue.
      * Simply decreases the `podOwner`'s shares by `shares`, down to a minimum of zero.
      * @dev This function reverts if it would result in `podOwnerDepositShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
      * result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
@@ -173,6 +173,7 @@ contract EigenPodManager is
     ) external onlyDelegationManager {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         require(staker != address(0), InputAddressZero());
+        require(int256(shares) >= 0, SharesNegative());
 
         int256 currentDepositShares = podOwnerDepositShares[staker];
         uint256 sharesToWithdraw;
@@ -232,6 +233,7 @@ contract EigenPodManager is
 
     function _addShares(address staker, uint256 shares) internal {
         require(staker != address(0), InputAddressZero());
+        require(int256(shares) >= 0, SharesNegative());
 
         int256 sharesToAdd = int256(shares);
         int256 currentDepositShares = podOwnerDepositShares[staker];

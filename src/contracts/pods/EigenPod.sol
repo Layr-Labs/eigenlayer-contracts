@@ -474,7 +474,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // Ensure the validator's withdrawal credentials are pointed at this pod
         require(
             validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()),
-            WithdrawCredentialsNotForEigenPod()
+            WithdrawalCredentialsNotForEigenPod()
         );
 
         // Get the validator's effective balance. Note that this method uses effective balance, while
@@ -495,10 +495,8 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // purpose of `lastCheckpointedAt` is to enforce that newly-verified validators are not
         // eligible to progress already-existing checkpoints - however in this case, no checkpoints exist.
         activeValidatorCount++;
-        uint64 lastCheckpointedAt = lastCheckpointTimestamp;
-        if (currentCheckpointTimestamp != 0) {
-            lastCheckpointedAt = currentCheckpointTimestamp;
-        }
+        uint64 lastCheckpointedAt =
+            currentCheckpointTimestamp == 0 ? lastCheckpointTimestamp : currentCheckpointTimestamp;
 
         // Proofs complete - create the validator in state
         _validatorPubkeyHashToInfo[pubkeyHash] = ValidatorInfo({
@@ -632,6 +630,15 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             int256 totalShareDeltaWei =
                 (int128(uint128(checkpoint.podBalanceGwei)) + checkpoint.balanceDeltasGwei) * int256(GWEI_TO_WEI);
 
+            // Calculate the slashing proportion
+            uint64 proportionOfOldBalance = 0;
+            if (totalShareDeltaWei < 0) {
+                uint256 totalRestakedBeforeWei =
+                    (withdrawableRestakedExecutionLayerGwei + checkpoint.beaconChainBalanceBeforeGwei) * GWEI_TO_WEI;
+                proportionOfOldBalance =
+                    uint64((totalRestakedBeforeWei - uint256(-totalShareDeltaWei)) * WAD / totalRestakedBeforeWei);
+            }
+
             // Add any native ETH in the pod to `withdrawableRestakedExecutionLayerGwei`
             // ... this amount can be withdrawn via the `DelegationManager` withdrawal queue
             withdrawableRestakedExecutionLayerGwei += checkpoint.podBalanceGwei;
@@ -640,15 +647,6 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             lastCheckpointTimestamp = currentCheckpointTimestamp;
             delete currentCheckpointTimestamp;
             delete _currentCheckpoint;
-
-            // Calculate the slashing proportion
-            uint64 proportionOfOldBalance = 0;
-            if (totalShareDeltaWei < 0) {
-                uint256 totalRestakedBeforeWei =
-                    (withdrawableRestakedExecutionLayerGwei + checkpoint.beaconChainBalanceBeforeGwei) * GWEI_TO_WEI;
-                proportionOfOldBalance =
-                    uint64((totalRestakedBeforeWei + uint256(-totalShareDeltaWei)) * WAD / totalRestakedBeforeWei);
-            }
 
             // Update pod owner's shares
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei, proportionOfOldBalance);
