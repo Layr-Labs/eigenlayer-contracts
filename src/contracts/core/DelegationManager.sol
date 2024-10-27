@@ -791,17 +791,11 @@ contract DelegationManager is
             // forgefmt: disable-next-item
             uint256 depositShares = shareManager.stakerDepositShares(staker, strategies[i]);
 
-            // 2. if the staker is delegated, actual withdrawable shares can be different from what is stored
-            // in the StrategyManager/EigenPodManager because they could have been slashed
-            if (operator != address(0)) {
-                // forgefmt: disable-next-item
-                withdrawableShares[i] = depositShares.toShares(
-                    stakerScalingFactor[staker][strategies[i]],
-                    maxMagnitudes[i]
-                );
-            } else {
-                withdrawableShares[i] = depositShares;
-            }
+            // 2. Calculate the withdrawable shares
+            withdrawableShares[i] = depositShares.toShares(
+                stakerScalingFactor[staker][strategies[i]],
+                maxMagnitudes[i]
+            );
         }
         return withdrawableShares;
     }

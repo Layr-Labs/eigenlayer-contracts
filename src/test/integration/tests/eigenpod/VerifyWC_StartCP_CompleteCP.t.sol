@@ -316,32 +316,31 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.verifyWithdrawalCredentials(validators);
     }
 
-    // TODO: fix test
     /// 1. Verify validators' withdrawal credentials
     /// -- get slashed on beacon chain; exit to pod
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => after 3, shares should decrease by slashed amount
-    // function test_VerifyWC_SlashToPod_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
-    //     (User staker, ,) = _newRandomStaker();
-    //     _upgradeEigenLayerContracts();
+    function test_VerifyWC_SlashToPod_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+        (User staker, ,) = _newRandomStaker();
+        _upgradeEigenLayerContracts();
 
-    //     (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
-    //     // Advance epoch without generating rewards
-    //     beaconChain.advanceEpoch_NoRewards();
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        // Advance epoch without generating rewards
+        beaconChain.advanceEpoch_NoRewards();
 
-    //     staker.verifyWithdrawalCredentials(validators);
-    //     check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
-    //     uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
-    //     beaconChain.advanceEpoch_NoRewards();
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
 
-    //     staker.startCheckpoint();
-    //     check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
 
-    //     staker.completeCheckpoint();
-    //     check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
-    // }
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
+    }
 
     // TODO: fix test
     /// 1. Verify validators' withdrawal credentials
