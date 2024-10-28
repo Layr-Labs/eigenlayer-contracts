@@ -512,6 +512,38 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assert_Snap_Removed_StakerWithdrawableShares(staker, strategies, removedShares, err);
     }
 
+    /// @dev Check that the staker's withdrawable shares have decreased by at least `removedShares`
+    /// @dev Used to handle overslashing of beacon chain
+    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory removedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertGe(prevShares[i] - removedShares[i], curShares[i], err);
+        }
+    }
+
+    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy strat,
+        uint removedShares,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        uint[] memory removedSharesArr = new uint[](1);
+        strategies[0] = strat;
+        removedSharesArr[0] = removedShares;
+
+        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strategies, removedSharesArr, err);
+    }
+
     /// @dev Check that the staker's delegatable shares in ALL strategies have not changed
     /// since the last snapshot
     function assert_Snap_Unchanged_StakerDepositShares(

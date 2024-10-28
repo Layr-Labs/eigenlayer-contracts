@@ -91,6 +91,19 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
     }
 
+    function check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(
+        User staker,
+        uint40[] memory slashedValidators,
+        uint64 slashedAmountGwei
+    ) internal {
+        check_CompleteCheckpoint_State(staker);
+
+        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
+        assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+    }
+
     function check_CompleteCheckpoint_WithCLSlashing_State(
         User staker,
         uint64 slashedAmountGwei
