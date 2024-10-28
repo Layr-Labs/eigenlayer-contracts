@@ -1,91 +1,118 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import {OperatorSet} from "./IAVSDirectory.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
+import "./IAVSRegistrar.sol";
 
 interface IAllocationManagerErrors {
+    /// Input Validation
+
     /// @dev Thrown when `wadToSlash` is zero or greater than 1e18
     error InvalidWadToSlash();
-    /// @dev Thrown when `operator` is not a registered operator.
-    error OperatorNotRegistered();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
-    /// @dev Thrown when an operator's allocation delay has yet to be set.
-    error UninitializedAllocationDelay();
-    /// @dev Thrown when provided `expectedMaxMagnitude` for a given allocation does not match`currentMaxMagnitude`.
-    error InvalidExpectedMaxMagnitude();
-    /// @dev Thrown when an invalid operator set is provided.
-    error InvalidOperatorSet();
-    /// @dev Thrown when an invalid operator is provided.
-    error InvalidOperator();
+    /// @dev Thrown when calling a view function that requires a valid block number.
+    error InvalidBlockNumber();
+
+    /// Caller
+
     /// @dev Thrown when caller is not the delegation manager.
     error OnlyDelegationManager();
+    /// @dev Thrown when caller is not authorized to call a function.
+    error InvalidCaller();
+
+    /// Operator Status
+
+    /// @dev Thrown when an invalid operator is provided.
+    error InvalidOperator();
+    /// @dev Thrown when `operator` is not a registered operator.
+    error OperatorNotRegistered();
+    /// @dev Thrown when an operator's allocation delay has yet to be set.
+    error UninitializedAllocationDelay();
+    /// @dev Thrown when attempting to slash an operator when they are not slashable.
+    error OperatorNotSlashable();
+    /// @dev Thrown when trying to add an operator to a set they are already a member of
+    error AlreadyMemberOfSet();
+    /// @dev Thrown when trying to slash/remove an operator from a set they are not a member of
+    error NotMemberOfSet();
+
+    /// Operator Set Status
+
+    /// @dev Thrown when an invalid operator set is provided.
+    error InvalidOperatorSet();
+    /// @dev Thrown when a strategy is referenced that does not belong to an operator set.
+    error InvalidStrategy();
+    /// @dev Thrown when trying to add a strategy to an operator set that already contains it.
+    error StrategyAlreadyInOperatorSet();
+    /// @dev Thrown when trying to remove a strategy from an operator set it is not a part of.
+    error StrategyNotInOperatorSet();
+
+    /// Modifying Allocations
+
     /// @dev Thrown when an operator attempts to set their allocation for an operatorSet to the same value
     error SameMagnitude();
     /// @dev Thrown when an allocation is attempted for a given operator when they have pending allocations or deallocations.
     error ModificationAlreadyPending();
     /// @dev Thrown when an allocation is attempted that exceeds a given operators total allocatable magnitude.
-    error InsufficientAllocatableMagnitude();
-    /// @dev Thrown when attempting to spend a spent eip-712 salt.
-    error SaltSpent();
-    /// @dev Thrown when attempting to slash an operator that has already been slashed at the given timestamp.
-    error AlreadySlashedForTimestamp();
-    /// @dev Thrown when calling a view function that requires a valid timestamp.
-    error InvalidTimestamp();
-    /// @dev Thrown when a slash is attempted on an operator who has not allocated to the strategy, operatorSet pair
-    error OperatorNotAllocated();
+    error InsufficientMagnitude();
 }
 
 interface IAllocationManagerTypes {
     /**
-     * @notice struct used to modify the allocation of slashable magnitude to list of operatorSets
-     * @param strategy the strategy to allocate magnitude for
-     * @param expectedMaxMagnitude the expected max magnitude of the operator (used to combat against race conditions with slashing)
-     * @param operatorSets the operatorSets to allocate magnitude for
-     * @param magnitudes the magnitudes to allocate for each operatorSet
+     * @notice Defines allocation information from a strategy to an operator set, for an operator
+     * @param currentMagnitude the current magnitude allocated from the strategy to the operator set
+     * @param pendingDiff a pending change in magnitude, if it exists (0 otherwise)
+     * @param effectBlock the block at which the pending magnitude diff will take effect
      */
-    struct MagnitudeAllocation {
-        IStrategy strategy;
-        uint64 expectedMaxMagnitude;
-        OperatorSet[] operatorSets;
-        uint64[] magnitudes;
-    }
-
-    /**
-     * @notice struct used for operator magnitude updates. Stored in _operatorMagnitudeInfo mapping
-     * @param currentMagnitude the current magnitude of the operator
-     * @param pendingDiff the pending magnitude difference of the operator
-     * @param effectTimestamp the timestamp at which the pending magnitude will take effect
-     */
-    struct MagnitudeInfo {
+    struct Allocation {
         uint64 currentMagnitude;
         int128 pendingDiff;
-        uint32 effectTimestamp;
+        uint32 effectBlock;
     }
 
     /**
      * @notice Struct containing allocation delay metadata for a given operator.
-     * @param delay Current allocation delay if `pendingDelay` is non-zero and `pendingDelayEffectTimestamp` has elapsed.
+     * @param delay Current allocation delay
      * @param isSet Whether the operator has initially set an allocation delay. Note that this could be false but the
-     * block.timestamp >= effectTimestamp in which we consider their delay to be configured and active.
-     * @param pendingDelay Current allocation delay if it's non-zero and `pendingDelayEffectTimestamp` has elapsed.
-     * @param effectTimestamp The timestamp for which `pendingDelay` becomes the curren allocation delay.
+     * block.number >= effectBlock in which we consider their delay to be configured and active.
+     * @param pendingDelay The delay that will take effect after `effectBlock`
+     * @param effectBlock The block number after which a pending delay will take effect
      */
     struct AllocationDelayInfo {
         uint32 delay;
         bool isSet;
         uint32 pendingDelay;
-        uint32 effectTimestamp;
+        uint32 effectBlock;
+    }
+
+    /**
+     * @notice Contains registration details for an operator pertaining to an operator set
+     * @param registered Whether the operator is currently registered for the operator set
+     * @param registeredUntil If the operator is not registered, how long until the operator is no longer
+     * slashable by the AVS.
+     */
+    struct RegistrationStatus {
+        bool registered;
+        uint32 registeredUntil;
+    }
+
+    /**
+     * @notice Contains allocation info for a specific strategy
+     * @param maxMagnitude the maximum magnitude that can be allocated between all operator sets
+     * @param encumberedMagnitude the currently-allocated magnitude for the strategy
+     */
+    struct StrategyInfo {
+        uint64 maxMagnitude;
+        uint64 encumberedMagnitude;
     }
 
     /**
      * @notice Struct containing parameters to slashing
      * @param operator the address to slash
      * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
-     * @param strategies the set of strategies to slash
      * @param wadToSlash the parts in 1e18 to slash, this will be proportional to the operator's
      * slashable stake allocation for the operatorSet
      * @param description the description of the slashing provided by the AVS for legibility
@@ -93,34 +120,64 @@ interface IAllocationManagerTypes {
     struct SlashingParams {
         address operator;
         uint32 operatorSetId;
-        IStrategy[] strategies;
         uint256 wadToSlash;
         string description;
     }
 
     /**
-     * @param encumberedMagnitude the effective magnitude allocated to all operator sets
-     * for the strategy
-     * @param currentMagnitude the effective current magnitude allocated to a single operator set
-     * for the strategy
-     * @param pendingDiff the pending change in magnitude, if one exists
-     * @param effectTimestamp the time after which `pendingDiff` will take effect
+     * @notice struct used to modify the allocation of slashable magnitude to an operator set
+     * @param operatorSet the operator set to modify the allocation for
+     * @param strategies the strategies to modify allocations for
+     * @param newMagnitudes the new magnitude to allocate for each strategy to this operator set
      */
-    struct PendingMagnitudeInfo {
-        uint64 encumberedMagnitude;
-        uint64 currentMagnitude;
-        int128 pendingDiff;
-        uint32 effectTimestamp;
+    struct AllocateParams {
+        OperatorSet operatorSet;
+        IStrategy[] strategies;
+        uint64[] newMagnitudes;
+    }
+
+    /**
+     * @notice Parameters used to register for an AVS's operator sets
+     * @param avs the AVS being registered for
+     * @param operatorSetIds the operator sets within the AVS to register for
+     * @param data extra data to be passed to the AVS to complete registration
+     */
+    struct RegisterParams {
+        address avs;
+        uint32[] operatorSetIds;
+        bytes data;
+    }
+
+    /**
+     * @notice Parameters used to deregister from an AVS's operator sets
+     * @param operator the operator being deregistered
+     * @param avs the avs being deregistered from
+     * @param operatorSetIds the operator sets within the AVS being deregistered from
+     */
+    struct DeregisterParams {
+        address operator;
+        address avs;
+        uint32[] operatorSetIds;
+    }
+
+    /**
+     * @notice Parameters used by an AVS to create new operator sets
+     * @param operatorSetId the id of the operator set to create
+     * @param strategies the strategies to add as slashable to the operator set
+     */
+    struct CreateSetParams {
+        uint32 operatorSetId;
+        IStrategy[] strategies;
     }
 }
 
 interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when operator updates their allocation delay.
-    event AllocationDelaySet(address operator, uint32 delay, uint32 effectTimestamp);
+    event AllocationDelaySet(address operator, uint32 delay, uint32 effectBlock);
 
     /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
-    event OperatorSetMagnitudeUpdated(
-        address operator, OperatorSet operatorSet, IStrategy strategy, uint64 magnitude, uint32 effectTimestamp
+    event AllocationUpdated(
+        address operator, OperatorSet operatorSet, IStrategy strategy, uint64 magnitude, uint32 effectBlock
     );
 
     /// @notice Emitted when operator's encumbered magnitude is updated for a given strategy
@@ -134,6 +191,28 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     event OperatorSlashed(
         address operator, OperatorSet operatorSet, IStrategy[] strategies, uint256[] wadSlashed, string description
     );
+
+    /// @notice Emitted when an AVS configures the address that will handle registration/deregistration
+    event AVSRegistrarSet(address avs, IAVSRegistrar registrar);
+
+    /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
+    /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
+    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+
+    /// @notice Emitted when an operator set is created by an AVS.
+    event OperatorSetCreated(OperatorSet operatorSet);
+
+    /// @notice Emitted when an operator is added to an operator set.
+    event OperatorAddedToOperatorSet(address indexed operator, OperatorSet operatorSet);
+
+    /// @notice Emitted when an operator is removed from an operator set.
+    event OperatorRemovedFromOperatorSet(address indexed operator, OperatorSet operatorSet);
+
+    /// @notice Emitted when a strategy is added to an operator set.
+    event StrategyAddedToOperatorSet(OperatorSet operatorSet, IStrategy strategy);
+
+    /// @notice Emitted when a strategy is removed from an operator set.
+    event StrategyRemovedFromOperatorSet(OperatorSet operatorSet, IStrategy strategy);
 }
 
 interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllocationManagerEvents {
@@ -150,15 +229,15 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
-     * @notice Modifies the proportions of slashable stake allocated to a list of operatorSets for a set of strategies.
-     * Note that deallocations remain slashable for DEALLOCATION_DELAY amount of time therefore when they are cleared they may
+     * @notice Modifies the proportions of slashable stake allocated to an operator set from a list of strategies
+     * Note that deallocations remain slashable for DEALLOCATION_DELAY blocks therefore when they are cleared they may
      * free up less allocatable magnitude than initially deallocated.
-     * @param allocations array of magnitude adjustments for multiple strategies and corresponding operator sets
+     * @param params array of magnitude adjustments for one or more operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
      * @dev msg.sender is used as operator
      */
     function modifyAllocations(
-        MagnitudeAllocation[] calldata allocations
+        AllocateParams[] calldata params
     ) external;
 
     /**
@@ -179,24 +258,89 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
+     * @notice Allows an operator to register for one or more operator sets for an AVS. If the operator
+     * has any stake allocated to these operator sets, it immediately becomes slashable.
+     * @dev After registering within the ALM, this method calls `avs.registerOperator` to complete
+     * registration. This call MUST succeed in order for registration to be successful.
+     */
+    function registerForOperatorSets(
+        RegisterParams calldata params
+    ) external;
+
+    /**
+     * @notice Allows an operator or AVS to deregister the operator from one or more of the AVS's operator sets.
+     * If the operator has any slashable stake allocated to the AVS, it remains slashable until the
+     * DEALLOCATION_DELAY has passed.
+     * @dev After deregistering within the ALM, this method calls `avs.deregisterOperator` to complete
+     * deregistration. If this call reverts, it is ignored.
+     */
+    function deregisterFromOperatorSets(
+        DeregisterParams calldata params
+    ) external;
+
+    /**
      * @notice Called by the delegation manager to set an operator's allocation delay.
-     * This is set when the operator first registers, and is the time between an operator
+     * This is set when the operator first registers, and is the number of blocks between an operator
      * allocating magnitude to an operator set, and the magnitude becoming slashable.
      * @param operator The operator to set the delay on behalf of.
-     * @param delay the allocation delay in seconds
+     * @param delay the allocation delay in blocks
      */
     function setAllocationDelay(address operator, uint32 delay) external;
 
     /**
-     * @notice Called by an operator to set their allocation delay. This is the time between an operator
+     * @notice Called by an operator to set their allocation delay. This is number of blocks between an operator
      * allocating magnitude to an operator set, and the magnitude becoming slashable.
-     * @dev Note that if an operator's allocation delay is 0, it has not been set yet,
-     * and the operator will be unable to allocate magnitude to any operator set.
-     * @param delay the allocation delay in seconds
+     * @dev Note that if an operator's allocation delay has not been set, the operator will be unable to allocate
+     * slashable magnitude to any operator set.
+     * @param delay the allocation delay in blocks
      */
     function setAllocationDelay(
         uint32 delay
     ) external;
+
+    /**
+     * @notice Called by an AVS to configure the address that is called when an operator registers
+     * or is deregistered from the AVS's operator sets. If not set (or set to 0), defaults
+     * to the AVS's address.
+     * @param registrar the new registrar address
+     */
+    function setAVSRegistrar(
+        IAVSRegistrar registrar
+    ) external;
+
+    /**
+     *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+     *
+     *  @param metadataURI The URI for metadata associated with an AVS.
+     *
+     *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
+     */
+    function updateAVSMetadataURI(
+        string calldata metadataURI
+    ) external;
+
+    /**
+     * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
+     */
+    function createOperatorSets(
+        CreateSetParams[] calldata params
+    ) external;
+
+    /**
+     * @notice Allows an AVS to add strategies to an operator set
+     * @dev Strategies MUST NOT already exist in the operator set
+     * @param operatorSetId the operator set to add strategies to
+     * @param strategies the strategies to add
+     */
+    function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
+
+    /**
+     * @notice Allows an AVS to remove strategies from an operator set
+     * @dev Strategies MUST already exist in the operator set
+     * @param operatorSetId the operator set to remove strategies from
+     * @param strategies the strategies to remove
+     */
+    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
 
     /**
      *
@@ -205,49 +349,65 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      */
 
     /**
-     * @notice Returns the effective magnitude info for each of an operator's operator sets.
-     * This method fetches the complete list of an operator's operator sets, then applies any
-     * completable allocation modifications to return the effective, up-to-date current and
-     * pending magnitude allocations for each operator set.
+     * @notice Returns the list of operator sets the operator has current or pending allocations/deallocations in
      * @param operator the operator to query
-     * @param strategy the strategy to get allocation info for
-     * @return the list of the operator's operator sets
-     * @return the corresponding allocation details for each operator set
+     * @return the list of operator sets the operator has current or pending allocations/deallocations in
      */
-    function getAllocationInfo(
+    function getAllocatedSets(
+        address operator
+    ) external view returns (OperatorSet[] memory);
+
+    /**
+     * @notice Returns the list of strategies an operator has current or pending allocations/deallocations from
+     * given a specific operator set.
+     * @param operator the operator to query
+     * @param operatorSet the operator set to query
+     * @return the list of strategies
+     */
+    function getAllocatedStrategies(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external view returns (IStrategy[] memory);
+
+    /**
+     * @notice Returns the current/pending stake allocation an operator has from a strategy to an operator set
+     * @param operator the operator to query
+     * @param operatorSet the operator set to query
+     * @param strategy the strategy to query
+     * @return the current/pending stake allocation
+     */
+    function getAllocation(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) external view returns (Allocation memory);
+
+    /**
+     * @notice Returns the current/pending stake allocations for multiple operators from a strategy to an operator set
+     * @param operators the operators to query
+     * @param operatorSet the operator set to query
+     * @param strategy the strategy to query
+     * @return each operator's allocation
+     */
+    function getAllocations(
+        address[] memory operators,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) external view returns (Allocation[] memory);
+
+    /**
+     * @notice Given a strategy, returns a list of operator sets and corresponding stake allocations.
+     * @dev Note that this returns a list of ALL operator sets the operator has allocations in. This means
+     * some of the returned allocations may be zero.
+     * @param operator the operator to query
+     * @param strategy the strategy to query
+     * @return the list of all operator sets the operator has allocations for
+     * @return the corresponding list of allocations from the specific `strategy`
+     */
+    function getStrategyAllocations(
         address operator,
         IStrategy strategy
-    ) external view returns (OperatorSet[] memory, MagnitudeInfo[] memory);
-
-    /**
-     * @notice Returns the effective magnitude info for each operator set. This method
-     * automatically applies any completable modifications, returning the effective
-     * current and pending allocations for each operator set.
-     * @param operator the operator to query
-     * @param strategy the strategy to get allocation info for
-     * @param operatorSets the operatorSets to get allocation info for
-     * @return The magnitude info for each operator set
-     */
-    function getAllocationInfo(
-        address operator,
-        IStrategy strategy,
-        OperatorSet[] calldata operatorSets
-    ) external view returns (MagnitudeInfo[] memory);
-
-    /**
-     * @notice Returns the effective magnitude info for each operator for each strategy for the operatorSet This method
-     * automatically applies any completable modifications, returning the effective
-     * current and pending allocations for each operator set.
-     * @param operatorSet the operator set to query
-     * @param strategies the strategies to get allocation info for
-     * @param operators the operators to get allocation info for
-     * @return The magnitude info for each operator for each strategy
-     */
-    function getAllocationInfo(
-        OperatorSet calldata operatorSet,
-        IStrategy[] calldata strategies,
-        address[] calldata operators
-    ) external view returns (MagnitudeInfo[][] memory);
+    ) external view returns (OperatorSet[] memory, Allocation[] memory);
 
     /**
      * @notice For a strategy, get the amount of magnitude not currently allocated to any operator set
@@ -271,58 +431,90 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external view returns (uint64[] memory);
 
     /**
+     * @notice Returns the maximum magnitudes each operator can allocate for the given strategy
+     * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
+     * the operator is slashed. This value acts as a cap on the max magnitude of the operator.
+     * @param operators the operators to query
+     * @param strategy the strategy to get the max magnitudes for
+     * @return the max magnitudes for each operator
+     */
+    function getMaxMagnitudes(
+        address[] calldata operators,
+        IStrategy strategy
+    ) external view returns (uint64[] memory);
+
+    /**
      * @notice Returns the maximum magnitude an operator can allocate for the given strategies
-     * at a given timestamp
+     * at a given block number
      * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
      * the operator is slashed. This value acts as a cap on the max magnitude of the operator.
      * @param operator the operator to query
      * @param strategies the strategies to get the max magnitudes for
-     * @param timestamp the timestamp at which to check the max magnitudes
+     * @param blockNumber the blockNumber at which to check the max magnitudes
      * @return the max magnitudes for each strategy
      */
-    function getMaxMagnitudesAtTimestamp(
+    function getMaxMagnitudesAtBlock(
         address operator,
         IStrategy[] calldata strategies,
-        uint32 timestamp
+        uint32 blockNumber
     ) external view returns (uint64[] memory);
 
     /**
-     * @notice Returns the time in seconds between an operator allocating slashable magnitude
+     * @notice Returns the time in blocks between an operator allocating slashable magnitude
      * and the magnitude becoming slashable. If the delay has not been set, `isSet` will be false.
      * @dev The operator must have a configured delay before allocating magnitude
      * @param operator The operator to query
      * @return isSet Whether the operator has configured a delay
-     * @return delay The time in seconds between allocating magnitude and magnitude becoming slashable
+     * @return delay The time in blocks between allocating magnitude and magnitude becoming slashable
      */
     function getAllocationDelay(
         address operator
     ) external view returns (bool isSet, uint32 delay);
 
     /**
-     * @notice returns the current operatorShares and the slashableOperatorShares for an operator, list of strategies,
-     * and an operatorSet
-     * @param operatorSet the operatorSet to get the shares for
-     * @param operators the operators to get the shares for
-     * @param strategies the strategies to get the shares for
+     * @notice Returns a list of all operator sets the operator is registered for
+     * @param operator The operator address to query.
      */
-    function getCurrentDelegatedAndSlashableOperatorShares(
-        OperatorSet calldata operatorSet,
-        address[] calldata operators,
-        IStrategy[] calldata strategies
-    ) external view returns (uint256[][] memory, uint256[][] memory);
+    function getRegisteredSets(
+        address operator
+    ) external view returns (OperatorSet[] memory operatorSets);
 
     /**
-     * @notice returns the minimum operatorShares and the slashableOperatorShares for an operator, list of strategies,
-     * and an operatorSet before a given timestamp. This is used to get the shares to weight operators by given ones slashing window.
-     * @param operatorSet the operatorSet to get the shares for
-     * @param operators the operators to get the shares for
-     * @param strategies the strategies to get the shares for
-     * @param beforeTimestamp the timestamp to get the shares at
+     * @notice Returns whether the operator set exists
      */
-    function getMinDelegatedAndSlashableOperatorSharesBefore(
-        OperatorSet calldata operatorSet,
-        address[] calldata operators,
-        IStrategy[] calldata strategies,
-        uint32 beforeTimestamp
-    ) external view returns (uint256[][] memory, uint256[][] memory);
+    function isOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (bool);
+
+    /**
+     * @notice Returns all the operators registered to an operator set
+     * @param operatorSet The operatorSet to query.
+     */
+    function getMembers(
+        OperatorSet memory operatorSet
+    ) external view returns (address[] memory operators);
+
+    /**
+     * @notice Returns the number of operators registered to an operatorSet.
+     * @param operatorSet The operatorSet to get the member count for
+     */
+    function getMemberCount(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256);
+
+    /**
+     * @notice Returns the address that handles registration/deregistration for the AVS
+     * If not set, defaults to the input address (`avs`)
+     */
+    function getAVSRegistrar(
+        address avs
+    ) external view returns (IAVSRegistrar);
+
+    /**
+     * @notice Returns an array of strategies in the operatorSet.
+     * @param operatorSet The operatorSet to query.
+     */
+    function getStrategiesInOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (IStrategy[] memory strategies);
 }

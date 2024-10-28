@@ -180,7 +180,10 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
      * @param token The token being deposited
      */
-    function _beforeDeposit(IERC20 token, uint256 amount) internal virtual {
+    function _beforeDeposit(
+        IERC20 token,
+        uint256 // amount
+    ) internal virtual {
         require(token == underlyingToken, OnlyUnderlyingToken());
     }
 
@@ -188,7 +191,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
      * @param token The token being withdrawn
      */
-    function _beforeWithdrawal(address recipient, IERC20 token, uint256 amountShares) internal virtual {
+    function _beforeWithdrawal(
+        address, // recipient
+        IERC20 token,
+        uint256 // amountShares
+    ) internal virtual {
         require(token == underlyingToken, OnlyUnderlyingToken());
     }
 

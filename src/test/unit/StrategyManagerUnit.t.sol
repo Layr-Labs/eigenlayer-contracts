@@ -236,7 +236,7 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
         strategyManager.initialize(initialOwner, initialOwner, 0);
     }
 
-    function test_InitializedStorageProperly() public {
+    function test_InitializedStorageProperly() public view {
         assertEq(strategyManager.owner(), initialOwner, "strategyManager.owner() != initialOwner");
         assertEq(
             strategyManager.strategyWhitelister(),
@@ -364,7 +364,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
     //     pod = new EigenPod(ethPOSDeposit, eigenPodManager, GOERLI_GENESIS_TIME);
 
     //     eigenPodBeacon = new UpgradeableBeacon(address(pod));
-
     //     // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
     //     DelegationManager delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
     //     StrategyManager strategyManagerImplementation = new StrategyManager(delegation);
@@ -456,7 +455,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
     //             "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
     //         );
     //     }
-
     //     // check that the shares out match the expected amount out
     //     // the actual transfer in will be lower by 1-2 wei than expected due to stETH's internal rounding
     //     // to account for this we check approximate rather than strict equivalence here
@@ -595,7 +593,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
     //         strategyManager.addStrategiesToDepositWhitelist(_strategy);
     //         cheats.stopPrank();
     //     }
-
     //     uint256 operatorSharesBefore = strategyManager.stakerDepositShares(sender, oneWeiFeeOnTransferTokenStrategy);
     //     // check the expected output
     //     uint256 expectedSharesOut = oneWeiFeeOnTransferTokenStrategy.underlyingToShares(amountToDeposit);
@@ -614,7 +611,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
     //             "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
     //         );
     //     }
-
     //     // check that the shares out match the expected amount out
     //     // the actual transfer in will be lower by 1 wei than expected due to stETH's internal rounding
     //     // to account for this we check approximate rather than strict equivalence here

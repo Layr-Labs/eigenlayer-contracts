@@ -17,7 +17,14 @@ import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
 import "src/test/mocks/EmptyContract.sol";
 
+import "src/test/utils/SingleItemArrayLib.sol";
+import "src/test/utils/Random.sol";
+
 abstract contract EigenLayerUnitTestSetup is Test {
+    using SingleItemArrayLib for *;
+
+    uint256 internal constant MAX_PRIVATE_KEY = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140;
+
     Vm cheats = Vm(VM_ADDRESS);
 
     address constant pauser = address(555);
@@ -39,6 +46,15 @@ abstract contract EigenLayerUnitTestSetup is Test {
     modifier filterFuzzedAddressInputs(address addr) {
         cheats.assume(!isExcludedFuzzAddress[addr]);
         _;
+    }
+
+    modifier rand(Randomness r) {
+        r.set();
+        _;
+    }
+
+    function random() internal returns (Randomness) {
+        return Randomness.wrap(Random.SEED).shuffle();
     }
 
     function setUp() public virtual {

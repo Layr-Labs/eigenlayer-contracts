@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/IAllocationManager.sol";
-import "../interfaces/IAVSDirectory.sol";
-import "../interfaces/IDelegationManager.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/structs/DoubleEndedQueue.sol";
+
+import "../interfaces/IAllocationManager.sol";
+import "../interfaces/IDelegationManager.sol";
+
 import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
@@ -18,19 +20,13 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
     uint8 internal constant PAUSED_OPERATOR_SLASHING = 1;
 
-    /// @dev BIPS factor for slashable bips
-    uint256 internal constant BIPS_FACTOR = 10_000;
-
-    /// @dev Maximum number of pending updates that can be queued for allocations/deallocations
-    uint256 internal constant MAX_PENDING_UPDATES = 1;
+    /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
+    uint8 internal constant PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION = 2;
 
     // Immutables
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
-
-    /// @notice The AVSDirectory contract for EigenLayer
-    IAVSDirectory public immutable avsDirectory;
 
     /// @notice Delay before deallocations are clearable and can be added back into freeMagnitude
     /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
@@ -41,35 +37,62 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     // Mutatables
 
-    /// @notice Returns snapshots of max magnitude for each `operator` for a given `strategy`.
-    /// @dev This value starts at 100% (1e18) and decreases with slashing.
-    mapping(address operator => mapping(IStrategy strategy => Snapshots.DefaultWadHistory)) internal
-        _maxMagnitudeHistory;
+    /// AVS => OPERATOR SET
 
-    /// @notice Returns the amount of magnitude that is not available for allocation for each `operator` for a given `strategy`.
-    /// @dev This value increases with allocations and slashing, and decreases with deallocations; should never exceed 100% (1e18).
-    mapping(address operator => mapping(IStrategy strategy => uint64)) public encumberedMagnitude;
+    /// @dev Contains the AVS's configured registrar contract that handles registration/deregistration
+    /// Note: if set to 0, defaults to the AVS's address
+    mapping(address avs => IAVSRegistrar) internal _avsRegistrar;
 
-    /// @notice Returns the magnitude info for each `operator` for a given `strategy` and operator set (`operatorSetKey`).
-    mapping(address operator => mapping(IStrategy strategy => mapping(bytes32 operatorSetKey => MagnitudeInfo)))
-        internal _operatorMagnitudeInfo;
+    /// @dev Lists the operator sets an AVS has created
+    mapping(address avs => EnumerableSet.UintSet) internal _operatorSets;
 
-    /// @notice Returns pending deallocations for each `operator` for a given `strategy`.
-    mapping(address operator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal deallocationQueue;
+    /// @dev Lists the strategies an AVS supports for an operator set
+    mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet) internal _operatorSetStrategies;
+
+    /// @dev Lists the members of an AVS's operator set
+    mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet) internal _operatorSetMembers;
+
+    /// OPERATOR => OPERATOR SET (REGISTRATION/DEREGISTRATION)
 
     /// @notice Returns the allocation delay info for each `operator`; the delay and whether or not it's previously been set.
     mapping(address operator => AllocationDelayInfo) internal _allocationDelayInfo;
 
+    /// @dev Lists the operator sets the operator is registered for. Note that an operator
+    /// can be registered without allocated stake. Likewise, an operator can allocate
+    /// without being registered.
+    mapping(address operator => EnumerableSet.Bytes32Set) internal registeredSets;
+
+    /// @dev Lists the operator sets the operator has outstanding allocations in.
+    mapping(address operator => EnumerableSet.Bytes32Set) internal allocatedSets;
+
+    /// @dev Contains the operator's registration status for an operator set.
+    mapping(address operator => mapping(bytes32 operatorSetKey => RegistrationStatus)) internal registrationStatus;
+
+    /// @dev For an operator set, lists all strategies an operator has outstanding allocations from.
+    mapping(address operator => mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet)) internal
+        allocatedStrategies;
+
+    /// @dev For an operator set and strategy, the current allocated magnitude and any pending modification
+    mapping(address operator => mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => Allocation))) internal
+        allocations;
+
+    /// OPERATOR => STRATEGY (MAX/USED AND DEALLOCATIONS)
+
+    /// @dev Contains a history of the operator's maximum magnitude for a given strategy
+    mapping(address operator => mapping(IStrategy strategy => Snapshots.DefaultWadHistory)) internal
+        _maxMagnitudeHistory;
+
+    /// @dev For a strategy, contains the amount of magnitude an operator has allocated to operator sets
+    mapping(address operator => mapping(IStrategy strategy => uint64)) public encumberedMagnitude;
+
+    /// @dev For a strategy, keeps an ordered queue of operator sets that have pending deallocations
+    /// These must be completed in order to free up magnitude for future allocation
+    mapping(address operator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal deallocationQueue;
+
     // Construction
 
-    constructor(
-        IDelegationManager _delegation,
-        IAVSDirectory _avsDirectory,
-        uint32 _DEALLOCATION_DELAY,
-        uint32 _ALLOCATION_CONFIGURATION_DELAY
-    ) {
+    constructor(IDelegationManager _delegation, uint32 _DEALLOCATION_DELAY, uint32 _ALLOCATION_CONFIGURATION_DELAY) {
         delegation = _delegation;
-        avsDirectory = _avsDirectory;
         DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
         ALLOCATION_CONFIGURATION_DELAY = _ALLOCATION_CONFIGURATION_DELAY;
     }
@@ -79,5 +102,5 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[45] private __gap;
+    uint256[39] private __gap;
 }

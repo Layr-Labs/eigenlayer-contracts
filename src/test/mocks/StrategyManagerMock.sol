@@ -82,11 +82,21 @@ contract StrategyManagerMock is Test {
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}
 
 
-    function withdrawSharesAsTokens(address staker, IStrategy strategy, address token, uint256 shares) external {
+    function withdrawSharesAsTokens(
+        address staker, 
+        IStrategy strategy, 
+        address, // token 
+        uint256 shares
+    ) external {
         strategySharesWithdrawn[staker][strategy] += shares;
     }
 
-    function addShares(address staker, IStrategy strategy, IERC20 token, uint256 addedShares) external {
+    function addShares(
+        address staker, 
+        IStrategy strategy, 
+        IERC20, // token 
+        uint256 addedShares
+    ) external {
         // Increase the staker's shares
         uint256 strategyIndex = _getStrategyIndex(staker, strategy);
         sharesToReturn[staker][strategyIndex] += addedShares;

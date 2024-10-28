@@ -230,7 +230,7 @@ contract DeployFromScratch is Script, Test {
 
         delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
         strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg);
-        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
@@ -248,13 +248,11 @@ contract DeployFromScratch is Script, Test {
             REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
             REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
         );
-        allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegation, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
-            IStrategy[] memory _strategies;
-            uint256[] memory _withdrawalDelayBlocks;
             eigenLayerProxyAdmin.upgradeAndCall(
                 ITransparentUpgradeableProxy(payable(address(delegation))),
                 address(delegationImplementation),
@@ -495,10 +493,6 @@ contract DeployFromScratch is Script, Test {
             allocationManagerContract.delegation() == delegation,
             "allocationManager: delegation address not set correctly"
         );
-        require(
-            allocationManagerContract.avsDirectory() == avsDirectory,
-            "allocationManager: avsDirectory address not set correctly"
-        );
     }
 
     function _verifyImplementationsSetCorrectly() internal view {
@@ -609,7 +603,7 @@ contract DeployFromScratch is Script, Test {
         // require(eigenPodManager.paused() == 30, "eigenPodManager: init paused status set incorrectly");
     }
 
-    function _verifyInitializationParams() internal {
+    function _verifyInitializationParams() internal view {
         // // one week in blocks -- 50400
         // uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
         // require(strategyManager.withdrawalDelayBlocks() == 7 days / 12 seconds,

@@ -75,7 +75,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
 
     function _initializePodWithShares(address podOwner, int256 shares) internal {
         // Deploy pod
-        IEigenPod deployedPod = _deployAndReturnEigenPodForStaker(podOwner);
+        _deployAndReturnEigenPodForStaker(podOwner);
         
         if (shares >= 0) {
             cheats.prank(address(delegationManagerMock));
@@ -98,7 +98,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
         return deployedPod;
     }
 
-    function _checkPodDeployed(address staker, address expectedPod, uint256 numPodsBefore) internal {
+    function _checkPodDeployed(address staker, address expectedPod, uint256 numPodsBefore) internal view {
         assertEq(address(eigenPodManager.ownerToPod(staker)), expectedPod, "Expected pod not deployed");
         assertEq(eigenPodManager.numPods(), numPodsBefore + 1, "Num pods not incremented");
     }
@@ -110,7 +110,7 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
                                 Initialization Tests
     *******************************************************************************/
 
-    function test_initialization() public {
+    function test_initialization() public view {
         // Check max pods, beacon chain, owner, and pauser
         assertEq(eigenPodManager.owner(), initialOwner, "Initialization: owner incorrect");
         assertEq(address(eigenPodManager.pauserRegistry()), address(pauserRegistry), "Initialization: pauser registry incorrect");
@@ -445,10 +445,10 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, 0, 0);
     }
 
-    function testFuzz_recordBalanceUpdate(int224 sharesBefore, int224 sharesDelta) public {
+    function testFuzz_recordBalanceUpdate(int256 sharesBefore, int256 sharesDelta) public {
         // Constrain inputs
-        int256 sharesBefore = sharesBefore * int256(GWEI_TO_WEI);
-        int256 sharesDelta = sharesDelta * int256(GWEI_TO_WEI);
+        sharesBefore = int224(bound(sharesBefore, type(int224).min, type(int224).max)) * int256(GWEI_TO_WEI);
+        sharesDelta = int224(bound(sharesDelta, type(int224).min, type(int224).max)) * int256(GWEI_TO_WEI);
 
         // Initialize shares
         _initializePodWithShares(defaultStaker, sharesBefore);

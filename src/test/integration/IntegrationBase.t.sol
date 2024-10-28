@@ -184,7 +184,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                                 COMMON ASSERTIONS
     *******************************************************************************/
 
-    function assert_HasNoDelegatableShares(User user, string memory err) internal {
+    function assert_HasNoDelegatableShares(User user, string memory err) internal view {
         (IStrategy[] memory strategies, uint[] memory shares) = 
             delegationManager.getDepositedShares(address(user));
         
@@ -197,7 +197,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies, 
         uint[] memory expectedBalances, 
         string memory err
-    ) internal {
+    ) internal view {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
             
@@ -214,7 +214,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    function assert_HasNoUnderlyingTokenBalance(User user, IStrategy[] memory strategies, string memory err) internal {
+    function assert_HasNoUnderlyingTokenBalance(User user, IStrategy[] memory strategies, string memory err) internal view {
         assert_HasUnderlyingTokenBalances(user, strategies, new uint[](strategies.length), err);
     }
 
@@ -223,7 +223,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies, 
         uint[] memory expectedShares, 
         string memory err
-    ) internal {
+    ) internal view {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
 
@@ -251,7 +251,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies, 
         uint[] memory expectedShares, 
         string memory err
-    ) internal {
+    ) internal view {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
 
@@ -262,25 +262,25 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     /// @dev Asserts that ALL of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
-    function assert_AllWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal {
+    function assert_AllWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal view {
         for (uint i = 0; i < withdrawalRoots.length; i++) {
             assert_WithdrawalPending(withdrawalRoots[i], err);
         }
     }
 
     /// @dev Asserts that NONE of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
-    function assert_NoWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal {
+    function assert_NoWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal view {
         for (uint i = 0; i < withdrawalRoots.length; i++) {
             assert_WithdrawalNotPending(withdrawalRoots[i], err);
         }
     }
 
     /// @dev Asserts that the hash of each withdrawal corresponds to the provided withdrawal root
-    function assert_WithdrawalPending(bytes32 withdrawalRoot, string memory err) internal {
+    function assert_WithdrawalPending(bytes32 withdrawalRoot, string memory err) internal view {
         assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), err);
     }
 
-    function assert_WithdrawalNotPending(bytes32 withdrawalRoot, string memory err) internal {
+    function assert_WithdrawalNotPending(bytes32 withdrawalRoot, string memory err) internal view {
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), err);
     }
 
@@ -288,7 +288,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         string memory err
-    ) internal {
+    ) internal view {
         for (uint i = 0; i < withdrawals.length; i++) {
             assert_ValidWithdrawalHash(withdrawals[i], withdrawalRoots[i], err);
         }
@@ -298,7 +298,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IDelegationManagerTypes.Withdrawal memory withdrawal,
         bytes32 withdrawalRoot,
         string memory err
-    ) internal {
+    ) internal view {
         assertEq(withdrawalRoot, delegationManager.calculateWithdrawalRoot(withdrawal), err);
     }
 
@@ -306,7 +306,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         User staker,
         uint expectedBalance,
         string memory err
-    ) internal {
+    ) internal view {
         EigenPod pod = staker.pod();
         assertEq(address(pod).balance, expectedBalance, err);
     }
@@ -314,7 +314,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function assert_ProofsRemainingEqualsActive(
         User staker,
         string memory err
-    ) internal {
+    ) internal view {
         EigenPod pod = staker.pod();
         assertEq(pod.currentCheckpoint().proofsRemaining, pod.activeValidatorCount(), err);
     }
@@ -323,7 +323,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         User staker,
         uint64 expectedPodBalanceGwei,
         string memory err
-    ) internal {
+    ) internal view {
         EigenPod pod = staker.pod();
         assertEq(pod.currentCheckpoint().podBalanceGwei, expectedPodBalanceGwei, err);
     }

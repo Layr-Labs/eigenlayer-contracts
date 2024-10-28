@@ -12,7 +12,7 @@
 │       │   └── it should set the new delay to the previous delay delay
 │       ├── given that a previous delay is set and has not passed
 │       │   └── it should should overwrite the previous pending delay with the new delay
-│       └── it should set the pendingDelay, update the effectTimestamp, and emit an `AllocationDelaySetEvent`
+│       └── it should set the pendingDelay, update the effectBlock, and emit an `AllocationDelaySetEvent`
 ├── when setAllocationDelay is called by the delegationManager
 │   ├── given that the caller is not the delegationManager
 │   │   └── it should revert
@@ -25,7 +25,7 @@
 │       │   └── it should set the new delay to the previous delay delay
 │       ├── given that a previous delay is set and has not passed
 │       │   └── it should should overwrite the previous pending delay with the new delay
-│       └── it should set the pendingDelay, update the effectTimestamp, and emit an `AllocationDelaySetEvent`
+│       └── it should set the pendingDelay, update the effectBlock, and emit an `AllocationDelaySetEvent`
 ├── when clearModificationQueue is called
 │   ├── given that the length of the strategies and numToClear are not equal
 │   │   └── it should revert
@@ -37,7 +37,7 @@
 │       ├── given that the latest effect timestamp has not been reached
 │       │   └── it should break the loop
 │       └── given that the latest effect timestamp has been reached
-│           ├── it should update the magnitude info to the currentMagnitude, with a pendingDiff of 0 and effectTimestamp of 0
+│           ├── it should update the magnitude info to the currentMagnitude, with a pendingDiff of 0 and effectBlock of 0
 │           ├── it should change the encumbered magnitude if the pendingDiff was less than 0
 │           ├── it should emit an EncumberedmagnitudeUpdated event
 │           ├── it should remove the modification from the queue
@@ -65,7 +65,7 @@
 │           │   └── it should increase the encumberedMagnitude in memory by the pendingDiff
 │           ├── it should push to the modification queue
 │           ├── it should update the magnitude info, encumbered magnitude, emit an event for encumbered magnitude
-│           └── it should emit an OperatorSetMagnitudeUpdated Event
+│           └── it should emit an AllocationUpdated Event
 └── when slashOperator is called
     ├── given that the  wads to slash is 0
     │   └── it should revert
@@ -79,8 +79,8 @@
         ├── it should slash the current magnitude by wads to slash
         ├── given that there is a pending deallocation
         │   ├── it should slash the pending diff
-        │   └── it should emit an event for OperatorSetMagnitudeUpdated with the orginial deallocation's effect timestamp
+        │   └── it should emit an event for AllocationUpdated with the orginial deallocation's effect timestamp
         ├── it should update the magnitude info, encumbered magnitude, emit an event for encumbered magnitude
         ├── it should decrease the operator's max magnitude
         ├── it should decrease the operators shares in the delegation manager
-        └── It should emit an OperatorSetMagnitudeUpdated event
+        └── It should emit an AllocationUpdated event

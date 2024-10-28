@@ -76,7 +76,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
         delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
@@ -86,7 +86,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             delegationManager,
             eigenLayerPauserReg
         );
-        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to point to the implementations
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);

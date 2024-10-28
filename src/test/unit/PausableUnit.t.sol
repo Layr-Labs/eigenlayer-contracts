@@ -25,6 +25,9 @@ contract PausableUnitTests is Test {
     /// @notice Emitted when the pause is lifted by `account`, and changed to `newPausedStatus`.
     event Unpaused(address indexed account, uint256 newPausedStatus);
 
+    /// @notice Emitted when the `pauserRegistry` is set to `newPauserRegistry`.
+    event PauserRegistrySet(IPauserRegistry pauserRegistry, IPauserRegistry newPauserRegistry);
+
     function setUp() virtual public {
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
@@ -160,5 +163,4 @@ contract PausableUnitTests is Test {
         pausable.unpause(newPausedStatus);
         cheats.stopPrank();
     }
-
 }
