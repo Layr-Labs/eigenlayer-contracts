@@ -62,7 +62,7 @@ function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {
 
 **If you want to know about the time travel**, there's a few things to note:
 
-The main feature we're using is foundry's `cheats.snapshot()` and `cheats.revertTo(snapshot)` to zip around in time. You can look at the [Cheatcodes Reference](https://book.getfoundry.sh/cheatcodes/#cheatcodes-interface) to get some idea, but the docs aren't actually correct. The best thing to do is look through our tests and see how it's being used. If you see an assertion called `assert_Snap_...`, that's using the `TimeMachine` under the hood. 
+The main feature we're using is foundry's `cheats.snapshotState()` and `cheats.revertToState(snapshot)` to zip around in time. You can look at the [Cheatcodes Reference](https://book.getfoundry.sh/cheatcodes/#cheatcodes-interface) to get some idea, but the docs aren't actually correct. The best thing to do is look through our tests and see how it's being used. If you see an assertion called `assert_Snap_...`, that's using the `TimeMachine` under the hood. 
 
 Speaking of, the `TimeMachine` is a global contract that controls the time, fate, and destiny of all who use it.
 * `Users` use the `TimeMachine` to snapshot chain state *before* every action they perform. (see the [`User.createSnapshot`](https://github.com/layr-labs/eigenlayer-contracts/blob/c5193f7bff00903a4323be2a1500cbf7137a83e9/src/test/integration/User.t.sol#L43-L46) modifier).
