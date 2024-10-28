@@ -637,6 +637,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
                     (withdrawableRestakedExecutionLayerGwei + checkpoint.beaconChainBalanceBeforeGwei) * GWEI_TO_WEI;
                 proportionOfOldBalance =
                     uint64((totalRestakedBeforeWei - uint256(-totalShareDeltaWei)) * WAD / totalRestakedBeforeWei);
+                //TODO: analyze effects of rounding errors here see `test_VerifyWC_Slash_StartCP_VerifyWC_CompleteCP` for example
             }
 
             // Add any native ETH in the pod to `withdrawableRestakedExecutionLayerGwei`
