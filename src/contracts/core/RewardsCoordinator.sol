@@ -5,7 +5,6 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin-v4.9.0/contracts/utils/math/SafeCast.sol";
 import "../libraries/Merkle.sol";
 import "../permissions/Pausable.sol";
 import "./RewardsCoordinatorStorage.sol";
@@ -302,7 +301,7 @@ contract RewardsCoordinator is
             commission <= ONE_HUNDRED_IN_BIPS,
             "RewardsCoordinator.setOperatorAVSCommission: commission must be <= 10000 bips"
         );
-        uint32 activatedAt = SafeCast.toUint32(block.timestamp) + activationDelay;
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
 
         OperatorCommission storage operatorCommission = operatorAVSCommissionBips[operator][avs];
 
@@ -339,7 +338,7 @@ contract RewardsCoordinator is
             commission >= MIN_PI_COMMISSION_BIPS,
             "RewardsCoordinator.setOperatorPICommission: commission must be >= 1000 bips"
         );
-        uint32 activatedAt = SafeCast.toUint32(block.timestamp) + activationDelay;
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
 
         OperatorCommission storage operatorCommission = operatorPICommissionBips[operator];
 
@@ -495,7 +494,6 @@ contract RewardsCoordinator is
         address currAddress = address(0);
         for (uint256 i = 0; i < performanceRewardsSubmission.strategiesAndMultipliers.length; ++i) {
             IStrategy strategy = performanceRewardsSubmission.strategiesAndMultipliers[i].strategy;
-            // TODO: Check if this strategy whitelist check is necessary.
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
                 "RewardsCoordinator._validatePerformanceRewardsSubmission: invalid strategy considered"
