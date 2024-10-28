@@ -301,18 +301,11 @@ contract RewardsCoordinator is
             commission <= ONE_HUNDRED_IN_BIPS,
             "RewardsCoordinator.setOperatorAVSCommission: commission must be <= 10000 bips"
         );
-        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
 
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         OperatorCommission storage operatorCommission = operatorAVSCommissionBips[operator][avs];
 
-        // If, the earlier 'new' commission is activated, we update the 'old' commission with the earlier 'new' commission.
-        // Else, the earlier 'old' commission remains the same. This is essentially resetting the activation delay window
-        // since the earlier commission setting didn't complete.
-        if (block.timestamp >= operatorCommission.activatedAt) {
-            operatorCommission.oldCommissionBips = operatorCommission.newCommissionBips;
-        }
-        operatorCommission.newCommissionBips = commission;
-        operatorCommission.activatedAt = activatedAt;
+        _setOperatorCommission(operatorCommission, commission, activatedAt);
 
         emit OperatorAVSCommissionBipsSet(
             msg.sender,
@@ -338,18 +331,11 @@ contract RewardsCoordinator is
             commission >= MIN_PI_COMMISSION_BIPS,
             "RewardsCoordinator.setOperatorPICommission: commission must be >= 1000 bips"
         );
-        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
 
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         OperatorCommission storage operatorCommission = operatorPICommissionBips[operator];
 
-        // If, the earlier 'new' commission is activated, we update the 'old' commission with the earlier 'new' commission.
-        // Else, the earlier 'old' commission remains the same. This is essentially resetting the activation delay window
-        // since the earlier commission setting didn't complete.
-        if (block.timestamp >= operatorCommission.activatedAt) {
-            operatorCommission.oldCommissionBips = operatorCommission.newCommissionBips;
-        }
-        operatorCommission.newCommissionBips = commission;
-        operatorCommission.activatedAt = activatedAt;
+        _setOperatorCommission(operatorCommission, commission, activatedAt);
 
         emit OperatorPICommissionBipsSet(
             msg.sender,
@@ -656,6 +642,46 @@ contract RewardsCoordinator is
     }
 
     /**
+     * @notice Internal helper to set the operator commission.
+     * @param operatorCommission The commission struct for an Operator
+     * @param commission The commission in basis points.
+     * @param activatedAt The timestamp when the commission is activated.
+     */
+    function _setOperatorCommission(
+        OperatorCommission storage operatorCommission,
+        uint16 commission,
+        uint32 activatedAt
+    ) internal {
+        // If, the earlier 'new' commission is activated, we update the 'old' commission with the earlier 'new' commission.
+        // Else, the earlier 'old' commission remains the same. This is essentially resetting the activation delay window
+        // since the earlier commission setting didn't complete.
+        if (block.timestamp >= operatorCommission.activatedAt) {
+            operatorCommission.oldCommissionBips = operatorCommission.newCommissionBips;
+        }
+        operatorCommission.newCommissionBips = commission;
+        operatorCommission.activatedAt = activatedAt;
+    }
+
+    /**
+     * @notice Internal helper to get the operator commission in basis points.
+     * @dev It takes default and activation delay into account while calculating the commission.
+     * @param operatorCommission The commission struct for an Operator
+     * @return The commission in basis points.
+     */
+    function _getOperatorCommission(OperatorCommission memory operatorCommission) internal view returns (uint16) {
+        if (operatorCommission.activatedAt == 0) {
+            // Return the Global Operator Commission if the operator commission has not been initialized.
+            return globalOperatorCommissionBips;
+        } else {
+            // Return the new commission if the new commission has been activated, else return the old commission.
+            return
+                (block.timestamp >= operatorCommission.activatedAt)
+                    ? operatorCommission.newCommissionBips
+                    : operatorCommission.oldCommissionBips;
+        }
+    }
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
@@ -679,34 +705,12 @@ contract RewardsCoordinator is
 
     /// @inheritdoc IRewardsCoordinator
     function getOperatorAVSCommission(address operator, address avs) external view returns (uint16) {
-        OperatorCommission memory operatorCommission = operatorAVSCommissionBips[operator][avs];
-
-        if (operatorCommission.activatedAt == 0) {
-            // Return the Global Operator Commission if the operator commission has not been initialized.
-            return globalOperatorCommissionBips;
-        } else {
-            // Return the new commission if the new commission has been activated, else return the old commission.
-            return
-                (block.timestamp >= operatorCommission.activatedAt)
-                    ? operatorCommission.newCommissionBips
-                    : operatorCommission.oldCommissionBips;
-        }
+        return _getOperatorCommission(operatorAVSCommissionBips[operator][avs]);
     }
 
     /// @inheritdoc IRewardsCoordinator
     function getOperatorPICommission(address operator) external view returns (uint16) {
-        OperatorCommission memory operatorCommission = operatorPICommissionBips[operator];
-
-        if (operatorCommission.activatedAt == 0) {
-            // Return the Global Operator Commission if the operator commission has not been initialized.
-            return globalOperatorCommissionBips;
-        } else {
-            // Return the new commission if the new commission has been activated, else return the old commission.
-            return
-                (block.timestamp >= operatorCommission.activatedAt)
-                    ? operatorCommission.newCommissionBips
-                    : operatorCommission.oldCommissionBips;
-        }
+        return _getOperatorCommission(operatorPICommissionBips[operator]);
     }
 
     /// @inheritdoc IRewardsCoordinator
