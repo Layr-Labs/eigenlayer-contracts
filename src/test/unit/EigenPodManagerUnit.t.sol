@@ -315,7 +315,7 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
                         WithdrawSharesAsTokens Tests
     ******************************************************************************/
 
-    function test_withdrawSharesAsTokekns_revert_invalidStrategy() public {
+    function test_withdrawSharesAsTokens_revert_invalidStrategy() public {
         cheats.prank(address(delegationManagerMock));
         cheats.expectRevert(IEigenPodManagerErrors.InvalidStrategy.selector);
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, IStrategy(address(0)), IERC20(address(0)), 0);
@@ -465,6 +465,8 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, sharesDelta, 0);
 
         // Check storage
+        // Note that this is a unit test, we don't validate that the withdrawable shares are updated correctly
+        // See the integration tests for checking scaling factors and withdrawable shares
         if (sharesBefore >= 0 && sharesDelta > 0) {
             assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), sharesBefore + sharesDelta, "Shares not updated correctly");
         } else {

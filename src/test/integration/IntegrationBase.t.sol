@@ -524,9 +524,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         // Use timewarp to get previous staker shares
         uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
 
-        // For each strategy, check (prev - removed == cur)
+        // For each strategy, check diff between (prev-removed) and curr is at most 1 gwei
         for (uint i = 0; i < strategies.length; i++) {
-            assertGe(prevShares[i] - removedShares[i], curShares[i], err);
+            assertApproxEqAbs(prevShares[i] - removedShares[i], curShares[i], 1e9, err);
         }
     }
 
