@@ -414,20 +414,6 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     /*******************************************************************************
-                    SNAPSHOT ASSERTIONS: STAKER SCALING FACTOR
-    *******************************************************************************/
-
-    function assert_Snap_Decreased_BeaconChainScalingFactor(
-        User staker,
-        string memory err
-    ) internal {
-        uint64 curScalingFactor = _getBeaconChainScalingFactor(staker);
-        uint64 prevScalingFactor = _getPrevBeaconChainScalingFactor(staker);
-
-        assertLt(curScalingFactor, prevScalingFactor, err);
-    }
-
-    /*******************************************************************************
                             SNAPSHOT ASSERTIONS: STAKER SHARES
     *******************************************************************************/
 

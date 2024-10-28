@@ -86,8 +86,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         check_CompleteCheckpoint_State(staker);
 
         assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have decreased");
-        // TODO: make this better
-        assert_Snap_Decreased_BeaconChainScalingFactor(staker, "beacon chain scaling factor should have decreased");
         assert_Snap_Removed_StakerWithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
@@ -99,7 +97,8 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         check_CompleteCheckpoint_State(staker);
 
-        assert_Snap_Removed_StakerDepositShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have reduced shares by slashed amount");
+        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Removed_StakerWithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
     }
 
