@@ -99,7 +99,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     uint256 private __deprecated_minWithdrawalDelayBlocks;
 
     /// @dev Returns whether a withdrawal is pending for a given `withdrawalRoot`.
-    /// @dev This variable is actively being deprecated, values should only be read or deleted.
+    /// @dev This variable will be deprecated in the future, values should only be read or deleted.
     mapping(bytes32 withdrawalRoot => bool pending) internal _legacyPendingWithdrawals;
 
     /// @notice Returns the total number of withdrawals that have been queued for a given `staker`.
