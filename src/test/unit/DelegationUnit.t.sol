@@ -644,9 +644,6 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         assertEq(delegationManager.delegatedTo(operator), operator, "operator not delegated to self");
     }
 
-    /// TODO: registerAsOperator 2 separate addresses
-    /// function testTwoSelfOperatorsRegister() public {}
-
     // @notice Verifies that a staker who is actively delegated to an operator cannot register as an operator (without first undelegating, at least)
     function testFuzz_Revert_registerAsOperator_cannotRegisterWhileDelegated(
         address staker,
@@ -674,12 +671,6 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
     ///     depositShares == operatorShares == withdrawableShares
     ///     check operatorDetails hash encode matches the operatorDetails hash stored (call view function)
     function testFuzz_registerAsOperator_withDeposits() public {}
-
-    /// TODO: Add test for registerAsOperator where the operator has existing deposits in strategies
-    /// Assert:
-    ///     depositShares == operatorShares == withdrawableShares
-    ///     check operatorDetails hash encode matches the operatorDetails hash stored (call view function)
-    // function testFuzz_registerAsOperator_withDeposits() public {}
 
     /**
      * @notice Tests that an operator can modify their OperatorDetails by calling `DelegationManager.modifyOperatorDetails`
