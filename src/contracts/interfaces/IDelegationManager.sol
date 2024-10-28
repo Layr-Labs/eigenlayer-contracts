@@ -43,6 +43,12 @@ interface IDelegationManagerErrors {
     /// @dev Thrown when provided delay exceeds maximum.
     error WithdrawalDelayExceedsMax();
 
+    /// Slashing
+
+    /// @dev Thrown when an operator has been fully slashed(maxMagnitude is 0) for a strategy.
+    /// or if the staker has had been natively slashed to the point of their beaconChainScalingFactor equalling 0.
+    error FullySlashed();
+
     /// Signatures
 
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
@@ -262,6 +268,8 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      *             or their delegationApprover is the `msg.sender`, then approval is assumed.
      * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
      * in this case to save on complexity + gas costs
+     * @dev If the staker delegating has shares in a strategy that the operator was slashed 100% for (the operator's maxMagnitude = 0),
+     * then delegation is blocked and will revert.
      */
     function delegateTo(
         address operator,
@@ -285,6 +293,8 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @dev This function will revert if the current `block.timestamp` is equal to or exceeds the expiry
      * @dev In the case that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
      * in this case to save on complexity + gas costs
+     * @dev If the staker delegating has shares in a strategy that the operator was slashed 100% for (the operator's maxMagnitude = 0),
+     * then delegation is blocked and will revert.
      */
     function delegateToBySignature(
         address staker,
@@ -367,6 +377,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      *
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated delegatedShares in `strategy`.
      * Otherwise does nothing.
+     * @dev If the operator was slashed 100% for the strategy (the operator's maxMagnitude = 0), then increasing delegated shares is blocked and will revert.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
     function increaseDelegatedShares(
