@@ -508,10 +508,10 @@ contract DelegationManager is
 
         // read delegated operator's maxMagnitudes at the earliest time that the withdrawal could be completed
         // to convert the delegatedShares to shares factoring in slashing that occured during withdrawal delay
-        uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudesAtTimestamp({
+        uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudesAtBlock({
             operator: withdrawal.delegatedTo,
             strategies: withdrawal.strategies,
-            timestamp: completableBlock //TODO: update ALM to use blocks
+            blockNumber: completableBlock
         });
 
         for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
