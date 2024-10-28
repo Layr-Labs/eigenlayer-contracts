@@ -309,10 +309,10 @@ interface IRewardsCoordinator {
     /// @notice the commission for all operators across all avss
     function globalOperatorCommissionBips() external view returns (uint16);
 
-    /// @notice the commission for a specific operator for a specific avs
+    /// @notice the commission for a specific `operator` for a specific `avs`
     function getOperatorAVSCommission(address operator, address avs) external view returns (uint16);
 
-    /// @notice the commission for a specific operator for Programmatic Incentives
+    /// @notice the commission for a specific `operator` for Programmatic Incentives
     function getOperatorPICommission(address operator) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
