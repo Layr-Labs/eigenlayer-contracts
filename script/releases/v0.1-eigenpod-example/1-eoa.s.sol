@@ -12,6 +12,8 @@ import "zeus-templates/utils/StringUtils.sol";
 contract DeployEigenPodAndManager is EOADeployer {
     using StringUtils for string;
 
+    Deployment[] private _deployments;
+
     /// @notice deploys an EigenPod and returns the deployed address
     function _deploy(Addresses memory, Environment memory, Params memory params) internal override returns (Deployment[] memory) {
 
@@ -28,20 +30,20 @@ contract DeployEigenPodAndManager is EOADeployer {
 
         // record new deployment
         _deployments.push(Deployment({
-            name: type(EigenPodManager).name,
+            overrideName: "",
             deployedTo: newEigenPodManager,
-            envToUpdate: "eigenPodManager.pendingImpl"
+            singleton: true
         }));
 
         // create and record new EigenPod pointing to defunct EigenPodManager
         _deployments.push(Deployment({
-            name: type(EigenPod).name,
+            overrideName: "",
             deployedTo: address(new EigenPod(
                 IETHPOSDeposit(params.ethPOS),
                 IEigenPodManager(newEigenPodManager), // update EigenPodManager address
                 params.EIGENPOD_GENESIS_TIME
             )),
-            envToUpdate: "eigenPod.pendingImpl"
+            singleton: true
         }));
 
         vm.stopBroadcast();
@@ -57,7 +59,7 @@ contract DeployEigenPodAndManager is EOADeployer {
     function test_DeployEigenPodManager() public {
         Deployment memory eigenPodManager = _deployments[0];
         require(eigenPodManager.deployedTo != address(0), "eigenPodManager not deployed");
-        require(eigenPodManager.name.eq(type(EigenPodManager).name), "eigenPodManager name mismatch");
+        require(eigenPodManager.overrideName.eq(""), "eigenPodManager name mismatch");
 
         EigenPodManager eigenPodManagerInstance = EigenPodManager(eigenPodManager.deployedTo);
 
@@ -72,7 +74,7 @@ contract DeployEigenPodAndManager is EOADeployer {
         Deployment memory eigenPodManager = _deployments[0];
         Deployment memory eigenPod = _deployments[1];
         require(eigenPod.deployedTo != address(0), "eigenPod not deployed");
-        require(eigenPod.name.eq(type(EigenPod).name), "eigenPod name mismatch");
+        require(eigenPod.overrideName.eq(""), "eigenPod name mismatch");
 
         EigenPod eigenPodInstance = EigenPod(payable(eigenPod.deployedTo));
         require(address(eigenPodInstance.eigenPodManager()) == eigenPodManager.deployedTo, "eigenPodManager not set");
