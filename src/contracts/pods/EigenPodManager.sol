@@ -173,7 +173,7 @@ contract EigenPodManager is
     ) external onlyDelegationManager {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         require(staker != address(0), InputAddressZero());
-        require(int256(shares) >= 0, SharesNegative());
+        require(int256(shares) > 0, SharesNegative());
 
         int256 currentDepositShares = podOwnerDepositShares[staker];
         uint256 sharesToWithdraw;
