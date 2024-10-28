@@ -792,10 +792,7 @@ contract DelegationManager is
             uint256 depositShares = shareManager.stakerDepositShares(staker, strategies[i]);
 
             // 2. Calculate the withdrawable shares
-            withdrawableShares[i] = depositShares.toShares(
-                stakerScalingFactor[staker][strategies[i]],
-                maxMagnitudes[i]
-            );
+            withdrawableShares[i] = depositShares.toShares(stakerScalingFactor[staker][strategies[i]], maxMagnitudes[i]);
         }
         return withdrawableShares;
     }
