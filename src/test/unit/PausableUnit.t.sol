@@ -25,6 +25,9 @@ contract PausableUnitTests is Test {
     /// @notice Emitted when the pause is lifted by `account`, and changed to `newPausedStatus`.
     event Unpaused(address indexed account, uint256 newPausedStatus);
 
+    /// @notice Emitted when the `pauserRegistry` is set to `newPauserRegistry`.
+    event PauserRegistrySet(IPauserRegistry pauserRegistry, IPauserRegistry newPauserRegistry);
+
     function setUp() virtual public {
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
@@ -159,6 +162,25 @@ contract PausableUnitTests is Test {
         cheats.expectRevert(IPausable.InvalidNewPausedStatus.selector);
         pausable.unpause(newPausedStatus);
         cheats.stopPrank();
+    }
+
+    function testSetPauserRegistryUnpauser(IPauserRegistry newPauserRegistry) public {
+        cheats.assume(address(newPauserRegistry) != address(0));
+        IPauserRegistry oldPauserRegistry = pausable.pauserRegistry();
+        cheats.prank(unpauser);
+        cheats.expectEmit(true, true, true, true, address(pausable));
+        emit PauserRegistrySet(oldPauserRegistry, newPauserRegistry);
+        pausable.setPauserRegistry(newPauserRegistry);
+        
+        assertEq(address(newPauserRegistry), address(pausable.pauserRegistry()));
+    }
+
+    function testSetPauserRegistyUnauthorized(IPauserRegistry newPauserRegistry, address notUnpauser) public {
+        cheats.assume(notUnpauser != pausable.pauserRegistry().unpauser());
+        
+        cheats.prank(notUnpauser);
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
+        pausable.setPauserRegistry(newPauserRegistry);
     }
 
 }
