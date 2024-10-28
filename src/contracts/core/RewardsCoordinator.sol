@@ -196,7 +196,6 @@ contract RewardsCoordinator is
         PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION) nonReentrant {
         require(msg.sender == avs, "RewardsCoordinator.createAVSPerformanceRewardsSubmission: caller is not the AVS");
-        // TODO: Should we check if this is a registered AVS?
 
         for (uint256 i = 0; i < performanceRewardsSubmissions.length; i++) {
             PerformanceRewardsSubmission calldata performanceRewardsSubmission = performanceRewardsSubmissions[i];
@@ -215,7 +214,6 @@ contract RewardsCoordinator is
                 performanceRewardsSubmissionHash,
                 performanceRewardsSubmission
             );
-            // TODO: Figure out if avs or msg.sender should be sender here in the context of delegated accounts.
             performanceRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
     }
