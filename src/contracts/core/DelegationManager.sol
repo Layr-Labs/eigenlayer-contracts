@@ -218,7 +218,7 @@ contract DelegationManager is
             // Otherwise if the operator has been slashed 100% for the strategy, it implies
             // the staker has no available shares to withdraw and we simply decrement their entire depositShares amount.
             // Note the returned withdrawal root will be 0x0 in this scenario but is not actually a valid null root.
-            if (_verifyMaxMagnitudeAndScalingFactor(maxMagnitudes[i], ssf)) {
+            if (_hasNonZeroScalingFactors(maxMagnitudes[i], ssf)) {
                 IStrategy[] memory singleStrategy = new IStrategy[](1);
                 uint256[] memory singleShares = new uint256[](1);
                 uint64[] memory singleMaxMagnitude = new uint64[](1);
@@ -569,7 +569,7 @@ contract DelegationManager is
 
         // Ensure that the operator has not been fully slashed for a strategy
         // and that the staker has not been fully slashed if its the beaconChainStrategy
-        require(_verifyMaxMagnitudeAndScalingFactor(maxMagnitude, ssf), FullySlashed());
+        require(_hasNonZeroScalingFactors(maxMagnitude, ssf), FullySlashed());
 
         // Increment operator shares
         operatorShares[operator][strategy] += addedShares;
@@ -639,7 +639,7 @@ contract DelegationManager is
 
             // Ensure that the operator has not been fully slashed for a strategy
             // and that the staker has not been slashed fully if its the beaconChainStrategy
-            require(_verifyMaxMagnitudeAndScalingFactor(maxMagnitudes[i], ssf), FullySlashed());
+            require(_hasNonZeroScalingFactors(maxMagnitudes[i], ssf), FullySlashed());
 
             // Calculate the deposit shares
             uint256 depositSharesToRemove = sharesToWithdraw[i].toDepositShares(ssf, maxMagnitudes[i]);
@@ -694,7 +694,7 @@ contract DelegationManager is
      * if this is the beaconChain strategy
      * @return bool True if the maxMagnitude is not 0 and the staker's beaconChainScalingFactor is not 0
      */
-    function _verifyMaxMagnitudeAndScalingFactor(
+    function _hasNonZeroScalingFactors(
         uint64 maxMagnitude,
         StakerScalingFactors memory ssf
     ) internal view returns (bool) {
