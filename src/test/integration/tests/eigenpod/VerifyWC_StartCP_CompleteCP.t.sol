@@ -477,7 +477,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, 0);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithCLSlashing_State(staker, slashedBalanceGwei + secondSlashedBalanceGwei);
+        check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, secondSlashedBalanceGwei);
     }
 
     /// 1. Verify validators' withdrawal credentials
