@@ -56,16 +56,26 @@ contract SlashingLibUnitTests is Test {
     /// Getters
     /// -----------------------------------------------------------------------
 
-    // function test_GetDepositScalingFactor_InitiallyWad() public {
-    //     assertEq(factors.getDepositScalingFactor(), WAD);
-    // }
+    function test_GetDepositScalingFactor_InitiallyWad() public {
+        StakerScalingFactors memory ssf = StakerScalingFactors({
+            depositScalingFactor: 0,
+            isBeaconChainScalingFactorSet: false,
+            beaconChainScalingFactor: 0
+        });
+        assertEq(SlashingLib.getDepositScalingFactor(ssf), WAD);
+    }
 
-    // function test_GetBeaconChainScalingFactor_InitiallyWad() public {
-    //     assertEq(factors.getBeaconChainScalingFactor(), WAD);
-    // }
+    function test_GetBeaconChainScalingFactor_InitiallyWad() public {
+        StakerScalingFactors memory ssf = StakerScalingFactors({
+            depositScalingFactor: 0,
+            isBeaconChainScalingFactorSet: false,
+            beaconChainScalingFactor: 0
+        });
+        assertEq(SlashingLib.getBeaconChainScalingFactor(ssf), WAD);
+    }
 
     /// -----------------------------------------------------------------------
-    ///
+    /// Differential Test Helpers
     /// -----------------------------------------------------------------------
 
     function _differentialScaleSharesForQueuedWithdrawal(
@@ -84,15 +94,37 @@ contract SlashingLibUnitTests is Test {
         ffi[1] = "src/test/ext/slashing-lib.t.py";
         ffi[2] = args;
 
-        return uint256(bytes32(vm.ffi(ffi)));
+        return abi.decode(vm.ffi(ffi), (uint256));
     }
 
-    function test_ScaleSharesForQueuedWithdrawal_Differential(
-        uint256 r
-    ) public {
-        uint256 sharesToWithdraw = 1.0 ether;
-        uint64 beaconChainScalingFactor = 1 ether;
-        uint64 operatorMagnitude = 1.0 ether;
+    function _differentialScaleSharesForCompleteWithdrawal(
+        uint256 scaledShares,
+        uint256 beaconChainScalingFactor,
+        uint64 operatorMagnitude
+    ) internal returns (uint256) {
+        string memory args;
+        args = vm.serializeString("args", "method", "scaleSharesForCompleteWithdrawal");
+        args = vm.serializeUint("args", "scaledShares", scaledShares);
+        args = vm.serializeUint("args", "beaconChainScalingFactor", beaconChainScalingFactor);
+        args = vm.serializeUint("args", "operatorMagnitude", operatorMagnitude);
+
+        string[] memory ffi = new string[](3);
+        ffi[0] = "python3";
+        ffi[1] = "src/test/ext/slashing-lib.t.py";
+        ffi[2] = args;
+
+        return abi.decode(vm.ffi(ffi), (uint256));
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Differential Tests
+    /// -----------------------------------------------------------------------
+
+    function test_ScaleSharesForQueuedWithdrawal_Differential() public {
+        // TODO: Document the constraints of each variable and fuzz them.
+        uint256 sharesToWithdraw = 1e18;
+        uint64 beaconChainScalingFactor = 1e18;
+        uint64 operatorMagnitude = 1e18;
 
         uint256 result =
             _differentialScaleSharesForQueuedWithdrawal(sharesToWithdraw, beaconChainScalingFactor, operatorMagnitude);
