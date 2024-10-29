@@ -291,7 +291,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             withdrawer: withdrawer,
             nonce: delegation.cumulativeWithdrawalsQueued(staker),
             delegatedTo: delegation.delegatedTo(staker),
-            startTimestamp: uint32(block.timestamp)
+            startBlock: uint32(block.number)
         });
 
         {
@@ -402,7 +402,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             staker: depositor,
             withdrawer: withdrawer,
             nonce: nonce,
-            startTimestamp: withdrawalStartTimestamp,
+            startBlock: withdrawalStartTimestamp,
             delegatedTo: delegatedTo
         });
 
@@ -452,7 +452,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             staker: depositor,
             withdrawer: withdrawer,
             nonce: nonce,
-            startTimestamp: withdrawalStartTimestamp,
+            startBlock: withdrawalStartTimestamp,
             delegatedTo: delegatedTo,
             scaledShares: shareAmounts
         });

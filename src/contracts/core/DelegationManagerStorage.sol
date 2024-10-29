@@ -34,15 +34,8 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev Index for flag that pauses completing existing withdrawals when set.
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
 
-    /// @notice The minimum number of blocks to complete a withdrawal of a strategy. 50400 * 12 seconds = 1 week
+    /// @notice The minimum number of blocks to complete a legacy pre-slashing upgrade withdrawal of a strategy. 50400 * 12 seconds = 1 week
     uint256 public constant LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS = 50_400;
-
-    /// @notice Check against the blockNumber/timestamps to determine if the withdrawal is a legacy or slashing withdrawl.
-    // Legacy withdrawals use block numbers. We expect block number 1 billion in ~370 years
-    // Slashing withdrawals use timestamps. The UTC timestmap as of Jan 1st, 2024 is 1_704_067_200 . Thus, when deployed, all
-    // withdrawal timestamps are AFTER the `LEGACY_WITHDRAWAL_CHECK_VALUE` timestamp.
-    // This below value is the UTC timestamp at Sunday, September 9th, 2001.
-    uint32 public constant LEGACY_WITHDRAWAL_CHECK_VALUE = 1_000_000_000;
 
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
@@ -63,8 +56,12 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The AllocationManager contract for EigenLayer
     IAllocationManager public immutable allocationManager;
 
-    /// @notice Minimum withdrawal delay in seconds until a queued withdrawal can be completed.
-    uint32 public immutable MIN_WITHDRAWAL_DELAY;
+    /// @notice Minimum withdrawal delay in blocks until a queued withdrawal can be completed.
+    uint32 public immutable MIN_WITHDRAWAL_DELAY_BLOCKS;
+
+    /// @notice The block number at which the slashing upgrade was activated.
+    /// This is needed to determine if a withdrawal is a legacy or slashing withdrawal and the delays they are subject to.
+    uint32 public immutable SLASHING_UPGRADE_BLOCK;
 
     // Mutatables
 
@@ -121,13 +118,14 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         IStrategyManager _strategyManager,
         IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
-        uint32 _MIN_WITHDRAWAL_DELAY
+        uint32 _MIN_WITHDRAWAL_DELAY_BLOCKS
     ) {
         avsDirectory = _avsDirectory;
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
         allocationManager = _allocationManager;
-        MIN_WITHDRAWAL_DELAY = _MIN_WITHDRAWAL_DELAY;
+        MIN_WITHDRAWAL_DELAY_BLOCKS = _MIN_WITHDRAWAL_DELAY_BLOCKS;
+        SLASHING_UPGRADE_BLOCK = uint32(block.number);
     }
 
     /**

@@ -506,7 +506,7 @@ contract DelegationManager is
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
         require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
 
-        uint32 completableTimestamp = getCompletableTimestamp(withdrawal.startTimestamp);
+        uint32 completableTimestamp = getCompletableTimestamp(withdrawal.startBlock);
         // read delegated operator's maxMagnitudes at the earliest time that the withdrawal could be completed
         // to convert the delegatedShares to shares factoring in slashing that occured during withdrawal delay
         uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudesAtTimestamp({
@@ -672,7 +672,7 @@ contract DelegationManager is
             delegatedTo: operator,
             withdrawer: staker,
             nonce: nonce,
-            startTimestamp: uint32(block.timestamp),
+            startBlock: uint32(block.number),
             strategies: strategies,
             scaledShares: scaledShares
         });
@@ -828,19 +828,18 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function getCompletableTimestamp(
-        uint32 startTimestamp
-    ) public view returns (uint32 completableTimestamp) {
-        if (startTimestamp < LEGACY_WITHDRAWAL_CHECK_VALUE) {
-            // this is a legacy M2 withdrawal using blocknumbers.
-            // It would take 370+ years for the blockNumber to reach the LEGACY_WITHDRAWAL_CHECK_VALUE, so this is a safe check.
-            require(startTimestamp + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number, WithdrawalDelayNotElapsed());
-            // sourcing the magnitudes from time=0, will always give us WAD, which doesn't factor in slashing
-            completableTimestamp = 0;
+        uint32 startBlock
+    ) public view returns (uint32 completableBlock) {
+        if (startBlock < SLASHING_UPGRADE_BLOCK) {
+            // this is a legacy M2 withdrawal
+            require(startBlock + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number, WithdrawalDelayNotElapsed());
+            // sourcing the magnitudes from block=0, will always give us WAD, which doesn't factor in slashing
+            completableBlock = 0;
         } else {
-            // this is a post Slashing release withdrawal using timestamps
-            require(startTimestamp + MIN_WITHDRAWAL_DELAY <= block.timestamp, WithdrawalDelayNotElapsed());
             // source magnitudes from the time of completability
-            completableTimestamp = startTimestamp + MIN_WITHDRAWAL_DELAY;
+            completableBlock = startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
+            // this is a post Slashing release withdrawal
+            require(completableBlock <= uint32(block.number), WithdrawalDelayNotElapsed());
         }
     }
 

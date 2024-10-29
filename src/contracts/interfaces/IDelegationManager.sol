@@ -40,9 +40,6 @@ interface IDelegationManagerErrors {
     /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
     error OnlyStrategyManagerOrEigenPodManager();
 
-    /// @dev Thrown when provided delay exceeds maximum.
-    error WithdrawalDelayExceedsMax();
-
     /// Slashing
 
     /// @dev Thrown when an operator has been fully slashed(maxMagnitude is 0) for a strategy.
@@ -133,11 +130,8 @@ interface IDelegationManagerTypes {
         address withdrawer;
         // Nonce used to guarantee that otherwise identical withdrawals have unique hashes
         uint256 nonce;
-        // Timestamp when the Withdrawal was created.
-        // NOTE this used to be `startBlock` but changedto timestamps in the Slashing release. This has no effect
-        // on the hash of this struct but we do need to know when to handle blocknumbers vs timestamps depending on
-        // if the withdrawal was created before or after the Slashing release.
-        uint32 startTimestamp;
+        // Blocknumber when the Withdrawal was created.
+        uint32 startBlock;
         // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
         // Array containing the amount of staker's scaledShares for withdrawal in each Strategy in the `strategies` array
@@ -548,7 +542,12 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         uint32 startTimestamp
     ) external view returns (uint32 completableTimestamp);
 
-    /// @notice Return the M2 minimum withdrawal delay in blocks for backwards compatability
+    /// @notice Returns the minimum withdrawal delay in blocks to pass for withdrawals queued to be completable.
+    /// Applies to withdrawals queued at a blocknumber >= SLASHING_UPGRADE_BLOCK.
+    function MIN_WITHDRAWAL_DELAY_BLOCKS() external view returns (uint32);
+
+    /// @notice Return the M2 minimum withdrawal delay in blocks for backwards compatability.
+    /// NOT to be confused with the current minimum withdrawal delay for withdrawals queued at a blocknumber >= SLASHING_UPGRADE_BLOCK.
     function minWithdrawalDelayBlocks() external view returns (uint256);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
