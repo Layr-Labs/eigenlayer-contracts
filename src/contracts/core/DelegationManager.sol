@@ -506,13 +506,15 @@ contract DelegationManager is
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
         require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
 
-        uint32 completableTimestamp = getCompletableTimestamp(withdrawal.startBlock);
+        uint32 completableBlock = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
+        require(completableBlock <= uint32(block.number), WithdrawalDelayNotElapsed());
+
         // read delegated operator's maxMagnitudes at the earliest time that the withdrawal could be completed
         // to convert the delegatedShares to shares factoring in slashing that occured during withdrawal delay
         uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudesAtTimestamp({
             operator: withdrawal.delegatedTo,
             strategies: withdrawal.strategies,
-            timestamp: completableTimestamp
+            timestamp: completableBlock //TODO: update ALM to use blocks
         });
 
         for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
@@ -824,28 +826,6 @@ contract DelegationManager is
         }
 
         return (strategies, shares);
-    }
-
-    /// @inheritdoc IDelegationManager
-    function getCompletableTimestamp(
-        uint32 startBlock
-    ) public view returns (uint32 completableBlock) {
-        if (startBlock < SLASHING_UPGRADE_BLOCK) {
-            // this is a legacy M2 withdrawal
-            require(startBlock + LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS <= block.number, WithdrawalDelayNotElapsed());
-            // sourcing the magnitudes from block=0, will always give us WAD, which doesn't factor in slashing
-            completableBlock = 0;
-        } else {
-            // source magnitudes from the time of completability
-            completableBlock = startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
-            // this is a post Slashing release withdrawal
-            require(completableBlock <= uint32(block.number), WithdrawalDelayNotElapsed());
-        }
-    }
-
-    /// @inheritdoc IDelegationManager
-    function minWithdrawalDelayBlocks() public view returns (uint256) {
-        return LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS;
     }
 
     /// @inheritdoc IDelegationManager

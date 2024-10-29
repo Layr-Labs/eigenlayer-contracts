@@ -3918,10 +3918,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
 
 contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManagerUnitTests {
     // TODO: add upgrade tests for completing withdrawals queued before upgrade in integration tests
-    function setUp() public override {
-        DelegationManagerUnitTests.setUp();
-        cheats.roll(delegationManager.SLASHING_UPGRADE_BLOCK());
-    }
 
     function test_Revert_WhenExitWithdrawalQueuePaused() public {
         cheats.prank(pauser);

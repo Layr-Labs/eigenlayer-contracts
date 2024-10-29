@@ -34,9 +34,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev Index for flag that pauses completing existing withdrawals when set.
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
 
-    /// @notice The minimum number of blocks to complete a legacy pre-slashing upgrade withdrawal of a strategy. 50400 * 12 seconds = 1 week
-    uint256 public constant LEGACY_MIN_WITHDRAWAL_DELAY_BLOCKS = 50_400;
-
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
@@ -58,10 +55,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice Minimum withdrawal delay in blocks until a queued withdrawal can be completed.
     uint32 public immutable MIN_WITHDRAWAL_DELAY_BLOCKS;
-
-    /// @notice The block number at which the slashing upgrade was activated.
-    /// This is needed to determine if a withdrawal is a legacy or slashing withdrawal and the delays they are subject to.
-    uint32 public immutable SLASHING_UPGRADE_BLOCK;
 
     // Mutatables
 
@@ -125,7 +118,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         eigenPodManager = _eigenPodManager;
         allocationManager = _allocationManager;
         MIN_WITHDRAWAL_DELAY_BLOCKS = _MIN_WITHDRAWAL_DELAY_BLOCKS;
-        SLASHING_UPGRADE_BLOCK = uint32(block.number);
     }
 
     /**

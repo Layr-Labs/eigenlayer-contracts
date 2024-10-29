@@ -29,8 +29,6 @@ interface IDelegationManagerErrors {
 
     /// @dev Thrown when attempting to execute an action that was not queued.
     error WithdrawalNotQueued();
-    /// @dev Thrown when provided delay exceeds maximum.
-    error AllocationDelaySet();
     /// @dev Thrown when caller cannot undelegate on behalf of a staker.
     error CallerCannotUndelegate();
     /// @dev Thrown when two array parameters have mismatching lengths.
@@ -536,19 +534,12 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         address staker
     ) external view returns (IStrategy[] memory, uint256[] memory);
 
-    /// @notice Returns a completable timestamp given a start timestamp for a withdrawal
-    /// @dev check whether the withdrawal delay has elapsed (handles both legacy and post-slashing-release withdrawals) and returns the completable timestamp
-    function getCompletableTimestamp(
-        uint32 startTimestamp
-    ) external view returns (uint32 completableTimestamp);
-
-    /// @notice Returns the minimum withdrawal delay in blocks to pass for withdrawals queued to be completable.
-    /// Applies to withdrawals queued at a blocknumber >= SLASHING_UPGRADE_BLOCK.
+    /**
+     * @notice Returns the minimum withdrawal delay in blocks to pass for withdrawals queued to be completable.
+     * Also applies to legacy withdrawals so any withdrawals not completed prior to the slashing upgrade will be subject
+     * to this longer delay.
+     */
     function MIN_WITHDRAWAL_DELAY_BLOCKS() external view returns (uint32);
-
-    /// @notice Return the M2 minimum withdrawal delay in blocks for backwards compatability.
-    /// NOT to be confused with the current minimum withdrawal delay for withdrawals queued at a blocknumber >= SLASHING_UPGRADE_BLOCK.
-    function minWithdrawalDelayBlocks() external view returns (uint256);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(
