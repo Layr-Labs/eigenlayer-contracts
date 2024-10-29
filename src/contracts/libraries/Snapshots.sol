@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 import "@openzeppelin-upgrades/contracts/utils/math/MathUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/utils/math/SafeCastUpgradeable.sol";
-
-import "./SlashingLib.sol";
 
 /**
  * @title Library for handling snapshots as part of allocating and slashing.
@@ -22,6 +18,10 @@ import "./SlashingLib.sol";
  * _Available since v4.5._
  */
 library Snapshots {
+    error SnapshotKeyDecreased();
+
+    uint64 internal constant WAD = 1 ether;
+
     struct DefaultWadHistory {
         Snapshot[] _snapshots;
     }
@@ -76,11 +76,12 @@ library Snapshots {
         uint256 pos = self.length;
 
         if (pos > 0) {
+            
             // Copying to memory is important here.
             Snapshot memory last = _unsafeAccess(self, pos - 1);
 
             // Snapshot keys must be non-decreasing.
-            require(last._key <= key, "Snapshot: decreasing keys");
+            require(last._key <= key, SnapshotKeyDecreased());
 
             // Update or push new snapshot
             if (last._key == key) {
