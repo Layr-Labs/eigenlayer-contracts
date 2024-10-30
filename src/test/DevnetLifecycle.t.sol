@@ -115,7 +115,7 @@ contract Devnet_Lifecycle_Test is Test {
         cheats.prank(operator);
         delegationManager.registerAsOperator(operatorDetails, 1, emptyStringForMetadataURI);
         // Warp passed configuration delay
-        cheats.warp(block.timestamp + delegationManager.MIN_WITHDRAWAL_DELAY());
+        cheats.roll(block.number + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
 
         // Validate storage
         assertTrue(delegationManager.isOperator(operator));
@@ -202,10 +202,10 @@ contract Devnet_Lifecycle_Test is Test {
         IAllocationManagerTypes.MagnitudeInfo[] memory infos = allocationManager.getAllocationInfo(operator, wethStrategy, _getOperatorSetsArray());
         assertEq(infos[0].currentMagnitude, 0);
         assertEq(infos[0].pendingDiff, int128(uint128(magnitudeToSet)));
-        assertEq(infos[0].effectTimestamp, block.timestamp + 1);
+        assertEq(infos[0].effectTimestamp, block.number + 1);
 
         // Warp to effect timestamp
-        cheats.warp(block.timestamp + 1);
+        cheats.roll(block.number + 1);
 
         // Check allocation
         infos = allocationManager.getAllocationInfo(operator, wethStrategy, _getOperatorSetsArray());
@@ -253,7 +253,7 @@ contract Devnet_Lifecycle_Test is Test {
             delegatedTo: operator,
             withdrawer: staker,
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
-            startTimestamp: uint32(block.timestamp),
+            startBlock: uint32(block.number),
             strategies: strategies,
             scaledShares: scaledShares
         });
@@ -264,7 +264,7 @@ contract Devnet_Lifecycle_Test is Test {
         delegationManager.queueWithdrawals(queuedWithdrawals);
 
         // Roll passed withdrawal delay
-        cheats.warp(block.timestamp + delegationManager.MIN_WITHDRAWAL_DELAY());
+        cheats.roll(block.number + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
 
         // Complete withdrawal
         IERC20[] memory tokens = new IERC20[](1);

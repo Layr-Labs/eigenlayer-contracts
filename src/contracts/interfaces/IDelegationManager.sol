@@ -29,8 +29,6 @@ interface IDelegationManagerErrors {
 
     /// @dev Thrown when attempting to execute an action that was not queued.
     error WithdrawalNotQueued();
-    /// @dev Thrown when provided delay exceeds maximum.
-    error AllocationDelaySet();
     /// @dev Thrown when caller cannot undelegate on behalf of a staker.
     error CallerCannotUndelegate();
     /// @dev Thrown when two array parameters have mismatching lengths.
@@ -39,9 +37,6 @@ interface IDelegationManagerErrors {
     error InputArrayLengthZero();
     /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
     error OnlyStrategyManagerOrEigenPodManager();
-
-    /// @dev Thrown when provided delay exceeds maximum.
-    error WithdrawalDelayExceedsMax();
 
     /// Slashing
 
@@ -133,11 +128,8 @@ interface IDelegationManagerTypes {
         address withdrawer;
         // Nonce used to guarantee that otherwise identical withdrawals have unique hashes
         uint256 nonce;
-        // Timestamp when the Withdrawal was created.
-        // NOTE this used to be `startBlock` but changedto timestamps in the Slashing release. This has no effect
-        // on the hash of this struct but we do need to know when to handle blocknumbers vs timestamps depending on
-        // if the withdrawal was created before or after the Slashing release.
-        uint32 startTimestamp;
+        // Blocknumber when the Withdrawal was created.
+        uint32 startBlock;
         // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
         // Array containing the amount of staker's scaledShares for withdrawal in each Strategy in the `strategies` array
@@ -542,14 +534,12 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         address staker
     ) external view returns (IStrategy[] memory, uint256[] memory);
 
-    /// @notice Returns a completable timestamp given a start timestamp for a withdrawal
-    /// @dev check whether the withdrawal delay has elapsed (handles both legacy and post-slashing-release withdrawals) and returns the completable timestamp
-    function getCompletableTimestamp(
-        uint32 startTimestamp
-    ) external view returns (uint32 completableTimestamp);
-
-    /// @notice Return the M2 minimum withdrawal delay in blocks for backwards compatability
-    function minWithdrawalDelayBlocks() external view returns (uint256);
+    /**
+     * @notice Returns the minimum withdrawal delay in blocks to pass for withdrawals queued to be completable.
+     * Also applies to legacy withdrawals so any withdrawals not completed prior to the slashing upgrade will be subject
+     * to this longer delay.
+     */
+    function MIN_WITHDRAWAL_DELAY_BLOCKS() external view returns (uint32);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(

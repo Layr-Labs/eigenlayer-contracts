@@ -32,7 +32,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     IERC20 mockToken;
     uint256 mockTokenInitialSupply = 10e50;
 
-    uint32 constant MIN_WITHDRAWAL_DELAY = 17.5 days;
+    uint32 constant MIN_WITHDRAWAL_DELAY_BLOCKS = 126_000; // 17.5 days in blocks
 
     // Delegation signer
     uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
@@ -86,7 +86,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             IStrategyManager(address(strategyManagerMock)), 
             IEigenPodManager(address(eigenPodManagerMock)), 
             IAllocationManager(address(allocationManagerMock)), 
-            MIN_WITHDRAWAL_DELAY
+            MIN_WITHDRAWAL_DELAY_BLOCKS
         );
         delegationManager = DelegationManager(
             address(
@@ -371,7 +371,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             delegatedTo: delegationManager.delegatedTo(staker),
             withdrawer: withdrawer,
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
-            startTimestamp: uint32(block.timestamp),
+            startBlock: uint32(block.number),
             strategies: strategyArray,
             scaledShares: scaledSharesArray
         });
@@ -410,7 +410,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             delegatedTo: delegationManager.delegatedTo(staker),
             withdrawer: withdrawer,
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
-            startTimestamp: uint32(block.timestamp),
+            startBlock: uint32(block.number),
             strategies: strategies,
             scaledShares: scaledSharesArray
         });
@@ -544,8 +544,8 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
             "constructor / initializer incorrect, allocationManager set wrong"
         );
         assertEq(
-            delegationManager.MIN_WITHDRAWAL_DELAY(),
-            MIN_WITHDRAWAL_DELAY,
+            delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS(),
+            MIN_WITHDRAWAL_DELAY_BLOCKS,
             "constructor / initializer incorrect, MIN_WITHDRAWAL_DELAY set wrong"
         );
         assertEq(delegationManager.owner(), address(this), "constructor / initializer incorrect, owner set wrong");
@@ -3918,10 +3918,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
 
 contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManagerUnitTests {
     // TODO: add upgrade tests for completing withdrawals queued before upgrade in integration tests
-    function setUp() public override {
-        DelegationManagerUnitTests.setUp();
-        cheats.warp(delegationManager.LEGACY_WITHDRAWAL_CHECK_VALUE());
-    }
 
     function test_Revert_WhenExitWithdrawalQueuePaused() public {
         cheats.prank(pauser);
@@ -4000,7 +3996,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
         assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be pending");
-        cheats.warp(withdrawal.startTimestamp + delegationManager.MIN_WITHDRAWAL_DELAY());
+        cheats.roll(withdrawal.startBlock + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  true);
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
@@ -4035,7 +4031,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         });
 
         // prank as withdrawer address
-        cheats.warp(withdrawal.startTimestamp + minWithdrawalDelayBlocks - 1);
+        cheats.roll(withdrawal.startBlock + minWithdrawalDelayBlocks - 1);
         cheats.expectRevert(IDelegationManagerErrors.WithdrawalDelayNotElapsed.selector);
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  receiveAsTokens);
@@ -4071,7 +4067,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be pending");
 
         // completeQueuedWithdrawal
-        cheats.warp(withdrawal.startTimestamp + delegationManager.MIN_WITHDRAWAL_DELAY());
+        cheats.roll(withdrawal.startBlock + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
         cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit SlashingWithdrawalCompleted(withdrawalRoot);
@@ -4141,7 +4137,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         // Complete queue withdrawal
         IERC20[] memory tokens = new IERC20[](1);
         tokens[0] = IERC20(strategies[0].underlyingToken());
-        cheats.warp(withdrawal.startTimestamp + delegationManager.MIN_WITHDRAWAL_DELAY());
+        cheats.roll(withdrawal.startBlock + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
         cheats.prank(defaultStaker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit SlashingWithdrawalCompleted(withdrawalRoot);
@@ -4210,7 +4206,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         // Complete queue withdrawal
         IERC20[] memory tokens = new IERC20[](1);
-        cheats.warp(withdrawal.startTimestamp + delegationManager.MIN_WITHDRAWAL_DELAY());
+        cheats.roll(withdrawal.startBlock + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
         cheats.prank(defaultStaker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit SlashingWithdrawalCompleted(withdrawalRoot);
@@ -4292,7 +4288,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         // Complete queue withdrawal
         IERC20[] memory tokens = new IERC20[](1);
-        cheats.warp(withdrawal.startTimestamp + delegationManager.MIN_WITHDRAWAL_DELAY());
+        cheats.roll(withdrawal.startBlock + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
         cheats.prank(defaultStaker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit SlashingWithdrawalCompleted(withdrawalRoot);
@@ -4345,7 +4341,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         strategyManagerMock.setDelegationManager(delegationManager);
 
         // completeQueuedWithdrawal
-        cheats.warp(withdrawal.startTimestamp + delegationManager.MIN_WITHDRAWAL_DELAY());
+        cheats.roll(withdrawal.startBlock + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
         cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit SlashingWithdrawalCompleted(withdrawalRoot);
