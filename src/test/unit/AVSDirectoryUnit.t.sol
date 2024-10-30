@@ -330,6 +330,8 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
         expiry = bound(expiry, 1, type(uint256).max);
 
+        cheats.assume(salt != keccak256(""));
+
         cheats.warp(0);
 
         _createOperatorSet(operatorSetId);
@@ -338,6 +340,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         oids[0] = operatorSetId;
 
         address operator = cheats.addr(operatorPk);
+
         (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
             operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
         );
