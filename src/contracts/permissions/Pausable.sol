@@ -70,6 +70,7 @@ abstract contract Pausable is IPausable {
     constructor(
         IPauserRegistry _pauserRegistry
     ) {
+        require(address(_pauserRegistry) != address(0), InputAddressZero());
         pauserRegistry = _pauserRegistry;
     }
 
