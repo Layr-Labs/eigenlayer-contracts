@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import "../interfaces/IPermissionController.sol";
 
 abstract contract PermissionControllerStorage is IPermissionController {
-    /// @notice Mapping (account => admin)
-    mapping(address => address) accountToAdmin;
+    /// @notice Mapping of account to admin
+    mapping(address account => address admin) accountToAdmin;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
