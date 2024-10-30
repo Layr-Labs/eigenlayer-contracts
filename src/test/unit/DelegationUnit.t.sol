@@ -631,8 +631,12 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         assertEq(delegationManager.delegatedTo(operator), operator, "operator not delegated to self");
     }
 
+    /// TODO: registerAsOperator 2 separate addresses
+    /// function testTwoSelfOperatorsRegister() public {}
+
+
     // @notice Verifies that a staker who is actively delegated to an operator cannot register as an operator (without first undelegating, at least)
-    function testFuzz_registerAsOperator_cannotRegisterWhileDelegated(
+    function testFuzz_Revert_registerAsOperator_cannotRegisterWhileDelegated(
         address staker,
         IDelegationManagerTypes.OperatorDetails memory operatorDetails
     ) public filterFuzzedAddressInputs(staker) {
@@ -652,6 +656,12 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 
         cheats.stopPrank();
     }
+    
+    /// TODO: Add test for registerAsOperator where the operator has existing deposits in strategies
+    /// Assert:
+    ///     depositShares == operatorShares == withdrawableShares
+    ///     check operatorDetails hash encode matches the operatorDetails hash stored (call view function)
+    function testFuzz_registerAsOperator_withDeposits() public {}
 
     /**
      * @notice Tests that an operator can modify their OperatorDetails by calling `DelegationManager.modifyOperatorDetails`
@@ -699,7 +709,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
      * @dev This is an important check to ensure that our definition of 'operator' remains consistent, in particular for preserving the
      * invariant that 'operators' are always delegated to themselves
      */
-    function testFuzz_updateOperatorMetadataUri_revert_notOperator(
+    function testFuzz_Revert_updateOperatorMetadataUri_notOperator(
         IDelegationManagerTypes.OperatorDetails memory operatorDetails
     ) public {
         cheats.expectRevert(IDelegationManagerErrors.OperatorNotRegistered.selector);
@@ -2174,6 +2184,38 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         cheats.stopPrank();
     }
 
+    // TODO: Fix test from Delegation.t.sol
+    //     /// @notice  tries delegating using a wallet that does not comply with EIP 1271
+    // function testDelegateToBySignature_WithContractWallet_NonconformingWallet(
+    //     address operator,
+    //     uint96 ethAmount,
+    //     uint96 eigenAmount,
+    //     uint8 v,
+    //     bytes32 r,
+    //     bytes32 s
+    // ) public fuzzedAddress(operator) {
+    //     address staker = cheats.addr(PRIVATE_KEY);
+
+    //     // deploy non ERC1271-compliant wallet for staker to use
+    //     cheats.startPrank(staker);
+    //     ERC1271MaliciousMock wallet = new ERC1271MaliciousMock();
+    //     cheats.stopPrank();
+    //     staker = address(wallet);
+
+    //     _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount);
+
+    //     cheats.assume(staker != operator);
+
+    //     bytes memory signature = abi.encodePacked(r, s, v);
+
+    //     cheats.expectRevert();
+    //     ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
+    //         signature: signature,
+    //         expiry: type(uint256).max
+    //     });
+    //     delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
+    // }
+
     /// @notice Checks that `DelegationManager.delegateToBySignature` reverts when the staker is already delegated
     function test_Revert_Staker_WhenActivelyDelegated() public {
         address staker = cheats.addr(stakerPrivateKey);
@@ -3552,6 +3594,29 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         (uint256 newDepositScalingFactor,,) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
         assertEq(newDepositScalingFactor, WAD, "staker scaling factor not reset correctly");
     }
+
+    // TODO: fix old Withdrawals.t.sol test
+    //     // @notice This function tests to ensure that a delegator can re-delegate to an operator after undelegating.
+    // // @param operator is the operator being delegated to.
+    // // @param staker is the staker delegating stake to the operator.
+    // function testRedelegateAfterWithdrawal(
+    //     address operator,
+    //     address depositor,
+    //     uint96 ethAmount,
+    //     uint96 eigenAmount,
+    //     bool withdrawAsShares
+    // ) public fuzzedAddress(operator) fuzzedAddress(depositor) {
+    //     cheats.assume(depositor != operator);
+    //     //this function performs delegation and subsequent withdrawal
+    //     testWithdrawalWrapper(operator, depositor, ethAmount, eigenAmount, withdrawAsShares, true);
+
+    //     cheats.prank(depositor);
+    //     delegation.undelegate(depositor);
+
+    //     //warps past fraudproof time interval
+    //     cheats.warp(block.timestamp + 7 days + 1);
+    //     _initiateDelegation(operator, depositor, ethAmount, eigenAmount);
+    // }
 }
 
 contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTests {
@@ -4355,3 +4420,18 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
     // TODO: add slashing cases for withdrawing as shares (can also be in integration tests)
 }
+
+
+/**
+ * @notice TODO Lifecycle tests - These tests combine multiple functionalities of the DelegationManager
+   1. Old SigP test - registerAsOperator, separate staker delegate to operator, as operator undelegate (reverts),
+    checks that staker is still delegated and operator still registered, staker undelegates, checks staker not delegated and operator
+    is still registered
+   2. RegisterOperator, Deposit, Delegate, Queue, Complete
+   3. RegisterOperator, Mock Slash(set maxMagnitudes), Deposit/Delegate, Queue, Complete
+   4. RegisterOperator, Deposit/Delegate, Mock Slash(set maxMagnitudes), Queue, Complete
+   5. RegisterOperator, Mock Slash(set maxMagnitudes), Deposit/Delegate, Queue, Mock Slash(set maxMagnitudes), Complete
+   7. RegisterOperator, Deposit/Delegate, Mock Slash 100% (set maxMagnitudes), Undelegate, Complete non 100% slashed strategies
+   8. RegisterOperator, Deposit/Delegate, Undelegate, Re delegate to another operator, Mock Slash 100% (set maxMagnitudes), Complete as shares
+    (withdrawals should have been slashed even though delegated to a new operator)
+ */
