@@ -68,23 +68,4 @@ contract PausableTests is EigenLayerTestHelper {
         eigenLayerPauserReg.setIsPauser(newPauser, true);
         cheats.stopPrank();
     }
-
-    function testSetPauserRegistryUnpauser(IPauserRegistry newPauserRegistry) public {
-        cheats.assume(address(newPauserRegistry) != address(0));
-        IPauserRegistry oldPauserRegistry = strategyManager.pauserRegistry();
-        cheats.prank(unpauser);
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit PauserRegistrySet(oldPauserRegistry, newPauserRegistry);
-        strategyManager.setPauserRegistry(newPauserRegistry);
-        
-        assertEq(address(newPauserRegistry), address(strategyManager.pauserRegistry()));
-    }
-
-    function testSetPauserRegistyUnauthorized(IPauserRegistry newPauserRegistry, address notUnpauser) public fuzzedAddress(notUnpauser) {
-        cheats.assume(notUnpauser != eigenLayerPauserReg.unpauser());
-        
-        cheats.prank(notUnpauser);
-        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
-        strategyManager.setPauserRegistry(newPauserRegistry);
-    }
 }

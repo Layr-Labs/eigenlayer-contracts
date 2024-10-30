@@ -176,24 +176,27 @@ contract EigenLayerDeployer is Operators {
             strategyManager, 
             eigenPodManager, 
             allocationManager, 
+            eigenLayerPauserReg,
             17.5 days // min alloc delay
         );
 
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegation);
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            delegation
+            delegation,
+            eigenLayerPauserReg
         );
 
 
         AVSDirectory avsDirectoryImplementation = new AVSDirectory(
             delegation,
+            eigenLayerPauserReg,
             DEALLOCATION_DELAY
         );
 
-        AllocationManager allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        AllocationManager allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -202,7 +205,6 @@ contract EigenLayerDeployer is Operators {
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
                 eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
                 0 /*initialPausedStatus*/
             )
         );
@@ -212,7 +214,6 @@ contract EigenLayerDeployer is Operators {
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
                 0 /*initialPausedStatus*/,
                 minWithdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
@@ -226,7 +227,6 @@ contract EigenLayerDeployer is Operators {
                 StrategyManager.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
                 0 /*initialPausedStatus*/
             )
         );
@@ -236,7 +236,6 @@ contract EigenLayerDeployer is Operators {
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
                 0 /*initialPausedStatus*/
             )
         );
@@ -246,7 +245,6 @@ contract EigenLayerDeployer is Operators {
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector,
                 eigenLayerReputedMultisig,
-                eigenLayerPauserReg,
                 0 /*initialPausedStatus*/
             )
         );
@@ -255,13 +253,13 @@ contract EigenLayerDeployer is Operators {
         weth = new ERC20PresetFixedSupply("weth", "WETH", wethInitialSupply, address(this));
 
         // deploy StrategyBase contract implementation, then create upgradeable proxy that points to implementation and initialize it
-        baseStrategyImplementation = new StrategyBase(strategyManager);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
         wethStrat = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
                     address(baseStrategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, weth, eigenLayerPauserReg)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, weth)
                 )
             )
         );
@@ -274,7 +272,7 @@ contract EigenLayerDeployer is Operators {
                 new TransparentUpgradeableProxy(
                     address(baseStrategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, eigenToken, eigenLayerPauserReg)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, eigenToken)
                 )
             )
         );

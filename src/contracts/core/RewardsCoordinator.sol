@@ -43,6 +43,7 @@ contract RewardsCoordinator is
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
+        IPauserRegistry _pauserRegistry,
         uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
@@ -58,6 +59,7 @@ contract RewardsCoordinator is
             _MAX_FUTURE_LENGTH,
             _GENESIS_REWARDS_TIMESTAMP
         )
+        Pausable(_pauserRegistry)
     {
         _disableInitializers();
     }
@@ -68,13 +70,12 @@ contract RewardsCoordinator is
      */
     function initialize(
         address initialOwner,
-        IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus,
         address _rewardsUpdater,
         uint32 _activationDelay,
         uint16 _globalCommissionBips
     ) external initializer {
-        _initializePauser(_pauserRegistry, initialPausedStatus);
+        _setPausedStatus(initialPausedStatus);
         _transferOwnership(initialOwner);
         _setRewardsUpdater(_rewardsUpdater);
         _setActivationDelay(_activationDelay);

@@ -228,26 +228,28 @@ contract DeployFromScratch is Script, Test {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
 
-        delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegation);
-        avsDirectoryImplementation = new AVSDirectory(delegation, DEALLOCATION_DELAY);
+        delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg);
+        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, DEALLOCATION_DELAY);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            delegation
+            delegation,
+            eigenLayerPauserReg
         );
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegation,
             strategyManager,
+            eigenLayerPauserReg,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
             REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
             REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
         );
-        allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
-        strategyFactoryImplementation = new StrategyFactory(strategyManager);
+        allocationManagerImplementation = new AllocationManager(delegation, avsDirectory, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
@@ -259,7 +261,6 @@ contract DeployFromScratch is Script, Test {
                 abi.encodeWithSelector(
                     DelegationManager.initialize.selector,
                     executorMultisig,
-                    eigenLayerPauserReg,
                     DELEGATION_INIT_PAUSED_STATUS
                 )
             );
@@ -271,7 +272,6 @@ contract DeployFromScratch is Script, Test {
                 StrategyManager.initialize.selector,
                 executorMultisig,
                 operationsMultisig,
-                eigenLayerPauserReg,
                 STRATEGY_MANAGER_INIT_PAUSED_STATUS
             )
         );
@@ -286,7 +286,6 @@ contract DeployFromScratch is Script, Test {
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 executorMultisig,
-                eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
             )
         );
@@ -296,7 +295,6 @@ contract DeployFromScratch is Script, Test {
             abi.encodeWithSelector(
                 RewardsCoordinator.initialize.selector,
                 executorMultisig,
-                eigenLayerPauserReg,
                 REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                 REWARDS_COORDINATOR_UPDATER,
                 REWARDS_COORDINATOR_ACTIVATION_DELAY,
@@ -310,14 +308,13 @@ contract DeployFromScratch is Script, Test {
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector,
                 executorMultisig,
-                eigenLayerPauserReg,
                 ALLOCATION_MANAGER_INIT_PAUSED_STATUS
             )
         );
 
         // Deploy strategyFactory & base
         // Create base strategy implementation
-        baseStrategyImplementation = new StrategyBase(strategyManager);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Create a proxy beacon for base strategy implementation
         strategyBeacon = new UpgradeableBeacon(address(baseStrategyImplementation));
@@ -329,7 +326,6 @@ contract DeployFromScratch is Script, Test {
             abi.encodeWithSelector(
                 StrategyFactory.initialize.selector,
                 executorMultisig,
-                IPauserRegistry(address(eigenLayerPauserReg)),
                 0, // initial paused status
                 IBeacon(strategyBeacon)
             )

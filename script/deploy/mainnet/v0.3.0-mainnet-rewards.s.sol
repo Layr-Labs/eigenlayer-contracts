@@ -52,6 +52,7 @@ contract MainnetRewardsCoordinatorDeploy is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            eigenLayerPauserReg,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
@@ -66,7 +67,6 @@ contract MainnetRewardsCoordinatorDeploy is ExistingDeploymentParser {
                     abi.encodeWithSelector(
                         RewardsCoordinator.initialize.selector,
                         executorMultisig,
-                        eigenLayerPauserReg,
                         REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                         REWARDS_COORDINATOR_UPDATER,
                         REWARDS_COORDINATOR_ACTIVATION_DELAY,
@@ -85,6 +85,7 @@ contract MainnetRewardsCoordinatorDeploy is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            eigenLayerPauserReg,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,

@@ -44,7 +44,8 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
             ethPOSMock,
             eigenPodBeacon,
             IStrategyManager(address(strategyManagerMock)),
-            IDelegationManager(address(delegationManagerMock))
+            IDelegationManager(address(delegationManagerMock)),
+            pauserRegistry
         );
         eigenPodManager = EigenPodManager(
             address(
@@ -54,7 +55,6 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
                     abi.encodeWithSelector(
                         EigenPodManager.initialize.selector,
                         initialOwner,
-                        pauserRegistry,
                         0 /*initialPausedStatus*/
                     )
                 )
@@ -127,7 +127,6 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         cheats.expectRevert("Initializable: contract is already initialized");
         eigenPodManager.initialize(
             initialOwner,
-            pauserRegistry,
             0 /*initialPausedStatus*/);
     }
 }
@@ -307,7 +306,8 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
             ethPOSMock,
             eigenPodBeacon,
             IStrategyManager(address(strategyManagerMock)),
-            IDelegationManager(address(delegationManagerMock))
+            IDelegationManager(address(delegationManagerMock)),
+            pauserRegistry
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
@@ -406,7 +406,8 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
             ethPOSMock,
             eigenPodBeacon,
             IStrategyManager(address(strategyManagerMock)),
-            IDelegationManager(address(delegationManagerMock))
+            IDelegationManager(address(delegationManagerMock)),
+            pauserRegistry
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }

@@ -75,13 +75,14 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
 
         // Deploy implementations for AVSDirectory, DelegationManager, and AllocationManager.
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, pauserRegistry, DEALLOCATION_DELAY);
 
         delegationManagerImplementation = new DelegationManager(
             avsDirectory,
             IStrategyManager(address(strategyManagerMock)), 
             IEigenPodManager(address(eigenPodManagerMock)),  
             IAllocationManager(address(allocationManagerMock)),
+            pauserRegistry,
             MIN_WITHDRAWAL_DELAY
         );
 
@@ -92,7 +93,6 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
                 address(this),
-                pauserRegistry,
                 0, // 0 is initialPausedStatus
                 minWithdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
@@ -106,7 +106,6 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
                 address(this),
-                pauserRegistry,
                 0 // 0 is initialPausedStatus
             )
         );
@@ -251,12 +250,12 @@ contract AVSDirectoryUnitTests_initialize is AVSDirectoryUnitTests {
         address pauserRegistry,
         uint256 initialPausedStatus
     ) public virtual {
-        AVSDirectory dir = new AVSDirectory(IDelegationManager(delegationManager), DEALLOCATION_DELAY);
+        AVSDirectory dir = new AVSDirectory(IDelegationManager(delegationManager), IPauserRegistry(pauserRegistry), DEALLOCATION_DELAY);
 
         assertEq(address(dir.delegation()), delegationManager);
 
         cheats.expectRevert("Initializable: contract is already initialized");
-        dir.initialize(owner, IPauserRegistry(pauserRegistry), initialPausedStatus);
+        dir.initialize(owner, initialPausedStatus);
     }
 }
 
@@ -331,6 +330,8 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
         expiry = bound(expiry, 1, type(uint256).max);
 
+        cheats.assume(salt != keccak256(""));
+
         cheats.warp(0);
 
         _createOperatorSet(operatorSetId);
@@ -339,6 +340,7 @@ contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnit
         oids[0] = operatorSetId;
 
         address operator = cheats.addr(operatorPk);
+
         (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
             operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
         );

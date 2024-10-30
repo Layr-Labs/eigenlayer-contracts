@@ -9,8 +9,9 @@ contract EigenPodManagerWrapper is EigenPodManager {
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
         IStrategyManager _strategyManager,
-        IDelegationManager _delegationManager
-    ) EigenPodManager(_ethPOS, _eigenPodBeacon, _strategyManager, _delegationManager) {}
+        IDelegationManager _delegationManager,
+        IPauserRegistry _pauserRegistry
+    ) EigenPodManager(_ethPOS, _eigenPodBeacon, _strategyManager, _delegationManager, _pauserRegistry) {}
 
     function setPodOwnerShares(address owner, IEigenPod pod) external {
         ownerToPod[owner] = pod;

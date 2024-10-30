@@ -30,7 +30,7 @@ contract Eigen_Strategy_Deploy is ExistingDeploymentParser {
     }
 
     function _deployStrategy() internal {
-        eigenStrategyImpl = new EigenStrategy(strategyManager);
+        eigenStrategyImpl = new EigenStrategy(strategyManager, eigenLayerPauserReg);
 
         eigenStrategy = EigenStrategy(
             address(
@@ -40,8 +40,7 @@ contract Eigen_Strategy_Deploy is ExistingDeploymentParser {
                     abi.encodeWithSelector(
                         EigenStrategy.initialize.selector,
                         EIGEN,
-                        bEIGEN,
-                        eigenLayerPauserReg
+                        bEIGEN
                     )
                 )
             )

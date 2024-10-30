@@ -37,7 +37,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
         strategyManagerImplementation = new StrategyManager(
-            IDelegationManager(address(delegationManagerMock))
+            IDelegationManager(address(delegationManagerMock)), pauserRegistry
         );
         strategyManager = StrategyManager(
             address(
@@ -48,7 +48,6 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
                         StrategyManager.initialize.selector,
                         initialOwner,
                         initialOwner,
-                        pauserRegistry,
                         0 /*initialPausedStatus*/
                     )
                 )
@@ -83,9 +82,9 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         IPauserRegistry _pauserRegistry,
         address admin
     ) public returns (StrategyBase) {
-        StrategyBase newStrategy = new StrategyBase(_strategyManager);
+        StrategyBase newStrategy = new StrategyBase(_strategyManager, _pauserRegistry);
         newStrategy = StrategyBase(address(new TransparentUpgradeableProxy(address(newStrategy), address(admin), "")));
-        newStrategy.initialize(_token, _pauserRegistry);
+        newStrategy.initialize(_token);
         return newStrategy;
     }
 
@@ -234,7 +233,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
     function test_CannotReinitialize() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        strategyManager.initialize(initialOwner, initialOwner, pauserRegistry, 0);
+        strategyManager.initialize(initialOwner, initialOwner, 0);
     }
 
     function test_InitializedStorageProperly() public {

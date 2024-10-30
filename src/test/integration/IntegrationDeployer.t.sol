@@ -254,17 +254,18 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegationManager);
+        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            delegationManager
+            delegationManager,
+            eigenLayerPauserReg
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
-        strategyFactoryImplementation = new StrategyFactory(strategyManager);
-        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
+        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
@@ -277,7 +278,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
-                eigenLayerPauserReg,
                 0 /* initialPausedStatus */,
                 withdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
@@ -292,7 +292,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 StrategyManager.initialize.selector,
                 eigenLayerReputedMultisig, //initialOwner
                 eigenLayerReputedMultisig, //initial whitelister
-                eigenLayerPauserReg,
                 0 // initialPausedStatus
             )
         );
@@ -303,7 +302,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
-                eigenLayerPauserReg,
                 0 // initialPausedStatus
             )
         );
@@ -314,7 +312,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
-                eigenLayerPauserReg,
                 0 // initialPausedStatus
             )
         );
@@ -325,12 +322,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
-                eigenLayerPauserReg,
                 0 // initialPausedStatus
             )
         );
         // Create base strategy implementation and deploy a few strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Create a proxy beacon for base strategy implementation
         strategyBeacon = new UpgradeableBeacon(address(baseStrategyImplementation));
@@ -342,7 +338,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             abi.encodeWithSelector(
                 StrategyFactory.initialize.selector,
                 eigenLayerReputedMultisig,
-                IPauserRegistry(address(eigenLayerPauserReg)),
                 0, // initial paused status
                 IBeacon(strategyBeacon)
             )
@@ -397,15 +392,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegationManager);
+        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            delegationManager
+            delegationManager,
+            eigenLayerPauserReg
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -430,13 +426,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
                 executorMultisig,
-                eigenLayerPauserReg,
                 0 // initialPausedStatus
             )
         );
 
         // Create base strategy implementation and deploy a few strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Upgrade All deployed strategy contracts to new base strategy
         for (uint i = 0; i < numStrategiesDeployed; i++) {
@@ -484,15 +479,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegationManager);
+        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            delegationManager
+            delegationManager,
+            eigenLayerPauserReg
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -517,13 +513,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
                 executorMultisig,
-                eigenLayerPauserReg,
                 0 // initialPausedStatus
             )
         );
 
         // Create base strategy implementation and deploy a few strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Upgrade All deployed strategy contracts to new base strategy
         for (uint i = 0; i < numStrategiesDeployed; i++) {
@@ -565,7 +560,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                     new TransparentUpgradeableProxy(
                         address(baseStrategyImplementation),
                         address(eigenLayerProxyAdmin),
-                        abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
+                        abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                     )
                 )
             );

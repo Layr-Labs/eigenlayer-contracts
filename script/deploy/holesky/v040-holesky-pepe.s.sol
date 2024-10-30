@@ -59,7 +59,8 @@ contract PEPE_Deploy_Preprod is ExistingDeploymentParser {
             IETHPOSDeposit(ETHPOSDepositAddress),
             eigenPodBeacon,
             strategyManager,
-            delegationManager
+            delegationManager,
+            eigenLayerPauserReg
         );
     }
 
