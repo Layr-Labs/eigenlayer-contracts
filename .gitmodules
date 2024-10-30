@@ -18,4 +18,4 @@
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
 [submodule "lib/zeus-templates"]
 	path = lib/zeus-templates
-	url = https://github.com/Lays-labs/zeus-templates
+	url = https://github.com/Layr-Labs/zeus-templates
