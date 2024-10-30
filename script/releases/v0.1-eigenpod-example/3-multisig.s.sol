@@ -1,34 +1,36 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "zeus-templates/templates/OpsTimelockBuilder.sol";
+import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 
 import "src/contracts/pods/EigenPodManager.sol";
 
 import "./2-multisig.s.sol";
 
-contract ExecuteEigenPodAndManager is MultisigBuilder {
+contract ExecuteEigenPodAndManager is QueueEigenPodAndManager {
 
     using MultisigCallUtils for MultisigCall[];
     using SafeTxUtils for *;
 
-    function _execute(Addresses memory addrs, Environment memory env, Params memory params) internal override returns (MultisigCall[] memory) {
+    MultisigCall[] private _multisigCalls;
 
-        QueueEigenPodAndManager queue = new QueueEigenPodAndManager();
+    function _execute() internal override returns (MultisigCall[] memory) {
 
-        MultisigCall[] memory _executorCalls = queue.queue(addrs, env, params);
+        MultisigCall[] memory _executorCalls = _queue();
+
+        address multiSendCallOnly = zeusAddress("MultiSendCallOnly");
+        address timelock = zeusAddress("Timelock");
 
         // steals logic from queue() to perform execute()
         // likely the first step of any _execute() after a _queue()
-        bytes memory executorCalldata = queue.makeExecutorCalldata(
-            _executorCalls,
-            params.multiSendCallOnly,
-            addrs.timelock
+        bytes memory executorCalldata = _executorCalls.makeExecutorCalldata(
+            multiSendCallOnly,
+            timelock
         );
 
         // execute queued transaction upgrading eigenPodManager and eigenPod
         _multisigCalls.append({
-            to: addrs.timelock,
+            to: timelock,
             value: 0,
             data: abi.encodeWithSelector(
                 ITimelock.executeTransaction.selector,
@@ -36,12 +38,14 @@ contract ExecuteEigenPodAndManager is MultisigBuilder {
             )
         });
 
+        address eigenPodManagerProxy = zeusAddress("EigenPodManager_proxy");
+
         // after queued transaction, renounce ownership from eigenPodManager
         _multisigCalls.append({
-            to: addrs.eigenPodManager.proxy,
+            to: eigenPodManagerProxy,
             value: 0,
             data: abi.encodeWithSelector(
-                EigenPodManager(addrs.eigenPodManager.proxy).renounceOwnership.selector
+                EigenPodManager(eigenPodManagerProxy).renounceOwnership.selector
             )
         });
 

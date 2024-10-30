@@ -15,7 +15,7 @@ contract DeployEigenPodAndManager is EOADeployer {
     Deployment[] private _deployments;
 
     /// @notice deploys an EigenPod and returns the deployed address
-    function _deploy(Addresses memory, Environment memory, Params memory params) internal override returns (Deployment[] memory) {
+    function _deploy() internal override returns (Deployment[] memory) {
 
         vm.startBroadcast();
 
@@ -35,13 +35,15 @@ contract DeployEigenPodAndManager is EOADeployer {
             singleton: true
         }));
 
+        address ethPOS = zeusAddress("ethPOS");
+
         // create and record new EigenPod pointing to defunct EigenPodManager
         _deployments.push(Deployment({
             overrideName: "",
             deployedTo: address(new EigenPod(
-                IETHPOSDeposit(params.ethPOS),
+                IETHPOSDeposit(ethPOS),
                 IEigenPodManager(newEigenPodManager), // update EigenPodManager address
-                params.EIGENPOD_GENESIS_TIME
+                uint64(vm.envUint("EIGENPOD_GENESIS_TIME"))
             )),
             singleton: true
         }));
