@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin-upgrades/contracts/utils/math/SafeCastUpgradeable.sol";
 
 /// @dev the stakerScalingFactor and operatorMagnitude have initial default values to 1e18 as "1"
 /// to preserve precision with uint256 math. We use `WAD` where these variables are used
@@ -22,12 +23,10 @@ uint64 constant WAD = 1e18;
  * Note that `withdrawal.scaledShares` is scaled for the beaconChainETHStrategy to divide by the beaconChainScalingFactor upon queueing
  * and multiply by the beaconChainScalingFactor upon withdrawal
  */
-
 struct StakerScalingFactors {
-    uint256 depositScalingFactor;
-    // we need to know if the beaconChainScalingFactor is set because it can be set to 0 through 100% slashing
-    bool isBeaconChainScalingFactorSet;
+    uint184 depositScalingFactor;
     uint64 beaconChainScalingFactor;
+    bool isBeaconChainScalingFactorSet;
 }
 
 using SlashingLib for StakerScalingFactors global;
@@ -36,6 +35,7 @@ using SlashingLib for StakerScalingFactors global;
 library SlashingLib {
     using Math for uint256;
     using SlashingLib for uint256;
+    using SafeCastUpgradeable for uint256;
 
     // WAD MATH
 
@@ -130,7 +130,8 @@ library SlashingLib {
             /// forgefmt: disable-next-item
             ssf.depositScalingFactor = uint256(WAD)
                 .divWad(ssf.getBeaconChainScalingFactor())
-                .divWad(maxMagnitude);
+                .divWad(maxMagnitude)
+                .toUint184();
             return;
         }
         /**
@@ -161,10 +162,11 @@ library SlashingLib {
 
         // Step 3: Calculate newStakerDepositScalingFactor
         /// forgefmt: disable-next-item
-        uint256 newStakerDepositScalingFactor = newShares
+        uint184 newStakerDepositScalingFactor = newShares
             .divWad(existingDepositShares + addedShares)
             .divWad(maxMagnitude)
-            .divWad(uint256(ssf.getBeaconChainScalingFactor()));
+            .divWad(uint256(ssf.getBeaconChainScalingFactor()))
+            .toUint184();
 
         ssf.depositScalingFactor = newStakerDepositScalingFactor;
     }

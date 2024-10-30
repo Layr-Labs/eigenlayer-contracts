@@ -29,6 +29,7 @@ contract DelegationManager is
     SignatureUtils
 {
     using SlashingLib for *;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
     modifier onlyStrategyManagerOrEigenPodManager() {
@@ -238,6 +239,8 @@ contract DelegationManager is
                 depositSharesToWithdraw: params[i].depositShares,
                 maxMagnitudes: maxMagnitudes
             });
+
+            pendingWithdrawals[withdrawalRoots[i]] = true;
         }
 
         return withdrawalRoots;
@@ -258,8 +261,23 @@ contract DelegationManager is
         IERC20[][] calldata tokens,
         bool[] calldata receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
-        for (uint256 i = 0; i < withdrawals.length; ++i) {
+        uint256 n = withdrawals.length;
+        for (uint256 i; i < n; ++i) {
             _completeQueuedWithdrawal(withdrawals[i], tokens[i], receiveAsTokens[i]);
+        }
+    }
+
+    /// @inheritdoc IDelegationManager
+    function completeQueuedWithdrawals(
+        IERC20[][] calldata tokens,
+        bool[] calldata receiveAsTokens,
+        uint256 numToComplete
+    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
+        EnumerableSet.Bytes32Set storage withdrawalRoots = _stakerQueuedWithdrawalRoots[msg.sender];
+        uint256 totalQueued = withdrawalRoots.length();
+        numToComplete = numToComplete > totalQueued ? totalQueued : numToComplete;
+        for (uint256 i; i < numToComplete; ++i) {
+            _completeQueuedWithdrawal(queuedWithdrawals[withdrawalRoots.at(i)], tokens[i], receiveAsTokens[i]);
         }
     }
 
@@ -458,7 +476,7 @@ contract DelegationManager is
      * and added back to the operator's delegatedShares.
      */
     function _completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
+        Withdrawal memory withdrawal,
         IERC20[] calldata tokens,
         bool receiveAsTokens
     ) internal {
@@ -505,8 +523,12 @@ contract DelegationManager is
             }
         }
 
-        // Remove `withdrawalRoot` from pending roots
+        _stakerQueuedWithdrawalRoots[withdrawal.staker].remove(withdrawalRoot);
+
+        delete queuedWithdrawals[withdrawalRoot];
+
         delete pendingWithdrawals[withdrawalRoot];
+
         emit SlashingWithdrawalCompleted(withdrawalRoot);
     }
 
@@ -646,8 +668,9 @@ contract DelegationManager is
 
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
-        // Place withdrawal in queue
-        pendingWithdrawals[withdrawalRoot] = true;
+        _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
+
+        queuedWithdrawals[withdrawalRoot] = withdrawal;
 
         emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, depositSharesToWithdraw);
         return withdrawalRoot;
@@ -777,6 +800,33 @@ contract DelegationManager is
         }
 
         return (strategies, shares);
+    }
+    
+    /// @inheritdoc IDelegationManager
+    function getQueuedWithdrawals(
+        address staker
+    ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares) {
+        bytes32[] memory withdrawalRoots = _stakerQueuedWithdrawalRoots[staker].values();
+        uint256 totalQueued = withdrawalRoots.length;
+
+        withdrawals = new Withdrawal[](totalQueued);
+        shares = new uint256[][](totalQueued);
+
+        address operator = delegatedTo[staker];
+
+        for (uint256 i; i < totalQueued; ++i) {
+            withdrawals[i] = queuedWithdrawals[withdrawalRoots[i]];
+
+            uint64[] memory operatorMagnitudes =
+                allocationManager.getMaxMagnitudes(operator, withdrawals[i].strategies);
+
+            for (uint256 j; j < withdrawals[i].strategies.length; ++j) {
+                StakerScalingFactors memory ssf = stakerScalingFactor[staker][withdrawals[i].strategies[j]];
+
+                shares[i][j] =
+                    withdrawals[i].scaledShares[j].scaleSharesForCompleteWithdrawal(ssf, operatorMagnitudes[i]);
+            }
+        }
     }
 
     /// @inheritdoc IDelegationManager
