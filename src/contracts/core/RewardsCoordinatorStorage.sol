@@ -64,8 +64,8 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint32 public activationDelay;
     /// @notice Timestamp for last submitted DistributionRoot
     uint32 public currRewardsCalculationEndTimestamp;
-    /// @notice the commission for all operators across all avss
-    uint16 public globalOperatorCommissionBips;
+    /// @notice the default split for all operators across all avss in bips.
+    uint16 public defaultOperatorSplitBips;
 
     /// @notice Mapping: earner => the address of the entity who can call `processClaim` on behalf of the earner
     mapping(address => address) public claimerFor;
@@ -92,11 +92,11 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Mapping: avs => avsPerformanceRewardsSubmissionHash => bool to check if performance rewards submission hash has been submitted
     mapping(address => mapping(bytes32 => bool)) public isAVSPerformanceRewardsSubmissionHash;
 
-    /// @notice Mapping: operator => avs => OperatorCommission. The commission an operator takes for a specific AVS.
-    mapping(address => mapping(address => OperatorCommission)) internal operatorAVSCommissionBips;
+    /// @notice Mapping: operator => avs => OperatorSplit. The split an operator takes for a specific AVS.
+    mapping(address => mapping(address => OperatorSplit)) internal operatorAVSSplitBips;
 
-    /// @notice Mapping: operator => OperatorPICommission. The commission an operator takes for Programmatic Incentives.
-    mapping(address => OperatorCommission) internal operatorPICommissionBips;
+    /// @notice Mapping: operator => OperatorPISplit. The split an operator takes for Programmatic Incentives.
+    mapping(address => OperatorSplit) internal operatorPISplitBips;
 
     constructor(
         IDelegationManager _delegationManager,

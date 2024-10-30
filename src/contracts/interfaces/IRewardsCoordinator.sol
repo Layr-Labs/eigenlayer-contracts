@@ -37,14 +37,14 @@ interface IRewardsCoordinator {
     }
 
     /**
-     * @notice A commission struct for an Operator
-     * @param oldCommissionBips The old commission in basis points. This is the commission that is active if `block.timestamp < activatedAt`
-     * @param commissionBips The new commission in basis points. This is the commission that is active if `block.timestamp >= activatedAt`
-     * @param activatedAt The timestamp at which the commission will be activated
+     * @notice A split struct for an Operator
+     * @param oldSplitBips The old split in basis points. This is the split that is active if `block.timestamp < activatedAt`
+     * @param newSplitBips The new split in basis points. This is the split that is active if `block.timestamp >= activatedAt`
+     * @param activatedAt The timestamp at which the split will be activated
      */
-    struct OperatorCommission {
-        uint16 oldCommissionBips;
-        uint16 newCommissionBips;
+    struct OperatorSplit {
+        uint16 oldSplitBips;
+        uint16 newSplitBips;
         uint32 activatedAt;
     }
 
@@ -215,40 +215,40 @@ interface IRewardsCoordinator {
         bool indexed newValue
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
-    event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+    event DefaultOperatorSplitBipsSet(uint16 oldDefaultOperatorSplitBips, uint16 newDefaultOperatorSplitBips);
 
     /**
-     * @notice Emitted when the operator commission for an AVS is set.
-     * @param caller The address calling `setOperatorAVSCommission`.
-     * @param operator The operator on behalf of which the commission is being set.
-     * @param avs The avs for which the commission is being set by the operator.
-     * @param activatedAt The timestamp at which the commission will be activated.
-     * @param oldOperatorAVSCommissionBips The old commission for the operator for the AVS.
-     * @param newOperatorAVSCommissionBips The new commission for the operator for the AVS.
+     * @notice Emitted when the operator split for an AVS is set.
+     * @param caller The address calling `setOperatorAVSSplit`.
+     * @param operator The operator on behalf of which the split is being set.
+     * @param avs The avs for which the split is being set by the operator.
+     * @param activatedAt The timestamp at which the split will be activated.
+     * @param oldOperatorAVSSplitBips The old split for the operator for the AVS.
+     * @param newOperatorAVSSplitBips The new split for the operator for the AVS.
      */
-    event OperatorAVSCommissionBipsSet(
+    event OperatorAVSSplitBipsSet(
         address indexed caller,
         address indexed operator,
         address indexed avs,
         uint32 activatedAt,
-        uint16 oldOperatorAVSCommissionBips,
-        uint16 newOperatorAVSCommissionBips
+        uint16 oldOperatorAVSSplitBips,
+        uint16 newOperatorAVSSplitBips
     );
 
     /**
-     * @notice Emitted when the operator commission for Programmatic Incentives is set.
-     * @param caller The address calling `setOperatorPICommission`.
-     * @param operator The operator on behalf of which the commission is being set.
-     * @param activatedAt The timestamp at which the commission will be activated.
-     * @param oldOperatorPICommissionBips The old commission for the operator for Programmatic Incentives.
-     * @param newOperatorPICommissionBips The new commission for the operator for Programmatic Incentives.
+     * @notice Emitted when the operator split for Programmatic Incentives is set.
+     * @param caller The address calling `setOperatorPISplit`.
+     * @param operator The operator on behalf of which the split is being set.
+     * @param activatedAt The timestamp at which the split will be activated.
+     * @param oldOperatorPISplitBips The old split for the operator for Programmatic Incentives.
+     * @param newOperatorPISplitBips The new split for the operator for Programmatic Incentives.
      */
-    event OperatorPICommissionBipsSet(
+    event OperatorPISplitBipsSet(
         address indexed caller,
         address indexed operator,
         uint32 activatedAt,
-        uint16 oldOperatorPICommissionBips,
-        uint16 newOperatorPICommissionBips
+        uint16 oldOperatorPISplitBips,
+        uint16 newOperatorPISplitBips
     );
 
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
@@ -306,14 +306,14 @@ interface IRewardsCoordinator {
     /// @notice Mapping: claimer => token => total amount claimed
     function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
 
-    /// @notice the commission for all operators across all avss
-    function globalOperatorCommissionBips() external view returns (uint16);
+    /// @notice the defautl split for all operators across all avss
+    function defaultOperatorSplitBips() external view returns (uint16);
 
-    /// @notice the commission for a specific `operator` for a specific `avs`
-    function getOperatorAVSCommission(address operator, address avs) external view returns (uint16);
+    /// @notice the split for a specific `operator` for a specific `avs`
+    function getOperatorAVSSplit(address operator, address avs) external view returns (uint16);
 
-    /// @notice the commission for a specific `operator` for Programmatic Incentives
-    function getOperatorPICommission(address operator) external view returns (uint16);
+    /// @notice the split for a specific `operator` for Programmatic Incentives
+    function getOperatorPISplit(address operator) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
@@ -455,32 +455,32 @@ interface IRewardsCoordinator {
     function setActivationDelay(uint32 _activationDelay) external;
 
     /**
-     * @notice Sets the global commission for all operators across all avss
-     * @param _globalCommissionBips The commission for all operators across all avss
-     * @dev Only callable by the contract owner
+     * @notice Sets the default split for all operators across all avss.
+     * @param split The default split for all operators across all avss in bips.
+     * @dev Only callable by the contract owner.
      */
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external;
+    function setDefaultOperatorSplit(uint16 split) external;
 
     /**
-     * @notice Sets the commission for a specific operator for a specific avs
-     * @param operator The operator who is setting the commission
-     * @param avs The avs for which the commission is being set by the operator
-     * @param commission The commission for the operator for the specific avs
+     * @notice Sets the split for a specific operator for a specific avs
+     * @param operator The operator who is setting the split
+     * @param avs The avs for which the split is being set by the operator
+     * @param split The split for the operator for the specific avs in bips.
      * @dev Only callable by the operator
-     * @dev Commission has to be between 0 and 10000 bips (inclusive)
-     * @dev The commission will be activated after the activation delay
+     * @dev Split has to be between 0 and 10000 bips (inclusive)
+     * @dev The split will be activated after the activation delay
      */
-    function setOperatorAVSCommission(address operator, address avs, uint16 commission) external;
+    function setOperatorAVSSplit(address operator, address avs, uint16 split) external;
 
     /**
-     * @notice Sets the commission for a specific operator for Programmatic Incentives.
-     * @param operator The operator on behalf of which the commission is being set.
-     * @param commission The commission for the operator for Programmatic Incentives.
+     * @notice Sets the split for a specific operator for Programmatic Incentives.
+     * @param operator The operator on behalf of which the split is being set.
+     * @param split The split for the operator for Programmatic Incentives in bips.
      * @dev Only callable by the operator
-     * @dev Commission has to be between 1000 and 10000 bips (inclusive)
-     * @dev The commission will be activated after the activation delay
+     * @dev Split has to be between 1000 and 10000 bips (inclusive)
+     * @dev The split will be activated after the activation delay
      */
-    function setOperatorPICommission(address operator, uint16 commission) external;
+    function setOperatorPISplit(address operator, uint16 split) external;
 
     /**
      * @notice Sets the permissioned `rewardsUpdater` address which can post new roots

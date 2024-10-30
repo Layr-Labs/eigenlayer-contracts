@@ -15,7 +15,7 @@ import "./RewardsCoordinatorStorage.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice  This is the contract for rewards in EigenLayer. The main functionalities of this contract are
  * - enabling any ERC20 rewards from AVSs to their operators and stakers for a given time range
- * - allowing stakers and operators to claim their earnings including a commission bips for operators
+ * - allowing stakers and operators to claim their earnings including a split bips for operators
  * - allowing the protocol to provide ERC20 tokens to stakers over a specified time range
  */
 contract RewardsCoordinator is
@@ -36,8 +36,8 @@ contract RewardsCoordinator is
     uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
     /// @notice Equivalent to 100%, but in basis points.
     uint16 internal constant ONE_HUNDRED_IN_BIPS = 10_000;
-    /// @notice Minimum commission for operators for Programmatic Incentives in basis points
-    uint16 internal constant MIN_PI_COMMISSION_BIPS = 1_000;
+    /// @notice Minimum split for operators for Programmatic Incentives in basis points
+    uint16 internal constant MIN_PI_SPLIT_BIPS = 1_000;
 
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
@@ -51,10 +51,10 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
     /// @dev Index for flag that pauses calling createAVSPerformanceRewardsSubmission
     uint8 internal constant PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION = 5;
-    /// @dev Index for flag that pauses calling setOperatorAVSCommission
-    uint8 internal constant PAUSED_OPERATOR_AVS_COMMISSION = 6;
-    /// @dev Index for flag that pauses calling setOperatorPICommission
-    uint8 internal constant PAUSED_OPERATOR_PI_COMMISSION = 7;
+    /// @dev Index for flag that pauses calling setOperatorAVSSplit
+    uint8 internal constant PAUSED_OPERATOR_AVS_SPLIT = 6;
+    /// @dev Index for flag that pauses calling setOperatorPISplit
+    uint8 internal constant PAUSED_OPERATOR_PI_SPLIT = 7;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -103,7 +103,7 @@ contract RewardsCoordinator is
 
     /**
      * @dev Initializes the addresses of the initial owner, pauser registry, rewardsUpdater and
-     * configures the initial paused status, activationDelay, and globalOperatorCommissionBips.
+     * configures the initial paused status, activationDelay, and defaultOperatorSplitBips.
      */
     function initialize(
         address initialOwner,
@@ -111,14 +111,14 @@ contract RewardsCoordinator is
         uint256 initialPausedStatus,
         address _rewardsUpdater,
         uint32 _activationDelay,
-        uint16 _globalCommissionBips
+        uint16 _defaultSplitBips
     ) external initializer {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setRewardsUpdater(_rewardsUpdater);
         _setActivationDelay(_activationDelay);
-        _setGlobalOperatorCommission(_globalCommissionBips);
+        _setDefaultOperatorSplit(_defaultSplitBips);
     }
 
     /**
@@ -286,64 +286,39 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external onlyOwner {
-        _setGlobalOperatorCommission(_globalCommissionBips);
+    function setDefaultOperatorSplit(uint16 split) external onlyOwner {
+        _setDefaultOperatorSplit(split);
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setOperatorAVSCommission(
+    function setOperatorAVSSplit(
         address operator,
         address avs,
-        uint16 commission
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_AVS_COMMISSION) {
-        require(msg.sender == operator, "RewardsCoordinator.setOperatorAVSCommission: caller is not the operator");
-        require(
-            commission <= ONE_HUNDRED_IN_BIPS,
-            "RewardsCoordinator.setOperatorAVSCommission: commission must be <= 10000 bips"
-        );
+        uint16 split
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_AVS_SPLIT) {
+        require(msg.sender == operator, "RewardsCoordinator.setOperatorAVSSplit: caller is not the operator");
+        require(split <= ONE_HUNDRED_IN_BIPS, "RewardsCoordinator.setOperatorAVSSplit: split must be <= 10000 bips");
 
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
-        OperatorCommission storage operatorCommission = operatorAVSCommissionBips[operator][avs];
+        OperatorSplit storage operatorSplit = operatorAVSSplitBips[operator][avs];
 
-        _setOperatorCommission(operatorCommission, commission, activatedAt);
+        _setOperatorSplit(operatorSplit, split, activatedAt);
 
-        emit OperatorAVSCommissionBipsSet(
-            msg.sender,
-            operator,
-            avs,
-            activatedAt,
-            operatorCommission.oldCommissionBips,
-            commission
-        );
+        emit OperatorAVSSplitBipsSet(msg.sender, operator, avs, activatedAt, operatorSplit.oldSplitBips, split);
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setOperatorPICommission(
-        address operator,
-        uint16 commission
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_PI_COMMISSION) {
-        require(msg.sender == operator, "RewardsCoordinator.setOperatorPICommission: caller is not the operator");
-        require(
-            commission <= ONE_HUNDRED_IN_BIPS,
-            "RewardsCoordinator.setOperatorPICommission: commission must be <= 10000 bips"
-        );
-        require(
-            commission >= MIN_PI_COMMISSION_BIPS,
-            "RewardsCoordinator.setOperatorPICommission: commission must be >= 1000 bips"
-        );
+    function setOperatorPISplit(address operator, uint16 split) external onlyWhenNotPaused(PAUSED_OPERATOR_PI_SPLIT) {
+        require(msg.sender == operator, "RewardsCoordinator.setOperatorPISplit: caller is not the operator");
+        require(split <= ONE_HUNDRED_IN_BIPS, "RewardsCoordinator.setOperatorPISplit: split must be <= 10000 bips");
+        require(split >= MIN_PI_SPLIT_BIPS, "RewardsCoordinator.setOperatorPISplit: split must be >= 1000 bips");
 
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
-        OperatorCommission storage operatorCommission = operatorPICommissionBips[operator];
+        OperatorSplit storage operatorSplit = operatorPISplitBips[operator];
 
-        _setOperatorCommission(operatorCommission, commission, activatedAt);
+        _setOperatorSplit(operatorSplit, split, activatedAt);
 
-        emit OperatorPICommissionBipsSet(
-            msg.sender,
-            operator,
-            activatedAt,
-            operatorCommission.oldCommissionBips,
-            commission
-        );
+        emit OperatorPISplitBipsSet(msg.sender, operator, activatedAt, operatorSplit.oldSplitBips, split);
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -631,9 +606,9 @@ contract RewardsCoordinator is
         activationDelay = _activationDelay;
     }
 
-    function _setGlobalOperatorCommission(uint16 _globalCommissionBips) internal {
-        emit GlobalCommissionBipsSet(globalOperatorCommissionBips, _globalCommissionBips);
-        globalOperatorCommissionBips = _globalCommissionBips;
+    function _setDefaultOperatorSplit(uint16 split) internal {
+        emit DefaultOperatorSplitBipsSet(defaultOperatorSplitBips, split);
+        defaultOperatorSplitBips = split;
     }
 
     function _setRewardsUpdater(address _rewardsUpdater) internal {
@@ -642,42 +617,38 @@ contract RewardsCoordinator is
     }
 
     /**
-     * @notice Internal helper to set the operator commission.
-     * @param operatorCommission The commission struct for an Operator
-     * @param commission The commission in basis points.
-     * @param activatedAt The timestamp when the commission is activated.
+     * @notice Internal helper to set the operator split.
+     * @param operatorSplit The split struct for an Operator
+     * @param split The split in basis points.
+     * @param activatedAt The timestamp when the split is activated.
      */
-    function _setOperatorCommission(
-        OperatorCommission storage operatorCommission,
-        uint16 commission,
-        uint32 activatedAt
-    ) internal {
-        // If, the earlier 'new' commission is activated, we update the 'old' commission with the earlier 'new' commission.
-        // Else, the earlier 'old' commission remains the same. This is essentially resetting the activation delay window
-        // since the earlier commission setting didn't complete.
-        if (block.timestamp >= operatorCommission.activatedAt) {
-            operatorCommission.oldCommissionBips = operatorCommission.newCommissionBips;
+    function _setOperatorSplit(OperatorSplit storage operatorSplit, uint16 split, uint32 activatedAt) internal {
+        // If, the earlier 'new' split is activated, we update the 'old' split with the earlier 'new' split.
+        // Else, the earlier 'old' split remains the same. This is essentially resetting the activation delay window
+        // since the earlier split setting didn't complete.
+        if (block.timestamp >= operatorSplit.activatedAt) {
+            operatorSplit.oldSplitBips = operatorSplit.newSplitBips;
         }
-        operatorCommission.newCommissionBips = commission;
-        operatorCommission.activatedAt = activatedAt;
+        operatorSplit.newSplitBips = split;
+        operatorSplit.activatedAt = activatedAt;
     }
 
     /**
-     * @notice Internal helper to get the operator commission in basis points.
-     * @dev It takes default and activation delay into account while calculating the commission.
-     * @param operatorCommission The commission struct for an Operator
-     * @return The commission in basis points.
+     * @notice Internal helper to get the operator split in basis points.
+     * @dev It takes default split and activation delay into account while calculating the split.
+     * @param operatorSplit The split struct for an Operator
+     * @return The split in basis points.
      */
-    function _getOperatorCommission(OperatorCommission memory operatorCommission) internal view returns (uint16) {
-        if (operatorCommission.activatedAt == 0) {
-            // Return the Global Operator Commission if the operator commission has not been initialized.
-            return globalOperatorCommissionBips;
+    function _getOperatorSplit(OperatorSplit memory operatorSplit) internal view returns (uint16) {
+        if (operatorSplit.activatedAt == 0) {
+            // Return the Default Operator Split if the operator split has not been initialized.
+            return defaultOperatorSplitBips;
         } else {
-            // Return the new commission if the new commission has been activated, else return the old commission.
+            // Return the new split if the new split has been activated, else return the old split.
             return
-                (block.timestamp >= operatorCommission.activatedAt)
-                    ? operatorCommission.newCommissionBips
-                    : operatorCommission.oldCommissionBips;
+                (block.timestamp >= operatorSplit.activatedAt)
+                    ? operatorSplit.newSplitBips
+                    : operatorSplit.oldSplitBips;
         }
     }
 
@@ -704,13 +675,13 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function getOperatorAVSCommission(address operator, address avs) external view returns (uint16) {
-        return _getOperatorCommission(operatorAVSCommissionBips[operator][avs]);
+    function getOperatorAVSSplit(address operator, address avs) external view returns (uint16) {
+        return _getOperatorSplit(operatorAVSSplitBips[operator][avs]);
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function getOperatorPICommission(address operator) external view returns (uint16) {
-        return _getOperatorCommission(operatorPICommissionBips[operator]);
+    function getOperatorPISplit(address operator) external view returns (uint16) {
+        return _getOperatorSplit(operatorPISplitBips[operator]);
     }
 
     /// @inheritdoc IRewardsCoordinator
