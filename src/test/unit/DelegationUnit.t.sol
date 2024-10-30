@@ -87,7 +87,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             IEigenPodManager(address(eigenPodManagerMock)), 
             IAllocationManager(address(allocationManagerMock)), 
             pauserRegistry,
-            MIN_WITHDRAWAL_DELAY
+            MIN_WITHDRAWAL_DELAY_BLOCKS
         );
         delegationManager = DelegationManager(
             address(

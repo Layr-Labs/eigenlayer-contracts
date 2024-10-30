@@ -306,7 +306,8 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
             ethPOSMock,
             eigenPodBeacon,
             IStrategyManager(address(strategyManagerMock)),
-            IDelegationManager(address(delegationManagerMock))
+            IDelegationManager(address(delegationManagerMock)),
+            pauserRegistry
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
