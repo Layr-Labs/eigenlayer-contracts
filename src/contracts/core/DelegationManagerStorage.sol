@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 import "../libraries/SlashingLib.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
@@ -86,7 +88,8 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev Do not remove, deprecated storage.
     uint256 private __deprecated_minWithdrawalDelayBlocks;
 
-    /// @notice Returns whether a given `withdrawalRoot` has a pending withdrawal.
+    /// @dev Returns whether a withdrawal is pending for a given `withdrawalRoot`.
+    /// @dev This variable will be deprecated in the future, values should only be read or deleted.
     mapping(bytes32 withdrawalRoot => bool pending) public pendingWithdrawals;
 
     /// @notice Returns the total number of withdrawals that have been queued for a given `staker`.
@@ -103,6 +106,15 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice Returns the scaling factors for a `staker` for a given `strategy`.
     /// @dev We do not need the `beaconChainScalingFactor` for non-beaconchain strategies, but it's nicer syntactically to keep it.
     mapping(address staker => mapping(IStrategy strategy => StakerScalingFactors)) public stakerScalingFactor;
+
+    /// @notice Returns a list of queued withdrawals for a given `staker`.
+    /// @dev Entrys are removed when the withdrawal is completed.
+    /// @dev This variable only reflects withdrawals that were made after the slashing release.
+    mapping(address staker => EnumerableSet.Bytes32Set withdrawalRoots) internal _stakerQueuedWithdrawalRoots;
+
+    /// @notice Returns the details of a queued withdrawal for a given `staker` and `withdrawalRoot`.
+    /// @dev This variable only reflects withdrawals that were made after the slashing release.
+    mapping(bytes32 withdrawalRoot => Withdrawal withdrawal) public queuedWithdrawals;
 
     // Construction
 
@@ -125,5 +137,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[38] private __gap;
+    uint256[36] private __gap;
 }

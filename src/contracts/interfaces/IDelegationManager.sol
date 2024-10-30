@@ -325,10 +325,22 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external returns (bytes32[] memory);
 
     /**
-     * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
-     * Withdrawals remain slashable during the withdrawal delay period and the actual withdrawn shares are calculated
-     * based off the scaledShares.
-     * @param withdrawal The Withdrawal to complete.
+     * @notice Used to complete the all queued withdrawals.
+     * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
+     * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
+     * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
+     * @param numToComplete The number of withdrawals to complete. This must be less than or equal to the number of queued withdrawals.
+     * @dev See `completeQueuedWithdrawal` for relevant dev tags
+     */
+    function completeQueuedWithdrawals(
+        IERC20[][] calldata tokens,
+        bool[] calldata receiveAsTokens,
+        uint256 numToComplete
+    ) external;
+
+    /**
+     * @notice Used to complete the lastest queued withdrawal.
+     * @param withdrawal The withdrawal to complete.
      * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
      * @param receiveAsTokens If true, the shares calculated to be withdrawn will be withdrawn from the specified strategies themselves
      * and sent to the caller, through calls to `withdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
@@ -344,9 +356,9 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
-     * @notice Array-ified version of `completeQueuedWithdrawal`.
+     * @notice Used to complete the all queued withdrawals.
      * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
-     * @param withdrawals The Withdrawals to complete.
+     * @param withdrawals Array of Withdrawals to complete. See `completeQueuedWithdrawal` for the usage of a single Withdrawal.
      * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
      * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
      * @dev See `completeQueuedWithdrawal` for relevant dev tags
@@ -534,6 +546,11 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * to this longer delay.
      */
     function MIN_WITHDRAWAL_DELAY_BLOCKS() external view returns (uint32);
+
+    /// @notice Returns a list of pending queued withdrawals for a `staker`, and the `shares` to be withdrawn.
+    function getQueuedWithdrawals(
+        address staker
+    ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(
