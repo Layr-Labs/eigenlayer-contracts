@@ -807,7 +807,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         proofs.validatorFields[0][VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] = invalidWithdrawalCredentials;
 
         cheats.startPrank(address(staker));
-        cheats.expectRevert(IEigenPodErrors.WithdrawCredentialsNotForEigenPod.selector);
+        cheats.expectRevert(IEigenPodErrors.WithdrawalCredentialsNotForEigenPod.selector);
         pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,

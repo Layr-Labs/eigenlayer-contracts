@@ -11,7 +11,7 @@ contract TimeMachine is Test {
     uint lastSnapshot;
 
     function createSnapshot() public returns (uint) {
-        uint snapshot = cheats.snapshot();
+        uint snapshot = cheats.snapshotState();
         lastSnapshot = snapshot;
         pastExists = true;
         return snapshot;
@@ -22,12 +22,12 @@ contract TimeMachine is Test {
         // so we don't accidentally prevent our own births
         assertTrue(pastExists, "Global.warpToPast: invalid usage, past does not exist");
 
-        curState = cheats.snapshot();
-        cheats.revertTo(lastSnapshot);
+        curState = cheats.snapshotState();
+        cheats.revertToState(lastSnapshot);
         return curState;
     }
 
     function warpToPresent(uint curState) public {
-        cheats.revertTo(curState);
+        cheats.revertToState(curState);
     }
 }

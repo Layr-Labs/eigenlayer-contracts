@@ -150,7 +150,7 @@ contract User is PrintUtils {
             delegatedTo: operator,
             withdrawer: withdrawer,
             nonce: nonce,
-            startTimestamp: uint32(block.timestamp),
+            startBlock: uint32(block.number),
             strategies: strategies,
             scaledShares: shares
         });
@@ -486,7 +486,7 @@ contract User is PrintUtils {
                 delegatedTo: delegatedTo,
                 withdrawer: staker,
                 nonce: (nonce + i),
-                startTimestamp: uint32(block.timestamp),
+                startBlock: uint32(block.number),
                 strategies: singleStrategy,
                 scaledShares: singleShares
             });

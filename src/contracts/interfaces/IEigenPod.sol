@@ -50,7 +50,7 @@ interface IEigenPodErrors {
     /// @dev Thrown when a validator's withdrawal credentials have already been verified.
     error CredentialsAlreadyVerified();
     /// @dev Thrown if the provided proof is not valid for this EigenPod.
-    error WithdrawCredentialsNotForEigenPod();
+    error WithdrawalCredentialsNotForEigenPod();
     /// @dev Thrown when a validator is not in the ACTIVE status in the pod.
     error ValidatorNotActiveInPod();
     /// @dev Thrown when validator is not active yet on the beacon chain.
