@@ -10,7 +10,6 @@ import {ITimelock} from "zeus-templates/interfaces/ITimelock.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
 contract QueueEigenPodAndManager is MultisigBuilder {
-
     using MultisigCallUtils for MultisigCall[];
     using SafeTxUtils for SafeTx;
 
@@ -18,7 +17,6 @@ contract QueueEigenPodAndManager is MultisigBuilder {
     MultisigCall[] private _opsCalls;
 
     function _queue() internal returns (MultisigCall[] memory) {
-
         address eigenPodManagerPendingImpl = zeusAddress("EigenPodManager_pendingImpl");
         address operationsMultisig = zeusAddress("OperationsMultisig");
         address pauserRegistry = zeusAddress("PauserRegistry");
@@ -51,10 +49,7 @@ contract QueueEigenPodAndManager is MultisigBuilder {
         // upgrade eigenPod beacon implementation
         _executorCalls.append({
             to: eigenPodBeacon,
-            data: abi.encodeWithSelector(
-                IUpgradeableBeacon.upgradeTo.selector,
-                eigenPodPendingImpl
-            )
+            data: abi.encodeWithSelector(IUpgradeableBeacon.upgradeTo.selector, eigenPodPendingImpl)
         });
 
         return _executorCalls;

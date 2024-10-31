@@ -8,14 +8,12 @@ import "src/contracts/pods/EigenPodManager.sol";
 import "./2-multisig.s.sol";
 
 contract ExecuteEigenPodAndManager is QueueEigenPodAndManager {
-
     using MultisigCallUtils for MultisigCall[];
     using SafeTxUtils for *;
 
     MultisigCall[] private _multisigCalls;
 
     function _execute() internal override returns (MultisigCall[] memory) {
-
         MultisigCall[] memory _executorCalls = _queue();
 
         address multiSendCallOnly = zeusAddress("MultiSendCallOnly");
@@ -23,19 +21,13 @@ contract ExecuteEigenPodAndManager is QueueEigenPodAndManager {
 
         // steals logic from queue() to perform execute()
         // likely the first step of any _execute() after a _queue()
-        bytes memory executorCalldata = _executorCalls.makeExecutorCalldata(
-            multiSendCallOnly,
-            timelock
-        );
+        bytes memory executorCalldata = _executorCalls.makeExecutorCalldata(multiSendCallOnly, timelock);
 
         // execute queued transaction upgrading eigenPodManager and eigenPod
         _multisigCalls.append({
             to: timelock,
             value: 0,
-            data: abi.encodeWithSelector(
-                ITimelock.executeTransaction.selector,
-                executorCalldata
-            )
+            data: abi.encodeWithSelector(ITimelock.executeTransaction.selector, executorCalldata)
         });
 
         address eigenPodManagerProxy = zeusAddress("EigenPodManager_proxy");
@@ -44,9 +36,7 @@ contract ExecuteEigenPodAndManager is QueueEigenPodAndManager {
         _multisigCalls.append({
             to: eigenPodManagerProxy,
             value: 0,
-            data: abi.encodeWithSelector(
-                EigenPodManager(eigenPodManagerProxy).renounceOwnership.selector
-            )
+            data: abi.encodeWithSelector(EigenPodManager(eigenPodManagerProxy).renounceOwnership.selector)
         });
 
         return _multisigCalls;

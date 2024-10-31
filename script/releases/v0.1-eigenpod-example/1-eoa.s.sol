@@ -16,37 +16,31 @@ contract DeployEigenPodAndManager is EOADeployer {
 
     /// @notice deploys an EigenPod and returns the deployed address
     function _deploy() internal override returns (Deployment[] memory) {
-
         vm.startBroadcast();
 
         // create a defunct EigenPodManager
-        address newEigenPodManager = address(new EigenPodManager(
-            IETHPOSDeposit(address(1)),
-            IBeacon(address(2)),
-            IStrategyManager(address(3)),
-            ISlasher(address(4)),
-            IDelegationManager(address(5))
-        ));
+        address newEigenPodManager = address(
+            new EigenPodManager(
+                IETHPOSDeposit(address(1)),
+                IBeacon(address(2)),
+                IStrategyManager(address(3)),
+                ISlasher(address(4)),
+                IDelegationManager(address(5))
+            )
+        );
 
-        // record new deployment
-        _deployments.push(Deployment({
-            overrideName: "",
-            deployedTo: newEigenPodManager,
-            singleton: true
-        }));
+        _deployments.push(singleton(newEigenPodManager));
 
-        address ethPOS = zeusAddress("ethPOS");
+        address newEigenPod = address(
+            new EigenPod(
+                IETHPOSDeposit(ethPOS()),
+                IEigenPodManager(newEigenPodManager), // update EigenPodManager address
+                getUint64("EIGENPOD_GENESIS_TIME") // set genesis time
+            )
+        );
 
         // create and record new EigenPod pointing to defunct EigenPodManager
-        _deployments.push(Deployment({
-            overrideName: "",
-            deployedTo: address(new EigenPod(
-                IETHPOSDeposit(ethPOS),
-                IEigenPodManager(newEigenPodManager), // update EigenPodManager address
-                uint64(vm.envUint("EIGENPOD_GENESIS_TIME"))
-            )),
-            singleton: true
-        }));
+        _deployments.push(singleton(newEigenPod));
 
         vm.stopBroadcast();
 
