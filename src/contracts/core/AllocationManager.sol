@@ -553,6 +553,23 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
+    function getAllocations(
+        address[] memory operators,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) external view returns (Allocation[] memory) {
+        Allocation[] memory _allocations = new Allocation[](operators.length);
+
+        for (uint256 i = 0; i < operators.length; i++) {
+            (, Allocation memory allocation) = _getUpdatedAllocation(operators[i], operatorSet.key(), strategy);
+
+            _allocations[i] = allocation;
+        }
+
+        return _allocations;
+    }
+
+    /// @inheritdoc IAllocationManager
     function getStrategyAllocations(
         address operator,
         IStrategy strategy
@@ -617,6 +634,17 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
+    function getMaxMagnitudes(address[] memory operators, IStrategy strategy) external view returns (uint64[] memory) {
+        uint64[] memory maxMagnitudes = new uint64[](operators.length);
+
+        for (uint256 i = 0; i < operators.length; ++i) {
+            maxMagnitudes[i] = _maxMagnitudeHistory[operators[i]][strategy].latest();
+        }
+
+        return maxMagnitudes;
+    }
+
+    /// @inheritdoc IAllocationManager
     function getMaxMagnitudesAtBlock(
         address operator,
         IStrategy[] memory strategies,
@@ -651,51 +679,27 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function getRegisteredSets(
-        address operator,
-        uint256 start,
-        uint256 count
+        address operator
     ) public view returns (OperatorSet[] memory) {
-        uint256 maxCount = registeredSets[operator].length() - start;
-        if (count > maxCount) count = maxCount;
+        uint256 length = registeredSets[operator].length();
+        OperatorSet[] memory operatorSets = new OperatorSet[](length);
 
-        OperatorSet[] memory operatorSets = new OperatorSet[](count);
-        for (uint256 i = 0; i < count; ++i) {
-            // forgefmt: disable-next-item
-            operatorSets[i] = OperatorSetLib.decode(
-                registeredSets[operator].at(start + i)
-            );
+        for (uint256 i = 0; i < length; ++i) {
+            operatorSets[i] = OperatorSetLib.decode(registeredSets[operator].at(i));
         }
 
         return operatorSets;
     }
 
     /// @inheritdoc IAllocationManager
-    function getRegisteredSetCount(
-        address operator
-    ) external view returns (uint256) {
-        return registeredSets[operator].length();
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getRegisteredSetAtIndex(address operator, uint256 index) external view returns (OperatorSet memory) {
-        // forgefmt: disable-next-item
-        return OperatorSetLib.decode(
-            registeredSets[operator].at(index)
-        );
-    }
-
-    /// @inheritdoc IAllocationManager
     function getMembers(
-        OperatorSet memory operatorSet,
-        uint256 start,
-        uint256 count
+        OperatorSet memory operatorSet
     ) external view returns (address[] memory) {
-        uint256 maxCount = _operatorSetMembers[operatorSet.key()].length() - start;
-        if (count > maxCount) count = maxCount;
+        uint256 length = _operatorSetMembers[operatorSet.key()].length();
+        address[] memory operators = new address[](length);
 
-        address[] memory operators = new address[](count);
-        for (uint256 i = 0; i < count; ++i) {
-            operators[i] = _operatorSetMembers[operatorSet.key()].at(start + i);
+        for (uint256 i = 0; i < length; ++i) {
+            operators[i] = _operatorSetMembers[operatorSet.key()].at(i);
         }
 
         return operators;
@@ -706,11 +710,6 @@ contract AllocationManager is
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
         return _operatorSetMembers[operatorSet.key()].length();
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address) {
-        return _operatorSetMembers[operatorSet.key()].at(index);
     }
 
     /// @inheritdoc IAllocationManager
@@ -734,51 +733,5 @@ contract AllocationManager is
         }
 
         return strategies;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getCurrentDelegatedAndSlashableOperatorShares(
-        OperatorSet memory operatorSet,
-        address[] memory operators,
-        IStrategy[] memory strategies
-    ) external view returns (uint256[][] memory, uint256[][] memory) {
-        return getMinDelegatedAndSlashableOperatorSharesBefore(operatorSet, operators, strategies, uint32(block.number));
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getMinDelegatedAndSlashableOperatorSharesBefore(
-        OperatorSet memory operatorSet,
-        address[] memory operators,
-        IStrategy[] memory strategies,
-        uint32 beforeBlock
-    ) public view returns (uint256[][] memory, uint256[][] memory) {
-        require(beforeBlock >= block.number, InvalidBlockNumber());
-        bytes32 operatorSetKey = operatorSet.key();
-
-        uint256[][] memory delegatedShares = delegation.getOperatorsShares(operators, strategies);
-        uint256[][] memory slashableShares = new uint256[][](operators.length);
-
-        for (uint256 i = 0; i < operators.length; ++i) {
-            address operator = operators[i];
-            slashableShares[i] = new uint256[](strategies.length);
-
-            for (uint256 j = 0; j < strategies.length; ++j) {
-                IStrategy strategy = strategies[j];
-                Allocation memory allocation = allocations[operator][operatorSetKey][strategy];
-                uint64 maxMagnitude = _maxMagnitudeHistory[operator][strategy].latest();
-
-                if (beforeBlock >= allocation.effectBlock) {
-                    allocation.currentMagnitude = _addInt128(allocation.currentMagnitude, allocation.pendingDiff);
-                }
-
-                // forgefmt: disable-next-item
-                slashableShares[i][j] = 
-                    delegatedShares[i][j]
-                        .mulWad(allocation.currentMagnitude)
-                        .divWad(maxMagnitude);
-            }
-        }
-
-        return (delegatedShares, slashableShares);
     }
 }

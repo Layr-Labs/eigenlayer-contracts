@@ -368,6 +368,19 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external view returns (Allocation memory);
 
     /**
+     * @notice Returns the current/pending stake allocations for multiple operators from a strategy to an operator set
+     * @param operators the operators to query
+     * @param operatorSet the operator set to query
+     * @param strategy the strategy to query
+     * @return each operator's allocation
+     */
+    function getAllocations(
+        address[] memory operators,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) external view returns (Allocation[] memory);
+
+    /**
      * @notice Given a strategy, returns a list of operator sets and corresponding stake allocations.
      * @dev Note that this returns a list of ALL operator sets the operator has allocations in. This means
      * some of the returned allocations may be zero.
@@ -403,6 +416,19 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external view returns (uint64[] memory);
 
     /**
+     * @notice Returns the maximum magnitudes each operator can allocate for the given strategy
+     * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
+     * the operator is slashed. This value acts as a cap on the max magnitude of the operator.
+     * @param operators the operators to query
+     * @param strategy the strategy to get the max magnitudes for
+     * @return the max magnitudes for each operator
+     */
+    function getMaxMagnitudes(
+        address[] calldata operators,
+        IStrategy strategy
+    ) external view returns (uint64[] memory);
+
+    /**
      * @notice Returns the maximum magnitude an operator can allocate for the given strategies
      * at a given block number
      * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
@@ -431,42 +457,19 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external view returns (bool isSet, uint32 delay);
 
     /**
-     * @notice Returns an array of operator sets an operator is registered to.
+     * @notice Returns a list of all operator sets the operator is registered for
      * @param operator The operator address to query.
-     * @param start The starting index in the array to query.
-     *  @param length The amount of items of the array to return.
      */
     function getRegisteredSets(
-        address operator,
-        uint256 start,
-        uint256 length
+        address operator
     ) external view returns (OperatorSet[] memory operatorSets);
 
     /**
-     * @notice Returns the number of operator sets an operator is registered to.
-     * @param operator the operator address to query
-     */
-    function getRegisteredSetCount(
-        address operator
-    ) external view returns (uint256);
-
-    /**
-     * @notice Returns operator set an operator is registered to in the order they were registered.
-     * @param operator The operator address to query.
-     * @param index The index in the enumerated list of operator sets.
-     */
-    function getRegisteredSetAtIndex(address operator, uint256 index) external view returns (OperatorSet memory);
-
-    /**
-     * @notice Returns an array of operators registered to the operatorSet.
+     * @notice Returns all the operators registered to an operator set
      * @param operatorSet The operatorSet to query.
-     * @param start The starting index in the array to query.
-     * @param length The amount of items of the array to return.
      */
     function getMembers(
-        OperatorSet memory operatorSet,
-        uint256 start,
-        uint256 length
+        OperatorSet memory operatorSet
     ) external view returns (address[] memory operators);
 
     /**
@@ -476,13 +479,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function getMemberCount(
         OperatorSet memory operatorSet
     ) external view returns (uint256);
-
-    /**
-     *  @notice Returns the operator registered to an operatorSet in the order that it was registered.
-     *  @param operatorSet The operatorSet to query.
-     *  @param index The index in the enumerated list of operators.
-     */
-    function getMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address);
 
     /**
      * @notice Returns the address that handles registration/deregistration for the AVS
@@ -499,32 +495,4 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function getStrategiesInOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory strategies);
-
-    /**
-     * @notice returns the current operatorShares and the slashableOperatorShares for an operator, list of strategies,
-     * and an operatorSet
-     * @param operatorSet the operatorSet to get the shares for
-     * @param operators the operators to get the shares for
-     * @param strategies the strategies to get the shares for
-     */
-    function getCurrentDelegatedAndSlashableOperatorShares(
-        OperatorSet calldata operatorSet,
-        address[] calldata operators,
-        IStrategy[] calldata strategies
-    ) external view returns (uint256[][] memory, uint256[][] memory);
-
-    /**
-     * @notice returns the minimum operatorShares and the slashableOperatorShares for an operator, list of strategies,
-     * and an operatorSet before a given block number. This is used to get the shares to weight operators by given ones slashing window.
-     * @param operatorSet the operatorSet to get the shares for
-     * @param operators the operators to get the shares for
-     * @param strategies the strategies to get the shares for
-     * @param beforeBlock the block number to get the shares at
-     */
-    function getMinDelegatedAndSlashableOperatorSharesBefore(
-        OperatorSet calldata operatorSet,
-        address[] calldata operators,
-        IStrategy[] calldata strategies,
-        uint32 beforeBlock
-    ) external view returns (uint256[][] memory, uint256[][] memory);
 }
