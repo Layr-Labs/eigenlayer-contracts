@@ -5,6 +5,7 @@ import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
+import "./IAVSRegistrar.sol";
 
 interface IAllocationManagerErrors {
     /// Input Validation
@@ -191,6 +192,9 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
         address operator, OperatorSet operatorSet, IStrategy[] strategies, uint256[] wadSlashed, string description
     );
 
+    /// @notice Emitted when an AVS configures the address that will handle registration/deregistration
+    event AVSRegistrarSet(address avs, IAVSRegistrar registrar);
+
     /// @notice Emitted when an operator set is created by an AVS.
     event OperatorSetCreated(OperatorSet operatorSet);
 
@@ -288,6 +292,16 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      */
     function setAllocationDelay(
         uint32 delay
+    ) external;
+
+    /**
+     * @notice Called by an AVS to configure the address that is called when an operator registers
+     * or is deregistered from the AVS's operator sets. If not set (or set to 0), defaults
+     * to the AVS's address.
+     * @param registrar the new registrar address
+     */
+    function setAVSRegistrar(
+        IAVSRegistrar registrar
     ) external;
 
     /**
@@ -464,11 +478,19 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external view returns (uint256);
 
     /**
-     * @notice Returns the operator registered to an operatorSet in the order that it was registered.
+     *  @notice Returns the operator registered to an operatorSet in the order that it was registered.
      *  @param operatorSet The operatorSet to query.
      *  @param index The index in the enumerated list of operators.
      */
     function getMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address);
+
+    /**
+     * @notice Returns the address that handles registration/deregistration for the AVS
+     * If not set, defaults to the input address (`avs`)
+     */
+    function getAVSRegistrar(
+        address avs
+    ) external view returns (IAVSRegistrar);
 
     /**
      * @notice Returns an array of strategies in the operatorSet.

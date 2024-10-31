@@ -39,6 +39,10 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     /// AVS => OPERATOR SET
 
+    /// @dev Contains the AVS's configured registrar contract that handles registration/deregistration
+    /// Note: if set to 0, defaults to the AVS's address
+    mapping(address avs => IAVSRegistrar) internal _avsRegistrar;
+
     /// @dev Lists the operator sets an AVS has created
     mapping(address avs => EnumerableSet.UintSet) internal _operatorSets;
 
@@ -98,5 +102,5 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[39] private __gap;
 }

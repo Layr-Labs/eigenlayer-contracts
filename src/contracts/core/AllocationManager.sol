@@ -10,11 +10,6 @@ import "../libraries/SlashingLib.sol";
 import "../libraries/OperatorSetLib.sol";
 import "./AllocationManagerStorage.sol";
 
-interface IAVS {
-    function registerOperator(address operator, uint32[] calldata operatorSetIds, bytes calldata data) external;
-    function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external;
-}
-
 contract AllocationManager is
     Initializable,
     OwnableUpgradeable,
@@ -236,7 +231,7 @@ contract AllocationManager is
         }
 
         // Call the AVS to complete registration. If the AVS reverts, registration will fail.
-        IAVS(params.avs).registerOperator(msg.sender, params.operatorSetIds, params.data);
+        getAVSRegistrar(params.avs).registerOperator(msg.sender, params.operatorSetIds, params.data);
     }
 
     /// @inheritdoc IAllocationManager
@@ -266,7 +261,7 @@ contract AllocationManager is
 
         // Call the AVS to complete deregistration. Even if the AVS reverts, the operator is
         // considered deregistered
-        try IAVS(params.avs).deregisterOperator(params.operator, params.operatorSetIds) {} catch {}
+        try getAVSRegistrar(params.avs).deregisterOperator(params.operator, params.operatorSetIds) {} catch {}
     }
 
     /// @inheritdoc IAllocationManager
@@ -281,6 +276,14 @@ contract AllocationManager is
     ) external {
         require(delegation.isOperator(msg.sender), OperatorNotRegistered());
         _setAllocationDelay(msg.sender, delay);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function setAVSRegistrar(
+        IAVSRegistrar registrar
+    ) external {
+        _avsRegistrar[msg.sender] = registrar;
+        emit AVSRegistrarSet(msg.sender, getAVSRegistrar(msg.sender));
     }
 
     /// @inheritdoc IAllocationManager
@@ -708,6 +711,15 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function getMemberAtIndex(OperatorSet memory operatorSet, uint256 index) external view returns (address) {
         return _operatorSetMembers[operatorSet.key()].at(index);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getAVSRegistrar(
+        address avs
+    ) public view returns (IAVSRegistrar) {
+        IAVSRegistrar registrar = _avsRegistrar[avs];
+
+        return address(registrar) == address(0) ? IAVSRegistrar(avs) : registrar;
     }
 
     /// @inheritdoc IAllocationManager
