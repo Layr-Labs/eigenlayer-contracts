@@ -29,8 +29,6 @@ contract RolesAuthority is Ownable {
 
     mapping(address => bytes32) public getUserRoles;
 
-    mapping(address => mapping(bytes4 => bool)) public isCapabilityPublic;
-
     mapping(address => mapping(bytes4 => bytes32)) public getRolesWithCapability;
 
     function doesUserHaveRole(address user, uint8 role) public view virtual returns (bool) {
