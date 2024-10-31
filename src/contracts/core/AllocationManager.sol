@@ -111,14 +111,15 @@ contract AllocationManager is
             emit MaxMagnitudeUpdated(params.operator, params.strategies[i], maxMagnitudeAfterSlash);
 
             // 5. Decrease operators shares in the DelegationManager
+            uint256 sharesWadSlashed = uint256(slashedMagnitude).divWad(maxMagnitudeBeforeSlash);
             delegation.decreaseOperatorShares({
                 operator: params.operator,
                 strategy: params.strategies[i],
-                wadSlashed: params.wadToSlash
+                wadSlashed: sharesWadSlashed
             });
 
             // 6. Record the proportion of shares slashed
-            wadSlashed[i] = uint256(slashedMagnitude).divWad(maxMagnitudeBeforeSlash);
+            wadSlashed[i] = sharesWadSlashed;
         }
 
         emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
