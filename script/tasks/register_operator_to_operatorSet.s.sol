@@ -8,36 +8,50 @@ import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
 // use forge:
-// RUST_LOG=forge,foundry=trace forge script script/tasks/register_operator_to_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(address avsDir)" -- <AVS_DIRECTORY_ADDRESS>
-// RUST_LOG=forge,foundry=trace forge script script/tasks/register_operator_to_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(address avsDir)" -- 0x5FC8d32690cc91D4c39d9d3abcBD16989F875707
+// RUST_LOG=forge,foundry=trace forge script script/tasks/register_operator_to_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- <DEPLOYMENT_OUTPUT_JSON>
+// RUST_LOG=forge,foundry=trace forge script script/tasks/register_operator_to_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/slashing_output.json
 contract registerOperatorToOperatorSets is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
+    function run(string memory configFile) public {
+        // Load config
+        string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
+        string memory config_data = vm.readFile(deployConfigPath);
 
-    function run(address avsDir) public {
+        // Pull avs directory address
+        address avsDir = stdJson.readAddress(config_data, ".addresses.avsDirectory");
+
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
 
+        // Attach the AVSDirectory
         AVSDirectory avsDirectory = AVSDirectory(avsDir);
 
-        address operator = cheats.addr(delegationSignerPrivateKey);
+        // Use privateKey to register as an operator
+        address operator = cheats.addr(vm.envUint("PRIVATE_KEY"));
         uint256 expiry = type(uint256).max;
         uint32[] memory oids = new uint32[](1);
         oids[0] = 1;
 
+        // Sign as Operator
         (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operator, avsDirectory.calculateOperatorSetRegistrationDigestHash(operator, oids, bytes32(uint256(0) + 1), expiry)
+            operator, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, operator, bytes32(uint256(0) + 1), expiry)
         );
 
-        if (!avsDirectory.isOperatorSetAVS(operator)) {
-            avsDirectory.becomeOperatorSetAVS();
-        }
-        avsDirectory.createOperatorSets(oids);
-        avsDirectory.registerOperatorToOperatorSets(
-            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), bytes32(uint256(0) + 1), expiry)
+        // // Upgrade avsDirectory
+        // if (!avsDirectory.isOperatorSetAVS(operator)) {
+        //     avsDirectory.becomeOperatorSetAVS();
+        // }
+
+        // Create OperatorSet(s)
+        // avsDirectory.createOperatorSets(oids);
+
+        // Register the Operator to the AVS
+        avsDirectory.registerOperatorToAVS(
+            operator, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), bytes32(uint256(0) + 1), expiry)
         );
 
+        // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }
 }

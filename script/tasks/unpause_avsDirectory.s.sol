@@ -20,19 +20,29 @@ import "forge-std/Test.sol";
 // --private-key <YOUR_PRIVATE_KEY>
 
 // use forge:
-// RUST_LOG=forge,foundry=trace forge script script/tasks/unpause_avsDirectory.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(address avsDir)" -- <AVS_DIRECTORY_ADDRESS>
-// RUST_LOG=forge,foundry=trace forge script script/tasks/unpause_avsDirectory.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(address avsDir)" -- 0x5FC8d32690cc91D4c39d9d3abcBD16989F875707
+// RUST_LOG=forge,foundry=trace forge script script/tasks/unpause_avsDirectory.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- <DEPLOYMENT_OUTPUT_JSON>
+// RUST_LOG=forge,foundry=trace forge script script/tasks/unpause_avsDirectory.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/slashing_output.json
 contract unpauseAVSDirectory is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(address avsDir) public {
+    function run(string memory configFile) public {
+        // Load config
+        string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
+        string memory config_data = vm.readFile(deployConfigPath);
+
+        // Pull avs directory address
+        address avsDir = stdJson.readAddress(config_data, ".addresses.avsDirectory");
+
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
 
+        // Attach to the AVSDirectory
         AVSDirectory avsDirectory = AVSDirectory(avsDir);
 
+        // Unpause the AVSDirectory
         avsDirectory.unpause(0);
 
+        // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }
 }

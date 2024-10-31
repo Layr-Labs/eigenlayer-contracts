@@ -20,12 +20,19 @@ import "forge-std/Test.sol";
 // --private-key <YOUR_PRIVATE_KEY>
 
 // use forge:
-// RUST_LOG=forge,foundry=trace forge script script/tasks/deposit_into_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(address strategyManager,address strategy,address token,uint256 amount)" -- <STRATEGY_MANAGER_ADDRESS> <STRATEGY_ADDRESS> <TOKEN_ADDRESS> <AMOUNT>
-// RUST_LOG=forge,foundry=trace forge script script/tasks/deposit_into_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(address strategyManager,address strategy,address token,uint256 amount)" -- 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9 0x8aCd85898458400f7Db866d53FCFF6f0D49741FF 0x67d269191c92Caf3cD7723F116c85e6E9bf55933 1000
+// RUST_LOG=forge,foundry=trace forge script script/tasks/deposit_into_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,address strategy,address token,uint256 amount)" -- <DEPLOYMENT_OUTPUT_JSON> <STRATEGY_ADDRESS> <TOKEN_ADDRESS> <AMOUNT>
+// RUST_LOG=forge,foundry=trace forge script script/tasks/deposit_into_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,address strategy,address token,uint256 amount)" -- local/slashing_output.json 0x8aCd85898458400f7Db866d53FCFF6f0D49741FF 0x67d269191c92Caf3cD7723F116c85e6E9bf55933 $DEPOSIT_SHARES
 contract depositIntoStrategy is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(address strategyManager, address strategy, address token, uint256 amount) public {
+    function run(string memory configFile, address strategy, address token, uint256 amount) public {
+        // Load config
+        string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
+        string memory config_data = vm.readFile(deployConfigPath);
+
+        // Pull strategy manager address
+        address strategyManager = stdJson.readAddress(config_data, ".addresses.strategyManager");
+
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
 
