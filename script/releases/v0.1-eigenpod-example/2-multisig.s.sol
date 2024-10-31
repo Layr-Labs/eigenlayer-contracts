@@ -17,39 +17,29 @@ contract QueueEigenPodAndManager is MultisigBuilder {
     MultisigCall[] private _opsCalls;
 
     function _queue() internal returns (MultisigCall[] memory) {
-        address eigenPodManagerPendingImpl = zeusAddress("EigenPodManager_pendingImpl");
-        address operationsMultisig = zeusAddress("OperationsMultisig");
-        address pauserRegistry = zeusAddress("PauserRegistry");
-
         // construct initialization data for eigenPodManager
         bytes memory eigenPodManagerData = abi.encodeWithSelector(
-            EigenPodManager(eigenPodManagerPendingImpl).initialize.selector,
-            operationsMultisig, // set opsMultisig as new direct owner
-            pauserRegistry, // set pauser registry
+            EigenPodManager.initialize.selector,
+            _operationsMultisig(), // set opsMultisig as new direct owner
+            _pauserRegistry(), // set pauser registry
             uint256(0) // set all 0 bits, nothing paused
         );
 
-        address proxyAdmin = zeusAddress("ProxyAdmin");
-        address eigenPodManagerProxy = zeusAddress("EigenPodManager_proxy");
-
         // upgrade eigenPodManager
         _executorCalls.append({
-            to: proxyAdmin,
+            to: _proxyAdmin(),
             data: abi.encodeWithSelector(
                 ProxyAdmin.upgradeAndCall.selector,
-                eigenPodManagerProxy,
-                eigenPodManagerPendingImpl,
+                _eigenPodManagerProxy(),
+                _eigenPodManagerPendingImpl(),
                 eigenPodManagerData // initialize impl here
             )
         });
 
-        address eigenPodBeacon = zeusAddress("EigenPod_beacon");
-        address eigenPodPendingImpl = zeusAddress("EigenPod_pendingImpl");
-
         // upgrade eigenPod beacon implementation
         _executorCalls.append({
-            to: eigenPodBeacon,
-            data: abi.encodeWithSelector(IUpgradeableBeacon.upgradeTo.selector, eigenPodPendingImpl)
+            to: _eigenPodBeacon(),
+            data: abi.encodeWithSelector(IUpgradeableBeacon.upgradeTo.selector, _eigenPodPendingImpl())
         });
 
         return _executorCalls;
@@ -59,20 +49,15 @@ contract QueueEigenPodAndManager is MultisigBuilder {
         // get the queue data
         MultisigCall[] memory calls = _queue();
 
-        address multiSendCallOnly = zeusAddress("MultiSendCallOnly");
-        address timelock = zeusAddress("Timelock");
-
         // encode calls for executor
-        bytes memory executorCalldata = calls.makeExecutorCalldata(multiSendCallOnly, timelock);
-
-        address executorMultisig = zeusAddress("ExecutorMultisig");
+        bytes memory executorCalldata = calls.makeExecutorCalldata(_multiSendCallOnly(), _timelock());
 
         // encode executor data for timelock
         bytes memory timelockCalldata = abi.encodeWithSelector(
-            ITimelock.queueTransaction.selector, executorMultisig, 0, "", executorCalldata, type(uint256).max
+            ITimelock.queueTransaction.selector, _executorMultisig(), 0, "", executorCalldata, type(uint256).max
         );
 
-        _opsCalls.append(timelock, timelockCalldata);
+        _opsCalls.append(_timelock(), timelockCalldata);
 
         // encode timelock data for ops multisig
         return _opsCalls;

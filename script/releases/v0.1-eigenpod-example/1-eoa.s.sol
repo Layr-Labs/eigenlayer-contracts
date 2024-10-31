@@ -33,7 +33,7 @@ contract DeployEigenPodAndManager is EOADeployer {
 
         address newEigenPod = address(
             new EigenPod(
-                IETHPOSDeposit(ethPOS()),
+                IETHPOSDeposit(_ethPos()),
                 IEigenPodManager(newEigenPodManager), // update EigenPodManager address
                 getUint64("EIGENPOD_GENESIS_TIME") // set genesis time
             )
