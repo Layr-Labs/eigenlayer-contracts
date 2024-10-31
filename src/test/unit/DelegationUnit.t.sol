@@ -1384,7 +1384,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
-        cheats.expectRevert(IDelegationManagerErrors.SignatureExpired.selector);
+        cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
     }
@@ -1851,7 +1851,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // try to delegate from the `staker` to the operator, and check reversion
         cheats.startPrank(staker);
-        cheats.expectRevert(IDelegationManagerErrors.SignatureExpired.selector);
+        cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
         delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
@@ -2097,17 +2097,20 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
     /// @notice Checks that `DelegationManager.delegateToBySignature` reverts if the staker's signature has expired
     function testFuzz_Revert_WhenStakerSignatureExpired(
         address staker,
-        address operator,
         uint256 expiry,
         bytes memory signature
-    ) public filterFuzzedAddressInputs(staker) filterFuzzedAddressInputs(operator) {
+    ) public filterFuzzedAddressInputs(staker) {
+        cheats.assume(expiry >= block.timestamp);
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+
         expiry = bound(expiry, 0, block.timestamp - 1);
-        cheats.expectRevert(IDelegationManagerErrors.SignatureExpired.selector);
+        cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
             expiry: expiry
         });
-        delegationManager.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, emptySalt);
+        delegationManager.delegateToBySignature(staker, defaultOperator, signatureWithExpiry, signatureWithExpiry, emptySalt);
     }
 
     /// @notice Checks that `DelegationManager.delegateToBySignature` reverts if the staker's ECDSA signature verification fails
@@ -2273,7 +2276,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
 
         // try delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`, and check for reversion
         cheats.startPrank(caller);
-        cheats.expectRevert(IDelegationManagerErrors.SignatureExpired.selector);
+        cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
         delegationManager.delegateToBySignature(
             defaultStaker,
             defaultOperator,

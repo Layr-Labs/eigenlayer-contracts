@@ -19,8 +19,6 @@ interface IStrategyManagerErrors {
     error SharesAmountTooHigh();
     /// @dev Thrown when provided `shares` amount is zero.
     error SharesAmountZero();
-    /// @dev Thrown when attempting to use an expired eip-712 signature.
-    error SignatureExpired();
     /// @dev Thrown when provided `staker` address is null.
     error StakerAddressZero();
     /// @dev Thrown when provided `strategy` not found.

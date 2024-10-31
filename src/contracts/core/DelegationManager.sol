@@ -145,8 +145,6 @@ contract DelegationManager is
         SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 approverSalt
     ) external {
-        // check the signature expiry
-        require(stakerSignatureAndExpiry.expiry >= block.timestamp, SignatureExpired());
         require(!isDelegated(staker), ActivelyDelegated());
         require(isOperator(operator), OperatorNotRegistered());
 
@@ -162,7 +160,8 @@ contract DelegationManager is
                 operator: operator,
                 expiry: stakerSignatureAndExpiry.expiry
             }),
-            signature: stakerSignatureAndExpiry.signature
+            signature: stakerSignatureAndExpiry.signature,
+            expiry: stakerSignatureAndExpiry.expiry
         });
 
         unchecked {
@@ -446,8 +445,6 @@ contract DelegationManager is
          * If the `approver` or the `operator` themselves is the caller, then approval is assumed and signature verification is skipped as well.
          */
         if (approver != address(0) && msg.sender != approver && msg.sender != operator) {
-            // check the signature expiry
-            require(approverSignatureAndExpiry.expiry >= block.timestamp, SignatureExpired());
             // check that the salt hasn't been used previously, then mark the salt as spent
             require(!delegationApproverSaltIsSpent[approver][approverSalt], SaltSpent());
             // actually check that the signature is valid
@@ -456,7 +453,8 @@ contract DelegationManager is
                 signableDigest: calculateDelegationApprovalDigestHash(
                     staker, operator, approver, approverSalt, approverSignatureAndExpiry.expiry
                 ),
-                signature: approverSignatureAndExpiry.signature
+                signature: approverSignatureAndExpiry.signature,
+                expiry: approverSignatureAndExpiry.expiry
             });
 
             delegationApproverSaltIsSpent[approver][approverSalt] = true;

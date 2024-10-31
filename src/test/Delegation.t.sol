@@ -176,7 +176,7 @@ contract DelegationTests is EigenLayerTestHelper {
         }
 
         if (expiry < block.timestamp) {
-            cheats.expectRevert(IDelegationManagerErrors.SignatureExpired.selector);
+            cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
         }
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
