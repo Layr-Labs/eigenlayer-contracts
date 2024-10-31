@@ -114,8 +114,7 @@ contract AllocationManager is
             delegation.decreaseOperatorShares({
                 operator: params.operator,
                 strategy: params.strategies[i],
-                previousMaxMagnitude: maxMagnitudeBeforeSlash,
-                newMaxMagnitude: maxMagnitudeAfterSlash
+                wadSlashed: params.wadToSlash
             });
 
             // 6. Record the proportion of shares slashed

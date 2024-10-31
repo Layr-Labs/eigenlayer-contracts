@@ -107,12 +107,8 @@ library SlashingLib {
             .mulWad(uint256(operatorMagnitude));
     }
 
-    function getOperatorSharesToDecrease(
-        uint256 operatorShares,
-        uint64 previousMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) internal pure returns (uint256) {
-        return operatorShares - operatorShares.divWad(previousMaxMagnitude).mulWad(newMaxMagnitude);
+    function calcSlashedAmount(uint256 operatorShares, uint256 wadSlashed) internal pure returns (uint256) {
+        return operatorShares.mulWad(wadSlashed);
     }
 
     function decreaseBeaconChainScalingFactor(

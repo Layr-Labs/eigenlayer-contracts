@@ -359,17 +359,19 @@ contract DelegationManager is
     function decreaseOperatorShares(
         address operator,
         IStrategy strategy,
-        uint64 previousMaxMagnitude,
-        uint64 newMaxMagnitude
+        uint256 wadSlashed
     ) external onlyAllocationManager {
-        uint256 sharesToDecrease =
-            operatorShares[operator][strategy].getOperatorSharesToDecrease(previousMaxMagnitude, newMaxMagnitude);
+        /// forgefmt: disable-next-item
+        uint256 amountSlashed = SlashingLib.calcSlashedAmount({
+            operatorShares: operatorShares[operator][strategy], 
+            wadSlashed: wadSlashed
+        });
 
         _decreaseDelegation({
             operator: operator,
             staker: address(0), // we treat this as a decrease for the zero address staker
             strategy: strategy,
-            sharesToDecrease: sharesToDecrease
+            sharesToDecrease: amountSlashed
         });
     }
 
