@@ -48,6 +48,13 @@ contract DeployEigenPodAndManager is EOADeployer {
     }
 
     function zeusTest() public override {
-        // Test function implementation
+        _deploy();
+
+        Deployment memory eigenPodManager = _deployments[0];
+        Deployment memory eigenPod = _deployments[1];
+
+        require(eigenPodManager.deployedTo != address(0), "EigenPodManager deployment failed");
+
+        require(eigenPod.deployedTo != address(0), "EigenPod deployment failed");
     }
 }
