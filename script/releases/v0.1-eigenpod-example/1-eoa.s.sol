@@ -46,4 +46,8 @@ contract DeployEigenPodAndManager is EOADeployer {
 
         return _deployments;
     }
+
+    function zeusTest() public override {
+        // Test function implementation
+    }
 }

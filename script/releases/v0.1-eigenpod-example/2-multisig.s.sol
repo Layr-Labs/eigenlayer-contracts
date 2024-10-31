@@ -77,4 +77,8 @@ contract QueueEigenPodAndManager is MultisigBuilder {
         // encode timelock data for ops multisig
         return _opsCalls;
     }
+
+    function zeusTest() public override virtual {
+        // Test function implementation
+    }
 }

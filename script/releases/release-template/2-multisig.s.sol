@@ -44,4 +44,8 @@ contract Queue is MultisigBuilder {
         // encode timelock data for ops multisig
         return _opsCalls;
     }
+
+    function zeusTest() public override {
+        // Test function implementation
+    }
 }

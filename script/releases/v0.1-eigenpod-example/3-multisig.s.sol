@@ -41,4 +41,8 @@ contract ExecuteEigenPodAndManager is QueueEigenPodAndManager {
 
         return _multisigCalls;
     }
+
+    function zeusTest() public override {
+        // Test function implementation
+    }
 }
