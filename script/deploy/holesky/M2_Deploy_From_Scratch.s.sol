@@ -85,7 +85,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             strategyManager,
             delegationManager
         );
-        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegationManager, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to point to the implementations
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);

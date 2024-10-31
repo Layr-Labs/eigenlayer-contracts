@@ -69,7 +69,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         );
     }
 
-    function test_initialization() public {
+    function test_initialization() public view {
         assertEq(
             address(strategyFactory.strategyManager()),
             address(strategyManagerMock),

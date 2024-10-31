@@ -388,7 +388,7 @@ contract DelegationManager is
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
+        uint256, // middlewareTimesIndex
         bool receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
@@ -398,7 +398,7 @@ contract DelegationManager is
     function completeQueuedWithdrawals(
         Withdrawal[] calldata withdrawals,
         IERC20[][] calldata tokens,
-        uint256[] calldata middlewareTimesIndexes,
+        uint256[] calldata, // middlewareTimesIndexes
         bool[] calldata receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         for (uint256 i = 0; i < withdrawals.length; ++i) {
@@ -699,7 +699,7 @@ contract DelegationManager is
     function _hasNonZeroScalingFactors(
         uint64 maxMagnitude,
         StakerScalingFactors memory ssf
-    ) internal view returns (bool) {
+    ) internal pure returns (bool) {
         return maxMagnitude != 0 && (!ssf.isBeaconChainScalingFactorSet || ssf.beaconChainScalingFactor != 0);
     }
 

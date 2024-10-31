@@ -16,7 +16,11 @@ import "src/test/mocks/StrategyManagerMock.sol";
 import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
 
+import "src/test/utils/SingleItemArrayLib.sol";
+
 abstract contract EigenLayerUnitTestSetup is Test {
+    using SingleItemArrayLib for *;
+
     Vm cheats = Vm(VM_ADDRESS);
 
     address constant pauser = address(555);

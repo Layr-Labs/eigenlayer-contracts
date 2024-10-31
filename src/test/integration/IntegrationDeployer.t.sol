@@ -264,7 +264,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
         strategyFactoryImplementation = new StrategyFactory(strategyManager);
-        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegationManager, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;

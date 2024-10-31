@@ -63,7 +63,7 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
         _verifyInitializationParams();
     }
 
-    function _sanityCheckImplementations(RewardsCoordinator oldRc, RewardsCoordinator newRc) internal {
+    function _sanityCheckImplementations(RewardsCoordinator oldRc, RewardsCoordinator newRc) internal view {
         // Verify configs between both rewardsCoordinatorImplementations
         assertEq(
             address(oldRc.delegationManager()),

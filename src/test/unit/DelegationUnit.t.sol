@@ -522,7 +522,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 }
 
 contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerUnitTests {
-    function test_initialization() public {
+    function test_initialization() public view {
         assertEq(
             address(delegationManager.strategyManager()),
             address(strategyManagerMock),
@@ -583,7 +583,6 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 
     // @notice Verifies that someone cannot successfully call `DelegationManager.registerAsOperator(operatorDetails)` again after registering for the first time
     function testFuzz_registerAsOperator_revert_cannotRegisterMultipleTimes(
-        address operator,
         IDelegationManagerTypes.OperatorDetails memory operatorDetails
     ) public {
         // Register once
@@ -874,7 +873,6 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         uint256[] memory sharesToReturn = new uint256[](1);
         sharesToReturn[0] = shares;
         strategyManagerMock.setDeposits(staker, strategiesToReturn, sharesToReturn);
-        uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);
 
         // Set the operators magnitude to be 0
         _setOperatorMagnitude(defaultOperator, strategyMock, 0);
@@ -2929,7 +2927,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
     ) public filterFuzzedAddressInputs(staker) { // remeber to filter fuzz inputs
         cheats.assume(staker != defaultOperator);
         cheats.assume(shares > existingShares);
-        uint64 initialMagnitude = uint64(bound(initialMagnitude, 1, WAD));
+        initialMagnitude = uint64(bound(initialMagnitude, 1, WAD));
 
         // 1. Register operator with initial operator magnitude and delegate staker to operator
         _registerOperatorWithBaseDetails(defaultOperator);
@@ -2999,7 +2997,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         cheats.assume(staker != defaultOperator);
         cheats.assume(address(strategy) != address(strategyMock));
 
-        uint64 magnitude = uint64(bound(magnitude, 1, WAD));
+        magnitude = uint64(bound(magnitude, 1, WAD));
 
         // Register operator
         _registerOperatorWithBaseDetails(defaultOperator);
@@ -3552,7 +3550,6 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         uint64 operatorMagnitude = 0;
         uint256 operatorSharesAfterSlash;
         {
-            uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);
             _setOperatorMagnitude(defaultOperator, strategyMock, operatorMagnitude);
             cheats.prank(address(allocationManagerMock));
             delegationManager.decreaseOperatorShares(defaultOperator, strategyMock, WAD, operatorMagnitude);
@@ -3905,7 +3902,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         }
 
         assertEq(delegationManager.delegatedTo(defaultStaker), defaultOperator, "staker should be delegated to operator");
-        uint256 delegatedSharesBefore = delegationManager.operatorShares(defaultOperator, strategies[0]);
 
         // queueWithdrawals should revert from the 100% slashing
         cheats.prank(defaultStaker);
@@ -4032,7 +4028,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         (
             IDelegationManagerTypes.Withdrawal memory withdrawal,
             IERC20[] memory tokens,
-            bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
             withdrawer: defaultStaker,
@@ -4325,6 +4320,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             sharesToWithdraw: withdrawalAmount
         });
 
+        uint256 operatorSharesAfterAVSSlash;
         {
             cheats.prank(defaultStaker);
             delegationManager.queueWithdrawals(queuedWithdrawalParams);
@@ -4345,11 +4341,10 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             _setOperatorMagnitude(defaultOperator, withdrawal.strategies[0], operatorMagnitude);
             cheats.prank(address(allocationManagerMock));
             delegationManager.decreaseOperatorShares(defaultOperator, withdrawal.strategies[0], WAD, operatorMagnitude);
-            uint256 operatorSharesAfterAVSSlash = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
+            operatorSharesAfterAVSSlash = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
             assertEq(operatorSharesAfterAVSSlash, operatorSharesAfterBeaconSlash / 2, "operator shares should be decreased after AVS slash");
         }
-        uint256 operatorSharesAfterAVSSlash = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
-
+        operatorSharesAfterAVSSlash = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
 
         // Complete queue withdrawal
         IERC20[] memory tokens = new IERC20[](1);

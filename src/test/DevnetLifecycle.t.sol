@@ -30,9 +30,10 @@ contract Devnet_Lifecycle_Test is Test {
     address public operator;
     uint256 operatorPk = 420;
     address public avs = address(0x3);
-    uint32 public operatorSet = 1;
+    uint32 public operatorSetId = 1;
     uint256 public wethAmount = 100 ether;
     uint256 public wethShares = 100 ether;
+    OperatorSet public operatorSet;
 
     // Values
     uint64 public magnitudeToSet = 1e18;
@@ -48,17 +49,18 @@ contract Devnet_Lifecycle_Test is Test {
 
         // Set operator
         operator = cheats.addr(operatorPk);
+        operatorSet = OperatorSet({avs: avs, id: operatorSetId});
     }
 
     function _getOperatorSetArray() internal view returns (uint32[] memory) {
         uint32[] memory operatorSets = new uint32[](1);
-        operatorSets[0] = operatorSet;
+        operatorSets[0] = operatorSetId;
         return operatorSets;
     }
     
     function _getOperatorSetsArray() internal view returns (OperatorSet[] memory) {
         OperatorSet[] memory operatorSets = new OperatorSet[](1);
-        operatorSets[0] = OperatorSet({avs: avs, operatorSetId: operatorSet});
+        operatorSets[0] = OperatorSet({avs: avs, id: operatorSetId});
         return operatorSets;
     }
 
@@ -137,79 +139,61 @@ contract Devnet_Lifecycle_Test is Test {
 
     function _registerAVS() internal {
         cheats.startPrank(avs);
-        avsDirectory.createOperatorSets(_getOperatorSetArray());
-        avsDirectory.becomeOperatorSetAVS();
-        cheats.stopPrank();
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = wethStrategy;
 
-        // Assert storage
-        assertTrue(avsDirectory.isOperatorSetAVS(avs));
+        IAllocationManagerTypes.CreateSetParams memory createSetParams = IAllocationManagerTypes.CreateSetParams({
+            operatorSetId: operatorSetId,
+            strategies: strategies
+        });
+
+        IAllocationManagerTypes.CreateSetParams[] memory array = new IAllocationManagerTypes.CreateSetParams[](1);
+        array[0] = createSetParams;
+
+        allocationManager.createOperatorSets(array);
+        cheats.stopPrank();
     }
 
     function _registerOperatorToAVS() public {
-        bytes32 salt = bytes32(0);
-        uint256 expiry = type(uint256).max;
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operatorPk,
-            avsDirectory.calculateOperatorSetRegistrationDigestHash(avs, _getOperatorSetArray(), salt, expiry)
-        );
+        cheats.prank(operator);
+        
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = operatorSetId;
 
-        cheats.prank(avs);
-        avsDirectory.registerOperatorToOperatorSets(
-            operator, 
-            _getOperatorSetArray(), 
-            ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
-        );
+        allocationManager.registerForOperatorSets(IAllocationManagerTypes.RegisterParams(avs, operatorSetIds, ""));
 
-        // Assert registration
-        assertTrue(avsDirectory.isMember(
-            operator,
-            OperatorSet({
-                avs: avs,
-                operatorSetId: operatorSet
-            })
-        ));
-
-        // Assert operator is slashable
-        assertTrue(avsDirectory.isOperatorSlashable(
-            operator,
-            OperatorSet({
-                avs: avs,
-                operatorSetId: operatorSet
-            })
-        ));
+        assertEq(allocationManager.getMemberAtIndex(OperatorSet(avs, operatorSetId), 0), operator);
     }
 
     function _setMagnitude() public {
-        OperatorSet[] memory operatorSets = new OperatorSet[](1);
-        operatorSets[0] = OperatorSet({avs: avs, operatorSetId: operatorSet});
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = wethStrategy;
 
         uint64[] memory magnitudes = new uint64[](1);
         magnitudes[0] = magnitudeToSet;
 
-        IAllocationManagerTypes.MagnitudeAllocation[] memory allocations =
-            new IAllocationManagerTypes.MagnitudeAllocation[](1);
-        allocations[0] = IAllocationManagerTypes.MagnitudeAllocation({
-            strategy: wethStrategy,
-            expectedMaxMagnitude: 1e18,
-            operatorSets: operatorSets,
-            magnitudes: magnitudes
+        IAllocationManagerTypes.AllocateParams[] memory allocations = new IAllocationManagerTypes.AllocateParams[](1);
+        allocations[0] = IAllocationManagerTypes.AllocateParams({
+            operatorSet: operatorSet,
+            strategies: strategies,
+            newMagnitudes: magnitudes
         });
 
         cheats.prank(operator);
         allocationManager.modifyAllocations(allocations);
 
         // Assert storage
-        IAllocationManagerTypes.MagnitudeInfo[] memory infos = allocationManager.getAllocationInfo(operator, wethStrategy, _getOperatorSetsArray());
-        assertEq(infos[0].currentMagnitude, 0);
-        assertEq(infos[0].pendingDiff, int128(uint128(magnitudeToSet)));
-        assertEq(infos[0].effectTimestamp, block.number + 1);
+        IAllocationManagerTypes.Allocation memory info = allocationManager.getAllocation(operator, operatorSet, wethStrategy);
+        assertEq(info.currentMagnitude, 0);
+        assertEq(info.pendingDiff, int128(uint128(magnitudeToSet)));
+        assertEq(info.effectBlock, block.number + 1);
 
         // Warp to effect timestamp
         cheats.roll(block.number + 1);
 
         // Check allocation
-        infos = allocationManager.getAllocationInfo(operator, wethStrategy, _getOperatorSetsArray());
-        assertEq(infos[0].currentMagnitude, magnitudeToSet);
+        info = allocationManager.getAllocation(operator, operatorSet, wethStrategy);
+        assertEq(info.currentMagnitude, magnitudeToSet);
     }
 
     function _slashOperator() public {
@@ -219,7 +203,6 @@ contract Devnet_Lifecycle_Test is Test {
         IAllocationManagerTypes.SlashingParams memory slashingParams = IAllocationManagerTypes.SlashingParams({
             operator: operator,
             operatorSetId: 1,
-            strategies: strategies,
             wadToSlash: 5e17,
             description: "test"
         });
@@ -229,8 +212,8 @@ contract Devnet_Lifecycle_Test is Test {
         allocationManager.slashOperator(slashingParams);
 
         // Assert storage
-        IAllocationManagerTypes.MagnitudeInfo[] memory infos = allocationManager.getAllocationInfo(operator, wethStrategy, _getOperatorSetsArray());
-        assertEq(infos[0].currentMagnitude, magnitudeToSet - 5e17);
+        IAllocationManagerTypes.Allocation memory info = allocationManager.getAllocation(operator, operatorSet, wethStrategy);
+        assertEq(info.currentMagnitude, magnitudeToSet - 5e17);
     }
 
     function _withdrawStaker() public {
@@ -257,7 +240,7 @@ contract Devnet_Lifecycle_Test is Test {
             strategies: strategies,
             scaledShares: scaledShares
         });
-        bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
+        // bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
         // Generate complete withdrawal params
 
         cheats.startPrank(staker);

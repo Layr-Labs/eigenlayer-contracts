@@ -237,7 +237,7 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
         strategyManager.initialize(initialOwner, initialOwner, pauserRegistry, 0);
     }
 
-    function test_InitializedStorageProperly() public {
+    function test_InitializedStorageProperly() public view {
         assertEq(strategyManager.owner(), initialOwner, "strategyManager.owner() != initialOwner");
         assertEq(
             strategyManager.strategyWhitelister(),

@@ -423,7 +423,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16) {
+    function operatorCommissionBips(
+        address, // operator
+        address // avs
+    ) external view returns (uint16) {
         return globalOperatorCommissionBips;
     }
 

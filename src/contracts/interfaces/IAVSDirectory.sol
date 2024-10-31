@@ -109,7 +109,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
     /**
      *  @notice Legacy function called by the AVS's service manager contract
      * to register an operator with the AVS. NOTE: this function will be deprecated in a future release
-     * after the slashing release. New AVSs should use `registerOperatorToOperatorSets` instead.
+     * after the slashing release. New AVSs should use `registerForOperatorSets` instead.
      *
      *  @param operator The address of the operator to register.
      *  @param operatorSignature The signature, salt, and expiry of the operator's signature.

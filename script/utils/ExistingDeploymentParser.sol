@@ -459,8 +459,6 @@ contract ExistingDeploymentParser is Script, Test {
         );
         // DelegationManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
-        uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManager.initialize(
             address(0),
             eigenLayerPauserReg,

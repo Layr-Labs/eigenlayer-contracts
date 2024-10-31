@@ -245,7 +245,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
     function assert_ProofsRemainingEqualsActive(
         EigenPodUser staker,
         string memory err
-    ) internal {
+    ) internal view {
         EigenPod pod = staker.pod();
         assertEq(pod.currentCheckpoint().proofsRemaining, pod.activeValidatorCount(), err);
     }
@@ -1732,7 +1732,7 @@ contract EigenPodUnitTests_proofParsingTests is EigenPodHarnessSetup, ProofParsi
     bytes validatorFieldsProof;
     bytes32[] validatorFields;
 
-    function _assertWithdrawalCredentialsSet(uint256 restakedBalanceGwei) internal {
+    function _assertWithdrawalCredentialsSet(uint256 restakedBalanceGwei) internal view {
         IEigenPodTypes.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
         assertEq(uint8(validatorInfo.status), uint8(IEigenPodTypes.VALIDATOR_STATUS.ACTIVE), "Validator status should be active");
         assertEq(validatorInfo.validatorIndex, validatorIndex, "Validator index incorrectly set");

@@ -294,7 +294,7 @@ contract AllocationManager is
             OperatorSet memory operatorSet = OperatorSet(msg.sender, params[i].operatorSetId);
 
             // Create the operator set, ensuring it does not already exist
-            require(_operatorSets[msg.sender].add(operatorSet.id) == false, InvalidOperatorSet());
+            require(_operatorSets[msg.sender].add(operatorSet.id) == true, InvalidOperatorSet());
             emit OperatorSetCreated(OperatorSet(msg.sender, operatorSet.id));
 
             // Add strategies to the operator set
@@ -423,7 +423,7 @@ contract AllocationManager is
     /**
      * @dev For an operator set, get the operator's effective allocated magnitude.
      * If the operator set has a pending deallocation that can be completed at the
-     * current timestamp, this method returns a view of the allocation as if the deallocation
+     * current block number, this method returns a view of the allocation as if the deallocation
      * was completed.
      * @return info the effective allocated and pending magnitude for the operator set, and
      * the effective encumbered magnitude for all operator sets belonging to this strategy
