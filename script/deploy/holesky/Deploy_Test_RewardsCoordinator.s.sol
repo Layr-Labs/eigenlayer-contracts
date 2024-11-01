@@ -11,7 +11,6 @@ import "../../utils/ExistingDeploymentParser.sol";
  *
  */
 contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
-
     address testAddress = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
     address initOwner = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
 
@@ -64,14 +63,14 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
                         REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                         REWARDS_COORDINATOR_UPDATER,
                         REWARDS_COORDINATOR_ACTIVATION_DELAY,
-                        REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS
+                        REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS
                     )
                 )
             )
         );
     }
 
-        /**
+    /**
      * @notice Deploy RewardsCoordinator Implementation for Holesky and upgrade the proxy
      */
     function _upgradeRewardsCoordinator() internal {

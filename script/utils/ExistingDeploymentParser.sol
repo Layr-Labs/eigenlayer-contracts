@@ -116,7 +116,7 @@ contract ExistingDeploymentParser is Script, Test {
     address REWARDS_COORDINATOR_UPDATER;
     uint32 REWARDS_COORDINATOR_ACTIVATION_DELAY;
     uint32 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
-    uint32 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
+    uint32 REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     // EigenPod
@@ -216,10 +216,14 @@ contract ExistingDeploymentParser is Script, Test {
         bEIGEN = IBackingEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.bEIGEN"));
         bEIGENImpl = IBackingEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.bEIGENImpl"));
         eigenStrategy = EigenStrategy(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenStrategy"));
-        eigenStrategyImpl = EigenStrategy(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenStrategyImpl"));
+        eigenStrategyImpl = EigenStrategy(
+            stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenStrategyImpl")
+        );
     }
 
-    function _parseDeployedEigenPods(string memory existingDeploymentInfoPath) internal returns (DeployedEigenPods memory) {
+    function _parseDeployedEigenPods(
+        string memory existingDeploymentInfoPath
+    ) internal returns (DeployedEigenPods memory) {
         uint256 currentChainId = block.chainid;
 
         // READ JSON CONFIG DATA
@@ -233,11 +237,12 @@ contract ExistingDeploymentParser is Script, Test {
         singleValidatorPods = stdJson.readAddressArray(existingDeploymentData, ".eigenPods.singleValidatorPods");
         inActivePods = stdJson.readAddressArray(existingDeploymentData, ".eigenPods.inActivePods");
         allEigenPods = stdJson.readAddressArray(existingDeploymentData, ".eigenPods.allEigenPods");
-        return DeployedEigenPods({
-            multiValidatorPods: multiValidatorPods,
-            singleValidatorPods: singleValidatorPods,
-            inActivePods: inActivePods
-        });
+        return
+            DeployedEigenPods({
+                multiValidatorPods: multiValidatorPods,
+                singleValidatorPods: singleValidatorPods,
+                inActivePods: inActivePods
+            });
     }
 
     /// @notice use for deploying a new set of EigenLayer contracts
@@ -308,15 +313,30 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".rewardsCoordinator.init_paused_status"
         );
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS"));
-        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_REWARDS_DURATION"));
-        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_RETROACTIVE_LENGTH"));
-        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_FUTURE_LENGTH"));
-        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP"));
-        REWARDS_COORDINATOR_UPDATER = stdJson.readAddress(initialDeploymentData, ".rewardsCoordinator.rewards_updater_address");
-        REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.activation_delay"));
-        REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
-            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.global_operator_commission_bips")
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS")
+        );
+        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_REWARDS_DURATION")
+        );
+        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_RETROACTIVE_LENGTH")
+        );
+        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_FUTURE_LENGTH")
+        );
+        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP")
+        );
+        REWARDS_COORDINATOR_UPDATER = stdJson.readAddress(
+            initialDeploymentData,
+            ".rewardsCoordinator.rewards_updater_address"
+        );
+        REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.activation_delay")
+        );
+        REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.default_operator_split_bips")
         );
         // AVSDirectory
         AVS_DIRECTORY_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".avsDirectory.init_paused_status");
@@ -457,7 +477,7 @@ contract ExistingDeploymentParser is Script, Test {
             0, // initialPausedStatus
             address(0), // rewardsUpdater
             0, // activationDelay
-            0 // globalCommissionBips
+            0 // defaultSplitBips
         );
         // DelegationManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
@@ -476,11 +496,7 @@ contract ExistingDeploymentParser is Script, Test {
         strategyManager.initialize(address(0), address(0), eigenLayerPauserReg, STRATEGY_MANAGER_INIT_PAUSED_STATUS);
         // EigenPodManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        eigenPodManager.initialize(
-            address(0),
-            eigenLayerPauserReg,
-            EIGENPOD_MANAGER_INIT_PAUSED_STATUS
-        );
+        eigenPodManager.initialize(address(0), eigenLayerPauserReg, EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
         // Strategies
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
             vm.expectRevert(bytes("Initializable: contract is already initialized"));
@@ -547,8 +563,8 @@ contract ExistingDeploymentParser is Script, Test {
             "rewardsCoordinator: CALCULATION_INTERVAL_SECONDS not set correctly"
         );
         require(
-            rewardsCoordinator.globalOperatorCommissionBips() == REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS,
-            "rewardsCoordinator: globalCommissionBips not set correctly"
+            rewardsCoordinator.defaultOperatorSplitBips() == REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS,
+            "rewardsCoordinator: defaultSplitBips not set correctly"
         );
         // DelegationManager
         require(
@@ -584,7 +600,7 @@ contract ExistingDeploymentParser is Script, Test {
             // require(
             //     strategyManager.strategyWhitelister() == executorMultisig,
             //     "strategyManager: strategyWhitelister not set correctly"
-            // );    
+            // );
         }
         // EigenPodManager
         require(

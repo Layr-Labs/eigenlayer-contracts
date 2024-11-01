@@ -16,12 +16,8 @@ import "../../utils/ExistingDeploymentParser.sol";
  */
 contract MainnetRewardsCoordinatorDeploy is ExistingDeploymentParser {
     function run() external virtual {
-        _parseInitialDeploymentParams(
-            "script/configs/mainnet/v0.3.0-mainnet-rewards.config.json"
-        );
-        _parseDeployedContracts(
-            "script/configs/mainnet/v0.3.0-eigenlayer-addresses.config.json"
-        );
+        _parseInitialDeploymentParams("script/configs/mainnet/v0.3.0-mainnet-rewards.config.json");
+        _parseDeployedContracts("script/configs/mainnet/v0.3.0-eigenlayer-addresses.config.json");
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
@@ -46,8 +42,6 @@ contract MainnetRewardsCoordinatorDeploy is ExistingDeploymentParser {
      * @notice Deploy RewardsCoordinator for Holesky
      */
     function _deployRewardsCoordinator() internal {
-
-
         // Deploy RewardsCoordinator proxy and implementation
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
@@ -70,7 +64,7 @@ contract MainnetRewardsCoordinatorDeploy is ExistingDeploymentParser {
                         REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                         REWARDS_COORDINATOR_UPDATER,
                         REWARDS_COORDINATOR_ACTIVATION_DELAY,
-                        REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS
+                        REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS
                     )
                 )
             )
