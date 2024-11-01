@@ -16,7 +16,6 @@ contract Execute is Queue {
      * @dev Overrides the previous _execute function to execute the queued transactions.
      */
     function _execute() internal override returns (MultisigCall[] memory) {
-
         MultisigCall[] memory _executorCalls = _queue();
 
         address multiSendCallOnly = zeusAddress("MultiSendCallOnly");

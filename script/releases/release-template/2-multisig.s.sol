@@ -11,7 +11,6 @@ contract Queue is MultisigBuilder {
     MultisigCall[] private _opsCalls;
 
     function _queue() internal returns (MultisigCall[] memory) {
-
         //////////////////////////
         // construct executor data here
         //////////////////////////

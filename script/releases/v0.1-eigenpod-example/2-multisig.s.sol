@@ -63,7 +63,7 @@ contract QueueEigenPodAndManager is MultisigBuilder {
         return _opsCalls;
     }
 
-    function zeusTest() public override virtual {
+    function zeusTest() public virtual override {
         // Test function implementation
     }
 }
