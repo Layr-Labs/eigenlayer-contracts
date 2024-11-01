@@ -129,7 +129,9 @@ contract ExistingDeploymentParser is Script, Test {
     uint256 STRATEGY_MAX_TOTAL_DEPOSITS;
 
     /// @notice use for parsing already deployed EigenLayer contracts
-    function _parseDeployedContracts(string memory existingDeploymentInfoPath) internal virtual {
+    function _parseDeployedContracts(
+        string memory existingDeploymentInfoPath
+    ) internal virtual {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         emit log_named_uint("You are parsing on ChainID", currentChainId);
@@ -151,51 +153,38 @@ contract ExistingDeploymentParser is Script, Test {
         pauserMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.pauserMultisig");
         timelock = stdJson.readAddress(existingDeploymentData, ".parameters.timelock");
 
-        eigenLayerProxyAdmin = ProxyAdmin(
-            stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerProxyAdmin")
-        );
-        eigenLayerPauserReg = PauserRegistry(
-            stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerPauserReg")
-        );
+        eigenLayerProxyAdmin =
+            ProxyAdmin(stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerProxyAdmin"));
+        eigenLayerPauserReg =
+            PauserRegistry(stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerPauserReg"));
         slasher = Slasher(stdJson.readAddress(existingDeploymentData, ".addresses.slasher"));
-        slasherImplementation = Slasher(
-            stdJson.readAddress(existingDeploymentData, ".addresses.slasherImplementation")
-        );
-        delegationManager = DelegationManager(
-            stdJson.readAddress(existingDeploymentData, ".addresses.delegationManager")
-        );
-        delegationManagerImplementation = DelegationManager(
-            stdJson.readAddress(existingDeploymentData, ".addresses.delegationManagerImplementation")
-        );
+        slasherImplementation = Slasher(stdJson.readAddress(existingDeploymentData, ".addresses.slasherImplementation"));
+        delegationManager =
+            DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationManager"));
+        delegationManagerImplementation =
+            DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationManagerImplementation"));
         avsDirectory = AVSDirectory(stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectory"));
-        avsDirectoryImplementation = AVSDirectory(
-            stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectoryImplementation")
-        );
-        rewardsCoordinator = RewardsCoordinator(
-            stdJson.readAddress(existingDeploymentData, ".addresses.rewardsCoordinator")
-        );
+        avsDirectoryImplementation =
+            AVSDirectory(stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectoryImplementation"));
+        rewardsCoordinator =
+            RewardsCoordinator(stdJson.readAddress(existingDeploymentData, ".addresses.rewardsCoordinator"));
         rewardsCoordinatorImplementation = RewardsCoordinator(
             stdJson.readAddress(existingDeploymentData, ".addresses.rewardsCoordinatorImplementation")
         );
         strategyManager = StrategyManager(stdJson.readAddress(existingDeploymentData, ".addresses.strategyManager"));
-        strategyManagerImplementation = StrategyManager(
-            stdJson.readAddress(existingDeploymentData, ".addresses.strategyManagerImplementation")
-        );
+        strategyManagerImplementation =
+            StrategyManager(stdJson.readAddress(existingDeploymentData, ".addresses.strategyManagerImplementation"));
         strategyFactory = StrategyFactory(stdJson.readAddress(existingDeploymentData, ".addresses.strategyFactory"));
-        strategyFactoryImplementation = StrategyFactory(
-            stdJson.readAddress(existingDeploymentData, ".addresses.strategyFactoryImplementation")
-        );
+        strategyFactoryImplementation =
+            StrategyFactory(stdJson.readAddress(existingDeploymentData, ".addresses.strategyFactoryImplementation"));
         eigenPodManager = EigenPodManager(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodManager"));
-        eigenPodManagerImplementation = EigenPodManager(
-            stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodManagerImplementation")
-        );
+        eigenPodManagerImplementation =
+            EigenPodManager(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodManagerImplementation"));
         eigenPodBeacon = UpgradeableBeacon(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodBeacon"));
-        eigenPodImplementation = EigenPod(
-            payable(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodImplementation"))
-        );
-        baseStrategyImplementation = StrategyBase(
-            stdJson.readAddress(existingDeploymentData, ".addresses.baseStrategyImplementation")
-        );
+        eigenPodImplementation =
+            EigenPod(payable(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodImplementation")));
+        baseStrategyImplementation =
+            StrategyBase(stdJson.readAddress(existingDeploymentData, ".addresses.baseStrategyImplementation"));
         emptyContract = EmptyContract(stdJson.readAddress(existingDeploymentData, ".addresses.emptyContract"));
 
         // Strategies Deployed, load strategy list
@@ -216,10 +205,13 @@ contract ExistingDeploymentParser is Script, Test {
         bEIGEN = IBackingEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.bEIGEN"));
         bEIGENImpl = IBackingEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.bEIGENImpl"));
         eigenStrategy = EigenStrategy(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenStrategy"));
-        eigenStrategyImpl = EigenStrategy(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenStrategyImpl"));
+        eigenStrategyImpl =
+            EigenStrategy(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenStrategyImpl"));
     }
 
-    function _parseDeployedEigenPods(string memory existingDeploymentInfoPath) internal returns (DeployedEigenPods memory) {
+    function _parseDeployedEigenPods(
+        string memory existingDeploymentInfoPath
+    ) internal returns (DeployedEigenPods memory) {
         uint256 currentChainId = block.chainid;
 
         // READ JSON CONFIG DATA
@@ -242,7 +234,9 @@ contract ExistingDeploymentParser is Script, Test {
 
     /// @notice use for deploying a new set of EigenLayer contracts
     /// Note that this does require multisigs to already be deployed
-    function _parseInitialDeploymentParams(string memory initialDeploymentParamsPath) internal virtual {
+    function _parseInitialDeploymentParams(
+        string memory initialDeploymentParamsPath
+    ) internal virtual {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         emit log_named_uint("You are parsing on ChainID", currentChainId);
@@ -275,56 +269,47 @@ contract ExistingDeploymentParser is Script, Test {
             bytes memory tokenInfoBytes = stdJson.parseRaw(initialDeploymentData, key);
 
             // Decode the token information into the Token struct
-            StrategyUnderlyingTokenConfig memory tokenInfo = abi.decode(
-                tokenInfoBytes,
-                (StrategyUnderlyingTokenConfig)
-            );
+            StrategyUnderlyingTokenConfig memory tokenInfo = abi.decode(tokenInfoBytes, (StrategyUnderlyingTokenConfig));
 
             strategiesToDeploy.push(tokenInfo);
         }
 
         // Read initialize params for upgradeable contracts
-        STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(
-            initialDeploymentData,
-            ".strategyManager.init_paused_status"
-        );
-        STRATEGY_MANAGER_WHITELISTER = stdJson.readAddress(
-            initialDeploymentData,
-            ".strategyManager.init_strategy_whitelister"
-        );
+        STRATEGY_MANAGER_INIT_PAUSED_STATUS =
+            stdJson.readUint(initialDeploymentData, ".strategyManager.init_paused_status");
+        STRATEGY_MANAGER_WHITELISTER =
+            stdJson.readAddress(initialDeploymentData, ".strategyManager.init_strategy_whitelister");
         // Slasher
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".slasher.init_paused_status");
         // DelegationManager
-        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = stdJson.readUint(
-            initialDeploymentData,
-            ".delegationManager.init_minWithdrawalDelayBlocks"
-        );
-        DELEGATION_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(
-            initialDeploymentData,
-            ".delegationManager.init_paused_status"
-        );
+        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS =
+            stdJson.readUint(initialDeploymentData, ".delegationManager.init_minWithdrawalDelayBlocks");
+        DELEGATION_MANAGER_INIT_PAUSED_STATUS =
+            stdJson.readUint(initialDeploymentData, ".delegationManager.init_paused_status");
         // RewardsCoordinator
-        REWARDS_COORDINATOR_INIT_PAUSED_STATUS = stdJson.readUint(
-            initialDeploymentData,
-            ".rewardsCoordinator.init_paused_status"
-        );
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS"));
-        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_REWARDS_DURATION"));
-        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_RETROACTIVE_LENGTH"));
-        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_FUTURE_LENGTH"));
-        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP"));
-        REWARDS_COORDINATOR_UPDATER = stdJson.readAddress(initialDeploymentData, ".rewardsCoordinator.rewards_updater_address");
-        REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.activation_delay"));
-        REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
-            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.global_operator_commission_bips")
-        );
+        REWARDS_COORDINATOR_INIT_PAUSED_STATUS =
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.init_paused_status");
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS =
+            uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS"));
+        REWARDS_COORDINATOR_MAX_REWARDS_DURATION =
+            uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_REWARDS_DURATION"));
+        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH =
+            uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_RETROACTIVE_LENGTH"));
+        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH =
+            uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_FUTURE_LENGTH"));
+        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP =
+            uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP"));
+        REWARDS_COORDINATOR_UPDATER =
+            stdJson.readAddress(initialDeploymentData, ".rewardsCoordinator.rewards_updater_address");
+        REWARDS_COORDINATOR_ACTIVATION_DELAY =
+            uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.activation_delay"));
+        REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS =
+            uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.global_operator_commission_bips"));
         // AVSDirectory
         AVS_DIRECTORY_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".avsDirectory.init_paused_status");
         // EigenPodManager
-        EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(
-            initialDeploymentData,
-            ".eigenPodManager.init_paused_status"
-        );
+        EIGENPOD_MANAGER_INIT_PAUSED_STATUS =
+            stdJson.readUint(initialDeploymentData, ".eigenPodManager.init_paused_status");
         // EigenPod
         EIGENPOD_GENESIS_TIME = uint64(stdJson.readUint(initialDeploymentData, ".eigenPod.GENESIS_TIME"));
         ETHPOSDepositAddress = stdJson.readAddress(initialDeploymentData, ".ethPOSDepositAddress");
@@ -336,8 +321,7 @@ contract ExistingDeploymentParser is Script, Test {
     function _verifyContractPointers() internal view virtual {
         // AVSDirectory
         require(
-            avsDirectory.delegation() == delegationManager,
-            "avsDirectory: delegationManager address not set correctly"
+            avsDirectory.delegation() == delegationManager, "avsDirectory: delegationManager address not set correctly"
         );
         // RewardsCoordinator
         require(
@@ -391,8 +375,8 @@ contract ExistingDeploymentParser is Script, Test {
     /// @notice verify implementations for Transparent Upgradeable Proxies
     function _verifyImplementations() internal view virtual {
         require(
-            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(avsDirectory)))) ==
-                address(avsDirectoryImplementation),
+            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(avsDirectory))))
+                == address(avsDirectoryImplementation),
             "avsDirectory: implementation set incorrectly"
         );
         require(
@@ -408,20 +392,18 @@ contract ExistingDeploymentParser is Script, Test {
             "delegationManager: implementation set incorrectly"
         );
         require(
-            eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(strategyManager)))
-            ) == address(strategyManagerImplementation),
+            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(strategyManager))))
+                == address(strategyManagerImplementation),
             "strategyManager: implementation set incorrectly"
         );
         require(
-            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(slasher)))) ==
-                address(slasherImplementation),
+            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(slasher))))
+                == address(slasherImplementation),
             "slasher: implementation set incorrectly"
         );
         require(
-            eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(eigenPodManager)))
-            ) == address(eigenPodManagerImplementation),
+            eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(eigenPodManager))))
+                == address(eigenPodManagerImplementation),
             "eigenPodManager: implementation set incorrectly"
         );
 
@@ -445,7 +427,15 @@ contract ExistingDeploymentParser is Script, Test {
      * initialization params if this is the first deployment.
      * @dev isInitialDeployment True if this is the first deployment of contracts from scratch
      */
-    function _verifyContractsInitialized(bool /** isInitialDeployment **/) internal virtual {
+    function _verifyContractsInitialized(
+        bool
+    )
+        /**
+         * isInitialDeployment *
+         */
+        internal
+        virtual
+    {
         // AVSDirectory
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         avsDirectory.initialize(address(0), eigenLayerPauserReg, AVS_DIRECTORY_INIT_PAUSED_STATUS);
@@ -476,19 +466,12 @@ contract ExistingDeploymentParser is Script, Test {
         strategyManager.initialize(address(0), address(0), eigenLayerPauserReg, STRATEGY_MANAGER_INIT_PAUSED_STATUS);
         // EigenPodManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        eigenPodManager.initialize(
-            address(0),
-            eigenLayerPauserReg,
-            EIGENPOD_MANAGER_INIT_PAUSED_STATUS
-        );
+        eigenPodManager.initialize(address(0), eigenLayerPauserReg, EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
         // Strategies
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
             vm.expectRevert(bytes("Initializable: contract is already initialized"));
             StrategyBaseTVLLimits(address(deployedStrategyArray[i])).initialize(
-                0,
-                0,
-                IERC20(address(0)),
-                eigenLayerPauserReg
+                0, 0, IERC20(address(0)), eigenLayerPauserReg
             );
         }
     }
@@ -496,10 +479,7 @@ contract ExistingDeploymentParser is Script, Test {
     /// @notice Verify params based on config constants that are updated from calling `_parseInitialDeploymentParams`
     function _verifyInitializationParams() internal view virtual {
         // AVSDirectory
-        require(
-            avsDirectory.pauserRegistry() == eigenLayerPauserReg,
-            "avsdirectory: pauser registry not set correctly"
-        );
+        require(avsDirectory.pauserRegistry() == eigenLayerPauserReg, "avsdirectory: pauser registry not set correctly");
         require(avsDirectory.owner() == executorMultisig, "avsdirectory: owner not set correctly");
         require(
             avsDirectory.paused() == AVS_DIRECTORY_INIT_PAUSED_STATUS,
@@ -579,12 +559,12 @@ contract ExistingDeploymentParser is Script, Test {
                 strategyManager.strategyWhitelister() == address(strategyFactory),
                 "strategyManager: strategyWhitelister not set correctly"
             );
-        } else if (block.chainid == 17000) {
+        } else if (block.chainid == 17_000) {
             // On holesky, for ease of whitelisting we set to executorMultisig
             // require(
             //     strategyManager.strategyWhitelister() == executorMultisig,
             //     "strategyManager: strategyWhitelister not set correctly"
-            // );    
+            // );
         }
         // EigenPodManager
         require(
@@ -617,10 +597,7 @@ contract ExistingDeploymentParser is Script, Test {
                 deployedStrategyArray[i].pauserRegistry() == eigenLayerPauserReg,
                 "StrategyBaseTVLLimits: pauser registry not set correctly"
             );
-            require(
-                deployedStrategyArray[i].paused() == 0,
-                "StrategyBaseTVLLimits: init paused status set incorrectly"
-            );
+            require(deployedStrategyArray[i].paused() == 0, "StrategyBaseTVLLimits: init paused status set incorrectly");
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(deployedStrategyArray[i]),
                 "StrategyBaseTVLLimits: strategy should be whitelisted"
@@ -646,8 +623,7 @@ contract ExistingDeploymentParser is Script, Test {
         emit log_named_address("STRATEGY_MANAGER_WHITELISTER", STRATEGY_MANAGER_WHITELISTER);
         emit log_named_uint("SLASHER_INIT_PAUSED_STATUS", SLASHER_INIT_PAUSED_STATUS);
         emit log_named_uint(
-            "DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS",
-            DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS
+            "DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS", DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS
         );
         emit log_named_uint("DELEGATION_MANAGER_INIT_PAUSED_STATUS", DELEGATION_MANAGER_INIT_PAUSED_STATUS);
         emit log_named_uint("AVS_DIRECTORY_INIT_PAUSED_STATUS", AVS_DIRECTORY_INIT_PAUSED_STATUS);
@@ -672,16 +648,16 @@ contract ExistingDeploymentParser is Script, Test {
     /**
      * @notice Log contract addresses and write to output json file
      */
-    function logAndOutputContractAddresses(string memory outputPath) public {
+    function logAndOutputContractAddresses(
+        string memory outputPath
+    ) public {
         // WRITE JSON DATA
         string memory parent_object = "parent object";
 
         string memory deployed_strategies = "strategies";
         for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
             vm.serializeAddress(
-                deployed_strategies,
-                strategiesToDeploy[i].tokenSymbol,
-                address(deployedStrategyArray[i])
+                deployed_strategies, strategiesToDeploy[i].tokenSymbol, address(deployedStrategyArray[i])
             );
         }
         string memory deployed_strategies_output = numStrategiesToDeploy == 0
@@ -701,37 +677,22 @@ contract ExistingDeploymentParser is Script, Test {
         vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
         vm.serializeAddress(deployed_addresses, "delegationManager", address(delegationManager));
         vm.serializeAddress(
-            deployed_addresses,
-            "delegationManagerImplementation",
-            address(delegationManagerImplementation)
+            deployed_addresses, "delegationManagerImplementation", address(delegationManagerImplementation)
         );
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
-        vm.serializeAddress(
-            deployed_addresses,
-            "strategyManagerImplementation",
-            address(strategyManagerImplementation)
-        );
+        vm.serializeAddress(deployed_addresses, "strategyManagerImplementation", address(strategyManagerImplementation));
         vm.serializeAddress(deployed_addresses, "rewardsCoordinator", address(rewardsCoordinator));
         vm.serializeAddress(
-            deployed_addresses,
-            "rewardsCoordinatorImplementation",
-            address(rewardsCoordinatorImplementation)
+            deployed_addresses, "rewardsCoordinatorImplementation", address(rewardsCoordinatorImplementation)
         );
         vm.serializeAddress(deployed_addresses, "eigenPodManager", address(eigenPodManager));
-        vm.serializeAddress(
-            deployed_addresses,
-            "eigenPodManagerImplementation",
-            address(eigenPodManagerImplementation)
-        );
+        vm.serializeAddress(deployed_addresses, "eigenPodManagerImplementation", address(eigenPodManagerImplementation));
         vm.serializeAddress(deployed_addresses, "eigenPodBeacon", address(eigenPodBeacon));
         vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
         vm.serializeAddress(deployed_addresses, "baseStrategyImplementation", address(baseStrategyImplementation));
         vm.serializeAddress(deployed_addresses, "emptyContract", address(emptyContract));
-        string memory deployed_addresses_output = vm.serializeString(
-            deployed_addresses,
-            "strategies",
-            deployed_strategies_output
-        );
+        string memory deployed_addresses_output =
+            vm.serializeString(deployed_addresses, "strategies", deployed_strategies_output);
 
         string memory parameters = "parameters";
         vm.serializeAddress(parameters, "executorMultisig", executorMultisig);

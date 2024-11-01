@@ -487,12 +487,12 @@ contract DeployFromScratch is Script, Test {
         );
 
         require(
-            rewardsCoordinatorContract.delegationManager() == delegation, 
+            rewardsCoordinatorContract.delegationManager() == delegation,
             "rewardsCoordinator: delegation address not set correctly"
         );
 
         require(
-            rewardsCoordinatorContract.strategyManager() == strategyManager, 
+            rewardsCoordinatorContract.strategyManager() == strategyManager,
             "rewardsCoordinator: strategyManager address not set correctly"
         );
     }

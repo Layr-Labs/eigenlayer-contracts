@@ -1,0 +1,126 @@
+{
+  "config": {
+    "environment": {
+      "chainid": 31337,
+      "lastUpdated": "v0.4.2-mainnet-pepe",
+      "name": "zipzoop-tester"
+    },
+    "params": {
+      "ACTIVATION_DELAY": 7200,
+      "CALCULATION_INTERVAL_SECONDS": 604800,
+      "EIGENPOD_GENESIS_TIME": 1695902400,
+      "GENESIS_REWARDS_TIMESTAMP": 1710979200,
+      "GLOBAL_OPERATOR_COMMISSION_BIPS": 1000,
+      "MAX_FUTURE_LENGTH": 2592000,
+      "MAX_RETROACTIVE_LENGTH": 7776000,
+      "MAX_REWARDS_DURATION": 6048000,
+      "REWARDS_UPDATER_ADDRESS": "0x18a0f92Ad9645385E8A8f3db7d0f6CF7aBBb0aD4",
+      "ethPOS": "0x4242424242424242424242424242424242424242",
+      "multiSendCallOnly": "0x40A2aCCbd92BCA938b02010E17A5b8929b49130D"
+    }
+  },
+  "deployment": {
+    "admin": {
+      "communityMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
+      "executorMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
+      "operationsMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
+      "pauserMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
+      "pauserRegistry": "0x9Ab2FEAf0465f0eD51Fc2b663eF228B418c9Dad1",
+      "proxyAdmin": "0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B",
+      "timelock": "0x0000000000000000000000000000000000000000"
+    },
+    "core": {
+      "avsDirectory": {
+        "impl": "0x357978adC03375BD6a3605DE055fABb84695d79A",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0x141d6995556135D4997b2ff72EB443Be300353bC"
+      },
+      "delegationManager": {
+        "impl": "0x56E88cb4f0136fC27D95499dE4BE2acf47946Fa1",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0x75dfE5B44C2E530568001400D3f704bC8AE350CC"
+      },
+      "rewardsCoordinator": {
+        "impl": "0x7523b42b081C30fA245AA4039c645e36746fC400",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0xb22Ef643e1E067c994019A4C19e403253C05c2B0"
+      },
+      "slasher": {
+        "impl": "0x9460fCe11E1e0365419fa860599903B4E5097cf0",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0x12699471dF8dca329C76D72823B1b79d55709384"
+      },
+      "strategyManager": {
+        "impl": "0x1a26B23a004C512350d7Dd89056655A80b850199",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0xF9fbF2e35D8803273E214c99BF15174139f4E67a"
+      }
+    },
+    "pods": {
+      "delayedWithdrawalRouter": {
+        "impl": "0x0011FA2c512063C495f77296Af8d195F33A8Dd38",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0xC4BC46a87A67a531eCF7f74338E1FA79533334Fa"
+      },
+      "eigenPod": {
+        "beacon": "0x92Cc4a800A1513E85C481dDDf3A06C6921211eaC",
+        "impl": "0x8Da4b953cbFb715624D98C0D2b4a7978462eFd38",
+        "pendingImpl": "0x0000000000000000000000000000000000000000"
+      },
+      "eigenPodManager": {
+        "impl": "0x10EBa780CCd9E5e9FFBe529C25046c076Be91048",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0xB8d8952f572e67B11e43bC21250967772fa883Ff"
+      }
+    },
+    "strategies": {
+      "preLongtailStrats": {
+        "addrs": [
+          "0x6E5D5060B33ca2090A78E9cb74Fe207453b30E49",
+          "0xf6a09ae03D7760aEcf1626Ce7Df0F113BEC2d9bD",
+          "0x7fA77c321bf66e42eaBC9b10129304F7f90c5585",
+          "0x24DA526F9e465c4fb6BAe41E226Df8aA5b34eAc7",
+          "0x6dC6cE589F852F96ac86cB160AB0B15b9f56DeDd",
+          "0x3c28437E610fB099Cc3d6De4D9c707DFACD308AE",
+          "0x7b6257F5caf7311b36F7416133A8499c68a83c3a",
+          "0xC86382179500e8Ed3e686fC4A99eD9EC72df3f56",
+          "0x3cb1fD19CFb178C1098f2fc1e11090A0642B2314",
+          "0x87f6C7d24b109919eB38295e3F8298425e6331D9",
+          "0x5C8b55722f421556a2AAfb7A3EA63d4c3e514312",
+          "0xD523267698C81a372191136e477fdebFa33D9FB4",
+          "0xdcCF401fD121d8C542E96BC1d0078884422aFAD2"
+        ],
+        "impl": "0x62450517EfA1CE60d79801daf8f95973865e8D40"
+      },
+      "strategyBeacon": {
+        "beacon": "0xf2c2AcA859C685895E60ca7A14274365b64c0c2a",
+        "impl": "0xd648792F932FbabcCC80Cd376812074434412685",
+        "pendingImpl": "0x0000000000000000000000000000000000000000"
+      },
+      "strategyFactory": {
+        "impl": "0x7a9478c0AcB819d7c235FbE2a6E13ee1D2fCD862",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0xad4A89E3cA9b3dc25AABe0aa7d72E61D2Ec66052"
+      }
+    },
+    "token": {
+      "EIGEN": {
+        "impl": "0x95a7431400F362F3647a69535C5666cA0133CAA0",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0xD58f6844f79eB1fbd9f7091d05f7cb30d3363926",
+        "proxyAdmin": "0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B"
+      },
+      "bEIGEN": {
+        "impl": "0xd5FdabDac3d8ACeAB7BFfDDFA18877A4c5D5Aa82",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0xA72942289a043874249E60469F68f08B8c6ECCe8",
+        "proxyAdmin": "0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B"
+      },
+      "eigenStrategy": {
+        "impl": "0x59D13E7Fb0bC0e57c1fc6594ff701592A6e4dD2B",
+        "pendingImpl": "0x0000000000000000000000000000000000000000",
+        "proxy": "0xdcCF401fD121d8C542E96BC1d0078884422aFAD2"
+      }
+    }
+  }
+}
