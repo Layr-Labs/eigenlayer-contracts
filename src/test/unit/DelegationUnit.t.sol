@@ -3167,7 +3167,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         (
             IDelegationManager.Withdrawal memory withdrawal,
             IERC20[] memory tokens,
-            // bytes32 withdrawalRoot
+            
         ) = _setUpCompleteQueuedWithdrawalBeaconStrat({
             staker: defaultStaker,
             withdrawer: defaultStaker,

@@ -14,7 +14,7 @@ import "../mocks/ERC20_SetTransferReverting_Mock.sol";
 import "forge-std/Test.sol";
 
 contract StrategyBaseUnitTests is Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
@@ -334,7 +334,7 @@ contract StrategyBaseUnitTests is Test {
     }
 
     // uint240 input to prevent overflow
-    function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint240 amountSharesToQuery) public {
+    function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint240 amountSharesToQuery) public view {
         uint256 underlyingFromShares = strategy.sharesToUnderlying(amountSharesToQuery);
         require(underlyingFromShares == amountSharesToQuery, "underlyingFromShares != amountSharesToQuery");
 

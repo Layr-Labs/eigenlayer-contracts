@@ -55,6 +55,8 @@ contract StrategyManagerMock is
     function recordBeaconChainETHBalanceUpdate(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
         external{}
 
+    function setStrategyWhitelister(address newStrategyWhitelister) external {}
+
     function depositIntoStrategyWithSignature(
         IStrategy strategy,
         IERC20 token,
@@ -121,6 +123,8 @@ contract StrategyManagerMock is
     function beaconChainETHStrategy() external view returns (IStrategy) {}
 
     // function withdrawalDelayBlocks() external view returns (uint256) {}
+
+    function domainSeparator() external view returns (bytes32) {}
 
     function addStrategiesToDepositWhitelist(
         IStrategy[] calldata strategiesToWhitelist,

@@ -18,7 +18,7 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
     //     // // 1. Check proper state pre-upgrade
     //     // _verifyContractPointers();
     //     // _verifyImplementations();
-    //     // _verifyContractsInitialized({isInitialDeployment: true});
+    //     // _verifyContractsInitialized(true);
     //     // _verifyInitializationParams();
 
     //     // 2. Upgrade mainnet contracts
@@ -28,7 +28,7 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
     //     // 2. Verify upgrade setup
     //     _verifyContractPointers();
     //     _verifyImplementations();
-    //     _verifyContractsInitialized({isInitialDeployment: true});
+    //     _verifyContractsInitialized(true);
     //     _verifyInitializationParams();
     // }
 
@@ -45,7 +45,7 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
     //     // // 1. Check proper state pre-upgrade
     //     // _verifyContractPointers();
     //     // _verifyImplementations();
-    //     // _verifyContractsInitialized({isInitialDeployment: true});
+    //     // _verifyContractsInitialized(true);
     //     // _verifyInitializationParams();
 
     //     // 2. Upgrade holesky contracts
@@ -55,7 +55,7 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
     //     // 3. Verify upgrade setup
     //     _verifyContractPointers();
     //     _verifyImplementations();
-    //     _verifyContractsInitialized({isInitialDeployment: true});
+    //     _verifyContractsInitialized(true);
     //     _verifyInitializationParams();
     // }
 

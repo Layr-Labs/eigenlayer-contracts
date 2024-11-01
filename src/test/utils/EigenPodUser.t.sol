@@ -24,7 +24,7 @@ interface IUserDeployer {
 
 contract EigenPodUser is PrintUtils {
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     TimeMachine timeMachine;
     BeaconChainMock beaconChain;

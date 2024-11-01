@@ -271,6 +271,7 @@ interface IRewardsCoordinator {
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
      * rather than just those delegated to operators who are registered to a single avs and is
      * a permissioned call based on isRewardsForAllSubmitter mapping.
+     * @param rewardsSubmission The rewards submission being created
      */
     function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmission) external;
 
@@ -300,7 +301,7 @@ interface IRewardsCoordinator {
     /**
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
      * @param root The merkle root of the distribution
-     * @param rewardsCalculationEndTimestamp The timestamp (seconds) until which rewards have been calculated
+     * @param rewardsCalculationEndTimestamp The timestamp until which rewards have been calculated
      * @dev Only callable by the rewardsUpdater
      */
     function submitRoot(bytes32 root, uint32 rewardsCalculationEndTimestamp) external;
@@ -313,15 +314,15 @@ interface IRewardsCoordinator {
 
     /**
      * @notice Sets the address of the entity that can call `processClaim` on behalf of the earner (msg.sender)
-     * @param claimer The address of the entity that can claim rewards on behalf of the earner
+     * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
      * @dev Only callable by the `earner`
      */
     function setClaimerFor(address claimer) external;
 
     /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
-     * @param _activationDelay Delay in timestamp (seconds) before a posted root can be claimed against
      * @dev Only callable by the contract owner
+     * @param _activationDelay The new value for activationDelay
      */
     function setActivationDelay(uint32 _activationDelay) external;
 
@@ -335,6 +336,7 @@ interface IRewardsCoordinator {
     /**
      * @notice Sets the permissioned `rewardsUpdater` address which can post new roots
      * @dev Only callable by the contract owner
+     * @param _rewardsUpdater The address of the new rewardsUpdater
      */
     function setRewardsUpdater(address _rewardsUpdater) external;
 
@@ -345,4 +347,13 @@ interface IRewardsCoordinator {
      * @param _newValue The new value for isRewardsForAllSubmitter
      */
     function setRewardsForAllSubmitter(address _submitter, bool _newValue) external;
+
+    /**
+     * @notice Getter function for the current EIP-712 domain separator for this contract.
+     *
+     * @dev The domain separator will change in the event of a fork that changes the ChainID.
+     * @dev By introducing a domain separator the DApp developers are guaranteed that there can be no signature collision.
+     * for more detailed information please read EIP-712.
+     */
+    function domainSeparator() external view returns (bytes32);
 }

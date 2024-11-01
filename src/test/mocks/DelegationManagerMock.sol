@@ -10,6 +10,12 @@ contract DelegationManagerMock is IDelegationManager, Test {
     mapping(address => bool) public isOperator;
     mapping(address => mapping(IStrategy => uint256)) public operatorShares;
 
+    function getDelegatableShares(address staker) external view returns (IStrategy[] memory, uint256[] memory) {}
+
+    function setMinWithdrawalDelayBlocks(uint256 newMinWithdrawalDelayBlocks) external {}
+
+    function setStrategyWithdrawalDelayBlocks(IStrategy[] calldata strategies, uint256[] calldata withdrawalDelayBlocks) external {}
+
     function setIsOperator(address operator, bool _isOperatorReturnValue) external {
         isOperator[operator] = _isOperatorReturnValue;
     }
@@ -136,8 +142,6 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
 
-    function domainSeparator() external view returns (bytes32) {}
-
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256) {}
 
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
@@ -147,6 +151,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function deregisterOperatorFromAVS(address operator) external {}
 
     function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool) {}
+
+    function domainSeparator() external view returns (bytes32) {}
 
    function queueWithdrawals(
         QueuedWithdrawalParams[] calldata queuedWithdrawalParams

@@ -148,6 +148,7 @@ interface IDelegationManager is ISignatureUtils {
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      *
      * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
+     * @dev This function will revert if the caller is already delegated to an operator.
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
     function registerAsOperator(
@@ -246,7 +247,7 @@ interface IDelegationManager is ISignatureUtils {
      * @param receiveAsTokens If true, the shares specified in the withdrawal will be withdrawn from the specified strategies themselves
      * and sent to the caller, through calls to `withdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
      * will simply be transferred to the caller directly.
-     * @dev middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`
+     * @dev middlewareTimesIndex is unused, but will be used in the Slasher eventually
      * @dev beaconChainETHStrategy shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
      * any beaconChainETHStrategy shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
      * any other strategies, which will be transferred to the withdrawer.
@@ -297,6 +298,21 @@ interface IDelegationManager is ISignatureUtils {
     function decreaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external;
 
     /**
+     * @notice Owner-only function for modifying the value of the `minWithdrawalDelayBlocks` variable.
+     * @param newMinWithdrawalDelayBlocks new value of `minWithdrawalDelayBlocks`.
+     */
+    function setMinWithdrawalDelayBlocks(uint256 newMinWithdrawalDelayBlocks) external; 
+
+    /**
+     * @notice Called by owner to set the minimum withdrawal delay blocks for each passed in strategy
+     * Note that the min number of blocks to complete a withdrawal of a strategy is
+     * MAX(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy])
+     * @param strategies The strategies to set the minimum withdrawal delay blocks for
+     * @param withdrawalDelayBlocks The minimum withdrawal delay blocks to set for each strategy
+     */
+    function setStrategyWithdrawalDelayBlocks(IStrategy[] calldata strategies, uint256[] calldata withdrawalDelayBlocks) external;
+
+    /**
      * @notice returns the address of the operator that `staker` is delegated to.
      * @notice Mapping: staker => operator whom the staker is currently delegated to.
      * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
@@ -341,6 +357,13 @@ interface IDelegationManager is ISignatureUtils {
      * = sum (delegateable shares of all stakers delegated to the operator)
      */
     function operatorShares(address operator, IStrategy strategy) external view returns (uint256);
+
+
+    /**
+     * @notice Returns the number of actively-delegatable shares a staker has across all strategies.
+     * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
+     */
+    function getDelegatableShares(address staker) external view returns (IStrategy[] memory, uint256[] memory);
 
     /**
      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
