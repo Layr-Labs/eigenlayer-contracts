@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/contracts/core/AVSDirectory.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
-contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, IAVSDirectoryErrors {
+contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtils {
     uint8 constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
     AVSDirectory avsDirectory;
@@ -12,7 +12,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
     address defaultAVS;
     address defaultOperator;
     uint256 defaultOperatorPk;
-    ISignatureUtils.SignatureWithSaltAndExpiry defaultOperatorSignature;
+    SignatureWithSaltAndExpiry defaultOperatorSignature;
 
     function setUp() public virtual override {
         EigenLayerUnitTestSetup.setUp();
@@ -22,18 +22,20 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         defaultAVS = cheats.randomAddress();
         defaultOperatorPk = cheats.randomUint(1, MAX_PRIVATE_KEY);
         defaultOperator = cheats.addr(defaultOperatorPk);
-        defaultOperatorSignature = _newOperatorRegistrationSignature(
-            defaultOperatorPk, defaultOperator, defaultAVS, bytes32(cheats.randomUint()), type(uint256).max
-        );
+        defaultOperatorSignature = _newOperatorRegistrationSignature({
+            operatorPk: defaultOperatorPk,
+            avs: defaultAVS,
+            salt: bytes32(cheats.randomUint()),
+            expiry: type(uint256).max
+        });
 
         delegationManagerMock.setIsOperator(defaultOperator, true);
-        isExcludedFuzzAddress[address(avsDirectory)] = true;
     }
 
     function _deployAVSD(
         address delegationManager
-    ) internal returns (AVSDirectory) {
-        return AVSDirectory(
+    ) internal returns (AVSDirectory avsd) {
+        avsd = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
                     address(new AVSDirectory(IDelegationManager(delegationManager))),
@@ -47,31 +49,29 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
                 )
             )
         );
+        isExcludedFuzzAddress[address(avsDirectory)] = true;
     }
 
     function _newOperatorRegistrationSignature(
         uint256 operatorPk,
-        address operator,
         address avs,
         bytes32 salt,
         uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    ) internal view returns (SignatureWithSaltAndExpiry memory) {
         (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, avs, salt, expiry)
+            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(cheats.addr(operatorPk), avs, salt, expiry)
         );
-        return ISignatureUtils.SignatureWithSaltAndExpiry({
-            signature: abi.encodePacked(r, s, v),
-            salt: salt,
-            expiry: expiry
-        });
+        return SignatureWithSaltAndExpiry({signature: abi.encodePacked(r, s, v), salt: salt, expiry: expiry});
     }
 
     /// -----------------------------------------------------------------------
     /// initialize()
     /// -----------------------------------------------------------------------
 
-    function test_initialize_Correctness() public view {
+    function test_initialize_Correctness() public {
         assertEq(address(avsDirectory.delegation()), address(delegationManagerMock));
+        cheats.expectRevert("Initializable: contract is already initialized");
+        avsDirectory.initialize(address(this), pauserRegistry, 0);
     }
 
     /// -----------------------------------------------------------------------
@@ -136,16 +136,13 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
     function test_registerOperatorToAVS_Correctness() public {
         cheats.expectEmit(true, true, true, false, address(avsDirectory));
-        emit OperatorAVSRegistrationStatusUpdated(
-            defaultOperator, defaultAVS, OperatorAVSRegistrationStatus.REGISTERED
-        );
-        
+        emit OperatorAVSRegistrationStatusUpdated(defaultOperator, defaultAVS, OperatorAVSRegistrationStatus.REGISTERED);
+
         cheats.prank(defaultAVS);
         avsDirectory.registerOperatorToAVS(defaultOperator, defaultOperatorSignature);
-        
+
         assertTrue(
-            avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator)
-                == OperatorAVSRegistrationStatus.REGISTERED
+            avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.REGISTERED
         );
         assertTrue(avsDirectory.operatorSaltIsSpent(defaultOperator, defaultOperatorSignature.salt));
     }
@@ -171,15 +168,14 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         emit OperatorAVSRegistrationStatusUpdated(
             defaultOperator, defaultAVS, OperatorAVSRegistrationStatus.UNREGISTERED
         );
-        
+
         cheats.startPrank(defaultAVS);
         avsDirectory.registerOperatorToAVS(defaultOperator, defaultOperatorSignature);
         avsDirectory.deregisterOperatorFromAVS(defaultOperator);
         cheats.stopPrank();
 
         assertTrue(
-            avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator)
-                == OperatorAVSRegistrationStatus.UNREGISTERED
+            avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.UNREGISTERED
         );
     }
 }
