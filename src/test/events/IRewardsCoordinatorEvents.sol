@@ -35,7 +35,7 @@ interface IRewardsCoordinatorEvents {
         bool indexed newValue
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
-    event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
+    event DefaultOperatorSplitBipsSet(uint16 oldDefaultOperatorSplitBips, uint16 newDefaultOperatorSplitBips);
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
@@ -53,8 +53,6 @@ interface IRewardsCoordinatorEvents {
         IERC20 token,
         uint256 claimedAmount
     );
-
-
 
     /// TOKEN EVENTS FOR TESTING ///
     /**

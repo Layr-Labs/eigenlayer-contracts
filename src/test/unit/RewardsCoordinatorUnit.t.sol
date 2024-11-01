@@ -57,8 +57,8 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
 
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
-    /// @notice the commission for all operators across all avss
-    uint16 globalCommissionBips = 1000;
+    /// @notice the split for all operators across all avss
+    uint16 defaultSplitBips = 1000;
 
     IERC20[] rewardTokens;
 
@@ -111,7 +111,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
                         0, // 0 is initialPausedStatus
                         rewardsUpdater,
                         activationDelay,
-                        globalCommissionBips
+                        defaultSplitBips
                     )
                 )
             )
@@ -204,7 +204,11 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
-    function _assertRewardsClaimedEvents(bytes32 root, IRewardsCoordinator.RewardsMerkleClaim memory claim, address recipient) internal {
+    function _assertRewardsClaimedEvents(
+        bytes32 root,
+        IRewardsCoordinator.RewardsMerkleClaim memory claim,
+        address recipient
+    ) internal {
         address earner = claim.earnerLeaf.earner;
         address claimer = rewardsCoordinator.claimerFor(earner);
         if (claimer == address(0)) {
@@ -313,27 +317,23 @@ contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorU
         rewardsCoordinator.setActivationDelay(activationDelay);
     }
 
-    function testFuzz_setGlobalOperatorCommission(uint16 globalCommissionBips) public {
+    function testFuzz_setDefaultOperatorSplit(uint16 defaultSplitBips) public {
         cheats.startPrank(rewardsCoordinator.owner());
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit GlobalCommissionBipsSet(rewardsCoordinator.globalOperatorCommissionBips(), globalCommissionBips);
-        rewardsCoordinator.setGlobalOperatorCommission(globalCommissionBips);
-        assertEq(
-            globalCommissionBips,
-            rewardsCoordinator.globalOperatorCommissionBips(),
-            "globalOperatorCommissionBips not set"
-        );
+        emit DefaultOperatorSplitBipsSet(rewardsCoordinator.defaultOperatorSplitBips(), defaultSplitBips);
+        rewardsCoordinator.setDefaultOperatorSplit(defaultSplitBips);
+        assertEq(defaultSplitBips, rewardsCoordinator.defaultOperatorSplitBips(), "defaultOperatorSplitBips not set");
         cheats.stopPrank();
     }
 
-    function testFuzz_setGlobalOperatorCommission_Revert_WhenNotOwner(
+    function testFuzz_setDefaultOperatorSplit_Revert_WhenNotOwner(
         address caller,
-        uint16 globalCommissionBips
+        uint16 defaultSplitBips
     ) public filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != rewardsCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
-        rewardsCoordinator.setGlobalOperatorCommission(globalCommissionBips);
+        rewardsCoordinator.setDefaultOperatorSplit(defaultSplitBips);
     }
 
     function testFuzz_setRewardsUpdater(address newRewardsUpdater) public {
@@ -360,11 +360,7 @@ contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorU
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit RewardsForAllSubmitterSet(submitter, rewardsCoordinator.isRewardsForAllSubmitter(submitter), newValue);
         rewardsCoordinator.setRewardsForAllSubmitter(submitter, newValue);
-        assertEq(
-            newValue,
-            rewardsCoordinator.isRewardsForAllSubmitter(submitter),
-            "isRewardsForAllSubmitter not set"
-        );
+        assertEq(newValue, rewardsCoordinator.isRewardsForAllSubmitter(submitter), "isRewardsForAllSubmitter not set");
         cheats.stopPrank();
     }
 
@@ -393,7 +389,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
     // Revert from reentrancy
     function test_Revert_WhenReentrancy(uint256 amount) public {
-        amount = bound(amount, 1, 1e38-1);
+        amount = bound(amount, 1, 1e38 - 1);
         Reenterer reenterer = new Reenterer();
 
         reenterer.prepareReturnData(abi.encode(amount));
@@ -403,7 +399,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         _deployMockRewardTokens(address(this), 1);
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
@@ -412,7 +410,10 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
             duration: 0
         });
 
-        bytes memory calldataToUse = abi.encodeWithSelector(RewardsCoordinator.createAVSRewardsSubmission.selector, rewardsSubmissions);
+        bytes memory calldataToUse = abi.encodeWithSelector(
+            RewardsCoordinator.createAVSRewardsSubmission.selector,
+            rewardsSubmissions
+        );
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
         cheats.expectRevert();
@@ -444,7 +445,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         IRewardsCoordinator.StrategyAndMultiplier[] memory emptyStratsAndMultipliers;
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: emptyStratsAndMultipliers,
@@ -482,7 +485,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
@@ -518,7 +523,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         IRewardsCoordinator.StrategyAndMultiplier[]
             memory dupStratsAndMultipliers = new IRewardsCoordinator.StrategyAndMultiplier[](2);
         dupStratsAndMultipliers[0] = defaultStrategyAndMultipliers[0];
@@ -563,7 +570,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
@@ -603,7 +612,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
@@ -649,7 +660,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
@@ -687,7 +700,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
@@ -727,7 +742,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         defaultStrategyAndMultipliers[0].strategy = IStrategy(address(999));
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
@@ -774,7 +791,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
@@ -797,7 +816,10 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
         cheats.stopPrank();
 
-        assertTrue(rewardsCoordinator.isAVSRewardsSubmissionHash(avs, rewardsSubmissionHash), "rewards submission hash not submitted");
+        assertTrue(
+            rewardsCoordinator.isAVSRewardsSubmissionHash(avs, rewardsSubmissionHash),
+            "rewards submission hash not submitted"
+        );
         assertEq(currSubmissionNonce + 1, rewardsCoordinator.submissionNonce(avs), "submission nonce not incremented");
         assertEq(
             avsBalanceBefore - amount,
@@ -826,7 +848,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         cheats.assume(param.avs != address(0));
         cheats.prank(rewardsCoordinator.owner());
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](numSubmissions);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            numSubmissions
+        );
         bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(param.avs);
         _deployMockRewardTokens(param.avs, numSubmissions);
@@ -865,9 +889,16 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
             rewardsSubmissions[i] = rewardsSubmission;
 
             // 3. expected event emitted for this rewardsSubmission
-            rewardsSubmissionHashes[i] = keccak256(abi.encode(param.avs, startSubmissionNonce + i, rewardsSubmissions[i]));
+            rewardsSubmissionHashes[i] = keccak256(
+                abi.encode(param.avs, startSubmissionNonce + i, rewardsSubmissions[i])
+            );
             cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-            emit AVSRewardsSubmissionCreated(param.avs, startSubmissionNonce + i, rewardsSubmissionHashes[i], rewardsSubmissions[i]);
+            emit AVSRewardsSubmissionCreated(
+                param.avs,
+                startSubmissionNonce + i,
+                rewardsSubmissionHashes[i],
+                rewardsSubmissions[i]
+            );
         }
 
         // 4. call createAVSRewardsSubmission()
@@ -922,7 +953,9 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
 
         _deployMockRewardTokens(address(this), 1);
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
@@ -931,7 +964,10 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
             duration: 0
         });
 
-        bytes memory calldataToUse = abi.encodeWithSelector(RewardsCoordinator.createAVSRewardsSubmission.selector, rewardsSubmissions);
+        bytes memory calldataToUse = abi.encodeWithSelector(
+            RewardsCoordinator.createAVSRewardsSubmission.selector,
+            rewardsSubmissions
+        );
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
         cheats.prank(rewardsForAllSubmitter);
@@ -956,7 +992,11 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
      * - rewards submission hash being set in storage
      * - token balance before and after of RewardsForAllSubmitter and rewardsCoordinator
      */
-    function testFuzz_createRewardsForAllSubmission_SingleSubmission(uint256 startTimestamp, uint256 duration, uint256 amount) public {
+    function testFuzz_createRewardsForAllSubmission_SingleSubmission(
+        uint256 startTimestamp,
+        uint256 duration,
+        uint256 amount
+    ) public {
         cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
@@ -979,7 +1019,9 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
@@ -995,10 +1037,17 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         cheats.startPrank(rewardsForAllSubmitter);
         rewardToken.approve(address(rewardsCoordinator), amount);
         uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(rewardsForAllSubmitter);
-        bytes32 rewardsSubmissionHash = keccak256(abi.encode(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissions[0]));
+        bytes32 rewardsSubmissionHash = keccak256(
+            abi.encode(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissions[0])
+        );
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit RewardsSubmissionForAllCreated(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissionHash, rewardsSubmissions[0]);
+        emit RewardsSubmissionForAllCreated(
+            rewardsForAllSubmitter,
+            currSubmissionNonce,
+            rewardsSubmissionHash,
+            rewardsSubmissions[0]
+        );
         rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
         cheats.stopPrank();
 
@@ -1030,11 +1079,16 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
      * - rewards submission hash being set in storage
      * - token balances before and after of createRewardsForAllSubmission submitter and rewardsCoordinator
      */
-    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint256 numSubmissions) public {
+    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(
+        FuzzAVSRewardsSubmission memory param,
+        uint256 numSubmissions
+    ) public {
         cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
         cheats.prank(rewardsCoordinator.owner());
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](numSubmissions);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            numSubmissions
+        );
         bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(rewardsForAllSubmitter);
         _deployMockRewardTokens(rewardsForAllSubmitter, numSubmissions);
@@ -1073,7 +1127,9 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
             rewardsSubmissions[i] = rewardsSubmission;
 
             // 3. expected event emitted for this rewardsSubmission
-            rewardsSubmissionHashes[i] = keccak256(abi.encode(rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissions[i]));
+            rewardsSubmissionHashes[i] = keccak256(
+                abi.encode(rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissions[i])
+            );
             cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
             emit RewardsSubmissionForAllCreated(
                 rewardsForAllSubmitter,
@@ -1135,7 +1191,9 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
 
         _deployMockRewardTokens(address(this), 1);
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
@@ -1144,7 +1202,10 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
             duration: 0
         });
 
-        bytes memory calldataToUse = abi.encodeWithSelector(RewardsCoordinator.createAVSRewardsSubmission.selector, rewardsSubmissions);
+        bytes memory calldataToUse = abi.encodeWithSelector(
+            RewardsCoordinator.createAVSRewardsSubmission.selector,
+            rewardsSubmissions
+        );
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
         cheats.prank(rewardsForAllSubmitter);
@@ -1169,7 +1230,11 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
      * - rewards submission hash being set in storage
      * - token balance before and after of RewardsForAllSubmitter and rewardsCoordinator
      */
-    function testFuzz_createRewardsForAllSubmission_SingleSubmission(uint256 startTimestamp, uint256 duration, uint256 amount) public {
+    function testFuzz_createRewardsForAllSubmission_SingleSubmission(
+        uint256 startTimestamp,
+        uint256 duration,
+        uint256 amount
+    ) public {
         cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
@@ -1192,7 +1257,9 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create rewards submission input param
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            1
+        );
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
@@ -1208,10 +1275,17 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
         cheats.startPrank(rewardsForAllSubmitter);
         rewardToken.approve(address(rewardsCoordinator), amount);
         uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(rewardsForAllSubmitter);
-        bytes32 rewardsSubmissionHash = keccak256(abi.encode(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissions[0]));
+        bytes32 rewardsSubmissionHash = keccak256(
+            abi.encode(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissions[0])
+        );
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit RewardsSubmissionForAllEarnersCreated(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissionHash, rewardsSubmissions[0]);
+        emit RewardsSubmissionForAllEarnersCreated(
+            rewardsForAllSubmitter,
+            currSubmissionNonce,
+            rewardsSubmissionHash,
+            rewardsSubmissions[0]
+        );
         rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
         cheats.stopPrank();
 
@@ -1243,11 +1317,16 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
      * - rewards submission hash being set in storage
      * - token balances before and after of createRewardsForAllSubmission submitter and rewardsCoordinator
      */
-    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint256 numSubmissions) public {
+    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(
+        FuzzAVSRewardsSubmission memory param,
+        uint256 numSubmissions
+    ) public {
         cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
         cheats.prank(rewardsCoordinator.owner());
 
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](numSubmissions);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+            numSubmissions
+        );
         bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
         uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(rewardsForAllSubmitter);
         _deployMockRewardTokens(rewardsForAllSubmitter, numSubmissions);
@@ -1286,7 +1365,9 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
             rewardsSubmissions[i] = rewardsSubmission;
 
             // 3. expected event emitted for this rewardsSubmission
-            rewardsSubmissionHashes[i] = keccak256(abi.encode(rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissions[i]));
+            rewardsSubmissionHashes[i] = keccak256(
+                abi.encode(rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissions[i])
+            );
             cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
             emit RewardsSubmissionForAllEarnersCreated(
                 rewardsForAllSubmitter,
@@ -1309,7 +1390,10 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
 
         for (uint256 i = 0; i < numSubmissions; ++i) {
             assertTrue(
-                rewardsCoordinator.isRewardsSubmissionForAllEarnersHash(rewardsForAllSubmitter, rewardsSubmissionHashes[i]),
+                rewardsCoordinator.isRewardsSubmissionForAllEarnersHash(
+                    rewardsForAllSubmitter,
+                    rewardsSubmissionHashes[i]
+                ),
                 "rewards submission hash not submitted"
             );
             assertEq(
@@ -1360,7 +1444,9 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
         cheats.prank(rewardsUpdater);
         rewardsCoordinator.submitRoot(root, rewardsCalculationEndTimestamp);
 
-        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(expectedRootIndex);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
+            expectedRootIndex
+        );
 
         assertEq(
             expectedRootIndex,
@@ -1460,7 +1546,9 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
+            rootIndex
+        );
         cheats.warp(distributionRoot.activatedAt);
 
         // Claim against root and check balances before/after, and check it matches the difference between
@@ -1509,7 +1597,9 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
 
         uint32 rootIndex = claim.rootIndex;
-        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
+            rootIndex
+        );
         cheats.warp(distributionRoot.activatedAt);
 
         // Claim against root and check balances before/after, and check it matches the difference between
@@ -1560,7 +1650,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 1. Claim against first root
         {
             uint32 rootIndex = claim.rootIndex;
-            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator
+                .getDistributionRootAtIndex(rootIndex);
             cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1592,7 +1683,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         claim = claims[1];
         {
             uint32 rootIndex = claim.rootIndex;
-            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator
+                .getDistributionRootAtIndex(rootIndex);
             cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1624,7 +1716,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         claim = claims[2];
         {
             uint32 rootIndex = claim.rootIndex;
-            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator
+                .getDistributionRootAtIndex(rootIndex);
             cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1672,10 +1765,12 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         cheats.startPrank(rewardsUpdater);
         rewardsCoordinator.submitRoot(root, 1);
         uint32 rootIndex = 0;
-        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
+            rootIndex
+        );
         rewardsCoordinator.disableRoot(rootIndex);
         cheats.stopPrank();
-        
+
         cheats.warp(distributionRoot.activatedAt);
 
         cheats.startPrank(claimer);
@@ -1709,7 +1804,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 1. Claim against first root
         {
             uint32 rootIndex = claim.rootIndex;
-            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator
+                .getDistributionRootAtIndex(rootIndex);
             cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1740,7 +1836,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 2. Claim against first root again, expect a revert
         {
             uint32 rootIndex = claim.rootIndex;
-            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator
+                .getDistributionRootAtIndex(rootIndex);
             cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1778,7 +1875,9 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
+            rootIndex
+        );
         cheats.warp(distributionRoot.activatedAt);
 
         // Modify Earnings
@@ -1819,7 +1918,9 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
+            rootIndex
+        );
         cheats.warp(distributionRoot.activatedAt);
 
         // Modify Earner
@@ -1858,7 +1959,9 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
+            rootIndex
+        );
         cheats.warp(distributionRoot.activatedAt);
 
         assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
@@ -1899,7 +2002,9 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
+            rootIndex
+        );
         cheats.warp(distributionRoot.activatedAt);
 
         assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
@@ -1937,7 +2042,9 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
+            rootIndex
+        );
         cheats.warp(distributionRoot.activatedAt);
 
         assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
@@ -1977,7 +2084,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
             uint32 rootIndex = claim.rootIndex;
-            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator
+                .getDistributionRootAtIndex(rootIndex);
             cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -2042,7 +2150,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
             uint32 rootIndex = claim.rootIndex;
-            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator
+                .getDistributionRootAtIndex(rootIndex);
             cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -2055,16 +2164,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
             // Single tokenLeaf in earner's subtree, should be 0 index
-            assertEq(
-                claim.tokenIndices[0],
-                0,
-                "TokenIndex should be 0"
-            );
-            assertEq(
-                claim.tokenTreeProofs[0].length,
-                0,
-                "TokenTreeProof should be empty"
-            );
+            assertEq(claim.tokenIndices[0], 0, "TokenIndex should be 0");
+            assertEq(claim.tokenTreeProofs[0].length, 0, "TokenTreeProof should be empty");
             _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
             rewardsCoordinator.processClaim(claim, claimer);
 
@@ -2107,7 +2208,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
             uint32 rootIndex = claim.rootIndex;
-            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(rootIndex);
+            IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator
+                .getDistributionRootAtIndex(rootIndex);
             cheats.warp(distributionRoot.activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -2120,16 +2222,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
             // Earner Leaf in merkle tree, should be 0 index
-            assertEq(
-                claim.earnerIndex,
-                0,
-                "EarnerIndex should be 0"
-            );
-            assertEq(
-                claim.earnerTreeProof.length,
-                0,
-                "EarnerTreeProof should be empty"
-            );
+            assertEq(claim.earnerIndex, 0, "EarnerIndex should be 0");
+            assertEq(claim.earnerTreeProof.length, 0, "EarnerTreeProof should be empty");
             _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
             rewardsCoordinator.processClaim(claim, claimer);
 
@@ -2230,15 +2324,25 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         return claims;
     }
 
-    function _parseAllProofsMaxEarnerAndLeafIndices() internal virtual returns (IRewardsCoordinator.RewardsMerkleClaim[] memory) {
+    function _parseAllProofsMaxEarnerAndLeafIndices()
+        internal
+        virtual
+        returns (IRewardsCoordinator.RewardsMerkleClaim[] memory)
+    {
         IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](1);
 
-        claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_MaxEarnerAndLeafIndices.json");
+        claims[0] = _parseProofData(
+            "src/test/test-data/rewardsCoordinator/processClaimProofs_MaxEarnerAndLeafIndices.json"
+        );
 
         return claims;
     }
 
-    function _parseAllProofsSingleTokenLeaf() internal virtual returns (IRewardsCoordinator.RewardsMerkleClaim[] memory) {
+    function _parseAllProofsSingleTokenLeaf()
+        internal
+        virtual
+        returns (IRewardsCoordinator.RewardsMerkleClaim[] memory)
+    {
         IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](1);
 
         claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_SingleTokenLeaf.json");
@@ -2246,7 +2350,11 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         return claims;
     }
 
-    function _parseAllProofsSingleEarnerLeaf() internal virtual returns (IRewardsCoordinator.RewardsMerkleClaim[] memory) {
+    function _parseAllProofsSingleEarnerLeaf()
+        internal
+        virtual
+        returns (IRewardsCoordinator.RewardsMerkleClaim[] memory)
+    {
         IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](1);
 
         claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_SingleEarnerLeaf.json");
