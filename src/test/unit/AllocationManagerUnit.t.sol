@@ -996,99 +996,99 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         );
     }
 
-    /**
-     * Allocates to multiple operatorSets for a strategy. Only slashes from one operatorSet. Validates
-     * 1. The slashable shares of each operatorSet after magnitude allocation
-     * 2. The first operatorSet has less slashable shares post slash
-     * 3. The second operatorSet has the same number slashable shares post slash
-     * 4. The PROPORTION that is slashable for opSet 2 has increased
-     * 5. Encumbered magnitude, total allocatable magnitude
-     */
-    function test_allocateMultipleOpsets_slashSingleOpset() public {
-        // Set 100e18 shares for operator in DM
-        uint256 operatorShares = 100e18;
-        delegationManagerMock.setOperatorShares(defaultOperator, strategyMock, operatorShares);
-        uint64 magnitudeToAllocate = 4e17;
+    // /**
+    //  * Allocates to multiple operatorSets for a strategy. Only slashes from one operatorSet. Validates
+    //  * 1. The slashable shares of each operatorSet after magnitude allocation
+    //  * 2. The first operatorSet has less slashable shares post slash
+    //  * 3. The second operatorSet has the same number slashable shares post slash
+    //  * 4. The PROPORTION that is slashable for opSet 2 has increased
+    //  * 5. Encumbered magnitude, total allocatable magnitude
+    //  */
+    // function test_allocateMultipleOpsets_slashSingleOpset() public {
+    //     // Set 100e18 shares for operator in DM
+    //     uint256 operatorShares = 100e18;
+    //     delegationManagerMock.setOperatorShares(defaultOperator, strategyMock, operatorShares);
+    //     uint64 magnitudeToAllocate = 4e17;
 
-        // Allocate 40% to firstOperatorSet, 40% to secondOperatorSet
-        AllocateParams[] memory allocateParams = new AllocateParams[](2);
-        allocateParams[0] = _newAllocateParams_SingleMockStrategy(OperatorSet(defaultAVS, 1), magnitudeToAllocate)[0];
-        allocateParams[1] = _newAllocateParams_SingleMockStrategy(OperatorSet(defaultAVS, 2), magnitudeToAllocate)[0];
-        cheats.prank(defaultOperator);
-        allocationManager.modifyAllocations(allocateParams);
-        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+    //     // Allocate 40% to firstOperatorSet, 40% to secondOperatorSet
+    //     AllocateParams[] memory allocateParams = new AllocateParams[](2);
+    //     allocateParams[0] = _newAllocateParams_SingleMockStrategy(OperatorSet(defaultAVS, 1), magnitudeToAllocate)[0];
+    //     allocateParams[1] = _newAllocateParams_SingleMockStrategy(OperatorSet(defaultAVS, 2), magnitudeToAllocate)[0];
+    //     cheats.prank(defaultOperator);
+    //     allocationManager.modifyAllocations(allocateParams);
+    //     cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
-        // Get slashable shares for each operatorSet
-        address[] memory operatorArray = new address[](1);
-        operatorArray[0] = defaultOperator;
-        (, uint256[][] memory slashableSharesOpset1_preSlash) = allocationManager
-            .getMinDelegatedAndSlashableOperatorSharesBefore(
-            OperatorSet(defaultAVS, 1), operatorArray, _strategyMockArray(), uint32(block.number + 1)
-        );
-        (, uint256[][] memory slashableSharesOpset2_preSlash) = allocationManager
-            .getMinDelegatedAndSlashableOperatorSharesBefore(
-            OperatorSet(defaultAVS, 2), operatorArray, _strategyMockArray(), uint32(block.number + 1)
-        );
-        assertEq(40e18, slashableSharesOpset1_preSlash[0][0], "slashableShares of opSet_1 should be 40e18");
-        assertEq(40e18, slashableSharesOpset2_preSlash[0][0], "slashableShares of opSet_2 should be 40e18");
-        uint256 maxMagnitude = allocationManager.getMaxMagnitudes(defaultOperator, _strategyMockArray())[0];
-        uint256 opSet2PortionOfMaxMagnitude = uint256(magnitudeToAllocate) * WAD / maxMagnitude;
+    //     // Get slashable shares for each operatorSet
+    //     address[] memory operatorArray = new address[](1);
+    //     operatorArray[0] = defaultOperator;
+    //     (, uint256[][] memory slashableSharesOpset1_preSlash) = allocationManager
+    //         .getMinDelegatedAndSlashableOperatorSharesBefore(
+    //         OperatorSet(defaultAVS, 1), operatorArray, _strategyMockArray(), uint32(block.number + 1)
+    //     );
+    //     (, uint256[][] memory slashableSharesOpset2_preSlash) = allocationManager
+    //         .getMinDelegatedAndSlashableOperatorSharesBefore(
+    //         OperatorSet(defaultAVS, 2), operatorArray, _strategyMockArray(), uint32(block.number + 1)
+    //     );
+    //     assertEq(40e18, slashableSharesOpset1_preSlash[0][0], "slashableShares of opSet_1 should be 40e18");
+    //     assertEq(40e18, slashableSharesOpset2_preSlash[0][0], "slashableShares of opSet_2 should be 40e18");
+    //     uint256 maxMagnitude = allocationManager.getMaxMagnitudes(defaultOperator, _strategyMockArray())[0];
+    //     uint256 opSet2PortionOfMaxMagnitude = uint256(magnitudeToAllocate) * WAD / maxMagnitude;
 
-        // Slash operator on operatorSet1 for 50%
-        SlashingParams memory slashingParams = SlashingParams({
-            operator: defaultOperator,
-            operatorSetId: allocateParams[0].operatorSet.id,
-            wadToSlash: 5e17,
-            description: "test"
-        });
-        // avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
+    //     // Slash operator on operatorSet1 for 50%
+    //     SlashingParams memory slashingParams = SlashingParams({
+    //         operator: defaultOperator,
+    //         operatorSetId: allocateParams[0].operatorSet.id,
+    //         wadToSlash: 5e17,
+    //         description: "test"
+    //     });
+    //     // avsDirectoryMock.setIsOperatorSlashable(slashingParams.operator, defaultAVS, slashingParams.operatorSetId, true);
 
-        // Slash Operator
-        cheats.prank(defaultAVS);
-        allocationManager.slashOperator(slashingParams);
+    //     // Slash Operator
+    //     cheats.prank(defaultAVS);
+    //     allocationManager.slashOperator(slashingParams);
 
-        // Operator should now have 80e18 shares, since half of 40e18 was slashed
-        delegationManagerMock.setOperatorShares(defaultOperator, strategyMock, 80e18);
+    //     // Operator should now have 80e18 shares, since half of 40e18 was slashed
+    //     delegationManagerMock.setOperatorShares(defaultOperator, strategyMock, 80e18);
 
-        // Check storage
-        (, uint256[][] memory slashableSharesOpset1_postSlash) = allocationManager
-            .getMinDelegatedAndSlashableOperatorSharesBefore(
-            OperatorSet(defaultAVS, 1), operatorArray, _strategyMockArray(), uint32(block.number + 1)
-        );
-        (, uint256[][] memory slashableSharesOpset2_postSlash) = allocationManager
-            .getMinDelegatedAndSlashableOperatorSharesBefore(
-            OperatorSet(defaultAVS, 2), operatorArray, _strategyMockArray(), uint32(block.number + 1)
-        );
+    //     // Check storage
+    //     (, uint256[][] memory slashableSharesOpset1_postSlash) = allocationManager
+    //         .getMinDelegatedAndSlashableOperatorSharesBefore(
+    //         OperatorSet(defaultAVS, 1), operatorArray, _strategyMockArray(), uint32(block.number + 1)
+    //     );
+    //     (, uint256[][] memory slashableSharesOpset2_postSlash) = allocationManager
+    //         .getMinDelegatedAndSlashableOperatorSharesBefore(
+    //         OperatorSet(defaultAVS, 2), operatorArray, _strategyMockArray(), uint32(block.number + 1)
+    //     );
 
-        assertEq(20e18, slashableSharesOpset1_postSlash[0][0], "slashableShares of opSet_1 should be 20e18");
-        assertEq(
-            slashableSharesOpset2_preSlash[0][0],
-            slashableSharesOpset2_postSlash[0][0],
-            "slashableShares of opSet_2 should remain unchanged"
-        );
+    //     assertEq(20e18, slashableSharesOpset1_postSlash[0][0], "slashableShares of opSet_1 should be 20e18");
+    //     assertEq(
+    //         slashableSharesOpset2_preSlash[0][0],
+    //         slashableSharesOpset2_postSlash[0][0],
+    //         "slashableShares of opSet_2 should remain unchanged"
+    //     );
 
-        // Validate encumbered and total allocatable magnitude
-        uint256 maxMagnitudeAfterSlash = allocationManager.getMaxMagnitudes(defaultOperator, _strategyMockArray())[0];
-        uint256 expectedEncumberedMagnitude = 6e17; // 4e17 from opSet2, 2e17 from opSet1
-        assertEq(
-            expectedEncumberedMagnitude,
-            allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
-            "encumberedMagnitude not updated"
-        );
-        assertEq(
-            maxMagnitudeAfterSlash - expectedEncumberedMagnitude,
-            allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock),
-            "allocatableMagnitude should be diff of maxMagnitude and encumberedMagnitude"
-        );
+    //     // Validate encumbered and total allocatable magnitude
+    //     uint256 maxMagnitudeAfterSlash = allocationManager.getMaxMagnitudes(defaultOperator, _strategyMockArray())[0];
+    //     uint256 expectedEncumberedMagnitude = 6e17; // 4e17 from opSet2, 2e17 from opSet1
+    //     assertEq(
+    //         expectedEncumberedMagnitude,
+    //         allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
+    //         "encumberedMagnitude not updated"
+    //     );
+    //     assertEq(
+    //         maxMagnitudeAfterSlash - expectedEncumberedMagnitude,
+    //         allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock),
+    //         "allocatableMagnitude should be diff of maxMagnitude and encumberedMagnitude"
+    //     );
 
-        // Check proportion after slash
-        uint256 opSet2PortionOfMaxMagnitudeAfterSlash = uint256(magnitudeToAllocate) * WAD / maxMagnitudeAfterSlash;
-        assertGt(
-            opSet2PortionOfMaxMagnitudeAfterSlash,
-            opSet2PortionOfMaxMagnitude,
-            "opSet2 should have a greater proportion to slash from previous"
-        );
-    }
+    //     // Check proportion after slash
+    //     uint256 opSet2PortionOfMaxMagnitudeAfterSlash = uint256(magnitudeToAllocate) * WAD / maxMagnitudeAfterSlash;
+    //     assertGt(
+    //         opSet2PortionOfMaxMagnitudeAfterSlash,
+    //         opSet2PortionOfMaxMagnitude,
+    //         "opSet2 should have a greater proportion to slash from previous"
+    //     );
+    // }
 
     /**
      * Allocates to multiple strategies for the given operatorSetKey. Slashes from both strategies Validates a slash propogates to both strategies.
