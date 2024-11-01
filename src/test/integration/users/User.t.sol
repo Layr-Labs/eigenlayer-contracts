@@ -127,7 +127,7 @@ contract User is PrintUtils {
     /// @dev Queues a single withdrawal for every share and strategy pair
     function queueWithdrawals(
         IStrategy[] memory strategies, 
-        uint[] memory shares
+        uint[] memory depositShares
     ) public createSnapshot virtual returns (IDelegationManagerTypes.Withdrawal[] memory) {
         _logM("queueWithdrawals");
 
@@ -139,7 +139,7 @@ contract User is PrintUtils {
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory params = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
         params[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
-            shares: shares,
+            depositShares: depositShares,
             withdrawer: withdrawer
         });
 
@@ -152,7 +152,7 @@ contract User is PrintUtils {
             nonce: nonce,
             startBlock: uint32(block.number),
             strategies: strategies,
-            scaledShares: shares
+            scaledShares: depositShares // TODO: convert depositShares to shares and then scale in withdrawal
         });
 
         bytes32[] memory withdrawalRoots = delegationManager.queueWithdrawals(params);

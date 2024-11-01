@@ -1152,7 +1152,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
-        return delegationManager.getWithdrawableShares(address(staker), strategies); 
+        (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        return withdrawableShares; 
     }
 
     /// @dev Uses timewarp modifier to get staker beacon chain scaling factor at the last snapshot
