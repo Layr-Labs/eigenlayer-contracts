@@ -9,11 +9,6 @@ PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 SENDER=$(cast wallet address --private-key $PRIVATE_KEY)
 OUTPUT_DIR="../output/local"
 
-# Extract contract addresses from deployment output
-DELEGATION_MANAGER=$(jq -r '.addresses.delegationManager' "$OUTPUT_DIR/slashing_output.json")
-STRATEGY=$(jq -r '.addresses.strategy' "$OUTPUT_DIR/slashing_output.json")
-TOKEN=$(jq -r '.addresses.TestToken' "$OUTPUT_DIR/slashing_output.json")
-
 # Define amount of shares to deposit/withdraw
 DEPOSIT_SHARES=1000
 
@@ -25,6 +20,11 @@ forge script ../deploy/local/deploy_from_scratch.slashing.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
     --sig "run(string memory configFile)" \
     -- local/deploy_from_scratch.slashing.anvil.config.json
+
+# Extract contract addresses from deployment output
+DELEGATION_MANAGER=$(jq -r '.addresses.delegationManager' "$OUTPUT_DIR/slashing_output.json")
+STRATEGY=$(jq -r '.addresses.strategy' "$OUTPUT_DIR/slashing_output.json")
+TOKEN=$(jq -r '.addresses.TestToken' "$OUTPUT_DIR/slashing_output.json")
 
 # Unpause the AVS Directory
 forge script ../tasks/unpause_avsDirectory.s.sol \
