@@ -8,6 +8,7 @@ pragma solidity >=0.5.0;
  */
 interface ISignatureUtils {
     error InvalidSignature();
+    error SignatureExpired();
 
     // @notice Struct that bundles together a signature and an expiration time for the signature. Used primarily for stack management.
     struct SignatureWithExpiry {

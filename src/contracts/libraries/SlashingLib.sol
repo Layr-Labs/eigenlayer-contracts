@@ -58,6 +58,21 @@ library SlashingLib {
 
     // GETTERS
 
+    /**
+     * @dev We want to avoid divide by 0 situations, so if an operator's maxMagnitude is 0, we consider them
+     * to be "fully slashed" for that strategy and revert with a error. The same goes for a staker whose
+     * beaconChainScalingFactor is 0, at which point they are considered "fully slashed".
+     * @param ssf The staker's scaling factors for a given strategy. Here, we care about their beaconChainScalingFactor
+     * @param operatorMaxMagnitude The maxMagnitude of the operator for a given strategy
+     * @return bool true if either the operator or staker are fully slashed
+     */
+    function isFullySlashed(
+        StakerScalingFactors memory ssf,
+        uint64 operatorMaxMagnitude
+    ) internal pure returns (bool) {
+        return operatorMaxMagnitude == 0 || (ssf.getBeaconChainScalingFactor() == 0);
+    }
+
     function getDepositScalingFactor(
         StakerScalingFactors memory ssf
     ) internal pure returns (uint256) {
@@ -92,12 +107,8 @@ library SlashingLib {
             .mulWad(uint256(operatorMagnitude));
     }
 
-    function getOperatorSharesToDecrease(
-        uint256 operatorShares,
-        uint64 previousMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) internal pure returns (uint256) {
-        return operatorShares - operatorShares.divWad(previousMaxMagnitude).mulWad(newMaxMagnitude);
+    function calcSlashedAmount(uint256 operatorShares, uint256 wadSlashed) internal pure returns (uint256) {
+        return operatorShares.mulWad(wadSlashed);
     }
 
     function decreaseBeaconChainScalingFactor(

@@ -29,8 +29,6 @@ interface IAllocationManagerErrors {
     error ModificationAlreadyPending();
     /// @dev Thrown when an allocation is attempted that exceeds a given operators total allocatable magnitude.
     error InsufficientAllocatableMagnitude();
-    /// @dev Thrown when attempting to use an expired eip-712 signature.
-    error SignatureExpired();
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
     error SaltSpent();
     /// @dev Thrown when attempting to slash an operator that has already been slashed at the given timestamp.

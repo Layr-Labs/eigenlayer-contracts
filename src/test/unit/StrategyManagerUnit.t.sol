@@ -163,7 +163,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         if (!expectedRevertMessageIsempty) {
             cheats.expectRevert(expectedRevertMessage);
         } else if (expiry < block.timestamp) {
-            cheats.expectRevert(IStrategyManagerErrors.SignatureExpired.selector);
+            cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
         } else {
             // needed for expecting an event with the right parameters
             uint256 expectedDepositShares = amount;
@@ -732,7 +732,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, strategy);
 
-        cheats.expectRevert(IStrategyManagerErrors.SignatureExpired.selector);
+        cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
 
         uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, strategy);

@@ -102,8 +102,6 @@ contract AVSDirectory is
         uint32[] calldata operatorSetIds,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
-        // Assert operator's signature has not expired.
-        require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
         // Assert `operator` is actually an operator.
         require(delegation.isOperator(operator), OperatorNotRegisteredToEigenLayer());
         // Assert that the AVS is an operator set AVS.
@@ -120,7 +118,8 @@ contract AVSDirectory is
                 salt: operatorSignature.salt,
                 expiry: operatorSignature.expiry
             }),
-            signature: operatorSignature.signature
+            signature: operatorSignature.signature,
+            expiry: operatorSignature.expiry
         });
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
@@ -139,8 +138,6 @@ contract AVSDirectory is
         if (operatorSignature.signature.length == 0) {
             require(msg.sender == operator, InvalidOperator());
         } else {
-            // Assert operator's signature has not expired.
-            require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
             // Assert operator's signature `salt` has not already been spent.
             require(!operatorSaltIsSpent[operator][operatorSignature.salt], SaltSpent());
 
@@ -153,7 +150,8 @@ contract AVSDirectory is
                     salt: operatorSignature.salt,
                     expiry: operatorSignature.expiry
                 }),
-                signature: operatorSignature.signature
+                signature: operatorSignature.signature,
+                expiry: operatorSignature.expiry
             });
 
             // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.
@@ -222,9 +220,6 @@ contract AVSDirectory is
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        // Assert `operatorSignature.expiry` has not elapsed.
-        require(operatorSignature.expiry >= block.timestamp, SignatureExpired());
-
         // Assert that the AVS is not an operator set AVS.
         require(!isOperatorSetAVS[msg.sender], InvalidAVS());
 
@@ -249,7 +244,8 @@ contract AVSDirectory is
                 salt: operatorSignature.salt,
                 expiry: operatorSignature.expiry
             }),
-            signature: operatorSignature.signature
+            signature: operatorSignature.signature,
+            expiry: operatorSignature.expiry
         });
 
         // Mutate `operatorSaltIsSpent` to `true` to prevent future respending.

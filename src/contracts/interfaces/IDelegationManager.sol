@@ -48,8 +48,6 @@ interface IDelegationManagerErrors {
 
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
     error SaltSpent();
-    /// @dev Thrown when attempting to use an expired eip-712 signature.
-    error SignatureExpired();
 
     /// Withdrawal Processing
 
@@ -399,16 +397,10 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @notice Decreases the operators shares in storage after a slash
      * @param operator The operator to decrease shares for
      * @param strategy The strategy to decrease shares for
-     * @param previousMaxMagnitude The max magnitude before the slash
-     * @param newMaxMagnitude The max magnitude after the slash
+     * @param wadSlashed The proportion of 1e18 slashed
      * @dev Callable only by the AllocationManager
      */
-    function decreaseOperatorShares(
-        address operator,
-        IStrategy strategy,
-        uint64 previousMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external;
+    function decreaseOperatorShares(address operator, IStrategy strategy, uint256 wadSlashed) external;
 
     /**
      *

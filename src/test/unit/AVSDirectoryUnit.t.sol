@@ -270,24 +270,30 @@ contract AVSDirectoryUnitTests_domainSeparator is AVSDirectoryUnitTests {
 
 contract AVSDirectoryUnitTests_registerOperatorToOperatorSet is AVSDirectoryUnitTests {
     function testFuzz_revert_SignatureIsExpired(
-        address operator,
+        uint256 operatorPk,
         uint32 operatorSetId,
         bytes32 salt,
         uint256 expiry
     ) public virtual {
-        expiry = bound(expiry, 0, type(uint32).max - 1);
-        cheats.warp(type(uint256).max);
+        avsDirectory.becomeOperatorSetAVS();
+        operatorPk = bound(operatorPk, 1, MAX_PRIVATE_KEY);
+        expiry = bound(expiry, 0, block.timestamp - 1);
 
         _createOperatorSet(operatorSetId);
-
-        _registerOperatorWithBaseDetails(operator);
 
         uint32[] memory oids = new uint32[](1);
         oids[0] = operatorSetId;
 
-        cheats.expectRevert(IAVSDirectoryErrors.SignatureExpired.selector);
+        address operator = cheats.addr(operatorPk);
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            operatorPk, avsDirectory.calculateOperatorSetRegistrationDigestHash(address(this), oids, salt, expiry)
+        );
+
+        _registerOperatorWithBaseDetails(operator);
+
+        cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
         avsDirectory.registerOperatorToOperatorSets(
-            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(new bytes(0), salt, expiry)
+            operator, oids, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), salt, expiry)
         );
     }
 
@@ -768,7 +774,7 @@ contract AVSDirectoryUnitTests_forceDeregisterFromOperatorSets is AVSDirectoryUn
             _createForceDeregSignature(operatorPk, address(this), oids, 0, salt);
 
         cheats.warp(type(uint256).max);
-        cheats.expectRevert(IAVSDirectoryErrors.SignatureExpired.selector);
+        cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
         avsDirectory.forceDeregisterFromOperatorSets(operator, address(this), oids, operatorSig);
     }
 
@@ -1529,13 +1535,20 @@ contract AVSDirectoryUnitTests_legacyOperatorAVSRegistration is AVSDirectoryUnit
     }
 
     // @notice Verifies an operator registers fails when the signature expiry already expires
-    function testFuzz_revert_whenExpiryHasExpired(ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature)
+    function testFuzz_revert_whenExpiryHasExpired(bytes32 salt)
         public
     {
         address operator = cheats.addr(delegationSignerPrivateKey);
-        operatorSignature.expiry = bound(operatorSignature.expiry, 0, block.timestamp - 1);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
 
-        cheats.expectRevert(IAVSDirectoryErrors.SignatureExpired.selector);
+        uint256 expiry = block.timestamp - 1;
+
+        cheats.prank(defaultAVS);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
+            _getOperatorAVSRegistrationSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
+
+        cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
     }
 

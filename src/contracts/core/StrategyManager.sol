@@ -94,15 +94,14 @@ contract StrategyManager is
         uint256 expiry,
         bytes memory signature
     ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 depositedShares) {
-        // Assert that the signature is not expired.
-        require(expiry >= block.timestamp, SignatureExpired());
         // Cache staker's nonce to avoid sloads.
         uint256 nonce = nonces[staker];
         // Assert that the signature is valid.
         _checkIsValidSignatureNow({
             signer: staker,
             signableDigest: calculateStrategyDepositDigestHash(staker, strategy, token, amount, nonce, expiry),
-            signature: signature
+            signature: signature,
+            expiry: expiry
         });
         // Increment the nonce for the staker.
         unchecked {
