@@ -510,7 +510,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external view returns (uint256[][] memory);
 
     /**
-     * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal and the 
+     * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal and the
      * corresponding depositShares.
      * This value depends on which operator the staker is delegated to.
      * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
