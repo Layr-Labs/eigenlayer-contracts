@@ -531,11 +531,11 @@ contract AllocationManager is
         address operator,
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory) {
-        uint256 length = allocatedStrategies[operator][operatorSet.key()].length();
+        address[] memory values = allocatedStrategies[operator][operatorSet.key()].values();
+        IStrategy[] memory strategies;
 
-        IStrategy[] memory strategies = new IStrategy[](length);
-        for (uint256 i = 0; i < length; i++) {
-            strategies[i] = IStrategy(allocatedStrategies[operator][operatorSet.key()].at(i));
+        assembly {
+            strategies := values
         }
 
         return strategies;
@@ -695,14 +695,7 @@ contract AllocationManager is
     function getMembers(
         OperatorSet memory operatorSet
     ) external view returns (address[] memory) {
-        uint256 length = _operatorSetMembers[operatorSet.key()].length();
-        address[] memory operators = new address[](length);
-
-        for (uint256 i = 0; i < length; ++i) {
-            operators[i] = _operatorSetMembers[operatorSet.key()].at(i);
-        }
-
-        return operators;
+        return _operatorSetMembers[operatorSet.key()].values();
     }
 
     /// @inheritdoc IAllocationManager
@@ -725,11 +718,11 @@ contract AllocationManager is
     function getStrategiesInOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory) {
-        uint256 length = _operatorSetStrategies[operatorSet.key()].length();
+        address[] memory values = _operatorSetStrategies[operatorSet.key()].values();
+        IStrategy[] memory strategies;
 
-        IStrategy[] memory strategies = new IStrategy[](length);
-        for (uint256 i = 0; i < length; ++i) {
-            strategies[i] = IStrategy(_operatorSetStrategies[operatorSet.key()].at(i));
+        assembly {
+            strategies := values
         }
 
         return strategies;
