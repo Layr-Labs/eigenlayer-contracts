@@ -262,7 +262,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             strategyManager,
             delegationManager
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
         strategyFactoryImplementation = new StrategyFactory(strategyManager);
         allocationManagerImplementation = new AllocationManager(delegationManager, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
@@ -405,7 +405,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             strategyManager,
             delegationManager
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -492,7 +492,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             strategyManager,
             delegationManager
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager

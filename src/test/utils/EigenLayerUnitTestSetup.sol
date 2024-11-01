@@ -21,6 +21,8 @@ import "src/test/utils/SingleItemArrayLib.sol";
 abstract contract EigenLayerUnitTestSetup is Test {
     using SingleItemArrayLib for *;
 
+    uint256 internal constant MAX_PRIVATE_KEY = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140;
+
     Vm cheats = Vm(VM_ADDRESS);
 
     address constant pauser = address(555);

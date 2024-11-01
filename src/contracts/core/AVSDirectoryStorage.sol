@@ -30,10 +30,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
-    /// @notice Delay before deallocations are completable and can be added back into freeMagnitude
-    /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
-    uint32 public immutable DEALLOCATION_DELAY;
-
     // Mutatables
 
     /// @dev Do not remove, deprecated storage.
@@ -48,9 +44,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     // Construction
 
-    constructor(IDelegationManager _delegation, uint32 _DEALLOCATION_DELAY) {
+    constructor(IDelegationManager _delegation) {
         delegation = _delegation;
-        DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
     }
 
     /**

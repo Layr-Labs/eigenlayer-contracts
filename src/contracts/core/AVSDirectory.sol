@@ -28,9 +28,8 @@ contract AVSDirectory is
      * and eigenpodManager contracts
      */
     constructor(
-        IDelegationManager _delegation,
-        uint32 _DEALLOCATION_DELAY
-    ) AVSDirectoryStorage(_delegation, _DEALLOCATION_DELAY) {
+        IDelegationManager _delegation
+    ) AVSDirectoryStorage(_delegation) {
         _disableInitializers();
     }
 

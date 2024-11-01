@@ -2108,6 +2108,12 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     }
 }
 
+contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManagerUnitTests {
+
+    
+
+}
+
 /**
  * @notice TODO Lifecycle tests - These tests combine multiple functionalities of the AllocationManager
  * 1. Set allocation delay > 21 days (configuration), Allocate, modify allocation delay to < 21 days, try to allocate again once new delay is set (should be able to allocate faster than 21 deays)

@@ -236,7 +236,7 @@ contract DeployFromScratch is Script, Test {
 
         delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, MIN_WITHDRAWAL_DELAY);
         strategyManagerImplementation = new StrategyManager(delegation);
-        avsDirectoryImplementation = new AVSDirectory(delegation, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegation);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
