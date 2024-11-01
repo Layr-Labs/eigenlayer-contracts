@@ -18,6 +18,8 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
     TimelockController public protocolTimelockController;
     TimelockController public protocolTimelockController_BEIGEN;
 
+    address public beigenExecutorMultisig;
+
     function run(string memory networkName) public virtual {
         if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("preprod-holesky"))) {
             deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
@@ -88,6 +90,8 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         // vm.stopPrank();
 
         checkGovernanceConfiguration_Current();
+
+        // simulateProtocolCouncilUpgrade(networkName);
     }
 
     // check governance configuration
@@ -208,36 +212,20 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         require(eigenLayerPauserReg.isPauser(pauserMultisig),
             "pauserMultisig does not have pausing permissions");
 
+        // TODO: delete this? it should no longer matter going forwards
+        // check legacy timelock admin
         (bool success, bytes memory returndata) = timelock.staticcall(abi.encodeWithSignature("admin()"));
         require(success, "call to timelock.admin() failed");
         address timelockAdmin = abi.decode(returndata, (address));
         assertEq(timelockAdmin, operationsMultisig,
             "timelockAdmin != operationsMultisig");
 
-        (success, returndata) = executorMultisig.staticcall(abi.encodeWithSignature("getOwners()"));
-        require(success, "call to executorMultisig.getOwners() failed");
-        address[] memory executorMultisigOwners = abi.decode(returndata, (address[]));
-        require(executorMultisigOwners.length == 2,
-            "executorMultisig owners wrong length");
-        bool protocolTimelockInOwners;
-        bool communityMultisigInOwners;
-        for (uint256 i = 0; i < 2; ++i) {
-            if (executorMultisigOwners[i] == address(protocolTimelockController)) {
-                protocolTimelockInOwners = true;
-            }
-            if (executorMultisigOwners[i] == communityMultisig) {
-                communityMultisigInOwners = true;
-            }
-        }
-        require(protocolTimelockInOwners, "protocolTimelockController not in executorMultisig owners");
-        require(communityMultisigInOwners, "communityMultisig not in executorMultisig owners");
-
         require(eigenTokenProxyAdmin != beigenTokenProxyAdmin,
             "tokens must have different proxy admins to allow different timelock controllers");
         require(protocolTimelockController != protocolTimelockController_BEIGEN,
             "tokens must have different timelock controllers");
 
-        // note that proxy admin owners are different but _token_ owners are the same
+        // note that proxy admin owners are different but _token_ owners per se are the same
         assertEq(Ownable(address(EIGEN)).owner(), address(executorMultisig),
             "EIGEN.owner() != executorMultisig");
         assertEq(Ownable(address(bEIGEN)).owner(), address(executorMultisig),
@@ -254,56 +242,94 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
             address(beigenTokenProxyAdmin),
             "beigenTokenProxyAdmin is not actually the admin of the bEIGEN token");
 
-        require(protocolTimelockController.hasRole(protocolTimelockController.PROPOSER_ROLE(), protocolCouncilMultisig),
-            "protocolCouncilMultisig does not have PROPOSER_ROLE on protocolTimelockController");
-        require(protocolTimelockController.hasRole(protocolTimelockController.EXECUTOR_ROLE(), protocolCouncilMultisig),
-            "protocolCouncilMultisig does not have EXECUTOR_ROLE on protocolTimelockController");
-        require(protocolTimelockController.hasRole(protocolTimelockController.PROPOSER_ROLE(), operationsMultisig),
-            "operationsMultisig does not have PROPOSER_ROLE on protocolTimelockController");
-        require(protocolTimelockController.hasRole(protocolTimelockController.CANCELLER_ROLE(), operationsMultisig),
-            "operationsMultisig does not have CANCELLER_ROLE on protocolTimelockController");
-        require(protocolTimelockController.hasRole(protocolTimelockController.TIMELOCK_ADMIN_ROLE(), executorMultisig),
-            "executorMultisig does not have TIMELOCK_ADMIN_ROLE on protocolTimelockController");
-        require(protocolTimelockController.hasRole(protocolTimelockController.TIMELOCK_ADMIN_ROLE(), address(protocolTimelockController)),
-            "protocolTimelockController does not have TIMELOCK_ADMIN_ROLE on itself");
-        require(!protocolTimelockController.hasRole(protocolTimelockController.TIMELOCK_ADMIN_ROLE(), msg.sender),
-            "deployer erroenously retains TIMELOCK_ADMIN_ROLE on protocolTimelockController");
+        // check that community multisig and protocol timelock are the owners of the executorMultisig
+        checkExecutorMultisigOwnership(executorMultisig, address(protocolTimelockController));
+        // check that community multisig and bEIGEN protocol timelock are the owners of the beigenExecutorMultisig
+        checkExecutorMultisigOwnership(beigenExecutorMultisig, address(protocolTimelockController_BEIGEN));
 
-        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.PROPOSER_ROLE(), executorMultisig),
-            "executorMultisig does not have PROPOSER_ROLE on protocolTimelockController_BEIGEN");
-        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.EXECUTOR_ROLE(), executorMultisig),
-            "executorMultisig does not have EXECUTOR_ROLE on protocolTimelockController_BEIGEN");
-        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.CANCELLER_ROLE(), executorMultisig),
-            "executorMultisig does not have CANCELLER_ROLE on protocolTimelockController_BEIGEN");
-        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.TIMELOCK_ADMIN_ROLE(), executorMultisig),
-            "executorMultisig does not have TIMELOCK_ADMIN_ROLE on protocolTimelockController_BEIGEN");
-        require(protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.TIMELOCK_ADMIN_ROLE(), address(protocolTimelockController_BEIGEN)),
-            "protocolTimelockController_BEIGEN does not have TIMELOCK_ADMIN_ROLE on itself");
-        require(!protocolTimelockController_BEIGEN.hasRole(protocolTimelockController_BEIGEN.TIMELOCK_ADMIN_ROLE(), msg.sender),
-            "deployer erroenously retains TIMELOCK_ADMIN_ROLE on protocolTimelockController_BEIGEN");
+        checkTimelockControllerConfig(protocolTimelockController);
+        checkTimelockControllerConfig(protocolTimelockController_BEIGEN);
+    }
+
+    function checkExecutorMultisigOwnership(address _executorMultisig, address timelockControllerAddress) public view {
+        (bool success, bytes memory returndata) = _executorMultisig.staticcall(abi.encodeWithSignature("getOwners()"));
+        require(success, "call to _executorMultisig.getOwners() failed");
+        address[] memory _executorMultisigOwners = abi.decode(returndata, (address[]));
+        require(_executorMultisigOwners.length == 2,
+            "executorMultisig owners wrong length");
+        bool timelockControllerInOwners;
+        bool communityMultisigInOwners;
+        for (uint256 i = 0; i < 2; ++i) {
+            if (_executorMultisigOwners[i] == address(timelockControllerAddress)) {
+                timelockControllerInOwners = true;
+            }
+            if (_executorMultisigOwners[i] == communityMultisig) {
+                communityMultisigInOwners = true;
+            }
+        }
+        require(timelockControllerInOwners, "timelockControllerAddress not in _executorMultisig owners");
+        require(communityMultisigInOwners, "communityMultisig not in _executorMultisig owners");
+
+    }
+
+    function checkTimelockControllerConfig(TimelockController timelockController) public view {
+        // check for proposer + executor rights on Protocol Council multisig
+        require(timelockController.hasRole(timelockController.PROPOSER_ROLE(), protocolCouncilMultisig),
+            "protocolCouncilMultisig does not have PROPOSER_ROLE on timelockController");
+        require(timelockController.hasRole(timelockController.EXECUTOR_ROLE(), protocolCouncilMultisig),
+            "protocolCouncilMultisig does not have EXECUTOR_ROLE on timelockController");
+
+        // check for proposer + canceller rights on ops multisig
+        require(timelockController.hasRole(timelockController.PROPOSER_ROLE(), operationsMultisig),
+            "operationsMultisig does not have PROPOSER_ROLE on timelockController");
+        require(timelockController.hasRole(timelockController.CANCELLER_ROLE(), operationsMultisig),
+            "operationsMultisig does not have CANCELLER_ROLE on timelockController");
+
+        // check that community multisig has admin rights
+        require(timelockController.hasRole(timelockController.TIMELOCK_ADMIN_ROLE(), communityMultisig),
+            "executorMultisig does not have TIMELOCK_ADMIN_ROLE on timelockController");
+
+        // check for self-administration
+        require(timelockController.hasRole(timelockController.TIMELOCK_ADMIN_ROLE(), address(timelockController)),
+            "timelockController does not have TIMELOCK_ADMIN_ROLE on itself");
+
+        // check that deployer has no rights
+        require(!timelockController.hasRole(timelockController.TIMELOCK_ADMIN_ROLE(), msg.sender),
+            "deployer erroenously retains TIMELOCK_ADMIN_ROLE on timelockController");
+        require(!timelockController.hasRole(timelockController.PROPOSER_ROLE(), msg.sender),
+            "deployer erroenously retains PROPOSER_ROLE on timelockController");
+        require(!timelockController.hasRole(timelockController.EXECUTOR_ROLE(), msg.sender),
+            "deployer erroenously retains EXECUTOR_ROLE on timelockController");
+        require(!timelockController.hasRole(timelockController.CANCELLER_ROLE(), msg.sender),
+            "deployer erroenously retains CANCELLER_ROLE on timelockController");
     }
 
     // forge script script/utils/CurrentConfigCheck.s.sol:CurrentConfigCheck -vvv --sig "simulateProtocolCouncilUpgrade(string)" $NETWORK_NAME
     function simulateProtocolCouncilUpgrade(string memory networkName) public virtual {
         run(networkName);
-        deployProtocolTimelockController();
-        deployTimelockController_BEIGEN();
+
+        // deployment steps
+        deployTimelockControllers();
+        deployBeigenExecutorMultisig();
+        configureTimelockController(protocolTimelockController);
+        configureTimelockController(protocolTimelockController_BEIGEN);
+
+        // simulate transferring powers
         simulateLegacyTimelockActions();
         simulateEigenTokenTimelockControllerActions();
         simulateBEIGENTokenTimelockControllerActions();
+
+        // check correctness after deployment + simulation
         checkGovernanceConfiguration_WithProtocolCouncil();
     }
 
-    function deployProtocolTimelockController() public {
-        // set up initially with sender also a proposer & executor, to be renounced prior to finalizing deployment
-        address[] memory proposers = new address[](3);
-        proposers[0] = protocolCouncilMultisig;
-        proposers[1] = msg.sender;
-        proposers[2] = operationsMultisig;
+    function deployTimelockControllers() public {
+        // set up initially with sender as a proposer & executor, to be renounced prior to finalizing deployment
+        address[] memory proposers = new address[](1);
+        proposers[0] = msg.sender;
 
-        address[] memory executors = new address[](2);
-        executors[0] = protocolCouncilMultisig;
-        executors[1] = msg.sender;
+        address[] memory executors = new address[](1);
+        executors[0] = msg.sender;
 
         vm.startBroadcast();
         protocolTimelockController = 
@@ -312,98 +338,99 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
                 proposers, 
                 executors
             );
-
-        uint256 tx_array_length = 7;
-        address[] memory targets = new address[](tx_array_length);
-        for (uint256 i = 0; i < targets.length; ++i) {
-            targets[i] = address(protocolTimelockController);
-        }
-
-        uint256[] memory values = new uint256[](tx_array_length);
-
-        bytes[] memory payloads = new bytes[](tx_array_length);
-        // 1. add operationsMultisig as canceller
-        payloads[0] = abi.encodeWithSelector(AccessControl.grantRole.selector, protocolTimelockController.CANCELLER_ROLE(), operationsMultisig);
-        // 2. remove sender as canceller
-        payloads[1] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController.CANCELLER_ROLE(), msg.sender);
-        // 3. remove sender as executor
-        payloads[2] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController.EXECUTOR_ROLE(), msg.sender);
-        // 4. remove sender as proposer
-        payloads[3] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController.PROPOSER_ROLE(), msg.sender);
-        // 5. remove sender as admin
-        payloads[4] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController.TIMELOCK_ADMIN_ROLE(), msg.sender);
-        // 6. add executorMultisig as admin
-        payloads[5] = abi.encodeWithSelector(AccessControl.grantRole.selector, protocolTimelockController.TIMELOCK_ADMIN_ROLE(), executorMultisig);
-        // TODO: get appropriate value for chain instead of hardcoding
-        // 7. set min delay to appropriate length
-        payloads[6] = abi.encodeWithSelector(protocolTimelockController.updateDelay.selector, 10 days);
-
-        // schedule the batch
-        protocolTimelockController.scheduleBatch(
-            targets, 
-            values, 
-            payloads, 
-            bytes32(0), // no predecessor needed
-            bytes32(0), // no salt 
-            0 // 0 enforced delay
-        );
-
-        // execute the batch
-        protocolTimelockController.executeBatch(
-            targets, 
-            values, 
-            payloads, 
-            bytes32(0), // no predecessor needed
-            bytes32(0) // no salt
-        );
-        vm.stopBroadcast();
-    }
-
-    function deployTimelockController_BEIGEN() public {
-        // set up initially with sender also a proposer & executor, to be renounced prior to finalizing deployment
-        address[] memory proposers = new address[](3);
-        proposers[0] = executorMultisig;
-        proposers[1] = msg.sender;
-
-        address[] memory executors = new address[](2);
-        executors[0] = executorMultisig;
-        executors[1] = msg.sender;
-
-        vm.startBroadcast();
         protocolTimelockController_BEIGEN = 
             new TimelockController(
                 0, // no delay for setup
                 proposers, 
                 executors
             );
+        vm.stopBroadcast();
+    }
 
-        uint256 tx_array_length = 7;
+    function deployBeigenExecutorMultisig() public {
+        require(address(beigenTokenTimelockController) != address(0),
+            "must deploy beigenTokenTimelockController before beigenExecutorMultisig");
+        // TODO: solution for local network?
+        // TODO: verify this also works for Holesky
+        address safeFactory = 0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2;
+        address safeSingleton = 0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552;
+        address safeFallbackHandler = 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99;
+        address[] memory owners = new address[](2);
+        bytes memory emptyData;
+        owners[0] = address(protocolTimelockController_BEIGEN);
+        owners[1] = communityMultisig;
+        bytes memory initializerData = abi.encodeWithSignature(
+            "setup(address[],uint256,address,bytes,address,address,uint256,address)",
+            owners,
+            1, /* threshold */
+            address(0), /* to (used in setupModules) */
+            emptyData, /* data (used in setupModules) */
+            safeFallbackHandler,
+            address(0), /* paymentToken */
+            0, /* payment */
+            payable(address(0)) /* paymentReceiver */
+        );
+        uint256 salt = 0;
+
+        bytes memory calldataToFactory = abi.encodeWithSignature(
+            "createProxyWithNonce(address,bytes,uint256)",
+            safeSingleton,
+            initializerData,
+            salt
+        );
+
+        (bool success, bytes memory returndata) = safeFactory.call(calldataToFactory);
+        require(success, "multisig deployment failed");
+        beigenExecutorMultisig = abi.decode(returndata, (address));
+        require(beigenExecutorMultisig != address(0), "something wrong in multisig deployment, zero address returned");
+    }
+
+    function configureTimelockController(TimelockController timelockController) public {
+        vm.startBroadcast();
+        uint256 tx_array_length = 10;
         address[] memory targets = new address[](tx_array_length);
         for (uint256 i = 0; i < targets.length; ++i) {
-            targets[i] = address(protocolTimelockController_BEIGEN);
+            targets[i] = address(timelockController);
         }
 
         uint256[] memory values = new uint256[](tx_array_length);
 
         bytes[] memory payloads = new bytes[](tx_array_length);
-        // 1. add executorMultisig as canceller
-        payloads[0] = abi.encodeWithSelector(AccessControl.grantRole.selector, protocolTimelockController_BEIGEN.CANCELLER_ROLE(), executorMultisig);
-        // 2. remove sender as canceller
-        payloads[1] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController_BEIGEN.CANCELLER_ROLE(), msg.sender);
-        // 3. remove sender as executor
-        payloads[2] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController_BEIGEN.EXECUTOR_ROLE(), msg.sender);
-        // 4. remove sender as proposer
-        payloads[3] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController_BEIGEN.PROPOSER_ROLE(), msg.sender);
-        // 5. remove sender as admin
-        payloads[4] = abi.encodeWithSelector(AccessControl.revokeRole.selector, protocolTimelockController.TIMELOCK_ADMIN_ROLE(), msg.sender);
-        // 6. add executorMultisig as admin
-        payloads[0] = abi.encodeWithSelector(AccessControl.grantRole.selector, protocolTimelockController_BEIGEN.TIMELOCK_ADMIN_ROLE(), executorMultisig);
+        // 1. remove sender as canceller
+        payloads[0] = abi.encodeWithSelector(AccessControl.revokeRole.selector, timelockController.CANCELLER_ROLE(), msg.sender);
+        // 2. remove sender as executor
+        payloads[1] = abi.encodeWithSelector(AccessControl.revokeRole.selector, timelockController.EXECUTOR_ROLE(), msg.sender);
+        // 3. remove sender as proposer
+        payloads[2] = abi.encodeWithSelector(AccessControl.revokeRole.selector, timelockController.PROPOSER_ROLE(), msg.sender);
+        // 4. remove sender as admin
+        payloads[3] = abi.encodeWithSelector(AccessControl.revokeRole.selector, timelockController.TIMELOCK_ADMIN_ROLE(), msg.sender);
+
+        // 5. add operationsMultisig as canceller
+        payloads[4] = abi.encodeWithSelector(AccessControl.grantRole.selector, timelockController.CANCELLER_ROLE(), operationsMultisig);
+        // 6. add operationsMultisig as proposer
+        payloads[5] = abi.encodeWithSelector(AccessControl.grantRole.selector, timelockController.PROPOSER_ROLE(), operationsMultisig);
+
+        // 7. add protocolCouncilMultisig as proposer
+        payloads[6] = abi.encodeWithSelector(AccessControl.grantRole.selector, timelockController.PROPOSER_ROLE(), protocolCouncilMultisig);
+        // 8. add protocolCouncilMultisig as executor
+        payloads[7] = abi.encodeWithSelector(AccessControl.grantRole.selector, timelockController.EXECUTOR_ROLE(), protocolCouncilMultisig);
+
+        // 9. add communityMultisig as admin
+        payloads[8] = abi.encodeWithSelector(AccessControl.grantRole.selector, timelockController.TIMELOCK_ADMIN_ROLE(), communityMultisig);
+
         // TODO: get appropriate value for chain instead of hardcoding
-        // 7. set min delay to appropriate length
-        payloads[6] = abi.encodeWithSelector(protocolTimelockController_BEIGEN.updateDelay.selector, 14 days);
+        uint256 delayToSet;
+        if (timelockController == protocolTimelockController) {
+            delayToSet = 10 days;
+        } else if (timelockController == protocolTimelockController_BEIGEN) {
+            delayToSet = 14 days;
+        }
+        require(delayToSet != 0, "delay not calculated");
+        // 10. set min delay to appropriate length
+        payloads[9] = abi.encodeWithSelector(timelockController.updateDelay.selector, delayToSet);
 
         // schedule the batch
-        protocolTimelockController_BEIGEN.scheduleBatch(
+        timelockController.scheduleBatch(
             targets, 
             values, 
             payloads, 
@@ -413,7 +440,7 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         );
 
         // execute the batch
-        protocolTimelockController_BEIGEN.executeBatch(
+        timelockController.executeBatch(
             targets, 
             values, 
             payloads, 
@@ -505,7 +532,6 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         vm.stopPrank();
     }
 
-    // TODO: make this correct
     function simulateBEIGENTokenTimelockControllerActions() public {
         vm.startPrank(foundationMultisig);
 
