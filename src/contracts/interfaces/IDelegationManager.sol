@@ -142,8 +142,9 @@ interface IDelegationManagerTypes {
     struct QueuedWithdrawalParams {
         // Array of strategies that the QueuedWithdrawal contains
         IStrategy[] strategies;
-        // Array containing the amount of withdrawable shares for withdrawal in each Strategy in the `strategies` array
-        uint256[] shares;
+        // Array containing the amount of depositShares for withdrawal in each Strategy in the `strategies` array
+        // Note that the actual shares received on completing withdrawal may be less than the depositShares if slashing occurred
+        uint256[] depositShares;
         // The address of the withdrawer
         address withdrawer;
     }
@@ -187,9 +188,9 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
      * @notice Emitted when a new withdrawal is queued.
      * @param withdrawalRoot Is the hash of the `withdrawal`.
      * @param withdrawal Is the withdrawal itself.
-     * @param sharesToWithdraw Is an array of the shares that were queued for withdrawal corresponding to the strategies in the `withdrawal`.
+     * @param depositSharesToWithdraw Is an array of the depositShares that were queued for withdrawal corresponding to the strategies in the `withdrawal`.
      */
-    event SlashingWithdrawalQueued(bytes32 withdrawalRoot, Withdrawal withdrawal, uint256[] sharesToWithdraw);
+    event SlashingWithdrawalQueued(bytes32 withdrawalRoot, Withdrawal withdrawal, uint256[] depositSharesToWithdraw);
 
     /// @notice Emitted when a queued withdrawal is completed
     event SlashingWithdrawalCompleted(bytes32 withdrawalRoot);
@@ -509,7 +510,8 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external view returns (uint256[][] memory);
 
     /**
-     * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal.
+     * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal and the 
+     * corresponding depositShares.
      * This value depends on which operator the staker is delegated to.
      * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
      * to each strategy's underlying shares to token ratio).
@@ -517,7 +519,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     function getWithdrawableShares(
         address staker,
         IStrategy[] memory strategies
-    ) external view returns (uint256[] memory withdrawableShares);
+    ) external view returns (uint256[] memory withdrawableShares, uint256[] memory depositShares);
 
     /**
      * @notice Returns the number of shares in storage for a staker and all their strategies

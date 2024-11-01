@@ -171,18 +171,6 @@ library SlashingLib {
 
     // CONVERSION
 
-    function toDepositShares(
-        uint256 shares,
-        StakerScalingFactors memory ssf,
-        uint64 magnitude
-    ) internal pure returns (uint256 depositShares) {
-        /// forgefmt: disable-next-item
-        depositShares = shares
-            .divWad(ssf.getDepositScalingFactor())
-            .divWad(uint256(ssf.getBeaconChainScalingFactor()))
-            .divWad(uint256(magnitude));
-    }
-
     function toShares(
         uint256 depositShares,
         StakerScalingFactors memory ssf,

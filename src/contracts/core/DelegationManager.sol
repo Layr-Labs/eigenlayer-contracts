@@ -216,18 +216,17 @@ contract DelegationManager is
             // Note the returned withdrawal root will be 0x0 in this scenario but is not actually a valid null root.
             if (!ssf.isFullySlashed(maxMagnitudes[i])) {
                 IStrategy[] memory singleStrategy = new IStrategy[](1);
-                uint256[] memory singleShares = new uint256[](1);
+                uint256[] memory singleDepositShares = new uint256[](1);
                 uint64[] memory singleMaxMagnitude = new uint64[](1);
                 singleStrategy[0] = strategies[i];
-                // TODO: this part is a bit gross, can we make it better?
-                singleShares[0] = depositedShares[i].toShares(ssf, maxMagnitudes[i]);
+                singleDepositShares[0] = depositedShares[i];
                 singleMaxMagnitude[0] = maxMagnitudes[i];
 
                 withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
                     staker: staker,
                     operator: operator,
                     strategies: singleStrategy,
-                    sharesToWithdraw: singleShares,
+                    depositSharesToWithdraw: singleDepositShares,
                     maxMagnitudes: singleMaxMagnitude
                 });
             } else {
@@ -258,7 +257,7 @@ contract DelegationManager is
         address operator = delegatedTo[msg.sender];
 
         for (uint256 i = 0; i < params.length; i++) {
-            require(params[i].strategies.length == params[i].shares.length, InputArrayLengthMismatch());
+            require(params[i].strategies.length == params[i].depositShares.length, InputArrayLengthMismatch());
             require(params[i].withdrawer == msg.sender, WithdrawerNotStaker());
 
             uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudes(operator, params[i].strategies);
@@ -271,7 +270,7 @@ contract DelegationManager is
                 staker: msg.sender,
                 operator: operator,
                 strategies: params[i].strategies,
-                sharesToWithdraw: params[i].shares,
+                depositSharesToWithdraw: params[i].depositShares,
                 maxMagnitudes: maxMagnitudes
             });
         }
@@ -602,18 +601,19 @@ contract DelegationManager is
      * @param staker The staker queuing a withdrawal
      * @param operator The operator the staker is delegated to
      * @param strategies The strategies to queue a withdrawal for
-     * @param sharesToWithdraw The amount of shares the staker wishes to withdraw, must be less than staker's withdrawable shares
+     * @param depositSharesToWithdraw The amount of deposit shares the staker wishes to withdraw, must be less than staker's depositShares in storage
      * @param maxMagnitudes The corresponding maxMagnitudes of the operator for the respective strategies
      *
      * @dev The amount withdrawable by the staker may not actually be the same as the depositShares that are in storage in the StrategyManager/EigenPodManager.
      * This is a result of any slashing that has occurred during the time the staker has been delegated to an operator. So the proportional amount that is withdrawn
      * out of the amount withdrawable for the staker has to also be decremented from the staker's deposit shares.
+     * So the amount of depositShares withdrawn out has to be proportionally scaled down depending on the slashing that has occurred.
      * Ex. Suppose as a staker, I have 100 depositShares for a strategy thats sitting in the StrategyManager in the `stakerDepositShares` mapping but I actually have been slashed 50%
      * and my real withdrawable amount is 50 shares.
-     * Now when I go to withdraw 20 shares, I'm proportionally withdrawing 40% of my withdrawable shares. We calculate below via the `toDepositShares()` function to
-     * decrement 40 shares from my 100 depositShares in storage. The end state is that I have 30 withdrawable shares now and 60 depositShares, this still accurately reflects a 50% slashing
-     * that has occurred on my existing stake.
-     * @dev sharesToWithdraw are divided by the current maxMagnitude of the operator (at queue time) and this value is stored in the Withdrawal struct as `scaledShares`.
+     * Now when I go to withdraw 40 depositShares, I'm proportionally withdrawing 40% of my withdrawable shares. We calculate below the actual shares withdrawn via the `toShares()` function to
+     * get 20 shares to queue withdraw. The end state is that I have 60 depositShares and 30 withdrawable shares now, this still accurately reflects a 50% slashing that has occurred on my existing stake.
+     * @dev depositSharesToWithdraw are converted to sharesToWithdraw using the `toShares` library function. sharesToWithdraw are then divided by the current maxMagnitude of the operator (at queue time)
+     * and this value is stored in the Withdrawal struct as `scaledShares.
      * Upon completion the `scaledShares` are then multiplied by the maxMagnitude of the operator at completion time. This is how we factor in any slashing events
      * that occurred during the withdrawal delay period. Shares in a withdrawal are no longer slashable once the withdrawal is completable.
      * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
@@ -622,7 +622,7 @@ contract DelegationManager is
         address staker,
         address operator,
         IStrategy[] memory strategies,
-        uint256[] memory sharesToWithdraw,
+        uint256[] memory depositSharesToWithdraw,
         uint64[] memory maxMagnitudes
     ) internal returns (bytes32) {
         require(staker != address(0), InputAddressZero());
@@ -639,27 +639,30 @@ contract DelegationManager is
             // Ensure that the operator has not been fully slashed for a strategy
             // and that the staker has not been slashed fully if its the beaconChainStrategy
             require(!ssf.isFullySlashed(maxMagnitudes[i]), FullySlashed());
+            // Check withdrawing deposit shares amount doesn't exceed balance
+            require(
+                depositSharesToWithdraw[i] <= shareManager.stakerDepositShares(staker, strategies[i]),
+                WithdrawalExceedsMax()
+            );
 
-            // Calculate the deposit shares
-            uint256 depositSharesToRemove = sharesToWithdraw[i].toDepositShares(ssf, maxMagnitudes[i]);
-            uint256 depositSharesWithdrawable = shareManager.stakerDepositShares(staker, strategies[i]);
-            require(depositSharesToRemove <= depositSharesWithdrawable, WithdrawalExceedsMax());
+            // Calculate the shares to withdraw
+            uint256 sharesToWithdraw = depositSharesToWithdraw[i].toShares(ssf, maxMagnitudes[i]);
 
             // Remove delegated shares from the operator
             if (operator != address(0)) {
                 // forgefmt: disable-next-item
                 _decreaseDelegation({
-                    operator: operator, 
-                    staker: staker, 
-                    strategy: strategies[i], 
-                    sharesToDecrease: sharesToWithdraw[i]
+                    operator: operator,
+                    staker: staker,
+                    strategy: strategies[i],
+                    sharesToDecrease: sharesToWithdraw
                 });
             }
 
-            scaledShares[i] = sharesToWithdraw[i].scaleSharesForQueuedWithdrawal(ssf, maxMagnitudes[i]);
+            scaledShares[i] = sharesToWithdraw.scaleSharesForQueuedWithdrawal(ssf, maxMagnitudes[i]);
 
             // Remove active shares from EigenPodManager/StrategyManager
-            shareManager.removeDepositShares(staker, strategies[i], depositSharesToRemove);
+            shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
         }
 
         // Create queue entry and increment withdrawal nonce
@@ -681,7 +684,7 @@ contract DelegationManager is
         // Place withdrawal in queue
         pendingWithdrawals[withdrawalRoot] = true;
 
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, sharesToWithdraw);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, depositSharesToWithdraw);
         return withdrawalRoot;
     }
 
@@ -762,23 +765,24 @@ contract DelegationManager is
     function getWithdrawableShares(
         address staker,
         IStrategy[] memory strategies
-    ) public view returns (uint256[] memory withdrawableShares) {
+    ) public view returns (uint256[] memory withdrawableShares, uint256[] memory depositShares) {
         address operator = delegatedTo[staker];
         uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
         withdrawableShares = new uint256[](strategies.length);
+        depositShares = new uint256[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
             IShareManager shareManager = _getShareManager(strategies[i]);
             // TODO: batch call for strategyManager shares?
             // 1. read strategy deposit shares
-
             // forgefmt: disable-next-item
-            uint256 depositShares = shareManager.stakerDepositShares(staker, strategies[i]);
+            depositShares[i] = shareManager.stakerDepositShares(staker, strategies[i]);
 
             // 2. Calculate the withdrawable shares
-            withdrawableShares[i] = depositShares.toShares(stakerScalingFactor[staker][strategies[i]], maxMagnitudes[i]);
+            withdrawableShares[i] =
+                depositShares[i].toShares(stakerScalingFactor[staker][strategies[i]], maxMagnitudes[i]);
         }
-        return withdrawableShares;
+        return (withdrawableShares, depositShares);
     }
 
     /// @inheritdoc IDelegationManager
