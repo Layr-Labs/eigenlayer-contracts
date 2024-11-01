@@ -5,7 +5,21 @@ import "src/contracts/interfaces/IAllocationManager.sol";
 
 /// @dev Helper library for simplifying the syntax for creating single item arrays for inputs.
 library SingleItemArrayLib {
-    function toArray(
+    function toArrayU16(
+        uint16 x
+    ) internal pure returns (uint16[] memory array) {
+        array = new uint16[](1);
+        array[0] = x;
+    }
+    
+    function toArrayU32(
+        uint32 x
+    ) internal pure returns (uint32[] memory array) {
+        array = new uint32[](1);
+        array[0] = x;
+    }
+
+    function toArrayU64(
         uint64 x
     ) internal pure returns (uint64[] memory array) {
         array = new uint64[](1);

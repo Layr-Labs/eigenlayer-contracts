@@ -36,7 +36,7 @@ interface IAllocationManagerErrors {
     error OperatorNotSlashable();
     /// @dev Thrown when trying to add an operator to a set they are already a member of
     error AlreadyMemberOfSet();
-    /// @dev Thrown when trying to remove an operator from a set they are not a member of
+    /// @dev Thrown when trying to slash/remove an operator from a set they are not a member of
     error NotMemberOfSet();
 
     /// Operator Set Status
@@ -463,6 +463,13 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function getRegisteredSets(
         address operator
     ) external view returns (OperatorSet[] memory operatorSets);
+
+    /**
+     * @notice Returns whether the operator set exists
+     */
+    function isOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (bool);
 
     /**
      * @notice Returns all the operators registered to an operator set

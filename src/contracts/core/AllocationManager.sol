@@ -62,7 +62,7 @@ contract AllocationManager is
         OperatorSet memory operatorSet = OperatorSet(msg.sender, params.operatorSetId);
         bool isRegistered = _isRegistered(params.operator, operatorSet);
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
-        require(isRegistered, InvalidOperator());
+        require(isRegistered, NotMemberOfSet());
 
         uint256 length = _operatorSetStrategies[operatorSet.key()].length();
         IStrategy[] memory strategiesSlashed = new IStrategy[](length);
@@ -689,6 +689,13 @@ contract AllocationManager is
         }
 
         return operatorSets;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (bool) {
+        return _operatorSets[operatorSet.avs].contains(operatorSet.id);
     }
 
     /// @inheritdoc IAllocationManager
