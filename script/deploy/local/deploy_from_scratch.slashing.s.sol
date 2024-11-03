@@ -31,7 +31,7 @@ import "forge-std/Test.sol";
 // source .env
 
 // # To deploy and verify our contract
-// forge script script/deploy/local/Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/deploy_from_scratch.anvil.config.json
+// forge script script/deploy/local/deploy_from_scratch.slashing.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/deploy_from_scratch.slashing.anvil.config.json
 contract DeployFromScratch is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
@@ -349,6 +349,15 @@ contract DeployFromScratch is Script, Test {
             );
         }
 
+        {
+            // Whitelist the strategies
+            IStrategy[] memory strategies = new IStrategy[](deployedStrategyArray.length);
+            for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
+                strategies[i] = IStrategy(deployedStrategyArray[i]);
+            }
+            strategyManager.addStrategiesToDepositWhitelist(strategies);
+        }
+
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
 
@@ -450,7 +459,7 @@ contract DeployFromScratch is Script, Test {
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
         // TODO: should output to different file depending on configFile passed to run()
         //       so that we don't override mainnet output by deploying to goerli for eg.
-        vm.writeJson(finalJson, "script/output/devnet/M2_from_scratch_deployment_data.json");
+        vm.writeJson(finalJson, "script/output/local/slashing_output.json");
     }
 
     function _verifyContractsPointAtOneAnother(

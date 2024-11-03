@@ -15,6 +15,9 @@ DEPOSIT_SHARES=1000
 # Ensure output directory exists
 mkdir -p $OUTPUT_DIR
 
+# Compile contracts
+forge build
+
 # Deploy contracts
 forge script ../deploy/local/deploy_from_scratch.slashing.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
@@ -25,6 +28,7 @@ forge script ../deploy/local/deploy_from_scratch.slashing.s.sol \
 DELEGATION_MANAGER=$(jq -r '.addresses.delegationManager' "$OUTPUT_DIR/slashing_output.json")
 STRATEGY=$(jq -r '.addresses.strategy' "$OUTPUT_DIR/slashing_output.json")
 TOKEN=$(jq -r '.addresses.TestToken' "$OUTPUT_DIR/slashing_output.json")
+BALANCE=$(cast call $TOKEN "balanceOf(address)(uint256)" $SENDER --rpc-url $RPC_URL)
 
 # Unpause the AVS Directory
 forge script ../tasks/unpause_avsDirectory.s.sol \
@@ -47,6 +51,7 @@ forge script ../tasks/register_as_operator.s.sol \
 # Register Operator to OperatorSet
 forge script ../tasks/register_operator_to_operatorSet.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
+    --tc registerOperatorToOperatorSets \
     --sig "run(string memory configFile)" \
     -- local/slashing_output.json
 
@@ -62,8 +67,8 @@ forge script ../tasks/allocate_operatorSet.s.sol \
 # Slash the OperatorSet (50%)
 forge script ../tasks/slash_operatorSet.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
-    --sig "run(string memory configFile,address strategy,address operator,uint32 operatorSetId,uint256 wadToSlash)" \
-    -- local/slashing_output.json $STRATEGY $SENDER 00000001 0500000000000000000
+    --sig "run(string memory configFile,address operator,uint32 operatorSetId,uint256 wadToSlash)" \
+    -- local/slashing_output.json $SENDER 00000001 0500000000000000000
 
 # Fetch current withdrawable shares and nonce
 SHARES=$(cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed 's/[][]//g')
@@ -89,9 +94,19 @@ forge script ../tasks/complete_withdrawal_from_strategy.s.sol \
 
 # Verification
 FINAL_SHARES=$(cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL)
-FINAL_TOKENS=$(cast call $TOKEN "balanceOf(address)(uint256)" $SENDER --rpc-url $RPC_URL)
+FINAL_BALANCE=$(cast call $TOKEN "balanceOf(address)(uint256)" $SENDER --rpc-url $RPC_URL)
+BALANCE_AS_DEC=$(echo "$BALANCE" | awk '{print $1}')
+FINAL_BALANCE_AS_DEC=$(echo "$FINAL_BALANCE" | awk '{print $1}')
+SLASHED_BY_BALANCE=$(bc <<< "$BALANCE_AS_DEC - $FINAL_BALANCE_AS_DEC")
 
+# Print details
+echo -e "==========================\n"
+echo -e "Addresses saved to: $(realpath $(pwd)/../../script/output/local/slashing_output.json)"
+echo -e "\n==========================\n"
+echo "Number of tokens held initially: $BALANCE"
 echo "Number of shares deposited: $DEPOSIT_SHARES"
 echo "Number of shares after slashing: $SHARES"
 echo "Number of shares remaining: $FINAL_SHARES"
-echo "Number of tokens held: $FINAL_TOKENS"
+echo "Number of tokens held: $FINAL_BALANCE"
+echo "Number of tokens slashed: $SLASHED_BY_BALANCE"
+echo -e "\n=========================="

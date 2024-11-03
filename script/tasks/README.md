@@ -33,7 +33,9 @@ forge script ../deploy/local/deploy_from_scratch.slashing.s.sol \
 
 3. Extract `DELEGATION_MANAGER`, `STRATEGY` and `TOKEN` addresses from deployment output
 ```sh
+export SENDER=$(cast wallet address --private-key $PRIVATE_KEY)
 export DELEGATION_MANAGER=$(jq -r '.addresses.delegationManager' "../output/local/slashing_output.json")
+export STRATEGY_MANAGER=$(jq -r '.addresses.strategyManager' "../output/local/slashing_output.json")
 export STRATEGY=$(jq -r '.addresses.strategy' "../output/local/slashing_output.json")
 export TOKEN=$(jq -r '.addresses.TestToken' "../output/local/slashing_output.json")
 ```
@@ -65,6 +67,7 @@ forge script ../tasks/register_as_operator.s.sol \
 7. Register `Operator` to `OperatorSet`
 ```sh
 forge script ../tasks/register_operator_to_operatorSet.s.sol \
+    --tc registerOperatorToOperatorSets \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
     --sig "run(string memory configFile)" \
     -- local/slashing_output.json
@@ -87,18 +90,18 @@ forge script ../tasks/allocate_operatorSet.s.sol \
 ```sh
 forge script ../tasks/slash_operatorSet.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
-    --sig "run(string memory configFile,address strategy,address operator,uint32 operatorSetId,uint256 wadToSlash)" \
-    -- local/slashing_output.json $STRATEGY $SENDER 00000001 0500000000000000000
+    --sig "run(string memory configFile,address operator,uint32 operatorSetId,uint256 wadToSlash)" \
+    -- local/slashing_output.json $SENDER 00000001 0500000000000000000
 ```
 
 11. Verify that the sender holds **1000** Deposited `TOKEN` shares:
 ```sh
-cast call 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9 "getDeposits(address)(address[],uint256[])" $SENDER  --rpc-url $RPC_URL
+cast call $STRATEGY_MANAGER "getDeposits(address)(address[],uint256[])" $SENDER  --rpc-url $RPC_URL
 ```
 
 12. Verify that the sender holds **750** Withdrawable `TOKEN` shares:
 ```sh
-cast call 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9 "getWithdrawableShares(address,address[])(uint256[])" 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 "[0x8aCd85898458400f7Db866d53FCFF6f0D49741FF]" --rpc-url $RPC_URL
+cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL
 ```
 
 13. Withdraw slashed shares from `DelegationManager`
