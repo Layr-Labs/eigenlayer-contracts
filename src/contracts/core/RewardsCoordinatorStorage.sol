@@ -89,8 +89,8 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// if rewards submission hash for all stakers and operators has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRewardsSubmissionForAllEarnersHash;
 
-    /// @notice Mapping: avs => avsPerformanceRewardsSubmissionHash => bool to check if performance rewards submission hash has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isAVSPerformanceRewardsSubmissionHash;
+    /// @notice Mapping: avs => operatorDirectedAVSRewardsSubmissionHash => bool to check if operator-directed rewards submission hash has been submitted
+    mapping(address => mapping(bytes32 => bool)) public isOperatorDirectedAVSRewardsSubmissionHash;
 
     /// @notice Mapping: operator => avs => OperatorSplit. The split an operator takes for a specific AVS.
     mapping(address => mapping(address => OperatorSplit)) internal operatorAVSSplitBips;

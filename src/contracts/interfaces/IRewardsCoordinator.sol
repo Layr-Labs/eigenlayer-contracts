@@ -83,7 +83,7 @@ interface IRewardsCoordinator {
     }
 
     /**
-     * @notice PerformanceRewardsSubmission struct submitted by AVSs when making performance-based rewards for their operators and stakers.
+     * @notice OperatorDirectedRewardsSubmission struct submitted by AVSs when making operator-directed rewards for their operators and stakers.
      * @param strategiesAndMultipliers The strategies and their relative weights.
      * @param token The rewards token to be distributed.
      * @param operatorRewards The rewards for the operators.
@@ -91,7 +91,7 @@ interface IRewardsCoordinator {
      * @param duration The duration of the submission range in seconds.
      * @param description Describes what the rewards submission is for.
      */
-    struct PerformanceRewardsSubmission {
+    struct OperatorDirectedRewardsSubmission {
         StrategyAndMultiplier[] strategiesAndMultipliers;
         IERC20 token;
         OperatorReward[] operatorRewards;
@@ -192,19 +192,19 @@ interface IRewardsCoordinator {
     );
 
     /**
-     * @notice Emitted when an AVS creates a valid `PerformanceRewardsSubmission`
-     * @param caller The address calling `createAVSPerformanceRewardsSubmission`.
-     * @param avs The avs on behalf of which the performance rewards are being submitted.
+     * @notice Emitted when an AVS creates a valid `OperatorDirectedRewardsSubmission`
+     * @param caller The address calling `createOperatorDirectedAVSRewardsSubmission`.
+     * @param avs The avs on behalf of which the operator-directed rewards are being submitted.
      * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
-     * @param performanceRewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `performanceRewardsSubmission`).
-     * @param performanceRewardsSubmission The Performance Rewards Submission. Contains the token, start timestamp, duration, operator rewards, description and, strategy and multipliers.
+     * @param operatorDirectedRewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `operatorDirectedRewardsSubmission`).
+     * @param operatorDirectedRewardsSubmission The Operator-Directed Rewards Submission. Contains the token, start timestamp, duration, operator rewards, description and, strategy and multipliers.
      */
-    event AVSPerformanceRewardsSubmissionCreated(
+    event OperatorDirectedAVSRewardsSubmissionCreated(
         address indexed caller,
         address indexed avs,
         uint256 submissionNonce,
-        bytes32 indexed performanceRewardsSubmissionHash,
-        PerformanceRewardsSubmission performanceRewardsSubmission
+        bytes32 indexed operatorDirectedRewardsSubmissionHash,
+        OperatorDirectedRewardsSubmission operatorDirectedRewardsSubmission
     );
 
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
@@ -381,21 +381,21 @@ interface IRewardsCoordinator {
     function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions) external;
 
     /**
-     * @notice Creates a new performance-based rewards submission on behalf of an AVS, to be split amongst the operators and
+     * @notice Creates a new operator-directed rewards submission on behalf of an AVS, to be split amongst the operators and
      * set of stakers delegated to operators who are registered to the `avs`.
      * @param avs The AVS on behalf of which the reward is being submitted
-     * @param performanceRewardsSubmissions The performance rewards submissions being created
+     * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created
      * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
-     * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `performanceRewardsSubmissions`, before calling this function.
+     * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `operatorDirectedRewardsSubmissions`, before calling this function.
      * @dev Strategies must be in ascending order of addresses to check for duplicates
      * @dev Operators must be in ascending order of addresses to check for duplicates.
-     * @dev This function will revert if the `performanceRewardsSubmissions` is malformed.
+     * @dev This function will revert if the `operatorDirectedRewardsSubmissions` is malformed.
      */
-    function createAVSPerformanceRewardsSubmission(
+    function createOperatorDirectedAVSRewardsSubmission(
         address avs,
-        PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
+        OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
     ) external;
 
     /**

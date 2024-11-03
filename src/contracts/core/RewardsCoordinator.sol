@@ -49,8 +49,8 @@ contract RewardsCoordinator is
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
     /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
     uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
-    /// @dev Index for flag that pauses calling createAVSPerformanceRewardsSubmission
-    uint8 internal constant PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION = 5;
+    /// @dev Index for flag that pauses calling createOperatorDirectedAVSRewardsSubmission
+    uint8 internal constant PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION = 5;
     /// @dev Index for flag that pauses calling setOperatorAVSSplit
     uint8 internal constant PAUSED_OPERATOR_AVS_SPLIT = 6;
     /// @dev Index for flag that pauses calling setOperatorPISplit
@@ -190,30 +190,36 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function createAVSPerformanceRewardsSubmission(
+    function createOperatorDirectedAVSRewardsSubmission(
         address avs,
-        PerformanceRewardsSubmission[] calldata performanceRewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_AVS_PERFORMANCE_REWARDS_SUBMISSION) nonReentrant {
-        require(msg.sender == avs, "RewardsCoordinator.createAVSPerformanceRewardsSubmission: caller is not the AVS");
+        OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION) nonReentrant {
+        require(
+            msg.sender == avs,
+            "RewardsCoordinator.createOperatorDirectedAVSRewardsSubmission: caller is not the AVS"
+        );
 
-        for (uint256 i = 0; i < performanceRewardsSubmissions.length; i++) {
-            PerformanceRewardsSubmission calldata performanceRewardsSubmission = performanceRewardsSubmissions[i];
+        for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; i++) {
+            OperatorDirectedRewardsSubmission
+                calldata operatorDirectedRewardsSubmission = operatorDirectedRewardsSubmissions[i];
             uint256 nonce = submissionNonce[avs];
-            bytes32 performanceRewardsSubmissionHash = keccak256(abi.encode(avs, nonce, performanceRewardsSubmission));
+            bytes32 operatorDirectedRewardsSubmissionHash = keccak256(
+                abi.encode(avs, nonce, operatorDirectedRewardsSubmission)
+            );
 
-            uint256 totalAmount = _validatePerformanceRewardsSubmission(performanceRewardsSubmission);
+            uint256 totalAmount = _validateOperatorDirectedRewardsSubmission(operatorDirectedRewardsSubmission);
 
-            isAVSPerformanceRewardsSubmissionHash[avs][performanceRewardsSubmissionHash] = true;
+            isOperatorDirectedAVSRewardsSubmissionHash[avs][operatorDirectedRewardsSubmissionHash] = true;
             submissionNonce[avs] = nonce + 1;
 
-            emit AVSPerformanceRewardsSubmissionCreated(
+            emit OperatorDirectedAVSRewardsSubmissionCreated(
                 msg.sender,
                 avs,
                 nonce,
-                performanceRewardsSubmissionHash,
-                performanceRewardsSubmission
+                operatorDirectedRewardsSubmissionHash,
+                operatorDirectedRewardsSubmission
             );
-            performanceRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
+            operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
     }
 
@@ -391,77 +397,78 @@ contract RewardsCoordinator is
     }
 
     /**
-     * @notice Validate a PerformanceRewardsSubmission. Called from `createAVSPerformanceRewardsSubmission`.
-     * @dev Not checking for `MAX_FUTURE_LENGTH` (Since Performance based reward submissions are retroactive)
+     * @notice Validate a OperatorDirectedRewardsSubmission. Called from `createOperatorDirectedAVSRewardsSubmission`.
+     * @dev Not checking for `MAX_FUTURE_LENGTH` (Since operator-directed reward submissions are strictly retroactive)
      * or `MAX_REWARDS_AMOUNT` (Since we no longer have the `1e38 - 1` limitation in the offchain rewards calculation)
-     * @param performanceRewardsSubmission PerformanceRewardsSubmission to validate.
+     * @param operatorDirectedRewardsSubmission OperatorDirectedRewardsSubmission to validate.
      * @return total amount to be transferred from the avs to the contract.
      */
-    function _validatePerformanceRewardsSubmission(
-        PerformanceRewardsSubmission calldata performanceRewardsSubmission
+    function _validateOperatorDirectedRewardsSubmission(
+        OperatorDirectedRewardsSubmission calldata operatorDirectedRewardsSubmission
     ) internal view returns (uint256) {
         require(
-            performanceRewardsSubmission.strategiesAndMultipliers.length > 0,
-            "RewardsCoordinator._validatePerformanceRewardsSubmission: no strategies set"
+            operatorDirectedRewardsSubmission.strategiesAndMultipliers.length > 0,
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: no strategies set"
         );
         require(
-            performanceRewardsSubmission.operatorRewards.length > 0,
-            "RewardsCoordinator._validatePerformanceRewardsSubmission: no operators rewarded"
+            operatorDirectedRewardsSubmission.operatorRewards.length > 0,
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: no operators rewarded"
         );
 
         uint256 totalAmount = 0;
         address currOperatorAddress = address(0);
-        for (uint256 i = 0; i < performanceRewardsSubmission.operatorRewards.length; ++i) {
-            OperatorReward calldata operatorReward = performanceRewardsSubmission.operatorRewards[i];
+        for (uint256 i = 0; i < operatorDirectedRewardsSubmission.operatorRewards.length; ++i) {
+            OperatorReward calldata operatorReward = operatorDirectedRewardsSubmission.operatorRewards[i];
             require(
                 operatorReward.operator != address(0),
-                "RewardsCoordinator._validatePerformanceRewardsSubmission: operator cannot be 0 address"
+                "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operator cannot be 0 address"
             );
             require(
                 currOperatorAddress < operatorReward.operator,
-                "RewardsCoordinator._validatePerformanceRewardsSubmission: operators must be in ascending order to handle duplicates"
+                "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operators must be in ascending order to handle duplicates"
             );
             currOperatorAddress = operatorReward.operator;
             require(
                 operatorReward.amount > 0,
-                "RewardsCoordinator._validatePerformanceRewardsSubmission: operator reward amount cannot be 0"
+                "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operator reward amount cannot be 0"
             );
             totalAmount += operatorReward.amount;
         }
 
         require(
-            performanceRewardsSubmission.duration <= MAX_REWARDS_DURATION,
-            "RewardsCoordinator._validatePerformanceRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
+            operatorDirectedRewardsSubmission.duration <= MAX_REWARDS_DURATION,
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
         );
         require(
-            performanceRewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator._validatePerformanceRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            operatorDirectedRewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            performanceRewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator._validatePerformanceRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            operatorDirectedRewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= performanceRewardsSubmission.startTimestamp &&
-                GENESIS_REWARDS_TIMESTAMP <= performanceRewardsSubmission.startTimestamp,
-            "RewardsCoordinator._validatePerformanceRewardsSubmission: startTimestamp too far in the past"
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= operatorDirectedRewardsSubmission.startTimestamp &&
+                GENESIS_REWARDS_TIMESTAMP <= operatorDirectedRewardsSubmission.startTimestamp,
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: startTimestamp too far in the past"
         );
         require(
-            performanceRewardsSubmission.startTimestamp + performanceRewardsSubmission.duration < block.timestamp,
-            "RewardsCoordinator._validatePerformanceRewardsSubmission: performance rewards submission is not retroactive"
+            operatorDirectedRewardsSubmission.startTimestamp + operatorDirectedRewardsSubmission.duration <
+                block.timestamp,
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operator-directed rewards submission is not retroactive"
         );
 
-        // Require performanceRewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
+        // Require operatorDirectedRewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
         address currAddress = address(0);
-        for (uint256 i = 0; i < performanceRewardsSubmission.strategiesAndMultipliers.length; ++i) {
-            IStrategy strategy = performanceRewardsSubmission.strategiesAndMultipliers[i].strategy;
+        for (uint256 i = 0; i < operatorDirectedRewardsSubmission.strategiesAndMultipliers.length; ++i) {
+            IStrategy strategy = operatorDirectedRewardsSubmission.strategiesAndMultipliers[i].strategy;
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
-                "RewardsCoordinator._validatePerformanceRewardsSubmission: invalid strategy considered"
+                "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: invalid strategy considered"
             );
             require(
                 currAddress < address(strategy),
-                "RewardsCoordinator._validatePerformanceRewardsSubmission: strategies must be in ascending order to handle duplicates"
+                "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: strategies must be in ascending order to handle duplicates"
             );
             currAddress = address(strategy);
         }
