@@ -522,29 +522,6 @@ contract User_AltMethods is User {
 
     constructor(string memory name) User(name) {}
 
-    function delegateTo(User operator) public createSnapshot override {
-        _logM("delegateTo_ALT", operator.NAME());
-
-        // Create empty data
-        ISignatureUtils.SignatureWithExpiry memory emptySig;
-        uint256 expiry = type(uint256).max;
-
-        // Get signature
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry;
-        stakerSignatureAndExpiry.expiry = expiry;
-        bytes32 digestHash = delegationManager.calculateCurrentStakerDelegationDigestHash(address(this), address(operator), expiry);
-        stakerSignatureAndExpiry.signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
-
-        // Mark hash as signed
-        signedHashes[digestHash] = true;
-
-        // Delegate
-        delegationManager.delegateToBySignature(address(this), address(operator), stakerSignatureAndExpiry, emptySig, bytes32(0));
-
-        // Mark hash as used
-        signedHashes[digestHash] = false;
-    }
-
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot override {
         _logM("depositIntoEigenlayer_ALT");
         
@@ -589,13 +566,4 @@ contract User_AltMethods is User {
             }
         }
     }
- 
-    bytes4 internal constant MAGIC_VALUE = 0x1626ba7e;
-    function isValidSignature(bytes32 hash, bytes memory) external view returns (bytes4) {
-        if(signedHashes[hash]){
-            return MAGIC_VALUE;
-        } else {
-            return 0xffffffff;
-        }
-    } 
 }

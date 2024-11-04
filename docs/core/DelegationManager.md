@@ -112,7 +112,6 @@ Allows an Operator to emit an `OperatorMetadataURIUpdated` event. No other state
 Stakers interact with the following functions to delegate their shares to an Operator:
 
 * [`DelegationManager.delegateTo`](#delegateto)
-* [`DelegationManager.delegateToBySignature`](#delegatetobysignature)
 
 #### `delegateTo`
 
@@ -137,30 +136,6 @@ Allows the caller (a Staker) to delegate their shares to an Operator. Delegation
 * The caller MUST NOT already be delegated to an Operator
 * The `operator` MUST already be an Operator
 * If the `operator` has a `delegationApprover`, the caller MUST provide a valid `approverSignatureAndExpiry` and `approverSalt`
-
-#### `delegateToBySignature`
-
-```solidity
-function delegateToBySignature(
-    address staker,
-    address operator,
-    SignatureWithExpiry memory stakerSignatureAndExpiry,
-    SignatureWithExpiry memory approverSignatureAndExpiry,
-    bytes32 approverSalt
-) 
-    external
-```
-
-Allows a Staker to delegate to an Operator by way of signature. This function can be called by three different parties:
-* If the Operator calls this method, they need to submit only the `stakerSignatureAndExpiry`
-* If the Operator's `delegationApprover` calls this method, they need to submit only the `stakerSignatureAndExpiry`
-* If the anyone else calls this method, they need to submit both the `stakerSignatureAndExpiry` AND `approverSignatureAndExpiry`
-
-*Effects*: See `delegateTo` above.
-
-*Requirements*: See `delegateTo` above. Additionally:
-* If caller is either the Operator's `delegationApprover` or the Operator, the `approverSignatureAndExpiry` and `approverSalt` can be empty
-* `stakerSignatureAndExpiry` MUST be a valid, unexpired signature over the correct hash and nonce
 
 ---
 

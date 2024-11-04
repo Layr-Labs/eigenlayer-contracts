@@ -138,41 +138,6 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function delegateToBySignature(
-        address staker,
-        address operator,
-        SignatureWithExpiry memory stakerSignatureAndExpiry,
-        SignatureWithExpiry memory approverSignatureAndExpiry,
-        bytes32 approverSalt
-    ) external {
-        require(!isDelegated(staker), ActivelyDelegated());
-        require(isOperator(operator), OperatorNotRegistered());
-
-        // calculate the digest hash, then increment `staker`'s nonce
-        uint256 currentStakerNonce = stakerNonce[staker];
-
-        // actually check that the signature is valid
-        _checkIsValidSignatureNow({
-            signer: staker,
-            signableDigest: calculateStakerDelegationDigestHash({
-                staker: staker,
-                nonce: currentStakerNonce,
-                operator: operator,
-                expiry: stakerSignatureAndExpiry.expiry
-            }),
-            signature: stakerSignatureAndExpiry.signature,
-            expiry: stakerSignatureAndExpiry.expiry
-        });
-
-        unchecked {
-            stakerNonce[staker] = currentStakerNonce + 1;
-        }
-
-        // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
-        _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
-    }
-
-    /// @inheritdoc IDelegationManager
     function undelegate(
         address staker
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
@@ -819,36 +784,6 @@ contract DelegationManager is
         Withdrawal memory withdrawal
     ) public pure returns (bytes32) {
         return keccak256(abi.encode(withdrawal));
-    }
-
-    /// @inheritdoc IDelegationManager
-    function calculateCurrentStakerDelegationDigestHash(
-        address staker,
-        address operator,
-        uint256 expiry
-    ) external view returns (bytes32) {
-        return calculateStakerDelegationDigestHash(staker, stakerNonce[staker], operator, expiry);
-    }
-
-    /// @inheritdoc IDelegationManager
-    function calculateStakerDelegationDigestHash(
-        address staker,
-        uint256 nonce,
-        address operator,
-        uint256 expiry
-    ) public view returns (bytes32) {
-        /// forgefmt: disable-next-item
-        return _calculateSignableDigest(
-            keccak256(
-                abi.encode(
-                    STAKER_DELEGATION_TYPEHASH, 
-                    staker, 
-                    operator, 
-                    nonce, 
-                    expiry
-                )
-            )
-        );
     }
 
     /// @inheritdoc IDelegationManager
