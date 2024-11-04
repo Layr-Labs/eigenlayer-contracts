@@ -31,8 +31,7 @@ contract AllocationManager is
      */
 
     /**
-     * @dev Initializes the immutable addresses of the strategy mananger, delegationManage,
-     * and eigenpodManager contracts
+     * @dev Initializes the DelegationManager address, the deallocation delay, and the allocation configuration delay.
      */
     constructor(
         IDelegationManager _delegation,

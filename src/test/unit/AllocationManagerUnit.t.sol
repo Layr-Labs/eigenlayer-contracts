@@ -2398,8 +2398,14 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         cheats.prank(operator);
         allocationManager.registerForOperatorSets(RegisterParams(defaultAVS, operatorSetIds, ""));
 
-        // TODO: Test state mutations, needs getters.
-        // assertEq(allocationManager.registrationStatus(operator, defaultOperatorSet), true, "registrationStatus");
+        require(allocationManager.getRegisteredSets(operator).length == numOpSets, "should be registered for all sets");
+
+        for (uint256 k; k < numOpSets; ++k) {
+            require(
+                allocationManager.getMembers(OperatorSet(defaultAVS, operatorSetIds[k]))[0] == operator,
+                "should be member of set"
+            );
+        }
     }
 }
 
@@ -2471,6 +2477,54 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
 
         cheats.prank(operator);
         allocationManager.deregisterFromOperatorSets(DeregisterParams(operator, defaultAVS, operatorSetIds));
+
+        require(allocationManager.getRegisteredSets(operator).length == 0, "should not be registered for any sets");
+
+        for (uint256 k; k < numOpSets; ++k) {
+            require(
+                allocationManager.getMemberCount(OperatorSet(defaultAVS, operatorSetIds[k])) == 0,
+                "should not be member of set"
+            );
+        }
+    }
+}
+
+contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationManagerUnitTests {
+    function test_addStrategiesToOperatorSet_InvalidOperatorSet() public {
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(InvalidOperatorSet.selector);
+        allocationManager.addStrategiesToOperatorSet(1, defaultStrategies);
+    }
+
+    function test_addStrategiesToOperatorSet_StrategyAlreadyInOperatorSet() public {
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(StrategyAlreadyInOperatorSet.selector);
+        allocationManager.addStrategiesToOperatorSet(defaultOperatorSet.id, defaultStrategies);
+    }
+
+    function testFuzz_addStrategiesToOperatorSet_Correctness(
+        Randomness r
+    ) public rand(r) {
+        uint256 numStrategies = r.Uint256(1, 32);
+
+        IStrategy[] memory strategies = new IStrategy[](numStrategies);
+
+        for (uint256 i; i < numStrategies; ++i) {
+            strategies[i] = IStrategy(r.Address());
+            cheats.expectEmit(true, false, false, false, address(allocationManager));
+            emit StrategyAddedToOperatorSet(defaultOperatorSet, strategies[i]);
+        }
+
+        cheats.prank(defaultAVS);
+        allocationManager.addStrategiesToOperatorSet(defaultOperatorSet.id, strategies);
+
+        for (uint256 j; j < numStrategies; ++j) {
+            require(
+                allocationManager.getStrategiesInOperatorSet(defaultOperatorSet)[j + 1]
+                    == strategies[j],
+                "should be strat of set"
+            );
+        }
     }
 }
 
