@@ -1163,7 +1163,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     /// @dev Looks up the staker's beacon chain scaling factor
     function _getBeaconChainScalingFactor(User staker) internal view returns (uint64) {
-        (,bool isBeaconChainScalingFactorSet, uint64 beaconChainScalingFactor)= delegationManager.stakerScalingFactor(address(staker), BEACONCHAIN_ETH_STRAT);
+        (, uint64 beaconChainScalingFactor, bool isBeaconChainScalingFactorSet)= delegationManager.stakerScalingFactor(address(staker), BEACONCHAIN_ETH_STRAT);
         return isBeaconChainScalingFactorSet ? beaconChainScalingFactor : WAD;
     }
 
