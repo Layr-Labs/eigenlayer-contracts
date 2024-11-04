@@ -11,6 +11,13 @@ contract Queue is MultisigBuilder {
     MultisigCall[] private _opsCalls;
 
     function _queue() internal returns (MultisigCall[] memory) {
+
+        // Example of a call to a contract - remove this
+        _executorCalls.append({
+            to: address(0),
+            data: abi.encodeWithSelector(bytes4(keccak256("test(uint256)")), uint256(0))
+        });
+
         //////////////////////////
         // construct executor data here
         //////////////////////////
