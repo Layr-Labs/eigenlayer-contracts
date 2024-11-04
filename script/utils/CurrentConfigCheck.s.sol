@@ -287,7 +287,7 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
 
         // check that community multisig has admin rights
         require(timelockController.hasRole(timelockController.TIMELOCK_ADMIN_ROLE(), communityMultisig),
-            "executorMultisig does not have TIMELOCK_ADMIN_ROLE on timelockController");
+            "communityMultisig does not have TIMELOCK_ADMIN_ROLE on timelockController");
 
         // check for self-administration
         require(timelockController.hasRole(timelockController.TIMELOCK_ADMIN_ROLE(), address(timelockController)),
