@@ -2334,6 +2334,14 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
     }
 
+    function testFuzz_regressionBeac() public {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = beaconChainETHStrategy;
+        uint128 shares = 19282;
+        bool delegateFromStakerToOperator = true;
+        testFuzz_decreaseOperatorShares_slashedOperator(strategies, 19282, true);
+    }
+
     /**
      * @notice Verifies that `DelegationManager.decreaseOperatorShares` properly decreases the delegated `shares` that the operator
      * who the `defaultStaker` is delegated to has in the strategies
