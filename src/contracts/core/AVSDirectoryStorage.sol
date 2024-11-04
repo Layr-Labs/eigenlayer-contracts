@@ -44,7 +44,9 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     // Construction
 
-    constructor(IDelegationManager _delegation) {
+    constructor(
+        IDelegationManager _delegation
+    ) {
         delegation = _delegation;
     }
 

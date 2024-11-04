@@ -546,7 +546,7 @@ contract AllocationManager is
         address operator,
         OperatorSet memory operatorSet,
         IStrategy strategy
-    ) external view returns (Allocation memory) {
+    ) public view returns (Allocation memory) {
         (, Allocation memory allocation) = _getUpdatedAllocation(operator, operatorSet.key(), strategy);
 
         return allocation;
@@ -561,9 +561,7 @@ contract AllocationManager is
         Allocation[] memory _allocations = new Allocation[](operators.length);
 
         for (uint256 i = 0; i < operators.length; i++) {
-            (, Allocation memory allocation) = _getUpdatedAllocation(operators[i], operatorSet.key(), strategy);
-
-            _allocations[i] = allocation;
+            _allocations[i] = getAllocation(operators[i], operatorSet, strategy);
         }
 
         return _allocations;
@@ -578,12 +576,12 @@ contract AllocationManager is
 
         OperatorSet[] memory operatorSets = new OperatorSet[](length);
         Allocation[] memory _allocations = new Allocation[](length);
+
         for (uint256 i = 0; i < length; i++) {
             OperatorSet memory operatorSet = OperatorSetLib.decode(allocatedSets[operator].at(i));
-            (, Allocation memory allocation) = _getUpdatedAllocation(operator, operatorSet.key(), strategy);
 
-            operatorSets[i] = OperatorSetLib.decode(allocatedSets[operator].at(i));
-            _allocations[i] = allocation;
+            operatorSets[i] = operatorSet;
+            _allocations[i] = getAllocation(operator, operatorSet, strategy);
         }
 
         return (operatorSets, _allocations);
