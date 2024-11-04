@@ -2571,6 +2571,55 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
     }
 }
 
+contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitTests {
+    using SingleItemArrayLib for *;
+
+    function test_createOperatorSets_InvalidOperatorSet() public {
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(InvalidOperatorSet.selector);
+        allocationManager.createOperatorSets(CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
+    }
+
+    function testFuzz_createOperatorSets_Correctness(
+        Randomness r
+    ) public rand(r) {
+        address avs = r.Address();
+        uint256 numOpSets = r.Uint256(1, 32);
+        uint256 numStrategies = r.Uint256(1, 32);
+
+        CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
+
+        for (uint256 i; i < numOpSets; ++i) {
+            createSetParams[i].operatorSetId = r.Uint32(1, type(uint32).max);
+            createSetParams[i].strategies = r.strategyArray(numStrategies);
+            cheats.expectEmit(true, false, false, false, address(allocationManager));
+            emit OperatorSetCreated(OperatorSet(avs, createSetParams[i].operatorSetId));
+            for (uint256 j; j < numStrategies; ++j) {
+                cheats.expectEmit(true, false, false, false, address(allocationManager));
+                emit StrategyAddedToOperatorSet(
+                    OperatorSet(avs, createSetParams[i].operatorSetId), createSetParams[i].strategies[j]
+                );
+            }
+        }
+
+        cheats.prank(avs);
+        allocationManager.createOperatorSets(createSetParams);
+
+        for (uint256 k; k < numOpSets; ++k) {
+            OperatorSet memory opSet = OperatorSet(avs, createSetParams[k].operatorSetId);
+            require(allocationManager.isOperatorSet(opSet), "should be operator set");
+            IStrategy[] memory strategiesInSet = allocationManager.getStrategiesInOperatorSet(opSet);
+            require(strategiesInSet.length == numStrategies, "strategiesInSet length should be numStrategies");
+            for (uint256 l; l < numStrategies; ++l) {
+                require(
+                    allocationManager.getStrategiesInOperatorSet(opSet)[l] == createSetParams[k].strategies[l],
+                    "should be strat of set"
+                );
+            }
+        }
+    }
+}
+
 /**
  * @notice TODO Lifecycle tests - These tests combine multiple functionalities of the AllocationManager
  * 1. Set allocation delay > 21 days (configuration), Allocate, modify allocation delay to < 21 days, try to allocate again once new delay is set (should be able to allocate faster than 21 deays)
