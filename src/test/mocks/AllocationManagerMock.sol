@@ -29,7 +29,7 @@ contract AllocationManagerMock is Test {
         uint64 maxMagnitude
     ) public {
         _maxMagnitudeHistory[operator][strategy].push({
-            key: uint32(block.timestamp),
+            key: uint32(block.number),
             value: maxMagnitude
         });
     }
@@ -47,15 +47,15 @@ contract AllocationManagerMock is Test {
         return maxMagnitudes;
     }
 
-    function getMaxMagnitudesAtTimestamp(
+    function getMaxMagnitudesAtBlock(
         address operator,
         IStrategy[] calldata strategies,
-        uint32 timestamp
+        uint32 blockNumber
     ) external view returns (uint64[] memory) {
         uint64[] memory maxMagnitudes = new uint64[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
-            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup(timestamp);
+            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup(blockNumber);
         }
 
         return maxMagnitudes;

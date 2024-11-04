@@ -475,8 +475,12 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         currentAmounts[0] = depositAmount - withdrawalAmount;
         strategyManagerMock.setDeposits(staker, strategies, currentAmounts);
 
-        IERC20[] memory tokens = new IERC20[](1);
-        tokens[0] = strategies[0].underlyingToken();
+        IERC20[] memory tokens = new IERC20[](strategies.length);
+
+        for (uint i = 0; i < tokens.length; i++) {
+            tokens[i] = strategies[i].underlyingToken();
+        }
+
         return (withdrawal, tokens, withdrawalRoot);
     }
 
