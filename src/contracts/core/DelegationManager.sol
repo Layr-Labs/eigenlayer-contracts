@@ -239,8 +239,6 @@ contract DelegationManager is
                 depositSharesToWithdraw: params[i].depositShares,
                 maxMagnitudes: maxMagnitudes
             });
-
-            pendingWithdrawals[withdrawalRoots[i]] = true;
         }
 
         return withdrawalRoots;
@@ -667,6 +665,8 @@ contract DelegationManager is
         });
 
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+
+        pendingWithdrawals[withdrawalRoot] = true;
 
         _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
 
