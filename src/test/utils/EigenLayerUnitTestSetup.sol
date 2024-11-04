@@ -17,6 +17,7 @@ import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
 
 import "src/test/utils/SingleItemArrayLib.sol";
+import "src/test/utils/Random.sol";
 
 abstract contract EigenLayerUnitTestSetup is Test {
     using SingleItemArrayLib for *;
@@ -42,6 +43,15 @@ abstract contract EigenLayerUnitTestSetup is Test {
     modifier filterFuzzedAddressInputs(address addr) {
         cheats.assume(!isExcludedFuzzAddress[addr]);
         _;
+    }
+
+    modifier rand(Randomness r) {
+        r.set();
+        _;
+    }
+
+    function random() internal returns (Randomness) {
+        return Randomness.wrap(Random.SEED).shuffle();
     }
 
     function setUp() public virtual {

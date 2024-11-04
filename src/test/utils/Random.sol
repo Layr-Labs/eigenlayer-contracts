@@ -39,11 +39,19 @@ library Random {
     }
 
     function Uint256(Randomness r, uint256 min, uint256 max) internal returns (uint256) {
-        return r.Uint256() % (max - min) + min;
+        return max <= min ? min : r.Uint256() % (max - min) + min;
     }
 
     function Uint256(Randomness r) internal returns (uint256) {
         return r.shuffle().unwrap();
+    }
+
+    function Uint64(Randomness r, uint64 min, uint64 max) internal returns (uint64) {
+        return uint64(Uint256(r, min, max));
+    }
+
+    function Uint64(Randomness r) internal returns (uint64) {
+        return uint64(Uint256(r));
     }
 
     function Uint32(Randomness r, uint32 min, uint32 max) internal returns (uint32) {
@@ -57,7 +65,7 @@ library Random {
     function Bytes32(Randomness r) internal returns (bytes32) {
         return bytes32(r.Uint256());
     }
-    
+
     function Address(Randomness r) internal returns (address) {
         return address(uint160(r.Uint256(1, type(uint160).max)));
     }
