@@ -2620,6 +2620,17 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
     }
 }
 
+contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTests {
+    function test_setAVSRegistrar_Correctness() public {
+        IAVSRegistrar avsRegistrar = IAVSRegistrar(random().Address());
+        cheats.expectEmit(true, false, false, false, address(allocationManager));
+        emit AVSRegistrarSet(defaultAVS, avsRegistrar);
+        cheats.prank(defaultAVS);
+        allocationManager.setAVSRegistrar(avsRegistrar);
+        assertEq(address(avsRegistrar), address(allocationManager.getAVSRegistrar(defaultAVS)), "should be set");
+    }
+}
+
 /**
  * @notice TODO Lifecycle tests - These tests combine multiple functionalities of the AllocationManager
  * 1. Set allocation delay > 21 days (configuration), Allocate, modify allocation delay to < 21 days, try to allocate again once new delay is set (should be able to allocate faster than 21 deays)
