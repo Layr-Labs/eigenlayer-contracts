@@ -2518,13 +2518,56 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
         cheats.prank(defaultAVS);
         allocationManager.addStrategiesToOperatorSet(defaultOperatorSet.id, strategies);
 
+        IStrategy[] memory strategiesInSet = allocationManager.getStrategiesInOperatorSet(defaultOperatorSet);
+
         for (uint256 j; j < numStrategies; ++j) {
-            require(
-                allocationManager.getStrategiesInOperatorSet(defaultOperatorSet)[j + 1]
-                    == strategies[j],
-                "should be strat of set"
-            );
+            require(strategiesInSet[j + 1] == strategies[j], "should be strat of set");
         }
+    }
+}
+
+contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is AllocationManagerUnitTests {
+    using SingleItemArrayLib for *;
+
+    function test_removeStrategiesFromOperatorSet_InvalidOperatorSet() public {
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(InvalidOperatorSet.selector);
+        allocationManager.removeStrategiesFromOperatorSet(1, defaultStrategies);
+    }
+
+    function test_removeStrategiesFromOperatorSet_StrategyNotInOperatorSet() public {
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(StrategyNotInOperatorSet.selector);
+        allocationManager.removeStrategiesFromOperatorSet(
+            defaultOperatorSet.id, IStrategy(random().Address()).toArray()
+        );
+    }
+
+    function testFuzz_removeStrategiesFromOperatorSet_Correctness(
+        Randomness r
+    ) public rand(r) {
+        uint256 numStrategies = r.Uint256(1, 32);
+        IStrategy[] memory strategies = r.strategyArray(numStrategies);
+
+        cheats.prank(defaultAVS);
+        allocationManager.addStrategiesToOperatorSet(defaultOperatorSet.id, strategies);
+
+        for (uint256 i; i < numStrategies; ++i) {
+            cheats.expectEmit(true, false, false, false, address(allocationManager));
+            emit StrategyRemovedFromOperatorSet(defaultOperatorSet, strategies[i]);
+        }
+
+        require(
+            allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length == numStrategies + 1, "sanity check"
+        );
+
+        cheats.prank(defaultAVS);
+        allocationManager.removeStrategiesFromOperatorSet(defaultOperatorSet.id, strategies);
+
+        // The orginal strategy should still be in the operator set.
+        require(
+            allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length == 1, "should not be strat of set"
+        );
     }
 }
 
