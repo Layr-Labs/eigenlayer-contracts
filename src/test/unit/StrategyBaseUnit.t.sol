@@ -51,7 +51,7 @@ contract StrategyBaseUnitTests is Test {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
         
-        strategyManager = IStrategyManager(address(new StrategyManagerMock()));
+        strategyManager = IStrategyManager(address(new StrategyManagerMock(IDelegationManager(address(0)))));
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);
 

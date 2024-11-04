@@ -20,8 +20,6 @@ import "src/test/mocks/EmptyContract.sol";
 contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, IAVSDirectoryErrors {
     uint256 internal constant MAX_PRIVATE_KEY = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140;
 
-    EmptyContract emptyContract;
-
     // Contract under test
     AVSDirectory avsDirectory;
     AVSDirectory avsDirectoryImplementation;
@@ -62,8 +60,6 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         // Deploy DelegationManager implmentation and proxy
         initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         initializeWithdrawalDelayBlocks = new uint256[](0);
-        
-        emptyContract = new EmptyContract();
 
         // Create empty proxys for AVSDirectory, DelegationManager, and AllocationManager.
         avsDirectory = AVSDirectory(

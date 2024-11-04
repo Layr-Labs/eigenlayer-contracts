@@ -52,8 +52,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
     // 604800 seconds in week / 12 = 50,400 blocks
     uint256 minWithdrawalDelayBlocks = 50400;
-    IStrategy[] public initializeStrategiesToSetDelayBlocks;
-    uint256[] public initializeWithdrawalDelayBlocks;
 
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
@@ -78,9 +76,14 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         // Setup
         EigenLayerUnitTestSetup.setUp();
 
-        // Deploy DelegationManager implmentation and proxy
-        initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
-        initializeWithdrawalDelayBlocks = new uint256[](0);
+        delegationManager = DelegationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+
+        // Redeploy StrategyManagerMock with DM
+        strategyManagerMock = StrategyManagerMock(payable(address(new StrategyManagerMock(delegationManager))));
+
+        // Deploy DelegationManager implmentation and upgrade proxy
         delegationManagerImplementation = new DelegationManager(
             IAVSDirectory(address(avsDirectoryMock)), 
             IStrategyManager(address(strategyManagerMock)), 
@@ -89,20 +92,14 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             pauserRegistry,
             MIN_WITHDRAWAL_DELAY_BLOCKS
         );
-        delegationManager = DelegationManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(delegationManagerImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        DelegationManager.initialize.selector,
-                        address(this),
-                        0, // 0 is initialPausedStatus
-                        minWithdrawalDelayBlocks,
-                        initializeStrategiesToSetDelayBlocks,
-                        initializeWithdrawalDelayBlocks
-                    )
-                )
+
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(delegationManager))),
+            address(delegationManagerImplementation),
+            abi.encodeWithSelector(
+                DelegationManager.initialize.selector,
+                address(this),
+                0 // 0 is initial paused status
             )
         );
 
@@ -121,6 +118,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
         // Exclude delegation manager from fuzzed tests
         isExcludedFuzzAddress[address(delegationManager)] = true;
+        isExcludedFuzzAddress[address(strategyManagerMock)] = true;
         isExcludedFuzzAddress[defaultApprover] = true;
     }
 
@@ -3145,6 +3143,8 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
 }
 
 contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
+    using SlashingLib for uint256;
+
     // @notice Verifies that undelegating is not possible when the "undelegation paused" switch is flipped
     function test_undelegate_revert_paused(address staker) public filterFuzzedAddressInputs(staker) {
         // set the pausing flag
@@ -3562,6 +3562,92 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         assertEq(stakerWithdrawableShares[0], 0, "staker withdrawable shares not calculated correctly");
         (uint256 newDepositScalingFactor,,) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
         assertEq(newDepositScalingFactor, WAD, "staker scaling factor not reset correctly");
+    }
+
+    /**
+     * @notice Given an operator with slashed magnitude, delegate, undelegate, and then delegate back to the same operator with
+     * completing withdrawals as shares. This should result in the operatorShares after the second delegation being <= the shares from the first delegation.
+     */
+    function testFuzz_undelegate_delegateAgainWithRounding(uint128 shares) public {
+        // set magnitude to 66% to ensure rounding when calculating `toShares`
+        uint64 operatorMagnitude = 333333333333333333;
+
+        // register *this contract* as an operator & set its slashed magnitude
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, operatorMagnitude);
+    
+        // Set the staker deposits in the strategies
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = strategyMock;
+        {
+            uint256[] memory sharesToSet = new uint256[](1);
+            sharesToSet[0] = shares;
+            strategyManagerMock.setDeposits(defaultStaker, strategies, sharesToSet);
+        }
+
+        // delegate from the `staker` to them
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+        (uint256 depositScalingFactor,,) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
+        assertEq(depositScalingFactor, uint256(WAD).divWad(uint256(operatorMagnitude)), "first deposit should result in k value of (1 / magnitude)");
+        uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);
+
+        // Format queued withdrawal
+        (
+            IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            IDelegationManagerTypes.Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            strategy: strategyMock,
+            depositSharesToWithdraw: shares
+        });
+
+        StakerScalingFactors memory ssf = StakerScalingFactors({
+            depositScalingFactor: depositScalingFactor,
+            isBeaconChainScalingFactorSet: false,
+            beaconChainScalingFactor: 0
+        });
+
+        uint256 operatorSharesDecreased = uint256(shares).toShares(ssf, operatorMagnitude);
+
+        // Undelegate the staker
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerUndelegated(defaultStaker, defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesDecreased(defaultOperator, defaultStaker, strategyMock, operatorSharesDecreased);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, queuedWithdrawalParams[0].depositShares);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit DepositScalingFactorUpdated(defaultStaker, strategyMock, WAD);
+        cheats.prank(defaultStaker);
+        delegationManager.undelegate(defaultStaker);
+
+        // Checks - delegation status
+        assertEq(
+            delegationManager.delegatedTo(defaultStaker),
+            address(0),
+            "undelegated staker should be delegated to zero address"
+        );
+        assertFalse(delegationManager.isDelegated(defaultStaker), "staker not undelegated");
+
+        // Checks - operator & staker shares
+        (uint256[] memory stakerWithdrawableShares, ) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
+        assertEq(stakerWithdrawableShares[0], 0, "staker withdrawable shares not calculated correctly");
+        (uint256 newDepositScalingFactor,,) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
+        assertEq(newDepositScalingFactor, WAD, "staker scaling factor not reset correctly");
+
+        // // Re-delegate the staker to the operator again. The shares should have increased but may be less than from before due to rounding
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+        // complete withdrawal as shares, should add back delegated shares to operator due to delegating again
+        IERC20[] memory tokens = new IERC20[](1);
+        tokens[0] = IERC20(strategies[0].underlyingToken());
+        cheats.roll(withdrawal.startBlock + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
+        cheats.prank(defaultStaker);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, false);
+
+        uint256 operatorSharesAfter = delegationManager.operatorShares(defaultOperator, strategyMock);
+        assertLe(operatorSharesAfter, operatorSharesBefore, "operator shares should be less than or equal to before due to potential rounding");
     }
 
     // TODO: fix old Withdrawals.t.sol test
