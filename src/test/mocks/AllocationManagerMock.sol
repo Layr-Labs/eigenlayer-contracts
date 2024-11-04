@@ -29,7 +29,7 @@ contract AllocationManagerMock is Test {
         uint64 maxMagnitude
     ) public {
         _maxMagnitudeHistory[operator][strategy].push({
-            key: uint32(block.timestamp),
+            key: uint32(block.number),
             value: maxMagnitude
         });
     }

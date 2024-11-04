@@ -3,12 +3,10 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
-import "../../contracts/interfaces/IEigenPodManager.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
 
 contract StrategyManagerMock is Test {
     IDelegationManager public delegation;
-    IEigenPodManager public eigenPodManager;
     address public strategyWhitelister;
 
     mapping(address => IStrategy[]) public strategiesToReturn;
@@ -21,6 +19,10 @@ contract StrategyManagerMock is Test {
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
+
+    constructor(IDelegationManager _delegation) {
+        delegation = _delegation;
+    }
 
     /**
      * @notice mocks the return value of getDeposits

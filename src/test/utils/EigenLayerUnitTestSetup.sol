@@ -15,6 +15,7 @@ import "src/test/mocks/AllocationManagerMock.sol";
 import "src/test/mocks/StrategyManagerMock.sol";
 import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
+import "src/test/mocks/EmptyContract.sol";
 
 abstract contract EigenLayerUnitTestSetup is Test {
     Vm cheats = Vm(VM_ADDRESS);
@@ -30,6 +31,8 @@ abstract contract EigenLayerUnitTestSetup is Test {
     StrategyManagerMock strategyManagerMock;
     DelegationManagerMock delegationManagerMock;
     EigenPodManagerMock eigenPodManagerMock;
+    EmptyContract emptyContract;
+
 
     mapping(address => bool) public isExcludedFuzzAddress;
 
@@ -48,9 +51,10 @@ abstract contract EigenLayerUnitTestSetup is Test {
 
         avsDirectoryMock = AVSDirectoryMock(payable(address(new AVSDirectoryMock())));
         allocationManagerMock = AllocationManagerMock(payable(address(new AllocationManagerMock())));
-        strategyManagerMock = StrategyManagerMock(payable(address(new StrategyManagerMock())));
+        strategyManagerMock = StrategyManagerMock(payable(address(new StrategyManagerMock(IDelegationManager(address(delegationManagerMock))))));
         delegationManagerMock = DelegationManagerMock(payable(address(new DelegationManagerMock())));
         eigenPodManagerMock = EigenPodManagerMock(payable(address(new EigenPodManagerMock(pauserRegistry))));
+        emptyContract = new EmptyContract();
 
         isExcludedFuzzAddress[address(0)] = true;
         isExcludedFuzzAddress[address(pauserRegistry)] = true;

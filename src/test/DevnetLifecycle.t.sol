@@ -237,11 +237,11 @@ contract Devnet_Lifecycle_Test is Test {
         // Generate queued withdrawal params
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = wethStrategy;
-        uint256[] memory withdrawableShares = delegationManager.getWithdrawableShares(staker, strategies);
+        (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(staker, strategies);
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawals = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
         queuedWithdrawals[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
-            shares: withdrawableShares,
+            depositShares: withdrawableShares,
             withdrawer: staker
         });
 
