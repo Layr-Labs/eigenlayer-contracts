@@ -51,12 +51,6 @@ function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {
     // - `strategyManager.depositIntoStrategyWithSignature`
     staker.depositIntoEigenlayer(strategies, tokenBalances);
     // assertions go here
-
-    // Because of the `userTypes` flags above, this user might be using either:
-    // - `delegation.delegateTo`
-    // - `delegation.delegateToBySignature`
-    staker.delegateTo(operator);
-    // assertions go here
 }
 ```
 

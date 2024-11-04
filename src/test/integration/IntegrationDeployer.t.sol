@@ -758,8 +758,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             if (userType == DEFAULT) {
                 user = new User(name);
             } else if (userType == ALT_METHODS) {
-                // User will use nonstandard methods like:
-                // `delegateToBySignature` and `depositIntoStrategyWithSignature`
+                // User will use nonstandard methods like `depositIntoStrategyWithSignature`
                 user = User(new User_AltMethods(name));
             } else {
                 revert("_randUser: unimplemented userType");
@@ -768,8 +767,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             if (userType == DEFAULT) {
                 user = User(new User_M1(name));
             } else if (userType == ALT_METHODS) {
-                // User will use nonstandard methods like:
-                // `delegateToBySignature` and `depositIntoStrategyWithSignature`
+                // User will use nonstandard methods like `depositIntoStrategyWithSignature`
                 user = User(new User_M1_AltMethods(name));
             } else {
                 revert("_randUser: unimplemented userType");
@@ -784,8 +782,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             if (userType == DEFAULT) {
                 user = new User(name);
             } else if (userType == ALT_METHODS) {
-                // User will use nonstandard methods like:
-                // `delegateToBySignature` and `depositIntoStrategyWithSignature`
+                // User will use nonstandard methods like `depositIntoStrategyWithSignature`
                 user = User(new User_AltMethods(name));
             } else {
                 revert("_randUser: unimplemented userType");

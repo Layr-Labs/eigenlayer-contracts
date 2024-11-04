@@ -18,10 +18,6 @@ import "../interfaces/IAllocationManager.sol";
 abstract contract DelegationManagerStorage is IDelegationManager {
     // Constants
 
-    /// @notice The EIP-712 typehash for the `StakerDelegation` struct used by the contract
-    bytes32 public constant STAKER_DELEGATION_TYPEHASH =
-        keccak256("StakerDelegation(address staker,address operator,uint256 nonce,uint256 expiry)");
-
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant DELEGATION_APPROVAL_TYPEHASH = keccak256(
         "DelegationApproval(address delegationApprover,address staker,address operator,bytes32 salt,uint256 expiry)"
@@ -79,8 +75,8 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice Returns the `operator` a `staker` is delgated to, address(0) if not delegated.
     mapping(address staker => address operator) public delegatedTo;
 
-    /// @notice Returns the number of EIP-712 signatures validated via `delegateToBySignature` for a given `staker`.
-    mapping(address staker => uint256 nonce) public stakerNonce;
+    /// @notice Do not remove, deprecated storage.
+    mapping(address staker => uint256 nonce) private __deprecated_stakerNonce;
 
     /// @notice Returns whether `delegationApprover` has already used the given `salt`.
     mapping(address delegationApprover => mapping(bytes32 salt => bool spent)) public delegationApproverSaltIsSpent;

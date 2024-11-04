@@ -83,21 +83,6 @@ interface IDelegationManagerTypes {
     }
 
     /**
-     * @notice Abstract struct used in calculating an EIP712 signature for a staker to approve that they (the staker themselves) delegate to a specific operator.
-     * @dev Used in computing the `STAKER_DELEGATION_TYPEHASH` and as a reference in the computation of the stakerDigestHash in the `delegateToBySignature` function.
-     */
-    struct StakerDelegation {
-        // the staker who is delegating
-        address staker;
-        // the operator being delegated to
-        address operator;
-        // the staker's nonce
-        uint256 nonce;
-        // the expiration timestamp (UTC) of the signature
-        uint256 expiry;
-    }
-
-    /**
      * @notice Abstract struct used in calculating an EIP712 signature for an operator's delegationApprover to approve that a specific staker delegate to the operator.
      * @dev Used in computing the `DELEGATION_APPROVAL_TYPEHASH` and as a reference in the computation of the approverDigestHash in the `_delegate` function.
      */
@@ -269,33 +254,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
-     * @notice Caller delegates a staker's stake to an operator with valid signatures from both parties.
-     * @param staker The account delegating stake to an `operator` account
-     * @param operator The account (`staker`) is delegating its assets to for use in serving applications built on EigenLayer.
-     * @param stakerSignatureAndExpiry Signed data from the staker authorizing delegating stake to an operator
-     * @param approverSignatureAndExpiry is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
-     * @param approverSalt Is a salt used to help guarantee signature uniqueness. Each salt can only be used once by a given approver.
-     *
-     * @dev If `staker` is an EOA, then `stakerSignature` is verified to be a valid ECDSA stakerSignature from `staker`, indicating their intention for this action.
-     * @dev If `staker` is a contract, then `stakerSignature` will be checked according to EIP-1271.
-     * @dev the operator's `delegationApprover` address is set to a non-zero value.
-     * @dev neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
-     * is the `msg.sender`, then approval is assumed.
-     * @dev This function will revert if the current `block.timestamp` is equal to or exceeds the expiry
-     * @dev In the case that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
-     * in this case to save on complexity + gas costs
-     * @dev If the staker delegating has shares in a strategy that the operator was slashed 100% for (the operator's maxMagnitude = 0),
-     * then delegation is blocked and will revert.
-     */
-    function delegateToBySignature(
-        address staker,
-        address operator,
-        SignatureWithExpiry memory stakerSignatureAndExpiry,
-        SignatureWithExpiry memory approverSignatureAndExpiry,
-        bytes32 approverSalt
-    ) external;
-
-    /**
      * @notice Undelegates the staker from the operator who they are delegated to.
      * Queues withdrawals of all of the staker's withdrawable shares in the StrategyManager (to the staker) and/or EigenPodManager, if necessary.
      * @param staker The account to be undelegated.
@@ -455,14 +413,9 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         address staker
     ) external view returns (address);
 
-    /// @notice Mapping: staker => number of signed delegation nonces (used in `delegateToBySignature`) from the staker that the contract has already checked
-    function stakerNonce(
-        address staker
-    ) external view returns (uint256);
-
     /**
      * @notice Mapping: delegationApprover => 32-byte salt => whether or not the salt has already been used by the delegationApprover.
-     * @dev Salts are used in the `delegateTo` and `delegateToBySignature` functions. Note that these functions only process the delegationApprover's
+     * @dev Salts are used in the `delegateTo` function. Note that this function only processes the delegationApprover's
      * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
      */
     function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
@@ -558,33 +511,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external pure returns (bytes32);
 
     /**
-     * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
-     * @param staker The signing staker
-     * @param operator The operator who is being delegated to
-     * @param expiry The desired expiry time of the staker's signature
-     */
-    function calculateCurrentStakerDelegationDigestHash(
-        address staker,
-        address operator,
-        uint256 expiry
-    ) external view returns (bytes32);
-
-    /**
-     * @notice Calculates the digest hash to be signed and used in the `delegateToBySignature` function
-     * @param staker The signing staker
-     * @param _stakerNonce The nonce of the staker. In practice we use the staker's current nonce, stored at `stakerNonce[staker]`
-     * @param operator The operator who is being delegated to
-     * @param expiry The desired expiry time of the staker's signature
-     */
-    function calculateStakerDelegationDigestHash(
-        address staker,
-        uint256 _stakerNonce,
-        address operator,
-        uint256 expiry
-    ) external view returns (bytes32);
-
-    /**
-     * @notice Calculates the digest hash to be signed by the operator's delegationApprove and used in the `delegateTo` and `delegateToBySignature` functions.
+     * @notice Calculates the digest hash to be signed by the operator's delegationApprove and used in the `delegateTo` function.
      * @param staker The account delegating their stake
      * @param operator The account receiving delegated stake
      * @param _delegationApprover the operator's `delegationApprover` who will be signing the delegationHash (in general)
@@ -601,9 +528,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
 
     /// @notice return address of the beaconChainETHStrategy
     function beaconChainETHStrategy() external view returns (IStrategy);
-
-    /// @notice The EIP-712 typehash for the StakerDelegation struct used by the contract
-    function STAKER_DELEGATION_TYPEHASH() external view returns (bytes32);
 
     /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32);
