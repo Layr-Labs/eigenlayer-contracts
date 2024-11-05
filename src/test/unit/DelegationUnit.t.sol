@@ -2428,8 +2428,6 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
         for (uint256 i = 0; i < strategies.length; ++i) {
             uint256 delegatedSharesAfter = delegationManager.operatorShares(delegatedTo, strategies[i]);
-            console.log("withdrawable shares: ", withdrawableShares[i]);
-            console.log("delegated shares after: ", delegatedSharesAfter);
 
             if (delegateFromStakerToOperator) {
                 assertEq(
