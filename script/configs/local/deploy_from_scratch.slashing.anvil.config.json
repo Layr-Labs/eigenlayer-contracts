@@ -39,6 +39,7 @@
     "init_paused_status": 0
   },
   "delegation": {
+    "withdrawal_delay_blocks": 5,
     "init_paused_status": 0,
     "init_withdrawal_delay_blocks": 1
   },

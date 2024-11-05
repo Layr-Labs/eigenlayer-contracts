@@ -67,7 +67,7 @@ contract completeWithdrawFromStrategy is Script, Test {
         });
         
         // Get TM for Operator in strategies
-        uint64[] memory maxMagnitudes = am.getMaxMagnitudes(msg.sender, strategies);
+        uint64[] memory maxMagnitudes = am.getMaxMagnitudesAtBlock(msg.sender, strategies, startBlock);
         // Get scaled shares for the given amount
         uint256[] memory scaledShares = new uint256[](1);
         scaledShares[0] = SlashingLib.scaleSharesForQueuedWithdrawal(amount, ssf, maxMagnitudes[0]);

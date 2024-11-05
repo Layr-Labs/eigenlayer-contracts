@@ -90,8 +90,14 @@ forge script ../tasks/withdraw_from_strategy.s.sol \
 # Capture block number after initiating withdrawal
 WITHDRAWAL_START_BLOCK_NUMBER=$(cast block-number --rpc-url $RPC_URL)
 
-# Advance the blockchain by 6 blocks to meet `MIN_WITHDRAWAL_DELAY_BLOCKS`
-cast rpc anvil_mine 6 --rpc-url $RPC_URL
+# Advance the blockchain by 5 blocks to meet `MIN_WITHDRAWAL_DELAY_BLOCKS`
+cast rpc anvil_mine 5 --rpc-url $RPC_URL
+
+# Slash the OperatorSet (50%)
+forge script ../tasks/slash_operatorSet.s.sol \
+    --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
+    --sig "run(string memory configFile,address operator,uint32 operatorSetId,uint256 wadToSlash)" \
+    -- local/slashing_output.json $SENDER 00000001 0500000000000000000
 
 # Complete the withdrawal process
 forge script ../tasks/complete_withdrawal_from_strategy.s.sol \
