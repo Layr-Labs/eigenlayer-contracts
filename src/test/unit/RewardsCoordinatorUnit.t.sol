@@ -1517,6 +1517,45 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
     //     );
     // }
 
+    // Revert when avs is not msg.sender
+    function testFuzz_Revert_WhenAVSIsNotMsgSender(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0) && avs != address(this));
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
+        cheats.expectRevert("RewardsCoordinator.createOperatorDirectedAVSRewardsSubmission: caller is not the AVS");
+        rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
+    }
+
     // Revert with 0 length strats and multipliers
     function testFuzz_Revert_WhenEmptyStratsAndMultipliers(
         address avs,
