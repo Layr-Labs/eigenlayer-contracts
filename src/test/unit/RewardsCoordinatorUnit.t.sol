@@ -40,7 +40,6 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     StrategyBase strategyImplementation;
     uint256 mockTokenInitialSupply = 1e38 - 1;
     IRewardsCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
-    IRewardsCoordinator.OperatorReward[] defaultOperatorRewards;
 
     // Config Variables
     /// @notice intervals(epochs) are 1 weeks
@@ -184,16 +183,6 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
             IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
         );
 
-        address[] memory operators = new address[](3);
-        operators[0] = makeAddr("operator1");
-        operators[1] = makeAddr("operator2");
-        operators[2] = makeAddr("operator3");
-        operators = _sortAddressArrayAsc(operators);
-
-        defaultOperatorRewards.push(IRewardsCoordinator.OperatorReward(operators[0], 1e18));
-        defaultOperatorRewards.push(IRewardsCoordinator.OperatorReward(operators[1], 2e18));
-        defaultOperatorRewards.push(IRewardsCoordinator.OperatorReward(operators[2], 3e18));
-
         rewardsCoordinator.setRewardsForAllSubmitter(rewardsForAllSubmitter, true);
         rewardsCoordinator.setRewardsUpdater(rewardsUpdater);
 
@@ -303,21 +292,6 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
             for (uint256 j = i + 1; j < l; j++) {
                 if (address(arr[i]) > address(arr[j])) {
                     IStrategy temp = arr[i];
-                    arr[i] = arr[j];
-                    arr[j] = temp;
-                }
-            }
-        }
-        return arr;
-    }
-
-    /// @dev Sort to ensure that the array is in ascending order for strategies
-    function _sortAddressArrayAsc(address[] memory arr) internal pure returns (address[] memory) {
-        uint256 l = arr.length;
-        for (uint256 i = 0; i < l; i++) {
-            for (uint256 j = i + 1; j < l; j++) {
-                if (arr[i] > arr[j]) {
-                    address temp = arr[i];
                     arr[i] = arr[j];
                     arr[j] = temp;
                 }
@@ -1450,13 +1424,41 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
 }
 
 contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission is RewardsCoordinatorUnitTests {
+    IRewardsCoordinator.OperatorReward[] defaultOperatorRewards;
+
     function setUp() public virtual override {
         RewardsCoordinatorUnitTests.setUp();
+
+        address[] memory operators = new address[](3);
+        operators[0] = makeAddr("operator1");
+        operators[1] = makeAddr("operator2");
+        operators[2] = makeAddr("operator3");
+        operators = _sortAddressArrayAsc(operators);
+
+        defaultOperatorRewards.push(IRewardsCoordinator.OperatorReward(operators[0], 1e18));
+        defaultOperatorRewards.push(IRewardsCoordinator.OperatorReward(operators[1], 2e18));
+        defaultOperatorRewards.push(IRewardsCoordinator.OperatorReward(operators[2], 3e18));
+
         // Set the timestamp to when Rewards v2 will realisticly go out (i.e 6 months)
         cheats.warp(GENESIS_REWARDS_TIMESTAMP + 168 days);
     }
 
-    function _totalRewardsAmount(
+    /// @dev Sort to ensure that the array is in ascending order for addresses
+    function _sortAddressArrayAsc(address[] memory arr) internal pure returns (address[] memory) {
+        uint256 l = arr.length;
+        for (uint256 i = 0; i < l; i++) {
+            for (uint256 j = i + 1; j < l; j++) {
+                if (arr[i] > arr[j]) {
+                    address temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+        }
+        return arr;
+    }
+
+    function _getTotalRewardsAmount(
         IRewardsCoordinator.OperatorReward[] memory operatorRewards
     ) internal pure returns (uint256) {
         uint256 totalAmount = 0;
