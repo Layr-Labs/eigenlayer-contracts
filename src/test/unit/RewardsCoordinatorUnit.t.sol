@@ -1535,7 +1535,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
-            block.timestamp - duration
+            block.timestamp - duration - 1
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
@@ -1574,7 +1574,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
-            block.timestamp - duration
+            block.timestamp - duration - 1
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
@@ -1615,7 +1615,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
-            block.timestamp - duration
+            block.timestamp - duration - 1
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
@@ -1635,6 +1635,52 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert("RewardsCoordinator._validateOperatorDirectedRewardsSubmission: no operators rewarded");
+        rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when duplicate strategies
+    function testFuzz_Revert_WhenDuplicateStrategies(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory dupStratsAndMultipliers = new IRewardsCoordinator.StrategyAndMultiplier[](2);
+        dupStratsAndMultipliers[0] = defaultStrategyAndMultipliers[0];
+        dupStratsAndMultipliers[1] = defaultStrategyAndMultipliers[0];
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: dupStratsAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: strategies must be in ascending order to handle duplicates"
+        );
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 }
