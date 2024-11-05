@@ -38,9 +38,9 @@ contract AllocationManager is
         IPauserRegistry _pauserRegistry,
         uint32 _DEALLOCATION_DELAY,
         uint32 _ALLOCATION_CONFIGURATION_DELAY
-    ) 
+    )
         AllocationManagerStorage(_delegation, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY)
-        Pausable(_pauserRegistry) 
+        Pausable(_pauserRegistry)
     {
         _disableInitializers();
     }
@@ -88,7 +88,7 @@ contract AllocationManager is
             uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(params.wadToSlash));
             uint256 sharesWadSlashed = uint256(slashedMagnitude).divWad(info.maxMagnitude);
             wadSlashed[i] = sharesWadSlashed;
- 
+
             allocation.currentMagnitude -= slashedMagnitude;
             info.maxMagnitude -= slashedMagnitude;
             info.encumberedMagnitude -= slashedMagnitude;
@@ -284,7 +284,7 @@ contract AllocationManager is
         _avsRegistrar[msg.sender] = registrar;
         emit AVSRegistrarSet(msg.sender, getAVSRegistrar(msg.sender));
     }
-    
+
     /// @inheritdoc IAllocationManager
     function updateAVSMetadataURI(
         string calldata metadataURI
