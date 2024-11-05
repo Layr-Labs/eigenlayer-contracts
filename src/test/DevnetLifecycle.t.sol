@@ -188,7 +188,7 @@ contract Devnet_Lifecycle_Test is Test {
         assertEq(info.pendingDiff, int128(uint128(magnitudeToSet)));
         assertEq(info.effectBlock, block.number + 1);
 
-        // Warp to effect timestamp
+        // Warp to effect block
         cheats.roll(block.number + 1);
 
         // Check allocation
