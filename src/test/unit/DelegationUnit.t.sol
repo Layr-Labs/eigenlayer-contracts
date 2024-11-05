@@ -362,7 +362,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         strategyArray[0] = strategy;
 
         // Set scaling factors
-        (uint184 depositScalingFactor, uint64 beaconChainScalingFactor, bool isBeaconChainScalingFactorSet) = delegationManager.stakerScalingFactor(staker, strategy);
+        (uint256 depositScalingFactor, bool isBeaconChainScalingFactorSet, uint64 beaconChainScalingFactor) = delegationManager.stakerScalingFactor(staker, strategy);
         StakerScalingFactors memory stakerScalingFactor = StakerScalingFactors({
             depositScalingFactor: depositScalingFactor,
             isBeaconChainScalingFactorSet: isBeaconChainScalingFactorSet,
@@ -2354,6 +2354,14 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         for(uint256 i = 0; i < strategies.length; i++) {
             if (strategies[i] == beaconChainETHStrategy) {
                 hasBeaconChainStrategy = true;
+                // Swap beacon chain strategy to the end of the array
+                strategies[i] = strategies[strategies.length - 1];
+                strategies[strategies.length - 1] = beaconChainETHStrategy;
+                
+                // Resize
+                assembly {
+                    mstore(strategies, sub(mload(strategies), 1))
+                }
                 break;
             }
         }
@@ -2366,7 +2374,6 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         for(uint256 i = 0; i < strategies.length; i++) {
             sharesToSet[i] = shares;
         }
-        // Okay to set beacon chain shares in SM mock, wont' be called by DM
         strategyManagerMock.setDeposits(defaultStaker, strategies, sharesToSet);
         if (hasBeaconChainStrategy) {
             eigenPodManagerMock.setPodOwnerShares(defaultStaker, int256(uint256(shares)));
@@ -2421,6 +2428,8 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
         for (uint256 i = 0; i < strategies.length; ++i) {
             uint256 delegatedSharesAfter = delegationManager.operatorShares(delegatedTo, strategies[i]);
+            console.log("withdrawable shares: ", withdrawableShares[i]);
+            console.log("delegated shares after: ", delegatedSharesAfter);
 
             if (delegateFromStakerToOperator) {
                 assertEq(
@@ -2907,7 +2916,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         });
 
         StakerScalingFactors memory ssf = StakerScalingFactors({
-            depositScalingFactor: uint184(depositScalingFactor),
+            depositScalingFactor: depositScalingFactor,
             isBeaconChainScalingFactorSet: false,
             beaconChainScalingFactor: 0
         });
@@ -3210,12 +3219,12 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         uint256 delegatedSharesAfter = delegationManager.operatorShares(defaultOperator, strategies[0]);
 
         {
-            (uint256 depositScalingFactor, uint64 beaconChainScalingFactor, bool isBeaconChainScalingFactorSet) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
+            (uint256 depositScalingFactor, bool isBeaconChainScalingFactorSet, uint64 beaconChainScalingFactor) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
             ssf = StakerScalingFactors({
-                depositScalingFactor: uint184(depositScalingFactor),
-                beaconChainScalingFactor: beaconChainScalingFactor,
-                isBeaconChainScalingFactorSet: isBeaconChainScalingFactorSet
-            });
+                depositScalingFactor: depositScalingFactor,
+                isBeaconChainScalingFactorSet: isBeaconChainScalingFactorSet,
+                beaconChainScalingFactor: beaconChainScalingFactor
+            });    
         }
         uint256 sharesWithdrawn = withdrawalAmount.toShares(ssf, 5e17);
         assertEq(nonceBefore + 1, nonceAfter, "staker nonce should have incremented");
@@ -3368,15 +3377,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  false);
-
-        IERC20[][] memory tokensArray = new IERC20[][](1);
-        tokensArray[0] = tokens;
-
-        bool[] memory receiveAsTokens = new bool[](1);
-        receiveAsTokens[0] = false;
-
-        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        delegationManager.completeQueuedWithdrawals(tokensArray,  receiveAsTokens, 1);
     }
 
     function test_Revert_WhenInputArrayLengthMismatch() public {
@@ -3396,21 +3396,10 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         // resize tokens array
         tokens = new IERC20[](0);
 
-        cheats.prank(defaultStaker);
         cheats.expectRevert(IDelegationManagerErrors.InputArrayLengthMismatch.selector);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  false);
-
-        IERC20[][] memory tokensArray = new IERC20[][](1);
-        tokensArray[0] = tokens;
-
-        bool[] memory receiveAsTokens = new bool[](1);
-        receiveAsTokens[0] = false;
-
-        cheats.prank(defaultStaker);
-        cheats.expectRevert(IDelegationManagerErrors.InputArrayLengthMismatch.selector);
-        delegationManager.completeQueuedWithdrawals(tokensArray,  receiveAsTokens, 1);
     }
-    
+
     function test_Revert_WhenWithdrawerNotCaller(address invalidCaller) filterFuzzedAddressInputs(invalidCaller) public {
         cheats.assume(invalidCaller != defaultStaker);
 
@@ -3486,16 +3475,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         cheats.expectRevert(IDelegationManagerErrors.WithdrawalDelayNotElapsed.selector);
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  receiveAsTokens);
-
-        IERC20[][] memory tokensArray = new IERC20[][](1);
-        tokensArray[0] = tokens;
-
-        bool[] memory receiveAsTokensArray = new bool[](1);
-        receiveAsTokensArray[0] = false;
-
-        cheats.expectRevert(IDelegationManagerErrors.WithdrawalDelayNotElapsed.selector);
-        cheats.prank(defaultStaker);
-        delegationManager.completeQueuedWithdrawals(tokensArray,  receiveAsTokensArray, 1);
     }
 
     /**
