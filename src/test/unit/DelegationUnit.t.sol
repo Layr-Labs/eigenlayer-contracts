@@ -2334,7 +2334,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
     }
 
-    /**
+ /**
      * @notice Verifies that `DelegationManager.decreaseOperatorShares` properly decreases the delegated `shares` that the operator
      * who the `defaultStaker` is delegated to has in the strategies
      * @dev Checks that there is no change if the staker is not delegated
@@ -2354,6 +2354,14 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         for(uint256 i = 0; i < strategies.length; i++) {
             if (strategies[i] == beaconChainETHStrategy) {
                 hasBeaconChainStrategy = true;
+                // Swap beacon chain strategy to the end of the array
+                strategies[i] = strategies[strategies.length - 1];
+                strategies[strategies.length - 1] = beaconChainETHStrategy;
+                
+                // Resize
+                assembly {
+                    mstore(strategies, sub(mload(strategies), 1))
+                }
                 break;
             }
         }
@@ -2366,7 +2374,6 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         for(uint256 i = 0; i < strategies.length; i++) {
             sharesToSet[i] = shares;
         }
-        // Okay to set beacon chain shares in SM mock, wont' be called by DM
         strategyManagerMock.setDeposits(defaultStaker, strategies, sharesToSet);
         if (hasBeaconChainStrategy) {
             eigenPodManagerMock.setPodOwnerShares(defaultStaker, int256(uint256(shares)));
