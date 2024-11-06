@@ -501,7 +501,6 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         warpTime = uint32(
             bound(warpTime, uint32(block.timestamp) + activationDelay, type(uint32).max - activationDelay)
         );
-        uint16 oldSplit = rewardsCoordinator.getOperatorAVSSplit(operator, avs);
 
         // Setting First Split
         cheats.prank(operator);
@@ -642,7 +641,6 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         warpTime = uint32(
             bound(warpTime, uint32(block.timestamp) + activationDelay, type(uint32).max - activationDelay)
         );
-        uint16 oldSplit = rewardsCoordinator.getOperatorPISplit(operator);
 
         // Setting First Split
         cheats.prank(operator);
@@ -1762,41 +1760,51 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         );
     }
 
-    // // Revert from reentrancy
-    // function test_Revert_WhenReentrancy() public {
-    //     uint256 totalAmount = _totalRewardsAmount(defaultOperatorRewards);
-    //     Reenterer reenterer = new Reenterer();
+    // Revert from reentrancy
+    function testFuzz_Revert_WhenReentrancy(uint256 startTimestamp, uint256 duration) public {
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-    //     // reenterer.prepareReturnData(abi.encode(totalAmount));
+        // 2. Deploy Reenterer
+        Reenterer reenterer = new Reenterer();
 
-    //     address targetToUse = address(rewardsCoordinator);
-    //     uint256 msgValueToUse = 0;
+        // 2. Create operator directed rewards submission input param
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: IERC20(address(reenterer)),
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
 
-    //     _deployMockRewardTokens(address(this), 1);
+        address targetToUse = address(rewardsCoordinator);
+        uint256 msgValueToUse = 0;
+        bytes memory calldataToUse = abi.encodeWithSelector(
+            RewardsCoordinator.createOperatorDirectedAVSRewardsSubmission.selector,
+            address(reenterer),
+            operatorDirectedRewardsSubmissions
+        );
+        reenterer.prepare(targetToUse, msgValueToUse, calldataToUse);
 
-    //     IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-    //         memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-    //     operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
-    //         strategiesAndMultipliers: defaultStrategyAndMultipliers,
-    //         token: IERC20(address(reenterer)),
-    //         operatorRewards: defaultOperatorRewards,
-    //         startTimestamp: uint32(block.timestamp) - (uint32(block.timestamp) % CALCULATION_INTERVAL_SECONDS),
-    //         duration: 0,
-    //         description: ""
-    //     });
-
-    //     bytes memory calldataToUse = abi.encodeWithSelector(
-    //         RewardsCoordinator.createOperatorDirectedAVSRewardsSubmission.selector,
-    //         operatorDirectedRewardsSubmissions
-    //     );
-    //     reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
-
-    //     cheats.expectRevert();
-    //     rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(
-    //         address(this),
-    //         operatorDirectedRewardsSubmissions
-    //     );
-    // }
+        cheats.prank(address(reenterer));
+        cheats.expectRevert("ReentrancyGuard: reentrant call");
+        rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(
+            address(reenterer),
+            operatorDirectedRewardsSubmissions
+        );
+    }
 
     // Revert when avs is not msg.sender
     function testFuzz_Revert_WhenAVSIsNotMsgSender(
