@@ -300,7 +300,7 @@ contract AllocationManager is
             OperatorSet memory operatorSet = OperatorSet(msg.sender, params[i].operatorSetId);
 
             // Create the operator set, ensuring it does not already exist
-            require(_operatorSets[msg.sender].add(operatorSet.id) == true, InvalidOperatorSet());
+            require(_operatorSets[msg.sender].add(operatorSet.id), InvalidOperatorSet());
             emit OperatorSetCreated(OperatorSet(msg.sender, operatorSet.id));
 
             // Add strategies to the operator set

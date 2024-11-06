@@ -2256,8 +2256,8 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     function test_fuzz_setDelay_multipleTimesWithinConfigurationDelay(
         Randomness r
     ) public rand(r) {
-        uint32 firstDelay = uint32(r.Uint256(1, type(uint32).max));
-        uint32 secondDelay = uint32(r.Uint256(1, type(uint32).max));
+        uint32 firstDelay = uint32(r.Uint256(0, type(uint32).max));
+        uint32 secondDelay = uint32(r.Uint256(0, type(uint32).max));
         cheats.assume(firstDelay != secondDelay);
 
         // Set delay
