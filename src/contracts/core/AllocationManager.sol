@@ -624,6 +624,11 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
+    function getMaxMagnitude(address operator, IStrategy strategy) public view returns (uint64) {
+        return _maxMagnitudeHistory[operator][strategy].latest();
+    }
+
+    /// @inheritdoc IAllocationManager
     function getMaxMagnitudes(
         address operator,
         IStrategy[] memory strategies
@@ -631,7 +636,7 @@ contract AllocationManager is
         uint64[] memory maxMagnitudes = new uint64[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
-            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].latest();
+            maxMagnitudes[i] = getMaxMagnitude(operator, strategies[i]);
         }
 
         return maxMagnitudes;
@@ -642,7 +647,7 @@ contract AllocationManager is
         uint64[] memory maxMagnitudes = new uint64[](operators.length);
 
         for (uint256 i = 0; i < operators.length; ++i) {
-            maxMagnitudes[i] = _maxMagnitudeHistory[operators[i]][strategy].latest();
+            maxMagnitudes[i] = getMaxMagnitude(operators[i], strategy);
         }
 
         return maxMagnitudes;

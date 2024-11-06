@@ -1157,14 +1157,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     /// @dev Uses timewarp modifier to get staker beacon chain scaling factor at the last snapshot
-    function _getPrevBeaconChainScalingFactor(User staker) internal timewarp() returns (uint64) {
-        return _getBeaconChainScalingFactor(staker);
+    function _getPrevBeaconChainSlashingFactor(User staker) internal timewarp() returns (uint64) {
+        return _getBeaconChainSlashingFactor(staker);
     }
 
     /// @dev Looks up the staker's beacon chain scaling factor
-    function _getBeaconChainScalingFactor(User staker) internal view returns (uint64) {
-        (, uint64 beaconChainScalingFactor, bool isBeaconChainScalingFactorSet)= delegationManager.stakerScalingFactor(address(staker), BEACONCHAIN_ETH_STRAT);
-        return isBeaconChainScalingFactorSet ? beaconChainScalingFactor : WAD;
+    function _getBeaconChainSlashingFactor(User staker) internal view returns (uint64) {
+        return delegationManager.getBeaconChainSlashingFactor(address(staker));
     }
 
     function _getPrevCumulativeWithdrawals(User staker) internal timewarp() returns (uint) {

@@ -133,6 +133,11 @@ interface IDelegationManagerTypes {
         // The address of the withdrawer
         address withdrawer;
     }
+
+    struct BeaconChainSlashingFactor {
+        bool isSet;
+        uint64 slashingFactor;
+    }
 }
 
 interface IDelegationManagerEvents is IDelegationManagerTypes {
@@ -492,6 +497,18 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     function getDepositedShares(
         address staker
     ) external view returns (IStrategy[] memory, uint256[] memory);
+
+    /**
+     * @notice Returns the scaling factor applied to a staker's deposits for a given strategy
+     */
+    function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256);
+
+    /**
+     * @notice Returns the slashing factor applied to the staker's beacon chain ETH shares
+     */
+    function getBeaconChainSlashingFactor(
+        address staker
+    ) external view returns (uint64);
 
     /**
      * @notice Returns the minimum withdrawal delay in blocks to pass for withdrawals queued to be completable.

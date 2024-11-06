@@ -12,6 +12,8 @@ import "forge-std/Test.sol";
 // RUST_LOG=forge,foundry=trace forge script script/tasks/complete_withdrawal_from_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,,address strategy,address token,uint256 amount)" -- <DEPLOYMENT_OUTPUT_JSON> <STRATEGY_ADDRESS> <TOKEN_ADDRESS> <AMOUNT> <NONCE> <START_BLOCK_NUMBER>
 // RUST_LOG=forge,foundry=trace forge script script/tasks/complete_withdrawal_from_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,,address strategy,address token,uint256 amount,uint256 nonce,uint32 startBlock)" -- local/slashing_output.json 0x8aCd85898458400f7Db866d53FCFF6f0D49741FF 0x67d269191c92Caf3cD7723F116c85e6E9bf55933 750 0 630 
 contract CompleteWithdrawFromStrategy is Script, Test {
+    using SlashingLib for *;
+
     Vm cheats = Vm(VM_ADDRESS);
 
     string public deployConfigPath;
@@ -55,23 +57,23 @@ contract CompleteWithdrawFromStrategy is Script, Test {
         uint256[] memory shares = new uint256[](1);
         shares[0] = amount;
 
-        // Get SSF for Staker in strategy
-        (uint184 depositScalingFactor, uint64 beaconChainScalingFactor, bool isBeaconChainScalingFactorSet) = dm.stakerScalingFactor(msg.sender, strategies[0]);
-        // Populate the StakerScalingFactors struct with the returned values
-        StakerScalingFactors memory ssf = StakerScalingFactors({
-            depositScalingFactor: depositScalingFactor,
-            beaconChainScalingFactor: beaconChainScalingFactor,
-            isBeaconChainScalingFactorSet: isBeaconChainScalingFactorSet
-        });
-        
+        // Get DSF for Staker in strategy
+        DepositScalingFactor memory dsf = DepositScalingFactor(dm.depositScalingFactor(msg.sender, strategies[0]));
+
         // Get TM for Operator in strategies
         uint64[] memory maxMagnitudes = am.getMaxMagnitudesAtBlock(msg.sender, strategies, startBlock);
+        uint256 slashingFactor = _getSlashingFactor(dm, msg.sender, strategies[0], maxMagnitudes[0]);
+        uint256 sharesToWithdraw = dsf.calcWithdrawable(amount, slashingFactor);
+
         // Get scaled shares for the given amount
         uint256[] memory scaledShares = new uint256[](1);
-        scaledShares[0] = SlashingLib.scaleSharesForQueuedWithdrawal(amount, ssf, maxMagnitudes[0]);
+        scaledShares[0] = SlashingLib.scaleSharesForQueuedWithdrawal({
+            sharesToWithdraw: sharesToWithdraw,
+            slashingFactor: slashingFactor
+        });
 
         // Log the current state before completing
-        emit log_uint(depositScalingFactor);
+        emit log_uint(dsf.scalingFactor());
         emit log_uint(maxMagnitudes[0]);
         emit log_uint(scaledShares[0]);
 
@@ -88,5 +90,19 @@ contract CompleteWithdrawFromStrategy is Script, Test {
 
         // Return the withdrawal struct
         return withdrawal;
+    }
+
+    function _getSlashingFactor(
+        DelegationManager dm,
+        address staker,
+        IStrategy strategy,
+        uint64 operatorMaxMagnitude
+    ) internal view returns (uint256) {
+        if (strategy == dm.beaconChainETHStrategy()) {
+            uint64 beaconChainSlashingFactor = dm.getBeaconChainSlashingFactor(staker);
+            return operatorMaxMagnitude.mulWad(beaconChainSlashingFactor);
+        }
+
+        return operatorMaxMagnitude;
     }
 }
