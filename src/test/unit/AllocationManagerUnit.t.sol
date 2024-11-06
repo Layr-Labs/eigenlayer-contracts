@@ -10,6 +10,11 @@ import "src/test/mocks/MockAVSRegistrar.sol";
 contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManagerErrors, IAllocationManagerEvents {
     using SingleItemArrayLib for *;
 
+    /// NOTE: Raising these values directly increases cpu time for tests.
+    uint256 internal constant FUZZ_MAX_ALLOCATIONS = 8;
+    uint256 internal constant FUZZ_MAX_STRATS = 8;
+    uint256 internal constant FUZZ_MAX_OP_SETS = 8;
+
     uint8 internal constant PAUSED_MODIFY_ALLOCATIONS = 0;
     uint8 internal constant PAUSED_OPERATOR_SLASHING = 1;
     uint8 internal constant PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION = 2;
@@ -106,9 +111,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
                         )
                     ),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        AllocationManager.initialize.selector, _initialOwner, _initialPausedStatus
-                    )
+                    abi.encodeWithSelector(AllocationManager.initialize.selector, _initialOwner, _initialPausedStatus)
                 )
             )
         );
@@ -1028,8 +1031,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
     //     // Allocate 40% to firstOperatorSet, 40% to secondOperatorSet
     //     AllocateParams[] memory allocateParams = new AllocateParams[](2);
-    //     allocateParams[0] = _newAllocateParams_SingleMockStrategy(OperatorSet(defaultAVS, 1), magnitudeToAllocate)[0];
-    //     allocateParams[1] = _newAllocateParams_SingleMockStrategy(OperatorSet(defaultAVS, 2), magnitudeToAllocate)[0];
+    //     allocateParams[0] = _newAllocateParams(OperatorSet(defaultAVS, 1), magnitudeToAllocate)[0];
+    //     allocateParams[1] = _newAllocateParams(OperatorSet(defaultAVS, 2), magnitudeToAllocate)[0];
     //     cheats.prank(defaultOperator);
     //     allocationManager.modifyAllocations(allocateParams);
     //     cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
@@ -1182,8 +1185,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         Randomness r
     ) public rand(r) {
         // Bound allocation and deallocation
-        uint64 firstMod = uint64(r.Uint256(3, WAD));
-        uint64 secondMod = uint64(r.Uint256(1, firstMod - 2));
+        uint64 firstMod = r.Uint64(3, WAD);
+        uint64 secondMod = r.Uint64(1, firstMod - 2);
 
         // TODO: remove these assumptions around even numbers
         if (firstMod % 2 != 0) {
@@ -1273,9 +1276,6 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     using SingleItemArrayLib for *;
     using OperatorSetLib for *;
 
-    /// -----------------------------------------------------------------------
-    /// modifyAllocations()
-    /// -----------------------------------------------------------------------
     function test_revert_paused() public {
         allocationManager.pause(2 ** PAUSED_MODIFY_ALLOCATIONS);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
@@ -1521,10 +1521,8 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     function testFuzz_allocateMultipleTimes(
         Randomness r
     ) public rand(r) {
-        // Assumptions
-        uint64 firstAlloc = uint64(r.Uint256(1, type(uint64).max));
-        uint64 secondAlloc = uint64(r.Uint256(0, WAD));
-        cheats.assume(firstAlloc < secondAlloc);
+        uint64 firstAlloc = r.Uint64(1, WAD - 1);
+        uint64 secondAlloc = r.Uint64(firstAlloc + 1, WAD);
 
         // Check that the operator has no allocated sets/strats before allocation
         OperatorSet[] memory allocatedSets = allocationManager.getAllocatedSets(defaultOperator);
@@ -1657,8 +1655,8 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         Randomness r
     ) public rand(r) {
         // Bound allocation and deallocation
-        uint64 firstMod = uint64(r.Uint256(1, WAD));
-        uint64 secondMod = uint64(r.Uint256(0, firstMod - 1));
+        uint64 firstMod = r.Uint64(1, WAD);
+        uint64 secondMod = r.Uint64(0, firstMod - 1);
 
         // Allocate magnitude to default registered set
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, firstMod);
@@ -1972,9 +1970,85 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         );
     }
 
-    function testFuzz_allocate_WithDeallocationQueue(
+    /// @dev Set allocation delay > ALLOCATION_CONFIGURATION_DELAY, allocate,
+    /// set allocation delay to < ALLOCATION_CONFIGURATION_DELAY, allocate again
+    /// once new delay is set.
+    ///
+    /// NOTE: Should be able to allocate faster than `ALLOCATION_CONFIGURATION_DELAY`.
+    function testFuzz_modifyAllocations_ShouldBeAbleToAllocateSoonerThanLastDelay(
         Randomness r
-    ) public rand(r) {}
+    ) public rand(r) {
+        uint32 firstDelay = r.Uint32(ALLOCATION_CONFIGURATION_DELAY, type(uint24).max);
+        uint32 secondDelay = r.Uint32(1, ALLOCATION_CONFIGURATION_DELAY - 1);
+        uint64 half = 0.5 ether;
+
+        cheats.prank(defaultAVS);
+        allocationManager.createOperatorSets(CreateSetParams(1, defaultStrategies).toArray());
+
+        cheats.startPrank(defaultOperator);
+        
+        allocationManager.setAllocationDelay(firstDelay);
+        allocationManager.modifyAllocations(_newAllocateParams(defaultOperatorSet, half));
+
+        allocationManager.setAllocationDelay(secondDelay);
+        cheats.roll(block.number + secondDelay);
+        allocationManager.modifyAllocations(_newAllocateParams(OperatorSet(defaultAVS, 1), half));
+        
+        cheats.stopPrank();
+    }
+
+    function testFuzz_modifyAllocations_MultipleSetsAndStrats(
+        Randomness r
+    ) public rand(r) {
+        uint256 numAllocations = r.Uint256(2, FUZZ_MAX_ALLOCATIONS);
+        uint256 numStrats = r.Uint256(2, FUZZ_MAX_STRATS);
+
+        AllocateParams[] memory allocateParams = r.allocateParams(defaultAVS, numAllocations, numStrats);
+        AllocateParams[] memory deallocateParams = r.deallocateParams(allocateParams);
+        CreateSetParams[] memory createSetParams = r.createSetParams(allocateParams);
+
+        cheats.prank(defaultAVS);
+        allocationManager.createOperatorSets(createSetParams);
+
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocateParams);
+
+        for (uint256 i = 0; i < allocateParams.length; i++) {
+            for (uint256 j = 0; j < allocateParams[i].strategies.length; j++) {
+                Allocation memory allocation =
+                    allocationManager.getAllocation(defaultOperator, allocateParams[i].operatorSet, allocateParams[i].strategies[j]);
+                assertEq(allocation.currentMagnitude, 0, "currentMagnitude not updated");
+                assertEq(allocation.pendingDiff, int64(allocateParams[i].newMagnitudes[j]), "pendingMagnitude not updated");
+                assertEq(allocation.effectBlock, block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY, "effectBlock not updated");
+            }
+        }
+
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        for (uint256 i = 0; i < allocateParams.length; i++) {
+            for (uint256 j = 0; j < allocateParams[i].strategies.length; j++) {
+                Allocation memory allocation =
+                    allocationManager.getAllocation(defaultOperator, allocateParams[i].operatorSet, allocateParams[i].strategies[j]);
+                assertEq(allocation.currentMagnitude, allocateParams[i].newMagnitudes[j], "currentMagnitude not updated");
+                assertEq(allocation.pendingDiff, 0, "pendingMagnitude not updated");
+                assertEq(allocation.effectBlock, 0, "effectBlock not updated");
+            }
+        }
+
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(deallocateParams);
+
+        // Deallocations are immediate if the operator's allocation is not slashable.
+        for (uint256 i = 0; i < allocateParams.length; i++) {
+            for (uint256 j = 0; j < allocateParams[i].strategies.length; j++) {
+                Allocation memory allocation =
+                    allocationManager.getAllocation(defaultOperator, allocateParams[i].operatorSet, allocateParams[i].strategies[j]);
+                assertEq(allocation.currentMagnitude, deallocateParams[i].newMagnitudes[j], "currentMagnitude not updated");
+                assertEq(allocation.pendingDiff, 0, "pendingMagnitude not updated");
+                assertEq(allocation.effectBlock, 0, "effectBlock not updated");
+            }
+        }
+    }
 }
 
 contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerUnitTests {
@@ -2231,7 +2305,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     function testFuzz_setDelay(
         Randomness r
     ) public rand(r) {
-        uint32 delay = uint32(r.Uint256(0, type(uint32).max));
+        uint32 delay = r.Uint32(0, type(uint32).max);
 
         // Set delay
         cheats.expectEmit(true, true, true, true, address(allocationManager));
@@ -2256,9 +2330,8 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     function test_fuzz_setDelay_multipleTimesWithinConfigurationDelay(
         Randomness r
     ) public rand(r) {
-        uint32 firstDelay = uint32(r.Uint256(1, type(uint32).max));
-        uint32 secondDelay = uint32(r.Uint256(1, type(uint32).max));
-        cheats.assume(firstDelay != secondDelay);
+        uint32 firstDelay = r.Uint32(1, type(uint32).max);
+        uint32 secondDelay = r.Uint32(1, type(uint32).max);
 
         // Set delay
         cheats.prank(operatorToSet);
@@ -2291,9 +2364,8 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     function testFuzz_multipleDelays(
         Randomness r
     ) public rand(r) {
-        uint32 firstDelay = uint32(r.Uint256(1, type(uint32).max));
-        uint32 secondDelay = uint32(r.Uint256(1, type(uint32).max));
-        cheats.assume(firstDelay != secondDelay);
+        uint32 firstDelay = r.Uint32(1, type(uint32).max);
+        uint32 secondDelay = r.Uint32(1, type(uint32).max);
 
         // Set delay
         cheats.prank(operatorToSet);
@@ -2323,7 +2395,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     function testFuzz_setDelay_DMCaller(
         Randomness r
     ) public rand(r) {
-        uint32 delay = uint32(r.Uint256(1, type(uint32).max));
+        uint32 delay = r.Uint32(1, type(uint32).max);
 
         cheats.prank(address(delegationManagerMock));
         allocationManager.setAllocationDelay(operatorToSet, delay);
@@ -2371,7 +2443,7 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         Randomness r
     ) public rand(r) {
         address operator = r.Address();
-        uint256 numOpSets = r.Uint256(1, 32);
+        uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
         uint32[] memory operatorSetIds = new uint32[](numOpSets);
         CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
 
@@ -2398,11 +2470,12 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         cheats.prank(operator);
         allocationManager.registerForOperatorSets(RegisterParams(defaultAVS, operatorSetIds, ""));
 
-        require(allocationManager.getRegisteredSets(operator).length == numOpSets, "should be registered for all sets");
+        assertEq(allocationManager.getRegisteredSets(operator).length, numOpSets, "should be registered for all sets");
 
         for (uint256 k; k < numOpSets; ++k) {
-            require(
-                allocationManager.getMembers(OperatorSet(defaultAVS, operatorSetIds[k]))[0] == operator,
+            assertEq(
+                allocationManager.getMembers(OperatorSet(defaultAVS, operatorSetIds[k]))[0],
+                operator,
                 "should be member of set"
             );
         }
@@ -2447,7 +2520,7 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
     function testFuzz_deregisterFromOperatorSets_Correctness(
         Randomness r
     ) public rand(r) {
-        uint256 numOpSets = r.Uint256(1, 32);
+        uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
         uint32[] memory operatorSetIds = new uint32[](numOpSets);
         CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
 
@@ -2478,11 +2551,12 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
         cheats.prank(operator);
         allocationManager.deregisterFromOperatorSets(DeregisterParams(operator, defaultAVS, operatorSetIds));
 
-        require(allocationManager.getRegisteredSets(operator).length == 0, "should not be registered for any sets");
+        assertEq(allocationManager.getRegisteredSets(operator).length, 0, "should not be registered for any sets");
 
         for (uint256 k; k < numOpSets; ++k) {
-            require(
-                allocationManager.getMemberCount(OperatorSet(defaultAVS, operatorSetIds[k])) == 0,
+            assertEq(
+                allocationManager.getMemberCount(OperatorSet(defaultAVS, operatorSetIds[k])),
+                0,
                 "should not be member of set"
             );
         }
@@ -2505,7 +2579,7 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
     function testFuzz_addStrategiesToOperatorSet_Correctness(
         Randomness r
     ) public rand(r) {
-        uint256 numStrategies = r.Uint256(1, 32);
+        uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
 
         IStrategy[] memory strategies = new IStrategy[](numStrategies);
 
@@ -2521,7 +2595,7 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
         IStrategy[] memory strategiesInSet = allocationManager.getStrategiesInOperatorSet(defaultOperatorSet);
 
         for (uint256 j; j < numStrategies; ++j) {
-            require(strategiesInSet[j + 1] == strategies[j], "should be strat of set");
+            assertTrue(strategiesInSet[j + 1] == strategies[j], "should be strat of set");
         }
     }
 }
@@ -2546,7 +2620,7 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
     function testFuzz_removeStrategiesFromOperatorSet_Correctness(
         Randomness r
     ) public rand(r) {
-        uint256 numStrategies = r.Uint256(1, 32);
+        uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
         IStrategy[] memory strategies = r.strategyArray(numStrategies);
 
         cheats.prank(defaultAVS);
@@ -2557,16 +2631,16 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
             emit StrategyRemovedFromOperatorSet(defaultOperatorSet, strategies[i]);
         }
 
-        require(
-            allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length == numStrategies + 1, "sanity check"
+        assertEq(
+            allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length, numStrategies + 1, "sanity check"
         );
 
         cheats.prank(defaultAVS);
         allocationManager.removeStrategiesFromOperatorSet(defaultOperatorSet.id, strategies);
 
         // The orginal strategy should still be in the operator set.
-        require(
-            allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length == 1, "should not be strat of set"
+        assertEq(
+            allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length, 1, "should not be strat of set"
         );
     }
 }
@@ -2584,8 +2658,8 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
         Randomness r
     ) public rand(r) {
         address avs = r.Address();
-        uint256 numOpSets = r.Uint256(1, 32);
-        uint256 numStrategies = r.Uint256(1, 32);
+        uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
+        uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
 
         CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
 
@@ -2607,11 +2681,11 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
 
         for (uint256 k; k < numOpSets; ++k) {
             OperatorSet memory opSet = OperatorSet(avs, createSetParams[k].operatorSetId);
-            require(allocationManager.isOperatorSet(opSet), "should be operator set");
+            assertTrue(allocationManager.isOperatorSet(opSet), "should be operator set");
             IStrategy[] memory strategiesInSet = allocationManager.getStrategiesInOperatorSet(opSet);
-            require(strategiesInSet.length == numStrategies, "strategiesInSet length should be numStrategies");
+            assertEq(strategiesInSet.length, numStrategies, "strategiesInSet length should be numStrategies");
             for (uint256 l; l < numStrategies; ++l) {
-                require(
+                assertTrue(
                     allocationManager.getStrategiesInOperatorSet(opSet)[l] == createSetParams[k].strategies[l],
                     "should be strat of set"
                 );
@@ -2621,22 +2695,23 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
 }
 
 contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTests {
-    function test_setAVSRegistrar_Correctness() public {
-        IAVSRegistrar avsRegistrar = IAVSRegistrar(random().Address());
+    function testFuzz_setAVSRegistrar_Correctness(
+        Randomness r
+    ) public rand(r) {
+        address avs = r.Address();
+        IAVSRegistrar avsRegistrar = IAVSRegistrar(r.Address());
+
         cheats.expectEmit(true, false, false, false, address(allocationManager));
-        emit AVSRegistrarSet(defaultAVS, avsRegistrar);
-        cheats.prank(defaultAVS);
+        emit AVSRegistrarSet(avs, avsRegistrar);
+
+        cheats.prank(avs);
         allocationManager.setAVSRegistrar(avsRegistrar);
-        assertEq(address(avsRegistrar), address(allocationManager.getAVSRegistrar(defaultAVS)), "should be set");
+        assertTrue(avsRegistrar == allocationManager.getAVSRegistrar(avs), "should be set");
     }
 }
 
 /**
  * @notice TODO Lifecycle tests - These tests combine multiple functionalities of the AllocationManager
- * 1. Set allocation delay > 21 days (configuration), Allocate, modify allocation delay to < 21 days, try to allocate again once new delay is set (should be able to allocate faster than 21 deays)
- * 2. Allocate across multiple strategies and multiple operatorSets
- * 3. lifecycle fuzz test allocating/deallocating across multiple opSets/strategies
  * 4. HIGH PRIO - add uint16.max allocateParams/deallocateParams and then clear them
  * 5. Correctness of slashable magnitudes
- * 6. HIGH PRIO - get gas costs of `getSlashableMagnitudes`
  */
