@@ -2184,8 +2184,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
 
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit OperatorSharesIncreased(defaultOperator, staker, strategyMock, shares);
-        } else {
-            uint256 slashingFactor = _getSlashingFactor(staker, strategyMock, WAD);
+            uint256 slashingFactor = _getSlashingFactor(staker, strategyMock, magnitude);
             dsf.update(0, shares, slashingFactor);
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit DepositScalingFactorUpdated(staker, strategyMock, dsf.scalingFactor());
