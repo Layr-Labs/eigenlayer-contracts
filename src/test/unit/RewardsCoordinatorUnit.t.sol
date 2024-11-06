@@ -1638,6 +1638,137 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
+    // Revert when operator is zero address
+    function testFuzz_Revert_WhenOperatorIsZeroAddress(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
+        defaultOperatorRewards[0].operator = address(0);
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operator cannot be 0 address"
+        );
+        rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when duplicate operators
+    function testFuzz_Revert_WhenDuplicateOperators(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
+        IRewardsCoordinator.OperatorReward[] memory dupOperatorRewards = new IRewardsCoordinator.OperatorReward[](2);
+        dupOperatorRewards[0] = defaultOperatorRewards[0];
+        dupOperatorRewards[1] = defaultOperatorRewards[0];
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: dupOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operators must be in ascending order to handle duplicates"
+        );
+        rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when operator amount is zero
+    function testFuzz_Revert_WhenOperatorAmountIsZero(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
+        defaultOperatorRewards[0].amount = 0;
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operator reward amount cannot be 0"
+        );
+        rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
+    }
+
     // Revert with exceeding max duration
     function testFuzz_Revert_WhenExceedingMaxDuration(
         address avs,
@@ -1926,51 +2057,6 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         cheats.prank(avs);
         cheats.expectRevert(
             "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: strategies must be in ascending order to handle duplicates"
-        );
-        rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
-    }
-
-    // Revert when duplicate operators
-    function testFuzz_Revert_WhenDuplicateOperators(
-        address avs,
-        uint256 startTimestamp,
-        uint256 duration
-    ) public filterFuzzedAddressInputs(avs) {
-        cheats.assume(avs != address(0));
-        cheats.prank(rewardsCoordinator.owner());
-
-        // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
-        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
-        startTimestamp = bound(
-            startTimestamp,
-            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                CALCULATION_INTERVAL_SECONDS -
-                1,
-            block.timestamp - duration - 1
-        );
-        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
-
-        // 2. Create operator directed rewards submission input param
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory operatorDirectedRewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](1);
-        IRewardsCoordinator.OperatorReward[] memory dupOperatorRewards = new IRewardsCoordinator.OperatorReward[](2);
-        dupOperatorRewards[0] = defaultOperatorRewards[0];
-        dupOperatorRewards[1] = defaultOperatorRewards[0];
-        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinator.OperatorDirectedRewardsSubmission({
-            strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: rewardToken,
-            operatorRewards: dupOperatorRewards,
-            startTimestamp: uint32(startTimestamp),
-            duration: uint32(duration),
-            description: ""
-        });
-
-        // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
-        cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operators must be in ascending order to handle duplicates"
         );
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
