@@ -106,14 +106,14 @@ library Random {
     /// General Types
     /// -----------------------------------------------------------------------
 
-    function strategyArray(Randomness r, uint256 len) internal returns (IStrategy[] memory strategies) {
+    function StrategyArray(Randomness r, uint256 len) internal returns (IStrategy[] memory strategies) {
         strategies = new IStrategy[](len);
         for (uint256 i; i < len; ++i) {
             strategies[i] = IStrategy(r.Address());
         }
     }
 
-    function operatorSetArray(
+    function OperatorSetArray(
         Randomness r,
         address avs,
         uint256 len
@@ -129,7 +129,7 @@ library Random {
     /// -----------------------------------------------------------------------
 
     /// @dev Usage: `r.createSetParams(r, numOpSets, numStrats)`.
-    function createSetParams(
+    function CreateSetParams(
         Randomness r,
         uint256 numOpSets,
         uint256 numStrats
@@ -137,7 +137,7 @@ library Random {
         params = new IAllocationManagerTypes.CreateSetParams[](numOpSets);
         for (uint256 i; i < numOpSets; ++i) {
             params[i].operatorSetId = r.Uint32(1, type(uint32).max);
-            params[i].strategies = r.strategyArray(numStrats);
+            params[i].strategies = r.StrategyArray(numStrats);
         }
     }
     
@@ -147,7 +147,7 @@ library Random {
     /// cheats.prank(avs);
     /// allocationManager.createOperatorSets(r.createSetParams(allocateParams));
     /// ```
-    function createSetParams(
+    function CreateSetParams(
         Randomness,
         IAllocationManagerTypes.AllocateParams[] memory allocateParams
     ) internal pure returns (IAllocationManagerTypes.CreateSetParams[] memory params) {
@@ -170,7 +170,7 @@ library Random {
     /// cheats.prank(operator);
     /// allocationManager.modifyAllocations(allocateParams);
     /// ```
-    function allocateParams(
+    function AllocateParams(
         Randomness r,
         address avs,
         uint256 numAllocations,
@@ -183,7 +183,7 @@ library Random {
 
         for (uint256 i; i < numAllocations; ++i) {
             allocateParams[i].operatorSet = OperatorSet(avs, r.Uint32());
-            allocateParams[i].strategies = r.strategyArray(numStrats);
+            allocateParams[i].strategies = r.StrategyArray(numStrats);
             allocateParams[i].newMagnitudes = new uint64[](numStrats);
 
             for (uint256 j; j < numStrats; ++j) {
@@ -207,7 +207,7 @@ library Random {
     /// cheats.prank(operator)
     /// allocationManager.modifyAllocations(deallocateParams);
     /// ```
-    function deallocateParams(
+    function DeallocateParams(
         Randomness r,
         IAllocationManagerTypes.AllocateParams[] memory allocateParams
     ) internal returns (IAllocationManagerTypes.AllocateParams[] memory deallocateParams) {
@@ -223,7 +223,30 @@ library Random {
             for (uint256 j; j < allocateParams[i].strategies.length; ++j) {
                 deallocateParams[i].newMagnitudes[j] = r.Uint64(0, allocateParams[i].newMagnitudes[j] - 1);
             }
-        }    
+        }
+    }
+
+    function RegisterParams(
+        Randomness r, 
+        address avs, 
+        uint256 numOpSets
+    ) internal returns (IAllocationManagerTypes.RegisterParams memory params) {
+        params.avs = avs;
+        params.operatorSetIds = new uint32[](numOpSets);
+        for (uint256 i; i < numOpSets; ++i) {
+            params.operatorSetIds[i] = r.Uint32(1, type(uint32).max);
+        }
+        params.data = abi.encode(r.Bytes32());
+    }
+
+    function DeregisterParams(
+        Randomness,
+        address operator,
+        IAllocationManagerTypes.RegisterParams memory registerParams
+    ) internal pure returns (IAllocationManagerTypes.DeregisterParams memory params) {
+        params.operator = operator;
+        params.avs = registerParams.avs;
+        params.operatorSetIds = registerParams.operatorSetIds;
     }
 
     /// -----------------------------------------------------------------------

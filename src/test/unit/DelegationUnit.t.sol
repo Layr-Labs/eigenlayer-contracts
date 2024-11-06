@@ -2773,7 +2773,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         assertEq(depositScalingFactor, WAD, "bad test setup");
 
         // Get withdrawable shares
-        (uint256[] memory withdrawableSharesBefore, uint256[] memory depositShares) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
+        (, uint256[] memory depositShares) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
         
         // Format queued withdrawal
         (
