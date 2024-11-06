@@ -3215,6 +3215,9 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             depositSharesToWithdraw: withdrawalAmount
         });
 
+        uint256[] memory sharesToWithdraw = new uint256[](1);
+        sharesToWithdraw[0] = withdrawalAmount / 2;
+
         assertEq(delegationManager.delegatedTo(defaultStaker), defaultOperator, "staker should be delegated to operator");
         uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
         uint256 delegatedSharesBefore = delegationManager.operatorShares(defaultOperator, strategies[0]);
@@ -3222,7 +3225,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
 
         // queueWithdrawals
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, queuedWithdrawalParams[0].depositShares);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, sharesToWithdraw);
         cheats.prank(defaultStaker);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
