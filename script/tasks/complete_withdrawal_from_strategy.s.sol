@@ -49,7 +49,7 @@ contract completeWithdrawFromStrategy is Script, Test {
         vm.stopBroadcast();
     }
 
-    function getWithdrawalStruct(AllocationManager am, DelegationManager dm, address strategy, uint256 amount, uint256 nonce, uint32 startBlock) internal returns (IDelegationManagerTypes.Withdrawal memory)  {
+    function getWithdrawalStruct(AllocationManager am, DelegationManager dm, address strategy, uint256 amount, uint256 nonce, uint32 startBlock) internal view returns (IDelegationManagerTypes.Withdrawal memory)  {
         // Add strategy to array
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = IStrategy(strategy);
@@ -58,12 +58,12 @@ contract completeWithdrawFromStrategy is Script, Test {
         shares[0] = amount;
 
         // Get SSF for Staker in strategy
-        (uint256 depositScalingFactor, bool isBeaconChainScalingFactorSet, uint64 beaconChainScalingFactor) = dm.stakerScalingFactor(msg.sender, strategies[0]);
+        (uint184 depositScalingFactor, uint64 beaconChainScalingFactor, bool isBeaconChainScalingFactorSet) = dm.stakerScalingFactor(msg.sender, strategies[0]);
         // Populate the StakerScalingFactors struct with the returned values
         StakerScalingFactors memory ssf = StakerScalingFactors({
             depositScalingFactor: depositScalingFactor,
-            isBeaconChainScalingFactorSet: isBeaconChainScalingFactorSet,
-            beaconChainScalingFactor: beaconChainScalingFactor
+            beaconChainScalingFactor: beaconChainScalingFactor,
+            isBeaconChainScalingFactorSet: isBeaconChainScalingFactorSet
         });
         
         // Get TM for Operator in strategies

@@ -25,13 +25,18 @@ export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f
 export SENDER=$(cast wallet address --private-key $PRIVATE_KEY)
 
 mkdir ./script/output/local
-forge script ../deploy/local/deploy_from_scratch.slashing.s.sol \
+forge script -C src/contracts --via-ir ../deploy/local/deploy_from_scratch.slashing.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
     --sig "run(string memory configFile)" \
     -- local/deploy_from_scratch.slashing.anvil.config.json
 ```
 
-3. Extract `DELEGATION_MANAGER`, `STRATEGY` and `TOKEN` addresses from deployment output
+3. Build the task scripts
+```sh
+forge build -C script/tasks
+```
+
+4. Extract `DELEGATION_MANAGER`, `STRATEGY` and `TOKEN` addresses from deployment output
 ```sh
 export SENDER=$(cast wallet address --private-key $PRIVATE_KEY)
 export DELEGATION_MANAGER=$(jq -r '.addresses.delegationManager' "../output/local/slashing_output.json")
@@ -40,7 +45,7 @@ export STRATEGY=$(jq -r '.addresses.strategy' "../output/local/slashing_output.j
 export TOKEN=$(jq -r '.addresses.TestToken' "../output/local/slashing_output.json")
 ```
 
-4. Unpause the `avsDirectory`
+5. Unpause the `avsDirectory`
 ```sh
 forge script ../tasks/unpause_avsDirectory.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
@@ -48,7 +53,7 @@ forge script ../tasks/unpause_avsDirectory.s.sol \
     -- local/slashing_output.json
 ```
 
-5. Deposit into `Strategy`
+6. Deposit into `Strategy`
 ```sh
 forge script ../tasks/deposit_into_strategy.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
@@ -56,7 +61,7 @@ forge script ../tasks/deposit_into_strategy.s.sol \
     -- local/slashing_output.json $STRATEGY $TOKEN 1000
 ```
 
-6. Register as `Operator`
+7. Register as `Operator`
 ```sh
 forge script ../tasks/register_as_operator.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
@@ -64,7 +69,7 @@ forge script ../tasks/register_as_operator.s.sol \
     -- local/slashing_output.json $SENDER "metadataURI"
 ```
 
-7. Register `Operator` to `OperatorSet`
+8. Register `Operator` to `OperatorSet`
 ```sh
 forge script ../tasks/register_operator_to_operatorSet.s.sol \
     --tc registerOperatorToOperatorSets \
@@ -73,12 +78,12 @@ forge script ../tasks/register_operator_to_operatorSet.s.sol \
     -- local/slashing_output.json
 ```
 
-8. Move the chain by **600** blocks (to move beyond `pendingDelay`)
+9. Move the chain by **600** blocks (to move beyond `pendingDelay`)
 ```
 cast rpc anvil_mine 600 --rpc-url $RPC_URL
 ```
 
-9. Allocate the `OperatorSet` **(50%)**
+10. Allocate the `OperatorSet` **(50%)**
 ```sh
 forge script ../tasks/allocate_operatorSet.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
@@ -86,7 +91,7 @@ forge script ../tasks/allocate_operatorSet.s.sol \
     -- local/slashing_output.json $STRATEGY $SENDER 00000001 0500000000000000000
 ```
 
-10. Slash the `OperatorSet` **(50%)** - we expect that 25% of our shares will be slashed when we withdraw them
+11. Slash the `OperatorSet` **(50%)** - we expect that 25% of our shares will be slashed when we withdraw them
 ```sh
 forge script ../tasks/slash_operatorSet.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
@@ -94,22 +99,23 @@ forge script ../tasks/slash_operatorSet.s.sol \
     -- local/slashing_output.json $SENDER 00000001 0500000000000000000
 ```
 
-11. Verify that the sender holds **1000** Deposited `TOKEN` shares:
+12. Verify that the sender holds **1000** Deposited `TOKEN` shares:
 ```sh
 cast call $STRATEGY_MANAGER "getDeposits(address)(address[],uint256[])" $SENDER  --rpc-url $RPC_URL
 ```
 
-12. Verify that the sender holds **750** Withdrawable `TOKEN` shares:
+13. Verify that the sender holds **750** Withdrawable `TOKEN` shares:
 ```sh
 cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL
 ```
 
-13. Withdraw slashed shares from `DelegationManager`
+14. Withdraw slashed shares from `DelegationManager`
 
 - Extract Nonce and available shares from $DELEGATION_MANAGER
 ```sh
-export SHARES=$(cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed 's/[][]//g')
-export NONCE=$(cast call $DELEGATION_MANAGER "stakerNonce(address)(uint256)" $SENDER --rpc-url $RPC_URL)
+export DEPOSITS=$(cast call $DELEGATION_MANAGER "getDepositedShares(address)(address[],uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed -n '2p' | tr -d '[]')
+export SHARES=$(cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[],uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed -n '1p' | tr -d '[]')
+export NONCE=$(cast call $DELEGATION_MANAGER "cumulativeWithdrawalsQueued(address)(uint256)" $SENDER --rpc-url $RPC_URL)
 ```
 
 - Queue withdrawal
@@ -117,7 +123,7 @@ export NONCE=$(cast call $DELEGATION_MANAGER "stakerNonce(address)(uint256)" $SE
 forge script ../tasks/withdraw_from_strategy.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
     --sig "run(string memory configFile,address strategy,address token,uint256 amount)" \
-    -- local/slashing_output.json $STRATEGY $TOKEN $SHARES
+    -- local/slashing_output.json $STRATEGY $TOKEN $DEPOSITS
 ```
 
 - Record the withdrawal `START_BLOCK`
@@ -139,12 +145,12 @@ forge script ../tasks/complete_withdrawal_from_strategy.s.sol \
     -- local/slashing_output.json $STRATEGY $TOKEN $SHARES $NONCE $WITHDRAWAL_START_BLOCK_NUMBER
 ```
 
-14. Verify that the `SHARES` we're withdrawn back to the sender
+15. Verify that the `SHARES` we're withdrawn back to the sender
 ```sh
 cast call $TOKEN "balanceOf(address)(uint256)" $SENDER --rpc-url $RPC_URL
 ```
 
-15. Verify that the sender holds 0 withdrawable `TOKEN` shares:
+16. Verify that the sender holds 0 withdrawable `TOKEN` shares:
 ```sh
 cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL
 ```

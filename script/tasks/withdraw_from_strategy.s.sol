@@ -49,7 +49,7 @@ contract withdrawFromStrategy is Script, Test {
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory queueWithdrawals = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
         queueWithdrawals[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
-            shares: shares,
+            depositShares: shares,
             withdrawer: msg.sender
         });
 

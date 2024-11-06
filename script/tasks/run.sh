@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # These tasks deploy the `slashing-magnitudes` contracts and set up the sender (`address(PRIVATE_KEY)`) as an `AVS`, `Operator` and `Staker`. 
-# We then register the `Operator` to an `OperatorSet`, allocate the `strategy` in that `OperatorSet` and perform a `slashing`.
+# We then register the `Operator` to an `OperatorSet`, allocate the `strategy` in that `OperatorSet`, deposit `TestTokens` and perform a `slashing`.
 
 # Environment Configuration
 RPC_URL="127.0.0.1:8545"
@@ -15,14 +15,14 @@ DEPOSIT_SHARES=1000
 # Ensure output directory exists
 mkdir -p $OUTPUT_DIR
 
-# Compile contracts
-forge build
-
 # Deploy contracts
-forge script ../deploy/local/deploy_from_scratch.slashing.s.sol \
+forge script -C src/contracts --via-ir ../deploy/local/deploy_from_scratch.slashing.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
     --sig "run(string memory configFile)" \
     -- local/deploy_from_scratch.slashing.anvil.config.json
+
+# Compile task contracts
+forge build -C script/tasks
 
 # Extract contract addresses from deployment output
 DELEGATION_MANAGER=$(jq -r '.addresses.delegationManager' "$OUTPUT_DIR/slashing_output.json")
@@ -78,14 +78,14 @@ forge script ../tasks/deposit_into_strategy.s.sol \
 
 # Fetch current withdrawable shares and nonce
 DEPOSITS=$(cast call $DELEGATION_MANAGER "getDepositedShares(address)(address[],uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed -n '2p' | tr -d '[]')
-SHARES=$(cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed 's/[][]//g')
-NONCE=$(cast call $DELEGATION_MANAGER "stakerNonce(address)(uint256)" $SENDER --rpc-url $RPC_URL)
+SHARES=$(cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[],uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed -n '1p' | tr -d '[]')
+NONCE=$(cast call $DELEGATION_MANAGER "cumulativeWithdrawalsQueued(address)(uint256)" $SENDER --rpc-url $RPC_URL)
 
 # Withdraw slashed shares from Delegation Manager
 forge script ../tasks/withdraw_from_strategy.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
     --sig "run(string memory configFile,address strategy,address token,uint256 amount)" \
-    -- local/slashing_output.json $STRATEGY $TOKEN $SHARES
+    -- local/slashing_output.json $STRATEGY $TOKEN $DEPOSITS
 
 # Capture block number after initiating withdrawal
 WITHDRAWAL_START_BLOCK_NUMBER=$(cast block-number --rpc-url $RPC_URL)
@@ -106,7 +106,7 @@ forge script ../tasks/complete_withdrawal_from_strategy.s.sol \
     -- local/slashing_output.json $STRATEGY $TOKEN $SHARES $NONCE $WITHDRAWAL_START_BLOCK_NUMBER
 
 # Verification
-FINAL_SHARES=$(cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed 's/[][]//g')
+FINAL_SHARES=$(cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[],uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed -n '1p' | tr -d '[]')
 FINAL_BALANCE=$(cast call $TOKEN "balanceOf(address)(uint256)" $SENDER --rpc-url $RPC_URL)
 BALANCE_AS_DEC=$(echo "$BALANCE" | awk '{print $1}')
 FINAL_BALANCE_AS_DEC=$(echo "$FINAL_BALANCE" | awk '{print $1}')
