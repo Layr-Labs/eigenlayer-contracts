@@ -29,7 +29,11 @@ contract EigenPodManagerMock is Test, Pausable {
         podOwnerDepositShares[podOwner] = shares;
     }
 
-    function removeDepositShares(address podOwner, IStrategy strategy, uint256 shares) external {
+    function removeDepositShares(
+        address podOwner, 
+        IStrategy, // strategy 
+        uint256 shares
+    ) external {
         podOwnerDepositShares[podOwner] -= int256(shares);
     }
 

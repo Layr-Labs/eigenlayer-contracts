@@ -147,7 +147,7 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         _verifyInitializationParams();
     }
 
-    function _sanityCheckImplementations(RewardsCoordinator oldRc, RewardsCoordinator newRc) internal {
+    function _sanityCheckImplementations(RewardsCoordinator oldRc, RewardsCoordinator newRc) internal view {
         // Verify configs between both rewardsCoordinatorImplementations
         assertEq(
             address(oldRc.delegationManager()),

@@ -17,11 +17,11 @@ contract Owners is Test {
         return string.concat(".owners[", string.concat(vm.toString(index), "]."));
     }
 
-    function getNumOperators() public returns(uint256) {
+    function getNumOperators() public view returns(uint256) {
         return stdJson.readUint(ownersConfigJson, ".numOwners");
     }
 
-    function getOwnerAddress(uint256 index) public returns(address) {
+    function getOwnerAddress(uint256 index) public view returns(address) {
         return stdJson.readAddress(ownersConfigJson, string.concat(ownerPrefix(index), "Address"));
     }
 

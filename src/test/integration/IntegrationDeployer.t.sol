@@ -263,9 +263,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             delegationManager,
             eigenLayerPauserReg
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
-        allocationManagerImplementation = new AllocationManager(delegationManager, avsDirectory, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
@@ -401,7 +401,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             delegationManager,
             eigenLayerPauserReg
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -488,7 +488,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             delegationManager,
             eigenLayerPauserReg
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
