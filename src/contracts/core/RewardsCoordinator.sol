@@ -306,11 +306,10 @@ contract RewardsCoordinator is
         require(split <= ONE_HUNDRED_IN_BIPS, "RewardsCoordinator.setOperatorAVSSplit: split must be <= 10000 bips");
 
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
-        OperatorSplit storage operatorSplit = operatorAVSSplitBips[operator][avs];
+        uint16 oldSplit = _getOperatorSplit(operatorAVSSplitBips[operator][avs]);
+        _setOperatorSplit(operatorAVSSplitBips[operator][avs], split, activatedAt);
 
-        _setOperatorSplit(operatorSplit, split, activatedAt);
-
-        emit OperatorAVSSplitBipsSet(msg.sender, operator, avs, activatedAt, operatorSplit.oldSplitBips, split);
+        emit OperatorAVSSplitBipsSet(msg.sender, operator, avs, activatedAt, oldSplit, split);
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -320,11 +319,10 @@ contract RewardsCoordinator is
         require(split >= MIN_PI_SPLIT_BIPS, "RewardsCoordinator.setOperatorPISplit: split must be >= 1000 bips");
 
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
-        OperatorSplit storage operatorSplit = operatorPISplitBips[operator];
+        uint16 oldSplit = _getOperatorSplit(operatorPISplitBips[operator]);
+        _setOperatorSplit(operatorPISplitBips[operator], split, activatedAt);
 
-        _setOperatorSplit(operatorSplit, split, activatedAt);
-
-        emit OperatorPISplitBipsSet(msg.sender, operator, activatedAt, operatorSplit.oldSplitBips, split);
+        emit OperatorPISplitBipsSet(msg.sender, operator, activatedAt, oldSplit, split);
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -634,7 +632,12 @@ contract RewardsCoordinator is
         // Else, the earlier 'old' split remains the same. This is essentially resetting the activation delay window
         // since the earlier split setting didn't complete.
         if (block.timestamp >= operatorSplit.activatedAt) {
-            operatorSplit.oldSplitBips = operatorSplit.newSplitBips;
+            if (operatorSplit.activatedAt == 0) {
+                // If the operator split has not been initialized yet, set the old split to the default split.
+                operatorSplit.oldSplitBips = defaultOperatorSplitBips;
+            } else {
+                operatorSplit.oldSplitBips = operatorSplit.newSplitBips;
+            }
         }
         operatorSplit.newSplitBips = split;
         operatorSplit.activatedAt = activatedAt;
