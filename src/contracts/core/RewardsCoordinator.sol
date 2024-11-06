@@ -36,8 +36,6 @@ contract RewardsCoordinator is
     uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
     /// @notice Equivalent to 100%, but in basis points.
     uint16 internal constant ONE_HUNDRED_IN_BIPS = 10_000;
-    /// @notice Minimum split for operators for Programmatic Incentives in basis points
-    uint16 internal constant MIN_PI_SPLIT_BIPS = 1_000;
 
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
@@ -316,7 +314,6 @@ contract RewardsCoordinator is
     function setOperatorPISplit(address operator, uint16 split) external onlyWhenNotPaused(PAUSED_OPERATOR_PI_SPLIT) {
         require(msg.sender == operator, "RewardsCoordinator.setOperatorPISplit: caller is not the operator");
         require(split <= ONE_HUNDRED_IN_BIPS, "RewardsCoordinator.setOperatorPISplit: split must be <= 10000 bips");
-        require(split >= MIN_PI_SPLIT_BIPS, "RewardsCoordinator.setOperatorPISplit: split must be >= 1000 bips");
 
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         uint16 oldSplit = _getOperatorSplit(operatorPISplitBips[operator]);

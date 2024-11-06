@@ -56,8 +56,6 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     uint32 GENESIS_REWARDS_TIMESTAMP = 1712188800;
     /// @notice Equivalent to 100%, but in basis points.
     uint16 internal constant ONE_HUNDRED_IN_BIPS = 10_000;
-    /// @notice Minimum split for operators for Programmatic Incentives in basis points
-    uint16 internal constant MIN_PI_SPLIT_BIPS = 1_000;
 
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
@@ -525,7 +523,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
     // Revert when paused
     function testFuzz_Revert_WhenPaused(address operator, uint16 split) public {
         cheats.assume(operator != address(0));
-        split = uint16(bound(split, MIN_PI_SPLIT_BIPS, ONE_HUNDRED_IN_BIPS));
+        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         cheats.prank(pauser);
         rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_PI_SPLIT);
 
@@ -537,7 +535,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
     // Revert when operator is not caller
     function testFuzz_Revert_WhenOperatorIsNotMsgSender(address operator, uint16 split) public {
         cheats.assume(operator != address(0) && operator != address(this));
-        split = uint16(bound(split, MIN_PI_SPLIT_BIPS, ONE_HUNDRED_IN_BIPS));
+        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
 
         cheats.expectRevert("RewardsCoordinator.setOperatorPISplit: caller is not the operator");
         rewardsCoordinator.setOperatorPISplit(operator, split);
@@ -553,19 +551,9 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         rewardsCoordinator.setOperatorPISplit(operator, split);
     }
 
-    // Revert when split is less than 10%
-    function testFuzz_Revert_WhenSplitLessThan10(address operator, uint16 split) public {
-        cheats.assume(operator != address(0));
-        split = uint16(bound(split, 0, MIN_PI_SPLIT_BIPS - 1));
-
-        cheats.prank(operator);
-        cheats.expectRevert("RewardsCoordinator.setOperatorPISplit: split must be >= 1000 bips");
-        rewardsCoordinator.setOperatorPISplit(operator, split);
-    }
-
     function testFuzz_setOperatorAVSSplit(address operator, uint16 split) public {
         cheats.assume(operator != address(0));
-        split = uint16(bound(split, MIN_PI_SPLIT_BIPS, ONE_HUNDRED_IN_BIPS));
+        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         uint16 oldSplit = rewardsCoordinator.getOperatorPISplit(operator);
 
@@ -582,7 +570,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
     // Testing that the split has been initialized for the first time.
     function testFuzz_setOperatorAVSSplitFirstTime(address operator, uint16 split) public {
         cheats.assume(operator != address(0));
-        split = uint16(bound(split, MIN_PI_SPLIT_BIPS, ONE_HUNDRED_IN_BIPS));
+        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         uint16 oldSplit = rewardsCoordinator.getOperatorPISplit(operator);
         assertEq(oldSplit, defaultSplitBips, "Operator split is not Default split before Initialization");
@@ -605,8 +593,8 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         uint32 warpTime
     ) public {
         cheats.assume(operator != address(0));
-        firstSplit = uint16(bound(firstSplit, MIN_PI_SPLIT_BIPS, ONE_HUNDRED_IN_BIPS));
-        secondSplit = uint16(bound(secondSplit, MIN_PI_SPLIT_BIPS, ONE_HUNDRED_IN_BIPS));
+        firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
+        secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
         warpTime = uint32(bound(warpTime, uint32(block.timestamp), uint32(block.timestamp) + activationDelay - 1));
         uint16 oldSplit = rewardsCoordinator.getOperatorPISplit(operator);
 
@@ -636,8 +624,8 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         uint32 warpTime
     ) public {
         cheats.assume(operator != address(0));
-        firstSplit = uint16(bound(firstSplit, MIN_PI_SPLIT_BIPS, ONE_HUNDRED_IN_BIPS));
-        secondSplit = uint16(bound(secondSplit, MIN_PI_SPLIT_BIPS, ONE_HUNDRED_IN_BIPS));
+        firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
+        secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
         warpTime = uint32(
             bound(warpTime, uint32(block.timestamp) + activationDelay, type(uint32).max - activationDelay)
         );
