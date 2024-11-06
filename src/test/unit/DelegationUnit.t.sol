@@ -2777,7 +2777,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         
         // Format queued withdrawal
         (
-            IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            ,
             IDelegationManagerTypes.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
@@ -3221,7 +3221,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         assertEq(delegationManager.delegatedTo(defaultStaker), defaultOperator, "staker should be delegated to operator");
         uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
         uint256 delegatedSharesBefore = delegationManager.operatorShares(defaultOperator, strategies[0]);
-        (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
+        // (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
 
         // queueWithdrawals
         cheats.expectEmit(true, true, true, true, address(delegationManager));
