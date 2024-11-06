@@ -2641,6 +2641,60 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         mockTokenBytecode = address(mockToken).code;
     }
 
+    /// @notice Claim against latest submitted root, rootIndex 3 using batch claim.
+    /// Limit fuzz runs to speed up tests since these require reading from JSON
+    /// forge-config: default.fuzz.runs = 10
+    function testFuzz_processClaims_LatestRoot(
+        bool setClaimerFor,
+        address claimerFor
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            rewardsCoordinator.setClaimerFor(claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
+
+        uint32 rootIndex = claim.rootIndex;
+        IRewardsCoordinator.DistributionRoot memory distributionRoot = rewardsCoordinator.getDistributionRootAtIndex(
+            rootIndex
+        );
+        cheats.warp(distributionRoot.activatedAt);
+
+        // Claim against root and check balances before/after, and check it matches the difference between
+        // cumulative claimed and earned.
+        cheats.startPrank(claimer);
+        assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
+
+        uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+        uint256[] memory earnings = _getCumulativeEarnings(claim);
+        uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+        _assertRewardsClaimedEvents(distributionRoot.root, claim, claimer);
+        IRewardsCoordinator.RewardsMerkleClaim[] memory batchClaim = new IRewardsCoordinator.RewardsMerkleClaim[](1);
+        batchClaim[0] = claim;
+        rewardsCoordinator.processClaims(batchClaim, claimer);
+
+        uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+        for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+            assertEq(
+                earnings[i] - totalClaimedBefore[i],
+                tokenBalancesAfter[i] - tokenBalancesBefore[i],
+                "Token balance not incremented by earnings amount"
+            );
+        }
+
+        cheats.stopPrank();
+    }
+
     /// @notice Claim against latest submitted root, rootIndex 3
     /// Limit fuzz runs to speed up tests since these require reading from JSON
     /// forge-config: default.fuzz.runs = 10
