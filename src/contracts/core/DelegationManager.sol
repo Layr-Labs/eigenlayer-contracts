@@ -614,6 +614,7 @@ contract DelegationManager is
         require(strategies.length != 0, InputArrayLengthZero());
 
         uint256[] memory scaledShares = new uint256[](strategies.length);
+        uint256[] memory sharesToWithdraw = new uint256[](strategies.length);
 
         // Remove shares from staker and operator
         // Each of these operations fail if we attempt to remove more shares than exist
@@ -631,7 +632,7 @@ contract DelegationManager is
             );
 
             // Calculate the shares to withdraw
-            uint256 sharesToWithdraw = depositSharesToWithdraw[i].toShares(ssf, maxMagnitudes[i]);
+            sharesToWithdraw[i] = depositSharesToWithdraw[i].toShares(ssf, maxMagnitudes[i]);
 
             // Remove delegated shares from the operator
             if (operator != address(0)) {
@@ -640,11 +641,11 @@ contract DelegationManager is
                     operator: operator,
                     staker: staker,
                     strategy: strategies[i],
-                    sharesToDecrease: sharesToWithdraw
+                    sharesToDecrease: sharesToWithdraw[i]
                 });
             }
 
-            scaledShares[i] = sharesToWithdraw.scaleSharesForQueuedWithdrawal(ssf, maxMagnitudes[i]);
+            scaledShares[i] = sharesToWithdraw[i].scaleSharesForQueuedWithdrawal(ssf, maxMagnitudes[i]);
 
             // Remove active shares from EigenPodManager/StrategyManager
             shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
@@ -672,7 +673,7 @@ contract DelegationManager is
 
         queuedWithdrawals[withdrawalRoot] = withdrawal;
 
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, depositSharesToWithdraw);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, sharesToWithdraw);
         return withdrawalRoot;
     }
 
