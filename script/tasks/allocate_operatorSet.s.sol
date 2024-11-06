@@ -57,5 +57,3 @@ contract allocateOperatorSet is Script, Test {
         vm.stopBroadcast();
     }
 }
-
-

@@ -36,9 +36,8 @@ forge script -C src/contracts --via-ir ../deploy/local/deploy_from_scratch.slash
 forge build -C script/tasks
 ```
 
-4. Extract `DELEGATION_MANAGER`, `STRATEGY` and `TOKEN` addresses from deployment output
+4. Extract `DELEGATION_MANAGER`, `STRATEGY_MANAGER`, `STRATEGY` and `TOKEN` addresses from deployment output
 ```sh
-export SENDER=$(cast wallet address --private-key $PRIVATE_KEY)
 export DELEGATION_MANAGER=$(jq -r '.addresses.delegationManager' "../output/local/slashing_output.json")
 export STRATEGY_MANAGER=$(jq -r '.addresses.strategyManager' "../output/local/slashing_output.json")
 export STRATEGY=$(jq -r '.addresses.strategy' "../output/local/slashing_output.json")
@@ -131,9 +130,9 @@ forge script ../tasks/withdraw_from_strategy.s.sol \
 export WITHDRAWAL_START_BLOCK_NUMBER=$(cast block-number --rpc-url $RPC_URL)
 ```
 
-- Move the chain by 6 blocks (to move beyond `MIN_WITHDRAWAL_DELAY_BLOCKS` (5))
+- Move the chain by 5 blocks (to move beyond `MIN_WITHDRAWAL_DELAY_BLOCKS` (5))
 ```sh
-cast rpc anvil_mine 6 --rpc-url $RPC_URL
+cast rpc anvil_mine 5 --rpc-url $RPC_URL
 ```
 
 - Complete withdrawal
