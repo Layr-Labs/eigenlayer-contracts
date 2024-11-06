@@ -19,7 +19,7 @@ contract AVSRegistrar is IAVSRegistrar {
 // use forge:
 // RUST_LOG=forge,foundry=trace forge script script/tasks/register_operator_to_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- <DEPLOYMENT_OUTPUT_JSON>
 // RUST_LOG=forge,foundry=trace forge script script/tasks/register_operator_to_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/slashing_output.json
-contract registerOperatorToOperatorSets is Script, Test {
+contract RegisterOperatorToOperatorSets is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
     function run(string memory configFile) public {

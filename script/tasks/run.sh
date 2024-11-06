@@ -51,7 +51,7 @@ forge script ../tasks/register_as_operator.s.sol \
 # Register Operator to OperatorSet
 forge script ../tasks/register_operator_to_operatorSet.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
-    --tc registerOperatorToOperatorSets \
+    --tc RegisterOperatorToOperatorSets \
     --sig "run(string memory configFile)" \
     -- local/slashing_output.json
 
