@@ -64,7 +64,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
 
         pauserRegistry = new PauserRegistry(pausers, unpauser);
         eigenLayerProxyAdmin = new ProxyAdmin();
-
+        
         avsDirectoryMock = AVSDirectoryMock(payable(address(new AVSDirectoryMock())));
         allocationManagerMock = AllocationManagerMock(payable(address(new AllocationManagerMock())));
         strategyManagerMock = StrategyManagerMock(payable(address(new StrategyManagerMock(IDelegationManager(address(delegationManagerMock))))));
