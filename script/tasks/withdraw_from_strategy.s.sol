@@ -8,8 +8,6 @@ import "../../src/contracts/libraries/SlashingLib.sol";
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {console} from "forge-std/console.sol";
-
 // use forge:
 // RUST_LOG=forge,foundry=trace forge script script/tasks/withdraw_from_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,address strategy,address token,uint256 amount)" -- <DEPLOYMENT_OUTPUT_JSON> <STRATEGY_ADDRESS> <TOKEN_ADDRESS> <AMOUNT>
 // RUST_LOG=forge,foundry=trace forge script script/tasks/withdraw_from_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,address strategy,address token,uint256 amount)" -- local/slashing_output.json 0x8aCd85898458400f7Db866d53FCFF6f0D49741FF 0x67d269191c92Caf3cD7723F116c85e6E9bf55933 750
@@ -57,17 +55,14 @@ contract WithdrawFromStrategy is Script, Test {
         bytes32[] memory withdrawalRoots;
 
         // Log the details we need to reproduce the WithdrawalRoot
-        console.log("nonce");
-        console.logUint(nonce);
-        console.log("startBlock");
-        console.logUint(block.number + 1);
+        emit log_named_uint("nonce", nonce);
+        emit log_named_uint("startBlock", block.number + 1);
 
         // Queue withdrawal
         withdrawalRoots = dm.queueWithdrawals(queueWithdrawals);
 
         // Log the withdrawalRoot
-        console.log("withdrawalRoot");
-        console.logBytes32(withdrawalRoots[0]);
+        emit log_named_bytes32("withdrawalRoot", withdrawalRoots[0]);
         
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
