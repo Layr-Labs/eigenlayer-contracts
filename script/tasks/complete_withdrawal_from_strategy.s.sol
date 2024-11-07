@@ -8,8 +8,6 @@ import "../../src/contracts/libraries/SlashingLib.sol";
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {console} from "forge-std/console.sol";
-
 // use forge:
 // RUST_LOG=forge,foundry=trace forge script script/tasks/complete_withdrawal_from_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,,address strategy,address token,uint256 amount)" -- <DEPLOYMENT_OUTPUT_JSON> <STRATEGY_ADDRESS> <TOKEN_ADDRESS> <AMOUNT> <NONCE> <START_BLOCK_NUMBER>
 // RUST_LOG=forge,foundry=trace forge script script/tasks/complete_withdrawal_from_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,,address strategy,address token,uint256 amount,uint256 nonce,uint32 startBlock)" -- local/slashing_output.json 0x8aCd85898458400f7Db866d53FCFF6f0D49741FF 0x67d269191c92Caf3cD7723F116c85e6E9bf55933 750 0 630 
@@ -49,7 +47,7 @@ contract CompleteWithdrawFromStrategy is Script, Test {
         vm.stopBroadcast();
     }
 
-    function getWithdrawalStruct(AllocationManager am, DelegationManager dm, address strategy, uint256 amount, uint256 nonce, uint32 startBlock) internal view returns (IDelegationManagerTypes.Withdrawal memory)  {
+    function getWithdrawalStruct(AllocationManager am, DelegationManager dm, address strategy, uint256 amount, uint256 nonce, uint32 startBlock) internal returns (IDelegationManagerTypes.Withdrawal memory)  {
         // Add strategy to array
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = IStrategy(strategy);
@@ -73,9 +71,9 @@ contract CompleteWithdrawFromStrategy is Script, Test {
         scaledShares[0] = SlashingLib.scaleSharesForQueuedWithdrawal(amount, ssf, maxMagnitudes[0]);
 
         // Log the current state before completing
-        console.logUint(depositScalingFactor);
-        console.logUint(maxMagnitudes[0]);
-        console.logUint(scaledShares[0]);
+        emit log_uint(depositScalingFactor);
+        emit log_uint(maxMagnitudes[0]);
+        emit log_uint(scaledShares[0]);
 
         // Create the withdrawal struct
         IDelegationManagerTypes.Withdrawal memory withdrawal = IDelegationManagerTypes.Withdrawal({
