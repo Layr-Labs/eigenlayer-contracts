@@ -2771,9 +2771,6 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
 
         (uint256 depositScalingFactor,,) = delegationManager.stakerScalingFactor(defaultStaker, strategyMock);
         assertEq(depositScalingFactor, WAD, "bad test setup");
-
-        // Get withdrawable shares
-        (, uint256[] memory depositShares) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
         
         // Format queued withdrawal
         (
@@ -2913,7 +2910,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
 
         // Format queued withdrawal
         (
-            IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            ,
             IDelegationManagerTypes.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({

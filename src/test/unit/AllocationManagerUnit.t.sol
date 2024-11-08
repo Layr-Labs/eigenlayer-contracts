@@ -5,8 +5,6 @@ import "src/contracts/core/AllocationManager.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/MockAVSRegistrar.sol";
 
-// TODO: Add **unique** tests for events.
-
 contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManagerErrors, IAllocationManagerEvents {
     using SingleItemArrayLib for *;
 
