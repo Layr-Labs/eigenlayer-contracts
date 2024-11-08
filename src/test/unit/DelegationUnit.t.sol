@@ -2386,33 +2386,33 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         );
     }
 
-    /// @notice Verifies that `DelegationManager.burnOperatorShares` reverts if not called by the AllocationManager
-    function testFuzz_burnOperatorShares_revert_invalidCaller(
+    /// @notice Verifies that `DelegationManager.decreaseAndBurnOperatorShares` reverts if not called by the AllocationManager
+    function testFuzz_decreaseAndBurnOperatorShares_revert_invalidCaller(
         address invalidCaller
     ) public filterFuzzedAddressInputs(invalidCaller) {
         cheats.assume(invalidCaller != address(allocationManagerMock));
 
         cheats.startPrank(invalidCaller);
         cheats.expectRevert(IDelegationManagerErrors.OnlyAllocationManager.selector);
-        delegationManager.burnOperatorShares(invalidCaller, strategyMock, 0, 0);
+        delegationManager.decreaseAndBurnOperatorShares(invalidCaller, strategyMock, 0);
     }
 
     /// @notice Verifies that there is no change in shares if the staker is not delegatedd
-    function testFuzz_burnOperatorShares_noop() public {
+    function testFuzz_decreaseAndBurnOperatorShares_noop() public {
         _registerOperatorWithBaseDetails(defaultOperator);
 
         cheats.prank(address(allocationManagerMock));
-        delegationManager.burnOperatorShares(defaultOperator, strategyMock, WAD, WAD/2);
+        delegationManager.decreaseAndBurnOperatorShares(defaultOperator, strategyMock, WAD);
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
     }
 
-    /**
-     * @notice Verifies that `DelegationManager.burnOperatorShares` properly decreases the delegated `shares` that the operator
+ /**
+     * @notice Verifies that `DelegationManager.decreaseAndBurnOperatorShares` properly decreases the delegated `shares` that the operator
      * who the `defaultStaker` is delegated to has in the strategies
      * @dev Checks that there is no change if the staker is not delegated
      * TODO: fuzz magnitude
      */
-    function testFuzz_burnOperatorShares_slashedOperator(
+    function testFuzz_decreaseAndBurnOperatorShares_slashedOperator(
         IStrategy[] memory strategies,
         uint128 shares,
         bool delegateFromStakerToOperator
