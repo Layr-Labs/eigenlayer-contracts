@@ -635,10 +635,6 @@ contract DelegationManager is
             // Calculate how many shares can be withdrawn after factoring in slashing
             sharesToWithdraw[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
 
-            // Update cumulative withdrawn shares for the strategy, this is for accounting purposes for burning shares
-            // if 
-            _updateCumulativeWithdrawnShares(strategies[i], sharesToWithdraw);
-
             // Apply slashing. If the staker or operator has been fully slashed, this will return 0
             scaledShares[i] = SlashingLib.scaleSharesForQueuedWithdrawal({
                 sharesToWithdraw: sharesToWithdraw[i],
@@ -757,17 +753,13 @@ contract DelegationManager is
     ) internal view returns (uint256) {
         uint256 currCumulativeWithdrawalShares = uint256(_cumulativeWithdrawalsHistory[strategy].latest());
         // Note: this will simply return 0 if no history exists, same for latest() as well
-        uint256 pastCumulativeWithdrawalShares = _cumulativeWithdrawalsHistory[strategy].getAtProbablyRecentBlock(
-            block.number - MIN_WITHDRAWAL_DELAY_BLOCKS
-        );
+        uint256 pastCumulativeWithdrawalShares =
+            _cumulativeWithdrawalsHistory[strategy].getAtProbablyRecentBlock(block.number - MIN_WITHDRAWAL_DELAY_BLOCKS);
         return currCumulativeWithdrawalShares - pastCumulativeWithdrawalShares;
     }
 
     /// @dev Update the cumulative withdrawn shares for a strategy
-    function _updateCumulativeWithdrawnShares(
-        IStrategy strategy,
-        uint256 queueWithdrawnShares
-    ) internal {
+    function _updateCumulativeWithdrawnShares(IStrategy strategy, uint256 queueWithdrawnShares) internal {
         uint256 currCumulativeWithdrawalShares = uint256(_cumulativeWithdrawalsHistory[strategy].latest());
         _cumulativeWithdrawalsHistory[strategy].push(currCumulativeWithdrawalShares + queueWithdrawnShares);
     }

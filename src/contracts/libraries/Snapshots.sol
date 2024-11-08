@@ -131,7 +131,6 @@ library Snapshots {
         }
     }
 
-
     /**
      * @notice WithdrawalHistory SnapShotting used for calculating burned amounts for StrategyManager Strategies
      * Does not default to WAD, as the value is always 0 if there are no snapshots.
@@ -151,7 +150,10 @@ library Snapshots {
      * withdrawal snapshot is probably "recent", defined as being among the last sqrt(N) withdrawal snapshots where N is the number of
      * withdrawal snapshots.
      */
-    function getAtProbablyRecentBlock(WithdrawalHistory storage self, uint256 blockNumber) internal view returns (uint256) {
+    function getAtProbablyRecentBlock(
+        WithdrawalHistory storage self,
+        uint256 blockNumber
+    ) internal view returns (uint256) {
         require(blockNumber < block.number, BlocknumberDoesNotExist());
         uint32 key = SafeCastUpgradeable.toUint32(blockNumber);
 
@@ -180,13 +182,16 @@ library Snapshots {
      * Returns previous value and new value.
      */
     function push(WithdrawalHistory storage self, uint256 value) internal returns (uint256, uint256) {
-        return _insert(self._snapshots, SafeCastUpgradeable.toUint32(block.number), SafeCastUpgradeable.toUint224(value));
+        return
+            _insert(self._snapshots, SafeCastUpgradeable.toUint32(block.number), SafeCastUpgradeable.toUint224(value));
     }
 
     /**
      * @dev Returns the value in the most recent withdrawal snapshot, or zero if there are no withdrawal snapshots.
      */
-    function latest(WithdrawalHistory storage self) internal view returns (uint224) {
+    function latest(
+        WithdrawalHistory storage self
+    ) internal view returns (uint224) {
         uint256 pos = self._snapshots.length;
         return pos == 0 ? 0 : _unsafeAccess(self._snapshots, pos - 1)._value;
     }
@@ -244,7 +249,10 @@ library Snapshots {
     /**
      * @dev Access an element of the array without performing bounds check. The position is assumed to be within bounds.
      */
-    function _unsafeAccess(WithdrawalSnapshot[] storage self, uint256 pos) private pure returns (WithdrawalSnapshot storage result) {
+    function _unsafeAccess(
+        WithdrawalSnapshot[] storage self,
+        uint256 pos
+    ) private pure returns (WithdrawalSnapshot storage result) {
         assembly {
             mstore(0, self.slot)
             result.slot := add(keccak256(0, 0x20), pos)
