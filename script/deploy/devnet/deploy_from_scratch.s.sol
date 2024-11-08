@@ -13,6 +13,7 @@ import "../../../src/contracts/core/DelegationManager.sol";
 import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
 import "../../../src/contracts/core/AllocationManager.sol";
+import "../../../src/contracts/permissions/PermissionController.sol";
 
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "../../../src/contracts/strategies/StrategyFactory.sol";
@@ -60,6 +61,8 @@ contract DeployFromScratch is Script, Test {
     StrategyBase public baseStrategyImplementation;
     AllocationManager public allocationManagerImplementation;
     AllocationManager public allocationManager;
+    PermissionController public permissionController;
+    PermissionController public permissionControllerImplementation;
 
     EmptyContract public emptyContract;
 
@@ -210,6 +213,9 @@ contract DeployFromScratch is Script, Test {
         strategyFactory = StrategyFactory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        permissionController = PermissionController(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
 
         // if on mainnet, use the ETH2 deposit contract address
         if (chainId == 1) {
@@ -228,7 +234,7 @@ contract DeployFromScratch is Script, Test {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
 
-        delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
+        delegationImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, MIN_WITHDRAWAL_DELAY);
         strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
@@ -242,13 +248,15 @@ contract DeployFromScratch is Script, Test {
             delegation,
             strategyManager,
             eigenLayerPauserReg,
+            permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
             REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
             REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
         );
-        allocationManagerImplementation = new AllocationManager(delegation, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegation, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        permissionControllerImplementation = new PermissionController();
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
@@ -307,6 +315,14 @@ contract DeployFromScratch is Script, Test {
                 AllocationManager.initialize.selector,
                 executorMultisig,
                 ALLOCATION_MANAGER_INIT_PAUSED_STATUS
+            )
+        );
+
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(permissionController))),
+            address(permissionControllerImplementation),
+            abi.encodeWithSelector(
+                PermissionController.initialize.selector
             )
         );
 

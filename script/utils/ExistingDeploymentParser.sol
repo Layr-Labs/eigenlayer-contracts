@@ -10,6 +10,7 @@ import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
 import "../../src/contracts/core/AllocationManager.sol";
+import "../../src/contracts/permissions/PermissionController.sol";
 
 import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
@@ -64,6 +65,8 @@ contract ExistingDeploymentParser is Script, Test {
     AllocationManager public allocationManagerImplementation;
     UpgradeableBeacon public strategyBeacon;
     StrategyBase public strategyFactoryBeaconImplementation;
+    PermissionController public permissionController;
+    PermissionController public permissionControllerImplementation;
 
     // Token
     ProxyAdmin public tokenProxyAdmin;

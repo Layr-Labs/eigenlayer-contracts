@@ -150,7 +150,7 @@ contract Devnet_Lifecycle_Test is Test {
         IAllocationManagerTypes.CreateSetParams[] memory array = new IAllocationManagerTypes.CreateSetParams[](1);
         array[0] = createSetParams;
 
-        allocationManager.createOperatorSets(array);
+        allocationManager.createOperatorSets(avs, array);
         cheats.stopPrank();
     }
 
@@ -160,7 +160,7 @@ contract Devnet_Lifecycle_Test is Test {
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = operatorSetId;
 
-        allocationManager.registerForOperatorSets(IAllocationManagerTypes.RegisterParams(avs, operatorSetIds, ""));
+        allocationManager.registerForOperatorSets(operator, IAllocationManagerTypes.RegisterParams(avs, operatorSetIds, ""));
 
         assertEq(allocationManager.getMembers(OperatorSet(avs, operatorSetId))[0], operator);
     }
@@ -180,7 +180,7 @@ contract Devnet_Lifecycle_Test is Test {
         });
 
         cheats.prank(operator);
-        allocationManager.modifyAllocations(allocations);
+        allocationManager.modifyAllocations(operator, allocations);
 
         // Assert storage
         IAllocationManagerTypes.Allocation memory info = allocationManager.getAllocation(operator, operatorSet, wethStrategy);
@@ -209,7 +209,7 @@ contract Devnet_Lifecycle_Test is Test {
 
         // Slash operator
         cheats.prank(avs);
-        allocationManager.slashOperator(slashingParams);
+        allocationManager.slashOperator(avs, slashingParams);
 
         // Assert storage
         IAllocationManagerTypes.Allocation memory info = allocationManager.getAllocation(operator, operatorSet, wethStrategy);

@@ -95,6 +95,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             IEigenPodManager(address(eigenPodManagerMock)), 
             IAllocationManager(address(allocationManagerMock)), 
             pauserRegistry,
+            IPermissionController(address(permissionControllerMock)),
             MIN_WITHDRAWAL_DELAY_BLOCKS
         );
 
@@ -620,7 +621,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorDetailsModified(defaultOperator, modifiedOperatorDetails);
-        delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
+        delegationManager.modifyOperatorDetails(defaultOperator, modifiedOperatorDetails);
 
         assertEq(
             modifiedOperatorDetails.delegationApprover,
@@ -639,7 +640,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 
         cheats.prank(defaultOperator);
         cheats.expectRevert(OperatorNotRegistered.selector);
-        delegationManager.updateOperatorMetadataURI(emptyStringForMetadataURI);
+        delegationManager.updateOperatorMetadataURI(defaultOperator, emptyStringForMetadataURI);
     }
 
     /**
@@ -651,7 +652,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         OperatorDetails memory operatorDetails
     ) public {
         cheats.expectRevert(OperatorNotRegistered.selector);
-        delegationManager.modifyOperatorDetails(operatorDetails);
+        delegationManager.modifyOperatorDetails(defaultOperator, operatorDetails);
     }
 
     // @notice Tests that an operator who calls `updateOperatorMetadataURI` will correctly see an `OperatorMetadataURIUpdated` event emitted with their input
@@ -663,7 +664,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         cheats.prank(defaultOperator);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorMetadataURIUpdated(defaultOperator, metadataURI);
-        delegationManager.updateOperatorMetadataURI(metadataURI);
+        delegationManager.updateOperatorMetadataURI(defaultOperator, metadataURI);
     }
 }
 

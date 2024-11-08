@@ -22,20 +22,11 @@ The AllocationManager contract manages the allocation and reallocation of operat
 
 ```solidity
 /**
- * @notice Called by the delagation manager to set delay when operators register.
+ * @notice Called by operators or the delegation manager to set their allocation delay.
  * @param operator The operator to set the delay on behalf of.
  * @param delay The allocation delay in seconds.
- * @dev msg.sender is assumed to be the delegation manager.
  */
 function setAllocationDelay(address operator, uint32 delay) external;
-
-/**
- * @notice Called by operators to set their allocation delay.
- * @param delay the allocation delay in seconds
- * @dev msg.sender is assumed to be the operator
- */
-function setAllocationDelay(uint32 delay) external;
-```
 
 These functions allow operators to set their allocation delay. The first variant is called by the DelegationManager upon operator registration for all new operators created after the slashing release. The second variant is called by operators themselves to update their allocation delay or set it for the first time if they joined before the slashing release.
 

@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 import "src/contracts/permissions/PauserRegistry.sol";
+import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 
 import "src/test/mocks/AVSDirectoryMock.sol";
@@ -19,6 +20,9 @@ import "src/test/mocks/EmptyContract.sol";
 
 import "src/test/utils/SingleItemArrayLib.sol";
 import "src/test/utils/Random.sol";
+import "src/test/mocks/PermissionControllerMock.sol";
+
+import "src/test/utils/SingleItemArrayLib.sol";
 
 abstract contract EigenLayerUnitTestSetup is Test {
     using SingleItemArrayLib for *;
@@ -33,6 +37,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
     PauserRegistry pauserRegistry;
     ProxyAdmin eigenLayerProxyAdmin;
 
+    PermissionControllerMock permissionControllerMock;
     AVSDirectoryMock avsDirectoryMock;
     AllocationManagerMock allocationManagerMock;
     StrategyManagerMock strategyManagerMock;
@@ -71,6 +76,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
         delegationManagerMock = DelegationManagerMock(payable(address(new DelegationManagerMock())));
         eigenPodManagerMock = EigenPodManagerMock(payable(address(new EigenPodManagerMock(pauserRegistry))));
         emptyContract = new EmptyContract();
+        permissionControllerMock = PermissionControllerMock(payable(address(new PermissionControllerMock())));
 
         isExcludedFuzzAddress[address(0)] = true;
         isExcludedFuzzAddress[address(pauserRegistry)] = true;
@@ -80,5 +86,6 @@ abstract contract EigenLayerUnitTestSetup is Test {
         isExcludedFuzzAddress[address(strategyManagerMock)] = true;
         isExcludedFuzzAddress[address(delegationManagerMock)] = true;
         isExcludedFuzzAddress[address(eigenPodManagerMock)] = true;
+        isExcludedFuzzAddress[address(permissionControllerMock)] = true;
     }
 }
