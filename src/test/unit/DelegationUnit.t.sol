@@ -121,6 +121,10 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             )
         );
 
+        // Roll blocks forward so that block.number - MIN_WITHDRAWAL_DELAY_BLOCKS doesn't revert
+        // in _getSlashableSharesInQueue
+        cheats.roll(MIN_WITHDRAWAL_DELAY_BLOCKS);
+
         // Exclude delegation manager from fuzzed tests
         isExcludedFuzzAddress[address(delegationManager)] = true;
         isExcludedFuzzAddress[address(strategyManagerMock)] = true;
@@ -265,10 +269,17 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
      * @notice Using this helper function to fuzz withdrawalAmounts since fuzzing two dynamic sized arrays of equal lengths
      * reject too many inputs. 
      */
-    function _fuzzWithdrawalAmounts(uint256[] memory depositAmounts) internal view returns (uint256[] memory) {
-        uint256[] memory withdrawalAmounts = new uint256[](depositAmounts.length);
-        for (uint256 i = 0; i < depositAmounts.length; i++) {
-            cheats.assume(depositAmounts[i] > 0);
+    function _fuzzDepositWithdrawalAmounts(uint256[] memory fuzzAmounts) internal view returns (uint256[] memory, uint256[] memory) {
+        cheats.assume(fuzzAmounts.length > 0);
+        uint256[] memory withdrawalAmounts = new uint256[](fuzzAmounts.length);
+        // We want to bound deposits amounts as well
+        uint256[] memory depositAmounts = new uint256[](fuzzAmounts.length);
+        for (uint256 i = 0; i < fuzzAmounts.length; i++) {
+            depositAmounts[i] = bound(
+                uint256(keccak256(abi.encodePacked(fuzzAmounts[i]))),
+                1,
+                1e38 - 1
+            );
             // generate withdrawal amount within range s.t withdrawAmount <= depositAmount
             withdrawalAmounts[i] = bound(
                 uint256(keccak256(abi.encodePacked(depositAmounts[i]))),
@@ -276,7 +287,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                 depositAmounts[i]
             );
         }
-        return withdrawalAmounts;
+        return (depositAmounts, withdrawalAmounts);
     }
 
     function _setUpQueueWithdrawalsSingleStrat(
@@ -3326,15 +3337,12 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
      * - Checks that event was emitted with correct withdrawalRoot and withdrawal
      */
     function testFuzz_queueWithdrawal_MultipleStrats__nonSlashedOperator(
-        uint128[] memory depositAmountsUint128
+        uint256[] memory fuzzAmounts
     ) public {
-        cheats.assume(depositAmountsUint128.length > 0 && depositAmountsUint128.length <= 32);
-
-        uint256[] memory depositAmounts = new uint256[](depositAmountsUint128.length);
-        for (uint256 i = 0; i < depositAmountsUint128.length; i++) {
-            depositAmounts[i] = depositAmountsUint128[i];
-        }
-        uint256[] memory withdrawalAmounts = _fuzzWithdrawalAmounts(depositAmounts);
+        (
+            uint256[] memory depositAmounts,
+            uint256[] memory withdrawalAmounts
+        ) = _fuzzDepositWithdrawalAmounts(fuzzAmounts);
 
         IStrategy[] memory strategies = _deployAndDepositIntoStrategies(defaultStaker, depositAmounts);
         _registerOperatorWithBaseDetails(defaultOperator);
@@ -3498,11 +3506,13 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      * then it should revert if the validBlockNumber has not passed either.
      */
     function test_Revert_WhenWithdrawalDelayNotPassed(
-        uint256[] memory depositAmounts,
+        uint256[] memory fuzzAmounts,
         bool receiveAsTokens
     ) public {
-        cheats.assume(depositAmounts.length > 0 && depositAmounts.length <= 32);
-        uint256[] memory withdrawalAmounts = _fuzzWithdrawalAmounts(depositAmounts);
+        (
+            uint256[] memory depositAmounts,
+            uint256[] memory withdrawalAmounts
+        ) = _fuzzDepositWithdrawalAmounts(fuzzAmounts);
         
         _registerOperatorWithBaseDetails(defaultOperator);
         (
@@ -3520,7 +3530,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         cheats.roll(withdrawal.startBlock + minWithdrawalDelayBlocks - 1);
         cheats.expectRevert(WithdrawalDelayNotElapsed.selector);
         cheats.prank(defaultStaker);
-        delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  receiveAsTokens);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
 
         IERC20[][] memory tokensArray = new IERC20[][](1);
         tokensArray[0] = tokens;
