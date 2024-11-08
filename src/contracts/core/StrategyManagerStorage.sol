@@ -26,6 +26,9 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     // index for flag that pauses deposits when set
     uint8 internal constant PAUSED_DEPOSITS = 0;
 
+    /// @notice default address for burning slashed shares and transferring underlying tokens
+    address public constant DEFAULT_BURN_ADDRESS = address(0);
+
     // Immutables
 
     IDelegationManager public immutable delegation;

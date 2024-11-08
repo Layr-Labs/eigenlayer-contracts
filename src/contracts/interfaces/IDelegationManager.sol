@@ -370,13 +370,14 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
-     * @notice Decreases the operators shares in storage after a slash
+     * @notice Decreases the operators shares in storage after a slash and burns the corresponding Strategy shares
+     * by calling into the StrategyManager or EigenPodManager to burn the shares.
      * @param operator The operator to decrease shares for
      * @param strategy The strategy to decrease shares for
      * @param wadSlashed The proportion of 1e18 slashed
      * @dev Callable only by the AllocationManager
      */
-    function decreaseOperatorShares(address operator, IStrategy strategy, uint256 wadSlashed) external;
+    function decreaseAndBurnOperatorShares(address operator, IStrategy strategy, uint256 wadSlashed) external;
 
     /**
      *

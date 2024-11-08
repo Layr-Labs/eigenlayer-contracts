@@ -9,6 +9,8 @@ import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IAllocationManager.sol";
 
+import {Snapshots} from "../libraries/Snapshots.sol";
+
 /**
  * @title Storage variables for the `DelegationManager` contract.
  * @author Layr Labs, Inc.
@@ -16,6 +18,8 @@ import "../interfaces/IAllocationManager.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract DelegationManagerStorage is IDelegationManager {
+    using Snapshots for Snapshots.WithdrawalHistory;
+
     // Constants
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
@@ -115,6 +119,10 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev This variable only reflects withdrawals that were made after the slashing release.
     mapping(bytes32 withdrawalRoot => Withdrawal withdrawal) public queuedWithdrawals;
 
+    /// @dev Contains history of the total cumulative staker withdrawals for a given strategy. Used to calculate
+    /// burned shares for StrategyManager shares.
+    mapping(IStrategy strategy => Snapshots.WithdrawalHistory) internal _cumulativeWithdrawalsHistory;
+
     // Construction
 
     constructor(
@@ -136,5 +144,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[35] private __gap;
+    uint256[34] private __gap;
 }

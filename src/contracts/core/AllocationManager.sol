@@ -113,8 +113,8 @@ contract AllocationManager is
             _updateAllocationInfo(params.operator, operatorSet.key(), strategy, info, allocation);
             _updateMaxMagnitude(params.operator, strategy, info.maxMagnitude);
 
-            // 6. Decrease operators shares in the DelegationManager
-            delegation.decreaseOperatorShares({
+            // 6. Decrease and burn operators shares in the DelegationManager
+            delegation.decreaseAndBurnOperatorShares({
                 operator: params.operator,
                 strategy: strategy,
                 wadSlashed: sharesWadSlashed

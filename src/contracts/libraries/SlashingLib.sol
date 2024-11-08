@@ -141,7 +141,12 @@ library SlashingLib {
             .mulWad(slashingFactor);
     }
 
-    function calcSlashedAmount(uint256 operatorShares, uint256 wadSlashed) internal pure returns (uint256) {
-        return operatorShares.mulWad(wadSlashed);
+    function calcSlashedAmount(
+        uint256 operatorShares,
+        uint256 queuedWithdrawalShares,
+        uint256 wadSlashed
+    ) internal pure returns (uint256 sharesToDecrement, uint256 sharesToBurn) {
+        sharesToDecrement = operatorShares.mulWad(wadSlashed);
+        sharesToBurn = sharesToDecrement + queuedWithdrawalShares.mulWad(wadSlashed);
     }
 }

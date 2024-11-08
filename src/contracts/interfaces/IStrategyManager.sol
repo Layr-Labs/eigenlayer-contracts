@@ -111,6 +111,14 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256 shares);
 
     /**
+     * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer to the default burn address.
+     * @param strategy The strategy to burn shares in.
+     * @param sharesToBurn The amount of shares to burn.
+     * @dev This function is only called by the DelegationManager when an operator is slashed.
+     */
+    function burnShares(IStrategy strategy, uint256 sharesToBurn) external;
+
+    /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
      * @param newStrategyWhitelister new address for the `strategyWhitelister`.
      */

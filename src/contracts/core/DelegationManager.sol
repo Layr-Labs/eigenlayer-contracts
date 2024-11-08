@@ -8,6 +8,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
+import "../libraries/Snapshots.sol";
 import "./DelegationManagerStorage.sol";
 
 /**
@@ -29,6 +30,7 @@ contract DelegationManager is
     SignatureUtils
 {
     using SlashingLib for *;
+    using Snapshots for Snapshots.WithdrawalHistory;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
@@ -338,14 +340,15 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function decreaseOperatorShares(
+    function decreaseAndBurnOperatorShares(
         address operator,
         IStrategy strategy,
         uint256 wadSlashed
     ) external onlyAllocationManager {
         /// forgefmt: disable-next-item
-        uint256 amountSlashed = SlashingLib.calcSlashedAmount({
-            operatorShares: operatorShares[operator][strategy], 
+        (uint256 sharesToDecrement, uint256 sharesToBurn) = SlashingLib.calcSlashedAmount({
+            operatorShares: operatorShares[operator][strategy],
+            queuedWithdrawalShares: _getSlashableSharesInQueue(strategy),
             wadSlashed: wadSlashed
         });
 
@@ -353,8 +356,14 @@ contract DelegationManager is
             operator: operator,
             staker: address(0), // we treat this as a decrease for the zero address staker
             strategy: strategy,
-            sharesToDecrease: amountSlashed
+            sharesToDecrease: sharesToDecrement
         });
+
+        /// TODO: implement EPM.burnShares interface. Likely requires more complex interface than just shares
+        /// so not adding a burnShares method in IShareManager
+        if (strategy != beaconChainETHStrategy) {
+            strategyManager.burnShares(strategy, sharesToBurn);
+        }
     }
 
     /**
@@ -626,6 +635,10 @@ contract DelegationManager is
             // Calculate how many shares can be withdrawn after factoring in slashing
             sharesToWithdraw[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
 
+            // Update cumulative withdrawn shares for the strategy, this is for accounting purposes for burning shares
+            // if 
+            _updateCumulativeWithdrawnShares(strategies[i], sharesToWithdraw);
+
             // Apply slashing. If the staker or operator has been fully slashed, this will return 0
             scaledShares[i] = SlashingLib.scaleSharesForQueuedWithdrawal({
                 sharesToWithdraw: sharesToWithdraw[i],
@@ -634,6 +647,11 @@ contract DelegationManager is
 
             // Remove delegated shares from the operator
             if (operator != address(0)) {
+                // Staker was delegated and remains slashable during the withdrawal delay period
+                // Cumulative withdrawn shares are updated for the strategy, this is for accounting
+                // purposes for burning shares if slashed
+                _updateCumulativeWithdrawnShares(strategies[i], sharesToWithdraw);
+
                 // forgefmt: disable-next-item
                 _decreaseDelegation({
                     operator: operator,
@@ -730,6 +748,28 @@ contract DelegationManager is
 
         emit BeaconChainScalingFactorDecreased(staker, bsf.slashingFactor);
         _beaconChainSlashingFactor[staker] = bsf;
+    }
+
+    /// @dev Calculate amount of withdrawable shares for a strategy that are still in the queue
+    /// and therefore slashable.
+    function _getSlashableSharesInQueue(
+        IStrategy strategy
+    ) internal view returns (uint256) {
+        uint256 currCumulativeWithdrawalShares = uint256(_cumulativeWithdrawalsHistory[strategy].latest());
+        // Note: this will simply return 0 if no history exists, same for latest() as well
+        uint256 pastCumulativeWithdrawalShares = _cumulativeWithdrawalsHistory[strategy].getAtProbablyRecentBlock(
+            block.number - MIN_WITHDRAWAL_DELAY_BLOCKS
+        );
+        return currCumulativeWithdrawalShares - pastCumulativeWithdrawalShares;
+    }
+
+    /// @dev Update the cumulative withdrawn shares for a strategy
+    function _updateCumulativeWithdrawnShares(
+        IStrategy strategy,
+        uint256 queueWithdrawnShares
+    ) internal {
+        uint256 currCumulativeWithdrawalShares = uint256(_cumulativeWithdrawalsHistory[strategy].latest());
+        _cumulativeWithdrawalsHistory[strategy].push(currCumulativeWithdrawalShares + queueWithdrawnShares);
     }
 
     /// @dev Depending on the strategy used, determine which ShareManager contract to make external calls to
