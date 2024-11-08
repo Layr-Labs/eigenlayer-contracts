@@ -348,7 +348,7 @@ contract DelegationManager is
         /// forgefmt: disable-next-item
         (uint256 sharesToDecrement, uint256 sharesToBurn) = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
-            queuedWithdrawalShares: _getSlashableSharesInQueue(strategy),
+            queuedWithdrawalShares: _getSlashableSharesInQueue(operator, strategy),
             wadSlashed: wadSlashed
         });
 
@@ -646,7 +646,7 @@ contract DelegationManager is
                 // Staker was delegated and remains slashable during the withdrawal delay period
                 // Cumulative withdrawn shares are updated for the strategy, this is for accounting
                 // purposes for burning shares if slashed
-                _updateCumulativeWithdrawnShares(strategies[i], sharesToWithdraw);
+                _updateCumulativeWithdrawnShares(operator, strategies[i], sharesToWithdraw);
 
                 // forgefmt: disable-next-item
                 _decreaseDelegation({
@@ -746,22 +746,24 @@ contract DelegationManager is
         _beaconChainSlashingFactor[staker] = bsf;
     }
 
-    /// @dev Calculate amount of withdrawable shares for a strategy that are still in the queue
+    /// @dev Calculate amount of withdrawable shares from an operator for a strategy that is still in the queue
     /// and therefore slashable.
-    function _getSlashableSharesInQueue(
-        IStrategy strategy
-    ) internal view returns (uint256) {
-        uint256 currCumulativeWithdrawalShares = uint256(_cumulativeWithdrawalsHistory[strategy].latest());
+    function _getSlashableSharesInQueue(address operator, IStrategy strategy) internal view returns (uint256) {
+        uint256 currCumulativeWithdrawalShares = uint256(_cumulativeWithdrawalsHistory[operator][strategy].latest());
         // Note: this will simply return 0 if no history exists, same for latest() as well
-        uint256 pastCumulativeWithdrawalShares =
-            _cumulativeWithdrawalsHistory[strategy].getAtProbablyRecentBlock(block.number - MIN_WITHDRAWAL_DELAY_BLOCKS);
+        uint256 pastCumulativeWithdrawalShares = _cumulativeWithdrawalsHistory[operator][strategy]
+            .getAtProbablyRecentBlock(block.number - MIN_WITHDRAWAL_DELAY_BLOCKS);
         return currCumulativeWithdrawalShares - pastCumulativeWithdrawalShares;
     }
 
-    /// @dev Update the cumulative withdrawn shares for a strategy
-    function _updateCumulativeWithdrawnShares(IStrategy strategy, uint256 queueWithdrawnShares) internal {
-        uint256 currCumulativeWithdrawalShares = uint256(_cumulativeWithdrawalsHistory[strategy].latest());
-        _cumulativeWithdrawalsHistory[strategy].push(currCumulativeWithdrawalShares + queueWithdrawnShares);
+    /// @dev Update the cumulative withdrawn shares from an operator for a given strategy
+    function _updateCumulativeWithdrawnShares(
+        address operator,
+        IStrategy strategy,
+        uint256 queueWithdrawnShares
+    ) internal {
+        uint256 currCumulativeWithdrawalShares = uint256(_cumulativeWithdrawalsHistory[operator][strategy].latest());
+        _cumulativeWithdrawalsHistory[operator][strategy].push(currCumulativeWithdrawalShares + queueWithdrawnShares);
     }
 
     /// @dev Depending on the strategy used, determine which ShareManager contract to make external calls to
