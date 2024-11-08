@@ -78,16 +78,23 @@ library SingleItemArrayLib {
         }
     }
 
+    /// -----------------------------------------------------------------------
+    /// EigenLayer Types
+    /// -----------------------------------------------------------------------
+
+    function toArray(
+        IERC20 token
+    ) internal pure returns (IERC20[] memory array) {
+        array = new IERC20[](1);
+        array[0] = token;
+    }
+
     function toArray(
         IStrategy strategy
     ) internal pure returns (IStrategy[] memory array) {
         array = new IStrategy[](1);
         array[0] = strategy;
     }
-
-    /// -----------------------------------------------------------------------
-    /// EigenLayer Types
-    /// -----------------------------------------------------------------------
 
     function toArray(
         OperatorSet memory operatorSet

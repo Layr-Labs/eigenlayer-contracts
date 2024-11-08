@@ -102,6 +102,12 @@ library Random {
         return address(uint160(r.Uint256(1, type(uint160).max)));
     }
 
+    function Boolean(
+        Randomness r
+    ) internal returns (bool) {
+        return r.Uint256() % 2 == 0;
+    }
+
     /// -----------------------------------------------------------------------
     /// General Types
     /// -----------------------------------------------------------------------
