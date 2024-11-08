@@ -12,6 +12,7 @@ remappings = [
     "ds-test/=lib/ds-test/src/",
     "forge-std/=lib/forge-std/src/"
 ]
+sparse_mode = true
 
 # A list of ignored solc error codes
 

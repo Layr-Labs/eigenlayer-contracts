@@ -40,7 +40,7 @@ contract EigenStrategy is StrategyBase {
         IPauserRegistry _pauserRegistry
     ) StrategyBase(_strategyManager, _pauserRegistry) {}
 
-    function initialize(IEigen _EIGEN, IERC20 _bEIGEN, IPauserRegistry _pauserRegistry) public virtual initializer {
+    function initialize(IEigen _EIGEN, IERC20 _bEIGEN) public virtual initializer {
         EIGEN = _EIGEN;
         _initializeStrategyBase(_bEIGEN);
     }
