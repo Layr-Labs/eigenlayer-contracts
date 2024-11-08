@@ -646,6 +646,10 @@ contract DelegationManager is
             // Calculate how many shares can be withdrawn after factoring in slashing
             sharesToWithdraw[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
 
+            // Update cumulative withdrawn shares for the strategy, this is for accounting purposes for burning shares
+            // if 
+            _updateCumulativeWithdrawnShares(strategies[i], sharesToWithdraw);
+
             // Apply slashing. If the staker or operator has been fully slashed, this will return 0
             scaledShares[i] = SlashingLib.scaleForQueueWithdrawal({
                 sharesToWithdraw: sharesToWithdraw[i],
