@@ -112,7 +112,7 @@ contract AllocationManager is
 
             // 5. Update state
             _updateAllocationInfo(params.operator, operatorSet.key(), strategy, info, allocation);
-            _updateMaxMagnitude(params.operator, strategy, info.maxMagnitude);
+            uint64 prevMaxMagnitude = _updateMaxMagnitude(params.operator, strategy, info.maxMagnitude);
 
             // 6. Decrease and burn operators shares in the DelegationManager
             delegation.burnOperatorShares({
@@ -501,8 +501,13 @@ contract AllocationManager is
         }
     }
 
-    function _updateMaxMagnitude(address operator, IStrategy strategy, uint64 newMaxMagnitude) internal {
-        _maxMagnitudeHistory[operator][strategy].push({key: uint32(block.number), value: newMaxMagnitude});
+    function _updateMaxMagnitude(
+        address operator,
+        IStrategy strategy,
+        uint64 newMaxMagnitude
+    ) internal returns (uint64 prevMaxMagnitude) {
+        (prevMaxMagnitude,) =
+            _maxMagnitudeHistory[operator][strategy].push({key: uint32(block.number), value: newMaxMagnitude});
         emit MaxMagnitudeUpdated(operator, strategy, newMaxMagnitude);
     }
 

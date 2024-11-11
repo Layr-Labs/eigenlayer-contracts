@@ -2394,7 +2394,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
 
         cheats.startPrank(invalidCaller);
         cheats.expectRevert(IDelegationManagerErrors.OnlyAllocationManager.selector);
-        delegationManager.decreaseAndBurnOperatorShares(invalidCaller, strategyMock, 0);
+        delegationManager.decreaseAndBurnOperatorShares(invalidCaller, strategyMock, 0, 0);
     }
 
     /// @notice Verifies that there is no change in shares if the staker is not delegatedd
@@ -2402,11 +2402,11 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         _registerOperatorWithBaseDetails(defaultOperator);
 
         cheats.prank(address(allocationManagerMock));
-        delegationManager.decreaseAndBurnOperatorShares(defaultOperator, strategyMock, WAD);
+        delegationManager.decreaseAndBurnOperatorShares(defaultOperator, strategyMock, WAD, WAD/2);
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
     }
 
- /**
+    /**
      * @notice Verifies that `DelegationManager.decreaseAndBurnOperatorShares` properly decreases the delegated `shares` that the operator
      * who the `defaultStaker` is delegated to has in the strategies
      * @dev Checks that there is no change if the staker is not delegated
