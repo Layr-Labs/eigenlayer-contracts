@@ -9,10 +9,6 @@ import "src/contracts/interfaces/IPermissionController.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionControllerEvents, IPermissionControllerErrors {
-
-    PermissionController permissionController;
-    PermissionController permissionControllerImplementation;
-
     address account = address(0x1);
     address admin = address(0x2);
     address admin2 = address(0x3);
@@ -25,18 +21,8 @@ contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionCo
     bytes4 selector2 = IAllocationManager.modifyAllocations.selector;
 
     function setUp() virtual public override {
-        // Setup
+        // Setup - already deploys permissionController
         EigenLayerUnitTestSetup.setUp();
-
-        // Deploy PermissionController
-        permissionControllerImplementation = new PermissionController();
-        permissionController = PermissionController(address(new TransparentUpgradeableProxy(
-            address(permissionControllerImplementation),
-            address(eigenLayerProxyAdmin),
-            abi.encodeWithSelector(
-                PermissionController.initialize.selector
-            )
-        )));
 
         // Set targets
         target1 = address(delegationManagerMock);

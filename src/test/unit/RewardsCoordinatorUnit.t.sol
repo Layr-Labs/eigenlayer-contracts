@@ -93,7 +93,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
             IDelegationManager(address(delegationManagerMock)),
             IStrategyManager(address(strategyManagerMock)),
             pauserRegistry,
-            IPermissionController(address(permissionControllerMock)),
+            IPermissionController(address(permissionController)),
             CALCULATION_INTERVAL_SECONDS,
             MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,

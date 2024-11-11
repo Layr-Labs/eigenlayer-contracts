@@ -90,7 +90,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
                         new AllocationManager(
                             IDelegationManager(address(delegationManagerMock)),
                             _pauserRegistry,
-                            IPermissionController(address(permissionControllerMock)),
+                            IPermissionController(address(permissionController)),
                             DEALLOCATION_DELAY,
                             ALLOCATION_CONFIGURATION_DELAY
                         )
@@ -1521,6 +1521,12 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocationManager.modifyAllocations(address(this), new AllocateParams[](0));
     }
 
+    function test_revert_invalidCaller() public {
+        address invalidOperator = address(0x2);
+        cheats.expectRevert(InvalidCaller.selector);
+        allocationManager.modifyAllocations(invalidOperator, new AllocateParams[](0));
+    }
+
     function test_revert_allocationDelayNotSet() public {
         address invalidOperator = address(0x2);
         cheats.prank(invalidOperator);
@@ -2789,6 +2795,11 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         allocationManager.setAllocationDelay(operatorToSet, 1);
     }
 
+    function test_revert_callerNotAuthorized() public {
+        cheats.expectRevert(InvalidCaller.selector);
+        allocationManager.setAllocationDelay(operatorToSet, 1);
+    }
+
     function testFuzz_setDelay(
         Randomness r
     ) public rand(r) {
@@ -2911,12 +2922,13 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         allocationManager.registerForOperatorSets(defaultOperator, defaultRegisterParams);
     }
 
-    function testFuzz_registerForOperatorSets_InvalidOperator(
+    function testFuzz_registerForOperatorSets_InvalidOperator_x(
         Randomness r
     ) public rand(r) {
-        cheats.prank(r.Address());
+        address operator = r.Address();
+        cheats.prank(operator);
         cheats.expectRevert(InvalidOperator.selector);
-        allocationManager.registerForOperatorSets(r.Address(), defaultRegisterParams);
+        allocationManager.registerForOperatorSets(operator, defaultRegisterParams);
     }
 
     function testFuzz_registerForOperatorSets_InvalidOperatorSet(
@@ -2992,6 +3004,22 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
     function test_deregisterFromOperatorSets_Paused() public {
         allocationManager.pause(2 ** PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        allocationManager.deregisterFromOperatorSets(defaultDeregisterParams);
+    }
+
+    function test_deregisterFromOperatorSets_revert_invalidCaller_notOperator() public {
+        address randomOperator = address(0x1);
+        defaultDeregisterParams.operator = randomOperator;
+
+        cheats.expectRevert(InvalidCaller.selector);
+        allocationManager.deregisterFromOperatorSets(defaultDeregisterParams);
+    }
+
+    function test_deregisterFromOperatorSets_revert_invalidCaller_notAVS() public {
+        address randomAVS = address(0x1);
+
+        cheats.prank(randomAVS);
+        cheats.expectRevert(InvalidCaller.selector);
         allocationManager.deregisterFromOperatorSets(defaultDeregisterParams);
     }
 

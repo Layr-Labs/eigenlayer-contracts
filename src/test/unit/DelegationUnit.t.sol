@@ -109,7 +109,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             IEigenPodManager(address(eigenPodManagerMock)), 
             IAllocationManager(address(allocationManagerMock)), 
             pauserRegistry,
-            IPermissionController(address(permissionControllerMock)),
+            IPermissionController(address(permissionController)),
             MIN_WITHDRAWAL_DELAY_BLOCKS
         );
 
@@ -1099,6 +1099,44 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 
         // call `updateOperatorMetadataURI` and check for event
         cheats.prank(defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorMetadataURIUpdated(defaultOperator, metadataURI);
+        delegationManager.updateOperatorMetadataURI(defaultOperator, metadataURI);
+    }
+
+    function testFuzz_UAM_modifyOperatorDetails(
+        OperatorDetails memory operatorDetails
+    ) public {
+        // Set admin
+        cheats.prank(defaultOperator);
+        permissionController.setDelegate(
+            defaultOperator,
+            address(this),
+            address(delegationManager),
+            IDelegationManager.modifyOperatorDetails.selector
+        );
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+
+        // Modify operator details
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorDetailsModified(defaultOperator, operatorDetails);
+        delegationManager.modifyOperatorDetails(defaultOperator, operatorDetails);
+    }
+
+    function testFuzz_UAM_updateOperatorMetadataURI(string memory metadataURI) public {
+        // Set admin
+        cheats.prank(defaultOperator);
+        permissionController.setDelegate(
+            defaultOperator,
+            address(this),
+            address(delegationManager),
+            IDelegationManager.updateOperatorMetadataURI.selector
+        );
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+
+        // call `updateOperatorMetadataURI` and check for event
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorMetadataURIUpdated(defaultOperator, metadataURI);
         delegationManager.updateOperatorMetadataURI(defaultOperator, metadataURI);
@@ -3066,8 +3104,6 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
     function testFuzz_undelegate_revert_invalidCaller(
         address invalidCaller
     ) public filterFuzzedAddressInputs(invalidCaller) {
-        // Invalidate canCall on permissionController
-        permissionControllerMock.setCanCallResult(false);
         address staker = address(0x123);
         // filter out addresses that are actually allowed to call the function
         cheats.assume(invalidCaller != staker);
@@ -3146,6 +3182,31 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         bytes32[] memory withdrawalRoots = delegationManager.undelegate(staker);
 
         assertEq(withdrawalRoots.length, 0, "withdrawalRoot should be an empty array");
+        assertEq(
+            delegationManager.delegatedTo(staker),
+            address(0),
+            "undelegated staker should be delegated to zero address"
+        );
+        assertFalse(delegationManager.isDelegated(staker), "staker not undelegated");
+    }
+
+    function testFuzz_undelegate_UAM(address staker, bytes32 salt) public {
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoRequiresSig(staker, defaultOperator, salt);
+
+        // Set delegate
+        cheats.prank(defaultOperator);
+        permissionController.setDelegate(
+            defaultOperator,
+            address(this),
+            address(delegationManager),
+            IDelegationManager.undelegate.selector
+        );
+
+        // Undelegate
+        delegationManager.undelegate(staker);
+
+        // Checks
         assertEq(
             delegationManager.delegatedTo(staker),
             address(0),
