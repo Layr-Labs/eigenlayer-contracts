@@ -343,13 +343,15 @@ contract DelegationManager is
     function decreaseAndBurnOperatorShares(
         address operator,
         IStrategy strategy,
-        uint256 wadSlashed
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
     ) external onlyAllocationManager {
         /// forgefmt: disable-next-item
         (uint256 sharesToDecrement, uint256 sharesToBurn) = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
-            queuedWithdrawalShares: _getSlashableSharesInQueue(operator, strategy),
-            wadSlashed: wadSlashed
+            queuedWithdrawnScaledShares: _getSlashableSharesInQueue(operator, strategy, newMaxMagnitude),
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
         });
 
         _decreaseDelegation({
@@ -644,9 +646,9 @@ contract DelegationManager is
             // Remove delegated shares from the operator
             if (operator != address(0)) {
                 // Staker was delegated and remains slashable during the withdrawal delay period
-                // Cumulative withdrawn shares are updated for the strategy, this is for accounting
+                // Cumulative withdrawn scaled shares are updated for the strategy, this is for accounting
                 // purposes for burning shares if slashed
-                _updateCumulativeWithdrawnShares(operator, strategies[i], sharesToWithdraw);
+                _updateCumulativeScaledShares(operator, strategies[i], scaledShares[i]);
 
                 // forgefmt: disable-next-item
                 _decreaseDelegation({
@@ -746,24 +748,28 @@ contract DelegationManager is
         _beaconChainSlashingFactor[staker] = bsf;
     }
 
-    /// @dev Calculate amount of withdrawable shares from an operator for a strategy that is still in the queue
-    /// and therefore slashable.
-    function _getSlashableSharesInQueue(address operator, IStrategy strategy) internal view returns (uint256) {
-        uint256 currCumulativeWithdrawalShares = uint256(_cumulativeWithdrawalsHistory[operator][strategy].latest());
-        // Note: this will simply return 0 if no history exists, same for latest() as well
-        uint256 pastCumulativeWithdrawalShares = _cumulativeWithdrawalsHistory[operator][strategy]
-            .getAtProbablyRecentBlock(block.number - MIN_WITHDRAWAL_DELAY_BLOCKS);
-        return currCumulativeWithdrawalShares - pastCumulativeWithdrawalShares;
-    }
-
-    /// @dev Update the cumulative withdrawn shares from an operator for a given strategy
-    function _updateCumulativeWithdrawnShares(
+    /// @dev Calculate amount of slashable shares that are queued withdrawn from an operator for a strategy.
+    function _getSlashableSharesInQueue(
         address operator,
         IStrategy strategy,
-        uint256 queueWithdrawnShares
-    ) internal {
-        uint256 currCumulativeWithdrawalShares = uint256(_cumulativeWithdrawalsHistory[operator][strategy].latest());
-        _cumulativeWithdrawalsHistory[operator][strategy].push(currCumulativeWithdrawalShares + queueWithdrawnShares);
+        uint64 maxMagnitude
+    ) internal view returns (uint256) {
+        uint256 currCumulativeScaledShares = uint256(_cumulativeScaledSharesHistory[operator][strategy].latest());
+        // Note: this will simply return 0 if no history exists, same for latest() as well
+        uint256 pastCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].getAtProbablyRecentBlock(
+            block.number - MIN_WITHDRAWAL_DELAY_BLOCKS
+        );
+        uint256 slashableShareInQueue = SlashingLib.scaleSharesForBurningQueueWithdrawals(
+            pastCumulativeScaledShares, currCumulativeScaledShares, maxMagnitude
+        );
+
+        return slashableShareInQueue;
+    }
+
+    /// @dev Update the cumulative withdrawn scaled shares from an operator for a given strategy
+    function _updateCumulativeScaledShares(address operator, IStrategy strategy, uint256 scaledShares) internal {
+        uint256 currCumulativeScaledShares = uint256(_cumulativeScaledSharesHistory[operator][strategy].latest());
+        _cumulativeScaledSharesHistory[operator][strategy].push(currCumulativeScaledShares + scaledShares);
     }
 
     /// @dev Depending on the strategy used, determine which ShareManager contract to make external calls to
@@ -844,6 +850,14 @@ contract DelegationManager is
             shares[i] = getOperatorShares(operators[i], strategies);
         }
         return shares;
+    }
+
+    /// @inheritdoc IDelegationManager
+    function getSlashableSharesInQueue(address operator, IStrategy strategy) public view returns (uint256) {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = strategy;
+        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategies)[0];
+        return _getSlashableSharesInQueue(operator, strategy, maxMagnitude);
     }
 
     /// @inheritdoc IDelegationManager

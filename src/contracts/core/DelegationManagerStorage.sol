@@ -119,10 +119,11 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev This variable only reflects withdrawals that were made after the slashing release.
     mapping(bytes32 withdrawalRoot => Withdrawal withdrawal) public queuedWithdrawals;
 
-    /// @dev Contains history of the total cumulative staker withdrawals for an operator and a given strategy.
+    /// @notice Contains history of the total cumulative staker withdrawals for an operator and a given strategy.
     /// Used to calculate burned StrategyManager shares when an operator is slashed.
+    /// @dev Stores scaledShares instead of total withdrawn shares to track current slashable shares, dependent on the maxMagnitude
     mapping(address operator => mapping(IStrategy strategy => Snapshots.WithdrawalHistory)) internal
-        _cumulativeWithdrawalsHistory;
+        _cumulativeScaledSharesHistory;
 
     // Construction
 

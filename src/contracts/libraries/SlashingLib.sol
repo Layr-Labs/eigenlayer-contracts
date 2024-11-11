@@ -80,6 +80,14 @@ library SlashingLib {
         return scaledShares.mulWad(slashingFactor);
     }
 
+    function scaleSharesForBurningQueueWithdrawals(
+        uint256 pastCumulativeScaledShares,
+        uint256 currCumulativeScaledShares,
+        uint64 maxMagnitude
+    ) internal pure returns (uint256) {
+        return (currCumulativeScaledShares - pastCumulativeScaledShares).mulWad(maxMagnitude);
+    }
+
     function update(
         DepositScalingFactor storage dsf,
         uint256 existingDepositShares,
@@ -143,10 +151,11 @@ library SlashingLib {
 
     function calcSlashedAmount(
         uint256 operatorShares,
-        uint256 queuedWithdrawalShares,
-        uint256 wadSlashed
+        uint256 queuedWithdrawnScaledShares,
+        uint256 prevMaxMagnitude,
+        uint256 newMaxMagnitude
     ) internal pure returns (uint256 sharesToDecrement, uint256 sharesToBurn) {
-        sharesToDecrement = operatorShares.mulWad(wadSlashed);
-        sharesToBurn = sharesToDecrement + queuedWithdrawalShares.mulWad(wadSlashed);
+        sharesToDecrement = operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude);
+        sharesToBurn = sharesToDecrement + queuedWithdrawnScaledShares.mulWad(newMaxMagnitude);
     }
 }

@@ -374,10 +374,16 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * by calling into the StrategyManager or EigenPodManager to burn the shares.
      * @param operator The operator to decrease shares for
      * @param strategy The strategy to decrease shares for
-     * @param wadSlashed The proportion of 1e18 slashed
+     * @param prevMaxMagnitude the previous maxMagnitude of the operator
+     * @param newMaxMagnitude the new maxMagnitude of the operator
      * @dev Callable only by the AllocationManager
      */
-    function decreaseAndBurnOperatorShares(address operator, IStrategy strategy, uint256 wadSlashed) external;
+    function decreaseAndBurnOperatorShares(
+        address operator,
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) external;
 
     /**
      *
@@ -479,6 +485,16 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         address[] memory operators,
         IStrategy[] memory strategies
     ) external view returns (uint256[][] memory);
+
+    /**
+     * @notice Returns amount of withdrawable shares from an operator for a strategy that is still in the queue
+     * and therefore slashable. Note that the *actual* slashable amount could be less than this value as this doesn't account
+     * for amounts that have already been slashed. This assumes that none of the shares have been slashed.
+     * @param operator the operator to get shares for
+     * @param strategy the strategy to get shares for
+     * @return the amount of shares that are slashable in the withdrawal queue for an operator and a strategy
+     */
+    function getSlashableSharesInQueue(address operator, IStrategy strategy) external view returns (uint256);
 
     /**
      * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal and the
