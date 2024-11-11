@@ -20,7 +20,6 @@ import "src/test/mocks/EmptyContract.sol";
 
 import "src/test/utils/SingleItemArrayLib.sol";
 import "src/test/utils/Random.sol";
-import "src/test/mocks/PermissionControllerMock.sol";
 
 import "src/test/utils/SingleItemArrayLib.sol";
 
@@ -36,8 +35,9 @@ abstract contract EigenLayerUnitTestSetup is Test {
 
     PauserRegistry pauserRegistry;
     ProxyAdmin eigenLayerProxyAdmin;
+    PermissionController permissionControllerImplementation;
+    PermissionController permissionController;
 
-    PermissionControllerMock permissionControllerMock;
     AVSDirectoryMock avsDirectoryMock;
     AllocationManagerMock allocationManagerMock;
     StrategyManagerMock strategyManagerMock;
@@ -70,6 +70,15 @@ abstract contract EigenLayerUnitTestSetup is Test {
         pauserRegistry = new PauserRegistry(pausers, unpauser);
         eigenLayerProxyAdmin = new ProxyAdmin();
 
+        // Deploy permission controller
+        permissionControllerImplementation = new PermissionController();
+        permissionController = PermissionController(address(new TransparentUpgradeableProxy(
+            address(permissionControllerImplementation),
+            address(eigenLayerProxyAdmin),
+            abi.encodeWithSelector(
+                PermissionController.initialize.selector
+            )
+        )));
 
         avsDirectoryMock = AVSDirectoryMock(payable(address(new AVSDirectoryMock())));
         allocationManagerMock = AllocationManagerMock(payable(address(new AllocationManagerMock())));
@@ -77,16 +86,16 @@ abstract contract EigenLayerUnitTestSetup is Test {
         delegationManagerMock = DelegationManagerMock(payable(address(new DelegationManagerMock())));
         eigenPodManagerMock = EigenPodManagerMock(payable(address(new EigenPodManagerMock(pauserRegistry))));
         emptyContract = new EmptyContract();
-        permissionControllerMock = PermissionControllerMock(payable(address(new PermissionControllerMock())));
+
 
         isExcludedFuzzAddress[address(0)] = true;
         isExcludedFuzzAddress[address(pauserRegistry)] = true;
+        isExcludedFuzzAddress[address(permissionController)] = true;
         isExcludedFuzzAddress[address(eigenLayerProxyAdmin)] = true;
         isExcludedFuzzAddress[address(avsDirectoryMock)] = true;
         isExcludedFuzzAddress[address(allocationManagerMock)] = true;
         isExcludedFuzzAddress[address(strategyManagerMock)] = true;
         isExcludedFuzzAddress[address(delegationManagerMock)] = true;
         isExcludedFuzzAddress[address(eigenPodManagerMock)] = true;
-        isExcludedFuzzAddress[address(permissionControllerMock)] = true;
     }
 }
