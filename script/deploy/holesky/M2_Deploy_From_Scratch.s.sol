@@ -77,7 +77,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
-        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
+        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, MIN_WITHDRAWAL_DELAY);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             IETHPOSDeposit(ETHPOSDepositAddress),
@@ -86,7 +86,8 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             delegationManager,
             eigenLayerPauserReg
         );
-        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        permissionControllerImplementation = new PermissionController();
 
         // Third, upgrade the proxy contracts to point to the implementations
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
@@ -148,6 +149,14 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
                 msg.sender, // initialOwner is msg.sender for now to set forktimestamp later
                 eigenLayerPauserReg,
                 ALLOCATION_MANAGER_INIT_PAUSED_STATUS
+            )
+        );
+        // PermissionController
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(permissionController))),
+            address(permissionControllerImplementation),
+            abi.encodeWithSelector(
+                PermissionController.initialize.selector
             )
         );
 

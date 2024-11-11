@@ -51,7 +51,7 @@ contract AllocateOperatorSet is Script, Test {
         });
 
         // Perform allocation
-        am.modifyAllocations(allocations);
+        am.modifyAllocations(msg.sender, allocations);
         
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();

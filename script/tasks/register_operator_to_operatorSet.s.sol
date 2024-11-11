@@ -60,15 +60,15 @@ contract RegisterOperatorToOperatorSets is Script, Test {
             operatorSetId: 1,
             strategies: strategies
         });
-        allocationManager.createOperatorSets(sets);
+        allocationManager.createOperatorSets(msg.sender, sets);
 
         // Register the Operator to the AVS
         avsDirectory.registerOperatorToAVS(
             operator, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), bytes32(uint256(0) + 1), expiry)
         );
 
-        // Deploy and set registrar
-        allocationManager.setAVSRegistrar(new AVSRegistrar());
+        // Deploy and set registrar.
+        allocationManager.setAVSRegistrar(msg.sender, new AVSRegistrar());
 
         // Register OperatorSet(s)
         IAllocationManagerTypes.RegisterParams memory register = IAllocationManagerTypes.RegisterParams({
@@ -76,7 +76,7 @@ contract RegisterOperatorToOperatorSets is Script, Test {
             operatorSetIds: oids,
             data: ""
         });
-        allocationManager.registerForOperatorSets(register);
+        allocationManager.registerForOperatorSets(operator, register);
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
