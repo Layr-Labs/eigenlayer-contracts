@@ -19,8 +19,6 @@ interface IAllocationManagerErrors {
 
     /// Caller
 
-    /// @dev Thrown when caller is not the delegation manager.
-    error OnlyDelegationManager();
     /// @dev Thrown when caller is not authorized to call a function.
     error InvalidCaller();
 
@@ -224,21 +222,18 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     /**
      * @notice Called by an AVS to slash an operator in a given operator set
      */
-    function slashOperator(
-        SlashingParams calldata params
-    ) external;
+    function slashOperator(address avs, SlashingParams calldata params) external;
 
     /**
      * @notice Modifies the proportions of slashable stake allocated to an operator set from a list of strategies
      * Note that deallocations remain slashable for DEALLOCATION_DELAY blocks therefore when they are cleared they may
      * free up less allocatable magnitude than initially deallocated.
+     * @param operator the operator to modify allocations for
      * @param params array of magnitude adjustments for one or more operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
      * @dev msg.sender is used as operator
      */
-    function modifyAllocations(
-        AllocateParams[] calldata params
-    ) external;
+    function modifyAllocations(address operator, AllocateParams[] calldata params) external;
 
     /**
      * @notice This function takes a list of strategies and for each strategy, removes from the deallocationQueue
@@ -263,9 +258,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @dev After registering within the ALM, this method calls `avs.registerOperator` to complete
      * registration. This call MUST succeed in order for registration to be successful.
      */
-    function registerForOperatorSets(
-        RegisterParams calldata params
-    ) external;
+    function registerForOperatorSets(address operator, RegisterParams calldata params) external;
 
     /**
      * @notice Allows an operator or AVS to deregister the operator from one or more of the AVS's operator sets.
@@ -279,7 +272,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
-     * @notice Called by the delegation manager to set an operator's allocation delay.
+     * @notice Called by the delegation manager OR an operator to set an operator's allocation delay.
      * This is set when the operator first registers, and is the number of blocks between an operator
      * allocating magnitude to an operator set, and the magnitude becoming slashable.
      * @param operator The operator to set the delay on behalf of.
@@ -288,25 +281,12 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function setAllocationDelay(address operator, uint32 delay) external;
 
     /**
-     * @notice Called by an operator to set their allocation delay. This is number of blocks between an operator
-     * allocating magnitude to an operator set, and the magnitude becoming slashable.
-     * @dev Note that if an operator's allocation delay has not been set, the operator will be unable to allocate
-     * slashable magnitude to any operator set.
-     * @param delay the allocation delay in blocks
-     */
-    function setAllocationDelay(
-        uint32 delay
-    ) external;
-
-    /**
      * @notice Called by an AVS to configure the address that is called when an operator registers
      * or is deregistered from the AVS's operator sets. If not set (or set to 0), defaults
      * to the AVS's address.
      * @param registrar the new registrar address
      */
-    function setAVSRegistrar(
-        IAVSRegistrar registrar
-    ) external;
+    function setAVSRegistrar(address avs, IAVSRegistrar registrar) external;
 
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
@@ -315,32 +295,34 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      *
      *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
      */
-    function updateAVSMetadataURI(
-        string calldata metadataURI
-    ) external;
+    function updateAVSMetadataURI(address avs, string calldata metadataURI) external;
 
     /**
      * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
      */
-    function createOperatorSets(
-        CreateSetParams[] calldata params
-    ) external;
+    function createOperatorSets(address avs, CreateSetParams[] calldata params) external;
 
     /**
      * @notice Allows an AVS to add strategies to an operator set
      * @dev Strategies MUST NOT already exist in the operator set
+     * @param avs the avs to set strategies for
      * @param operatorSetId the operator set to add strategies to
      * @param strategies the strategies to add
      */
-    function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
+    function addStrategiesToOperatorSet(address avs, uint32 operatorSetId, IStrategy[] calldata strategies) external;
 
     /**
      * @notice Allows an AVS to remove strategies from an operator set
      * @dev Strategies MUST already exist in the operator set
+     * @param avs the avs to remove strategies for
      * @param operatorSetId the operator set to remove strategies from
      * @param strategies the strategies to remove
      */
-    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
+    function removeStrategiesFromOperatorSet(
+        address avs,
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies
+    ) external;
 
     /**
      *

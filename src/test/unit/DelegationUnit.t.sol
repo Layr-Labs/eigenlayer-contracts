@@ -109,6 +109,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             IEigenPodManager(address(eigenPodManagerMock)), 
             IAllocationManager(address(allocationManagerMock)), 
             pauserRegistry,
+            IPermissionController(address(permissionControllerMock)),
             MIN_WITHDRAWAL_DELAY_BLOCKS
         );
 
@@ -1060,8 +1061,8 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         cheats.startPrank(defaultOperator);
 
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit DelegationApproverUpdated(defaultOperator, delegationApprover2);
-        delegationManager.modifyOperatorDetails(delegationApprover2);
+        emit OperatorDetailsModified(defaultOperator, modifiedOperatorDetails);
+        delegationManager.modifyOperatorDetails(defaultOperator, modifiedOperatorDetails);
 
         assertEq(
             delegationApprover2,
@@ -1080,7 +1081,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 
         cheats.prank(defaultOperator);
         cheats.expectRevert(OperatorNotRegistered.selector);
-        delegationManager.updateOperatorMetadataURI(emptyStringForMetadataURI);
+        delegationManager.updateOperatorMetadataURI(defaultOperator, emptyStringForMetadataURI);
     }
 
     /**
@@ -1092,19 +1093,15 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         address delegationApprover
     ) public {
         cheats.expectRevert(OperatorNotRegistered.selector);
-        delegationManager.modifyOperatorDetails(delegationApprover);
-    }
-
-    // @notice Tests that an operator who calls `updateOperatorMetadataURI` will correctly see an `OperatorMetadataURIUpdated` event emitted with their input
+        delegationManager.modifyOperatorDetails(defaultOperator, operatorDetails);
     function testFuzz_UpdateOperatorMetadataURI(string memory metadataURI) public {
-        // register *this contract* as an operator
         _registerOperatorWithBaseDetails(defaultOperator);
 
         // call `updateOperatorMetadataURI` and check for event
         cheats.prank(defaultOperator);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorMetadataURIUpdated(defaultOperator, metadataURI);
-        delegationManager.updateOperatorMetadataURI(metadataURI);
+        delegationManager.updateOperatorMetadataURI(defaultOperator, metadataURI);
     }
 }
 
@@ -3066,9 +3063,16 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
      * @notice Verifies that the `undelegate` function has proper access controls (can only be called by the operator who the `staker` has delegated
      * to or the operator's `delegationApprover`), or the staker themselves
      */
-    function testFuzz_Revert_undelegate_invalidCaller(Randomness r) public {
-        address invalidCaller = r.Address();
-        address staker = r.Address();
+    function testFuzz_undelegate_revert_invalidCaller(
+        address invalidCaller
+    ) public filterFuzzedAddressInputs(invalidCaller) {
+        // Invalidate canCall on permissionController
+        permissionControllerMock.setCanCallResult(false);
+        address staker = address(0x123);
+        // filter out addresses that are actually allowed to call the function
+        cheats.assume(invalidCaller != staker);
+        cheats.assume(invalidCaller != defaultOperator);
+        cheats.assume(invalidCaller != defaultApprover);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
         _delegateToOperatorWhoRequiresSig(staker, defaultOperator);
