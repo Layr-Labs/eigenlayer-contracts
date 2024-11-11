@@ -27,7 +27,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     uint8 internal constant PAUSED_DEPOSITS = 0;
 
     /// @notice default address for burning slashed shares and transferring underlying tokens
-    address public constant DEFAULT_BURN_ADDRESS = address(0);
+    address public constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000DeaDBeef;
 
     // Immutables
 
