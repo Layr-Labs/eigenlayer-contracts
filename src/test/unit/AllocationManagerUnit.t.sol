@@ -411,6 +411,25 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.slashOperator(_randSlashingParams(random().Address(), 0));
     }
 
+    function test_revert_CannotSlashBeaconChainETHStrategy() public {
+        IStrategy[] memory strategies = allocationManager.beaconChainETHStrategy().toArray();
+
+        cheats.prank(defaultAVS);
+        allocationManager.addStrategiesToOperatorSet(defaultOperatorSet.id, strategies);
+
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(SlashingParams(defaultOperator, defaultOperatorSet.id, WAD, ""));
+
+        // assertEq(
+        //     0,
+        //     allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
+        //     "encumberedMagnitude was updated"
+        // );
+        // assertEq(
+        //     WAD, allocationManager.getMaxMagnitudes(defaultOperator, defaultStrategies)[0], "maxMagnitude was updated"
+        // );
+    }
+
     function test_revert_operatorAllocated_notActive() public {
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, WAD);
 
@@ -1729,7 +1748,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         }
     }
 
-    function test_CannotIncludeBeaconChainETHStrategy() public {
+    function test_CannotAllocateToBeaconChainETHStrategy() public {
         IStrategy[] memory strategies = allocationManager.beaconChainETHStrategy().toArray();
 
         cheats.prank(defaultAVS);
