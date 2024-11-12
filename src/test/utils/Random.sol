@@ -50,6 +50,34 @@ library Random {
     /// Native Types
     /// -----------------------------------------------------------------------
 
+    function Int256(Randomness r, int256 min, int256 max) internal returns (int256) {
+        return max <= min ? min : r.Int256() % (max - min) + min;
+    }
+
+    function Int256(Randomness r) internal returns (int256) {
+        return r.unwrap() % 2 == 0 ? int256(r.Uint256()) : -int256(r.Uint256());
+    }
+
+    function Int128(Randomness r, int128 min, int128 max) internal returns (int128) {
+        return int128(Int256(r, min, max));
+    }
+
+    function Int128(Randomness r) internal returns (int128) {
+        return int128(Int256(r));
+    }
+
+    function Int64(Randomness r, int64 min, int64 max) internal returns (int64) {
+        return int64(Int256(r, min, max));
+    }
+
+    function Int64(Randomness r) internal returns (int64) {
+        return int64(Int256(r));
+    }
+
+    function Int32(Randomness r, int32 min, int32 max) internal returns (int32) {
+        return int32(Int256(r, min, max));
+    }
+
     function Uint256(Randomness r, uint256 min, uint256 max) internal returns (uint256) {
         return max <= min ? min : r.Uint256() % (max - min) + min;
     }
