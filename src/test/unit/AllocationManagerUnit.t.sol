@@ -141,7 +141,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         );
     }
 
-    function _grantDelegatedStake(address operator, OperatorSet memory operatorSet, uint stake) internal {
+    function _grantDelegatedStake(address operator, OperatorSet memory operatorSet, uint256 stake) internal {
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
         delegationManagerMock.setOperatorsShares(operator, strategies, stake);
     }
@@ -161,9 +161,16 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         uint256 expectedCurrentMagnitude,
         int256 expectedPendingDiff,
         uint256 expectedEffectBlock
-    ) internal pure {
+    ) internal view {
+        console.log(StdStyle.yellow("Check Allocation Storage:"));
+        console.log("   currentMagnitude = %d", allocation.currentMagnitude);
+        console.log("   pendingDiff = %d", allocation.pendingDiff);
+        console.log("   effectBlock = %d", allocation.effectBlock);
+        console.log("   currentBlock = %d", block.number);
+        console.log("\n");
+
         assertApproxEqAbs(expectedCurrentMagnitude, allocation.currentMagnitude, 1, "currentMagnitude != expected");
-        assertApproxEqAbs(expectedPendingDiff, allocation.pendingDiff, 1, "pendingDiff != expected");
+        assertEq(expectedPendingDiff, allocation.pendingDiff, "pendingDiff != expected");
         assertEq(expectedEffectBlock, allocation.effectBlock, "effectBlock != expected");
     }
 
@@ -186,36 +193,30 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         OperatorSet memory operatorSet,
         address operator,
         IStrategy[] memory strategies,
-        uint expectedStake
+        uint256 expectedStake
     ) internal view {
-        uint[] memory slashableStake = allocationManager.getMinimumSlashableStake({
-            operatorSet: operatorSet,
-            operators: operator.toArray(),
-            strategies: strategies,
-            futureBlock: uint32(block.number)
-        })[0];
-
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(slashableStake[i], expectedStake, "slashableStake != expected");
-        }
+        _checkSlashableStake(operatorSet, operator, strategies, expectedStake, block.number);
     }
 
     function _checkSlashableStake(
         OperatorSet memory operatorSet,
         address operator,
         IStrategy[] memory strategies,
-        uint expectedStake,
-        uint futureBlock
+        uint256 expectedStake,
+        uint256 futureBlock
     ) internal view {
-        uint[] memory slashableStake = allocationManager.getMinimumSlashableStake({
+        uint256[] memory slashableStake = allocationManager.getMinimumSlashableStake({
             operatorSet: operatorSet,
             operators: operator.toArray(),
             strategies: strategies,
             futureBlock: uint32(futureBlock)
         })[0];
 
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(slashableStake[i], expectedStake, "slashableStake != expected");
+        for (uint256 i = 0; i < strategies.length; i++) {
+            console.log(StdStyle.yellow("Check Slashable Stake:"));
+            console.log("   slashableStake[%d] = %d", i, slashableStake[i]);
+            console.log("\n");
+            assertApproxEqAbs(slashableStake[i], expectedStake, 1, "slashableStake != expected");
         }
     }
 
@@ -588,8 +589,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             uint64(SlashingLib.mulWadRoundUp(allocatedMagnitude, slashingParams.wadToSlash));
         uint64 expectedEncumberedMagnitude = allocatedMagnitude - expectedSlashedMagnitude;
         uint64 maxMagnitudeAfterSlash = WAD - expectedSlashedMagnitude;
-        uint slashedStake = DEFAULT_OPERATOR_SHARES.mulWad(expectedSlashedMagnitude);
-        uint newSlashableMagnitude = uint(expectedEncumberedMagnitude).divWad(maxMagnitudeAfterSlash);
+        uint256 slashedStake = DEFAULT_OPERATOR_SHARES.mulWad(expectedSlashedMagnitude);
+        uint256 newSlashableMagnitude = uint256(expectedEncumberedMagnitude).divWad(maxMagnitudeAfterSlash);
 
         _checkSlashEvents({
             operator: defaultOperator,
@@ -642,131 +643,131 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
     function testFuzz_slash_oneCompletedAlloc_onePendingAlloc(
         Randomness r
     ) public rand(r) {
-        // uint64 wadToSlash = r.Uint64(0.01 ether, WAD);
+        uint64 wadToSlash = r.Uint64(0.01 ether, WAD);
 
-        // // Generate allocation for `strategyMock`, we allocate half
-        // AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
-        // cheats.prank(defaultOperator);
-        // allocationManager.modifyAllocations(allocateParams);
-        // cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+        // Generate allocation for `strategyMock`, we allocate half
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
-        // // Check slashable stake after the first allocation
-        // _checkSlashableStake({
-        //     operatorSet: defaultOperatorSet,
-        //     operator: defaultOperator,
-        //     strategies: defaultStrategies,
-        //     expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
-        // });
+        // Check slashable stake after the first allocation
+        _checkSlashableStake({
+            operatorSet: defaultOperatorSet,
+            operator: defaultOperator,
+            strategies: defaultStrategies,
+            expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
+        });
 
-        // // Allocate the other half
-        // AllocateParams[] memory allocateParams2 = _newAllocateParams(defaultOperatorSet, WAD);
-        // cheats.prank(defaultOperator);
-        // allocationManager.modifyAllocations(allocateParams2);
-        // uint32 secondAllocEffectBlock = uint32(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+        // Allocate the other half
+        AllocateParams[] memory allocateParams2 = _newAllocateParams(defaultOperatorSet, WAD);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocateParams2);
+        uint32 secondAllocEffectBlock = uint32(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
-        // // Check slashable stake hasn't changed after the second allocation
-        // _checkSlashableStake({
-        //     operatorSet: defaultOperatorSet,
-        //     operator: defaultOperator,
-        //     strategies: defaultStrategies,
-        //     expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
-        // });
+        // Check slashable stake hasn't changed after the second allocation
+        _checkSlashableStake({
+            operatorSet: defaultOperatorSet,
+            operator: defaultOperator,
+            strategies: defaultStrategies,
+            expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
+        });
 
-        // // Check minimum slashable stake would not change even after the second allocation becomes effective
-        // _checkSlashableStake({
-        //     operatorSet: defaultOperatorSet,
-        //     operator: defaultOperator,
-        //     strategies: defaultStrategies,
-        //     expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17),
-        //     futureBlock: secondAllocEffectBlock
-        // });
+        // Check minimum slashable stake would not change even after the second allocation becomes effective
+        _checkSlashableStake({
+            operatorSet: defaultOperatorSet,
+            operator: defaultOperator,
+            strategies: defaultStrategies,
+            expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17),
+            futureBlock: secondAllocEffectBlock
+        });
 
-        // // Slash operator for 50%
-        // SlashingParams memory slashingParams = SlashingParams({
-        //     operator: defaultOperator,
-        //     operatorSetId: defaultOperatorSet.id,
-        //     wadToSlash: wadToSlash,
-        //     description: "test"
-        // });
+        // Slash operator for 50%
+        SlashingParams memory slashingParams = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: defaultOperatorSet.id,
+            wadToSlash: wadToSlash,
+            description: "test"
+        });
 
-        // uint64 totalAllocated = 0.5 ether;
-        // uint64 expectedEncumberedMagnitude = (WAD - uint64(uint256(totalAllocated) * uint256(wadToSlash) / WAD));
-        // uint64 magnitudeAfterSlash = totalAllocated - uint64(uint256(totalAllocated) * uint256(wadToSlash) / WAD);
-        // uint64 maxMagnitudeAfterSlash = expectedEncumberedMagnitude;
+        uint64 totalAllocated = 0.5 ether;
+        uint64 expectedEncumberedMagnitude = (WAD - uint64(uint256(totalAllocated) * uint256(wadToSlash) / WAD));
+        uint64 magnitudeAfterSlash = totalAllocated - uint64(uint256(totalAllocated) * uint256(wadToSlash) / WAD);
+        uint64 maxMagnitudeAfterSlash = expectedEncumberedMagnitude;
 
-        // uint64 expectedSlashedMagnitude =
-        //     uint64(SlashingLib.mulWadRoundUp(totalAllocated, slashingParams.wadToSlash));
-        // uint newSlashableMagnitude = uint(magnitudeAfterSlash).divWad(maxMagnitudeAfterSlash);
-        // uint slashedStake = DEFAULT_OPERATOR_SHARES.mulWad(expectedSlashedMagnitude);
-        // uint newTotalStake = DEFAULT_OPERATOR_SHARES - slashedStake;
+        uint64 expectedSlashedMagnitude = uint64(totalAllocated.mulWadRoundUp(slashingParams.wadToSlash));
+        uint256 newSlashableMagnitude = uint256(magnitudeAfterSlash).divWad(maxMagnitudeAfterSlash);
+        uint256 slashedStake = DEFAULT_OPERATOR_SHARES.mulWad(expectedSlashedMagnitude);
+        uint256 newTotalStake = DEFAULT_OPERATOR_SHARES - slashedStake;
 
-        // _checkSlashEvents({
-        //     operator: defaultOperator,
-        //     operatorSet: defaultOperatorSet,
-        //     strategies: defaultStrategies,
-        //     wadToSlash: uint256(wadToSlash).toArrayU256(),
-        //     description: "test"
-        // });
+        // // STACK TOO DEEP
+        // // _checkSlashEvents({
+        // //     operator: defaultOperator,
+        // //     operatorSet: defaultOperatorSet,
+        // //     strategies: defaultStrategies,
+        // //     wadToSlash: uint256(wadToSlash).toArrayU256(),
+        // //     description: "test"
+        // // });
 
-        // // Slash Operator
-        // cheats.prank(defaultAVS);
-        // allocationManager.slashOperator(slashingParams);
+        // Slash Operator
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(slashingParams);
 
-        // // Check storage
-        // assertApproxEqAbs(
-        //     expectedEncumberedMagnitude,
-        //     allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
-        //     1,
-        //     "encumberedMagnitude not updated"
-        // );
-        // assertApproxEqAbs(
-        //     maxMagnitudeAfterSlash,
-        //     allocationManager.getMaxMagnitudes(defaultOperator, defaultStrategies)[0],
-        //     1,
-        //     "maxMagnitude not updated"
-        // );
+        // Check storage
+        assertApproxEqAbs(
+            expectedEncumberedMagnitude,
+            allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
+            1,
+            "encumberedMagnitude not updated"
+        );
+        assertApproxEqAbs(
+            maxMagnitudeAfterSlash,
+            allocationManager.getMaxMagnitudes(defaultOperator, defaultStrategies)[0],
+            1,
+            "maxMagnitude not updated"
+        );
 
-        // _checkAllocationStorage({
-        //     operator: defaultOperator,
-        //     operatorSet: defaultOperatorSet,
-        //     strategy: strategyMock,
-        //     expectedCurrentMagnitude: magnitudeAfterSlash,
-        //     expectedPendingDiff: 5e17,
-        //     expectedEffectBlock: secondAllocEffectBlock
-        // });
+        _checkAllocationStorage({
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
+            expectedCurrentMagnitude: magnitudeAfterSlash,
+            expectedPendingDiff: 5e17,
+            expectedEffectBlock: secondAllocEffectBlock
+        });
 
-        // // Slashable stake should include first allocation and slashed magnitude
-        // _checkSlashableStake({
-        //     operatorSet: defaultOperatorSet,
-        //     operator: defaultOperator,
-        //     strategies: defaultStrategies,
-        //     expectedStake: newTotalStake.mulWad(newSlashableMagnitude)
-        // });
+        // Slashable stake should include first allocation and slashed magnitude
+        _checkSlashableStake({
+            operatorSet: defaultOperatorSet,
+            operator: defaultOperator,
+            strategies: defaultStrategies,
+            expectedStake: newTotalStake.mulWad(newSlashableMagnitude)
+        });
 
-        // cheats.roll(secondAllocEffectBlock);
+        cheats.roll(secondAllocEffectBlock);
 
-        // assertEq(
-        //     0,
-        //     allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock),
-        //     "allocatableMagnitude should be 0"
-        // );
+        assertEq(
+            0,
+            allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock),
+            "allocatableMagnitude should be 0"
+        );
 
-        // _checkAllocationStorage({
-        //     operator: defaultOperator,
-        //     operatorSet: defaultOperatorSet,
-        //     strategy: strategyMock,
-        //     expectedCurrentMagnitude: magnitudeAfterSlash + 0.5 ether,
-        //     expectedPendingDiff: 0,
-        //     expectedEffectBlock: 0
-        // });
+        _checkAllocationStorage({
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
+            expectedCurrentMagnitude: magnitudeAfterSlash + 0.5 ether,
+            expectedPendingDiff: 0,
+            expectedEffectBlock: 0
+        });
 
-        // newSlashableMagnitude = allocateParams2[0].newMagnitudes[0];
-        // _checkSlashableStake({
-        //     operatorSet: defaultOperatorSet,
-        //     operator: defaultOperator,
-        //     strategies: defaultStrategies,
-        //     expectedStake: newTotalStake.mulWad(newSlashableMagnitude)
-        // });
+        newSlashableMagnitude = allocateParams2[0].newMagnitudes[0];
+        _checkSlashableStake({
+            operatorSet: defaultOperatorSet,
+            operator: defaultOperator,
+            strategies: defaultStrategies,
+            expectedStake: newTotalStake.mulWad(newSlashableMagnitude)
+        });
     }
 
     /**
@@ -956,9 +957,14 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         RegisterParams memory registerParams = r.RegisterParams(allocateParams);
         SlashingParams memory slashingParams = r.SlashingParams(defaultOperator, allocateParams[0]);
 
+        console.log("wadToSlash: %d", slashingParams.wadToSlash);
+
+        delegationManagerMock.setOperatorShares(
+            defaultOperator, allocateParams[0].strategies[0], DEFAULT_OPERATOR_SHARES
+        );
+
         cheats.prank(defaultAVS);
         allocationManager.createOperatorSets(createSetParams);
-
         cheats.startPrank(defaultOperator);
         allocationManager.registerForOperatorSets(registerParams);
         allocationManager.modifyAllocations(allocateParams);
@@ -969,27 +975,27 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         // Check slashable stake after deallocation (still pending; no change)
         _checkSlashableStake({
-            operatorSet: defaultOperatorSet,
+            operatorSet: allocateParams[0].operatorSet,
             operator: defaultOperator,
-            strategies: defaultStrategies,
-            expectedStake: DEFAULT_OPERATOR_SHARES
+            strategies: allocateParams[0].strategies,
+            expectedStake: allocateParams[0].newMagnitudes[0]
         });
 
         // Check slashable stake after deallocation takes effect, before slashing
         _checkSlashableStake({
-            operatorSet: defaultOperatorSet,
+            operatorSet: allocateParams[0].operatorSet,
             operator: defaultOperator,
-            strategies: defaultStrategies,
-            expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17),
+            strategies: allocateParams[0].strategies,
+            expectedStake: deallocateParams[0].newMagnitudes[0],
             futureBlock: deallocationEffectBlock
         });
 
         uint256 magnitudeAllocated = allocateParams[0].newMagnitudes[0];
         uint256 magnitudeDeallocated = magnitudeAllocated - deallocateParams[0].newMagnitudes[0];
-        uint256 magnitudeSlashed = magnitudeAllocated * slashingParams.wadToSlash / WAD;
+        uint256 magnitudeSlashed = magnitudeAllocated.mulWad(slashingParams.wadToSlash);
         uint256 expectedCurrentMagnitude = magnitudeAllocated - magnitudeSlashed;
         int128 expectedPendingDiff =
-            -int128(uint128(magnitudeDeallocated - magnitudeDeallocated * slashingParams.wadToSlash / WAD));
+            -int128(uint128(magnitudeDeallocated - magnitudeDeallocated.mulWadRoundUp(slashingParams.wadToSlash)));
 
         _checkSlashEvents({
             operator: defaultOperator,
@@ -1011,23 +1017,23 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             expectedEffectBlock: deallocationEffectBlock
         });
 
-        // // Check slashable stake after slash
-        // _checkSlashableStake({
-        //     operatorSet: defaultOperatorSet,
-        //     operator: defaultOperator,
-        //     strategies: defaultStrategies,
-        //     expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(expectedEncumberedMagnitude)
-        // });
+        // Check slashable stake after slash
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedStake: expectedCurrentMagnitude
+        });
 
-        // // Check slashable stake after deallocation takes effect
-        // _checkSlashableStake({
-        //     operatorSet: defaultOperatorSet,
-        //     operator: defaultOperator,
-        //     strategies: defaultStrategies,
-        //     expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(magnitudeAfterDeallocationSlash),
-        //     futureBlock: deallocationEffectBlock
-        // });
-        
+        // Check slashable stake after deallocation takes effect
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1,
+            futureBlock: deallocationEffectBlock
+        });
+
         assertEq(
             expectedCurrentMagnitude,
             allocationManager.encumberedMagnitude(defaultOperator, allocateParams[0].strategies[0]),
@@ -1042,25 +1048,23 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.roll(deallocationEffectBlock);
         allocationManager.clearDeallocationQueue(defaultOperator, allocateParams[0].strategies, _maxNumToClear());
 
-        expectedCurrentMagnitude = deallocateParams[0].newMagnitudes[0]
-            - deallocateParams[0].newMagnitudes[0] * slashingParams.wadToSlash / WAD;
-
         _checkAllocationStorage({
             operator: defaultOperator,
             operatorSet: allocateParams[0].operatorSet,
             strategy: allocateParams[0].strategies[0],
-            expectedCurrentMagnitude: expectedCurrentMagnitude,
+            expectedCurrentMagnitude: deallocateParams[0].newMagnitudes[0]
+                - deallocateParams[0].newMagnitudes[0] * slashingParams.wadToSlash / WAD,
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
         });
 
-        // // Check slashable stake after slash and deallocation
-        // _checkSlashableStake({
-        //     operatorSet: defaultOperatorSet,
-        //     operator: defaultOperator,
-        //     strategies: defaultStrategies,
-        //     expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(magnitudeAfterDeallocationSlash)
-        // });
+        // Check slashable stake after slash and deallocation
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1
+        });
     }
 
     /**
