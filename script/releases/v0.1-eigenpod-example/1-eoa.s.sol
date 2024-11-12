@@ -29,7 +29,7 @@ contract DeployEigenPodAndManager is EOADeployer {
             )
         );
 
-        _deployments.push(singleton(newEigenPodManager));
+        _deployments.push(singleton(newEigenPodManager, type(EigenPodManager).name));
 
         address newEigenPod = address(
             new EigenPod(
@@ -40,7 +40,7 @@ contract DeployEigenPodAndManager is EOADeployer {
         );
 
         // create and record new EigenPod pointing to defunct EigenPodManager
-        _deployments.push(singleton(newEigenPod));
+        _deployments.push(singleton(newEigenPod, type(EigenPod).name));
 
         vm.stopBroadcast();
 
