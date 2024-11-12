@@ -417,17 +417,20 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.prank(defaultAVS);
         allocationManager.addStrategiesToOperatorSet(defaultOperatorSet.id, strategies);
 
+        cheats.expectEmit(true, false, false, false, address(allocationManager));
+        emit OperatorSlashed(defaultOperator, defaultOperatorSet, new IStrategy[](0), new uint256[](0), "");
+
         cheats.prank(defaultAVS);
         allocationManager.slashOperator(SlashingParams(defaultOperator, defaultOperatorSet.id, WAD, ""));
 
-        // assertEq(
-        //     0,
-        //     allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
-        //     "encumberedMagnitude was updated"
-        // );
-        // assertEq(
-        //     WAD, allocationManager.getMaxMagnitudes(defaultOperator, defaultStrategies)[0], "maxMagnitude was updated"
-        // );
+        assertEq(
+            0,
+            allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
+            "encumberedMagnitude was updated"
+        );
+        assertEq(
+            WAD, allocationManager.getMaxMagnitudes(defaultOperator, defaultStrategies)[0], "maxMagnitude was updated"
+        );
     }
 
     function test_revert_operatorAllocated_notActive() public {
