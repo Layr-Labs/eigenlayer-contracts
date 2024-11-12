@@ -43,7 +43,7 @@ interface IAllocationManagerErrors {
 
     /// @dev Thrown when an invalid operator set is provided.
     error InvalidOperatorSet();
-    /// @dev Thrown when a strategy is referenced that does not belong to an operator set.
+    /// @dev Thrown when a strategy is referenced that does not belong to an operator set or is not allowed to be added.
     error InvalidStrategy();
     /// @dev Thrown when trying to add a strategy to an operator set that already contains it.
     error StrategyAlreadyInOperatorSet();
@@ -320,7 +320,8 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     ) external;
 
     /**
-     * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
+     * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses.
+     * @dev Operator sets cannot include the beacon chain ETH strategy `beaconChainETHStrategy`.
      */
     function createOperatorSets(
         CreateSetParams[] calldata params
@@ -331,6 +332,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @dev Strategies MUST NOT already exist in the operator set
      * @param operatorSetId the operator set to add strategies to
      * @param strategies the strategies to add
+     * @dev Operator sets cannot include the beacon chain ETH strategy `beaconChainETHStrategy`.
      */
     function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
 

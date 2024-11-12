@@ -71,6 +71,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < length; i++) {
             // 1. Get the operator's allocation info for the strategy and operator set
             IStrategy strategy = IStrategy(_operatorSetStrategies[operatorSet.key()].at(i));
+
             (StrategyInfo memory info, Allocation memory allocation) =
                 _getUpdatedAllocation(params.operator, operatorSet.key(), strategy);
             strategiesSlashed[i] = strategy;
@@ -301,13 +302,20 @@ contract AllocationManager is
 
             // Create the operator set, ensuring it does not already exist
             require(_operatorSets[msg.sender].add(operatorSet.id), InvalidOperatorSet());
-            emit OperatorSetCreated(OperatorSet(msg.sender, operatorSet.id));
+
+            emit OperatorSetCreated(operatorSet);
 
             // Add strategies to the operator set
             bytes32 operatorSetKey = operatorSet.key();
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
-                _operatorSetStrategies[operatorSetKey].add(address(params[i].strategies[j]));
-                emit StrategyAddedToOperatorSet(operatorSet, params[i].strategies[j]);
+                IStrategy strategy = params[i].strategies[j];
+
+                // Cannot add the beacon chain strategy to an operator set.
+                require(strategy != beaconChainETHStrategy, InvalidStrategy());
+
+                _operatorSetStrategies[operatorSetKey].add(address(strategy));
+
+                emit StrategyAddedToOperatorSet(operatorSet, strategy);
             }
         }
     }
@@ -319,8 +327,13 @@ contract AllocationManager is
 
         bytes32 operatorSetKey = operatorSet.key();
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(_operatorSetStrategies[operatorSetKey].add(address(strategies[i])), StrategyAlreadyInOperatorSet());
-            emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
+            IStrategy strategy = strategies[i];
+            // Cannot add the beacon chain strategy to an operator set.
+            require(strategy != beaconChainETHStrategy, InvalidStrategy());
+            // Add the strategy to the operator set, while confirming it is not already present.
+            require(_operatorSetStrategies[operatorSetKey].add(address(strategy)), StrategyAlreadyInOperatorSet());
+
+            emit StrategyAddedToOperatorSet(operatorSet, strategy);
         }
     }
 
@@ -331,8 +344,11 @@ contract AllocationManager is
 
         bytes32 operatorSetKey = operatorSet.key();
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(_operatorSetStrategies[operatorSetKey].remove(address(strategies[i])), StrategyNotInOperatorSet());
-            emit StrategyRemovedFromOperatorSet(operatorSet, strategies[i]);
+            IStrategy strategy = strategies[i];
+            // Remove the strategy from the operator set, while confirming it is present.
+            require(_operatorSetStrategies[operatorSetKey].remove(address(strategy)), StrategyNotInOperatorSet());
+
+            emit StrategyRemovedFromOperatorSet(operatorSet, strategy);
         }
     }
 

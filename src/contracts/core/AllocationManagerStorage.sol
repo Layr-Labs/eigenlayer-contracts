@@ -23,6 +23,9 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
     uint8 internal constant PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION = 2;
 
+    /// @notice Canonical, virtual beacon chain ETH strategy
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
     // Immutables
 
     /// @notice The DelegationManager contract for EigenLayer

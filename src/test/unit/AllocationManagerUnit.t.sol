@@ -2858,6 +2858,15 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
 
 contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitTests {
     using SingleItemArrayLib for *;
+    
+    function test_CannotIncludeBeaconChainETHStrategy() public {
+        IStrategy strategy = IStrategy(allocationManager.beaconChainETHStrategy());
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(InvalidStrategy.selector);
+        allocationManager.createOperatorSets(
+            CreateSetParams(1, strategy.toArray()).toArray()
+        );
+    }
 
     function test_createOperatorSets_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
