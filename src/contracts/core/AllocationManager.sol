@@ -147,7 +147,7 @@ contract AllocationManager is
 
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 IStrategy strategy = params[i].strategies[j];
-                
+
                 // Cannot allocate to the beacon chain strategy.
                 if (strategy == beaconChainETHStrategy) {
                     continue;
