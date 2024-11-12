@@ -235,6 +235,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @param params array of magnitude adjustments for one or more operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
      * @dev msg.sender is used as operator
+     * @dev Cannot allocate to `beaconChainETHStrategy`.
      */
     function modifyAllocations(
         AllocateParams[] calldata params
@@ -321,7 +322,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
 
     /**
      * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses.
-     * @dev Operator sets cannot include the beacon chain ETH strategy `beaconChainETHStrategy`.
      */
     function createOperatorSets(
         CreateSetParams[] calldata params
@@ -332,7 +332,6 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @dev Strategies MUST NOT already exist in the operator set
      * @param operatorSetId the operator set to add strategies to
      * @param strategies the strategies to add
-     * @dev Operator sets cannot include the beacon chain ETH strategy `beaconChainETHStrategy`.
      */
     function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] calldata strategies) external;
 

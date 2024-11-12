@@ -1729,6 +1729,31 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         }
     }
 
+    function test_CannotIncludeBeaconChainETHStrategy() public {
+        IStrategy[] memory strategies = allocationManager.beaconChainETHStrategy().toArray();
+
+        cheats.prank(defaultAVS);
+        allocationManager.addStrategiesToOperatorSet(defaultOperatorSet.id, strategies);
+
+        AllocateParams[] memory allocateParams = new AllocateParams[](1);
+        allocateParams[0] = AllocateParams({
+            operatorSet: defaultOperatorSet,
+            strategies: strategies,
+            newMagnitudes: uint64(1 ether).toArrayU64()
+        });
+
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(allocateParams);
+
+        // Assert the allocation did not occur.
+        _checkAllocation(
+            allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategies[0]),
+            0,
+            0,
+            0
+        );
+    }
+
     /**
      * Allocates to `firstMod` magnitude and then deallocate to `secondMod` magnitude
      * Validates the storage
@@ -2858,15 +2883,6 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
 
 contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitTests {
     using SingleItemArrayLib for *;
-    
-    function test_CannotIncludeBeaconChainETHStrategy() public {
-        IStrategy strategy = IStrategy(allocationManager.beaconChainETHStrategy());
-        cheats.prank(defaultAVS);
-        cheats.expectRevert(InvalidStrategy.selector);
-        allocationManager.createOperatorSets(
-            CreateSetParams(1, strategy.toArray()).toArray()
-        );
-    }
 
     function test_createOperatorSets_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);

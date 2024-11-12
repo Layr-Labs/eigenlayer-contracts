@@ -147,6 +147,11 @@ contract AllocationManager is
 
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 IStrategy strategy = params[i].strategies[j];
+                
+                // Cannot allocate to the beacon chain strategy.
+                if (strategy == beaconChainETHStrategy) {
+                    continue;
+                }
 
                 // 1. If the operator has any pending deallocations for this strategy, clear them
                 // to free up magnitude for allocation. Fetch the operator's up to date allocation
@@ -309,10 +314,6 @@ contract AllocationManager is
             bytes32 operatorSetKey = operatorSet.key();
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 IStrategy strategy = params[i].strategies[j];
-
-                // Cannot add the beacon chain strategy to an operator set.
-                require(strategy != beaconChainETHStrategy, InvalidStrategy());
-
                 _operatorSetStrategies[operatorSetKey].add(address(strategy));
 
                 emit StrategyAddedToOperatorSet(operatorSet, strategy);
@@ -328,11 +329,8 @@ contract AllocationManager is
         bytes32 operatorSetKey = operatorSet.key();
         for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strategy = strategies[i];
-            // Cannot add the beacon chain strategy to an operator set.
-            require(strategy != beaconChainETHStrategy, InvalidStrategy());
             // Add the strategy to the operator set, while confirming it is not already present.
             require(_operatorSetStrategies[operatorSetKey].add(address(strategy)), StrategyAlreadyInOperatorSet());
-
             emit StrategyAddedToOperatorSet(operatorSet, strategy);
         }
     }
@@ -347,7 +345,6 @@ contract AllocationManager is
             IStrategy strategy = strategies[i];
             // Remove the strategy from the operator set, while confirming it is present.
             require(_operatorSetStrategies[operatorSetKey].remove(address(strategy)), StrategyNotInOperatorSet());
-
             emit StrategyRemovedFromOperatorSet(operatorSet, strategy);
         }
     }
