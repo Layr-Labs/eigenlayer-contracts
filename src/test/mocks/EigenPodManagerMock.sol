@@ -29,6 +29,17 @@ contract EigenPodManagerMock is Test, Pausable {
         podOwnerDepositShares[podOwner] = shares;
     }
 
+    function addShares(
+        address podOwner,
+        IStrategy,
+        IERC20,
+        uint256 shares
+    ) external returns (uint256 existingDepositShares, uint256 newDepositShares) {
+        existingDepositShares = uint256(podOwnerDepositShares[podOwner]);
+        podOwnerDepositShares[podOwner] += int256(shares);
+        newDepositShares = uint256(podOwnerDepositShares[podOwner]);
+    }
+
     function removeDepositShares(
         address podOwner, 
         IStrategy, // strategy 

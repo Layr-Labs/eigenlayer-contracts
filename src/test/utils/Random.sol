@@ -140,6 +140,13 @@ library Random {
     /// General Types
     /// -----------------------------------------------------------------------
 
+    function StakerArray(Randomness r, uint256 len) internal returns (address[] memory stakers) {
+        stakers = new address[](len);
+        for (uint256 i; i < len; ++i) {
+            stakers[i] = r.Address();
+        }
+    }
+
     function StrategyArray(Randomness r, uint256 len) internal returns (IStrategy[] memory strategies) {
         strategies = new IStrategy[](len);
         for (uint256 i; i < len; ++i) {
