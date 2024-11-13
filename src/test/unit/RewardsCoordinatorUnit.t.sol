@@ -2393,8 +2393,8 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         emit OperatorDirectedAVSRewardsSubmissionCreated(
             avs,
             avs,
-            currSubmissionNonce,
             rewardsSubmissionHash,
+            currSubmissionNonce,
             operatorDirectedRewardsSubmissions[0]
         );
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
@@ -2491,8 +2491,8 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             emit OperatorDirectedAVSRewardsSubmissionCreated(
                 param.avs,
                 param.avs,
-                startSubmissionNonce + i,
                 rewardsSubmissionHashes[i],
+                startSubmissionNonce + i,
                 rewardsSubmissions[i]
             );
         }

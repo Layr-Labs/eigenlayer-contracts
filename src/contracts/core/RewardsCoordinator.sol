@@ -213,8 +213,8 @@ contract RewardsCoordinator is
             emit OperatorDirectedAVSRewardsSubmissionCreated(
                 msg.sender,
                 avs,
-                nonce,
                 operatorDirectedRewardsSubmissionHash,
+                nonce,
                 operatorDirectedRewardsSubmission
             );
             operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);

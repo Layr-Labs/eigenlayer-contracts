@@ -195,15 +195,15 @@ interface IRewardsCoordinator {
      * @notice Emitted when an AVS creates a valid `OperatorDirectedRewardsSubmission`
      * @param caller The address calling `createOperatorDirectedAVSRewardsSubmission`.
      * @param avs The avs on behalf of which the operator-directed rewards are being submitted.
-     * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
      * @param operatorDirectedRewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `operatorDirectedRewardsSubmission`).
+     * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
      * @param operatorDirectedRewardsSubmission The Operator-Directed Rewards Submission. Contains the token, start timestamp, duration, operator rewards, description and, strategy and multipliers.
      */
     event OperatorDirectedAVSRewardsSubmissionCreated(
         address indexed caller,
         address indexed avs,
-        uint256 submissionNonce,
         bytes32 indexed operatorDirectedRewardsSubmissionHash,
+        uint256 submissionNonce,
         OperatorDirectedRewardsSubmission operatorDirectedRewardsSubmission
     );
 
@@ -477,7 +477,7 @@ interface IRewardsCoordinator {
      * @param operator The operator on behalf of which the split is being set.
      * @param split The split for the operator for Programmatic Incentives in bips.
      * @dev Only callable by the operator
-     * @dev Split has to be between 1000 and 10000 bips (inclusive)
+     * @dev Split has to be between 0 and 10000 bips (inclusive)
      * @dev The split will be activated after the activation delay
      */
     function setOperatorPISplit(address operator, uint16 split) external;

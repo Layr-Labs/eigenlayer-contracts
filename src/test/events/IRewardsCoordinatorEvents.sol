@@ -31,15 +31,15 @@ interface IRewardsCoordinatorEvents {
      * @notice Emitted when an AVS creates a valid `OperatorDirectedRewardsSubmission`
      * @param caller The address calling `createOperatorDirectedAVSRewardsSubmission`.
      * @param avs The avs on behalf of which the operator-directed rewards are being submitted.
-     * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
      * @param operatorDirectedRewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `operatorDirectedRewardsSubmission`).
+     * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
      * @param operatorDirectedRewardsSubmission The Operator-Directed Rewards Submission. Contains the token, start timestamp, duration, operator rewards, description and, strategy and multipliers.
      */
     event OperatorDirectedAVSRewardsSubmissionCreated(
         address indexed caller,
         address indexed avs,
-        uint256 submissionNonce,
         bytes32 indexed operatorDirectedRewardsSubmissionHash,
+        uint256 submissionNonce,
         IRewardsCoordinator.OperatorDirectedRewardsSubmission operatorDirectedRewardsSubmission
     );
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
