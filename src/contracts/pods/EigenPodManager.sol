@@ -215,6 +215,26 @@ contract EigenPodManager is
         }
     }
 
+    /// @inheritdoc IEigenPodManager
+    function setPectraForkTimestamp(uint64 newPectraForkTimestamp) external onlyOwner {
+        uint64 currentPectraForkTimestamp = getPectraForkTimestamp();
+        require(currentPectraForkTimestamp == type(uint64).max, ForkTimestampAlreadySet());
+        require(newPectraForkTimestamp != 0, InvalidForkTimestamp());
+
+        _pectraForkTimestamp = newPectraForkTimestamp;
+        emit PectraForkTimestampSet(newPectraForkTimestamp);
+    }
+
+    /// @inheritdoc IEigenPodManager
+    function getPectraForkTimestamp() public view returns (uint64) {
+        /// Initial value is 0, return type(uint64).max if not set
+        if (_pectraForkTimestamp == 0) {
+            return type(uint64).max;
+        } else {
+            return _pectraForkTimestamp;
+        }
+    }
+
     /// @notice Returns the current shares of `user` in `strategy`
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     /// @dev returns 0 if the user has negative shares

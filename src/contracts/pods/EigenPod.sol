@@ -19,7 +19,7 @@ import "./EigenPodStorage.sol";
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice This EigenPod Beacon Proxy implementation adheres to the current Deneb consensus specs
+ * @notice This EigenPod Beacon Proxy implementation adheres to the current Pectra consensus specs
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
@@ -160,7 +160,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // Verify `balanceContainerProof` against `beaconBlockRoot`
         BeaconChainProofs.verifyBalanceContainer({
             beaconBlockRoot: checkpoint.beaconBlockRoot,
-            proof: balanceContainerProof
+            proof: balanceContainerProof,
+            proofTimestamp: checkpointTimestamp,
+            pectraForkTimestamp: eigenPodManager.getPectraForkTimestamp()
         });
 
         // Process each checkpoint proof submitted
@@ -254,6 +256,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         for (uint256 i = 0; i < validatorIndices.length; i++) {
             // forgefmt: disable-next-item
             totalAmountToBeRestakedWei += _verifyWithdrawalCredentials(
+                beaconTimestamp,
                 stateRootProof.beaconStateRoot,
                 validatorIndices[i],
                 validatorFieldsProofs[i],
@@ -344,7 +347,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             beaconStateRoot: stateRootProof.beaconStateRoot,
             validatorFields: proof.validatorFields,
             validatorFieldsProof: proof.proof,
-            validatorIndex: uint40(validatorInfo.validatorIndex)
+            validatorIndex: uint40(validatorInfo.validatorIndex),
+            proofTimestamp: beaconTimestamp,
+            pectraForkTimestamp: eigenPodManager.getPectraForkTimestamp()
         });
 
         // Validator verified to be stale - start a checkpoint
@@ -419,63 +424,65 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      */
     function _verifyWithdrawalCredentials(
+        uint64 beaconTimestamp,
         bytes32 beaconStateRoot,
         uint40 validatorIndex,
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields
     ) internal returns (uint256) {
-        bytes32 pubkeyHash = validatorFields.getPubkeyHash();
-        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[pubkeyHash];
+        // TODO: Can we handle stack too deep cleaner?
+        {
+            ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorFields.getPubkeyHash()];
+            // Withdrawal credential proofs should only be processed for "INACTIVE" validators
+            
+            require(validatorInfo.status == VALIDATOR_STATUS.INACTIVE, CredentialsAlreadyVerified());
+            // Validator should be active on the beacon chain, or in the process of activating.
+            // This implies the validator has reached the minimum effective balance required
+            // to become active on the beacon chain.
+            //
+            // This check is important because the Pectra upgrade will move any validators that
+            // do NOT have an activation epoch to a "pending deposit queue," temporarily resetting
+            // their current and effective balances to 0. This balance can be restored if a deposit
+            // is made to bring the validator's balance above the minimum activation balance.
+            // (See https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/fork.md#upgrading-the-state)
+            //
+            // In the context of EigenLayer slashing, this temporary reset would allow pod shares
+            // to temporarily decrease, then be restored later. This would effectively prevent these
+            // shares from being slashable on EigenLayer for a short period of time.
+            require(
+                validatorFields.getActivationEpoch() != BeaconChainProofs.FAR_FUTURE_EPOCH, ValidatorInactiveOnBeaconChain()
+            );
 
-        // Withdrawal credential proofs should only be processed for "INACTIVE" validators
-        require(validatorInfo.status == VALIDATOR_STATUS.INACTIVE, CredentialsAlreadyVerified());
+            // Validator should not already be in the process of exiting. This is an important property
+            // this method needs to enforce to ensure a validator cannot be already-exited by the time
+            // its withdrawal credentials are verified.
+            //
+            // Note that when a validator initiates an exit, two values are set:
+            // - exit_epoch
+            // - withdrawable_epoch
+            //
+            // The latter of these two values describes an epoch after which the validator's ETH MIGHT
+            // have been exited to the EigenPod, depending on the state of the beacon chain withdrawal
+            // queue.
+            //
+            // Requiring that a validator has not initiated exit by the time the EigenPod sees their
+            // withdrawal credentials guarantees that the validator has not fully exited at this point.
+            //
+            // This is because:
+            // - the earliest beacon chain slot allowed for withdrawal credential proofs is the earliest
+            //   slot available in the EIP-4788 oracle, which keeps the last 8192 slots.
+            // - when initiating an exit, a validator's earliest possible withdrawable_epoch is equal to
+            //   1 + MAX_SEED_LOOKAHEAD + MIN_VALIDATOR_WITHDRAWABILITY_DELAY == 261 epochs (8352 slots).
+            //
+            // (See https://eth2book.info/capella/part3/helper/mutators/#initiate_validator_exit)
+            require(validatorFields.getExitEpoch() == BeaconChainProofs.FAR_FUTURE_EPOCH, ValidatorIsExitingBeaconChain());
 
-        // Validator should be active on the beacon chain, or in the process of activating.
-        // This implies the validator has reached the minimum effective balance required
-        // to become active on the beacon chain.
-        //
-        // This check is important because the Pectra upgrade will move any validators that
-        // do NOT have an activation epoch to a "pending deposit queue," temporarily resetting
-        // their current and effective balances to 0. This balance can be restored if a deposit
-        // is made to bring the validator's balance above the minimum activation balance.
-        // (See https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/fork.md#upgrading-the-state)
-        //
-        // In the context of EigenLayer slashing, this temporary reset would allow pod shares
-        // to temporarily decrease, then be restored later. This would effectively prevent these
-        // shares from being slashable on EigenLayer for a short period of time.
-        require(
-            validatorFields.getActivationEpoch() != BeaconChainProofs.FAR_FUTURE_EPOCH, ValidatorInactiveOnBeaconChain()
-        );
-
-        // Validator should not already be in the process of exiting. This is an important property
-        // this method needs to enforce to ensure a validator cannot be already-exited by the time
-        // its withdrawal credentials are verified.
-        //
-        // Note that when a validator initiates an exit, two values are set:
-        // - exit_epoch
-        // - withdrawable_epoch
-        //
-        // The latter of these two values describes an epoch after which the validator's ETH MIGHT
-        // have been exited to the EigenPod, depending on the state of the beacon chain withdrawal
-        // queue.
-        //
-        // Requiring that a validator has not initiated exit by the time the EigenPod sees their
-        // withdrawal credentials guarantees that the validator has not fully exited at this point.
-        //
-        // This is because:
-        // - the earliest beacon chain slot allowed for withdrawal credential proofs is the earliest
-        //   slot available in the EIP-4788 oracle, which keeps the last 8192 slots.
-        // - when initiating an exit, a validator's earliest possible withdrawable_epoch is equal to
-        //   1 + MAX_SEED_LOOKAHEAD + MIN_VALIDATOR_WITHDRAWABILITY_DELAY == 261 epochs (8352 slots).
-        //
-        // (See https://eth2book.info/capella/part3/helper/mutators/#initiate_validator_exit)
-        require(validatorFields.getExitEpoch() == BeaconChainProofs.FAR_FUTURE_EPOCH, ValidatorIsExitingBeaconChain());
-
-        // Ensure the validator's withdrawal credentials are pointed at this pod
-        require(
-            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()),
-            WithdrawalCredentialsNotForEigenPod()
-        );
+            // Ensure the validator's withdrawal credentials are pointed at this pod
+            require(
+                validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()),
+                WithdrawalCredentialsNotForEigenPod()
+            );
+        }
 
         // Get the validator's effective balance. Note that this method uses effective balance, while
         // `verifyCheckpointProofs` uses current balance. Effective balance is updated per-epoch - so it's
@@ -487,7 +494,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             beaconStateRoot: beaconStateRoot,
             validatorFields: validatorFields,
             validatorFieldsProof: validatorFieldsProof,
-            validatorIndex: validatorIndex
+            validatorIndex: validatorIndex,
+            proofTimestamp: beaconTimestamp,
+            pectraForkTimestamp: eigenPodManager.getPectraForkTimestamp()
         });
 
         // Account for validator in future checkpoints. Note that if this pod has never started a
@@ -499,7 +508,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             currentCheckpointTimestamp == 0 ? lastCheckpointTimestamp : currentCheckpointTimestamp;
 
         // Proofs complete - create the validator in state
-        _validatorPubkeyHashToInfo[pubkeyHash] = ValidatorInfo({
+        _validatorPubkeyHashToInfo[validatorFields.getPubkeyHash()] = ValidatorInfo({
             validatorIndex: validatorIndex,
             restakedBalanceGwei: restakedBalanceGwei,
             lastCheckpointedAt: lastCheckpointedAt,

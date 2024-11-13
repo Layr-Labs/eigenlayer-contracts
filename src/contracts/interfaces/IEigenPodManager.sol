@@ -25,6 +25,10 @@ interface IEigenPodManagerErrors {
     /// @dev Thrown when the pods shares are negative and a beacon chain balance update is attempted.
     /// The podOwner should complete legacy withdrawal first.
     error LegacyWithdrawalsNotCompleted();
+    /// @dev Thrown when the fork timestamp is invalid
+    error InvalidForkTimestamp();
+    /// @dev Thrown when the fork timestamp is not set
+    error ForkTimestampAlreadySet();
 }
 
 interface IEigenPodManagerEvents {
@@ -49,6 +53,9 @@ interface IEigenPodManagerEvents {
         address withdrawer,
         bytes32 withdrawalRoot
     );
+
+    /// @notice Emitted when the pectra fork timestamp is set
+    event PectraForkTimestampSet(uint64 newPectraForkTimestamp);
 }
 
 /**
@@ -129,4 +136,17 @@ interface IEigenPodManager is IEigenPodManagerErrors, IEigenPodManagerEvents, IS
 
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
+
+
+    /**
+     * @notice The Pectra hard fork timestamp used to determine which proof config to use for a checkpoint proof. 
+     * @dev This function returns type(uint64).max if the fork timestamp has not been set. The timestamp can never be set to 0.
+     */
+    function getPectraForkTimestamp() external view returns (uint64);
+
+     /**
+     * @notice Sets the pectra hard fork timestamp by the eigenPodManager owner
+     * @dev This function is callable only by the owner of the eigenPodManager only once
+     */
+    function setPectraForkTimestamp(uint64 pectraForkTimestamp) external;
 }
