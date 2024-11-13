@@ -517,4 +517,28 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function getStrategiesInOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory strategies);
+
+    /**
+     * @notice Returns the minimum amount of stake that will be slashable as of some future block,
+     * according to each operator's allocation from each strategy to the operator set.
+     * @dev This method queries actual delegated stakes in the DelegationManager and applies
+     * each operator's allocation to the stake to produce the slashable stake each allocation
+     * represents.
+     * @dev This minimum takes into account `futureBlock`, and will omit any pending magnitude
+     * diffs that will not be in effect as of `futureBlock`. NOTE that in order to get the true
+     * minimum slashable stake as of some future block, `futureBlock` MUST be greater than block.number
+     * @dev NOTE that `futureBlock` should be fewer than `DEALLOCATION_DELAY` blocks in the future,
+     * or the values returned from this method may not be accurate due to deallocations.
+     * @param operatorSet the operator set to query
+     * @param operators the list of operators whose slashable stakes will be returned
+     * @param strategies the strategies that each slashable stake corresponds to
+     * @param futureBlock the block at which to get allocation information. Should be a future block.
+     * @return slashableStake a list of slashable stakes, indexed by [operator][strategy]
+     */
+    function getMinimumSlashableStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies,
+        uint32 futureBlock
+    ) external view returns (uint256[][] memory slashableStake);
 }

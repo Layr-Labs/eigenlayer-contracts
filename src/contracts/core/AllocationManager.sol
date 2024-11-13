@@ -738,4 +738,44 @@ contract AllocationManager is
 
         return strategies;
     }
+
+    /// @inheritdoc IAllocationManager
+    function getMinimumSlashableStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies,
+        uint32 futureBlock
+    ) external view returns (uint256[][] memory slashableStake) {
+        slashableStake = new uint256[][](operators.length);
+        uint256[][] memory delegatedStake = delegation.getOperatorsShares(operators, strategies);
+
+        for (uint256 i = 0; i < operators.length; i++) {
+            address operator = operators[i];
+            slashableStake[i] = new uint256[](strategies.length);
+
+            for (uint256 j = 0; j < strategies.length; j++) {
+                IStrategy strategy = strategies[j];
+
+                // Fetch the max magnitude and allocation for the operator/strategy.
+                // Prevent division by 0 if needed. This mirrors the "FullySlashed" checks
+                // in the DelegationManager
+                uint64 maxMagnitude = _maxMagnitudeHistory[operator][strategy].latest();
+                if (maxMagnitude == 0) {
+                    continue;
+                }
+
+                Allocation memory alloc = getAllocation(operator, operatorSet, strategy);
+
+                // If the pending change takes effect before `futureBlock`, include it in `currentMagnitude`
+                // However, ONLY include the pending change if it is a deallocation, since this method
+                // is supposed to return the minimum slashable stake between now and `futureBlock`
+                if (alloc.effectBlock <= futureBlock && alloc.pendingDiff < 0) {
+                    alloc.currentMagnitude = _addInt128(alloc.currentMagnitude, alloc.pendingDiff);
+                }
+
+                uint256 slashableProportion = uint256(alloc.currentMagnitude).divWad(maxMagnitude);
+                slashableStake[i][j] = delegatedStake[i][j].mulWad(slashableProportion);
+            }
+        }
+    }
 }

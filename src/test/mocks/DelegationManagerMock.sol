@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 
 import "src/contracts/interfaces/IDelegationManager.sol";
 import "src/contracts/interfaces/IStrategyManager.sol";
+import "src/contracts/libraries/SlashingLib.sol";
 
 contract DelegationManagerMock is Test {
     receive() external payable {}
@@ -24,9 +25,25 @@ contract DelegationManagerMock is Test {
         isOperator[operator] = _isOperatorReturnValue;
     }
 
+    function decreaseOperatorShares(address operator, IStrategy strategy, uint256 wadSlashed) external {
+        uint256 amountSlashed = SlashingLib.calcSlashedAmount({
+            operatorShares: operatorShares[operator][strategy],
+            wadSlashed: wadSlashed
+        });
+
+        operatorShares[operator][strategy] -= amountSlashed;
+    }
+
     /// @notice returns the total number of shares in `strategy` that are delegated to `operator`.
     function setOperatorShares(address operator, IStrategy strategy, uint256 shares) external {
         operatorShares[operator][strategy] = shares;
+    }
+
+    /// @notice returns the total number of shares in `strategy` that are delegated to `operator`.
+    function setOperatorsShares(address operator, IStrategy[] memory strategies, uint256 shares) external {
+        for (uint i = 0; i < strategies.length; i++) {
+            operatorShares[operator][strategies[i]] = shares;
+        }
     }
 
     function delegateTo(address operator, ISignatureUtils.SignatureWithExpiry memory /*approverSignatureAndExpiry*/, bytes32 /*approverSalt*/) external {
