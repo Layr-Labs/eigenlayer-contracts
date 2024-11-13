@@ -341,12 +341,58 @@ contract RewardsCoordinator is
      */
 
     /**
+     * @notice Common checks for all RewardsSubmissions.
+     */
+    function _validateCommonRewardsSubmission(
+        StrategyAndMultiplier[] calldata strategiesAndMultipliers,
+        uint32 startTimestamp,
+        uint32 duration
+    ) internal view {
+        require(
+            strategiesAndMultipliers.length > 0,
+            "RewardsCoordinator._validateCommonRewardsSubmission: no strategies set"
+        );
+        require(
+            duration <= MAX_REWARDS_DURATION,
+            "RewardsCoordinator._validateCommonRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
+        );
+        require(
+            duration % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validateCommonRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
+        );
+        require(
+            startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
+            "RewardsCoordinator._validateCommonRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
+        );
+        require(
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= startTimestamp && GENESIS_REWARDS_TIMESTAMP <= startTimestamp,
+            "RewardsCoordinator._validateCommonRewardsSubmission: startTimestamp too far in the past"
+        );
+
+        // Require reward submission is for whitelisted strategy or beaconChainETHStrategy
+        address currAddress = address(0);
+        for (uint256 i = 0; i < strategiesAndMultipliers.length; ++i) {
+            IStrategy strategy = strategiesAndMultipliers[i].strategy;
+            require(
+                strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
+                "RewardsCoordinator._validateCommonRewardsSubmission: invalid strategy considered"
+            );
+            require(
+                currAddress < address(strategy),
+                "RewardsCoordinator._validateCommonRewardsSubmission: strategies must be in ascending order to handle duplicates"
+            );
+            currAddress = address(strategy);
+        }
+    }
+
+    /**
      * @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
      */
     function _validateRewardsSubmission(RewardsSubmission calldata rewardsSubmission) internal view {
-        require(
-            rewardsSubmission.strategiesAndMultipliers.length > 0,
-            "RewardsCoordinator._validateRewardsSubmission: no strategies set"
+        _validateCommonRewardsSubmission(
+            rewardsSubmission.strategiesAndMultipliers,
+            rewardsSubmission.startTimestamp,
+            rewardsSubmission.duration
         );
         require(rewardsSubmission.amount > 0, "RewardsCoordinator._validateRewardsSubmission: amount cannot be 0");
         require(
@@ -354,41 +400,9 @@ contract RewardsCoordinator is
             "RewardsCoordinator._validateRewardsSubmission: amount too large"
         );
         require(
-            rewardsSubmission.duration <= MAX_REWARDS_DURATION,
-            "RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
-        );
-        require(
-            rewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator._validateRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
-        );
-        require(
-            rewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator._validateRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
-        );
-        require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp &&
-                GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
-            "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past"
-        );
-        require(
             rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
             "RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the future"
         );
-
-        // Require rewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
-        address currAddress = address(0);
-        for (uint256 i = 0; i < rewardsSubmission.strategiesAndMultipliers.length; ++i) {
-            IStrategy strategy = rewardsSubmission.strategiesAndMultipliers[i].strategy;
-            require(
-                strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
-                "RewardsCoordinator._validateRewardsSubmission: invalid strategy considered"
-            );
-            require(
-                currAddress < address(strategy),
-                "RewardsCoordinator._validateRewardsSubmission: strategies must be in ascending order to handle duplicates"
-            );
-            currAddress = address(strategy);
-        }
     }
 
     /**
@@ -401,15 +415,16 @@ contract RewardsCoordinator is
     function _validateOperatorDirectedRewardsSubmission(
         OperatorDirectedRewardsSubmission calldata operatorDirectedRewardsSubmission
     ) internal view returns (uint256) {
-        require(
-            operatorDirectedRewardsSubmission.strategiesAndMultipliers.length > 0,
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: no strategies set"
+        _validateCommonRewardsSubmission(
+            operatorDirectedRewardsSubmission.strategiesAndMultipliers,
+            operatorDirectedRewardsSubmission.startTimestamp,
+            operatorDirectedRewardsSubmission.duration
         );
+
         require(
             operatorDirectedRewardsSubmission.operatorRewards.length > 0,
             "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: no operators rewarded"
         );
-
         uint256 totalAmount = 0;
         address currOperatorAddress = address(0);
         for (uint256 i = 0; i < operatorDirectedRewardsSubmission.operatorRewards.length; ++i) {
@@ -431,42 +446,10 @@ contract RewardsCoordinator is
         }
 
         require(
-            operatorDirectedRewardsSubmission.duration <= MAX_REWARDS_DURATION,
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
-        );
-        require(
-            operatorDirectedRewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
-        );
-        require(
-            operatorDirectedRewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
-        );
-        require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= operatorDirectedRewardsSubmission.startTimestamp &&
-                GENESIS_REWARDS_TIMESTAMP <= operatorDirectedRewardsSubmission.startTimestamp,
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: startTimestamp too far in the past"
-        );
-        require(
             operatorDirectedRewardsSubmission.startTimestamp + operatorDirectedRewardsSubmission.duration <
                 block.timestamp,
             "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: operator-directed rewards submission is not retroactive"
         );
-
-        // Require operatorDirectedRewardsSubmission is for whitelisted strategy or beaconChainETHStrategy
-        address currAddress = address(0);
-        for (uint256 i = 0; i < operatorDirectedRewardsSubmission.strategiesAndMultipliers.length; ++i) {
-            IStrategy strategy = operatorDirectedRewardsSubmission.strategiesAndMultipliers[i].strategy;
-            require(
-                strategyManager.strategyIsWhitelistedForDeposit(strategy) || strategy == beaconChainETHStrategy,
-                "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: invalid strategy considered"
-            );
-            require(
-                currAddress < address(strategy),
-                "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: strategies must be in ascending order to handle duplicates"
-            );
-            currAddress = address(strategy);
-        }
 
         return totalAmount;
     }

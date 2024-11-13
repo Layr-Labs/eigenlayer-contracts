@@ -732,7 +732,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: no strategies set");
+        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: no strategies set");
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -814,7 +814,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(
-            "RewardsCoordinator._validateRewardsSubmission: strategies must be in ascending order to handle duplicates"
+            "RewardsCoordinator._validateCommonRewardsSubmission: strategies must be in ascending order to handle duplicates"
         );
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
@@ -856,7 +856,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION");
+        cheats.expectRevert(
+            "RewardsCoordinator._validateCommonRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
+        );
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -899,7 +901,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(
-            "RewardsCoordinator._validateRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            "RewardsCoordinator._validateCommonRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
@@ -946,7 +948,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past");
+        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: startTimestamp too far in the past");
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -1029,7 +1031,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected event emitted
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: invalid strategy considered");
+        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: invalid strategy considered");
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
@@ -1870,7 +1872,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("RewardsCoordinator._validateOperatorDirectedRewardsSubmission: no strategies set");
+        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: no strategies set");
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2082,7 +2084,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
+            "RewardsCoordinator._validateCommonRewardsSubmission: duration exceeds MAX_REWARDS_DURATION"
         );
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
@@ -2124,7 +2126,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            "RewardsCoordinator._validateCommonRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
@@ -2166,7 +2168,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            "RewardsCoordinator._validateCommonRewardsSubmission: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
@@ -2203,9 +2205,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: startTimestamp too far in the past"
-        );
+        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: startTimestamp too far in the past");
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2286,9 +2286,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: invalid strategy considered"
-        );
+        cheats.expectRevert("RewardsCoordinator._validateCommonRewardsSubmission: invalid strategy considered");
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -2333,7 +2331,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(
-            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: strategies must be in ascending order to handle duplicates"
+            "RewardsCoordinator._validateCommonRewardsSubmission: strategies must be in ascending order to handle duplicates"
         );
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
