@@ -78,16 +78,16 @@ library SingleItemArrayLib {
         }
     }
 
+    function toArray(
+        address x
+    ) internal pure returns (address[] memory array) {
+        array = new address[](1);
+        array[0] = x;
+    }
+
     /// -----------------------------------------------------------------------
     /// EigenLayer Types
     /// -----------------------------------------------------------------------
-
-    function toArray(
-        address a
-    ) internal pure returns (address[] memory array) {
-        array = new address[](1);
-        array[0] = a;
-    }
 
     function toArray(
         IERC20 token

@@ -260,27 +260,28 @@ library Random {
         }
     }
 
+    /// @dev Usage:
+    /// ```
+    /// AllocateParams[] memory allocateParams = r.allocateParams(avs, numAllocations, numStrats);
+    /// CreateSetParams[] memory createSetParams = r.createSetParams(allocateParams);
+    /// RegisterParams memory registerParams = r.registerParams(allocateParams);
+    ///
+    /// cheats.prank(avs);
+    /// allocationManager.createOperatorSets(createSetParams);
+    ///
+    /// cheats.prank(operator);
+    /// allocationmanager.registerForOperatorSets(registerParams);
+    /// ```
     function RegisterParams(
         Randomness r, 
-        address avs, 
-        uint256 numOpSets
+        IAllocationManagerTypes.AllocateParams[] memory allocateParams
     ) internal returns (IAllocationManagerTypes.RegisterParams memory params) {
-        params.avs = avs;
-        params.operatorSetIds = new uint32[](numOpSets);
-        for (uint256 i; i < numOpSets; ++i) {
-            params.operatorSetIds[i] = r.Uint32(1, type(uint32).max);
+        params.avs = allocateParams[0].operatorSet.avs;
+        params.operatorSetIds = new uint32[](allocateParams.length);
+        for (uint256 i; i < allocateParams.length; ++i) {
+            params.operatorSetIds[i] = allocateParams[i].operatorSet.id;
         }
         params.data = abi.encode(r.Bytes32());
-    }
-
-    function DeregisterParams(
-        Randomness,
-        address operator,
-        IAllocationManagerTypes.RegisterParams memory registerParams
-    ) internal pure returns (IAllocationManagerTypes.DeregisterParams memory params) {
-        params.operator = operator;
-        params.avs = registerParams.avs;
-        params.operatorSetIds = registerParams.operatorSetIds;
     }
 
     /// -----------------------------------------------------------------------

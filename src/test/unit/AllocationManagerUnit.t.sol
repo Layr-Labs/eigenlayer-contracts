@@ -17,6 +17,8 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     uint256 internal constant FUZZ_MAX_STRATS = 8;
     uint256 internal constant FUZZ_MAX_OP_SETS = 8;
 
+    uint256 internal constant ACCEPTABLE_PRECISION_LOSS = 0.001 ether; // 0.1%
+
     uint8 internal constant PAUSED_MODIFY_ALLOCATIONS = 0;
     uint8 internal constant PAUSED_OPERATOR_SLASHING = 1;
     uint8 internal constant PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION = 2;
@@ -162,10 +164,28 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         int256 expectedPendingDiff,
         uint256 expectedEffectBlock
     ) internal pure {
-        assertEq(expectedCurrentMagnitude, allocation.currentMagnitude, "currentMagnitude != expected");
-        assertEq(expectedPendingDiff, allocation.pendingDiff, "pendingDiff != expected");
+        assertApproxEqAbs(
+            expectedCurrentMagnitude, 
+            allocation.currentMagnitude, 
+            1, 
+            "currentMagnitude != expected"
+        );
+        assertApproxEqAbs(expectedPendingDiff, allocation.pendingDiff, 1, "pendingDiff != expected");
         assertEq(expectedEffectBlock, allocation.effectBlock, "effectBlock != expected");
-        
+    }
+
+    function _checkAllocationStorage(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint256 expectedCurrentMagnitude,
+        int256 expectedPendingDiff,
+        uint256 expectedEffectBlock
+    ) internal view {
+        Allocation memory getAllocation = allocationManager.getAllocation(operator, operatorSet, strategy);
+        Allocation memory getAllocations = allocationManager.getAllocations(operator.toArray(), operatorSet, strategy)[0];
+        _checkAllocationStorage(getAllocation, expectedCurrentMagnitude, expectedPendingDiff, expectedEffectBlock);
+        _checkAllocationStorage(getAllocations, expectedCurrentMagnitude, expectedPendingDiff, expectedEffectBlock);
     }
 
     function _checkSlashableStake(
@@ -477,7 +497,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         uint256 effectBlock = block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY;
 
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: 0,
             expectedPendingDiff: int64(allocateParams[0].newMagnitudes[0]),
             expectedEffectBlock: effectBlock
@@ -486,7 +508,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.roll(effectBlock);
 
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: allocateParams[0].newMagnitudes[0],
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -537,7 +561,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             "allocatableMagnitude shoudl be 0"
         );
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: 75e16,
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -595,7 +621,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             "maxMagnitude not updated"
         );
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: expectedEncumberedMagnitude,
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -616,11 +644,12 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
      * 3. Max mag is updated
      * 4. Calculations for `getAllocatableMagnitude` and `getAllocation` are correct
      * 5. The second magnitude allocation is not slashed from
-     * TODO: Fuzz
      */
-    function test_slash_oneCompletedAlloc_onePendingAlloc(
+    function testFuzz_slash_oneCompletedAlloc_onePendingAlloc(
         Randomness r
     ) public rand(r) {
+        uint64 wadToSlash = r.Uint64(0.01 ether, WAD);
+
         // Generate allocation for `strategyMock`, we allocate half
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
         cheats.prank(defaultOperator);
@@ -662,16 +691,17 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: defaultOperatorSet.id,
-            wadToSlash: 50e16,
+            wadToSlash: wadToSlash,
             description: "test"
         });
 
-        uint64 expectedEncumberedMagnitude = 75e16; // 25e16 from first allocation, 50e16 from second
-        uint64 magnitudeAfterSlash = 25e16;
-        uint64 maxMagnitudeAfterSlash = 75e16;
-        
+        uint64 totalAllocated = 0.5 ether;
+        uint64 expectedEncumberedMagnitude = (WAD - uint64(uint256(totalAllocated) * uint256(wadToSlash) / WAD));
+        uint64 magnitudeAfterSlash = totalAllocated - uint64(uint256(totalAllocated) * uint256(wadToSlash) / WAD);
+        uint64 maxMagnitudeAfterSlash = expectedEncumberedMagnitude;
+
         uint64 expectedSlashedMagnitude =
-            uint64(SlashingLib.mulWadRoundUp(5e17, slashingParams.wadToSlash));
+            uint64(SlashingLib.mulWadRoundUp(totalAllocated, slashingParams.wadToSlash));
         uint newSlashableMagnitude = uint(magnitudeAfterSlash).divWad(maxMagnitudeAfterSlash);
         uint slashedStake = DEFAULT_OPERATOR_SHARES.mulWad(expectedSlashedMagnitude);
         uint newTotalStake = DEFAULT_OPERATOR_SHARES - slashedStake;
@@ -680,7 +710,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategies: defaultStrategies,
-            wadToSlash: uint256(50e16).toArrayU256(),
+            wadToSlash: uint256(wadToSlash).toArrayU256(),
             description: "test"
         });
 
@@ -689,19 +719,23 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.slashOperator(slashingParams);
 
         // Check storage
-        assertEq(
+        assertApproxEqRel(
             expectedEncumberedMagnitude,
             allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
+            ACCEPTABLE_PRECISION_LOSS,
             "encumberedMagnitude not updated"
         );
-        assertEq(
+        assertApproxEqRel(
             maxMagnitudeAfterSlash,
             allocationManager.getMaxMagnitudes(defaultOperator, defaultStrategies)[0],
+            ACCEPTABLE_PRECISION_LOSS,
             "maxMagnitude not updated"
         );
 
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: magnitudeAfterSlash,
             expectedPendingDiff: 5e17,
             expectedEffectBlock: secondAllocEffectBlock
@@ -724,8 +758,10 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         );
 
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
-            expectedCurrentMagnitude: 75e16,
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
+            expectedCurrentMagnitude: magnitudeAfterSlash + 0.5 ether,
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
         });
@@ -916,12 +952,13 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
      * 4. Calculations for `getAllocatableMagnitude` and `getAllocation` are correct
      * 5. The deallocation is slashed from
      * 6. Pending magnitude updates post deallocation are valid
-     * TODO: Fuzz the allocation & slash amounts
+     * TODO: Fuzz the allocation
      */
-    function test_allocateAll_deallocateHalf_slashWhileDeallocPending() public {
-        uint64 initialMagnitude = WAD;
+    function testFuzz_allocateAll_deallocateHalf_slashWhileDeallocPending(Randomness r) public rand(r) {
+        uint64 wadToSlash = r.Uint64(0.01 ether, WAD);
+
         // Generate allocation for `strategyMock`, we allocate half
-        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, initialMagnitude);
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, WAD);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(allocateParams);
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
@@ -935,7 +972,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
 
         // Deallocate half
-        AllocateParams[] memory deallocateParams = _newAllocateParams(defaultOperatorSet, initialMagnitude / 2);
+        AllocateParams[] memory deallocateParams = _newAllocateParams(defaultOperatorSet, 0.5 ether);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(deallocateParams);
         uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
@@ -961,20 +998,20 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: defaultOperatorSet.id,
-            wadToSlash: 25e16,
+            wadToSlash: wadToSlash,
             description: "test"
         });
 
-        uint64 magnitudeAfterDeallocationSlash = 375e15; // 25% is slashed off of 5e17
-        uint64 expectedEncumberedMagnitude = 75e16; // 25e16 is slashed. 75e16 is encumbered
-        uint64 magnitudeAfterSlash = 75e16;
-        uint64 maxMagnitudeAfterSlash = 75e16; // Operator can only allocate up to 75e16 magnitude since 25% is slashed
+        uint64 magnitudeAfterDeallocationSlash = uint64(0.5 ether - (0.5 ether * uint256(wadToSlash) / WAD)); // 25% is slashed off of 5e17
+        uint64 expectedEncumberedMagnitude = uint64(1 ether - (1 ether * uint256(wadToSlash) / WAD)); // 25e16 is slashed. 75e16 is encumbered
+        uint64 magnitudeAfterSlash = expectedEncumberedMagnitude;
+        uint64 maxMagnitudeAfterSlash = expectedEncumberedMagnitude; // Operator can only allocate up to 75e16 magnitude since 25% is slashed
 
         _checkSlashEvents({
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategies: defaultStrategies,
-            wadToSlash: uint256(25e16).toArrayU256(),
+            wadToSlash: uint256(wadToSlash).toArrayU256(),
             description: "test"
         });
 
@@ -1024,9 +1061,10 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         allocationManager.clearDeallocationQueue(defaultOperator, defaultStrategies, _maxNumToClear());
 
-        assertEq(
+        assertApproxEqAbs(
             magnitudeAfterDeallocationSlash,
             maxMagnitudeAfterSlash / 2,
+            1,
             "magnitude after deallocation should be half of max magnitude, since we originally deallocated by half"
         );
 
@@ -1129,7 +1167,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             0, allocationManager.getMaxMagnitudes(defaultOperator, defaultStrategies)[0], "maxMagnitude not updated"
         );
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: 0,
             expectedPendingDiff: 0,
             expectedEffectBlock: block.number + DEALLOCATION_DELAY
@@ -1157,7 +1197,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         // Check storage post deallocation
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: WAD,
             expectedPendingDiff: -5e17,
             expectedEffectBlock: deallocationEffectBlock
@@ -1202,7 +1244,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             "maxMagnitude not updated"
         );
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: magnitudeAfterSlash,
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -1402,7 +1446,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
                 "allocatableMagnitude not updated"
             );
             _checkAllocationStorage({
-                allocation: allocationManager.getAllocation(defaultOperator, operatorSet, strategies[i]),
+                operator: defaultOperator,
+                operatorSet: operatorSet,
+                strategy: strategies[i],
                 expectedCurrentMagnitude: expectedMagnitudeAfterSlash[i],
                 expectedPendingDiff: 0,
                 expectedEffectBlock: 0
@@ -1464,7 +1510,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         );
 
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, operatorSet, strategy),
+            operator: defaultOperator,
+            operatorSet: operatorSet,
+            strategy: strategy,
             expectedCurrentMagnitude: uint64(currentMagnitude),
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -1729,7 +1777,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             "allocatableMagnitude not calcualted correctly"
         );
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: 0,
             expectedPendingDiff: int128(uint128(magnitude)),
             expectedEffectBlock: effectBlock
@@ -1738,7 +1788,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         // Check storage after roll to completion
         cheats.roll(effectBlock);
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: magnitude,
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -1802,7 +1854,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
         for (uint256 i; i < allocateParams.length; ++i) {
             _checkAllocationStorage({
-                allocation: allocationManager.getAllocation(defaultOperator, operatorSets[i], strategyMock),
+                operator: defaultOperator,
+                operatorSet: operatorSets[i],
+                strategy: strategyMock,
                 expectedCurrentMagnitude: 0,
                 expectedPendingDiff: int128(uint128(allocateParams[i].newMagnitudes[0])),
                 expectedEffectBlock: effectBlock
@@ -1818,7 +1872,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         cheats.roll(effectBlock);
         for (uint256 i; i < allocateParams.length; ++i) {
             _checkAllocationStorage({
-                allocation: allocationManager.getAllocation(defaultOperator, operatorSets[i], strategyMock),
+                operator: defaultOperator,
+                operatorSet: operatorSets[i],
+                strategy: strategyMock,
                 expectedCurrentMagnitude: allocateParams[i].newMagnitudes[0],
                 expectedPendingDiff: 0,
                 expectedEffectBlock: 0
@@ -1985,7 +2041,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         uint32 effectBlock = uint32(block.number + DEALLOCATION_DELAY);
 
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: firstMod,
             expectedPendingDiff: -int128(uint128(firstMod - secondMod)),
             expectedEffectBlock: effectBlock
@@ -1994,7 +2052,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         // Check storage after roll to completion
         cheats.roll(effectBlock);
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: secondMod,
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -2091,7 +2151,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
         // Check operator set A
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, operatorSetA, strategyMock),
+            operator: defaultOperator,
+            operatorSet: operatorSetA,
+            strategy: strategyMock,
             expectedCurrentMagnitude: 0,
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -2099,7 +2161,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
         // Check operator set B
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, operatorSetB, strategyMock),
+            operator: defaultOperator,
+            operatorSet: operatorSetB,
+            strategy: strategyMock,
             expectedCurrentMagnitude: 0,
             expectedPendingDiff: int64(firstMod),
             expectedEffectBlock: block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY
@@ -2199,7 +2263,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         // Check that all magnitude will be allocated to the new set, and each prior set
         // has a zeroed-out allocation
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, finalOpSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: finalOpSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: 0,
             expectedPendingDiff: int64(WAD),
             expectedEffectBlock: block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY
@@ -2217,7 +2283,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
         for (uint256 i; i < deallocSets.length; ++i) {
             _checkAllocationStorage({
-                allocation: allocationManager.getAllocation(defaultOperator, deallocSets[i], strategyMock),
+                operator: defaultOperator,
+                operatorSet: deallocSets[i],
+                strategy: strategyMock,
                 expectedCurrentMagnitude: 0,
                 expectedPendingDiff: 0,
                 expectedEffectBlock: 0
@@ -2270,7 +2338,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             "encumberedMagnitude should be updated"
         );
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: 0,
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -2336,7 +2406,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
         for (uint256 i; i < allocateParams.length; ++i) {
             _checkAllocationStorage({
-                allocation: allocationManager.getAllocation(defaultOperator, operatorSets[i], strategyMock),
+                operator: defaultOperator,
+                operatorSet: operatorSets[i],
+                strategy: strategyMock,
                 expectedCurrentMagnitude: allocateParams[i].newMagnitudes[0],
                 expectedPendingDiff: -int64(allocateParams[i].newMagnitudes[0] - deallocateParams[i].newMagnitudes[0]),
                 expectedEffectBlock: block.number + DEALLOCATION_DELAY
@@ -2348,7 +2420,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
         for (uint256 i; i < allocateParams.length; ++i) {
             _checkAllocationStorage({
-                allocation: allocationManager.getAllocation(defaultOperator, operatorSets[i], strategyMock),
+                operator: defaultOperator,
+                operatorSet: operatorSets[i],
+                strategy: strategyMock,
                 expectedCurrentMagnitude: deallocateParams[i].newMagnitudes[0],
                 expectedPendingDiff: 0,
                 expectedEffectBlock: 0
@@ -2397,9 +2471,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         for (uint256 i; i < allocateParams.length; ++i) {
             for (uint256 j = 0; j < allocateParams[i].strategies.length; j++) {
                 _checkAllocationStorage({
-                    allocation: allocationManager.getAllocation(
-                        defaultOperator, allocateParams[i].operatorSet, allocateParams[i].strategies[j]
-                    ),
+                    operator: defaultOperator,
+                    operatorSet: allocateParams[i].operatorSet,
+                    strategy: allocateParams[i].strategies[j],
                     expectedCurrentMagnitude: 0,
                     expectedPendingDiff: int64(allocateParams[i].newMagnitudes[j]),
                     expectedEffectBlock: block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY
@@ -2412,9 +2486,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         for (uint256 i; i < allocateParams.length; ++i) {
             for (uint256 j = 0; j < allocateParams[i].strategies.length; j++) {
                 _checkAllocationStorage({
-                    allocation: allocationManager.getAllocation(
-                        defaultOperator, allocateParams[i].operatorSet, allocateParams[i].strategies[j]
-                    ),
+                    operator: defaultOperator,
+                    operatorSet: allocateParams[i].operatorSet,
+                    strategy: allocateParams[i].strategies[j],
                     expectedCurrentMagnitude: allocateParams[i].newMagnitudes[j],
                     expectedPendingDiff: 0,
                     expectedEffectBlock: 0
@@ -2429,9 +2503,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         for (uint256 i; i < allocateParams.length; ++i) {
             for (uint256 j = 0; j < allocateParams[i].strategies.length; j++) {
                 _checkAllocationStorage({
-                    allocation: allocationManager.getAllocation(
-                        defaultOperator, allocateParams[i].operatorSet, allocateParams[i].strategies[j]
-                    ),
+                    operator: defaultOperator,
+                    operatorSet: allocateParams[i].operatorSet,
+                    strategy: allocateParams[i].strategies[j],
                     expectedCurrentMagnitude: deallocateParams[i].newMagnitudes[j],
                     expectedPendingDiff: 0,
                     expectedEffectBlock: 0
@@ -2492,7 +2566,9 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
 
         // Validate allocation is no longer pending
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: allocateParams[0].newMagnitudes[0],
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -2534,7 +2610,9 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
 
         // Validate storage - encumbered magnitude should just be allocateParams (we only have 1 allocation)
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: allocateParams[0].newMagnitudes[0],
             expectedPendingDiff: -int128(uint128(allocateParams[0].newMagnitudes[0] - deallocateParams[0].newMagnitudes[0])),
             expectedEffectBlock: block.number + DEALLOCATION_DELAY
@@ -2553,7 +2631,9 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
             "encumberedMagnitude should be updated"
         );
         _checkAllocationStorage({
-            allocation: allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock),
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            strategy: strategyMock,
             expectedCurrentMagnitude: deallocateParams[0].newMagnitudes[0],
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
@@ -3112,5 +3192,48 @@ contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTest
         cheats.prank(avs);
         allocationManager.setAVSRegistrar(avsRegistrar);
         assertTrue(avsRegistrar == allocationManager.getAVSRegistrar(avs), "should be set");
+    }
+}
+
+contract AllocationManagerUnitTests_updateAVSMetadataURI is AllocationManagerUnitTests {
+    function test_updateAVSMetadataURI_Correctness() public {
+        string memory newURI = "test";
+        cheats.expectEmit(true, false, false, false, address(allocationManager));
+        emit AVSMetadataURIUpdated(defaultAVS, newURI);
+        cheats.prank(defaultAVS);
+        allocationManager.updateAVSMetadataURI(newURI);
+    }
+}
+
+contract AllocationManagerUnitTests_getStrategyAllocations is AllocationManagerUnitTests {
+    function testFuzz_getStrategyAllocations_Correctness(Randomness r) public rand(r) {
+        AllocateParams[] memory allocateParams = r.AllocateParams(defaultAVS, 1, 1);
+        CreateSetParams[] memory createSetParams = r.CreateSetParams(allocateParams);
+        RegisterParams memory registerParams = r.RegisterParams(allocateParams);
+
+        delegationManagerMock.setIsOperator(defaultOperator, true);
+
+        cheats.prank(defaultAVS);
+        allocationManager.createOperatorSets(createSetParams);
+
+        cheats.startPrank(defaultOperator);
+        allocationManager.registerForOperatorSets(registerParams);
+        allocationManager.modifyAllocations(allocateParams);
+        cheats.stopPrank();
+
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        (OperatorSet[] memory operatorSets, Allocation[] memory allocations) =
+            allocationManager.getStrategyAllocations(defaultOperator, allocateParams[0].strategies[0]);
+
+        assertEq(operatorSets[0].avs, allocateParams[0].operatorSet.avs, "should be defaultAVS");
+        assertEq(operatorSets[0].id, allocateParams[0].operatorSet.id, "should be defaultOperatorSet");
+
+        _checkAllocationStorage({
+            allocation: allocations[0],
+            expectedCurrentMagnitude: allocateParams[0].newMagnitudes[0],
+            expectedPendingDiff: 0,
+            expectedEffectBlock: 0
+        });
     }
 }
