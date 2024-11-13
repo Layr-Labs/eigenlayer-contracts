@@ -389,7 +389,11 @@ contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorU
 
 contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUnitTests {
     // Revert when paused
-    function testFuzz_Revert_WhenPaused(address operator, address avs, uint16 split) public {
+    function testFuzz_Revert_WhenPaused(
+        address operator,
+        address avs,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         cheats.prank(pauser);
@@ -401,7 +405,11 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
     }
 
     // Revert when operator is not caller
-    function testFuzz_Revert_WhenOperatorIsNotMsgSender(address operator, address avs, uint16 split) public {
+    function testFuzz_Revert_WhenOperatorIsNotMsgSender(
+        address operator,
+        address avs,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0) && operator != address(this));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
 
@@ -410,7 +418,11 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
     }
 
     // Revert when split is greater than 100%
-    function testFuzz_Revert_WhenSplitGreaterThan100(address operator, address avs, uint16 split) public {
+    function testFuzz_Revert_WhenSplitGreaterThan100(
+        address operator,
+        address avs,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, ONE_HUNDRED_IN_BIPS + 1, type(uint16).max));
 
@@ -419,7 +431,11 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         rewardsCoordinator.setOperatorAVSSplit(operator, avs, split);
     }
 
-    function testFuzz_setOperatorAVSSplit(address operator, address avs, uint16 split) public {
+    function testFuzz_setOperatorAVSSplit(
+        address operator,
+        address avs,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
@@ -436,7 +452,11 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
     }
 
     // Testing that the split has been initialized for the first time.
-    function testFuzz_setOperatorAVSSplitFirstTime(address operator, address avs, uint16 split) public {
+    function testFuzz_setOperatorAVSSplitFirstTime(
+        address operator,
+        address avs,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
@@ -460,7 +480,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         uint16 firstSplit,
         uint16 secondSplit,
         uint32 warpTime
-    ) public {
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
         secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
@@ -492,7 +512,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         uint16 firstSplit,
         uint16 secondSplit,
         uint32 warpTime
-    ) public {
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
         secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
@@ -521,7 +541,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
 
 contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUnitTests {
     // Revert when paused
-    function testFuzz_Revert_WhenPaused(address operator, uint16 split) public {
+    function testFuzz_Revert_WhenPaused(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         cheats.prank(pauser);
@@ -533,7 +553,10 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
     }
 
     // Revert when operator is not caller
-    function testFuzz_Revert_WhenOperatorIsNotMsgSender(address operator, uint16 split) public {
+    function testFuzz_Revert_WhenOperatorIsNotMsgSender(
+        address operator,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0) && operator != address(this));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
 
@@ -542,7 +565,10 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
     }
 
     // Revert when split is greater than 100%
-    function testFuzz_Revert_WhenSplitGreaterThan100(address operator, uint16 split) public {
+    function testFuzz_Revert_WhenSplitGreaterThan100(
+        address operator,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, ONE_HUNDRED_IN_BIPS + 1, type(uint16).max));
 
@@ -551,7 +577,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         rewardsCoordinator.setOperatorPISplit(operator, split);
     }
 
-    function testFuzz_setOperatorAVSSplit(address operator, uint16 split) public {
+    function testFuzz_setOperatorAVSSplit(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
@@ -568,7 +594,10 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
     }
 
     // Testing that the split has been initialized for the first time.
-    function testFuzz_setOperatorAVSSplitFirstTime(address operator, uint16 split) public {
+    function testFuzz_setOperatorAVSSplitFirstTime(
+        address operator,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
@@ -591,7 +620,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         uint16 firstSplit,
         uint16 secondSplit,
         uint32 warpTime
-    ) public {
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
         secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
@@ -622,7 +651,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         uint16 firstSplit,
         uint16 secondSplit,
         uint32 warpTime
-    ) public {
+    ) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
         secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
