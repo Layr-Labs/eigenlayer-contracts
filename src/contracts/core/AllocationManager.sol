@@ -767,7 +767,9 @@ contract AllocationManager is
                 Allocation memory alloc = getAllocation(operator, operatorSet, strategy);
 
                 // If the pending change takes effect before `futureBlock`, include it in `currentMagnitude`
-                if (alloc.effectBlock <= futureBlock) {
+                // However, ONLY include the pending change if it is a deallocation, since this method
+                // is supposed to return the minimum slashable stake between now and `futureBlock`
+                if (alloc.effectBlock <= futureBlock && alloc.pendingDiff < 0) {
                     alloc.currentMagnitude = _addInt128(alloc.currentMagnitude, alloc.pendingDiff);
                 }
 

@@ -646,12 +646,12 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
         });
 
-        // Check slashable stake would change after the second allocation becomes effective
+        // Check minimum slashable stake would not change even after the second allocation becomes effective
         _checkSlashableStake({
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedStake: DEFAULT_OPERATOR_SHARES,
+            expectedStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17),
             futureBlock: secondAllocEffectBlock
         });
 
