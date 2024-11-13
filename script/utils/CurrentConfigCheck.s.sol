@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import "./ExistingDeploymentParser.sol";
 import "./TimelockEncoding.sol";
+import "../NoDelayTimelock.sol";
 
 /**
  * forge script script/utils/CurrentConfigCheck.s.sol:CurrentConfigCheck -vvv --sig "run(string)" $NETWORK_NAME
@@ -21,41 +22,7 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
     address public beigenExecutorMultisig;
 
     function run(string memory networkName) public virtual {
-        if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("preprod-holesky"))) {
-            deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
-            intialDeploymentParams = "script/configs/holesky/eigenlayer_preprod.config.json";
-            forkUrl = vm.envString("RPC_HOLESKY");
-            uint256 forkId = vm.createFork(forkUrl);
-            vm.selectFork(forkId);
-        } else if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("testnet-holesky"))) {
-            deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
-            intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
-            forkUrl = vm.envString("RPC_HOLESKY");
-            uint256 forkId = vm.createFork(forkUrl);
-            vm.selectFork(forkId);
-        } else if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("mainnet"))) {
-            deployedContractsConfig = "script/configs/mainnet/mainnet-addresses.config.json";
-            intialDeploymentParams = "script/configs/mainnet/mainnet-config.config.json"; 
-            forkUrl = vm.envString("RPC_MAINNET");
-            uint256 forkId = vm.createFork(forkUrl);
-            vm.selectFork(forkId);
-        }
-
-        if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("local"))) {
-            deployedContractsConfig = "script/output/devnet/local_from_scratch_deployment_data.json";
-            intialDeploymentParams = "script/configs/local/deploy_from_scratch.anvil.config.json";             
-        }
-
-        require(keccak256(abi.encodePacked(deployedContractsConfig)) != keccak256(abi.encodePacked(emptyString)),
-            "deployedContractsConfig cannot be unset");
-        require(keccak256(abi.encodePacked(intialDeploymentParams)) != keccak256(abi.encodePacked(emptyString)),
-            "intialDeploymentParams cannot be unset");
-
-        // read and log the chainID
-        uint256 currentChainId = block.chainid;
-        emit log_named_uint("You are parsing on ChainID", currentChainId);
-        require(currentChainId == 1 || currentChainId == 17000 || currentChainId == 31337,
-            "script is only for mainnet or holesky or local environment");
+        startChainFork(networkName);
 
         _parseDeployedContracts(deployedContractsConfig);
         _parseInitialDeploymentParams(intialDeploymentParams);
@@ -94,6 +61,42 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         // simulateProtocolCouncilUpgrade(networkName);
     }
 
+    function startChainFork(string memory networkName) public virtual {
+        if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("preprod-holesky"))) {
+            deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_preprod.config.json";
+            intialDeploymentParams = "script/configs/holesky/eigenlayer_preprod.config.json";
+            forkUrl = vm.envString("RPC_HOLESKY");
+            uint256 forkId = vm.createFork(forkUrl);
+            vm.selectFork(forkId);
+        } else if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("testnet-holesky"))) {
+            deployedContractsConfig = "script/configs/holesky/eigenlayer_addresses_testnet.config.json";
+            intialDeploymentParams = "script/configs/holesky/eigenlayer_testnet.config.json";
+            forkUrl = vm.envString("RPC_HOLESKY");
+            uint256 forkId = vm.createFork(forkUrl);
+            vm.selectFork(forkId);
+        } else if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("mainnet"))) {
+            deployedContractsConfig = "script/configs/mainnet/mainnet-addresses.config.json";
+            intialDeploymentParams = "script/configs/mainnet/mainnet-config.config.json"; 
+            forkUrl = vm.envString("RPC_MAINNET");
+            uint256 forkId = vm.createFork(forkUrl);
+            vm.selectFork(forkId);
+        } else if (keccak256(abi.encodePacked(networkName)) == keccak256(abi.encodePacked("local"))) {
+            deployedContractsConfig = "script/output/devnet/local_from_scratch_deployment_data.json";
+            intialDeploymentParams = "script/configs/local/deploy_from_scratch.anvil.config.json";             
+        }
+
+        require(keccak256(abi.encodePacked(deployedContractsConfig)) != keccak256(abi.encodePacked(emptyString)),
+            "deployedContractsConfig cannot be unset");
+        require(keccak256(abi.encodePacked(intialDeploymentParams)) != keccak256(abi.encodePacked(emptyString)),
+            "intialDeploymentParams cannot be unset");
+
+        // read and log the chainID
+        uint256 currentChainId = block.chainid;
+        emit log_named_uint("You are parsing on ChainID", currentChainId);
+        require(currentChainId == 1 || currentChainId == 17000 || currentChainId == 31337,
+            "script is only for mainnet or holesky or local environment");
+    }
+
     // check governance configuration
     function checkGovernanceConfiguration_Current() public {
         assertEq(eigenLayerProxyAdmin.owner(), executorMultisig,
@@ -119,13 +122,11 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         require(eigenLayerPauserReg.isPauser(pauserMultisig),
             "pauserMultisig does not have pausing permissions");
 
-        (bool success, bytes memory returndata) = timelock.staticcall(abi.encodeWithSignature("admin()"));
-        require(success, "call to timelock.admin() failed");
-        address timelockAdmin = abi.decode(returndata, (address));
+        address timelockAdmin = NoDelayTimelock(payable(timelock)).admin();
         assertEq(timelockAdmin, operationsMultisig,
             "timelockAdmin != operationsMultisig");
 
-        (success, returndata) = executorMultisig.staticcall(abi.encodeWithSignature("getOwners()"));
+        (bool success, bytes memory returndata) = executorMultisig.staticcall(abi.encodeWithSignature("getOwners()"));
         require(success, "call to executorMultisig.getOwners() failed");
         address[] memory executorMultisigOwners = abi.decode(returndata, (address[]));
         require(executorMultisigOwners.length == 2,
@@ -213,10 +214,7 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
             "pauserMultisig does not have pausing permissions");
 
         // TODO: delete this? it should no longer matter going forwards
-        // check legacy timelock admin
-        (bool success, bytes memory returndata) = timelock.staticcall(abi.encodeWithSignature("admin()"));
-        require(success, "call to timelock.admin() failed");
-        address timelockAdmin = abi.decode(returndata, (address));
+        address timelockAdmin = NoDelayTimelock(payable(timelock)).admin();
         assertEq(timelockAdmin, operationsMultisig,
             "timelockAdmin != operationsMultisig");
 
