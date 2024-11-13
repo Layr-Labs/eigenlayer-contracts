@@ -83,6 +83,13 @@ library SingleItemArrayLib {
     /// -----------------------------------------------------------------------
 
     function toArray(
+        address a
+    ) internal pure returns (address[] memory array) {
+        array = new address[](1);
+        array[0] = a;
+    }
+
+    function toArray(
         IERC20 token
     ) internal pure returns (IERC20[] memory array) {
         array = new IERC20[](1);
