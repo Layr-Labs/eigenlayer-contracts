@@ -465,7 +465,7 @@ contract ExistingDeploymentParser is Script, Test {
      * initialization params if this is the first deployment.
      * @dev isInitialDeployment True if this is the first deployment of contracts from scratch
      */
-    function _verifyContractsInitialized(bool /** isInitialDeployment **/) internal virtual {
+    function _verifyContractsInitialized(bool /* isInitialDeployment */) internal virtual {
         // AVSDirectory
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         avsDirectory.initialize(address(0), eigenLayerPauserReg, AVS_DIRECTORY_INIT_PAUSED_STATUS);
@@ -595,7 +595,7 @@ contract ExistingDeploymentParser is Script, Test {
                 strategyManager.strategyWhitelister() == address(strategyFactory),
                 "strategyManager: strategyWhitelister not set correctly"
             );
-        } else if (block.chainid == 17000) {
+        } else if (block.chainid == 17_000) {
             // On holesky, for ease of whitelisting we set to executorMultisig
             // require(
             //     strategyManager.strategyWhitelister() == executorMultisig,

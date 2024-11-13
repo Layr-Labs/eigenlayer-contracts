@@ -2,7 +2,7 @@
 src = 'src'
 out = 'out'
 libs = ['lib']
-fs_permissions = [{ access = "read-write", path = "./"}]
+fs_permissions = [{ access = "read-write", path = "./"}, { access = "read-write", path = "/var/folders"}]
 gas_reports = ["*"]
 # ignore upgrade testing in scripts by default
 no_match_test = "queueUpgrade"

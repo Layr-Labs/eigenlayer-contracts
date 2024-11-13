@@ -16,3 +16,6 @@
 [submodule "lib/openzeppelin-contracts-upgradeable-v4.9.0"]
 	path = lib/openzeppelin-contracts-upgradeable-v4.9.0
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
+[submodule "lib/zeus-templates"]
+	path = lib/zeus-templates
+	url = https://github.com/Layr-Labs/zeus-templates
