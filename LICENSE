@@ -12,7 +12,27 @@ Licensor:             Layr Labs, Inc.
 Licensed Work:        EigenLayer Core Contracts
                       The Licensed Work is (c) 2023 Layr Labs, Inc.
 
-Additional Use Grant: None.
+Additional Use Grant: 
+
+You may additionally use any of the software included in the following repositories
+[here](https://docs.google.com/spreadsheets/d/1PlJRow5C0GMqXZlIxRm5CEnkhH-gMV1wIdq1pCfbZco/edit?usp=sharing)
+(“Additional Use Grant Software”) for production commercial uses, but only if such
+uses are (i) built on or using the EigenLayer Protocol or EigenDA, and (ii) not
+Competing Uses. 
+
+“Competing Use” means any use of the Additional Use Grant Software in any product,
+protocol, application or service that is made available to third parties and that
+(i) substitutes for use of EigenLayer Protocol or EigenDA, (ii) offers the same or
+substantially similar functionality as the EigenLayer Protocol or EigenDA or
+(iii) is built on or using a protocol with substantially similar functionality as
+the EigenLayer Protocol.
+
+EigenLayer Protocol means the restaking protocol as further described in the
+documentation [here](https://docs.eigenlayer.xyz/), as updated from time to time. 
+
+EigenDA means the data availability protocol built on top of the EigenLayer
+Protocol as further described in the documentation
+[here](https://docs.eigenlayer.xyz/eigenda/overview), as updated from time to time. 
 
 Change Dates:
 
