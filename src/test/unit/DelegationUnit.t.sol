@@ -467,7 +467,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         uint64 operatorMaxMagnitude
     ) internal view returns (uint256) {
         if (strategy == beaconChainETHStrategy) {
-            uint64 beaconChainSlashingFactor = delegationManager.getBeaconChainSlashingFactor(staker);
+            uint64 beaconChainSlashingFactor = eigenPodManagerMock.beaconChainSlashingFactor(staker);
             return operatorMaxMagnitude.mulWad(beaconChainSlashingFactor);
         }
 
@@ -4964,11 +4964,18 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         uint256 operatorSharesAfterQueue = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
         assertEq(operatorSharesAfterQueue, operatorSharesBeforeQueue - withdrawalAmount, "operator shares should be decreased after queue");
 
-        // Slash the staker for beacon chain shares while it has queued a withdrawal
-        uint256 beaconSharesBeforeSlash = uint256(eigenPodManagerMock.podOwnerShares(defaultStaker));
-        uint64 stakerBeaconChainScalingFactor = 5e17;
-        cheats.prank(address(eigenPodManagerMock));
-        delegationManager.decreaseBeaconChainScalingFactor(defaultStaker, beaconSharesBeforeSlash, stakerBeaconChainScalingFactor);
+        {
+            // Slash the staker for beacon chain shares while it has queued a withdrawal
+            uint256 beaconSharesBeforeSlash = uint256(eigenPodManagerMock.podOwnerShares(defaultStaker));
+            uint64 prevBeaconChainSlashingFactor = eigenPodManagerMock.beaconChainSlashingFactor(defaultStaker);
+            uint64 newBeaconChainSlashingFactor = 5e17;
+            eigenPodManagerMock.setBeaconChainSlashingFactor(defaultStaker, newBeaconChainSlashingFactor);
+            uint256 wadSlashed = newBeaconChainSlashingFactor.divWad(prevBeaconChainSlashingFactor);
+
+            cheats.prank(address(eigenPodManagerMock));
+            delegationManager.decreaseDelegatedShares(defaultStaker, beaconSharesBeforeSlash, prevBeaconChainSlashingFactor, wadSlashed);
+        }
+
         uint256 operatorSharesAfterBeaconSlash = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
         assertEq(operatorSharesAfterBeaconSlash, operatorSharesAfterQueue / 2, "operator shares should be decreased after beaconChain slash");
 
@@ -5035,9 +5042,13 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
             // Slash the staker for beacon chain shares while it has queued a withdrawal
             uint256 beaconSharesBeforeSlash = uint256(eigenPodManagerMock.podOwnerShares(defaultStaker));
-            uint64 stakerBeaconChainScalingFactor = 5e17;
+            uint64 prevBeaconChainSlashingFactor = eigenPodManagerMock.beaconChainSlashingFactor(defaultStaker);
+            uint64 newBeaconChainSlashingFactor = 5e17;
+            eigenPodManagerMock.setBeaconChainSlashingFactor(defaultStaker, newBeaconChainSlashingFactor);
+            uint256 wadSlashed = newBeaconChainSlashingFactor.divWad(prevBeaconChainSlashingFactor);
+
             cheats.prank(address(eigenPodManagerMock));
-            delegationManager.decreaseBeaconChainScalingFactor(defaultStaker, beaconSharesBeforeSlash, stakerBeaconChainScalingFactor);
+            delegationManager.decreaseDelegatedShares(defaultStaker, beaconSharesBeforeSlash, prevBeaconChainSlashingFactor, wadSlashed);
             uint256 operatorSharesAfterBeaconSlash = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
             assertEq(operatorSharesAfterBeaconSlash, operatorSharesAfterQueue / 2, "operator shares should be decreased after beaconChain slash");
 

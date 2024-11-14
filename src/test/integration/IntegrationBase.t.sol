@@ -1163,7 +1163,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     /// @dev Looks up the staker's beacon chain scaling factor
     function _getBeaconChainSlashingFactor(User staker) internal view returns (uint64) {
-        return delegationManager.getBeaconChainSlashingFactor(address(staker));
+        return eigenPodManager.beaconChainSlashingFactor(address(staker));
     }
 
     function _getPrevCumulativeWithdrawals(User staker) internal timewarp() returns (uint) {

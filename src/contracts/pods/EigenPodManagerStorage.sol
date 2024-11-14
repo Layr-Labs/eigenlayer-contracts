@@ -77,6 +77,10 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
 
     uint64 internal __deprecated_denebForkTimestamp;
 
+    /// @notice Returns the slashing factor applied to the `staker` for the `beaconChainETHStrategy`
+    /// Note: this is specifically updated when the staker's beacon chain balance decreases
+    mapping(address staker => BeaconChainSlashingFactor) internal _beaconChainSlashingFactor;
+
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
@@ -94,5 +98,5 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[43] private __gap;
 }

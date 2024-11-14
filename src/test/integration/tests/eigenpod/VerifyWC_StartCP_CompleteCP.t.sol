@@ -726,7 +726,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, gweiSent);
 
         staker.completeCheckpoint();
-        // check that `pod.balance == withdrawableRestakedExecutionLayerGwei + remainderSent
+        // check that `pod.balance == restakedExecutionLayerGwei + remainderSent
         assert_PodBalance_Eq(staker, (gweiSent * GWEI_TO_WEI) + remainderSent, "pod balance should equal expected");
         check_CompleteCheckpoint_WithPodBalance_State(staker, gweiSent);
     }
@@ -754,7 +754,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, gweiSent);
 
         staker.completeCheckpoint();
-        // check that `pod.balance == withdrawableRestakedExecutionLayerGwei + remainderSent
+        // check that `pod.balance == restakedExecutionLayerGwei + remainderSent
         assert_PodBalance_Eq(staker, (gweiSent * GWEI_TO_WEI) + remainderSent, "pod balance should equal expected");
         check_CompleteCheckpoint_WithPodBalance_State(staker, gweiSent);
     }

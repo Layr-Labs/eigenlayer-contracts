@@ -13,6 +13,13 @@ contract EigenPodManagerMock is Test, Pausable {
 
     mapping(address => uint256) public podOwnerSharesWithdrawn;
 
+    struct BeaconChainSlashingFactor {
+        bool isSet;
+        uint64 slashingFactor;
+    }
+
+    mapping(address => BeaconChainSlashingFactor) _beaconChainSlashingFactor;
+
     constructor(IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {
         _setPausedStatus(0);
     }
@@ -54,5 +61,17 @@ contract EigenPodManagerMock is Test, Pausable {
 
     function withdrawSharesAsTokens(address podOwner, address /** strategy */, address /** token */, uint256 shares) external {
         podOwnerSharesWithdrawn[podOwner] += shares;
+    }
+
+    function setBeaconChainSlashingFactor(address staker, uint64 bcsf) external {
+        _beaconChainSlashingFactor[staker] = BeaconChainSlashingFactor({
+            isSet: true,
+            slashingFactor: bcsf
+        });
+    }
+
+    function beaconChainSlashingFactor(address staker) external view returns (uint64) {
+        BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[staker];
+        return bsf.isSet ? bsf.slashingFactor : WAD;
     }
 }
