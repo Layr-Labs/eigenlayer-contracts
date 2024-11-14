@@ -1417,7 +1417,6 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
     }
 }
 
-/// @notice TODO
 contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
     /// @notice test verifyStaleBalance reverts when paused
     function testFuzz_revert_verifyStaleBalancePaused(uint256 rand) public {

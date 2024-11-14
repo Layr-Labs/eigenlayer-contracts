@@ -50,6 +50,34 @@ library Random {
     /// Native Types
     /// -----------------------------------------------------------------------
 
+    function Int256(Randomness r, int256 min, int256 max) internal returns (int256) {
+        return max <= min ? min : r.Int256() % (max - min) + min;
+    }
+
+    function Int256(Randomness r) internal returns (int256) {
+        return r.unwrap() % 2 == 0 ? int256(r.Uint256()) : -int256(r.Uint256());
+    }
+
+    function Int128(Randomness r, int128 min, int128 max) internal returns (int128) {
+        return int128(Int256(r, min, max));
+    }
+
+    function Int128(Randomness r) internal returns (int128) {
+        return int128(Int256(r));
+    }
+
+    function Int64(Randomness r, int64 min, int64 max) internal returns (int64) {
+        return int64(Int256(r, min, max));
+    }
+
+    function Int64(Randomness r) internal returns (int64) {
+        return int64(Int256(r));
+    }
+
+    function Int32(Randomness r, int32 min, int32 max) internal returns (int32) {
+        return int32(Int256(r, min, max));
+    }
+
     function Uint256(Randomness r, uint256 min, uint256 max) internal returns (uint256) {
         return max <= min ? min : r.Uint256() % (max - min) + min;
     }
@@ -232,27 +260,39 @@ library Random {
         }
     }
 
+    /// @dev Usage:
+    /// ```
+    /// AllocateParams[] memory allocateParams = r.allocateParams(avs, numAllocations, numStrats);
+    /// CreateSetParams[] memory createSetParams = r.createSetParams(allocateParams);
+    /// RegisterParams memory registerParams = r.registerParams(allocateParams);
+    ///
+    /// cheats.prank(avs);
+    /// allocationManager.createOperatorSets(createSetParams);
+    ///
+    /// cheats.prank(operator);
+    /// allocationmanager.registerForOperatorSets(registerParams);
+    /// ```
     function RegisterParams(
         Randomness r, 
-        address avs, 
-        uint256 numOpSets
+        IAllocationManagerTypes.AllocateParams[] memory allocateParams
     ) internal returns (IAllocationManagerTypes.RegisterParams memory params) {
-        params.avs = avs;
-        params.operatorSetIds = new uint32[](numOpSets);
-        for (uint256 i; i < numOpSets; ++i) {
-            params.operatorSetIds[i] = r.Uint32(1, type(uint32).max);
+        params.avs = allocateParams[0].operatorSet.avs;
+        params.operatorSetIds = new uint32[](allocateParams.length);
+        for (uint256 i; i < allocateParams.length; ++i) {
+            params.operatorSetIds[i] = allocateParams[i].operatorSet.id;
         }
         params.data = abi.encode(r.Bytes32());
     }
 
-    function DeregisterParams(
-        Randomness,
+    function SlashingParams(
+        Randomness r, 
         address operator,
-        IAllocationManagerTypes.RegisterParams memory registerParams
-    ) internal pure returns (IAllocationManagerTypes.DeregisterParams memory params) {
+        IAllocationManagerTypes.AllocateParams memory allocateParams
+    ) internal returns (IAllocationManagerTypes.SlashingParams memory params) {
         params.operator = operator;
-        params.avs = registerParams.avs;
-        params.operatorSetIds = registerParams.operatorSetIds;
+        params.operatorSetId = allocateParams.operatorSet.id;
+        params.wadToSlash = r.Uint256(0.01 ether, 1 ether);
+        params.description = "test";
     }
 
     /// -----------------------------------------------------------------------
