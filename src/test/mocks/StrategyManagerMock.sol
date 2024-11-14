@@ -96,14 +96,15 @@ contract StrategyManagerMock is Test {
         IStrategy strategy, 
         IERC20, // token 
         uint256 addedShares
-    ) external {
+    ) external returns (uint, uint) {
         // Increase the staker's shares
         uint256 strategyIndex = _getStrategyIndex(staker, strategy);
         sharesToReturn[staker][strategyIndex] += addedShares;
 
         // Call increase delegated shared
         uint256 existingShares = stakerDepositShares(staker, strategy);
-        delegation.increaseDelegatedShares(staker, strategy, existingShares, addedShares);
+
+        return (existingShares, addedShares);
     }
 
     function _getStrategyIndex(address staker, IStrategy strategy) internal view returns (uint256) {

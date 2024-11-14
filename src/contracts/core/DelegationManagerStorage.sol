@@ -99,9 +99,12 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev Do not remove, deprecated storage.
     mapping(IStrategy strategy => uint256 delayBlocks) private __deprecated_strategyWithdrawalDelayBlocks;
 
-    /// @notice Returns the scaling factors for a `staker` for a given `strategy`.
-    /// @dev We do not need the `beaconChainScalingFactor` for non-beaconchain strategies, but it's nicer syntactically to keep it.
-    mapping(address staker => mapping(IStrategy strategy => StakerScalingFactors)) public stakerScalingFactor;
+    /// @notice Returns the scaling factor applied to a `staker` for a given `strategy`
+    mapping(address staker => mapping(IStrategy strategy => DepositScalingFactor)) internal _depositScalingFactor;
+
+    /// @notice Returns the slashing factor applied to the `staker` for the `beaconChainETHStrategy`
+    /// Note: this is specifically updated when the staker's beacon chain balance decreases
+    mapping(address staker => BeaconChainSlashingFactor) internal _beaconChainSlashingFactor;
 
     /// @notice Returns a list of queued withdrawals for a given `staker`.
     /// @dev Entrys are removed when the withdrawal is completed.
@@ -133,5 +136,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[36] private __gap;
+    uint256[35] private __gap;
 }

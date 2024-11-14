@@ -23,13 +23,11 @@ uint64 constant WAD = 1e18;
  * Note that `withdrawal.scaledShares` is scaled for the beaconChainETHStrategy to divide by the beaconChainScalingFactor upon queueing
  * and multiply by the beaconChainScalingFactor upon withdrawal
  */
-struct StakerScalingFactors {
-    uint184 depositScalingFactor;
-    uint64 beaconChainScalingFactor;
-    bool isBeaconChainScalingFactorSet;
+struct DepositScalingFactor {
+    uint256 _scalingFactor;
 }
 
-using SlashingLib for StakerScalingFactors global;
+using SlashingLib for DepositScalingFactor global;
 
 // TODO: validate order of operations everywhere
 library SlashingLib {
@@ -58,130 +56,92 @@ library SlashingLib {
 
     // GETTERS
 
-    /**
-     * @dev We want to avoid divide by 0 situations, so if an operator's maxMagnitude is 0, we consider them
-     * to be "fully slashed" for that strategy and revert with a error. The same goes for a staker whose
-     * beaconChainScalingFactor is 0, at which point they are considered "fully slashed".
-     * @param ssf The staker's scaling factors for a given strategy. Here, we care about their beaconChainScalingFactor
-     * @param operatorMaxMagnitude The maxMagnitude of the operator for a given strategy
-     * @return bool true if either the operator or staker are fully slashed
-     */
-    function isFullySlashed(
-        StakerScalingFactors memory ssf,
-        uint64 operatorMaxMagnitude
-    ) internal pure returns (bool) {
-        return operatorMaxMagnitude == 0 || (ssf.getBeaconChainScalingFactor() == 0);
-    }
-
-    function getDepositScalingFactor(
-        StakerScalingFactors memory ssf
+    function scalingFactor(
+        DepositScalingFactor memory dsf
     ) internal pure returns (uint256) {
-        return ssf.depositScalingFactor == 0 ? WAD : ssf.depositScalingFactor;
-    }
-
-    function getBeaconChainScalingFactor(
-        StakerScalingFactors memory ssf
-    ) internal pure returns (uint64) {
-        return ssf.isBeaconChainScalingFactorSet ? ssf.beaconChainScalingFactor : WAD;
+        return dsf._scalingFactor == 0 ? WAD : dsf._scalingFactor;
     }
 
     function scaleSharesForQueuedWithdrawal(
         uint256 sharesToWithdraw,
-        StakerScalingFactors memory ssf,
-        uint64 operatorMagnitude
+        uint256 slashingFactor
     ) internal pure returns (uint256) {
-        /// forgefmt: disable-next-item
-        return sharesToWithdraw
-            .divWad(uint256(ssf.getBeaconChainScalingFactor()))
-            .divWad(uint256(operatorMagnitude));
+        if (slashingFactor == 0) {
+            return 0;
+        }
+
+        return sharesToWithdraw.divWad(slashingFactor);
     }
 
     function scaleSharesForCompleteWithdrawal(
         uint256 scaledShares,
-        StakerScalingFactors memory ssf,
-        uint64 operatorMagnitude
+        uint256 slashingFactor
     ) internal pure returns (uint256) {
-        /// forgefmt: disable-next-item
-        return scaledShares
-            .mulWad(uint256(ssf.getBeaconChainScalingFactor()))
-            .mulWad(uint256(operatorMagnitude));
+        return scaledShares.mulWad(slashingFactor);
     }
 
-    function calcSlashedAmount(uint256 operatorShares, uint256 wadSlashed) internal pure returns (uint256) {
-        return operatorShares.mulWad(wadSlashed);
-    }
-
-    function decreaseBeaconChainScalingFactor(
-        StakerScalingFactors storage ssf,
-        uint64 proportionOfOldBalance
-    ) internal {
-        ssf.beaconChainScalingFactor = uint64(uint256(ssf.getBeaconChainScalingFactor()).mulWad(proportionOfOldBalance));
-        ssf.isBeaconChainScalingFactorSet = true;
-    }
-
-    function updateDepositScalingFactor(
-        StakerScalingFactors storage ssf,
+    function update(
+        DepositScalingFactor storage dsf,
         uint256 existingDepositShares,
         uint256 addedShares,
-        uint64 maxMagnitude
+        uint256 slashingFactor
     ) internal {
+        // If this is the staker's first deposit for this operator, set the scaling factor to
+        // the inverse of slashingFactor
         if (existingDepositShares == 0) {
-            // if this is their first deposit for the operator, set the scaling factor to inverse of maxMagnitude
-            /// forgefmt: disable-next-item
-            ssf.depositScalingFactor = uint256(WAD)
-                .divWad(ssf.getBeaconChainScalingFactor())
-                .divWad(maxMagnitude)
-                .toUint184();
+            dsf._scalingFactor = uint256(WAD).divWad(slashingFactor);
             return;
         }
+
         /**
          * Base Equations:
          * (1) newShares = currentShares + addedShares
          * (2) newDepositShares = existingDepositShares + addedShares
-         * (3) newShares = newDepositShares * newStakerDepositScalingFactor * beaconChainScalingFactor * maxMagnitude
+         * (3) newShares = newDepositShares * newDepositScalingFactor * slashingFactor
          *
          * Plugging (1) into (3):
-         * (4) newDepositShares * newStakerDepositScalingFactor * beaconChainScalingFactor * maxMagnitude = currentShares + addedShares
+         * (4) newDepositShares * newDepositScalingFactor * slashingFactor = currentShares + addedShares
          *
-         * Solving for newStakerDepositScalingFactor
-         * (5) newStakerDepositScalingFactor = (currentShares + addedShares) / (newDepositShares * beaconChainScalingFactor * maxMagnitude)
+         * Solving for newDepositScalingFactor
+         * (5) newDepositScalingFactor = (currentShares + addedShares) / (newDepositShares * slashingFactor)
          *
          * Plugging in (2) into (5):
-         * (7) newStakerDepositScalingFactor = (currentShares + addedShares) / ((existingDepositShares + addedShares) * beaconChainScalingFactor * maxMagnitude)
+         * (7) newDepositScalingFactor = (currentShares + addedShares) / ((existingDepositShares + addedShares) * slashingFactor)
          * Note that magnitudes must be divided by WAD for precision. Thus,
          *
-         * (8) newStakerDepositScalingFactor = WAD * (currentShares + addedShares) / ((existingDepositShares + addedShares) * beaconChainScalingFactor / WAD * maxMagnitude / WAD)
-         * (9) newStakerDepositScalingFactor = (currentShares + addedShares) * WAD / (existingDepositShares + addedShares) * WAD / beaconChainScalingFactor * WAD / maxMagnitude
+         * (8) newDepositScalingFactor = WAD * (currentShares + addedShares) / ((existingDepositShares + addedShares) * slashingFactor / WAD)
+         * (9) newDepositScalingFactor = (currentShares + addedShares) * WAD / (existingDepositShares + addedShares) * WAD / slashingFactor
          */
 
         // Step 1: Calculate Numerator
-        uint256 currentShares = existingDepositShares.toShares(ssf, maxMagnitude);
+        uint256 currentShares = dsf.calcWithdrawable(existingDepositShares, slashingFactor);
 
         // Step 2: Compute currentShares + addedShares
         uint256 newShares = currentShares + addedShares;
 
-        // Step 3: Calculate newStakerDepositScalingFactor
+        // Step 3: Calculate newDepositScalingFactor
         /// forgefmt: disable-next-item
-        uint184 newStakerDepositScalingFactor = newShares
+        uint256 newDepositScalingFactor = newShares
             .divWad(existingDepositShares + addedShares)
-            .divWad(maxMagnitude)
-            .divWad(uint256(ssf.getBeaconChainScalingFactor()))
-            .toUint184();
+            .divWad(slashingFactor);
 
-        ssf.depositScalingFactor = newStakerDepositScalingFactor;
+        dsf._scalingFactor = newDepositScalingFactor;
     }
 
     // CONVERSION
 
-    function toShares(
+    function calcWithdrawable(
+        DepositScalingFactor memory dsf,
         uint256 depositShares,
-        StakerScalingFactors memory ssf,
-        uint64 magnitude
-    ) internal pure returns (uint256 shares) {
+        uint256 slashingFactor
+    ) internal pure returns (uint256) {
         /// forgefmt: disable-next-item
-        shares = depositShares
-            .mulWad(ssf.getDepositScalingFactor())
-            .mulWad(uint256(ssf.getBeaconChainScalingFactor()))
-            .mulWad(uint256(magnitude));
+        return depositShares
+            .mulWad(dsf.scalingFactor())
+            .mulWad(slashingFactor);
+    }
+
+    function calcSlashedAmount(uint256 operatorShares, uint256 wadSlashed) internal pure returns (uint256) {
+        return operatorShares.mulWad(wadSlashed);
     }
 }

@@ -126,8 +126,8 @@ contract StrategyManager is
         IStrategy strategy,
         IERC20 token,
         uint256 shares
-    ) external onlyDelegationManager {
-        _addShares(staker, token, strategy, shares);
+    ) external onlyDelegationManager returns (uint256, uint256) {
+        return _addShares(staker, token, strategy, shares);
     }
 
     /// @inheritdoc IShareManager
@@ -187,7 +187,12 @@ contract StrategyManager is
      * delegated shares are tracked, increases the stored share amount in `stakerDepositShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) internal {
+    function _addShares(
+        address staker,
+        IERC20 token,
+        IStrategy strategy,
+        uint256 shares
+    ) internal returns (uint256, uint256) {
         // sanity checks on inputs
         require(staker != address(0), StakerAddressZero());
         require(shares != 0, SharesAmountZero());
@@ -203,15 +208,8 @@ contract StrategyManager is
         // add the returned depositedShares to their existing shares for this strategy
         stakerDepositShares[staker][strategy] = existingShares + shares;
 
-        // Increase shares delegated to operator, if needed
-        delegation.increaseDelegatedShares({
-            staker: staker,
-            strategy: strategy,
-            existingDepositShares: existingShares,
-            addedShares: shares
-        });
-
         emit Deposit(staker, token, strategy, shares);
+        return (existingShares, shares);
     }
 
     /**
@@ -236,7 +234,15 @@ contract StrategyManager is
         shares = strategy.deposit(token, amount);
 
         // add the returned shares to the staker's existing shares for this strategy
-        _addShares(staker, token, strategy, shares);
+        (uint256 existingShares, uint256 addedShares) = _addShares(staker, token, strategy, shares);
+
+        // Increase shares delegated to operator
+        delegation.increaseDelegatedShares({
+            staker: staker,
+            strategy: strategy,
+            existingDepositShares: existingShares,
+            addedShares: addedShares
+        });
 
         return shares;
     }

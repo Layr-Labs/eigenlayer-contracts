@@ -115,8 +115,15 @@ contract EigenPodManager is
         // the only effects podOwner UX, not AVS UX, since the podOwner already has 0 shares in the DM if they
         // have a negative shares in EPM.
         require(podOwnerDepositShares[podOwner] >= 0, LegacyWithdrawalsNotCompleted());
+
         if (sharesDelta > 0) {
-            _addShares(podOwner, uint256(sharesDelta));
+            (uint256 existingDepositShares, uint256 addedShares) = _addShares(podOwner, uint256(sharesDelta));
+            delegationManager.increaseDelegatedShares({
+                staker: podOwner,
+                strategy: beaconChainETHStrategy,
+                existingDepositShares: existingDepositShares,
+                addedShares: addedShares
+            });
         } else if (sharesDelta < 0 && podOwnerDepositShares[podOwner] > 0) {
             delegationManager.decreaseBeaconChainScalingFactor(
                 podOwner, uint256(podOwnerDepositShares[podOwner]), proportionOfOldBalance
@@ -148,14 +155,19 @@ contract EigenPodManager is
     /**
      * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
      * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
-     * @dev Returns the number of shares added to `podOwnerDepositShares[podOwner]` above zero, which will be less than the `shares` input
-     * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerDepositShares[podOwner]` starts below zero).
-     * Also returns existingPodShares prior to adding shares, this is returned as 0 if the existing podOwnerDepositShares is negative
      * @dev Reverts if `shares` is not a whole Gwei amount
+     * @return existingDepositShares the pod owner's shares prior to any additions. Returns 0 if negative
+     * @return addedShares the number of shares added to the staker's balance above 0. This means that if,
+     * after shares are added, the staker's balance is non-positive, this will return 0.
      */
-    function addShares(address staker, IStrategy strategy, IERC20, uint256 shares) external onlyDelegationManager {
+    function addShares(
+        address staker,
+        IStrategy strategy,
+        IERC20,
+        uint256 shares
+    ) external onlyDelegationManager returns (uint256, uint256) {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
-        _addShares(staker, shares);
+        return _addShares(staker, shares);
     }
 
     /**
@@ -231,7 +243,11 @@ contract EigenPodManager is
         return pod;
     }
 
-    function _addShares(address staker, uint256 shares) internal {
+    /// @dev Adds the shares to the staker's balance, returning their current/added shares
+    /// NOTE: if the staker ends with a non-positive balance, this returns (0, 0)
+    /// @return existingDepositShares the shares the staker had before any were added
+    /// @return addedShares the shares added to the staker's balance
+    function _addShares(address staker, uint256 shares) internal returns (uint256, uint256) {
         require(staker != address(0), InputAddressZero());
         require(int256(shares) >= 0, SharesNegative());
 
@@ -243,15 +259,12 @@ contract EigenPodManager is
         emit PodSharesUpdated(staker, sharesToAdd);
         emit NewTotalShares(staker, updatedDepositShares);
 
-        if (updatedDepositShares > 0) {
-            delegationManager.increaseDelegatedShares({
-                staker: staker,
-                strategy: beaconChainETHStrategy,
-                // existing shares from standpoint of the DelegationManager
-                existingDepositShares: currentDepositShares < 0 ? 0 : uint256(currentDepositShares),
-                addedShares: shares
-            });
+        // If we haven't added enough shares to go positive, return (0, 0)
+        if (updatedDepositShares <= 0) {
+            return (0, 0);
         }
+
+        return (currentDepositShares < 0 ? 0 : uint256(currentDepositShares), shares);
     }
 
     // VIEW FUNCTIONS

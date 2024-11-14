@@ -418,6 +418,16 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64);
 
     /**
+     * @notice Returns the maximum magnitude an operator can allocate for the given strategy
+     * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
+     * the operator is slashed. This value acts as a cap on the max magnitude of the operator.
+     * @param operator the operator to query
+     * @param strategy the strategy to get the max magnitude for
+     * @return the max magnitude for the strategy
+     */
+    function getMaxMagnitude(address operator, IStrategy strategy) external view returns (uint64);
+
+    /**
      * @notice Returns the maximum magnitude an operator can allocate for the given strategies
      * @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
      * the operator is slashed. This value acts as a cap on the max magnitude of the operator.

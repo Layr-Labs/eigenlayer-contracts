@@ -34,6 +34,13 @@ contract AllocationManagerMock is Test {
         });
     }
 
+    function getMaxMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64) {
+        return _maxMagnitudeHistory[operator][strategy].latest();
+    }
+
     function getMaxMagnitudes(
         address operator,
         IStrategy[] calldata strategies
