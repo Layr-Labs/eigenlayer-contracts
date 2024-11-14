@@ -284,6 +284,17 @@ library Random {
         params.data = abi.encode(r.Bytes32());
     }
 
+    function SlashingParams(
+        Randomness r, 
+        address operator,
+        IAllocationManagerTypes.AllocateParams memory allocateParams
+    ) internal returns (IAllocationManagerTypes.SlashingParams memory params) {
+        params.operator = operator;
+        params.operatorSetId = allocateParams.operatorSet.id;
+        params.wadToSlash = r.Uint256(0.01 ether, 1 ether);
+        params.description = "test";
+    }
+
     /// -----------------------------------------------------------------------
     /// Helpers
     /// -----------------------------------------------------------------------
