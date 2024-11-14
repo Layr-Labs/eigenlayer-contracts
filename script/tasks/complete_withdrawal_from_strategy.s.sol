@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "../../src/contracts/core/AllocationManager.sol";
 import "../../src/contracts/core/DelegationManager.sol";
+import "../../src/contracts/pods/EigenPodManager.sol";
 import "../../src/contracts/libraries/SlashingLib.sol";
 
 import "forge-std/Script.sol";
@@ -25,22 +26,27 @@ contract CompleteWithdrawFromStrategy is Script, Test {
         config_data = vm.readFile(deployConfigPath);
 
         // Pull addresses from config
-        address allocationManager = stdJson.readAddress(config_data, ".addresses.allocationManager");
-        address delegationManager = stdJson.readAddress(config_data, ".addresses.delegationManager");
+        AllocationManager am = AllocationManager(stdJson.readAddress(config_data, ".addresses.allocationManager"));
+        DelegationManager dm = DelegationManager(stdJson.readAddress(config_data, ".addresses.delegationManager"));
+        EigenPodManager em = EigenPodManager(stdJson.readAddress(config_data, ".addresses.eigenPodManager"));
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
-
-        // Attach to Managers
-        AllocationManager am = AllocationManager(allocationManager);
-        DelegationManager dm = DelegationManager(delegationManager);
 
         // Add token to array
         IERC20[] memory tokens = new IERC20[](1);
         tokens[0] = IERC20(token);
 
         // Get the withdrawal struct
-        IDelegationManagerTypes.Withdrawal memory withdrawal = getWithdrawalStruct(am, dm, strategy, amount, nonce, startBlock);
+        IDelegationManagerTypes.Withdrawal memory withdrawal = getWithdrawalStruct(
+            am, 
+            dm, 
+            em, 
+            strategy, 
+            amount, 
+            nonce, 
+            startBlock
+        );
         
         // complete
         dm.completeQueuedWithdrawal(withdrawal, tokens, true);
@@ -49,7 +55,15 @@ contract CompleteWithdrawFromStrategy is Script, Test {
         vm.stopBroadcast();
     }
 
-    function getWithdrawalStruct(AllocationManager am, DelegationManager dm, address strategy, uint256 amount, uint256 nonce, uint32 startBlock) internal returns (IDelegationManagerTypes.Withdrawal memory)  {
+    function getWithdrawalStruct(
+        AllocationManager am, 
+        DelegationManager dm, 
+        EigenPodManager em, 
+        address strategy, 
+        uint256 amount, 
+        uint256 nonce, 
+        uint32 startBlock
+    ) internal returns (IDelegationManagerTypes.Withdrawal memory)  {
         // Add strategy to array
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = IStrategy(strategy);
@@ -62,7 +76,7 @@ contract CompleteWithdrawFromStrategy is Script, Test {
 
         // Get TM for Operator in strategies
         uint64[] memory maxMagnitudes = am.getMaxMagnitudesAtBlock(msg.sender, strategies, startBlock);
-        uint256 slashingFactor = _getSlashingFactor(dm, msg.sender, strategies[0], maxMagnitudes[0]);
+        uint256 slashingFactor = _getSlashingFactor(em, msg.sender, strategies[0], maxMagnitudes[0]);
         uint256 sharesToWithdraw = dsf.calcWithdrawable(amount, slashingFactor);
 
         // Get scaled shares for the given amount
@@ -93,13 +107,13 @@ contract CompleteWithdrawFromStrategy is Script, Test {
     }
 
     function _getSlashingFactor(
-        DelegationManager dm,
+        EigenPodManager em,
         address staker,
         IStrategy strategy,
         uint64 operatorMaxMagnitude
     ) internal view returns (uint256) {
-        if (strategy == dm.beaconChainETHStrategy()) {
-            uint64 beaconChainSlashingFactor = dm.getBeaconChainSlashingFactor(staker);
+        if (strategy == em.beaconChainETHStrategy()) {
+            uint64 beaconChainSlashingFactor = em.beaconChainSlashingFactor(staker);
             return operatorMaxMagnitude.mulWad(beaconChainSlashingFactor);
         }
 

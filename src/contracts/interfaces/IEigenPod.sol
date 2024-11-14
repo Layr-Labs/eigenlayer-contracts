@@ -40,7 +40,7 @@ interface IEigenPodErrors {
 
     /// Withdrawing
 
-    /// @dev Thrown when amount exceeds `withdrawableRestakedExecutionLayerGwei`.
+    /// @dev Thrown when amount exceeds `restakedExecutionLayerGwei`.
     error InsufficientWithdrawableBalance();
     /// @dev Thrown when provided `amountGwei` is not a multiple of gwei.
     error AmountMustBeMultipleOfGwei();
@@ -93,10 +93,8 @@ interface IEigenPodTypes {
         bytes32 beaconBlockRoot;
         uint24 proofsRemaining;
         uint64 podBalanceGwei;
-        // this used to be an int128 before the slashing release
-        // now it is an int64. (2^63 - 1) gwei * 1e-9 eth/gwei = 9_223_372_036.85 eth = 9 billion eth
         int64 balanceDeltasGwei;
-        uint64 beaconChainBalanceBeforeGwei;
+        uint64 prevBeaconBalanceGwei;
     }
 }
 
@@ -154,7 +152,7 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
     /**
      * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
      * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
-     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `withdrawableRestakedExecutionLayerGwei` exceeds the
+     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `restakedExecutionLayerGwei` exceeds the
      * `amountWei` input (when converted to GWEI).
      * @dev Reverts if `amountWei` is not a whole Gwei amount
      */

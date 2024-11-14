@@ -289,7 +289,7 @@ contract DelegationManager is
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 existingDepositShares,
+        uint256 curDepositShares,
         uint256 addedShares
     ) external onlyStrategyManagerOrEigenPodManager {
         address operator = delegatedTo[staker];
@@ -301,42 +301,44 @@ contract DelegationManager is
             operator: operator,
             staker: staker,
             strategy: strategy,
-            existingDepositShares: existingDepositShares,
+            curDepositShares: curDepositShares,
             addedShares: addedShares,
             slashingFactor: slashingFactor
         });
     }
 
     /// @inheritdoc IDelegationManager
-    function decreaseBeaconChainScalingFactor(
+    function decreaseDelegatedShares(
         address staker,
-        uint256 existingDepositShares,
-        uint64 proportionOfOldBalance
+        uint256 curDepositShares,
+        uint64 prevBeaconChainSlashingFactor,
+        uint256 wadSlashed
     ) external onlyEigenPodManager {
-        // decrease the staker's beaconChainScalingFactor proportionally
-        address operator = delegatedTo[staker];
-        uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, beaconChainETHStrategy);
-
-        DepositScalingFactor memory dsf = _depositScalingFactor[staker][beaconChainETHStrategy];
-
-        uint256 slashingFactor = _getSlashingFactor(staker, beaconChainETHStrategy, maxMagnitude);
-        uint256 withdrawableBefore = dsf.calcWithdrawable(existingDepositShares, slashingFactor);
-
-        _decreaseBeaconChainSlashingFactor(staker, proportionOfOldBalance);
-
-        slashingFactor = _getSlashingFactor(staker, beaconChainETHStrategy, maxMagnitude);
-        uint256 withdrawableAfter = dsf.calcWithdrawable(existingDepositShares, slashingFactor);
-
-        // if the staker is delegated to an operators
-        if (isDelegated(staker)) {
-            // subtract strategy shares from delegated scaled shares
-            _decreaseDelegation({
-                operator: operator,
-                staker: staker,
-                strategy: beaconChainETHStrategy,
-                sharesToDecrease: withdrawableBefore - withdrawableAfter
-            });
+        if (!isDelegated(staker)) {
+            return;
         }
+
+        address operator = delegatedTo[staker];
+
+        // Calculate the previous slashing factor. This mirrors the calculation done
+        // in _getSlashingFactor
+        uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, beaconChainETHStrategy);
+        uint256 prevSlashingFactor = maxMagnitude.mulWad(prevBeaconChainSlashingFactor);
+
+        // Calculate the shares to remove from the operator by calculating the previously-withdrawable
+        // shares and applying slashing
+        DepositScalingFactor memory dsf = _depositScalingFactor[staker][beaconChainETHStrategy];
+        uint256 sharesToRemove = dsf.calcWithdrawable({
+            depositShares: curDepositShares,
+            slashingFactor: prevSlashingFactor
+        }).mulWad(uint256(WAD) - wadSlashed); // ? TODO verify
+
+        _decreaseDelegation({
+            operator: operator,
+            staker: staker,
+            strategy: beaconChainETHStrategy,
+            sharesToDecrease: sharesToRemove
+        });
     }
 
     /// @inheritdoc IDelegationManager
@@ -449,7 +451,7 @@ contract DelegationManager is
                 operator: operator, 
                 staker: staker, 
                 strategy: strategies[i],
-                existingDepositShares: uint256(0),
+                curDepositShares: uint256(0),
                 addedShares: depositedShares[i],
                 slashingFactor: slashingFactors[i]
             });
@@ -516,7 +518,7 @@ contract DelegationManager is
                 });
             } else {
                 // Award shares back in StrategyManager/EigenPodManager.
-                (uint256 existingDepositShares, uint256 addedShares) = shareManager.addShares({
+                (uint256 curDepositShares, uint256 addedShares) = shareManager.addShares({
                     staker: withdrawal.staker,
                     strategy: withdrawal.strategies[i],
                     token: tokens[i],
@@ -528,7 +530,7 @@ contract DelegationManager is
                     operator: newOperator,
                     staker: withdrawal.staker,
                     strategy: withdrawal.strategies[i],
-                    existingDepositShares: existingDepositShares,
+                    curDepositShares: curDepositShares,
                     addedShares: addedShares,
                     slashingFactor: newSlashingFactors[i]
                 });
@@ -549,7 +551,7 @@ contract DelegationManager is
      * @param operator The operator to increase the delegated delegatedShares for
      * @param staker The staker to increase the depositScalingFactor for
      * @param strategy The strategy to increase the delegated delegatedShares and the depositScalingFactor for
-     * @param existingDepositShares The number of deposit shares the staker already has in the strategy.
+     * @param curDepositShares The number of deposit shares the staker already has in the strategy.
      * @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
      * @param slashingFactor The current slashing factor for the staker/operator/strategy
      */
@@ -557,7 +559,7 @@ contract DelegationManager is
         address operator,
         address staker,
         IStrategy strategy,
-        uint256 existingDepositShares,
+        uint256 curDepositShares,
         uint256 addedShares,
         uint256 slashingFactor
     ) internal {
@@ -568,7 +570,7 @@ contract DelegationManager is
         // Update the staker's depositScalingFactor. This only results in an update
         // if the slashing factor has changed for this strategy.
         DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategy];
-        dsf.update(existingDepositShares, addedShares, slashingFactor);
+        dsf.update(curDepositShares, addedShares, slashingFactor);
         emit DepositScalingFactorUpdated(staker, strategy, dsf.scalingFactor());
 
         // If the staker is delegated to an operator, update the operator's shares
@@ -703,7 +705,7 @@ contract DelegationManager is
         uint64 operatorMaxMagnitude
     ) internal view returns (uint256) {
         if (strategy == beaconChainETHStrategy) {
-            uint64 beaconChainSlashingFactor = getBeaconChainSlashingFactor(staker);
+            uint64 beaconChainSlashingFactor = eigenPodManager.beaconChainSlashingFactor(staker);
             return operatorMaxMagnitude.mulWad(beaconChainSlashingFactor);
         }
 
@@ -746,15 +748,6 @@ contract DelegationManager is
         }
 
         return slashingFactors;
-    }
-
-    function _decreaseBeaconChainSlashingFactor(address staker, uint64 proportionOfOldBalance) internal {
-        BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[staker];
-        bsf.slashingFactor = uint64(uint256(getBeaconChainSlashingFactor(staker)).mulWad(proportionOfOldBalance));
-        bsf.isSet = true;
-
-        emit BeaconChainScalingFactorDecreased(staker, bsf.slashingFactor);
-        _beaconChainSlashingFactor[staker] = bsf;
     }
 
     /**
@@ -845,14 +838,6 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function depositScalingFactor(address staker, IStrategy strategy) public view returns (uint256) {
         return _depositScalingFactor[staker][strategy].scalingFactor();
-    }
-
-    /// @inheritdoc IDelegationManager
-    function getBeaconChainSlashingFactor(
-        address staker
-    ) public view returns (uint64) {
-        BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[staker];
-        return bsf.isSet ? bsf.slashingFactor : WAD;
     }
 
     /// @inheritdoc IDelegationManager
