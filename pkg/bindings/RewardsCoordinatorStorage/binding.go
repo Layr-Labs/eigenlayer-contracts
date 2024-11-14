@@ -43,6 +43,22 @@ type IRewardsCoordinatorEarnerTreeMerkleLeaf struct {
 	EarnerTokenRoot [32]byte
 }
 
+// IRewardsCoordinatorOperatorDirectedRewardsSubmission is an auto generated low-level Go binding around an user-defined struct.
+type IRewardsCoordinatorOperatorDirectedRewardsSubmission struct {
+	StrategiesAndMultipliers []IRewardsCoordinatorStrategyAndMultiplier
+	Token                    common.Address
+	OperatorRewards          []IRewardsCoordinatorOperatorReward
+	StartTimestamp           uint32
+	Duration                 uint32
+	Description              string
+}
+
+// IRewardsCoordinatorOperatorReward is an auto generated low-level Go binding around an user-defined struct.
+type IRewardsCoordinatorOperatorReward struct {
+	Operator common.Address
+	Amount   *big.Int
+}
+
 // IRewardsCoordinatorRewardsMerkleClaim is an auto generated low-level Go binding around an user-defined struct.
 type IRewardsCoordinatorRewardsMerkleClaim struct {
 	RootIndex       uint32
@@ -77,7 +93,7 @@ type IRewardsCoordinatorTokenTreeMerkleLeaf struct {
 
 // RewardsCoordinatorStorageMetaData contains all meta data concerning the RewardsCoordinatorStorage contract.
 var RewardsCoordinatorStorageMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"CALCULATION_INTERVAL_SECONDS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"GENESIS_REWARDS_TIMESTAMP\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_FUTURE_LENGTH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_RETROACTIVE_LENGTH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_REWARDS_DURATION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"activationDelay\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateEarnerLeafHash\",\"inputs\":[{\"name\":\"leaf\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.EarnerTreeMerkleLeaf\",\"components\":[{\"name\":\"earner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"earnerTokenRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"calculateTokenLeafHash\",\"inputs\":[{\"name\":\"leaf\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.TokenTreeMerkleLeaf\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"cumulativeEarnings\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"checkClaim\",\"inputs\":[{\"name\":\"claim\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.RewardsMerkleClaim\",\"components\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"earnerIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"earnerTreeProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"earnerLeaf\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.EarnerTreeMerkleLeaf\",\"components\":[{\"name\":\"earner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"earnerTokenRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"tokenIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"tokenTreeProofs\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"},{\"name\":\"tokenLeaves\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.TokenTreeMerkleLeaf[]\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"cumulativeEarnings\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"claimerFor\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createAVSRewardsSubmission\",\"inputs\":[{\"name\":\"rewardsSubmissions\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.RewardsSubmission[]\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createRewardsForAllEarners\",\"inputs\":[{\"name\":\"rewardsSubmissions\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.RewardsSubmission[]\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createRewardsForAllSubmission\",\"inputs\":[{\"name\":\"rewardsSubmission\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.RewardsSubmission[]\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"cumulativeClaimed\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"currRewardsCalculationEndTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"disableRoot\",\"inputs\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"domainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentClaimableDistributionRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.DistributionRoot\",\"components\":[{\"name\":\"root\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"rewardsCalculationEndTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"activatedAt\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"disabled\",\"type\":\"bool\",\"internalType\":\"bool\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentDistributionRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.DistributionRoot\",\"components\":[{\"name\":\"root\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"rewardsCalculationEndTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"activatedAt\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"disabled\",\"type\":\"bool\",\"internalType\":\"bool\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDistributionRootAtIndex\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.DistributionRoot\",\"components\":[{\"name\":\"root\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"rewardsCalculationEndTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"activatedAt\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"disabled\",\"type\":\"bool\",\"internalType\":\"bool\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDistributionRootsLength\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRootIndexFromHash\",\"inputs\":[{\"name\":\"rootHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"globalOperatorCommissionBips\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isAVSRewardsSubmissionHash\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRewardsForAllSubmitter\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRewardsSubmissionForAllEarnersHash\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRewardsSubmissionForAllHash\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorCommissionBips\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"processClaim\",\"inputs\":[{\"name\":\"claim\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.RewardsMerkleClaim\",\"components\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"earnerIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"earnerTreeProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"earnerLeaf\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.EarnerTreeMerkleLeaf\",\"components\":[{\"name\":\"earner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"earnerTokenRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"tokenIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"tokenTreeProofs\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"},{\"name\":\"tokenLeaves\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.TokenTreeMerkleLeaf[]\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"cumulativeEarnings\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]},{\"name\":\"recipient\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"rewardsUpdater\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setActivationDelay\",\"inputs\":[{\"name\":\"_activationDelay\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setClaimerFor\",\"inputs\":[{\"name\":\"claimer\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGlobalOperatorCommission\",\"inputs\":[{\"name\":\"_globalCommissionBips\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRewardsForAllSubmitter\",\"inputs\":[{\"name\":\"_submitter\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_newValue\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRewardsUpdater\",\"inputs\":[{\"name\":\"_rewardsUpdater\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"submissionNonce\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"submitRoot\",\"inputs\":[{\"name\":\"root\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"rewardsCalculationEndTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AVSRewardsSubmissionCreated\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"submissionNonce\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"rewardsSubmissionHash\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"rewardsSubmission\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIRewardsCoordinator.RewardsSubmission\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ActivationDelaySet\",\"inputs\":[{\"name\":\"oldActivationDelay\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"newActivationDelay\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ClaimerForSet\",\"inputs\":[{\"name\":\"earner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"oldClaimer\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"claimer\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DistributionRootDisabled\",\"inputs\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DistributionRootSubmitted\",\"inputs\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"root\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"rewardsCalculationEndTimestamp\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"activatedAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalCommissionBipsSet\",\"inputs\":[{\"name\":\"oldGlobalCommissionBips\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"},{\"name\":\"newGlobalCommissionBips\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsClaimed\",\"inputs\":[{\"name\":\"root\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"},{\"name\":\"earner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"claimer\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"recipient\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"claimedAmount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsForAllSubmitterSet\",\"inputs\":[{\"name\":\"rewardsForAllSubmitter\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"oldValue\",\"type\":\"bool\",\"indexed\":true,\"internalType\":\"bool\"},{\"name\":\"newValue\",\"type\":\"bool\",\"indexed\":true,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsSubmissionForAllCreated\",\"inputs\":[{\"name\":\"submitter\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"submissionNonce\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"rewardsSubmissionHash\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"rewardsSubmission\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIRewardsCoordinator.RewardsSubmission\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsSubmissionForAllEarnersCreated\",\"inputs\":[{\"name\":\"tokenHopper\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"submissionNonce\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"rewardsSubmissionHash\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"rewardsSubmission\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIRewardsCoordinator.RewardsSubmission\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsUpdaterSet\",\"inputs\":[{\"name\":\"oldRewardsUpdater\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newRewardsUpdater\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"CALCULATION_INTERVAL_SECONDS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"GENESIS_REWARDS_TIMESTAMP\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_FUTURE_LENGTH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_RETROACTIVE_LENGTH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_REWARDS_DURATION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"activationDelay\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateEarnerLeafHash\",\"inputs\":[{\"name\":\"leaf\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.EarnerTreeMerkleLeaf\",\"components\":[{\"name\":\"earner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"earnerTokenRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"calculateTokenLeafHash\",\"inputs\":[{\"name\":\"leaf\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.TokenTreeMerkleLeaf\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"cumulativeEarnings\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"checkClaim\",\"inputs\":[{\"name\":\"claim\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.RewardsMerkleClaim\",\"components\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"earnerIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"earnerTreeProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"earnerLeaf\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.EarnerTreeMerkleLeaf\",\"components\":[{\"name\":\"earner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"earnerTokenRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"tokenIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"tokenTreeProofs\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"},{\"name\":\"tokenLeaves\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.TokenTreeMerkleLeaf[]\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"cumulativeEarnings\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"claimerFor\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createAVSRewardsSubmission\",\"inputs\":[{\"name\":\"rewardsSubmissions\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.RewardsSubmission[]\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createOperatorDirectedAVSRewardsSubmission\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorDirectedRewardsSubmissions\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.OperatorDirectedRewardsSubmission[]\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"operatorRewards\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.OperatorReward[]\",\"components\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"description\",\"type\":\"string\",\"internalType\":\"string\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createRewardsForAllEarners\",\"inputs\":[{\"name\":\"rewardsSubmissions\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.RewardsSubmission[]\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createRewardsForAllSubmission\",\"inputs\":[{\"name\":\"rewardsSubmission\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.RewardsSubmission[]\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"cumulativeClaimed\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"currRewardsCalculationEndTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"defaultOperatorSplitBips\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"disableRoot\",\"inputs\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"domainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentClaimableDistributionRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.DistributionRoot\",\"components\":[{\"name\":\"root\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"rewardsCalculationEndTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"activatedAt\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"disabled\",\"type\":\"bool\",\"internalType\":\"bool\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentDistributionRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.DistributionRoot\",\"components\":[{\"name\":\"root\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"rewardsCalculationEndTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"activatedAt\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"disabled\",\"type\":\"bool\",\"internalType\":\"bool\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDistributionRootAtIndex\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.DistributionRoot\",\"components\":[{\"name\":\"root\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"rewardsCalculationEndTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"activatedAt\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"disabled\",\"type\":\"bool\",\"internalType\":\"bool\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDistributionRootsLength\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorAVSSplit\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorPISplit\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRootIndexFromHash\",\"inputs\":[{\"name\":\"rootHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isAVSRewardsSubmissionHash\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorDirectedAVSRewardsSubmissionHash\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRewardsForAllSubmitter\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRewardsSubmissionForAllEarnersHash\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRewardsSubmissionForAllHash\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"processClaim\",\"inputs\":[{\"name\":\"claim\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.RewardsMerkleClaim\",\"components\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"earnerIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"earnerTreeProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"earnerLeaf\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.EarnerTreeMerkleLeaf\",\"components\":[{\"name\":\"earner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"earnerTokenRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"tokenIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"tokenTreeProofs\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"},{\"name\":\"tokenLeaves\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.TokenTreeMerkleLeaf[]\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"cumulativeEarnings\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]},{\"name\":\"recipient\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"processClaims\",\"inputs\":[{\"name\":\"claims\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.RewardsMerkleClaim[]\",\"components\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"earnerIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"earnerTreeProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"earnerLeaf\",\"type\":\"tuple\",\"internalType\":\"structIRewardsCoordinator.EarnerTreeMerkleLeaf\",\"components\":[{\"name\":\"earner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"earnerTokenRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"tokenIndices\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"tokenTreeProofs\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"},{\"name\":\"tokenLeaves\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.TokenTreeMerkleLeaf[]\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"cumulativeEarnings\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]},{\"name\":\"recipient\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"rewardsUpdater\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setActivationDelay\",\"inputs\":[{\"name\":\"_activationDelay\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setClaimerFor\",\"inputs\":[{\"name\":\"claimer\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDefaultOperatorSplit\",\"inputs\":[{\"name\":\"split\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorAVSSplit\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"split\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorPISplit\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"split\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRewardsForAllSubmitter\",\"inputs\":[{\"name\":\"_submitter\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_newValue\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRewardsUpdater\",\"inputs\":[{\"name\":\"_rewardsUpdater\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"submissionNonce\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"submitRoot\",\"inputs\":[{\"name\":\"root\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"rewardsCalculationEndTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AVSRewardsSubmissionCreated\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"submissionNonce\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"rewardsSubmissionHash\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"rewardsSubmission\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIRewardsCoordinator.RewardsSubmission\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ActivationDelaySet\",\"inputs\":[{\"name\":\"oldActivationDelay\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"newActivationDelay\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ClaimerForSet\",\"inputs\":[{\"name\":\"earner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"oldClaimer\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"claimer\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DefaultOperatorSplitBipsSet\",\"inputs\":[{\"name\":\"oldDefaultOperatorSplitBips\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"},{\"name\":\"newDefaultOperatorSplitBips\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DistributionRootDisabled\",\"inputs\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DistributionRootSubmitted\",\"inputs\":[{\"name\":\"rootIndex\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"root\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"rewardsCalculationEndTimestamp\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"activatedAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorAVSSplitBipsSet\",\"inputs\":[{\"name\":\"caller\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"activatedAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"oldOperatorAVSSplitBips\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"},{\"name\":\"newOperatorAVSSplitBips\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorDirectedAVSRewardsSubmissionCreated\",\"inputs\":[{\"name\":\"caller\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operatorDirectedRewardsSubmissionHash\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"submissionNonce\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"operatorDirectedRewardsSubmission\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIRewardsCoordinator.OperatorDirectedRewardsSubmission\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"operatorRewards\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.OperatorReward[]\",\"components\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"description\",\"type\":\"string\",\"internalType\":\"string\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorPISplitBipsSet\",\"inputs\":[{\"name\":\"caller\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"activatedAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"oldOperatorPISplitBips\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"},{\"name\":\"newOperatorPISplitBips\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsClaimed\",\"inputs\":[{\"name\":\"root\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"},{\"name\":\"earner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"claimer\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"recipient\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"claimedAmount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsForAllSubmitterSet\",\"inputs\":[{\"name\":\"rewardsForAllSubmitter\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"oldValue\",\"type\":\"bool\",\"indexed\":true,\"internalType\":\"bool\"},{\"name\":\"newValue\",\"type\":\"bool\",\"indexed\":true,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsSubmissionForAllCreated\",\"inputs\":[{\"name\":\"submitter\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"submissionNonce\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"rewardsSubmissionHash\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"rewardsSubmission\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIRewardsCoordinator.RewardsSubmission\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsSubmissionForAllEarnersCreated\",\"inputs\":[{\"name\":\"tokenHopper\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"submissionNonce\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"rewardsSubmissionHash\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"rewardsSubmission\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIRewardsCoordinator.RewardsSubmission\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsUpdaterSet\",\"inputs\":[{\"name\":\"oldRewardsUpdater\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newRewardsUpdater\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
 }
 
 // RewardsCoordinatorStorageABI is the input ABI used to generate the binding from.
@@ -598,6 +614,37 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) CurrRe
 	return _RewardsCoordinatorStorage.Contract.CurrRewardsCalculationEndTimestamp(&_RewardsCoordinatorStorage.CallOpts)
 }
 
+// DefaultOperatorSplitBips is a free data retrieval call binding the contract method 0x63f6a798.
+//
+// Solidity: function defaultOperatorSplitBips() view returns(uint16)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCaller) DefaultOperatorSplitBips(opts *bind.CallOpts) (uint16, error) {
+	var out []interface{}
+	err := _RewardsCoordinatorStorage.contract.Call(opts, &out, "defaultOperatorSplitBips")
+
+	if err != nil {
+		return *new(uint16), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint16)).(*uint16)
+
+	return out0, err
+
+}
+
+// DefaultOperatorSplitBips is a free data retrieval call binding the contract method 0x63f6a798.
+//
+// Solidity: function defaultOperatorSplitBips() view returns(uint16)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) DefaultOperatorSplitBips() (uint16, error) {
+	return _RewardsCoordinatorStorage.Contract.DefaultOperatorSplitBips(&_RewardsCoordinatorStorage.CallOpts)
+}
+
+// DefaultOperatorSplitBips is a free data retrieval call binding the contract method 0x63f6a798.
+//
+// Solidity: function defaultOperatorSplitBips() view returns(uint16)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) DefaultOperatorSplitBips() (uint16, error) {
+	return _RewardsCoordinatorStorage.Contract.DefaultOperatorSplitBips(&_RewardsCoordinatorStorage.CallOpts)
+}
+
 // DelegationManager is a free data retrieval call binding the contract method 0xea4d3c9b.
 //
 // Solidity: function delegationManager() view returns(address)
@@ -784,6 +831,68 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) GetDis
 	return _RewardsCoordinatorStorage.Contract.GetDistributionRootsLength(&_RewardsCoordinatorStorage.CallOpts)
 }
 
+// GetOperatorAVSSplit is a free data retrieval call binding the contract method 0xe063f81f.
+//
+// Solidity: function getOperatorAVSSplit(address operator, address avs) view returns(uint16)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCaller) GetOperatorAVSSplit(opts *bind.CallOpts, operator common.Address, avs common.Address) (uint16, error) {
+	var out []interface{}
+	err := _RewardsCoordinatorStorage.contract.Call(opts, &out, "getOperatorAVSSplit", operator, avs)
+
+	if err != nil {
+		return *new(uint16), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint16)).(*uint16)
+
+	return out0, err
+
+}
+
+// GetOperatorAVSSplit is a free data retrieval call binding the contract method 0xe063f81f.
+//
+// Solidity: function getOperatorAVSSplit(address operator, address avs) view returns(uint16)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) GetOperatorAVSSplit(operator common.Address, avs common.Address) (uint16, error) {
+	return _RewardsCoordinatorStorage.Contract.GetOperatorAVSSplit(&_RewardsCoordinatorStorage.CallOpts, operator, avs)
+}
+
+// GetOperatorAVSSplit is a free data retrieval call binding the contract method 0xe063f81f.
+//
+// Solidity: function getOperatorAVSSplit(address operator, address avs) view returns(uint16)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) GetOperatorAVSSplit(operator common.Address, avs common.Address) (uint16, error) {
+	return _RewardsCoordinatorStorage.Contract.GetOperatorAVSSplit(&_RewardsCoordinatorStorage.CallOpts, operator, avs)
+}
+
+// GetOperatorPISplit is a free data retrieval call binding the contract method 0x4b943960.
+//
+// Solidity: function getOperatorPISplit(address operator) view returns(uint16)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCaller) GetOperatorPISplit(opts *bind.CallOpts, operator common.Address) (uint16, error) {
+	var out []interface{}
+	err := _RewardsCoordinatorStorage.contract.Call(opts, &out, "getOperatorPISplit", operator)
+
+	if err != nil {
+		return *new(uint16), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint16)).(*uint16)
+
+	return out0, err
+
+}
+
+// GetOperatorPISplit is a free data retrieval call binding the contract method 0x4b943960.
+//
+// Solidity: function getOperatorPISplit(address operator) view returns(uint16)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) GetOperatorPISplit(operator common.Address) (uint16, error) {
+	return _RewardsCoordinatorStorage.Contract.GetOperatorPISplit(&_RewardsCoordinatorStorage.CallOpts, operator)
+}
+
+// GetOperatorPISplit is a free data retrieval call binding the contract method 0x4b943960.
+//
+// Solidity: function getOperatorPISplit(address operator) view returns(uint16)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) GetOperatorPISplit(operator common.Address) (uint16, error) {
+	return _RewardsCoordinatorStorage.Contract.GetOperatorPISplit(&_RewardsCoordinatorStorage.CallOpts, operator)
+}
+
 // GetRootIndexFromHash is a free data retrieval call binding the contract method 0xe810ce21.
 //
 // Solidity: function getRootIndexFromHash(bytes32 rootHash) view returns(uint32)
@@ -815,37 +924,6 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) GetRoo
 	return _RewardsCoordinatorStorage.Contract.GetRootIndexFromHash(&_RewardsCoordinatorStorage.CallOpts, rootHash)
 }
 
-// GlobalOperatorCommissionBips is a free data retrieval call binding the contract method 0x092db007.
-//
-// Solidity: function globalOperatorCommissionBips() view returns(uint16)
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCaller) GlobalOperatorCommissionBips(opts *bind.CallOpts) (uint16, error) {
-	var out []interface{}
-	err := _RewardsCoordinatorStorage.contract.Call(opts, &out, "globalOperatorCommissionBips")
-
-	if err != nil {
-		return *new(uint16), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint16)).(*uint16)
-
-	return out0, err
-
-}
-
-// GlobalOperatorCommissionBips is a free data retrieval call binding the contract method 0x092db007.
-//
-// Solidity: function globalOperatorCommissionBips() view returns(uint16)
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) GlobalOperatorCommissionBips() (uint16, error) {
-	return _RewardsCoordinatorStorage.Contract.GlobalOperatorCommissionBips(&_RewardsCoordinatorStorage.CallOpts)
-}
-
-// GlobalOperatorCommissionBips is a free data retrieval call binding the contract method 0x092db007.
-//
-// Solidity: function globalOperatorCommissionBips() view returns(uint16)
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) GlobalOperatorCommissionBips() (uint16, error) {
-	return _RewardsCoordinatorStorage.Contract.GlobalOperatorCommissionBips(&_RewardsCoordinatorStorage.CallOpts)
-}
-
 // IsAVSRewardsSubmissionHash is a free data retrieval call binding the contract method 0x6d21117e.
 //
 // Solidity: function isAVSRewardsSubmissionHash(address , bytes32 ) view returns(bool)
@@ -875,6 +953,37 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) IsAVSRewards
 // Solidity: function isAVSRewardsSubmissionHash(address , bytes32 ) view returns(bool)
 func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) IsAVSRewardsSubmissionHash(arg0 common.Address, arg1 [32]byte) (bool, error) {
 	return _RewardsCoordinatorStorage.Contract.IsAVSRewardsSubmissionHash(&_RewardsCoordinatorStorage.CallOpts, arg0, arg1)
+}
+
+// IsOperatorDirectedAVSRewardsSubmissionHash is a free data retrieval call binding the contract method 0xed71e6a2.
+//
+// Solidity: function isOperatorDirectedAVSRewardsSubmissionHash(address , bytes32 ) view returns(bool)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCaller) IsOperatorDirectedAVSRewardsSubmissionHash(opts *bind.CallOpts, arg0 common.Address, arg1 [32]byte) (bool, error) {
+	var out []interface{}
+	err := _RewardsCoordinatorStorage.contract.Call(opts, &out, "isOperatorDirectedAVSRewardsSubmissionHash", arg0, arg1)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsOperatorDirectedAVSRewardsSubmissionHash is a free data retrieval call binding the contract method 0xed71e6a2.
+//
+// Solidity: function isOperatorDirectedAVSRewardsSubmissionHash(address , bytes32 ) view returns(bool)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) IsOperatorDirectedAVSRewardsSubmissionHash(arg0 common.Address, arg1 [32]byte) (bool, error) {
+	return _RewardsCoordinatorStorage.Contract.IsOperatorDirectedAVSRewardsSubmissionHash(&_RewardsCoordinatorStorage.CallOpts, arg0, arg1)
+}
+
+// IsOperatorDirectedAVSRewardsSubmissionHash is a free data retrieval call binding the contract method 0xed71e6a2.
+//
+// Solidity: function isOperatorDirectedAVSRewardsSubmissionHash(address , bytes32 ) view returns(bool)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) IsOperatorDirectedAVSRewardsSubmissionHash(arg0 common.Address, arg1 [32]byte) (bool, error) {
+	return _RewardsCoordinatorStorage.Contract.IsOperatorDirectedAVSRewardsSubmissionHash(&_RewardsCoordinatorStorage.CallOpts, arg0, arg1)
 }
 
 // IsRewardsForAllSubmitter is a free data retrieval call binding the contract method 0x0018572c.
@@ -968,37 +1077,6 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) IsRewardsSub
 // Solidity: function isRewardsSubmissionForAllHash(address , bytes32 ) view returns(bool)
 func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) IsRewardsSubmissionForAllHash(arg0 common.Address, arg1 [32]byte) (bool, error) {
 	return _RewardsCoordinatorStorage.Contract.IsRewardsSubmissionForAllHash(&_RewardsCoordinatorStorage.CallOpts, arg0, arg1)
-}
-
-// OperatorCommissionBips is a free data retrieval call binding the contract method 0x22f19a64.
-//
-// Solidity: function operatorCommissionBips(address operator, address avs) view returns(uint16)
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCaller) OperatorCommissionBips(opts *bind.CallOpts, operator common.Address, avs common.Address) (uint16, error) {
-	var out []interface{}
-	err := _RewardsCoordinatorStorage.contract.Call(opts, &out, "operatorCommissionBips", operator, avs)
-
-	if err != nil {
-		return *new(uint16), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint16)).(*uint16)
-
-	return out0, err
-
-}
-
-// OperatorCommissionBips is a free data retrieval call binding the contract method 0x22f19a64.
-//
-// Solidity: function operatorCommissionBips(address operator, address avs) view returns(uint16)
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) OperatorCommissionBips(operator common.Address, avs common.Address) (uint16, error) {
-	return _RewardsCoordinatorStorage.Contract.OperatorCommissionBips(&_RewardsCoordinatorStorage.CallOpts, operator, avs)
-}
-
-// OperatorCommissionBips is a free data retrieval call binding the contract method 0x22f19a64.
-//
-// Solidity: function operatorCommissionBips(address operator, address avs) view returns(uint16)
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageCallerSession) OperatorCommissionBips(operator common.Address, avs common.Address) (uint16, error) {
-	return _RewardsCoordinatorStorage.Contract.OperatorCommissionBips(&_RewardsCoordinatorStorage.CallOpts, operator, avs)
 }
 
 // RewardsUpdater is a free data retrieval call binding the contract method 0xfbf1e2c1.
@@ -1115,6 +1193,27 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactorSession) Cr
 	return _RewardsCoordinatorStorage.Contract.CreateAVSRewardsSubmission(&_RewardsCoordinatorStorage.TransactOpts, rewardsSubmissions)
 }
 
+// CreateOperatorDirectedAVSRewardsSubmission is a paid mutator transaction binding the contract method 0x9cb9a5fa.
+//
+// Solidity: function createOperatorDirectedAVSRewardsSubmission(address avs, ((address,uint96)[],address,(address,uint256)[],uint32,uint32,string)[] operatorDirectedRewardsSubmissions) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactor) CreateOperatorDirectedAVSRewardsSubmission(opts *bind.TransactOpts, avs common.Address, operatorDirectedRewardsSubmissions []IRewardsCoordinatorOperatorDirectedRewardsSubmission) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.contract.Transact(opts, "createOperatorDirectedAVSRewardsSubmission", avs, operatorDirectedRewardsSubmissions)
+}
+
+// CreateOperatorDirectedAVSRewardsSubmission is a paid mutator transaction binding the contract method 0x9cb9a5fa.
+//
+// Solidity: function createOperatorDirectedAVSRewardsSubmission(address avs, ((address,uint96)[],address,(address,uint256)[],uint32,uint32,string)[] operatorDirectedRewardsSubmissions) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) CreateOperatorDirectedAVSRewardsSubmission(avs common.Address, operatorDirectedRewardsSubmissions []IRewardsCoordinatorOperatorDirectedRewardsSubmission) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.Contract.CreateOperatorDirectedAVSRewardsSubmission(&_RewardsCoordinatorStorage.TransactOpts, avs, operatorDirectedRewardsSubmissions)
+}
+
+// CreateOperatorDirectedAVSRewardsSubmission is a paid mutator transaction binding the contract method 0x9cb9a5fa.
+//
+// Solidity: function createOperatorDirectedAVSRewardsSubmission(address avs, ((address,uint96)[],address,(address,uint256)[],uint32,uint32,string)[] operatorDirectedRewardsSubmissions) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactorSession) CreateOperatorDirectedAVSRewardsSubmission(avs common.Address, operatorDirectedRewardsSubmissions []IRewardsCoordinatorOperatorDirectedRewardsSubmission) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.Contract.CreateOperatorDirectedAVSRewardsSubmission(&_RewardsCoordinatorStorage.TransactOpts, avs, operatorDirectedRewardsSubmissions)
+}
+
 // CreateRewardsForAllEarners is a paid mutator transaction binding the contract method 0xff9f6cce.
 //
 // Solidity: function createRewardsForAllEarners(((address,uint96)[],address,uint256,uint32,uint32)[] rewardsSubmissions) returns()
@@ -1199,6 +1298,27 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactorSession) Pr
 	return _RewardsCoordinatorStorage.Contract.ProcessClaim(&_RewardsCoordinatorStorage.TransactOpts, claim, recipient)
 }
 
+// ProcessClaims is a paid mutator transaction binding the contract method 0x4596021c.
+//
+// Solidity: function processClaims((uint32,uint32,bytes,(address,bytes32),uint32[],bytes[],(address,uint256)[])[] claims, address recipient) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactor) ProcessClaims(opts *bind.TransactOpts, claims []IRewardsCoordinatorRewardsMerkleClaim, recipient common.Address) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.contract.Transact(opts, "processClaims", claims, recipient)
+}
+
+// ProcessClaims is a paid mutator transaction binding the contract method 0x4596021c.
+//
+// Solidity: function processClaims((uint32,uint32,bytes,(address,bytes32),uint32[],bytes[],(address,uint256)[])[] claims, address recipient) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) ProcessClaims(claims []IRewardsCoordinatorRewardsMerkleClaim, recipient common.Address) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.Contract.ProcessClaims(&_RewardsCoordinatorStorage.TransactOpts, claims, recipient)
+}
+
+// ProcessClaims is a paid mutator transaction binding the contract method 0x4596021c.
+//
+// Solidity: function processClaims((uint32,uint32,bytes,(address,bytes32),uint32[],bytes[],(address,uint256)[])[] claims, address recipient) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactorSession) ProcessClaims(claims []IRewardsCoordinatorRewardsMerkleClaim, recipient common.Address) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.Contract.ProcessClaims(&_RewardsCoordinatorStorage.TransactOpts, claims, recipient)
+}
+
 // SetActivationDelay is a paid mutator transaction binding the contract method 0x58baaa3e.
 //
 // Solidity: function setActivationDelay(uint32 _activationDelay) returns()
@@ -1241,25 +1361,67 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactorSession) Se
 	return _RewardsCoordinatorStorage.Contract.SetClaimerFor(&_RewardsCoordinatorStorage.TransactOpts, claimer)
 }
 
-// SetGlobalOperatorCommission is a paid mutator transaction binding the contract method 0xe221b245.
+// SetDefaultOperatorSplit is a paid mutator transaction binding the contract method 0xa50a1d9c.
 //
-// Solidity: function setGlobalOperatorCommission(uint16 _globalCommissionBips) returns()
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactor) SetGlobalOperatorCommission(opts *bind.TransactOpts, _globalCommissionBips uint16) (*types.Transaction, error) {
-	return _RewardsCoordinatorStorage.contract.Transact(opts, "setGlobalOperatorCommission", _globalCommissionBips)
+// Solidity: function setDefaultOperatorSplit(uint16 split) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactor) SetDefaultOperatorSplit(opts *bind.TransactOpts, split uint16) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.contract.Transact(opts, "setDefaultOperatorSplit", split)
 }
 
-// SetGlobalOperatorCommission is a paid mutator transaction binding the contract method 0xe221b245.
+// SetDefaultOperatorSplit is a paid mutator transaction binding the contract method 0xa50a1d9c.
 //
-// Solidity: function setGlobalOperatorCommission(uint16 _globalCommissionBips) returns()
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) SetGlobalOperatorCommission(_globalCommissionBips uint16) (*types.Transaction, error) {
-	return _RewardsCoordinatorStorage.Contract.SetGlobalOperatorCommission(&_RewardsCoordinatorStorage.TransactOpts, _globalCommissionBips)
+// Solidity: function setDefaultOperatorSplit(uint16 split) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) SetDefaultOperatorSplit(split uint16) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.Contract.SetDefaultOperatorSplit(&_RewardsCoordinatorStorage.TransactOpts, split)
 }
 
-// SetGlobalOperatorCommission is a paid mutator transaction binding the contract method 0xe221b245.
+// SetDefaultOperatorSplit is a paid mutator transaction binding the contract method 0xa50a1d9c.
 //
-// Solidity: function setGlobalOperatorCommission(uint16 _globalCommissionBips) returns()
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactorSession) SetGlobalOperatorCommission(_globalCommissionBips uint16) (*types.Transaction, error) {
-	return _RewardsCoordinatorStorage.Contract.SetGlobalOperatorCommission(&_RewardsCoordinatorStorage.TransactOpts, _globalCommissionBips)
+// Solidity: function setDefaultOperatorSplit(uint16 split) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactorSession) SetDefaultOperatorSplit(split uint16) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.Contract.SetDefaultOperatorSplit(&_RewardsCoordinatorStorage.TransactOpts, split)
+}
+
+// SetOperatorAVSSplit is a paid mutator transaction binding the contract method 0xdcbb03b3.
+//
+// Solidity: function setOperatorAVSSplit(address operator, address avs, uint16 split) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactor) SetOperatorAVSSplit(opts *bind.TransactOpts, operator common.Address, avs common.Address, split uint16) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.contract.Transact(opts, "setOperatorAVSSplit", operator, avs, split)
+}
+
+// SetOperatorAVSSplit is a paid mutator transaction binding the contract method 0xdcbb03b3.
+//
+// Solidity: function setOperatorAVSSplit(address operator, address avs, uint16 split) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) SetOperatorAVSSplit(operator common.Address, avs common.Address, split uint16) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.Contract.SetOperatorAVSSplit(&_RewardsCoordinatorStorage.TransactOpts, operator, avs, split)
+}
+
+// SetOperatorAVSSplit is a paid mutator transaction binding the contract method 0xdcbb03b3.
+//
+// Solidity: function setOperatorAVSSplit(address operator, address avs, uint16 split) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactorSession) SetOperatorAVSSplit(operator common.Address, avs common.Address, split uint16) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.Contract.SetOperatorAVSSplit(&_RewardsCoordinatorStorage.TransactOpts, operator, avs, split)
+}
+
+// SetOperatorPISplit is a paid mutator transaction binding the contract method 0xb3dbb0e0.
+//
+// Solidity: function setOperatorPISplit(address operator, uint16 split) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactor) SetOperatorPISplit(opts *bind.TransactOpts, operator common.Address, split uint16) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.contract.Transact(opts, "setOperatorPISplit", operator, split)
+}
+
+// SetOperatorPISplit is a paid mutator transaction binding the contract method 0xb3dbb0e0.
+//
+// Solidity: function setOperatorPISplit(address operator, uint16 split) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) SetOperatorPISplit(operator common.Address, split uint16) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.Contract.SetOperatorPISplit(&_RewardsCoordinatorStorage.TransactOpts, operator, split)
+}
+
+// SetOperatorPISplit is a paid mutator transaction binding the contract method 0xb3dbb0e0.
+//
+// Solidity: function setOperatorPISplit(address operator, uint16 split) returns()
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactorSession) SetOperatorPISplit(operator common.Address, split uint16) (*types.Transaction, error) {
+	return _RewardsCoordinatorStorage.Contract.SetOperatorPISplit(&_RewardsCoordinatorStorage.TransactOpts, operator, split)
 }
 
 // SetRewardsForAllSubmitter is a paid mutator transaction binding the contract method 0x0eb38345.
@@ -1785,6 +1947,141 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) ParseClaime
 	return event, nil
 }
 
+// RewardsCoordinatorStorageDefaultOperatorSplitBipsSetIterator is returned from FilterDefaultOperatorSplitBipsSet and is used to iterate over the raw logs and unpacked data for DefaultOperatorSplitBipsSet events raised by the RewardsCoordinatorStorage contract.
+type RewardsCoordinatorStorageDefaultOperatorSplitBipsSetIterator struct {
+	Event *RewardsCoordinatorStorageDefaultOperatorSplitBipsSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *RewardsCoordinatorStorageDefaultOperatorSplitBipsSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(RewardsCoordinatorStorageDefaultOperatorSplitBipsSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(RewardsCoordinatorStorageDefaultOperatorSplitBipsSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *RewardsCoordinatorStorageDefaultOperatorSplitBipsSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *RewardsCoordinatorStorageDefaultOperatorSplitBipsSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// RewardsCoordinatorStorageDefaultOperatorSplitBipsSet represents a DefaultOperatorSplitBipsSet event raised by the RewardsCoordinatorStorage contract.
+type RewardsCoordinatorStorageDefaultOperatorSplitBipsSet struct {
+	OldDefaultOperatorSplitBips uint16
+	NewDefaultOperatorSplitBips uint16
+	Raw                         types.Log // Blockchain specific contextual infos
+}
+
+// FilterDefaultOperatorSplitBipsSet is a free log retrieval operation binding the contract event 0xe6cd4edfdcc1f6d130ab35f73d72378f3a642944fb4ee5bd84b7807a81ea1c4e.
+//
+// Solidity: event DefaultOperatorSplitBipsSet(uint16 oldDefaultOperatorSplitBips, uint16 newDefaultOperatorSplitBips)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) FilterDefaultOperatorSplitBipsSet(opts *bind.FilterOpts) (*RewardsCoordinatorStorageDefaultOperatorSplitBipsSetIterator, error) {
+
+	logs, sub, err := _RewardsCoordinatorStorage.contract.FilterLogs(opts, "DefaultOperatorSplitBipsSet")
+	if err != nil {
+		return nil, err
+	}
+	return &RewardsCoordinatorStorageDefaultOperatorSplitBipsSetIterator{contract: _RewardsCoordinatorStorage.contract, event: "DefaultOperatorSplitBipsSet", logs: logs, sub: sub}, nil
+}
+
+// WatchDefaultOperatorSplitBipsSet is a free log subscription operation binding the contract event 0xe6cd4edfdcc1f6d130ab35f73d72378f3a642944fb4ee5bd84b7807a81ea1c4e.
+//
+// Solidity: event DefaultOperatorSplitBipsSet(uint16 oldDefaultOperatorSplitBips, uint16 newDefaultOperatorSplitBips)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) WatchDefaultOperatorSplitBipsSet(opts *bind.WatchOpts, sink chan<- *RewardsCoordinatorStorageDefaultOperatorSplitBipsSet) (event.Subscription, error) {
+
+	logs, sub, err := _RewardsCoordinatorStorage.contract.WatchLogs(opts, "DefaultOperatorSplitBipsSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(RewardsCoordinatorStorageDefaultOperatorSplitBipsSet)
+				if err := _RewardsCoordinatorStorage.contract.UnpackLog(event, "DefaultOperatorSplitBipsSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDefaultOperatorSplitBipsSet is a log parse operation binding the contract event 0xe6cd4edfdcc1f6d130ab35f73d72378f3a642944fb4ee5bd84b7807a81ea1c4e.
+//
+// Solidity: event DefaultOperatorSplitBipsSet(uint16 oldDefaultOperatorSplitBips, uint16 newDefaultOperatorSplitBips)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) ParseDefaultOperatorSplitBipsSet(log types.Log) (*RewardsCoordinatorStorageDefaultOperatorSplitBipsSet, error) {
+	event := new(RewardsCoordinatorStorageDefaultOperatorSplitBipsSet)
+	if err := _RewardsCoordinatorStorage.contract.UnpackLog(event, "DefaultOperatorSplitBipsSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // RewardsCoordinatorStorageDistributionRootDisabledIterator is returned from FilterDistributionRootDisabled and is used to iterate over the raw logs and unpacked data for DistributionRootDisabled events raised by the RewardsCoordinatorStorage contract.
 type RewardsCoordinatorStorageDistributionRootDisabledIterator struct {
 	Event *RewardsCoordinatorStorageDistributionRootDisabled // Event containing the contract specifics and raw log
@@ -2092,9 +2389,9 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) ParseDistri
 	return event, nil
 }
 
-// RewardsCoordinatorStorageGlobalCommissionBipsSetIterator is returned from FilterGlobalCommissionBipsSet and is used to iterate over the raw logs and unpacked data for GlobalCommissionBipsSet events raised by the RewardsCoordinatorStorage contract.
-type RewardsCoordinatorStorageGlobalCommissionBipsSetIterator struct {
-	Event *RewardsCoordinatorStorageGlobalCommissionBipsSet // Event containing the contract specifics and raw log
+// RewardsCoordinatorStorageOperatorAVSSplitBipsSetIterator is returned from FilterOperatorAVSSplitBipsSet and is used to iterate over the raw logs and unpacked data for OperatorAVSSplitBipsSet events raised by the RewardsCoordinatorStorage contract.
+type RewardsCoordinatorStorageOperatorAVSSplitBipsSetIterator struct {
+	Event *RewardsCoordinatorStorageOperatorAVSSplitBipsSet // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2108,7 +2405,7 @@ type RewardsCoordinatorStorageGlobalCommissionBipsSetIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *RewardsCoordinatorStorageGlobalCommissionBipsSetIterator) Next() bool {
+func (it *RewardsCoordinatorStorageOperatorAVSSplitBipsSetIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2117,7 +2414,7 @@ func (it *RewardsCoordinatorStorageGlobalCommissionBipsSetIterator) Next() bool 
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(RewardsCoordinatorStorageGlobalCommissionBipsSet)
+			it.Event = new(RewardsCoordinatorStorageOperatorAVSSplitBipsSet)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2132,7 +2429,7 @@ func (it *RewardsCoordinatorStorageGlobalCommissionBipsSetIterator) Next() bool 
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(RewardsCoordinatorStorageGlobalCommissionBipsSet)
+		it.Event = new(RewardsCoordinatorStorageOperatorAVSSplitBipsSet)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2148,42 +2445,72 @@ func (it *RewardsCoordinatorStorageGlobalCommissionBipsSetIterator) Next() bool 
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *RewardsCoordinatorStorageGlobalCommissionBipsSetIterator) Error() error {
+func (it *RewardsCoordinatorStorageOperatorAVSSplitBipsSetIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *RewardsCoordinatorStorageGlobalCommissionBipsSetIterator) Close() error {
+func (it *RewardsCoordinatorStorageOperatorAVSSplitBipsSetIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// RewardsCoordinatorStorageGlobalCommissionBipsSet represents a GlobalCommissionBipsSet event raised by the RewardsCoordinatorStorage contract.
-type RewardsCoordinatorStorageGlobalCommissionBipsSet struct {
-	OldGlobalCommissionBips uint16
-	NewGlobalCommissionBips uint16
+// RewardsCoordinatorStorageOperatorAVSSplitBipsSet represents a OperatorAVSSplitBipsSet event raised by the RewardsCoordinatorStorage contract.
+type RewardsCoordinatorStorageOperatorAVSSplitBipsSet struct {
+	Caller                  common.Address
+	Operator                common.Address
+	Avs                     common.Address
+	ActivatedAt             uint32
+	OldOperatorAVSSplitBips uint16
+	NewOperatorAVSSplitBips uint16
 	Raw                     types.Log // Blockchain specific contextual infos
 }
 
-// FilterGlobalCommissionBipsSet is a free log retrieval operation binding the contract event 0x8cdc428b0431b82d1619763f443a48197db344ba96905f3949643acd1c863a06.
+// FilterOperatorAVSSplitBipsSet is a free log retrieval operation binding the contract event 0x48e198b6ae357e529204ee53a8e514c470ff77d9cc8e4f7207f8b5d490ae6934.
 //
-// Solidity: event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips)
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) FilterGlobalCommissionBipsSet(opts *bind.FilterOpts) (*RewardsCoordinatorStorageGlobalCommissionBipsSetIterator, error) {
+// Solidity: event OperatorAVSSplitBipsSet(address indexed caller, address indexed operator, address indexed avs, uint32 activatedAt, uint16 oldOperatorAVSSplitBips, uint16 newOperatorAVSSplitBips)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) FilterOperatorAVSSplitBipsSet(opts *bind.FilterOpts, caller []common.Address, operator []common.Address, avs []common.Address) (*RewardsCoordinatorStorageOperatorAVSSplitBipsSetIterator, error) {
 
-	logs, sub, err := _RewardsCoordinatorStorage.contract.FilterLogs(opts, "GlobalCommissionBipsSet")
+	var callerRule []interface{}
+	for _, callerItem := range caller {
+		callerRule = append(callerRule, callerItem)
+	}
+	var operatorRule []interface{}
+	for _, operatorItem := range operator {
+		operatorRule = append(operatorRule, operatorItem)
+	}
+	var avsRule []interface{}
+	for _, avsItem := range avs {
+		avsRule = append(avsRule, avsItem)
+	}
+
+	logs, sub, err := _RewardsCoordinatorStorage.contract.FilterLogs(opts, "OperatorAVSSplitBipsSet", callerRule, operatorRule, avsRule)
 	if err != nil {
 		return nil, err
 	}
-	return &RewardsCoordinatorStorageGlobalCommissionBipsSetIterator{contract: _RewardsCoordinatorStorage.contract, event: "GlobalCommissionBipsSet", logs: logs, sub: sub}, nil
+	return &RewardsCoordinatorStorageOperatorAVSSplitBipsSetIterator{contract: _RewardsCoordinatorStorage.contract, event: "OperatorAVSSplitBipsSet", logs: logs, sub: sub}, nil
 }
 
-// WatchGlobalCommissionBipsSet is a free log subscription operation binding the contract event 0x8cdc428b0431b82d1619763f443a48197db344ba96905f3949643acd1c863a06.
+// WatchOperatorAVSSplitBipsSet is a free log subscription operation binding the contract event 0x48e198b6ae357e529204ee53a8e514c470ff77d9cc8e4f7207f8b5d490ae6934.
 //
-// Solidity: event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips)
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) WatchGlobalCommissionBipsSet(opts *bind.WatchOpts, sink chan<- *RewardsCoordinatorStorageGlobalCommissionBipsSet) (event.Subscription, error) {
+// Solidity: event OperatorAVSSplitBipsSet(address indexed caller, address indexed operator, address indexed avs, uint32 activatedAt, uint16 oldOperatorAVSSplitBips, uint16 newOperatorAVSSplitBips)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) WatchOperatorAVSSplitBipsSet(opts *bind.WatchOpts, sink chan<- *RewardsCoordinatorStorageOperatorAVSSplitBipsSet, caller []common.Address, operator []common.Address, avs []common.Address) (event.Subscription, error) {
 
-	logs, sub, err := _RewardsCoordinatorStorage.contract.WatchLogs(opts, "GlobalCommissionBipsSet")
+	var callerRule []interface{}
+	for _, callerItem := range caller {
+		callerRule = append(callerRule, callerItem)
+	}
+	var operatorRule []interface{}
+	for _, operatorItem := range operator {
+		operatorRule = append(operatorRule, operatorItem)
+	}
+	var avsRule []interface{}
+	for _, avsItem := range avs {
+		avsRule = append(avsRule, avsItem)
+	}
+
+	logs, sub, err := _RewardsCoordinatorStorage.contract.WatchLogs(opts, "OperatorAVSSplitBipsSet", callerRule, operatorRule, avsRule)
 	if err != nil {
 		return nil, err
 	}
@@ -2193,8 +2520,8 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) WatchGlobal
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(RewardsCoordinatorStorageGlobalCommissionBipsSet)
-				if err := _RewardsCoordinatorStorage.contract.UnpackLog(event, "GlobalCommissionBipsSet", log); err != nil {
+				event := new(RewardsCoordinatorStorageOperatorAVSSplitBipsSet)
+				if err := _RewardsCoordinatorStorage.contract.UnpackLog(event, "OperatorAVSSplitBipsSet", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2215,12 +2542,332 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) WatchGlobal
 	}), nil
 }
 
-// ParseGlobalCommissionBipsSet is a log parse operation binding the contract event 0x8cdc428b0431b82d1619763f443a48197db344ba96905f3949643acd1c863a06.
+// ParseOperatorAVSSplitBipsSet is a log parse operation binding the contract event 0x48e198b6ae357e529204ee53a8e514c470ff77d9cc8e4f7207f8b5d490ae6934.
 //
-// Solidity: event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips)
-func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) ParseGlobalCommissionBipsSet(log types.Log) (*RewardsCoordinatorStorageGlobalCommissionBipsSet, error) {
-	event := new(RewardsCoordinatorStorageGlobalCommissionBipsSet)
-	if err := _RewardsCoordinatorStorage.contract.UnpackLog(event, "GlobalCommissionBipsSet", log); err != nil {
+// Solidity: event OperatorAVSSplitBipsSet(address indexed caller, address indexed operator, address indexed avs, uint32 activatedAt, uint16 oldOperatorAVSSplitBips, uint16 newOperatorAVSSplitBips)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) ParseOperatorAVSSplitBipsSet(log types.Log) (*RewardsCoordinatorStorageOperatorAVSSplitBipsSet, error) {
+	event := new(RewardsCoordinatorStorageOperatorAVSSplitBipsSet)
+	if err := _RewardsCoordinatorStorage.contract.UnpackLog(event, "OperatorAVSSplitBipsSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreatedIterator is returned from FilterOperatorDirectedAVSRewardsSubmissionCreated and is used to iterate over the raw logs and unpacked data for OperatorDirectedAVSRewardsSubmissionCreated events raised by the RewardsCoordinatorStorage contract.
+type RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreatedIterator struct {
+	Event *RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreated represents a OperatorDirectedAVSRewardsSubmissionCreated event raised by the RewardsCoordinatorStorage contract.
+type RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreated struct {
+	Caller                                common.Address
+	Avs                                   common.Address
+	OperatorDirectedRewardsSubmissionHash [32]byte
+	SubmissionNonce                       *big.Int
+	OperatorDirectedRewardsSubmission     IRewardsCoordinatorOperatorDirectedRewardsSubmission
+	Raw                                   types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorDirectedAVSRewardsSubmissionCreated is a free log retrieval operation binding the contract event 0xfc8888bffd711da60bc5092b33f677d81896fe80ecc677b84cfab8184462b6e0.
+//
+// Solidity: event OperatorDirectedAVSRewardsSubmissionCreated(address indexed caller, address indexed avs, bytes32 indexed operatorDirectedRewardsSubmissionHash, uint256 submissionNonce, ((address,uint96)[],address,(address,uint256)[],uint32,uint32,string) operatorDirectedRewardsSubmission)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) FilterOperatorDirectedAVSRewardsSubmissionCreated(opts *bind.FilterOpts, caller []common.Address, avs []common.Address, operatorDirectedRewardsSubmissionHash [][32]byte) (*RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreatedIterator, error) {
+
+	var callerRule []interface{}
+	for _, callerItem := range caller {
+		callerRule = append(callerRule, callerItem)
+	}
+	var avsRule []interface{}
+	for _, avsItem := range avs {
+		avsRule = append(avsRule, avsItem)
+	}
+	var operatorDirectedRewardsSubmissionHashRule []interface{}
+	for _, operatorDirectedRewardsSubmissionHashItem := range operatorDirectedRewardsSubmissionHash {
+		operatorDirectedRewardsSubmissionHashRule = append(operatorDirectedRewardsSubmissionHashRule, operatorDirectedRewardsSubmissionHashItem)
+	}
+
+	logs, sub, err := _RewardsCoordinatorStorage.contract.FilterLogs(opts, "OperatorDirectedAVSRewardsSubmissionCreated", callerRule, avsRule, operatorDirectedRewardsSubmissionHashRule)
+	if err != nil {
+		return nil, err
+	}
+	return &RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreatedIterator{contract: _RewardsCoordinatorStorage.contract, event: "OperatorDirectedAVSRewardsSubmissionCreated", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorDirectedAVSRewardsSubmissionCreated is a free log subscription operation binding the contract event 0xfc8888bffd711da60bc5092b33f677d81896fe80ecc677b84cfab8184462b6e0.
+//
+// Solidity: event OperatorDirectedAVSRewardsSubmissionCreated(address indexed caller, address indexed avs, bytes32 indexed operatorDirectedRewardsSubmissionHash, uint256 submissionNonce, ((address,uint96)[],address,(address,uint256)[],uint32,uint32,string) operatorDirectedRewardsSubmission)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) WatchOperatorDirectedAVSRewardsSubmissionCreated(opts *bind.WatchOpts, sink chan<- *RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreated, caller []common.Address, avs []common.Address, operatorDirectedRewardsSubmissionHash [][32]byte) (event.Subscription, error) {
+
+	var callerRule []interface{}
+	for _, callerItem := range caller {
+		callerRule = append(callerRule, callerItem)
+	}
+	var avsRule []interface{}
+	for _, avsItem := range avs {
+		avsRule = append(avsRule, avsItem)
+	}
+	var operatorDirectedRewardsSubmissionHashRule []interface{}
+	for _, operatorDirectedRewardsSubmissionHashItem := range operatorDirectedRewardsSubmissionHash {
+		operatorDirectedRewardsSubmissionHashRule = append(operatorDirectedRewardsSubmissionHashRule, operatorDirectedRewardsSubmissionHashItem)
+	}
+
+	logs, sub, err := _RewardsCoordinatorStorage.contract.WatchLogs(opts, "OperatorDirectedAVSRewardsSubmissionCreated", callerRule, avsRule, operatorDirectedRewardsSubmissionHashRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreated)
+				if err := _RewardsCoordinatorStorage.contract.UnpackLog(event, "OperatorDirectedAVSRewardsSubmissionCreated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorDirectedAVSRewardsSubmissionCreated is a log parse operation binding the contract event 0xfc8888bffd711da60bc5092b33f677d81896fe80ecc677b84cfab8184462b6e0.
+//
+// Solidity: event OperatorDirectedAVSRewardsSubmissionCreated(address indexed caller, address indexed avs, bytes32 indexed operatorDirectedRewardsSubmissionHash, uint256 submissionNonce, ((address,uint96)[],address,(address,uint256)[],uint32,uint32,string) operatorDirectedRewardsSubmission)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) ParseOperatorDirectedAVSRewardsSubmissionCreated(log types.Log) (*RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreated, error) {
+	event := new(RewardsCoordinatorStorageOperatorDirectedAVSRewardsSubmissionCreated)
+	if err := _RewardsCoordinatorStorage.contract.UnpackLog(event, "OperatorDirectedAVSRewardsSubmissionCreated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// RewardsCoordinatorStorageOperatorPISplitBipsSetIterator is returned from FilterOperatorPISplitBipsSet and is used to iterate over the raw logs and unpacked data for OperatorPISplitBipsSet events raised by the RewardsCoordinatorStorage contract.
+type RewardsCoordinatorStorageOperatorPISplitBipsSetIterator struct {
+	Event *RewardsCoordinatorStorageOperatorPISplitBipsSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *RewardsCoordinatorStorageOperatorPISplitBipsSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(RewardsCoordinatorStorageOperatorPISplitBipsSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(RewardsCoordinatorStorageOperatorPISplitBipsSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *RewardsCoordinatorStorageOperatorPISplitBipsSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *RewardsCoordinatorStorageOperatorPISplitBipsSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// RewardsCoordinatorStorageOperatorPISplitBipsSet represents a OperatorPISplitBipsSet event raised by the RewardsCoordinatorStorage contract.
+type RewardsCoordinatorStorageOperatorPISplitBipsSet struct {
+	Caller                 common.Address
+	Operator               common.Address
+	ActivatedAt            uint32
+	OldOperatorPISplitBips uint16
+	NewOperatorPISplitBips uint16
+	Raw                    types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorPISplitBipsSet is a free log retrieval operation binding the contract event 0xd1e028bd664486a46ad26040e999cd2d22e1e9a094ee6afe19fcf64678f16f74.
+//
+// Solidity: event OperatorPISplitBipsSet(address indexed caller, address indexed operator, uint32 activatedAt, uint16 oldOperatorPISplitBips, uint16 newOperatorPISplitBips)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) FilterOperatorPISplitBipsSet(opts *bind.FilterOpts, caller []common.Address, operator []common.Address) (*RewardsCoordinatorStorageOperatorPISplitBipsSetIterator, error) {
+
+	var callerRule []interface{}
+	for _, callerItem := range caller {
+		callerRule = append(callerRule, callerItem)
+	}
+	var operatorRule []interface{}
+	for _, operatorItem := range operator {
+		operatorRule = append(operatorRule, operatorItem)
+	}
+
+	logs, sub, err := _RewardsCoordinatorStorage.contract.FilterLogs(opts, "OperatorPISplitBipsSet", callerRule, operatorRule)
+	if err != nil {
+		return nil, err
+	}
+	return &RewardsCoordinatorStorageOperatorPISplitBipsSetIterator{contract: _RewardsCoordinatorStorage.contract, event: "OperatorPISplitBipsSet", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorPISplitBipsSet is a free log subscription operation binding the contract event 0xd1e028bd664486a46ad26040e999cd2d22e1e9a094ee6afe19fcf64678f16f74.
+//
+// Solidity: event OperatorPISplitBipsSet(address indexed caller, address indexed operator, uint32 activatedAt, uint16 oldOperatorPISplitBips, uint16 newOperatorPISplitBips)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) WatchOperatorPISplitBipsSet(opts *bind.WatchOpts, sink chan<- *RewardsCoordinatorStorageOperatorPISplitBipsSet, caller []common.Address, operator []common.Address) (event.Subscription, error) {
+
+	var callerRule []interface{}
+	for _, callerItem := range caller {
+		callerRule = append(callerRule, callerItem)
+	}
+	var operatorRule []interface{}
+	for _, operatorItem := range operator {
+		operatorRule = append(operatorRule, operatorItem)
+	}
+
+	logs, sub, err := _RewardsCoordinatorStorage.contract.WatchLogs(opts, "OperatorPISplitBipsSet", callerRule, operatorRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(RewardsCoordinatorStorageOperatorPISplitBipsSet)
+				if err := _RewardsCoordinatorStorage.contract.UnpackLog(event, "OperatorPISplitBipsSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorPISplitBipsSet is a log parse operation binding the contract event 0xd1e028bd664486a46ad26040e999cd2d22e1e9a094ee6afe19fcf64678f16f74.
+//
+// Solidity: event OperatorPISplitBipsSet(address indexed caller, address indexed operator, uint32 activatedAt, uint16 oldOperatorPISplitBips, uint16 newOperatorPISplitBips)
+func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageFilterer) ParseOperatorPISplitBipsSet(log types.Log) (*RewardsCoordinatorStorageOperatorPISplitBipsSet, error) {
+	event := new(RewardsCoordinatorStorageOperatorPISplitBipsSet)
+	if err := _RewardsCoordinatorStorage.contract.UnpackLog(event, "OperatorPISplitBipsSet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

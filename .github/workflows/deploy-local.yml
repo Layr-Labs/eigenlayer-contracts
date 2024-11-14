@@ -42,7 +42,7 @@ jobs:
         export RPC_URL="http://127.0.0.1:8545"
         echo "Extracted PRIVATE_KEY: $PRIVATE_KEY"
         echo "---Deploying Contracts"
-        RUST_LOG=forge,foundry=trace forge script script/deploy/local/Deploy_From_Scratch.s.sol \
+        RUST_LOG=forge,foundry=trace forge script script/deploy/local/Deploy_From_Scratch.s.sol --slow \
           --rpc-url $RPC_URL \
           --private-key "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" \
           --broadcast \

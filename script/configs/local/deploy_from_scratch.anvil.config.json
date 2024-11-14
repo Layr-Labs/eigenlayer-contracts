@@ -47,7 +47,7 @@
          "rewards_updater_address": "0x18a0f92Ad9645385E8A8f3db7d0f6CF7aBBb0aD4",
          "activation_delay": 7200,
          "calculation_interval_seconds": 604800,
-         "global_operator_commission_bips": 1000,
+         "default_operator_split_bips": 1000,
          "OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP": 1720656000,
          "OPERATOR_SET_MAX_RETROACTIVE_LENGTH": 2592000
     },
