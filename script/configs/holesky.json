@@ -26,7 +26,8 @@
             "pauserMultisig": "0x53410249ec7d3a3F9F1ba3912D50D6A3Df6d10A7",
             "pauserRegistry": "0x85Ef7299F8311B25642679edBF02B62FA2212F06",
             "proxyAdmin": "0xDB023566064246399b4AE851197a97729C93A6cf",
-            "timelock": "0xcF19CE0561052a7A7Ff21156730285997B350A7D"
+            "timelock": "0xFddd03C169E3FD9Ea4a9548dDC4BedC6502FE239",
+            "foundationMultisig": "0x7Cb5d96A8D67304E51E022979Eb9C63a17484076"
         },
         "core": {
             "avsDirectory": {
@@ -41,7 +42,7 @@
             },
             "rewardsCoordinator": {
                 "proxy": "0xAcc1fb458a1317E886dB376Fc8141540537E68fE",
-                "impl": "0x1a17df4170099577b79038fd310f3ff62f79752e",
+                "impl": "0x1131D88143a35011E35263b43eC66cDd27025584",
                 "pendingImpl": "0x0000000000000000000000000000000000000000"
             },
             "slasher": {
@@ -106,19 +107,22 @@
                 "proxy": "0x275cCf9Be51f4a6C94aBa6114cdf2a4c45B9cb27",
                 "impl": "0x4500927874Ad41538c1bEF2F5278E7a86DF6bce8",
                 "pendingImpl": "0x0000000000000000000000000000000000000000",
-                "proxyAdmin": "0x67482666771e82c9a73bb9e9a22b2b597f448bbf"
+                "proxyAdmin": "0x6B04F84780CdD42d02b079d1e7a36887bBff8679",
+                "timelockController": "0x1554003905e391d99126fF6b9f4ef6A425D8004a"
             },
             "EIGEN": {
                 "proxy": "0x3B78576F7D6837500bA3De27A60c7f594934027E",
                 "impl": "0x083bC9e0DCF2C3e13E24686e5202232995578c5a",
                 "pendingImpl": "0x0000000000000000000000000000000000000000",
-                "proxyAdmin": "0x67482666771e82c9a73bb9e9a22b2b597f448bbf"
+                "proxyAdmin": "0x67482666771e82c9a73bb9e9a22b2b597f448bbf",
+                "timelockController": "0xf74BAF5e332D4B5F65cB85F863466d745a74918e"
             },
             "eigenStrategy": {
                 "proxy": "0x43252609bff8a13dFe5e057097f2f45A24387a84",
                 "impl": "0x94650e09a471CEF96e7966cabf26718FBf352697",
                 "pendingImpl": "0x0000000000000000000000000000000000000000"
             }
-        }
+        },
+        "emptyContract": "0x9690d52B1Ce155DB2ec5eCbF5a262ccCc7B3A6D2"
     }
 }

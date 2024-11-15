@@ -21,13 +21,14 @@
     },
     "deployment": {
         "admin": {
-            "communityMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
-            "executorMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
-            "operationsMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
-            "pauserMultisig": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
+            "communityMultisig": "0x42789cCdE6486b81c7D41Fa3759A8BB74D7909DB",
+            "executorMultisig": "0x84E5e0D6f6c3153057bd5d661Be1ff1766cEac08",
+            "operationsMultisig": "0x6d609cD2812bDA02a75dcABa7DaafE4B20Ff5608",
+            "pauserMultisig": "0x546D3b66B27dCb94777d7eFC3825b10675FE5D95",
             "pauserRegistry": "0x9Ab2FEAf0465f0eD51Fc2b663eF228B418c9Dad1",
             "proxyAdmin": "0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B",
-            "timelock": "0x0000000000000000000000000000000000000000"
+            "timelock": "0x079D1e99a13EF1D01475c71A2AD43ff1cB971968",
+            "foundationMultisig": "0x9c36f012585c8bb4247eEe18C01Cdfc5f2e90336"
         },
         "core": {
             "avsDirectory": {
@@ -108,19 +109,22 @@
                 "proxy": "0xA72942289a043874249E60469F68f08B8c6ECCe8",
                 "impl": "0xd5FdabDac3d8ACeAB7BFfDDFA18877A4c5D5Aa82",
                 "pendingImpl": "0x0000000000000000000000000000000000000000",
-                "proxyAdmin": "0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B"
+                "proxyAdmin": "0xA518479dd419ad182746B231920A314B4b1b64f5",
+                "timelockController": "0xeB3DEac9d24660921aFfEEEA9ee8aB81C623da10"
             },
             "EIGEN": {
                 "proxy": "0xD58f6844f79eB1fbd9f7091d05f7cb30d3363926",
                 "impl": "0x95a7431400F362F3647a69535C5666cA0133CAA0",
                 "pendingImpl": "0x0000000000000000000000000000000000000000",
-                "proxyAdmin": "0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B"
+                "proxyAdmin": "0x3D8E4aa92Cba327226273DF0b565A2b0AD112deF",
+                "timelockController": "0x313360df34C8896ED117e863e7B2F2d4Aa7727FA"
             },
             "eigenStrategy": {
                 "proxy": "0xdcCF401fD121d8C542E96BC1d0078884422aFAD2",
                 "impl": "0x59D13E7Fb0bC0e57c1fc6594ff701592A6e4dD2B",
                 "pendingImpl": "0x0000000000000000000000000000000000000000"
             }
-        }
+        },
+        "emptyContract": "0x9690d52B1Ce155DB2ec5eCbF5a262ccCc7B3A6D2"
     }
 }
