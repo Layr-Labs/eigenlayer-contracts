@@ -140,13 +140,14 @@ interface IEigenPodManager is IEigenPodManagerErrors, IEigenPodManagerEvents, IS
 
     /**
      * @notice The Pectra hard fork timestamp used to determine which proof config to use for a checkpoint proof. 
-     * @dev This function returns type(uint64).max if the fork timestamp has not been set. The timestamp can never be set to 0.
+     * @dev This function returns type(uint64).max if the fork timestamp has not been set. 
      */
     function getPectraForkTimestamp() external view returns (uint64);
 
      /**
      * @notice Sets the pectra hard fork timestamp by the eigenPodManager owner
-     * @dev This function is callable only by the owner of the eigenPodManager only once
+     * @dev This function can only be called by the eigenPodManager owner
+     * @dev This function can only be called once
      */
     function setPectraForkTimestamp(uint64 pectraForkTimestamp) external;
 }

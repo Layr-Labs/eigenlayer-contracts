@@ -216,13 +216,13 @@ contract EigenPodManager is
     }
 
     /// @inheritdoc IEigenPodManager
-    function setPectraForkTimestamp(uint64 newPectraForkTimestamp) external onlyOwner {
+    function setPectraForkTimestamp(uint64 pectraForkTimestamp) external onlyOwner {
         uint64 currentPectraForkTimestamp = getPectraForkTimestamp();
         require(currentPectraForkTimestamp == type(uint64).max, ForkTimestampAlreadySet());
-        require(newPectraForkTimestamp != 0, InvalidForkTimestamp());
+        require(pectraForkTimestamp != type(uint64).max, InvalidForkTimestamp());
 
-        _pectraForkTimestamp = newPectraForkTimestamp;
-        emit PectraForkTimestampSet(newPectraForkTimestamp);
+        _pectraForkTimestamp = pectraForkTimestamp;
+        emit PectraForkTimestampSet(pectraForkTimestamp);
     }
 
     /// @inheritdoc IEigenPodManager

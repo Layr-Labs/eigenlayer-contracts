@@ -332,9 +332,9 @@ library BeaconChainProofs {
     }
 
     /// @dev Gets the height of the beacon state tree based on the pectraForkTimestamp
-    /// @dev We subtract one from the pectraForkTimestamp to ensure that a `proofTimestamp` at the `pectraForkTimestamp` 
-    ///      is considered to be Pre-Pectra given the EIP-4788 returns the parent block. 
+    /// @dev We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp` 
+    ///      is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block. 
     function getBeaconStateTreeHeight(uint64 proofTimestamp, uint64 pectraForkTimestamp) internal pure returns (uint256) {
-        return proofTimestamp < pectraForkTimestamp - 1 ? DENEB_BEACON_STATE_TREE_HEIGHT : PECTRA_BEACON_STATE_TREE_HEIGHT;
+        return proofTimestamp <= pectraForkTimestamp ? DENEB_BEACON_STATE_TREE_HEIGHT : PECTRA_BEACON_STATE_TREE_HEIGHT;
     }
 }
