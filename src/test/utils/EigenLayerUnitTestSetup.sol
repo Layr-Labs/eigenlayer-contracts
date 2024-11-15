@@ -48,15 +48,6 @@ abstract contract EigenLayerUnitTestSetup is Test {
         _;
     }
 
-    modifier rand(Randomness r) {
-        r.set();
-        _;
-    }
-
-    function random() internal returns (Randomness) {
-        return Randomness.wrap(Random.SEED).shuffle();
-    }
-
     function setUp() public virtual {
         address[] memory pausers = new address[](2);
         pausers[0] = pauser;

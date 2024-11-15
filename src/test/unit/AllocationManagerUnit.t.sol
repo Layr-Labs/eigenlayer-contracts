@@ -301,7 +301,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         for (uint8 i = 0; i < magnitudes.length; ++i) {
             uint64 remainingMagnitude = maxMagnitude - usedMagnitude;
             if (remainingMagnitude > 0) {
-                magnitudes[i] += uint64(random().Uint256(0, remainingMagnitude));
+                magnitudes[i] += uint64(Random.Uint256(0, remainingMagnitude));
                 usedMagnitude += magnitudes[i] - 1;
             }
         }
@@ -336,7 +336,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         for (uint8 i = 0; i < magnitudes.length; ++i) {
             uint64 remainingMagnitude = maxMagnitude - usedMagnitude;
             if (remainingMagnitude > 0) {
-                magnitudes[i] += uint64(random().Uint64(0, remainingMagnitude));
+                magnitudes[i] += uint64(Random.Uint64(0, remainingMagnitude));
                 usedMagnitude += magnitudes[i] - 1;
             }
         }
@@ -344,7 +344,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         // If there's any left, dump it on a random set
         uint64 magnitudeLeft = maxMagnitude - usedMagnitude;
         if (magnitudeLeft > 0) {
-            uint256 randIdx = random().Uint256(0, magnitudes.length - 1);
+            uint256 randIdx = Random.Uint256(0, magnitudes.length - 1);
             magnitudes[randIdx] += magnitudeLeft;
             usedMagnitude += magnitudeLeft;
         }
@@ -373,7 +373,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
             deallocateParams[i] = AllocateParams({
                 operatorSet: allocateParams[i].operatorSet,
                 strategies: allocateParams[i].strategies,
-                newMagnitudes: uint64(random().Uint256({min: 0, max: allocateParams[i].newMagnitudes[0] - 1})).toArrayU64()
+                newMagnitudes: uint64(Random.Uint256({min: 0, max: allocateParams[i].newMagnitudes[0] - 1})).toArrayU64()
             });
         }
 
@@ -400,14 +400,14 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
     /// 1. The fn can only be called once, during deployment.
     /// 2. The fn initializes the contract state correctly (owner, pauserRegistry, and initialPausedStatus).
     function testFuzz_Initialize(
-        Randomness r
-    ) public rand(r) {
+        Randomness
+    ) public {
         // Generate random values for the expected initial state of the contract.
-        address expectedInitialOwner = r.Address();
-        IPauserRegistry expectedPauserRegistry = IPauserRegistry(r.Address());
+        address expectedInitialOwner = Random.Address();
+        IPauserRegistry expectedPauserRegistry = IPauserRegistry(Random.Address());
 
         // Deploy the contract with the expected initial state.
-        uint256 initialPausedStatus = r.Uint256();
+        uint256 initialPausedStatus = Random.Uint256();
         AllocationManager alm =
             _initializeAllocationManager(expectedInitialOwner, expectedPauserRegistry, initialPausedStatus);
 
@@ -438,7 +438,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         return SlashingParams({
             operator: operator,
             operatorSetId: operatorSetId,
-            wadToSlash: random().Uint256(1, WAD),
+            wadToSlash: Random.Uint256(1, WAD),
             description: "test"
         });
     }
@@ -470,7 +470,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
     function test_revert_NotMemberOfSet() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(NotMemberOfSet.selector);
-        allocationManager.slashOperator(_randSlashingParams(random().Address(), 0));
+        allocationManager.slashOperator(_randSlashingParams(Random.Address(), 0));
     }
 
     function test_revert_operatorAllocated_notActive() public {
@@ -573,8 +573,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
     /// @notice Same test as above, but fuzzes the allocation
     function testFuzz_slashPostAllocation(
-        Randomness r
-    ) public rand(r) {
+        Randomness
+    ) public {
         AllocateParams[] memory allocateParams = _randAllocateParams_DefaultOpSet();
 
         // Allocate magnitude and roll forward to completable block
@@ -641,9 +641,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
      * 5. The second magnitude allocation is not slashed from
      */
     function testFuzz_slash_oneCompletedAlloc_onePendingAlloc(
-        Randomness r
-    ) public rand(r) {
-        uint64 wadToSlash = r.Uint64(0.01 ether, WAD);
+        Randomness
+    ) public {
+        uint64 wadToSlash = Random.Uint64(0.01 ether, WAD);
 
         // Generate allocation for `strategyMock`, we allocate half
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
@@ -949,13 +949,13 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
      * 6. Pending magnitude updates post deallocation are valid
      */
     function testFuzz_SlashWhileDeallocationPending(
-        Randomness r
-    ) public rand(r) {
-        AllocateParams[] memory allocateParams = r.AllocateParams(defaultAVS, 1, 1);
-        AllocateParams[] memory deallocateParams = r.DeallocateParams(allocateParams);
-        CreateSetParams[] memory createSetParams = r.CreateSetParams(allocateParams);
-        RegisterParams memory registerParams = r.RegisterParams(allocateParams);
-        SlashingParams memory slashingParams = r.SlashingParams(defaultOperator, allocateParams[0]);
+        Randomness
+    ) public {
+        AllocateParams[] memory allocateParams = Random.AllocateParams(defaultAVS, 1, 1);
+        AllocateParams[] memory deallocateParams = Random.DeallocateParams(allocateParams);
+        CreateSetParams[] memory createSetParams = Random.CreateSetParams(allocateParams);
+        RegisterParams memory registerParams = Random.RegisterParams(allocateParams);
+        SlashingParams memory slashingParams = Random.SlashingParams(defaultOperator, allocateParams[0]);
 
         console.log("wadToSlash: %d", slashingParams.wadToSlash);
 
@@ -1098,8 +1098,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             })
         );
 
-        OperatorSet memory operatorSet =
-            _createOperatorSet(OperatorSet(defaultAVS, random().Uint32()), defaultStrategies);
+        OperatorSet memory operatorSet = _createOperatorSet(OperatorSet(defaultAVS, Random.Uint32()), defaultStrategies);
         AllocateParams[] memory allocateParams2 = _newAllocateParams(operatorSet, 1);
 
         // Attempt to allocate
@@ -1344,8 +1343,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         uint64 strategy1Magnitude = 5e17;
         uint64 strategy2Magnitude = WAD;
 
-        OperatorSet memory operatorSet = OperatorSet(defaultAVS, random().Uint32());
-        _createOperatorSet(operatorSet, random().StrategyArray(2));
+        OperatorSet memory operatorSet = OperatorSet(defaultAVS, Random.Uint32());
+        _createOperatorSet(operatorSet, Random.StrategyArray(2));
         _registerForOperatorSet(defaultOperator, operatorSet);
 
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
@@ -1415,11 +1414,12 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
     /// @dev Allocates magnitude. Deallocates some. Slashes a portion, and then allocates up to the max available magnitude
     function testFuzz_allocate_deallocate_slashWhilePending_allocateMax(
-        Randomness r
-    ) public rand(r) {
-        AllocateParams[] memory allocateParams = r.AllocateParams({avs: defaultAVS, numAllocations: 1, numStrats: 1});
-        AllocateParams[] memory deallocateParams = r.DeallocateParams(allocateParams);
-        CreateSetParams[] memory createSetParams = r.CreateSetParams(allocateParams);
+        Randomness
+    ) public {
+        AllocateParams[] memory allocateParams =
+            Random.AllocateParams({avs: defaultAVS, numAllocations: 1, numStrats: 1});
+        AllocateParams[] memory deallocateParams = Random.DeallocateParams(allocateParams);
+        CreateSetParams[] memory createSetParams = Random.CreateSetParams(allocateParams);
         OperatorSet memory operatorSet = allocateParams[0].operatorSet;
         IStrategy strategy = allocateParams[0].strategies[0];
 
@@ -1440,7 +1440,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: operatorSet.id,
-            wadToSlash: r.Uint64(0.01 ether, 0.99 ether),
+            wadToSlash: Random.Uint64(0.01 ether, 0.99 ether),
             description: "test"
         });
 
@@ -1542,7 +1542,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
     function test_revert_invalidOperatorSet() public {
         AllocateParams[] memory allocateParams = AllocateParams({
-            operatorSet: OperatorSet(random().Address(), 0),
+            operatorSet: OperatorSet(Random.Address(), 0),
             strategies: defaultStrategies,
             newMagnitudes: uint64(0.5 ether).toArrayU64()
         }).toArray();
@@ -1604,16 +1604,16 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     }
 
     function testFuzz_revert_overAllocate(
-        Randomness r
-    ) public rand(r) {
-        uint8 numOpSets = uint8(r.Uint256(2, FUZZ_MAX_OP_SETS));
+        Randomness
+    ) public {
+        uint8 numOpSets = uint8(Random.Uint256(2, FUZZ_MAX_OP_SETS));
 
         // Create and register for operator sets
-        OperatorSet[] memory operatorSets = r.OperatorSetArray(defaultAVS, numOpSets);
+        OperatorSet[] memory operatorSets = Random.OperatorSetArray(defaultAVS, numOpSets);
         _createOperatorSets(operatorSets, defaultStrategies);
 
         AllocateParams[] memory allocateParams = _randAllocateParams_SingleMockStrategy(operatorSets);
-        uint256 randIdx = r.Uint256(0, allocateParams.length - 1);
+        uint256 randIdx = Random.Uint256(0, allocateParams.length - 1);
 
         allocateParams[randIdx].newMagnitudes[0] = WAD + 1;
 
@@ -1662,10 +1662,10 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     ///
     /// NOTE: Should be able to allocate faster than `ALLOCATION_CONFIGURATION_DELAY`.
     function testFuzz_ShouldBeAbleToAllocateSoonerThanLastDelay(
-        Randomness r
-    ) public rand(r) {
-        uint32 firstDelay = r.Uint32(ALLOCATION_CONFIGURATION_DELAY, type(uint24).max);
-        uint32 secondDelay = r.Uint32(1, ALLOCATION_CONFIGURATION_DELAY - 1);
+        Randomness
+    ) public {
+        uint32 firstDelay = Random.Uint32(ALLOCATION_CONFIGURATION_DELAY, type(uint24).max);
+        uint32 secondDelay = Random.Uint32(1, ALLOCATION_CONFIGURATION_DELAY - 1);
         uint64 half = 0.5 ether;
 
         cheats.prank(defaultAVS);
@@ -1685,8 +1685,8 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     }
 
     function testFuzz_allocate_singleStrat_singleOperatorSet(
-        Randomness r
-    ) public rand(r) {
+        Randomness
+    ) public {
         // Create allocation
         AllocateParams[] memory allocateParams = _randAllocateParams_DefaultOpSet();
 
@@ -1755,12 +1755,12 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     }
 
     function testFuzz_allocate_singleStrat_multipleSets(
-        Randomness r
-    ) public rand(r) {
-        uint8 numOpSets = uint8(r.Uint256(1, FUZZ_MAX_OP_SETS));
+        Randomness
+    ) public {
+        uint8 numOpSets = uint8(Random.Uint256(1, FUZZ_MAX_OP_SETS));
 
         // Create and register for operator sets, each with a single default strategy
-        OperatorSet[] memory operatorSets = r.OperatorSetArray(defaultAVS, numOpSets);
+        OperatorSet[] memory operatorSets = Random.OperatorSetArray(defaultAVS, numOpSets);
         AllocateParams[] memory allocateParams = _randAllocateParams_SingleMockStrategy(operatorSets);
 
         _createOperatorSets(operatorSets, defaultStrategies);
@@ -1840,10 +1840,10 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     }
 
     function testFuzz_allocateMultipleTimes(
-        Randomness r
-    ) public rand(r) {
-        uint64 firstAlloc = r.Uint64(1, WAD - 1);
-        uint64 secondAlloc = r.Uint64(firstAlloc + 1, WAD);
+        Randomness
+    ) public {
+        uint64 firstAlloc = Random.Uint64(1, WAD - 1);
+        uint64 secondAlloc = Random.Uint64(firstAlloc + 1, WAD);
 
         // Check that the operator has no allocated sets/strats before allocation
         OperatorSet[] memory allocatedSets = allocationManager.getAllocatedSets(defaultOperator);
@@ -1900,12 +1900,12 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     }
 
     function testFuzz_allocateMaxToMultipleStrategies(
-        Randomness r
-    ) public rand(r) {
-        uint256 numStrats = r.Uint256(2, FUZZ_MAX_STRATS);
+        Randomness
+    ) public {
+        uint256 numStrats = Random.Uint256(2, FUZZ_MAX_STRATS);
 
-        OperatorSet memory operatorSet = OperatorSet(defaultAVS, r.Uint32());
-        IStrategy[] memory strategies = r.StrategyArray(numStrats);
+        OperatorSet memory operatorSet = OperatorSet(defaultAVS, Random.Uint32());
+        IStrategy[] memory strategies = Random.StrategyArray(numStrats);
 
         _createOperatorSet(operatorSet, strategies);
         _registerForOperatorSet(defaultOperator, operatorSet);
@@ -1944,11 +1944,11 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
      * - 3. After the deallocation queue is cleared
      */
     function testFuzz_allocate_deallocate_whenRegistered(
-        Randomness r
-    ) public rand(r) {
+        Randomness
+    ) public {
         // Bound allocation and deallocation
-        uint64 firstMod = r.Uint64(1, WAD);
-        uint64 secondMod = r.Uint64(0, firstMod - 1);
+        uint64 firstMod = Random.Uint64(1, WAD);
+        uint64 secondMod = Random.Uint64(0, firstMod - 1);
 
         // Allocate magnitude to default registered set
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, firstMod);
@@ -2036,14 +2036,16 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
      * Checks that deallocation is instant and can be reallocated instantly.
      */
     function testFuzz_allocate_fullyDeallocate_reallocate_WhenNotRegistered(
-        Randomness r
-    ) public rand(r) {
+        Randomness
+    ) public {
         // Bound allocation and deallocation
-        uint64 firstMod = r.Uint64(1, WAD);
+        uint64 firstMod = Random.Uint64(1, WAD);
 
         // Create a new operator sets that the operator is not registered for
-        OperatorSet memory operatorSetA = _createOperatorSet(OperatorSet(defaultAVS, r.Uint32()), defaultStrategies);
-        OperatorSet memory operatorSetB = _createOperatorSet(OperatorSet(defaultAVS, r.Uint32()), defaultStrategies);
+        OperatorSet memory operatorSetA =
+            _createOperatorSet(OperatorSet(defaultAVS, Random.Uint32()), defaultStrategies);
+        OperatorSet memory operatorSetB =
+            _createOperatorSet(OperatorSet(defaultAVS, Random.Uint32()), defaultStrategies);
 
         // Allocate magnitude to operator set
         AllocateParams[] memory allocateParams = _newAllocateParams(operatorSetA, firstMod);
@@ -2132,12 +2134,12 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
      * queue is cleared
      */
     function testFuzz_allocate_fromClearedDeallocQueue(
-        Randomness r
-    ) public rand(r) {
-        uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
+        Randomness
+    ) public {
+        uint256 numOpSets = Random.Uint256(1, FUZZ_MAX_OP_SETS);
 
         // Create multiple operator sets, register, and allocate to each. Ensure all magnitude is fully allocated.
-        OperatorSet[] memory deallocSets = r.OperatorSetArray(defaultAVS, numOpSets);
+        OperatorSet[] memory deallocSets = Random.OperatorSetArray(defaultAVS, numOpSets);
         _createOperatorSets(deallocSets, defaultStrategies);
         _registerForOperatorSets(defaultOperator, deallocSets);
         AllocateParams[] memory allocateParams = _randAllocateParams_SingleMockStrategy_AllocAll(deallocSets);
@@ -2201,7 +2203,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         // Create and register for a new operator set with the same default strategy.
         // If we try to allocate to this new set, it should clear the deallocation queue,
         // allowing all magnitude to be allocated
-        OperatorSet memory finalOpSet = _createOperatorSet(OperatorSet(defaultAVS, r.Uint32()), defaultStrategies);
+        OperatorSet memory finalOpSet = _createOperatorSet(OperatorSet(defaultAVS, Random.Uint32()), defaultStrategies);
         _registerForOperatorSet(defaultOperator, finalOpSet);
         AllocateParams[] memory finalAllocParams = _newAllocateParams(finalOpSet, WAD);
 
@@ -2305,12 +2307,12 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     }
 
     function testFuzz_allocate_deallocate_singleStrat_multipleOperatorSets(
-        Randomness r
-    ) public rand(r) {
-        uint8 numOpSets = uint8(r.Uint256(1, FUZZ_MAX_OP_SETS));
+        Randomness
+    ) public {
+        uint8 numOpSets = uint8(Random.Uint256(1, FUZZ_MAX_OP_SETS));
 
         // Create and register for operator sets, each with a single default strategy
-        OperatorSet[] memory operatorSets = r.OperatorSetArray(defaultAVS, numOpSets);
+        OperatorSet[] memory operatorSets = Random.OperatorSetArray(defaultAVS, numOpSets);
         _createOperatorSets(operatorSets, defaultStrategies);
         _registerForOperatorSets(defaultOperator, operatorSets);
 
@@ -2397,14 +2399,14 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     }
 
     function testFuzz_MultipleSetsAndStrats(
-        Randomness r
-    ) public rand(r) {
-        uint256 numAllocations = r.Uint256(2, FUZZ_MAX_ALLOCATIONS);
-        uint256 numStrats = r.Uint256(2, FUZZ_MAX_STRATS);
+        Randomness
+    ) public {
+        uint256 numAllocations = Random.Uint256(2, FUZZ_MAX_ALLOCATIONS);
+        uint256 numStrats = Random.Uint256(2, FUZZ_MAX_STRATS);
 
-        AllocateParams[] memory allocateParams = r.AllocateParams(defaultAVS, numAllocations, numStrats);
-        AllocateParams[] memory deallocateParams = r.DeallocateParams(allocateParams);
-        CreateSetParams[] memory createSetParams = r.CreateSetParams(allocateParams);
+        AllocateParams[] memory allocateParams = Random.AllocateParams(defaultAVS, numAllocations, numStrats);
+        AllocateParams[] memory deallocateParams = Random.DeallocateParams(allocateParams);
+        CreateSetParams[] memory createSetParams = Random.CreateSetParams(allocateParams);
 
         cheats.prank(defaultAVS);
         allocationManager.createOperatorSets(createSetParams);
@@ -2500,8 +2502,8 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
      * - Validates storage after the second clear
      */
     function testFuzz_allocate(
-        Randomness r
-    ) public rand(r) {
+        Randomness
+    ) public {
         AllocateParams[] memory allocateParams = _randAllocateParams_DefaultOpSet();
 
         // Allocate magnitude
@@ -2540,8 +2542,8 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
      * - Assert events & validates storage after the deallocateParams are completed
      */
     function testFuzz_allocate_deallocate_whenRegistered(
-        Randomness r
-    ) public rand(r) {
+        Randomness
+    ) public {
         // Generate a random allocation and subsequent deallocation from the default operator set
         (AllocateParams[] memory allocateParams, AllocateParams[] memory deallocateParams) =
             _randAllocAndDeallocParams_SingleMockStrategy(defaultOperatorSet.toArray());
@@ -2620,7 +2622,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
 
         // Create and register for a new operator set
         OperatorSet memory newOperatorSet =
-            _createOperatorSet(OperatorSet(defaultAVS, random().Uint32()), defaultStrategies);
+            _createOperatorSet(OperatorSet(defaultAVS, Random.Uint32()), defaultStrategies);
         _registerForOperatorSet(defaultOperator, newOperatorSet);
 
         // Allocate 33e16 mag to new operator set
@@ -2672,7 +2674,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
 
         // Create and register for a second operator set
         OperatorSet memory newOperatorSet =
-            _createOperatorSet(OperatorSet(defaultAVS, random().Uint32()), defaultStrategies);
+            _createOperatorSet(OperatorSet(defaultAVS, Random.Uint32()), defaultStrategies);
         _registerForOperatorSet(defaultOperator, newOperatorSet);
 
         // Allocate half of mag to opset2
@@ -2728,9 +2730,9 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     }
 
     function testFuzz_setDelay(
-        Randomness r
-    ) public rand(r) {
-        uint32 delay = r.Uint32(0, type(uint32).max);
+        Randomness
+    ) public {
+        uint32 delay = Random.Uint32(0, type(uint32).max);
 
         // Set delay
         cheats.expectEmit(true, true, true, true, address(allocationManager));
@@ -2753,10 +2755,10 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     }
 
     function test_fuzz_setDelay_multipleTimesWithinConfigurationDelay(
-        Randomness r
-    ) public rand(r) {
-        uint32 firstDelay = r.Uint32(1, type(uint32).max);
-        uint32 secondDelay = r.Uint32(1, type(uint32).max);
+        Randomness
+    ) public {
+        uint32 firstDelay = Random.Uint32(1, type(uint32).max);
+        uint32 secondDelay = Random.Uint32(1, type(uint32).max);
 
         // Set delay
         cheats.prank(operatorToSet);
@@ -2787,10 +2789,10 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     }
 
     function testFuzz_multipleDelays(
-        Randomness r
-    ) public rand(r) {
-        uint32 firstDelay = r.Uint32(1, type(uint32).max);
-        uint32 secondDelay = r.Uint32(1, type(uint32).max);
+        Randomness
+    ) public {
+        uint32 firstDelay = Random.Uint32(1, type(uint32).max);
+        uint32 secondDelay = Random.Uint32(1, type(uint32).max);
 
         // Set delay
         cheats.prank(operatorToSet);
@@ -2818,9 +2820,9 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     }
 
     function testFuzz_setDelay_DMCaller(
-        Randomness r
-    ) public rand(r) {
-        uint32 delay = r.Uint32(1, type(uint32).max);
+        Randomness
+    ) public {
+        uint32 delay = Random.Uint32(1, type(uint32).max);
 
         cheats.prank(address(delegationManagerMock));
         allocationManager.setAllocationDelay(operatorToSet, delay);
@@ -2850,16 +2852,16 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
     }
 
     function testFuzz_registerForOperatorSets_InvalidOperator(
-        Randomness r
-    ) public rand(r) {
-        cheats.prank(r.Address());
+        Randomness
+    ) public {
+        cheats.prank(Random.Address());
         cheats.expectRevert(InvalidOperator.selector);
         allocationManager.registerForOperatorSets(defaultRegisterParams);
     }
 
     function testFuzz_registerForOperatorSets_InvalidOperatorSet(
-        Randomness r
-    ) public rand(r) {
+        Randomness
+    ) public {
         cheats.prank(defaultOperator);
         cheats.expectRevert(InvalidOperatorSet.selector);
         defaultRegisterParams.operatorSetIds[0] = 1; // invalid id
@@ -2867,25 +2869,25 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
     }
 
     function testFuzz_registerForOperatorSets_AlreadyMemberOfSet(
-        Randomness r
-    ) public rand(r) {
+        Randomness
+    ) public {
         cheats.prank(defaultOperator);
         cheats.expectRevert(AlreadyMemberOfSet.selector);
         allocationManager.registerForOperatorSets(defaultRegisterParams);
     }
 
     function testFuzz_registerForOperatorSets_Correctness(
-        Randomness r
-    ) public rand(r) {
-        address operator = r.Address();
-        uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
+        Randomness
+    ) public {
+        address operator = Random.Address();
+        uint256 numOpSets = Random.Uint256(1, FUZZ_MAX_OP_SETS);
         uint32[] memory operatorSetIds = new uint32[](numOpSets);
         CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
 
         _registerOperator(operator);
 
         for (uint256 i; i < numOpSets; ++i) {
-            operatorSetIds[i] = r.Uint32(1, type(uint32).max);
+            operatorSetIds[i] = Random.Uint32(1, type(uint32).max);
             createSetParams[i].operatorSetId = operatorSetIds[i];
             createSetParams[i].strategies = defaultStrategies;
         }
@@ -2934,16 +2936,16 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
     }
 
     function testFuzz_deregisterFromOperatorSets_InvalidCaller(
-        Randomness r
-    ) public rand(r) {
-        cheats.prank(r.Address());
+        Randomness
+    ) public {
+        cheats.prank(Random.Address());
         cheats.expectRevert(InvalidCaller.selector);
         allocationManager.deregisterFromOperatorSets(defaultDeregisterParams);
     }
 
     function testFuzz_deregisterFromOperatorSets_InvalidOperatorSet(
-        Randomness r
-    ) public rand(r) {
+        Randomness
+    ) public {
         defaultDeregisterParams.operatorSetIds = uint32(1).toArrayU32(); // invalid id
         cheats.prank(defaultOperator);
         cheats.expectRevert(InvalidOperatorSet.selector);
@@ -2951,23 +2953,23 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
     }
 
     function testFuzz_deregisterFromOperatorSets_NotMemberOfSet(
-        Randomness r
-    ) public rand(r) {
-        defaultDeregisterParams.operator = r.Address();
+        Randomness
+    ) public {
+        defaultDeregisterParams.operator = Random.Address();
         cheats.prank(defaultDeregisterParams.operator);
         cheats.expectRevert(NotMemberOfSet.selector);
         allocationManager.deregisterFromOperatorSets(defaultDeregisterParams);
     }
 
     function testFuzz_deregisterFromOperatorSets_Correctness(
-        Randomness r
-    ) public rand(r) {
-        uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
+        Randomness
+    ) public {
+        uint256 numOpSets = Random.Uint256(1, FUZZ_MAX_OP_SETS);
         uint32[] memory operatorSetIds = new uint32[](numOpSets);
         CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
 
         for (uint256 i; i < numOpSets; ++i) {
-            operatorSetIds[i] = r.Uint32(1, type(uint32).max);
+            operatorSetIds[i] = Random.Uint32(1, type(uint32).max);
             createSetParams[i].operatorSetId = operatorSetIds[i];
             createSetParams[i].strategies = defaultStrategies;
         }
@@ -2975,7 +2977,7 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
         cheats.prank(defaultAVS);
         allocationManager.createOperatorSets(createSetParams);
 
-        address operator = r.Address();
+        address operator = Random.Address();
         _registerOperator(operator);
 
         cheats.prank(operator);
@@ -3019,14 +3021,14 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
     }
 
     function testFuzz_addStrategiesToOperatorSet_Correctness(
-        Randomness r
-    ) public rand(r) {
-        uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
+        Randomness
+    ) public {
+        uint256 numStrategies = Random.Uint256(1, FUZZ_MAX_STRATS);
 
         IStrategy[] memory strategies = new IStrategy[](numStrategies);
 
         for (uint256 i; i < numStrategies; ++i) {
-            strategies[i] = IStrategy(r.Address());
+            strategies[i] = IStrategy(Random.Address());
             cheats.expectEmit(true, false, false, false, address(allocationManager));
             emit StrategyAddedToOperatorSet(defaultOperatorSet, strategies[i]);
         }
@@ -3054,16 +3056,14 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
     function test_removeStrategiesFromOperatorSet_StrategyNotInOperatorSet() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(StrategyNotInOperatorSet.selector);
-        allocationManager.removeStrategiesFromOperatorSet(
-            defaultOperatorSet.id, IStrategy(random().Address()).toArray()
-        );
+        allocationManager.removeStrategiesFromOperatorSet(defaultOperatorSet.id, IStrategy(Random.Address()).toArray());
     }
 
     function testFuzz_removeStrategiesFromOperatorSet_Correctness(
-        Randomness r
-    ) public rand(r) {
-        uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
-        IStrategy[] memory strategies = r.StrategyArray(numStrategies);
+        Randomness
+    ) public {
+        uint256 numStrategies = Random.Uint256(1, FUZZ_MAX_STRATS);
+        IStrategy[] memory strategies = Random.StrategyArray(numStrategies);
 
         cheats.prank(defaultAVS);
         allocationManager.addStrategiesToOperatorSet(defaultOperatorSet.id, strategies);
@@ -3097,17 +3097,17 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
     }
 
     function testFuzz_createOperatorSets_Correctness(
-        Randomness r
-    ) public rand(r) {
-        address avs = r.Address();
-        uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
-        uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
+        Randomness
+    ) public {
+        address avs = Random.Address();
+        uint256 numOpSets = Random.Uint256(1, FUZZ_MAX_OP_SETS);
+        uint256 numStrategies = Random.Uint256(1, FUZZ_MAX_STRATS);
 
         CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
 
         for (uint256 i; i < numOpSets; ++i) {
-            createSetParams[i].operatorSetId = r.Uint32(1, type(uint32).max);
-            createSetParams[i].strategies = r.StrategyArray(numStrategies);
+            createSetParams[i].operatorSetId = Random.Uint32(1, type(uint32).max);
+            createSetParams[i].strategies = Random.StrategyArray(numStrategies);
             cheats.expectEmit(true, false, false, false, address(allocationManager));
             emit OperatorSetCreated(OperatorSet(avs, createSetParams[i].operatorSetId));
             for (uint256 j; j < numStrategies; ++j) {
@@ -3138,10 +3138,10 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
 
 contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTests {
     function testFuzz_setAVSRegistrar_Correctness(
-        Randomness r
-    ) public rand(r) {
-        address avs = r.Address();
-        IAVSRegistrar avsRegistrar = IAVSRegistrar(r.Address());
+        Randomness
+    ) public {
+        address avs = Random.Address();
+        IAVSRegistrar avsRegistrar = IAVSRegistrar(Random.Address());
 
         cheats.expectEmit(true, false, false, false, address(allocationManager));
         emit AVSRegistrarSet(avs, avsRegistrar);
@@ -3164,10 +3164,10 @@ contract AllocationManagerUnitTests_updateAVSMetadataURI is AllocationManagerUni
 
 contract AllocationManagerUnitTests_getStrategyAllocations is AllocationManagerUnitTests {
     function testFuzz_getStrategyAllocations_Correctness(
-        Randomness r
-    ) public rand(r) {
-        AllocateParams[] memory allocateParams = r.AllocateParams(defaultAVS, 1, 1);
-        CreateSetParams[] memory createSetParams = r.CreateSetParams(allocateParams);
+        Randomness
+    ) public {
+        AllocateParams[] memory allocateParams = Random.AllocateParams(defaultAVS, 1, 1);
+        CreateSetParams[] memory createSetParams = Random.CreateSetParams(allocateParams);
 
         cheats.prank(defaultAVS);
         allocationManager.createOperatorSets(createSetParams);
