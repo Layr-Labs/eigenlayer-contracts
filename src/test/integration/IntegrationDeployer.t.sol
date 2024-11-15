@@ -22,6 +22,7 @@ import "src/test/mocks/EmptyContract.sol";
 import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
+import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 
@@ -748,10 +749,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _printUserInfo(name, assetType, userType, strategies, tokenBalances);
         return (user, strategies, tokenBalances);
     }
-
-    function _genRandUser(string memory name, uint userType) internal returns (User) {
+    
+    function _genRandUser(string memory name, uint userType) internal returns (User user) {
         // Create User contract based on userType:
-        User user;
         if (forkType == LOCAL) {
             user = new User(name);
 
@@ -790,8 +790,18 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         } else {
             revert("_randUser: unimplemented forkType");
         }
-
-        return user;
+    }
+    
+    function _genRandAVS(string memory name) internal returns (AVS avs) {
+        if (forkType == LOCAL) {
+            avs = new AVS(name);
+        } else if (forkType == MAINNET) {
+            avs = new AVS(name);
+        } else if (forkType == HOLESKY) {
+            avs = new AVS(name);
+        } else {
+            revert("_genRandAVS: unimplemented forkType");
+        }
     }
 
     /// @dev For a given `assetType`, select a random assortment of strategies and assets

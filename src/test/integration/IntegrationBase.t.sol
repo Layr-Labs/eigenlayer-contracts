@@ -20,6 +20,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     uint numStakers = 0;
     uint numOperators = 0;
+    uint numAVSs = 0;
 
     // Lists of stakers/operators created before the m2 upgrade
     //
@@ -103,6 +104,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         numOperators++;
         return (operator, strategies, tokenBalances);
+    }
+
+    function _newRandomAVS(IStrategy[] memory strategies) internal returns (AVS avs, uint32 operatorSetId) {
+        string memory avsName = string.concat("M1_Operator", numOperators.toString());
+        avs = _genRandAVS(avsName);
+        operatorSetId = avs.createOperatorSet(allStrats);
+        ++numAVSs;
     }
 
     /// @dev Send a random amount of ETH (up to 10 gwei) to the destination via `call`,

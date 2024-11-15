@@ -11,6 +11,8 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/utils/PrintUtils.t.sol";
 
+import "src/test/utils/SingleItemArrayLib.sol";
+
 interface IAVSDeployer {
     function allocationManager() external view returns (AllocationManager);
     function strategyFactory() external view returns (StrategyFactory);
@@ -18,6 +20,8 @@ interface IAVSDeployer {
 }
 
 contract AVS is PrintUtils, IAllocationManagerTypes {
+    using SingleItemArrayLib for *;
+
     Vm cheats = Vm(VM_ADDRESS);
     AllocationManager immutable allocationManager;
     StrategyFactory immutable strategyFactory;
@@ -48,7 +52,7 @@ contract AVS is PrintUtils, IAllocationManagerTypes {
     /// -----------------------------------------------------------------------
     /// AllocationManager Interactions
     /// -----------------------------------------------------------------------
-
+    
     function createOperatorSets(
         uint256 numOpSets,
         uint256 numStrategies
@@ -69,7 +73,20 @@ contract AVS is PrintUtils, IAllocationManagerTypes {
             operatorSetIds[i] = p[i].operatorSetId;
             strategies[i] = p[i].strategies;
         }
-        
+
+        _logCreateOperatorSets(p);
+
+        allocationManager.createOperatorSets(p);
+    }
+
+    function createOperatorSet(IStrategy[] memory strategies) public createSnapshot returns (uint32 operatorSetId) {
+        _logM("createOperatorSets");
+
+        CreateSetParams[] memory p = CreateSetParams({
+            operatorSetId: operatorSetId,
+            strategies: strategies
+        }).toArray();
+
         _logCreateOperatorSets(p);
 
         allocationManager.createOperatorSets(p);
