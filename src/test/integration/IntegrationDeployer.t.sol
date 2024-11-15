@@ -194,14 +194,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
 
         if (forkMainnet) {
-            emit log("setUp: running tests against mainnet fork");
-            emit log_named_string("- using RPC url", cheats.rpcUrl("mainnet"));
-            emit log_named_uint("- forking at block", mainnetForkBlock);
+            console.log("setUp: running tests against mainnet fork");
+            console.log("- using RPC url", cheats.rpcUrl("mainnet"));
+            console.log("- forking at block", mainnetForkBlock);
 
             cheats.createSelectFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
             forkType = MAINNET;
         } else {
-            emit log("setUp: running tests locally");
+            console.log("setUp: running tests locally");
 
             forkType = LOCAL;
         }
@@ -594,21 +594,21 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     ) internal {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
-        emit log_named_uint("_configRand: set random seed to: ", _randomSeed);
+        console.log("_configRand: set random seed to: ", _randomSeed);
         random = keccak256(abi.encodePacked(_randomSeed));
 
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
         assetTypes = _bitmapToBytes(_assetTypes);
         userTypes = _bitmapToBytes(_userTypes);
 
-        emit log("_configRand: Users will be initialized with these asset types:");
+        console.log("_configRand: Users will be initialized with these asset types:");
         for (uint i = 0; i < assetTypes.length; i++) {
-            emit log(assetTypeToStr[uint(uint8(assetTypes[i]))]);
+            console.log(assetTypeToStr[uint(uint8(assetTypes[i]))]);
         }
 
-        emit log("_configRand: these User contracts will be initialized:");
+        console.log("_configRand: these User contracts will be initialized:");
         for (uint i = 0; i < userTypes.length; i++) {
-            emit log(userTypeToStr[uint(uint8(userTypes[i]))]);
+            console.log(userTypeToStr[uint(uint8(userTypes[i]))]);
         }
 
         assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
@@ -622,7 +622,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Note: for non-LOCAL forktypes, upgrade of contracts will be peformed after user initialization.
      */
     function _deployOrFetchContracts() internal {
-        emit log_named_string("_deployOrFetchContracts using fork for test", forkTypeToStr[forkType]);
+        console.log("_deployOrFetchContracts using fork for test", forkTypeToStr[forkType]);
 
         if (forkType == LOCAL) {
             _setUpLocal();
@@ -749,7 +749,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _printUserInfo(name, assetType, userType, strategies, tokenBalances);
         return (user, strategies, tokenBalances);
     }
-    
+
     function _genRandUser(string memory name, uint userType) internal returns (User user) {
         // Create User contract based on userType:
         if (forkType == LOCAL) {
@@ -954,7 +954,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             // Mask for i-th bit
             uint mask = uint(1 << i);
 
-            // emit log_named_uint("mask: ", mask);
+            // console.log("mask: ", mask);
 
             // If the i-th bit is flipped, add a byte to the return array
             if (bitmap & mask != 0) {
@@ -971,30 +971,25 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         IStrategy[] memory strategies, 
         uint[] memory tokenBalances
     ) internal {
-
-        emit log("===Created User===");
-        emit log_named_string("Name", name);
-        emit log_named_string("assetType", assetTypeToStr[assetType]);
-        emit log_named_string("userType", userTypeToStr[userType]);
-        emit log_named_string("forkType", forkTypeToStr[forkType]);
-
-        emit log_named_uint("num assets: ", strategies.length);
-
+        console.log("====== Created User %s ======", StdStyle.bold(StdStyle.yellow(name)));
+        console.log("Asset Type:", assetTypeToStr[assetType]);
+        console.log("User Type:", userTypeToStr[userType]);
+        console.log("Fork Type:", forkTypeToStr[forkType]);
+        console.log("Total Assets:", strategies.length);
+        
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                emit log_named_string("token name: ", "Native ETH");
-                emit log_named_uint("token balance: ", tokenBalances[i]);    
+                console.log("Asset:", "Native ETH");
+                console.log("Balance:", tokenBalances[i]);    
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
-
-                emit log_named_string("token name: ", IERC20Metadata(address(underlyingToken)).name());
-                emit log_named_uint("token balance: ", tokenBalances[i]);
+                console.log("Asset:", IERC20Metadata(address(underlyingToken)).name());
+                console.log("Balance: ", tokenBalances[i]);
             }
         }
 
-        emit log("==================");
+        console.log("=====================================\n");
     }
 
     /// @dev Helper because solidity syntax is exhausting

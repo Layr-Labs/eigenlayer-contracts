@@ -46,13 +46,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            stakerName = string.concat("M1_Staker", numStakers.toString());
+            stakerName = string.concat("M1_Staker_", numStakers.toString());
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
 
             stakersToMigrate.push(staker);
         } else {
-            stakerName = string.concat("Staker", numStakers.toString());
+            stakerName = string.concat("Staker_", numStakers.toString());
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
         }
@@ -75,7 +75,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            string memory operatorName = string.concat("M1_Operator", numOperators.toString());
+            string memory operatorName = string.concat("M1_Operator_", numOperators.toString());
 
             // Create an operator for M1. We omit native ETH because we want to
             // check staker/operator shares, and we don't award native ETH shares in M1
@@ -88,7 +88,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             operatorsToMigrate.push(operator);
         } else {
-            string memory operatorName = string.concat("Operator", numOperators.toString());
+            string memory operatorName = string.concat("Operator_", numOperators.toString());
 
             (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
 
@@ -107,10 +107,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _newRandomAVS(IStrategy[] memory strategies) internal returns (AVS avs, uint32 operatorSetId) {
-        string memory avsName = string.concat("M1_Operator", numOperators.toString());
+        string memory avsName = string.concat("M1_Operator_", numOperators.toString());
         avs = _genRandAVS(avsName);
-        operatorSetId = avs.createOperatorSet(allStrats);
+        operatorSetId = avs.createOperatorSet(strategies);
         ++numAVSs;
+    }
+
+    function _newRandomAVS() internal returns (AVS avs, uint32 operatorSetId) {
+        return _newRandomAVS(allStrats);
     }
 
     /// @dev Send a random amount of ETH (up to 10 gwei) to the destination via `call`,
@@ -1065,6 +1069,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         timeMachine.warpToPresent(curState);
     }
 
+    // TODO:
     /// @dev Given a list of strategies, roll the block number forward to the
     /// a valid blocknumber to completeWithdrawals
     function _rollBlocksForCompleteWithdrawals(IStrategy[] memory strategies) internal {
@@ -1076,6 +1081,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
         //     }
         // }
         // cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
+        
+        cheats.roll(block.number + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot

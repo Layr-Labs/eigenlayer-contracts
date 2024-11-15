@@ -618,4 +618,14 @@ contract User_AltMethods is User {
             }
         }
     }
+
+    bytes4 internal constant MAGIC_VALUE = 0x1626ba7e;
+
+    function isValidSignature(bytes32 hash, bytes memory) external view returns (bytes4) {
+        if (signedHashes[hash]) {
+            return MAGIC_VALUE;
+        } else {
+            return 0xffffffff;
+        }
+    }
 }
