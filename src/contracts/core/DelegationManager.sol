@@ -756,7 +756,7 @@ contract DelegationManager is
     ) internal view returns (uint256) {
         uint256 currCumulativeScaledShares = uint256(_cumulativeScaledSharesHistory[operator][strategy].latest());
         // Note: this will simply return 0 if no history exists, same for latest() as well
-        uint256 pastCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].getAtProbablyRecentBlock(
+        uint256 pastCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookupRecent(
             block.number - MIN_WITHDRAWAL_DELAY_BLOCKS
         );
         uint256 slashableShareInQueue = SlashingLib.scaleSharesForBurningQueueWithdrawals(
@@ -768,8 +768,10 @@ contract DelegationManager is
 
     /// @dev Update the cumulative withdrawn scaled shares from an operator for a given strategy
     function _updateCumulativeScaledShares(address operator, IStrategy strategy, uint256 scaledShares) internal {
-        uint256 currCumulativeScaledShares = uint256(_cumulativeScaledSharesHistory[operator][strategy].latest());
-        _cumulativeScaledSharesHistory[operator][strategy].push(currCumulativeScaledShares + scaledShares);
+        if (strategy != beaconChainETHStrategy) {
+            uint256 currCumulativeScaledShares = uint256(_cumulativeScaledSharesHistory[operator][strategy].latest());
+            _cumulativeScaledSharesHistory[operator][strategy].push(currCumulativeScaledShares + scaledShares);    
+        }
     }
 
     /// @dev Depending on the strategy used, determine which ShareManager contract to make external calls to

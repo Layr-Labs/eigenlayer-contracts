@@ -150,7 +150,7 @@ library Snapshots {
      * withdrawal snapshot is probably "recent", defined as being among the last sqrt(N) withdrawal snapshots where N is the number of
      * withdrawal snapshots.
      */
-    function getAtProbablyRecentBlock(
+    function upperLookupRecent(
         WithdrawalHistory storage self,
         uint256 blockNumber
     ) internal view returns (uint256) {
