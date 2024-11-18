@@ -150,10 +150,7 @@ library Snapshots {
      * withdrawal snapshot is probably "recent", defined as being among the last sqrt(N) withdrawal snapshots where N is the number of
      * withdrawal snapshots.
      */
-    function upperLookupRecent(
-        WithdrawalHistory storage self,
-        uint256 blockNumber
-    ) internal view returns (uint256) {
+    function upperLookupRecent(WithdrawalHistory storage self, uint256 blockNumber) internal view returns (uint256) {
         require(blockNumber < block.number, BlocknumberDoesNotExist());
         uint32 key = SafeCastUpgradeable.toUint32(blockNumber);
 

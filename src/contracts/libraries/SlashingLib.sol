@@ -155,7 +155,12 @@ library SlashingLib {
         uint256 prevMaxMagnitude,
         uint256 newMaxMagnitude
     ) internal pure returns (uint256 sharesToDecrement, uint256 sharesToBurn) {
-        sharesToDecrement = operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude);
-        sharesToBurn = sharesToDecrement + queuedWithdrawnScaledShares.mulWad(newMaxMagnitude);
+        // round up mulDiv so we don't round up sharesToDecrement and overslash
+        sharesToDecrement = operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
+
+        // Calculate the difference in Slashable shares after the slashing. This is the amount to burn.
+        uint256 queueWithdrawalSharesBurned = queuedWithdrawnScaledShares.mulWad(prevMaxMagnitude)
+            - queuedWithdrawnScaledShares.mulWadRoundUp(newMaxMagnitude);
+        sharesToBurn = sharesToDecrement + queueWithdrawalSharesBurned;
     }
 }

@@ -2188,11 +2188,6 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         );
 
         if (delegationManager.isDelegated(staker)) {
-            uint256 slashingFactor = _getSlashingFactor(staker, strategyMock, magnitude);
-            dsf.update(0, shares, slashingFactor);
-            cheats.expectEmit(true, true, true, true, address(delegationManager));
-            emit DepositScalingFactorUpdated(staker, strategyMock, dsf.scalingFactor());
-
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit OperatorSharesIncreased(defaultOperator, staker, strategyMock, shares);
             uint256 slashingFactor = _getSlashingFactor(staker, strategyMock, magnitude);
@@ -2425,7 +2420,8 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         cheats.assume(strategies.length <= 16);
         // TODO: remove, handles rounding on division
         cheats.assume(shares % 2 == 0);
-
+        
+        uint256 numStrats = strategies.length;
         bool hasBeaconChainStrategy = false;
         for(uint256 i = 0; i < numStrats; i++) {
             if (strategies[i] == beaconChainETHStrategy) {
@@ -3882,7 +3878,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             uint64 operatorMagnitude = 5e17;
             _setOperatorMagnitude(defaultOperator, withdrawal.strategies[0], operatorMagnitude);
             cheats.prank(address(allocationManagerMock));
-            delegationManager.decreaseOperatorShares(defaultOperator, withdrawal.strategies[0], operatorMagnitude);
+            delegationManager.decreaseAndBurnOperatorShares(defaultOperator, withdrawal.strategies[0], WAD, operatorMagnitude);
             operatorSharesAfterAVSSlash = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
             assertApproxEqAbs(operatorSharesAfterAVSSlash, operatorSharesAfterBeaconSlash / 2, 1, "operator shares should be decreased after AVS slash");
         }

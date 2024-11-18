@@ -770,7 +770,7 @@ contract DelegationManager is
     function _updateCumulativeScaledShares(address operator, IStrategy strategy, uint256 scaledShares) internal {
         if (strategy != beaconChainETHStrategy) {
             uint256 currCumulativeScaledShares = uint256(_cumulativeScaledSharesHistory[operator][strategy].latest());
-            _cumulativeScaledSharesHistory[operator][strategy].push(currCumulativeScaledShares + scaledShares);    
+            _cumulativeScaledSharesHistory[operator][strategy].push(currCumulativeScaledShares + scaledShares);
         }
     }
 
