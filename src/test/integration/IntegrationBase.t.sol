@@ -15,6 +15,7 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer {
+    using StdStyle for *;
     using SlashingLib for *;
     using Strings for *;
 
@@ -46,13 +47,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            stakerName = string.concat("M1_Staker_", numStakers.toString());
+            stakerName = string.concat("M1Staker", cheats.toString(numStakers));
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
 
             stakersToMigrate.push(staker);
         } else {
-            stakerName = string.concat("Staker_", numStakers.toString());
+            stakerName = string.concat("staker", cheats.toString(numStakers));
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
         }
@@ -75,7 +76,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            string memory operatorName = string.concat("M1_Operator_", numOperators.toString());
+            string memory operatorName = string.concat("M1Operator", numOperators.toString());
 
             // Create an operator for M1. We omit native ETH because we want to
             // check staker/operator shares, and we don't award native ETH shares in M1
@@ -88,7 +89,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             operatorsToMigrate.push(operator);
         } else {
-            string memory operatorName = string.concat("Operator_", numOperators.toString());
+            string memory operatorName = string.concat("operator", numOperators.toString());
 
             (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
 
@@ -107,7 +108,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _newRandomAVS(IStrategy[] memory strategies) internal returns (AVS avs, uint32 operatorSetId) {
-        string memory avsName = string.concat("M1_Operator_", numOperators.toString());
+        string memory avsName = string.concat("M1Operator", numOperators.toString());
         avs = _genRandAVS(avsName);
         operatorSetId = avs.createOperatorSet(strategies);
         ++numAVSs;
@@ -191,7 +192,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return result;
     }
-
+    
+    function _getTokenName(IERC20 token) internal view returns (string memory) {
+        if (token == NATIVE_ETH) {
+            return "Native ETH";
+        }
+        return IERC20Metadata(address(token)).name();
+    }
     /*******************************************************************************
                                 COMMON ASSERTIONS
     *******************************************************************************/
@@ -652,8 +659,17 @@ abstract contract IntegrationBase is IntegrationDeployer {
         for (uint i = 0; i < tokens.length; i++) {
             uint prevBalance = prevTokenBalances[i];
             uint curBalance = curTokenBalances[i];
+            uint expected = prevBalance + addedTokens[i];
+            bool isError = expected != curBalance;
 
-            assertEq(prevBalance + addedTokens[i], curBalance, err);
+            if (isError) {
+                console.log("\nCurrent `%s` balance != previous balance + added tokens".red(), _getTokenName(tokens[i]));
+                console.log("   Previous Balance:", prevBalance);
+                console.log("   Tokens Added:", addedTokens[i]);
+                console.log("   Current Balance:", curBalance);
+            }
+
+            assertEq(expected, curBalance, err);
         }
     }
 
@@ -1195,7 +1211,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function _getTokenBalances(User staker, IERC20[] memory tokens) internal view returns (uint[] memory) {
         uint[] memory balances = new uint[](tokens.length);
-
+        
         for (uint i = 0; i < tokens.length; i++) {
             if (tokens[i] == NATIVE_ETH) {
                 balances[i] = address(staker).balance;

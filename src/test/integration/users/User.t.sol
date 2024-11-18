@@ -365,7 +365,7 @@ contract User is PrintUtils, IDelegationManagerTypes, IAllocationManagerTypes {
                 // If we're withdrawing native ETH as tokens, stop ALL validators
                 // and complete a checkpoint
                 if (receiveAsTokens) {
-                    _log("- exiting all validators and completing checkpoint");
+                    console.log("- exiting all validators and completing checkpoint");
                     _exitValidators(getActiveValidators());
 
                     beaconChain.advanceEpoch_NoRewards();
@@ -417,8 +417,8 @@ contract User is PrintUtils, IDelegationManagerTypes, IAllocationManagerTypes {
         uint40[] memory newValidators = new uint40[](totalValidators);
         uint64 totalBeaconBalanceGwei = uint64((address(this).balance - balanceWei) / GWEI_TO_WEI);
 
-        _log("- creating new validators", newValidators.length);
-        _log("- depositing balance to beacon chain (gwei)", totalBeaconBalanceGwei);
+        console.log("- creating new validators", newValidators.length);
+        console.log("- depositing balance to beacon chain (gwei)", totalBeaconBalanceGwei);
 
         // Create each of the full validators
         for (uint256 i = 0; i < numValidators; i++) {
@@ -442,13 +442,13 @@ contract User is PrintUtils, IDelegationManagerTypes, IAllocationManagerTypes {
     function _exitValidators(
         uint40[] memory _validators
     ) internal returns (uint64 exitedBalanceGwei) {
-        _log("- exiting num validators", _validators.length);
+        console.log("- exiting num validators", _validators.length);
 
         for (uint256 i = 0; i < _validators.length; i++) {
             exitedBalanceGwei += beaconChain.exitValidator(_validators[i]);
         }
 
-        _log("- exited balance to pod (gwei)", exitedBalanceGwei);
+        console.log("- exited balance to pod (gwei)", exitedBalanceGwei);
 
         return exitedBalanceGwei;
     }
@@ -461,8 +461,8 @@ contract User is PrintUtils, IDelegationManagerTypes, IAllocationManagerTypes {
     }
 
     function _completeCheckpoint() internal {
-        _log("- active validator count", pod.activeValidatorCount());
-        _log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
+        console.log("- active validator count", pod.activeValidatorCount());
+        console.log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
 
         uint64 checkpointTimestamp = pod.currentCheckpointTimestamp();
         if (checkpointTimestamp == 0) {
@@ -470,7 +470,7 @@ contract User is PrintUtils, IDelegationManagerTypes, IAllocationManagerTypes {
         }
 
         CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, checkpointTimestamp);
-        _log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
+        console.log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
 
         pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
     }

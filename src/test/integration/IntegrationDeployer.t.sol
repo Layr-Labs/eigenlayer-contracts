@@ -29,6 +29,7 @@ import "src/test/integration/users/User_M1.t.sol";
 import "script/utils/ExistingDeploymentParser.sol";
 
 abstract contract IntegrationDeployer is ExistingDeploymentParser {
+    using StdStyle for *;
 
     Vm cheats = Vm(VM_ADDRESS);
 
@@ -38,12 +39,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     uint256 mainnetForkId;
     uint256 holeskyForkBLock = 1_213_950;
     uint256 holeskyForkId;
-    uint64 constant DENEB_FORK_TIMESTAMP = 1705473120;
+    uint64 constant DENEB_FORK_TIMESTAMP = 1_705_473_120;
 
     // Beacon chain genesis time when running locally
     // Multiple of 12 for sanity's sake
     uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
-    uint64 constant GENESIS_TIME_MAINNET = 1606824023;
+    uint64 constant GENESIS_TIME_MAINNET = 1_606_824_023;
 
     TimeMachine public timeMachine;
 
@@ -52,7 +53,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     // When we select random user assets, we use the `assetType` to determine
     // which of these lists to select user assets from.
     IStrategy[] lstStrats;
-    IStrategy[] ethStrats;   // only has one strat tbh
+    IStrategy[] ethStrats; // only has one strat tbh
     IStrategy[] allStrats; // just a combination of the above 2 lists
     IERC20[] allTokens; // `allStrats`, but contains all of the underlying tokens instead
 
@@ -67,7 +68,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     address eigenLayerReputedMultisig = address(this); // admin address
     address constant pauser = address(555);
     address constant unpauser = address(556);
-    
+
     // Randomness state vars
     bytes32 random;
     // After calling `_configRand`, these are the allowed "variants" on users that will
@@ -75,7 +76,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     bytes assetTypes;
     bytes userTypes;
     // Set only once in setUp, if FORK_MAINNET env is set
-    uint forkType;
+    uint256 forkType;
 
     // Constants
     uint64 constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
@@ -83,9 +84,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    uint constant MIN_BALANCE = 1e6;
-    uint constant MAX_BALANCE = 5e6;
-    uint constant GWEI_TO_WEI = 1e9;
+    uint256 constant MIN_BALANCE = 1e6;
+    uint256 constant MAX_BALANCE = 5e6;
+    uint256 constant GWEI_TO_WEI = 1e9;
 
     // Paused Constants
     // DelegationManager
@@ -103,26 +104,26 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     uint8 internal constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
 
     // Flags
-    uint constant FLAG = 1;
+    uint256 constant FLAG = 1;
 
     /// @dev Asset flags
     /// These are used with _configRand to determine what assets are given
     /// to a user when they are created.
-    uint constant NO_ASSETS = (FLAG << 0); // will have no assets
-    uint constant HOLDS_LST = (FLAG << 1); // will hold some random amount of LSTs
-    uint constant HOLDS_ETH = (FLAG << 2); // will hold some random amount of ETH
-    uint constant HOLDS_ALL = (FLAG << 3); // will hold every LST and ETH
+    uint256 constant NO_ASSETS = (FLAG << 0); // will have no assets
+    uint256 constant HOLDS_LST = (FLAG << 1); // will hold some random amount of LSTs
+    uint256 constant HOLDS_ETH = (FLAG << 2); // will hold some random amount of ETH
+    uint256 constant HOLDS_ALL = (FLAG << 3); // will hold every LST and ETH
 
     /// @dev User contract flags
     /// These are used with _configRand to determine what User contracts can be deployed
-    uint constant DEFAULT = (FLAG << 0);
-    uint constant ALT_METHODS = (FLAG << 1);
+    uint256 constant DEFAULT = (FLAG << 0);
+    uint256 constant ALT_METHODS = (FLAG << 1);
 
     /// @dev Shadow Fork flags
     /// These are used for upgrade integration testing.
-    uint constant LOCAL = (FLAG << 0);
-    uint constant MAINNET = (FLAG << 1);
-    uint constant HOLESKY = (FLAG << 2);
+    uint256 constant LOCAL = (FLAG << 0);
+    uint256 constant MAINNET = (FLAG << 1);
+    uint256 constant HOLESKY = (FLAG << 2);
 
     // /// @dev Withdrawal flags
     // /// These are used with _configRand to determine how a user conducts a withdrawal
@@ -138,20 +139,20 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     ///     - same reason as above
     ///
     /// WithdrawalMethod (QUEUE_WITHDRAWAL, UNDELEGATE, REDELEGATE)
-    ///     - could still do this! 
+    ///     - could still do this!
     ///     - This would trigger staker.queueWithdrawals to use either `queueWithdrawals` or `undelegate` under the hood
     ///     - "redelegate" would be like the above, but adding a new `delegateTo` step after undelegating
 
-    mapping(uint => string) assetTypeToStr;
-    mapping(uint => string) userTypeToStr;
-    mapping(uint => string) forkTypeToStr;
+    mapping(uint256 => string) assetTypeToStr;
+    mapping(uint256 => string) userTypeToStr;
+    mapping(uint256 => string) forkTypeToStr;
 
-    constructor () {
+    constructor() {
         assetTypeToStr[NO_ASSETS] = "NO_ASSETS";
         assetTypeToStr[HOLDS_LST] = "HOLDS_LST";
         assetTypeToStr[HOLDS_ETH] = "HOLDS_ETH";
         assetTypeToStr[HOLDS_ALL] = "HOLDS_ALL";
-        
+
         userTypeToStr[DEFAULT] = "DEFAULT";
         userTypeToStr[ALT_METHODS] = "ALT_METHODS";
 
@@ -176,7 +177,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /**
      * @dev Anyone who wants to test using this contract in a separate repo via submodules may have to
      * override this function to set the correct paths for the deployment info files.
-     * 
+     *
      * This setUp function will account for specific --fork-url flags and deploy/upgrade contracts accordingly.
      * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
      */
@@ -189,19 +190,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
          * Running foundry like this will trigger the fork test profile,
          * lowering fuzz runs and using a remote RPC to test against mainnet state
          */
-        bool forkMainnet = 
-            _hash("forktest") ==
-            _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
+        bool forkMainnet = _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
 
         if (forkMainnet) {
-            console.log("setUp: running tests against mainnet fork");
-            console.log("- using RPC url", cheats.rpcUrl("mainnet"));
-            console.log("- forking at block", mainnetForkBlock);
+            console.log("Setting up integration tests against mainnet fork:");
+            console.log("Rpc Url:", cheats.rpcUrl("mainnet"));
+            console.log("Fork Block:", mainnetForkBlock);
 
             cheats.createSelectFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
             forkType = MAINNET;
         } else {
-            console.log("setUp: running tests locally");
+            console.log("Setting up integration tests locally");
 
             forkType = LOCAL;
         }
@@ -247,26 +246,21 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         // Deploy EigenPod Contracts
-        eigenPodImplementation = new EigenPod(
-            ethPOSDeposit,
-            eigenPodManager,
-            GENESIS_TIME_LOCAL
-        );
+        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL);
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            strategyManager,
-            delegationManager,
-            eigenLayerPauserReg
+        delegationManagerImplementation = new DelegationManager(
+            avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY
         );
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        eigenPodManagerImplementation =
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, delegationManager, eigenLayerPauserReg);
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
-        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(
+            delegationManager, eigenLayerPauserReg, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY
+        );
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
@@ -279,7 +273,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
-                0 /* initialPausedStatus */,
+                0, /* initialPausedStatus */
                 withdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
                 initializeWithdrawalDelayBlocks
@@ -343,19 +337,19 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 IBeacon(strategyBeacon)
             )
         );
-        
+
         cheats.prank(eigenLayerReputedMultisig);
         strategyManager.setStrategyWhitelister(address(strategyFactory));
 
         // Normal deployments
-        _newStrategyAndToken("Strategy1Token", "str1", 10e50, address(this), false); // initialSupply, owner
-        _newStrategyAndToken("Strategy2Token", "str2", 10e50, address(this), false); // initialSupply, owner
-        _newStrategyAndToken("Strategy3Token", "str3", 10e50, address(this), false); // initialSupply, owner
-        
+        _newStrategyAndToken("strategy1.underlyingToken()", "str1", 10e50, address(this), false); // initialSupply, owner
+        _newStrategyAndToken("strategy2.underlyingToken()", "str2", 10e50, address(this), false); // initialSupply, owner
+        _newStrategyAndToken("strategy3.underlyingToken()", "str3", 10e50, address(this), false); // initialSupply, owner
+
         // Factory deployments
-        _newStrategyAndToken("Strategy4Token", "str4", 10e50, address(this), true); // initialSupply, owner
-        _newStrategyAndToken("Strategy5Token", "str5", 10e50, address(this), true); // initialSupply, owner
-        _newStrategyAndToken("Strategy6Token", "str6", 10e50, address(this), true); // initialSupply, owner
+        _newStrategyAndToken("strategy4.underlyingToken()", "str4", 10e50, address(this), true); // initialSupply, owner
+        _newStrategyAndToken("strategy5.underlyingToken()", "str5", 10e50, address(this), true); // initialSupply, owner
+        _newStrategyAndToken("strategy6.underlyingToken()", "str6", 10e50, address(this), true); // initialSupply, owner
 
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
@@ -371,7 +365,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /**
      * @notice deploy current implementation contracts and upgrade the existing proxy EigenLayer contracts
      * on Mainnet. Setup for integration tests on mainnet fork.
-     * 
+     *
      * Note that beacon chain oracle and eth deposit contracts are mocked and pointed to different addresses for these tests.
      */
     function _upgradeMainnetContracts() public virtual {
@@ -381,11 +375,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         ETHPOSDepositAddress = address(ethPOSDeposit); // overwrite for upgrade checks later
 
         // Deploy EigenPod Contracts
-        eigenPodImplementation = new EigenPod(
-            ethPOSDeposit,
-            eigenPodManager,
-            GENESIS_TIME_MAINNET
-        );
+        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_MAINNET);
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
         // Deploy AVSDirectory, contract has not been deployed on mainnet yet
         avsDirectory = AVSDirectory(
@@ -393,32 +383,26 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            strategyManager,
-            delegationManager,
-            eigenLayerPauserReg
+        delegationManagerImplementation = new DelegationManager(
+            avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY
         );
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        eigenPodManagerImplementation =
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, delegationManager, eigenLayerPauserReg);
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(delegationManager))),
-            address(delegationManagerImplementation)
+            ITransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation)
         );
         // StrategyManager
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(strategyManager))),
-            address(strategyManagerImplementation)
+            ITransparentUpgradeableProxy(payable(address(strategyManager))), address(strategyManagerImplementation)
         );
         // EigenPodManager
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
-            address(eigenPodManagerImplementation)
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerImplementation)
         );
         // AVSDirectory, upgrade and initalized
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -435,7 +419,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Upgrade All deployed strategy contracts to new base strategy
-        for (uint i = 0; i < numStrategiesDeployed; i++) {
+        for (uint256 i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
             eigenLayerProxyAdmin.upgrade(
                 ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
@@ -458,7 +442,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /**
      * @notice deploy current implementation contracts and upgrade the existing proxy EigenLayer contracts
      * on Holesky. Setup for integration tests on Holesky fork.
-     * 
+     *
      * Note that beacon chain oracle and eth deposit contracts are mocked and pointed to different addresses for these tests.
      */
     function _upgradeHoleskyContracts() public virtual {
@@ -468,11 +452,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         ETHPOSDepositAddress = address(ethPOSDeposit); // overwrite for upgrade checks later
 
         // Deploy EigenPod Contracts
-        eigenPodImplementation = new EigenPod(
-            ethPOSDeposit,
-            eigenPodManager,
-            0
-        );
+        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, 0);
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
         // Deploy AVSDirectory, contract has not been deployed on mainnet yet
         avsDirectory = AVSDirectory(
@@ -480,32 +460,26 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            strategyManager,
-            delegationManager,
-            eigenLayerPauserReg
+        delegationManagerImplementation = new DelegationManager(
+            avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, MIN_WITHDRAWAL_DELAY
         );
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        eigenPodManagerImplementation =
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, delegationManager, eigenLayerPauserReg);
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(delegationManager))),
-            address(delegationManagerImplementation)
+            ITransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation)
         );
         // StrategyManager
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(strategyManager))),
-            address(strategyManagerImplementation)
+            ITransparentUpgradeableProxy(payable(address(strategyManager))), address(strategyManagerImplementation)
         );
         // EigenPodManager
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
-            address(eigenPodManagerImplementation)
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerImplementation)
         );
         // AVSDirectory, upgrade and initalized
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -522,7 +496,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Upgrade All deployed strategy contracts to new base strategy
-        for (uint i = 0; i < numStrategiesDeployed; i++) {
+        for (uint256 i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
             eigenLayerProxyAdmin.upgrade(
                 ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
@@ -544,17 +518,19 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
     /// strategy in strategyManager
-    function _newStrategyAndToken(string memory tokenName, string memory tokenSymbol, uint initialSupply, address owner, bool useFactory) internal {
-        IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner); 
-        
+    function _newStrategyAndToken(
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint256 initialSupply,
+        address owner,
+        bool useFactory
+    ) internal {
+        IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner);
+
         StrategyBase strategy;
 
         if (useFactory) {
-            strategy = StrategyBase(
-                address(
-                    strategyFactory.deployNewStrategy(underlyingToken)
-                )
-            );
+            strategy = StrategyBase(address(strategyFactory.deployNewStrategy(underlyingToken)));
         } else {
             strategy = StrategyBase(
                 address(
@@ -587,11 +563,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allTokens.push(underlyingToken);
     }
 
-    function _configRand(
-        uint24 _randomSeed, 
-        uint _assetTypes,
-        uint _userTypes
-    ) internal {
+    function _configRand(uint24 _randomSeed, uint256 _assetTypes, uint256 _userTypes) internal {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
         console.log("_configRand: set random seed to: ", _randomSeed);
@@ -602,13 +574,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         userTypes = _bitmapToBytes(_userTypes);
 
         console.log("_configRand: Users will be initialized with these asset types:");
-        for (uint i = 0; i < assetTypes.length; i++) {
-            console.log(assetTypeToStr[uint(uint8(assetTypes[i]))]);
+        for (uint256 i = 0; i < assetTypes.length; i++) {
+            console.log(assetTypeToStr[uint256(uint8(assetTypes[i]))]);
         }
 
         console.log("_configRand: these User contracts will be initialized:");
-        for (uint i = 0; i < userTypes.length; i++) {
-            console.log(userTypeToStr[uint(uint8(userTypes[i]))]);
+        for (uint256 i = 0; i < userTypes.length; i++) {
+            console.log(userTypeToStr[uint256(uint8(userTypes[i]))]);
         }
 
         assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
@@ -638,7 +610,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             strategyManager.unpause(0);
 
             // Add deployed strategies to lstStrats and allStrats
-            for (uint i; i < deployedStrategyArray.length; i++) {
+            for (uint256 i; i < deployedStrategyArray.length; i++) {
                 IStrategy strategy = IStrategy(deployedStrategyArray[i]);
 
                 if (tokensNotTested[address(strategy.underlyingToken())]) {
@@ -700,57 +672,61 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /**
      * @dev Create a new User with a random config using the range defined in `_configRand`
-     * 
+     *
      * Assets are pulled from `strategies` based on a random staker/operator `assetType`
      */
-    function _randUser(string memory name) internal returns (User, IStrategy[] memory, uint[] memory) {
+    function _randUser(
+        string memory name
+    ) internal returns (User, IStrategy[] memory, uint256[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
         // The values selected here are in the ranges configured via `_configRand`
-        uint assetType = _randAssetType();
-        uint userType = _randUserType();
-        
+        uint256 assetType = _randAssetType();
+        uint256 userType = _randUserType();
+
         // Deploy new User contract
         User user = _genRandUser(name, userType);
 
         // For the specific asset selection we made, get a random assortment of
         // strategies and deal the user some corresponding underlying token balances
-        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
+        (IStrategy[] memory strategies, uint256[] memory tokenBalances) = _dealRandAssets(user, assetType);
 
         _printUserInfo(name, assetType, userType, strategies, tokenBalances);
         return (user, strategies, tokenBalances);
     }
 
     /// @dev Create a new user without native ETH. See _randUser above for standard usage
-    function _randUser_NoETH(string memory name) internal returns (User, IStrategy[] memory, uint[] memory) {
+    function _randUser_NoETH(
+        string memory name
+    ) internal returns (User, IStrategy[] memory, uint256[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
         // The values selected here are in the ranges configured via `_configRand`
-        uint userType = _randUserType();
+        uint256 userType = _randUserType();
 
         // Pick the user's asset distribution, removing "native ETH" as an option
         // I'm sorry if this eventually leads to a bug that's really hard to track down
-        uint assetType = _randAssetType();
+        uint256 assetType = _randAssetType();
         if (assetType == HOLDS_ETH) {
             assetType = NO_ASSETS;
         } else if (assetType == HOLDS_ALL) {
             assetType = HOLDS_LST;
         }
-        
+
         // Deploy new User contract
         User user = _genRandUser(name, userType);
 
         // For the specific asset selection we made, get a random assortment of
         // strategies and deal the user some corresponding underlying token balances
-        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
+        (IStrategy[] memory strategies, uint256[] memory tokenBalances) = _dealRandAssets(user, assetType);
 
         _printUserInfo(name, assetType, userType, strategies, tokenBalances);
         return (user, strategies, tokenBalances);
     }
 
-    function _genRandUser(string memory name, uint userType) internal returns (User user) {
+    function _genRandUser(string memory name, uint256 userType) internal returns (User user) {
         // Create User contract based on userType:
         if (forkType == LOCAL) {
             user = new User(name);
@@ -772,7 +748,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             } else {
                 revert("_randUser: unimplemented userType");
             }
-
         } else if (forkType == HOLESKY) {
             // User deployment for Holesky is exact same as holesky.
             // Current Holesky deployment is up to date and no deprecated interfaces have been added.
@@ -791,8 +766,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             revert("_randUser: unimplemented forkType");
         }
     }
-    
-    function _genRandAVS(string memory name) internal returns (AVS avs) {
+
+    function _genRandAVS(
+        string memory name
+    ) internal returns (AVS avs) {
         if (forkType == LOCAL) {
             avs = new AVS(name);
         } else if (forkType == MAINNET) {
@@ -812,24 +789,24 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     ///             `tokenBalances` will contain the user's eth balance
     /// HOLDS_ALL - `strategies` will contain ALL initialized strategies AND BEACONCHAIN_ETH_STRAT, and
     ///             `tokenBalances` will contain random token/eth balances accordingly
-    function _dealRandAssets(User user, uint assetType) internal returns (IStrategy[] memory, uint[] memory) {
+    function _dealRandAssets(User user, uint256 assetType) internal returns (IStrategy[] memory, uint256[] memory) {
         IStrategy[] memory strategies;
-        uint[] memory tokenBalances;
+        uint256[] memory tokenBalances;
         if (assetType == NO_ASSETS) {
             strategies = new IStrategy[](0);
-            tokenBalances = new uint[](0);
+            tokenBalances = new uint256[](0);
         } else if (assetType == HOLDS_LST) {
             assetType = HOLDS_LST;
             // Select a random number of assets
-            uint numAssets = _randUint({ min: 1, max: lstStrats.length });
+            uint256 numAssets = _randUint({min: 1, max: lstStrats.length});
             strategies = new IStrategy[](numAssets);
-            tokenBalances = new uint[](numAssets);
+            tokenBalances = new uint256[](numAssets);
 
             // For each asset, award the user a random balance of the underlying token
-            for (uint i = 0; i < numAssets; i++) {
+            for (uint256 i = 0; i < numAssets; i++) {
                 IStrategy strat = lstStrats[i];
                 IERC20 underlyingToken = strat.underlyingToken();
-                uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
+                uint256 balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
 
                 StdCheats.deal(address(underlyingToken), address(user), balance);
                 tokenBalances[i] = balance;
@@ -837,25 +814,25 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             }
         } else if (assetType == HOLDS_ETH) {
             strategies = new IStrategy[](1);
-            tokenBalances = new uint[](1);
+            tokenBalances = new uint256[](1);
 
             // Award the user with a random amount of ETH
             // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
-            uint amount = 32 ether * _randUint({ min: 1, max: 5 });
+            uint256 amount = 32 ether * _randUint({min: 1, max: 5});
             cheats.deal(address(user), amount);
 
             strategies[0] = BEACONCHAIN_ETH_STRAT;
             tokenBalances[0] = amount;
         } else if (assetType == HOLDS_ALL) {
-            uint numLSTs = lstStrats.length;
+            uint256 numLSTs = lstStrats.length;
             strategies = new IStrategy[](numLSTs + 1);
-            tokenBalances = new uint[](numLSTs + 1);
-            
+            tokenBalances = new uint256[](numLSTs + 1);
+
             // For each LST, award the user a random balance of the underlying token
-            for (uint i = 0; i < numLSTs; i++) {
+            for (uint256 i = 0; i < numLSTs; i++) {
                 IStrategy strat = lstStrats[i];
                 IERC20 underlyingToken = strat.underlyingToken();
-                uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
+                uint256 balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
 
                 StdCheats.deal(address(underlyingToken), address(user), balance);
                 tokenBalances[i] = balance;
@@ -864,7 +841,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
             // Award the user with a random amount of ETH
             // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
-            uint amount = 32 ether * _randUint({ min: 1, max: 5 });
+            uint256 amount = 32 ether * _randUint({min: 1, max: 5});
             cheats.deal(address(user), amount);
 
             // Add BEACONCHAIN_ETH_STRAT and eth balance
@@ -878,18 +855,20 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// @dev By default will have a assetType of HOLDS_LST
-    function _dealRandAssets_M1(User user) internal returns (IStrategy[] memory, uint[] memory) {
+    function _dealRandAssets_M1(
+        User user
+    ) internal returns (IStrategy[] memory, uint256[] memory) {
         // Select a random number of assets
-        uint numAssets = _randUint({ min: 1, max: lstStrats.length });
+        uint256 numAssets = _randUint({min: 1, max: lstStrats.length});
 
         IStrategy[] memory strategies = new IStrategy[](numAssets);
-        uint[] memory tokenBalances = new uint[](numAssets);
+        uint256[] memory tokenBalances = new uint256[](numAssets);
 
         // For each asset, award the user a random balance of the underlying token
-        for (uint i = 0; i < numAssets; i++) {
+        for (uint256 i = 0; i < numAssets; i++) {
             IStrategy strat = lstStrats[i];
             IERC20 underlyingToken = strat.underlyingToken();
-            uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
+            uint256 balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
 
             StdCheats.deal(address(underlyingToken), address(user), balance);
             tokenBalances[i] = balance;
@@ -901,12 +880,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// @dev Uses `random` to return a random uint, with a range given by `min` and `max` (inclusive)
     /// @return `min` <= result <= `max`
-    function _randUint(uint min, uint max) internal returns (uint) {        
-        uint range = max - min + 1;
+    function _randUint(uint256 min, uint256 max) internal returns (uint256) {
+        uint256 range = max - min + 1;
 
         // calculate the number of bits needed for the range
-        uint bitsNeeded = 0;
-        uint tempRange = range;
+        uint256 bitsNeeded = 0;
+        uint256 tempRange = range;
         while (tempRange > 0) {
             bitsNeeded++;
             tempRange >>= 1;
@@ -914,8 +893,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // create a mask for the required number of bits
         // and extract the value from the hash
-        uint mask = (1 << bitsNeeded) - 1;
-        uint value = uint(random) & mask;
+        uint256 mask = (1 << bitsNeeded) - 1;
+        uint256 value = uint256(random) & mask;
 
         // in case value is out of range, wrap around or retry
         while (value >= range) {
@@ -928,19 +907,19 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _randBool() internal returns (bool) {
-        return _randUint({ min: 0, max: 1 }) == 0;
+        return _randUint({min: 0, max: 1}) == 0;
     }
 
-    function _randAssetType() internal returns (uint) {
-        uint idx = _randUint({ min: 0, max: assetTypes.length - 1 });
-        uint assetType = uint(uint8(assetTypes[idx]));
+    function _randAssetType() internal returns (uint256) {
+        uint256 idx = _randUint({min: 0, max: assetTypes.length - 1});
+        uint256 assetType = uint256(uint8(assetTypes[idx]));
 
         return assetType;
     }
 
-    function _randUserType() internal returns (uint) {
-        uint idx = _randUint({ min: 0, max: userTypes.length - 1 });
-        uint userType = uint(uint8(userTypes[idx]));
+    function _randUserType() internal returns (uint256) {
+        uint256 idx = _randUint({min: 0, max: userTypes.length - 1});
+        uint256 userType = uint256(uint8(userTypes[idx]));
 
         return userType;
     }
@@ -949,10 +928,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * @dev Converts a bitmap into an array of bytes
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
      */
-    function _bitmapToBytes(uint bitmap) internal pure returns (bytes memory bytesArray) {
-        for (uint i = 0; i < 256; ++i) {
+    function _bitmapToBytes(
+        uint256 bitmap
+    ) internal pure returns (bytes memory bytesArray) {
+        for (uint256 i = 0; i < 256; ++i) {
             // Mask for i-th bit
-            uint mask = uint(1 << i);
+            uint256 mask = uint256(1 << i);
 
             // console.log("mask: ", mask);
 
@@ -966,34 +947,36 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     function _printUserInfo(
         string memory name,
-        uint assetType, 
-        uint userType, 
-        IStrategy[] memory strategies, 
-        uint[] memory tokenBalances
+        uint256 assetType,
+        uint256 userType,
+        IStrategy[] memory strategies,
+        uint256[] memory tokenBalances
     ) internal {
-        console.log("====== Created User %s ======", StdStyle.bold(StdStyle.yellow(name)));
-        console.log("Asset Type:", assetTypeToStr[assetType]);
-        console.log("User Type:", userTypeToStr[userType]);
-        console.log("Fork Type:", forkTypeToStr[forkType]);
-        console.log("Total Assets:", strategies.length);
-        
-        for (uint i = 0; i < strategies.length; i++) {
+        console.log("\n====== Created User %s ======", name.bold());
+        console.log("   Asset Type:", assetTypeToStr[assetType]);
+        console.log("   User Type:", userTypeToStr[userType]);
+        console.log("   Fork Type:", forkTypeToStr[forkType]);
+        console.log("   Total Assets:", strategies.length);
+
+        for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                console.log("Asset:", "Native ETH");
-                console.log("Balance:", tokenBalances[i]);    
+                console.log("       Native ETH balance: %s", cheats.toString(tokenBalances[i]));
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
-                console.log("Asset:", IERC20Metadata(address(underlyingToken)).name());
-                console.log("Balance: ", tokenBalances[i]);
+                console.log(
+                    "       %s balance: %s",
+                    IERC20Metadata(address(underlyingToken)).name(),
+                    cheats.toString(tokenBalances[i])
+                );
             }
         }
-
-        console.log("=====================================\n");
     }
 
     /// @dev Helper because solidity syntax is exhausting
-    function _hash(string memory s) internal pure returns (bytes32) {
+    function _hash(
+        string memory s
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(s));
     }
 }

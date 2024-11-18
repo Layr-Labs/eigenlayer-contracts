@@ -18,7 +18,6 @@ import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
 
 contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants, IEigenPodEvents {
-    using Strings for *;
     using BytesLib for bytes;
     using BeaconChainProofs for *;
 
@@ -111,7 +110,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
 
         EigenPodUser staker;
 
-        stakerName = string.concat("Staker", numStakers.toString());
+        stakerName = string.concat("Staker", cheats.toString(numStakers));
         staker = new EigenPodUser(stakerName);
 
         uint256 amount = bound(rand, 1 ether, 640 ether);

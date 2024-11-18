@@ -22,7 +22,7 @@ interface IAVSDeployer {
 contract AVS is PrintUtils, IAllocationManagerTypes {
     using SingleItemArrayLib for *;
 
-    Vm cheats = Vm(VM_ADDRESS);
+    Vm constant cheats = Vm(VM_ADDRESS);
     AllocationManager immutable allocationManager;
     StrategyFactory immutable strategyFactory;
     TimeMachine immutable timeMachine;
@@ -133,16 +133,6 @@ contract AVS is PrintUtils, IAllocationManagerTypes {
         console.log("Setting AVS registrar to: %s", address(registrar));
 
         allocationManager.setAVSRegistrar(registrar);
-    }
-
-    function updateAVSMetadataURI(
-        string memory uri
-    ) public createSnapshot {
-        _logM("updateAVSMetadataURI");
-
-        console.log("Updating AVS metadata URI to: %s", uri);
-
-        allocationManager.updateAVSMetadataURI(uri);
     }
 
     function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) public createSnapshot {

@@ -287,9 +287,7 @@ contract BeaconChainMock is PrintUtils {
     /// - does NOT withdraw if validator is exited
     function advanceEpoch_NoWithdraw() public {
         _logM("advanceEpoch_NoWithdraw");
-        
         _generateRewards();
-
         _advanceEpoch();
     }
 
@@ -311,7 +309,7 @@ contract BeaconChainMock is PrintUtils {
             }
         }
 
-        _log("- generated rewards for num validators", totalRewarded);
+        console.log("- generated rewards for num validators", totalRewarded);
     }
 
     /// @dev Iterate over all validators. If the validator has > 32 ETH current balance
@@ -349,10 +347,11 @@ contract BeaconChainMock is PrintUtils {
         }
 
         if (totalExcessWei != 0)
-            _log("- withdrew excess balance", totalExcessWei);
+            console.log("- withdrew excess balance", totalExcessWei);
     }
 
     function _advanceEpoch() public {
+        console.log("   Advancing epoch:");
         // Update effective balances for each validator
         for (uint i = 0; i < validators.length; i++) {
             Validator storage v = validators[i];
@@ -367,20 +366,20 @@ contract BeaconChainMock is PrintUtils {
             v.effectiveBalanceGwei = balanceGwei;
         }
 
-        _log("- updated effective balances");
+        console.log("   Updated effective balances...");
 
         // Move forward one epoch
-        // _log("-- current time", block.timestamp);
-        _log("-- current epoch", currentEpoch());
+        // console.log("-- current time", block.timestamp);
+        console.log("-- current epoch", currentEpoch());
 
         uint64 curEpoch = currentEpoch();
         cheats.warp(_nextEpochStartTimestamp(curEpoch));
         curTimestamp = uint64(block.timestamp);
 
-        // _log("-- new time", block.timestamp);
-        _log("- jumped to next epoch", currentEpoch());
+        // console.log("-- new time", block.timestamp);
+        console.log("- jumped to next epoch", currentEpoch());
 
-        _log("- building beacon state trees");
+        console.log("- building beacon state trees");
 
         // Log total number of validators and number being processed for the first time
         if (validators.length > 0) {
@@ -389,7 +388,7 @@ contract BeaconChainMock is PrintUtils {
             // generate an empty root if we don't have any validators
             EIP_4788_ORACLE.setBlockRoot(curTimestamp, keccak256(""));
 
-            _log("-- no validators; added empty block root");
+            console.log("-- no validators; added empty block root");
             return;
         }
         
@@ -399,7 +398,7 @@ contract BeaconChainMock is PrintUtils {
             treeHeight: BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1,
             tree: trees[curTimestamp].validatorTree
         });
-        // _log("-- validator container root", validatorsRoot);
+        // console.log("-- validator container root", validatorsRoot);
         
         // Build merkle tree for current balances
         bytes32 balanceContainerRoot = _buildMerkleTree({
@@ -407,7 +406,7 @@ contract BeaconChainMock is PrintUtils {
             treeHeight: BeaconChainProofs.BALANCE_TREE_HEIGHT + 1,
             tree: trees[curTimestamp].balancesTree
         });
-        // _log("-- balances container root", balanceContainerRoot);
+        // console.log("-- balances container root", balanceContainerRoot);
         
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = _buildMerkleTree({
@@ -415,7 +414,7 @@ contract BeaconChainMock is PrintUtils {
             treeHeight: BeaconChainProofs.BEACON_STATE_TREE_HEIGHT,
             tree: trees[curTimestamp].stateTree
         });
-        // _log("-- beacon state root", beaconStateRoot);
+        // console.log("-- beacon state root", beaconStateRoot);
 
         // Build merkle tree for BeaconBlock
         bytes32 beaconBlockRoot = _buildMerkleTree({
@@ -423,7 +422,7 @@ contract BeaconChainMock is PrintUtils {
             treeHeight: BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT,
             tree: trees[curTimestamp].blockTree
         });
-        _log("-- beacon block root", beaconBlockRoot);
+        console.log("-- beacon block root", cheats.toString(beaconBlockRoot));
 
         // Push new block root to oracle
         EIP_4788_ORACLE.setBlockRoot(curTimestamp, beaconBlockRoot);

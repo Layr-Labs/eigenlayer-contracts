@@ -151,8 +151,8 @@ contract EigenPodUser is PrintUtils {
         uint40[] memory newValidators = new uint40[](totalValidators);
         uint totalBeaconBalance = address(this).balance - balanceWei;
 
-        _log("- creating new validators", newValidators.length);
-        _log("- depositing balance to beacon chain (wei)", totalBeaconBalance);
+        console.log("- creating new validators", newValidators.length);
+        console.log("- depositing balance to beacon chain (wei)", totalBeaconBalance);
 
         // Create each of the full validators
         for (uint i = 0; i < numValidators; i++) {
@@ -181,13 +181,13 @@ contract EigenPodUser is PrintUtils {
     }
 
     function _exitValidators(uint40[] memory _validators) internal returns (uint64 exitedBalanceGwei) {
-        _log("- exiting num validators", _validators.length);
+        console.log("- exiting num validators", _validators.length);
 
         for (uint i = 0; i < _validators.length; i++) {
             exitedBalanceGwei += beaconChain.exitValidator(_validators[i]);
         }
 
-        _log("- exited balance to pod (gwei)", exitedBalanceGwei);
+        console.log("- exited balance to pod (gwei)", exitedBalanceGwei);
 
         return exitedBalanceGwei;
     }
@@ -197,8 +197,8 @@ contract EigenPodUser is PrintUtils {
     }
 
     function _completeCheckpoint() internal {
-        _log("- active validator count", pod.activeValidatorCount());
-        _log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
+        console.log("- active validator count", pod.activeValidatorCount());
+        console.log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
 
         uint64 checkpointTimestamp = pod.currentCheckpointTimestamp();
         if (checkpointTimestamp == 0) {
@@ -206,7 +206,7 @@ contract EigenPodUser is PrintUtils {
         }
 
         CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, checkpointTimestamp);
-        _log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
+        console.log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
 
         pod.verifyCheckpointProofs({
             balanceContainerProof: proofs.balanceContainerProof,
