@@ -698,13 +698,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     function _undelegate_expectEmit_singleStrat(
         UndelegateEmitStruct memory params
     ) internal {
-        // DepositScalingFactor memory dsf = DepositScalingFactor({
-        //     _scalingFactor: delegationManager.depositScalingFactor(params.staker, params.strategy)
-        // });
-        // uint256 maxMagnitude = allocationManagerMock.getMaxMagnitude(params.operator, params.strategy);
-        // uint256[] memory sharesToWithdraw = new uint256[](1);
-        // sharesToWithdraw[0] = dsf.calcWithdrawable(params.depositSharesQueued, maxMagnitude);
-
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerUndelegated(params.staker, params.operator);
         if (params.forceUndelegated) {
@@ -774,11 +767,19 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         uint256 operatorShares,
         string memory errorMessage
     ) internal {
-        if (withdrawableShares < 10_000) {
+        assertLe(
+            withdrawableShares,
+            operatorShares,
+            "withdrawableShares should be less than or equal to operatorShares"
+        );
+        if (withdrawableShares < 1e18) {
+            // Note that the amount of "drift"/difference between staker withdrawable shares
+            // and operator shares is a result of the nested floor division in the calculation
+            // of withdrawable shares in calcWithdrawable. This is expected behavior.
             assertApproxEqAbs(
                 withdrawableShares,
                 operatorShares,
-                2,
+                1,
                 errorMessage
             );
         } else {
