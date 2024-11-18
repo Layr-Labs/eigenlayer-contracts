@@ -461,6 +461,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     }
 
     function _completeCheckpoint() internal {
+        cheats.pauseTracing();
         console.log("- active validator count", pod.activeValidatorCount());
         console.log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
 
@@ -472,12 +473,16 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, checkpointTimestamp);
         console.log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
 
+
+
         pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
+        cheats.resumeTracing();
     }
 
     function _verifyWithdrawalCredentials(
         uint40[] memory _validators
     ) internal {
+        cheats.pauseTracing();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(_validators);
 
         try pod.verifyWithdrawalCredentials({
@@ -489,6 +494,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }) {} catch (bytes memory err) {
             _revert(err);
         }
+        cheats.resumeTracing();
     }
 
     /// @dev Revert, passing through an error message

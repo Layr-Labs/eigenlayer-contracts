@@ -351,6 +351,8 @@ contract BeaconChainMock is Logger {
     }
 
     function _advanceEpoch() public {
+        cheats.pauseTracing();
+
         console.log("   Advancing epoch:");
         // Update effective balances for each validator
         for (uint i = 0; i < validators.length; i++) {
@@ -422,6 +424,8 @@ contract BeaconChainMock is Logger {
             treeHeight: BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT,
             tree: trees[curTimestamp].blockTree
         });
+
+
         console.log("-- beacon block root", cheats.toString(beaconBlockRoot));
 
         // Push new block root to oracle
@@ -432,6 +436,8 @@ contract BeaconChainMock is Logger {
         _genBalanceContainerProof(balanceContainerRoot);
         _genCredentialProofs();
         _genBalanceProofs();
+
+        cheats.resumeTracing();
     }
 
     /*******************************************************************************
@@ -439,6 +445,7 @@ contract BeaconChainMock is Logger {
     *******************************************************************************/
 
     function _createValidator(bytes memory withdrawalCreds, uint64 balanceGwei) internal returns (uint40) {
+        cheats.pauseTracing();
         uint40 validatorIndex = uint40(validators.length);
 
         // HACK to make balance proofs work. Every 4 validators we create
@@ -479,6 +486,8 @@ contract BeaconChainMock is Logger {
             exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
         }));
         _setCurrentBalance(validatorIndex, balanceGwei);
+
+        cheats.resumeTracing();
 
         return validatorIndex;
     }

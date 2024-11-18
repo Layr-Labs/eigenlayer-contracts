@@ -21,8 +21,10 @@ abstract contract Logger is Test {
 
     /// @dev Returns `NAME` colored based on the inheriting contract's role.
     function NAME_COLORED() internal view returns (string memory) {
+        vm.pauseTracing();
         bool isOperator = _contains(NAME(), "operator");
         bool isStaker = _contains(NAME(), "staker");
+        vm.resumeTracing();
 
         if (isOperator) {
             return NAME().blue();
