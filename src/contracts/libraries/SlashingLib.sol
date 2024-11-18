@@ -160,7 +160,7 @@ library SlashingLib {
 
         // Calculate the difference in Slashable shares after the slashing. This is the amount to burn.
         uint256 queueWithdrawalSharesBurned = queuedWithdrawnScaledShares.mulWad(prevMaxMagnitude)
-            - queuedWithdrawnScaledShares.mulWadRoundUp(newMaxMagnitude);
+            - queuedWithdrawnScaledShares.mulWad(newMaxMagnitude);
         sharesToBurn = sharesToDecrement + queueWithdrawalSharesBurned;
     }
 }
