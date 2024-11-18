@@ -43,6 +43,8 @@ interface IDelegationManagerErrors {
     /// @dev Thrown when an operator has been fully slashed(maxMagnitude is 0) for a strategy.
     /// or if the staker has had been natively slashed to the point of their beaconChainScalingFactor equalling 0.
     error FullySlashed();
+    /// @dev Thrown when an operator has been slashed but their new magnitude is higher than previously set.
+    error MaxMagnitudeCantIncrease();
 
     /// Signatures
 
@@ -158,6 +160,9 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted whenever an operator's shares are decreased for a given strategy. Note that shares is the delta in the operator's shares.
     event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+
+    /// @notice Emitted whenever an operator's shares are burned for a given strategy
+    event OperatorSharesBurned(address indexed operator, IStrategy strategy, uint256 shares);
 
     /// @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);

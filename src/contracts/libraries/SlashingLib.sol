@@ -151,7 +151,7 @@ library SlashingLib {
 
     function calcSlashedAmount(
         uint256 operatorShares,
-        uint256 queuedWithdrawnScaledShares,
+        uint256 queuedSlashableShares,
         uint256 prevMaxMagnitude,
         uint256 newMaxMagnitude
     ) internal pure returns (uint256 sharesToDecrement, uint256 sharesToBurn) {
@@ -159,8 +159,9 @@ library SlashingLib {
         sharesToDecrement = operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
 
         // Calculate the difference in Slashable shares after the slashing. This is the amount to burn.
-        uint256 queueWithdrawalSharesBurned = queuedWithdrawnScaledShares.mulWad(prevMaxMagnitude)
-            - queuedWithdrawnScaledShares.mulWad(newMaxMagnitude);
-        sharesToBurn = sharesToDecrement + queueWithdrawalSharesBurned;
+        // queuedSlashableShares = 
+        // uint256 queueWithdrawalSharesBurned = queuedWithdrawnScaledShares.mulWad(prevMaxMagnitude)
+        //     - queuedWithdrawnScaledShares.mulWad(newMaxMagnitude);
+        sharesToBurn = sharesToDecrement + queuedSlashableShares;
     }
 }

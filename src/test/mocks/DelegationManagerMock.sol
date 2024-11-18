@@ -34,7 +34,7 @@ contract DelegationManagerMock is Test {
     ) external {
         (uint256 amountSlashed, /*uint256 amountBurned*/) = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
-            queuedWithdrawnScaledShares: queuedWithdrawnScaledShares,
+            queuedSlashableShares: queuedWithdrawnScaledShares,
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });

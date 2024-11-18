@@ -1416,6 +1416,50 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
     }
 }
 
+contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
+    function test_Revert_DelegationManagerModifier() external {
+        DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
+        cheats.expectRevert(IStrategyManagerErrors.OnlyDelegationManager.selector);
+        strategyManager.burnShares(dummyStrat, 1);
+    }
+
+    /**
+     * @notice deposits a single strategy and withdrawSharesAsTokens() function reverts when sharesAmount is
+     * higher than depositAmount
+     */
+    function testFuzz_Revert_ShareAmountTooHigh(
+        address staker,
+        uint256 depositAmount,
+        uint256 sharesToBurn
+    ) external filterFuzzedAddressInputs(staker) {
+        cheats.assume(staker != address(0));
+        cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesToBurn);
+        IStrategy strategy = dummyStrat;
+        IERC20 token = dummyToken;
+        _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+        cheats.expectRevert(IStrategyErrors.WithdrawalAmountExceedsTotalDeposits.selector);
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.burnShares(strategy, sharesToBurn);
+    }
+
+    function testFuzz_SingleStrategyDeposited(
+        address staker,
+        uint256 depositAmount,
+        uint256 sharesToBurn
+    ) external filterFuzzedAddressInputs(staker) {
+        cheats.assume(staker != address(0));
+        cheats.assume(sharesToBurn > 0 && sharesToBurn < dummyToken.totalSupply() && depositAmount >= sharesToBurn);
+        IStrategy strategy = dummyStrat;
+        IERC20 token = dummyToken;
+        _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+        uint256 balanceBefore = token.balanceOf(staker);
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.burnShares(strategy, sharesToBurn);
+        uint256 balanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
+        assertEq(balanceAfter, balanceBefore + sharesToBurn, "balanceAfter != balanceBefore + sharesAmount");
+    }
+}
+
 contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitTests {
     function testFuzz_SetStrategyWhitelister(
         address newWhitelister

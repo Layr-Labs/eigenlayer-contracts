@@ -346,10 +346,12 @@ contract DelegationManager is
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
     ) external onlyAllocationManager {
+        require(newMaxMagnitude < prevMaxMagnitude, MaxMagnitudeCantIncrease());
+
         /// forgefmt: disable-next-item
         (uint256 sharesToDecrement, uint256 sharesToBurn) = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
-            queuedWithdrawnScaledShares: _getSlashableSharesInQueue(operator, strategy, newMaxMagnitude),
+            queuedSlashableShares: _getSlashableSharesInQueue(operator, strategy, newMaxMagnitude),
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });
@@ -365,6 +367,7 @@ contract DelegationManager is
         /// so not adding a burnShares method in IShareManager
         if (strategy != beaconChainETHStrategy) {
             strategyManager.burnShares(strategy, sharesToBurn);
+            emit OperatorSharesBurned(operator, strategy, sharesToBurn);
         }
     }
 
