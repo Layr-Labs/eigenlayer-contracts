@@ -188,7 +188,7 @@ contract EigenPodManager is
         require(int256(shares) > 0, SharesNegative());
 
         int256 currentDepositShares = podOwnerDepositShares[staker];
-        uint256 sharesToWithdraw;
+        uint256 sharesToWithdraw = shares;
         // if there is an existing shares deficit, prioritize decreasing the deficit first
         // this is an M2 legacy codepath. TODO: gross
         if (currentDepositShares < 0) {
