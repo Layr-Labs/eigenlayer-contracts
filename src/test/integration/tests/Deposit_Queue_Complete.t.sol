@@ -34,7 +34,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         // 3. Complete Queued Withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals();
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
@@ -70,7 +70,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         // 3. Complete Queued Withdrawal
-        _rollBlocksForCompleteWithdrawals(strategies);
+        _rollBlocksForCompleteWithdrawals();
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]); 
             check_Withdrawal_AsShares_State(staker, User(payable(0)), withdrawals[i], strategies, shares);

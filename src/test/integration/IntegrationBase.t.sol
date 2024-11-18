@@ -1088,7 +1088,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     // TODO
     /// @dev Given a list of strategies, roll the block number forward to the
     /// a valid blocknumber to completeWithdrawals
-    function _rollBlocksForCompleteWithdrawals(IStrategy[] memory strategies) internal {        
+    function _rollBlocksForCompleteWithdrawals() internal {        
         cheats.roll(block.number + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
     }
 

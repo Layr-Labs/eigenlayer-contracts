@@ -39,6 +39,7 @@ struct StaleBalanceProofs {
 }
 
 contract BeaconChainMock is Logger {
+    using StdStyle for *;
 
     Vm cheats = Vm(VM_ADDRESS);
 
@@ -255,10 +256,8 @@ contract BeaconChainMock is Logger {
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch() public {
         _logM("advanceEpoch");
-
         _generateRewards();
         _withdrawExcess();
-
         _advanceEpoch();
     }
 
@@ -271,9 +270,7 @@ contract BeaconChainMock is Logger {
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch_NoRewards() public {
         _logM("advanceEpoch_NoRewards");
-        
         _withdrawExcess();
-
         _advanceEpoch();
     }
 
@@ -309,7 +306,7 @@ contract BeaconChainMock is Logger {
             }
         }
 
-        console.log("- generated rewards for num validators", totalRewarded);
+        console.log("   - Generated rewards for %s of %s validators.", totalRewarded, validators.length);
     }
 
     /// @dev Iterate over all validators. If the validator has > 32 ETH current balance
@@ -347,13 +344,12 @@ contract BeaconChainMock is Logger {
         }
 
         if (totalExcessWei != 0)
-            console.log("- withdrew excess balance", totalExcessWei);
+            console.log("- Withdrew excess balance:", _toStringWad(totalExcessWei));
     }
 
     function _advanceEpoch() public {
         cheats.pauseTracing();
 
-        console.log("   Advancing epoch:");
         // Update effective balances for each validator
         for (uint i = 0; i < validators.length; i++) {
             Validator storage v = validators[i];
@@ -368,20 +364,19 @@ contract BeaconChainMock is Logger {
             v.effectiveBalanceGwei = balanceGwei;
         }
 
-        console.log("   Updated effective balances...");
-
-        // Move forward one epoch
-        // console.log("-- current time", block.timestamp);
-        console.log("-- ", currentEpoch());
+        console.log("   Updated effective balances...".dim());
+        console.log("       timestamp:", block.timestamp);
+        console.log("       epoch:", currentEpoch());
 
         uint64 curEpoch = currentEpoch();
         cheats.warp(_nextEpochStartTimestamp(curEpoch));
         curTimestamp = uint64(block.timestamp);
 
-        // console.log("-- new time", block.timestamp);
-        console.log("- jumped to next epoch", currentEpoch());
-
-        console.log("- building beacon state trees");
+        console.log("   Jumping to next epoch...".dim());
+        console.log("       timestamp:", block.timestamp);
+        console.log("       epoch:", currentEpoch());
+                
+        console.log("   Building beacon state trees...".dim());
 
         // Log total number of validators and number being processed for the first time
         if (validators.length > 0) {
@@ -426,7 +421,7 @@ contract BeaconChainMock is Logger {
         });
 
 
-        console.log("-- beacon block root", cheats.toString(beaconBlockRoot));
+        // console.log("-- beacon block root", cheats.toString(beaconBlockRoot));
 
         // Push new block root to oracle
         EIP_4788_ORACLE.setBlockRoot(curTimestamp, beaconBlockRoot);

@@ -6,14 +6,18 @@ import "forge-std/Test.sol";
 abstract contract Logger is Test {
     using StdStyle for *;
 
-    bool on = true;
-
     /// -----------------------------------------------------------------------
-    /// Override
+    /// Must Override
     /// -----------------------------------------------------------------------
 
     /// @dev Provide a name for the inheriting contract.
     function NAME() public view virtual returns (string memory);
+
+    /// -----------------------------------------------------------------------
+    /// Storage
+    /// -----------------------------------------------------------------------
+
+    bool on = true;
 
     /// -----------------------------------------------------------------------
     /// Colored Names
@@ -39,6 +43,32 @@ abstract contract Logger is Test {
     /// Logging
     /// -----------------------------------------------------------------------
 
+    modifier noTracing() {
+        vm.pauseTracing();
+        _;
+        vm.resumeTracing();
+    }
+
+    modifier noLogging() {
+        _pauseLogging();
+        _;
+        _resumeLogging();
+    }
+
+    function _pauseLogging() internal {
+        console.log("\n%s logging paused...", NAME_COLORED());
+        on = false;
+    }
+
+    function _resumeLogging() internal {
+        console.log("\n%s logging unpaused...", NAME_COLORED());
+        on = true;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Logging
+    /// -----------------------------------------------------------------------
+
     function _logM(
         string memory method
     ) internal view {
@@ -52,7 +82,7 @@ abstract contract Logger is Test {
     /// -----------------------------------------------------------------------
     /// Helpers
     /// -----------------------------------------------------------------------
-    
+
     /// @dev Returns `true` if `needle` is found in `haystack`.
     function _contains(string memory haystack, string memory needle) internal pure returns (bool) {
         return vm.indexOf(haystack, needle) != type(uint256).max;
@@ -62,17 +92,11 @@ abstract contract Logger is Test {
     function _toStringWad(
         uint256 wad
     ) public pure returns (string memory) {
-        // Convert the `uint256` to a string
-        string memory str = vm.toString(wad);
+        if (wad == 0) return "0";
 
-        /// forgefmt: disable-next-item
-        while (bytes(str).length < 18) str = string.concat("0", str);
-
-        bytes memory asBytes = bytes(str);
+        bytes memory asBytes = bytes(vm.toString(wad));
         uint256 len = asBytes.length;
-
-        // Create memory slices for the whole and fractional parts
-        bytes memory left = new bytes(len > 18 ? len - 18 : 0);
+        bytes memory left = len > 18 ? new bytes(len - 18) : new bytes(0);
         bytes memory right = new bytes(18);
 
         for (uint256 i; i < left.length; i++) {
@@ -82,6 +106,6 @@ abstract contract Logger is Test {
             right[i] = asBytes[len - 18 + i];
         }
 
-        return string.concat(left.length > 0 ? string(left) : "0", ".", string(right), " (wad)");
+        return string.concat(string(left), ".", string(right), " (wad)");
     }
 }

@@ -956,7 +956,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         uint256 userType,
         IStrategy[] memory strategies,
         uint256[] memory tokenBalances
-    ) internal {
+    ) internal view {
         console.log("\n====== Created User %s ======", name.bold());
         console.log("   Asset Type:", assetTypeToStr[assetType]);
         console.log("   User Type:", userTypeToStr[userType]);

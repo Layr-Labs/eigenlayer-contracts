@@ -80,8 +80,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     // TODO(integration): Implement these methods
     function modifyAllocations() public virtual createSnapshot {
         _logM("modifyAllocations");
-
-        AllocateParams[] memory params = new AllocateParams[](1);
     }
 
     function registerForOperatorSets() public virtual createSnapshot {
