@@ -91,21 +91,26 @@ abstract contract Logger is Test {
     /// @dev Returns a string representation of a `uint256` in wad format (with decimal place).
     function _toStringWad(
         uint256 wad
-    ) public pure returns (string memory) {
-        if (wad == 0) return "0";
+    ) public pure returns (string memory s) {
+        if (wad == 0) return "0.0 (wad)";
 
-        bytes memory asBytes = bytes(vm.toString(wad));
-        uint256 len = asBytes.length;
-        bytes memory left = len > 18 ? new bytes(len - 18) : new bytes(0);
+        s = vm.toString(wad);
+
+        while (bytes(s).length < 18) s = string.concat("0", s);
+
+        uint256 len = bytes(s).length;
+        bytes memory b = bytes(s);
+        bytes memory left = new bytes(len > 18 ? len - 18 : 0);
         bytes memory right = new bytes(18);
 
-        for (uint256 i; i < left.length; i++) {
-            left[i] = asBytes[i];
-        }
-        for (uint256 i; i < 18; i++) {
-            right[i] = asBytes[len - 18 + i];
+        for (uint256 i; i < left.length; ++i) {
+            left[i] = b[i];
         }
 
-        return string.concat(string(left), ".", string(right), " (wad)");
+        for (uint256 i; i < 18; ++i) {
+            right[i] = b[len - 18 + i];
+        }
+
+        return string.concat(left.length > 0 ? string(left) : "0", ".", string(right), " (wad)");
     }
 }
