@@ -43,7 +43,6 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         }
     }
 
-    // TODO: fix test
     function testFuzz_delegate_deposit_queue_completeAsTokens(uint24 _random) public {
         // Configure the random parameters for the test
         _configRand({

@@ -261,6 +261,8 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         // Common checks
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        
+        // FIXME: This check is currently broken for native ETH deposits for some reason.
         assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
         assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have changed");
         assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");

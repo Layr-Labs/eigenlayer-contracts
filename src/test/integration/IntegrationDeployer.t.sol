@@ -18,6 +18,7 @@ import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/permissions/PauserRegistry.sol";
 
+import "src/test/utils/Logger.t.sol";
 import "src/test/mocks/EmptyContract.sol";
 import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
@@ -28,7 +29,7 @@ import "src/test/integration/users/User_M1.t.sol";
 
 import "script/utils/ExistingDeploymentParser.sol";
 
-abstract contract IntegrationDeployer is ExistingDeploymentParser {
+abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     using StdStyle for *;
 
     Vm cheats = Vm(VM_ADDRESS);
@@ -172,6 +173,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         tokensNotTested[osETH_Holesky] = true;
         tokensNotTested[osETH_Mainnet] = true;
         tokensNotTested[cbETH_Holesky] = true;
+    }
+
+    function NAME() public view virtual override returns (string memory) {
+        return "Integration Deployer";
     }
 
     /**
@@ -566,8 +571,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function _configRand(uint24 _randomSeed, uint256 _assetTypes, uint256 _userTypes) internal {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
-        console.log("_configRand: set random seed to: ", _randomSeed);
-        random = keccak256(abi.encodePacked(_randomSeed));
+
+        random = _hash(_randomSeed);
 
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
         assetTypes = _bitmapToBytes(_assetTypes);
@@ -902,7 +907,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
 
         // Hash `random` with itself so the next value we generate is different
-        random = keccak256(abi.encodePacked(random));
+        random = _hash(uint256(random));
         return min + value;
     }
 
@@ -961,7 +966,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                console.log("       Native ETH balance: %s", cheats.toString(tokenBalances[i]));
+                console.log("       Native ETH balance: %s", _toStringWad(tokenBalances[i]));
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
                 console.log(
@@ -973,10 +978,15 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    /// @dev Helper because solidity syntax is exhausting
     function _hash(
-        string memory s
+        string memory x
     ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(s));
+        return keccak256(abi.encodePacked(x));
+    }
+
+    function _hash(
+        uint256 x
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(x));
     }
 }

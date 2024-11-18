@@ -9,7 +9,7 @@ import "src/contracts/strategies/StrategyFactory.sol";
 import "src/test/mocks/ERC20Mock.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
-import "src/test/integration/utils/PrintUtils.t.sol";
+import "src/test/utils/Logger.t.sol";
 
 import "src/test/utils/SingleItemArrayLib.sol";
 
@@ -19,7 +19,7 @@ interface IAVSDeployer {
     function timeMachine() external view returns (TimeMachine);
 }
 
-contract AVS is PrintUtils, IAllocationManagerTypes {
+contract AVS is Logger, IAllocationManagerTypes {
     using SingleItemArrayLib for *;
 
     Vm constant cheats = Vm(VM_ADDRESS);
@@ -63,9 +63,9 @@ contract AVS is PrintUtils, IAllocationManagerTypes {
         operatorSetIds = new uint32[](numOpSets);
         strategies = new IStrategy[][](numOpSets);
 
-        for (uint256 i = 0; i < numOpSets; ++i) {
+        for (uint256 i; i < numOpSets; ++i) {
             p[i].operatorSetId = uint32(cheats.randomUint({bits: 32}));
-            for (uint256 j = 0; j < numStrategies; ++j) {
+            for (uint256 j; j < numStrategies; ++j) {
                 IERC20 token = IERC20(new ERC20Mock());
                 p[i].strategies[j] = strategyFactory.deployNewStrategy(token);
             }
@@ -140,7 +140,7 @@ contract AVS is PrintUtils, IAllocationManagerTypes {
 
         console.log("Adding strategies to operator set: %d", operatorSetId);
 
-        for (uint256 i = 0; i < strategies.length; ++i) {
+        for (uint256 i; i < strategies.length; ++i) {
             console.log("   strategy: %s", address(strategies[i]));
         }
 
@@ -155,7 +155,7 @@ contract AVS is PrintUtils, IAllocationManagerTypes {
 
         console.log("Removing strategies from operator set: %d", operatorSetId);
 
-        for (uint256 i = 0; i < strategies.length; ++i) {
+        for (uint256 i; i < strategies.length; ++i) {
             console.log("   strategy: %s", address(strategies[i]));
         }
 
@@ -165,7 +165,7 @@ contract AVS is PrintUtils, IAllocationManagerTypes {
     /// -----------------------------------------------------------------------
     /// Logging
     /// -----------------------------------------------------------------------
-
+    
     function _logSlashOperator(
         SlashingParams memory p
     ) private pure {
@@ -179,9 +179,9 @@ contract AVS is PrintUtils, IAllocationManagerTypes {
         CreateSetParams[] memory p
     ) private pure {
         console.log("Creating operator sets:");
-        for (uint256 i = 0; i < p.length; ++i) {
+        for (uint256 i; i < p.length; ++i) {
             console.log("   Creating operator set: %d", p[i].operatorSetId);
-            for (uint256 j = 0; j < p[i].strategies.length; j++) {
+            for (uint256 j; j < p[i].strategies.length; ++j) {
                 console.log("       strategy: %s", address(p[i].strategies[j]));
             }
         }
@@ -192,7 +192,7 @@ contract AVS is PrintUtils, IAllocationManagerTypes {
     ) private pure {
         console.log("Deregistering operator: %s", address(p.operator));
         console.log("   from operator sets:");
-        for (uint256 i = 0; i < p.operatorSetIds.length; ++i) {
+        for (uint256 i; i < p.operatorSetIds.length; ++i) {
             console.log("       operatorSetId: %d", p.operatorSetIds[i]);
         }
     }

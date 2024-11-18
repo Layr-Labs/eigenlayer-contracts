@@ -8,7 +8,7 @@ import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
 import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
-import "src/test/integration/utils/PrintUtils.t.sol";
+import "src/test/utils/Logger.t.sol";
 
 struct ValidatorFieldsProof {
     bytes32[] validatorFields;
@@ -38,7 +38,7 @@ struct StaleBalanceProofs {
     BeaconChainProofs.ValidatorProof validatorProof;
 }
 
-contract BeaconChainMock is PrintUtils {
+contract BeaconChainMock is Logger {
 
     Vm cheats = Vm(VM_ADDRESS);
 
@@ -370,7 +370,7 @@ contract BeaconChainMock is PrintUtils {
 
         // Move forward one epoch
         // console.log("-- current time", block.timestamp);
-        console.log("-- current epoch", currentEpoch());
+        console.log("-- ", currentEpoch());
 
         uint64 curEpoch = currentEpoch();
         cheats.warp(_nextEpochStartTimestamp(curEpoch));

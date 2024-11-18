@@ -11,7 +11,7 @@ import "src/contracts/pods/EigenPod.sol";
 
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/integration/utils/PrintUtils.t.sol";
+import "src/test/utils/Logger.t.sol";
 
 struct Validator {
     uint40 index;
@@ -26,7 +26,7 @@ interface IUserDeployer {
     function beaconChain() external view returns (BeaconChainMock);
 }
 
-contract User is PrintUtils, IDelegationManagerTypes, IAllocationManagerTypes {
+contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     Vm cheats = Vm(VM_ADDRESS);
 
     AllocationManager allocationManager;

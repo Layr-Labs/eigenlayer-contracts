@@ -664,9 +664,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             if (isError) {
                 console.log("\nCurrent `%s` balance != previous balance + added tokens".red(), _getTokenName(tokens[i]));
-                console.log("   Previous Balance:", prevBalance);
-                console.log("   Tokens Added:", addedTokens[i]);
-                console.log("   Current Balance:", curBalance);
+                console.log("   Previous Balance:", _toStringWad(prevBalance));
+                console.log("   Tokens Added:", _toStringWad(addedTokens[i]));
+                console.log("   Current Balance:", _toStringWad(curBalance));
             }
 
             assertEq(expected, curBalance, err);

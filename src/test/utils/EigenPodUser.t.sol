@@ -10,7 +10,7 @@ import "src/contracts/interfaces/IStrategy.sol";
 
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/integration/utils/PrintUtils.t.sol";
+import "src/test/utils/Logger.t.sol";
 
 struct Validator {
     uint40 index;
@@ -22,7 +22,7 @@ interface IUserDeployer {
     function eigenPodBeacon() external view returns (IBeacon);
 }
 
-contract EigenPodUser is PrintUtils {
+contract EigenPodUser is Logger {
 
     Vm cheats = Vm(VM_ADDRESS);
 
