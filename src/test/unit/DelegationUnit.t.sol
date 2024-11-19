@@ -381,7 +381,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         DepositScalingFactor memory _dsf = DepositScalingFactor(delegationManager.depositScalingFactor(staker, strategy));
         uint256 sharesToWithdraw = _dsf.calcWithdrawable(depositSharesToWithdraw, slashingFactor);
 
-        uint256 scaledShares = SlashingLib.scaleSharesForQueuedWithdrawal({
+        uint256 scaledShares = SlashingLib.scaleForQueueWithdrawal({
             sharesToWithdraw: sharesToWithdraw,
             slashingFactor: slashingFactor
         });
