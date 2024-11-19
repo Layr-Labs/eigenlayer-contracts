@@ -88,6 +88,7 @@ contract AllocationManager is
             uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(params.wadToSlash));
             uint256 sharesWadSlashed = uint256(slashedMagnitude).divWad(info.maxMagnitude);
             wadSlashed[i] = sharesWadSlashed;
+            uint64 prevMaxMagnitude = info.maxMagnitude;
 
             allocation.currentMagnitude -= slashedMagnitude;
             info.maxMagnitude -= slashedMagnitude;
@@ -111,10 +112,10 @@ contract AllocationManager is
 
             // 5. Update state
             _updateAllocationInfo(params.operator, operatorSet.key(), strategy, info, allocation);
-            uint64 prevMaxMagnitude = _updateMaxMagnitude(params.operator, strategy, info.maxMagnitude);
+            _updateMaxMagnitude(params.operator, strategy, info.maxMagnitude);
 
             // 6. Decrease and burn operators shares in the DelegationManager
-            delegation.decreaseAndBurnOperatorShares({
+            delegation.burnOperatorShares({
                 operator: params.operator,
                 strategy: strategy,
                 prevMaxMagnitude: prevMaxMagnitude,
@@ -500,13 +501,8 @@ contract AllocationManager is
         }
     }
 
-    function _updateMaxMagnitude(
-        address operator,
-        IStrategy strategy,
-        uint64 newMaxMagnitude
-    ) internal returns (uint64 prevMaxMagnitude) {
-        (prevMaxMagnitude,) =
-            _maxMagnitudeHistory[operator][strategy].push({key: uint32(block.number), value: newMaxMagnitude});
+    function _updateMaxMagnitude(address operator, IStrategy strategy, uint64 newMaxMagnitude) internal {
+        _maxMagnitudeHistory[operator][strategy].push({key: uint32(block.number), value: newMaxMagnitude});
         emit MaxMagnitudeUpdated(operator, strategy, newMaxMagnitude);
     }
 
@@ -668,7 +664,7 @@ contract AllocationManager is
         uint64[] memory maxMagnitudes = new uint64[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
-            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup(blockNumber);
+            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup({key: blockNumber});
         }
 
         return maxMagnitudes;

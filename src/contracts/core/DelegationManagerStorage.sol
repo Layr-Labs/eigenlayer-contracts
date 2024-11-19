@@ -18,7 +18,7 @@ import {Snapshots} from "../libraries/Snapshots.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract DelegationManagerStorage is IDelegationManager {
-    using Snapshots for Snapshots.WithdrawalHistory;
+    using Snapshots for Snapshots.DefaultZeroHistory;
 
     // Constants
 
@@ -122,7 +122,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice Contains history of the total cumulative staker withdrawals for an operator and a given strategy.
     /// Used to calculate burned StrategyManager shares when an operator is slashed.
     /// @dev Stores scaledShares instead of total withdrawn shares to track current slashable shares, dependent on the maxMagnitude
-    mapping(address operator => mapping(IStrategy strategy => Snapshots.WithdrawalHistory)) internal
+    mapping(address operator => mapping(IStrategy strategy => Snapshots.DefaultZeroHistory)) internal
         _cumulativeScaledSharesHistory;
 
     // Construction

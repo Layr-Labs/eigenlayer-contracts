@@ -80,7 +80,12 @@ library SlashingLib {
         return scaledShares.mulWad(slashingFactor);
     }
 
-    function scaleSharesForBurningQueueWithdrawals(
+    /**
+     * @notice Scales the share difference between two cumulative scaled shares. This is used
+     * to read the total slashable/burnable shares that are queued for withdrawal from an operator.
+     * This is because shares are still slashable for the duration they are sitting in the withdrawal queue.
+     */
+    function scaleSharesForBurning(
         uint256 pastCumulativeScaledShares,
         uint256 currCumulativeScaledShares,
         uint64 maxMagnitude
@@ -151,17 +156,12 @@ library SlashingLib {
 
     function calcSlashedAmount(
         uint256 operatorShares,
-        uint256 queuedSlashableShares,
+        uint256 slashableSharesInQueue,
         uint256 prevMaxMagnitude,
         uint256 newMaxMagnitude
     ) internal pure returns (uint256 sharesToDecrement, uint256 sharesToBurn) {
         // round up mulDiv so we don't round up sharesToDecrement and overslash
         sharesToDecrement = operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
-
-        // Calculate the difference in Slashable shares after the slashing. This is the amount to burn.
-        // queuedSlashableShares = 
-        // uint256 queueWithdrawalSharesBurned = queuedWithdrawnScaledShares.mulWad(prevMaxMagnitude)
-        //     - queuedWithdrawnScaledShares.mulWad(newMaxMagnitude);
-        sharesToBurn = sharesToDecrement + queuedSlashableShares;
+        sharesToBurn = sharesToDecrement + slashableSharesInQueue;
     }
 }

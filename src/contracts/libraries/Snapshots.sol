@@ -11,24 +11,32 @@ import "./SlashingLib.sol";
  * @title Library for handling snapshots as part of allocating and slashing.
  * @notice This library is using OpenZeppelin's CheckpointsUpgradeable library (v4.9.0)
  * and removes structs and functions that are unessential.
- * Interfaces and structs are renamed for clarity and usage (timestamps, etc).
+ * Interfaces and structs are renamed for clarity and usage.
  * Some additional functions have also been added for convenience.
- * @dev This library defines the `DefaultWadHistory` struct, for snapshotting values as they change at different points in
+ * @dev This library defines the `DefaultWadHistory` and `DefaultZeroHistory` struct, for snapshotting values as they change at different points in
  * time, and later looking up past values by block number. See {Votes} as an example.
  *
- * To create a history of snapshots define a variable type `Snapshots.DefaultWadHistory` in your contract, and store a new
- * snapshot for the current transaction block using the {push} function. If there is no history yet, the value is WAD.
+ * To create a history of snapshots define a variable type `Snapshots.DefaultWadHistory` or `Snapshots.DefaultZeroHistory` in your contract,
+ * and store a new snapshot for the current transaction block using the {push} function. If there is no history yet, the value is either WAD or 0,
+ * depending on the type of History struct used. This is implemented because for the AllocationManager we want the
+ * the default value to be WAD(1e18) but when used in the DelegationManager we want the default value to be 0.
  *
  * _Available since v4.5._
  */
 library Snapshots {
+    using SafeCastUpgradeable for uint256;
+
     struct DefaultWadHistory {
+        Snapshot[] _snapshots;
+    }
+
+    struct DefaultZeroHistory {
         Snapshot[] _snapshots;
     }
 
     struct Snapshot {
         uint32 _key;
-        uint64 _value;
+        uint224 _value;
     }
 
     error InvalidSnapshotOrdering();
@@ -40,16 +48,47 @@ library Snapshots {
      * Returns previous value and new value.
      */
     function push(DefaultWadHistory storage self, uint32 key, uint64 value) internal returns (uint64, uint64) {
-        return _insert(self._snapshots, key, value);
+        (uint224 prevValue, uint224 currValue) = _insert(self._snapshots, key, value);
+        return (uint64(prevValue), uint64(currValue));
     }
 
     /**
-     * @dev Returns the value in the last (most recent) snapshot with key lower or equal than the search key, or zero if there is none.
+     * @dev Pushes a (`key`, `value`) pair into a DefaultZeroHistory so that it is stored as the snapshot.
+     * Peforms a safecast to uint224 for the value.
+     *
+     * Returns previous value and new value.
+     */
+    function push(DefaultZeroHistory storage self, uint32 key, uint256 value) internal returns (uint256, uint256) {
+        return _insert(self._snapshots, key, value.toUint224());
+    }
+
+    /**
+     * @dev Return default value of WAD if there are no snapshots for DefaultWadHistory.
+     * This is used for looking up maxMagnitudes in the AllocationManager.
      */
     function upperLookup(DefaultWadHistory storage self, uint32 key) internal view returns (uint64) {
-        uint256 len = self._snapshots.length;
-        uint256 pos = _upperBinaryLookup(self._snapshots, key, 0, len);
-        return pos == 0 ? WAD : _unsafeAccess(self._snapshots, pos - 1)._value;
+        return uint64(_upperLookup(self._snapshots, key, WAD));
+    }
+
+    /**
+     * @dev Return default value of 0 if there are no snapshots for DefaultZeroHistory.
+     * This is used for looking up cumulative scaled shares in the DelegationManager.
+     */
+    function upperLookup(DefaultZeroHistory storage self, uint32 key) internal view returns (uint256) {
+        return _upperLookup(self._snapshots, key, 0);
+    }
+
+    /**
+     * @dev Returns the value in the last (most recent) snapshot with key lower or equal than the search key, or `defaultValue` if there is none.
+     */
+    function _upperLookup(
+        Snapshot[] storage snapshots,
+        uint32 key,
+        uint224 defaultValue
+    ) private view returns (uint224) {
+        uint256 len = snapshots.length;
+        uint256 pos = _upperBinaryLookup(snapshots, key, 0, len);
+        return pos == 0 ? defaultValue : _unsafeAccess(snapshots, pos - 1)._value;
     }
 
     /**
@@ -58,8 +97,24 @@ library Snapshots {
     function latest(
         DefaultWadHistory storage self
     ) internal view returns (uint64) {
-        uint256 pos = self._snapshots.length;
-        return pos == 0 ? WAD : _unsafeAccess(self._snapshots, pos - 1)._value;
+        return uint64(_latest(self._snapshots, WAD));
+    }
+
+    /**
+     * @dev Returns the value in the most recent snapshot, or 0 if there are no snapshots.
+     */
+    function latest(
+        DefaultZeroHistory storage self
+    ) internal view returns (uint256) {
+        return uint256(_latest(self._snapshots, 0));
+    }
+
+    /**
+     * @dev Returns the value in the most recent snapshot, or `defaultValue` if there are no snapshots.
+     */
+    function _latest(Snapshot[] storage snapshots, uint224 defaultValue) private view returns (uint224) {
+        uint256 pos = snapshots.length;
+        return pos == 0 ? defaultValue : _unsafeAccess(snapshots, pos - 1)._value;
     }
 
     /**
@@ -72,10 +127,19 @@ library Snapshots {
     }
 
     /**
+     * @dev Returns the number of snapshots.
+     */
+    function length(
+        DefaultZeroHistory storage self
+    ) internal view returns (uint256) {
+        return self._snapshots.length;
+    }
+
+    /**
      * @dev Pushes a (`key`, `value`) pair into an ordered list of snapshots, either by inserting a new snapshot,
      * or by updating the last one.
      */
-    function _insert(Snapshot[] storage self, uint32 key, uint64 value) private returns (uint64, uint64) {
+    function _insert(Snapshot[] storage self, uint32 key, uint224 value) private returns (uint224, uint224) {
         uint256 pos = self.length;
 
         if (pos > 0) {
@@ -125,131 +189,6 @@ library Snapshots {
      * @dev Access an element of the array without performing bounds check. The position is assumed to be within bounds.
      */
     function _unsafeAccess(Snapshot[] storage self, uint256 pos) private pure returns (Snapshot storage result) {
-        assembly {
-            mstore(0, self.slot)
-            result.slot := add(keccak256(0, 0x20), pos)
-        }
-    }
-
-    /**
-     * @notice WithdrawalHistory SnapShotting used for calculating burned amounts for StrategyManager Strategies
-     * Does not default to WAD, as the value is always 0 if there are no snapshots.
-     */
-    struct WithdrawalHistory {
-        WithdrawalSnapshot[] _snapshots;
-    }
-
-    struct WithdrawalSnapshot {
-        uint32 _blockNumber;
-        uint224 _value;
-    }
-
-    /**
-     * @dev Returns the value at a given block number. If a withdrawal snapshot is not available at that block, the closest one
-     * before it is returned, or zero otherwise. Similar to {upperLookup} but optimized for the case when the searched
-     * withdrawal snapshot is probably "recent", defined as being among the last sqrt(N) withdrawal snapshots where N is the number of
-     * withdrawal snapshots.
-     */
-    function upperLookupRecent(WithdrawalHistory storage self, uint256 blockNumber) internal view returns (uint256) {
-        require(blockNumber < block.number, BlocknumberDoesNotExist());
-        uint32 key = SafeCastUpgradeable.toUint32(blockNumber);
-
-        uint256 len = self._snapshots.length;
-
-        uint256 low = 0;
-        uint256 high = len;
-
-        if (len > 5) {
-            uint256 mid = len - MathUpgradeable.sqrt(len);
-            if (key < _unsafeAccess(self._snapshots, mid)._blockNumber) {
-                high = mid;
-            } else {
-                low = mid + 1;
-            }
-        }
-
-        uint256 pos = _upperBinaryLookup(self._snapshots, key, low, high);
-
-        return pos == 0 ? 0 : _unsafeAccess(self._snapshots, pos - 1)._value;
-    }
-
-    /**
-     * @dev Pushes a value onto a WithdrawalHistory so that it is stored as the withdrawal snapshot for the current block.
-     *
-     * Returns previous value and new value.
-     */
-    function push(WithdrawalHistory storage self, uint256 value) internal returns (uint256, uint256) {
-        return
-            _insert(self._snapshots, SafeCastUpgradeable.toUint32(block.number), SafeCastUpgradeable.toUint224(value));
-    }
-
-    /**
-     * @dev Returns the value in the most recent withdrawal snapshot, or zero if there are no withdrawal snapshots.
-     */
-    function latest(
-        WithdrawalHistory storage self
-    ) internal view returns (uint224) {
-        uint256 pos = self._snapshots.length;
-        return pos == 0 ? 0 : _unsafeAccess(self._snapshots, pos - 1)._value;
-    }
-
-    /**
-     * @dev Pushes a (`key`, `value`) pair into an ordered list of withdrawal snapshots, either by inserting a new withdrawal snapshot,
-     * or by updating the last one.
-     */
-    function _insert(WithdrawalSnapshot[] storage self, uint32 key, uint224 value) private returns (uint224, uint224) {
-        uint256 pos = self.length;
-
-        if (pos > 0) {
-            // Copying to memory is important here.
-            WithdrawalSnapshot memory last = _unsafeAccess(self, pos - 1);
-
-            // WithdrawalSnapshot keys must be non-decreasing.
-            require(last._blockNumber <= key, InvalidSnapshotOrdering());
-
-            // Update or push new withdrawal snapshot
-            if (last._blockNumber == key) {
-                _unsafeAccess(self, pos - 1)._value = value;
-            } else {
-                self.push(WithdrawalSnapshot({_blockNumber: key, _value: value}));
-            }
-            return (last._value, value);
-        } else {
-            self.push(WithdrawalSnapshot({_blockNumber: key, _value: value}));
-            return (0, value);
-        }
-    }
-
-    /**
-     * @dev Return the index of the last (most recent) withdrawal snapshot with key lower or equal than the search key, or `high` if there is none.
-     * `low` and `high` define a section where to do the search, with inclusive `low` and exclusive `high`.
-     *
-     * WARNING: `high` should not be greater than the array's length.
-     */
-    function _upperBinaryLookup(
-        WithdrawalSnapshot[] storage self,
-        uint32 key,
-        uint256 low,
-        uint256 high
-    ) private view returns (uint256) {
-        while (low < high) {
-            uint256 mid = MathUpgradeable.average(low, high);
-            if (_unsafeAccess(self, mid)._blockNumber > key) {
-                high = mid;
-            } else {
-                low = mid + 1;
-            }
-        }
-        return high;
-    }
-
-    /**
-     * @dev Access an element of the array without performing bounds check. The position is assumed to be within bounds.
-     */
-    function _unsafeAccess(
-        WithdrawalSnapshot[] storage self,
-        uint256 pos
-    ) private pure returns (WithdrawalSnapshot storage result) {
         assembly {
             mstore(0, self.slot)
             result.slot := add(keccak256(0, 0x20), pos)

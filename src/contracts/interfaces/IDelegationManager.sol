@@ -383,7 +383,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @param newMaxMagnitude the new maxMagnitude of the operator
      * @dev Callable only by the AllocationManager
      */
-    function decreaseAndBurnOperatorShares(
+    function burnOperatorShares(
         address operator,
         IStrategy strategy,
         uint64 prevMaxMagnitude,
