@@ -62,7 +62,7 @@ library SlashingLib {
         return dsf._scalingFactor == 0 ? WAD : dsf._scalingFactor;
     }
 
-    function scaleSharesForQueuedWithdrawal(
+    function scaleForQueueWithdrawal(
         uint256 sharesToWithdraw,
         uint256 slashingFactor
     ) internal pure returns (uint256) {
@@ -73,25 +73,22 @@ library SlashingLib {
         return sharesToWithdraw.divWad(slashingFactor);
     }
 
-    function scaleSharesForCompleteWithdrawal(
-        uint256 scaledShares,
-        uint256 slashingFactor
-    ) internal pure returns (uint256) {
+    function scaleForCompleteWithdrawal(uint256 scaledShares, uint256 slashingFactor) internal pure returns (uint256) {
         return scaledShares.mulWad(slashingFactor);
     }
 
     /**
-     * @notice Scales the share difference between two cumulative scaled shares. This is used
-     * to read the total slashable/burnable shares that are queued for withdrawal from an operator.
-     * This is because shares are still slashable for the duration they are sitting in the withdrawal queue.
+     * @notice Scales shares according to the difference in an operator's magnitude before and
+     * after being slashed. This is used to calculate the number of slashable shares in the
+     * withdrawal queue.
+     * NOTE: max magnitude is guaranteed to only ever decrease.
      */
-    function scaleSharesForBurning(
-        uint256 pastCumulativeScaledShares,
-        uint256 currCumulativeScaledShares,
+    function scaleForBurning(
+        uint256 scaledShares,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
     ) internal pure returns (uint256) {
-        return (currCumulativeScaledShares - pastCumulativeScaledShares).mulWad(prevMaxMagnitude - newMaxMagnitude);
+        return scaledShares.mulWad(prevMaxMagnitude - newMaxMagnitude);
     }
 
     function update(
@@ -157,12 +154,10 @@ library SlashingLib {
 
     function calcSlashedAmount(
         uint256 operatorShares,
-        uint256 slashableSharesInQueue,
         uint256 prevMaxMagnitude,
         uint256 newMaxMagnitude
-    ) internal pure returns (uint256 sharesToDecrement, uint256 sharesToBurn) {
-        // round up mulDiv so we don't round up sharesToDecrement and overslash
-        sharesToDecrement = operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
-        sharesToBurn = sharesToDecrement + slashableSharesInQueue;
+    ) internal pure returns (uint256) {
+        // round up mulDiv so we don't overslash
+        return operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
     }
 }

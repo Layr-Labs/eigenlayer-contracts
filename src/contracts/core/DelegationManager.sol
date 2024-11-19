@@ -349,13 +349,19 @@ contract DelegationManager is
         require(newMaxMagnitude < prevMaxMagnitude, MaxMagnitudeCantIncrease());
 
         /// forgefmt: disable-next-item
-        (uint256 sharesToDecrement, uint256 sharesToBurn) = SlashingLib.calcSlashedAmount({
+        uint256 sharesToDecrement = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
-            slashableSharesInQueue: _getSlashedSharesInQueue(operator, strategy, prevMaxMagnitude, newMaxMagnitude),
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });
 
+        // While `sharesToDecrement` describes the amount we should directly remove from the operator's delegated
+        // shares, `sharesToBurn` also includes any shares that have been queued for withdrawal and are still
+        // slashable given the withdrawal delay.
+        uint256 sharesToBurn =
+            sharesToDecrement + _getSlashedSharesInQueue(operator, strategy, prevMaxMagnitude, newMaxMagnitude);
+
+        // Remove shares from operator
         _decreaseDelegation({
             operator: operator,
             staker: address(0), // we treat this as a decrease for the zero address staker
@@ -493,7 +499,7 @@ contract DelegationManager is
             IShareManager shareManager = _getShareManager(withdrawal.strategies[i]);
 
             // Calculate how much slashing to apply, as well as shares to withdraw
-            uint256 sharesToWithdraw = SlashingLib.scaleSharesForCompleteWithdrawal({
+            uint256 sharesToWithdraw = SlashingLib.scaleForCompleteWithdrawal({
                 scaledShares: withdrawal.scaledShares[i],
                 slashingFactor: prevSlashingFactors[i]
             });
@@ -641,7 +647,7 @@ contract DelegationManager is
             sharesToWithdraw[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
 
             // Apply slashing. If the staker or operator has been fully slashed, this will return 0
-            scaledShares[i] = SlashingLib.scaleSharesForQueuedWithdrawal({
+            scaledShares[i] = SlashingLib.scaleForQueueWithdrawal({
                 sharesToWithdraw: sharesToWithdraw[i],
                 slashingFactor: slashingFactors[i]
             });
@@ -763,16 +769,23 @@ contract DelegationManager is
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
     ) internal view returns (uint256) {
-        uint256 currCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
-        // Note: this will simply return 0 if no history exists, same for latest() as well
-        uint256 pastCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookup({
+        // Fetch the cumulative scaled shares sitting in the withdrawal queue both now and before
+        // the withdrawal delay.
+        uint256 curCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
+        uint256 prevCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookup({
             key: uint32(block.number) - MIN_WITHDRAWAL_DELAY_BLOCKS
         });
-        uint256 slashableShareInQueue = SlashingLib.scaleSharesForBurning(
-            pastCumulativeScaledShares, currCumulativeScaledShares, prevMaxMagnitude, newMaxMagnitude
-        );
 
-        return slashableShareInQueue;
+        // The difference between these values represents the number of scaled shares that entered the
+        // withdrawal queue less than `MIN_WITHDRAWAL_DELAY_BLOCKS` ago. These shares are still slashable,
+        // so we use them to calculate the number of slashable shares in the withdrawal queue.
+        uint256 slashableScaledShares = curCumulativeScaledShares - prevCumulativeScaledShares;
+
+        return SlashingLib.scaleForBurning({
+            scaledShares: slashableScaledShares,
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
     }
 
     /// @dev Add to the cumulative withdrawn scaled shares from an operator for a given strategy
@@ -952,7 +965,7 @@ contract DelegationManager is
             uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, withdrawals[i].strategies);
 
             for (uint256 j; j < withdrawals[i].strategies.length; ++j) {
-                shares[i][j] = SlashingLib.scaleSharesForCompleteWithdrawal({
+                shares[i][j] = SlashingLib.scaleForCompleteWithdrawal({
                     scaledShares: withdrawals[i].scaledShares[j],
                     slashingFactor: slashingFactors[i]
                 });

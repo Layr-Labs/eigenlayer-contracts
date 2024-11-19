@@ -28,13 +28,11 @@ contract DelegationManagerMock is Test {
     function burnOperatorShares(
         address operator,
         IStrategy strategy,
-        uint256 slashableSharesInQueue,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
     ) external {
-        (uint256 amountSlashed, /*uint256 amountBurned*/) = SlashingLib.calcSlashedAmount({
+        uint256 amountSlashed = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
-            slashableSharesInQueue: slashableSharesInQueue,
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });

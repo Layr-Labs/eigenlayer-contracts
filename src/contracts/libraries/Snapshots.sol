@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin-upgrades/contracts/utils/math/MathUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/utils/math/SafeCastUpgradeable.sol";
 
 import "./SlashingLib.sol";
 
@@ -24,8 +23,6 @@ import "./SlashingLib.sol";
  * _Available since v4.5._
  */
 library Snapshots {
-    using SafeCastUpgradeable for uint256;
-
     struct DefaultWadHistory {
         Snapshot[] _snapshots;
     }
@@ -43,22 +40,17 @@ library Snapshots {
 
     /**
      * @dev Pushes a (`key`, `value`) pair into a DefaultWadHistory so that it is stored as the snapshot.
-     *
-     * Returns previous value and new value.
      */
-    function push(DefaultWadHistory storage self, uint32 key, uint64 value) internal returns (uint64, uint64) {
-        (uint224 prevValue, uint224 currValue) = _insert(self._snapshots, key, value);
-        return (uint64(prevValue), uint64(currValue));
+    function push(DefaultWadHistory storage self, uint32 key, uint64 value) internal {
+        _insert(self._snapshots, key, value);
     }
 
     /**
      * @dev Pushes a (`key`, `value`) pair into a DefaultZeroHistory so that it is stored as the snapshot.
-     * Peforms a safecast to uint224 for the value.
-     *
-     * Returns previous value and new value.
+     * `value` is cast to uint224. Responsibility for the safety of this operation falls outside of this library.
      */
-    function push(DefaultZeroHistory storage self, uint32 key, uint256 value) internal returns (uint256, uint256) {
-        return _insert(self._snapshots, key, value.toUint224());
+    function push(DefaultZeroHistory storage self, uint32 key, uint256 value) internal {
+        _insert(self._snapshots, key, uint224(value));
     }
 
     /**
@@ -78,19 +70,6 @@ library Snapshots {
     }
 
     /**
-     * @dev Returns the value in the last (most recent) snapshot with key lower or equal than the search key, or `defaultValue` if there is none.
-     */
-    function _upperLookup(
-        Snapshot[] storage snapshots,
-        uint32 key,
-        uint224 defaultValue
-    ) private view returns (uint224) {
-        uint256 len = snapshots.length;
-        uint256 pos = _upperBinaryLookup(snapshots, key, 0, len);
-        return pos == 0 ? defaultValue : _unsafeAccess(snapshots, pos - 1)._value;
-    }
-
-    /**
      * @dev Returns the value in the most recent snapshot, or WAD if there are no snapshots.
      */
     function latest(
@@ -106,14 +85,6 @@ library Snapshots {
         DefaultZeroHistory storage self
     ) internal view returns (uint256) {
         return uint256(_latest(self._snapshots, 0));
-    }
-
-    /**
-     * @dev Returns the value in the most recent snapshot, or `defaultValue` if there are no snapshots.
-     */
-    function _latest(Snapshot[] storage snapshots, uint224 defaultValue) private view returns (uint224) {
-        uint256 pos = snapshots.length;
-        return pos == 0 ? defaultValue : _unsafeAccess(snapshots, pos - 1)._value;
     }
 
     /**
@@ -138,27 +109,44 @@ library Snapshots {
      * @dev Pushes a (`key`, `value`) pair into an ordered list of snapshots, either by inserting a new snapshot,
      * or by updating the last one.
      */
-    function _insert(Snapshot[] storage self, uint32 key, uint224 value) private returns (uint224, uint224) {
+    function _insert(Snapshot[] storage self, uint32 key, uint224 value) private {
         uint256 pos = self.length;
 
         if (pos > 0) {
-            // Copying to memory is important here.
+            // Validate that inserted keys are always >= the previous key
             Snapshot memory last = _unsafeAccess(self, pos - 1);
-
-            // Snapshot keys must be non-decreasing.
             require(last._key <= key, InvalidSnapshotOrdering());
 
-            // Update or push new snapshot
+            // Update existing snapshot if `key` matches
             if (last._key == key) {
                 _unsafeAccess(self, pos - 1)._value = value;
-            } else {
-                self.push(Snapshot({_key: key, _value: value}));
+                return;
             }
-            return (last._value, value);
-        } else {
-            self.push(Snapshot({_key: key, _value: value}));
-            return (0, value);
         }
+
+        // `key` was not in the list; push as a new entry
+        self.push(Snapshot({_key: key, _value: value}));
+    }
+
+    /**
+     * @dev Returns the value in the last (most recent) snapshot with key lower or equal than the search key, or `defaultValue` if there is none.
+     */
+    function _upperLookup(
+        Snapshot[] storage snapshots,
+        uint32 key,
+        uint224 defaultValue
+    ) private view returns (uint224) {
+        uint256 len = snapshots.length;
+        uint256 pos = _upperBinaryLookup(snapshots, key, 0, len);
+        return pos == 0 ? defaultValue : _unsafeAccess(snapshots, pos - 1)._value;
+    }
+
+    /**
+     * @dev Returns the value in the most recent snapshot, or `defaultValue` if there are no snapshots.
+     */
+    function _latest(Snapshot[] storage snapshots, uint224 defaultValue) private view returns (uint224) {
+        uint256 pos = snapshots.length;
+        return pos == 0 ? defaultValue : _unsafeAccess(snapshots, pos - 1)._value;
     }
 
     /**
