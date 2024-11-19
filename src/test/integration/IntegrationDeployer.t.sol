@@ -89,21 +89,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     uint256 constant MAX_BALANCE = 5e6;
     uint256 constant GWEI_TO_WEI = 1e9;
 
-    // Paused Constants
-    // DelegationManager
-    uint8 internal constant PAUSED_NEW_DELEGATION = 0;
-    uint8 internal constant PAUSED_ENTER_WITHDRAWAL_QUEUE = 1;
-    uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
-    // StrategyManager
-    uint8 internal constant PAUSED_DEPOSITS = 0;
-    // EigenpodManager
-    uint8 internal constant PAUSED_NEW_EIGENPODS = 0;
-    uint8 internal constant PAUSED_WITHDRAW_RESTAKED_ETH = 1;
-    uint8 internal constant PAUSED_EIGENPODS_VERIFY_CREDENTIALS = 2;
-    uint8 internal constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
-    uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
-    uint8 internal constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
-
     // Flags
     uint256 constant FLAG = 1;
 
@@ -150,9 +135,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
 
     constructor() {
         assetTypeToStr[NO_ASSETS] = "NO_ASSETS";
-        assetTypeToStr[HOLDS_LST] = "HOLDS_LST";
-        assetTypeToStr[HOLDS_ETH] = "HOLDS_ETH";
-        assetTypeToStr[HOLDS_ALL] = "HOLDS_ALL";
+        assetTypeToStr[HOLDS_LST] = "LST";
+        assetTypeToStr[HOLDS_ETH] = "ETH";
+        assetTypeToStr[HOLDS_ALL] = "ALL_ASSETS";
 
         userTypeToStr[DEFAULT] = "DEFAULT";
         userTypeToStr[ALT_METHODS] = "ALT_METHODS";
@@ -198,14 +183,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         bool forkMainnet = _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
 
         if (forkMainnet) {
-            console.log("Setting up integration tests against mainnet fork:");
-            console.log("Rpc Url:", cheats.rpcUrl("mainnet"));
-            console.log("Fork Block:", mainnetForkBlock);
+            console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
+            console.log("RPC:", cheats.rpcUrl("mainnet"));
+            console.log("Block:", mainnetForkBlock);
 
             cheats.createSelectFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
             forkType = MAINNET;
         } else {
-            console.log("Setting up integration tests locally");
+            console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
 
             forkType = LOCAL;
         }
@@ -347,14 +332,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         strategyManager.setStrategyWhitelister(address(strategyFactory));
 
         // Normal deployments
-        _newStrategyAndToken("strategy1.underlyingToken()", "str1", 10e50, address(this), false); // initialSupply, owner
-        _newStrategyAndToken("strategy2.underlyingToken()", "str2", 10e50, address(this), false); // initialSupply, owner
-        _newStrategyAndToken("strategy3.underlyingToken()", "str3", 10e50, address(this), false); // initialSupply, owner
+        _newStrategyAndToken("Strategy1 token", "str1", 10e50, address(this), false); // initialSupply, owner
+        _newStrategyAndToken("Strategy2 token", "str2", 10e50, address(this), false); // initialSupply, owner
+        _newStrategyAndToken("Strategy3 token", "str3", 10e50, address(this), false); // initialSupply, owner
 
         // Factory deployments
-        _newStrategyAndToken("strategy4.underlyingToken()", "str4", 10e50, address(this), true); // initialSupply, owner
-        _newStrategyAndToken("strategy5.underlyingToken()", "str5", 10e50, address(this), true); // initialSupply, owner
-        _newStrategyAndToken("strategy6.underlyingToken()", "str6", 10e50, address(this), true); // initialSupply, owner
+        _newStrategyAndToken("Strategy4 token", "str4", 10e50, address(this), true); // initialSupply, owner
+        _newStrategyAndToken("Strategy5 token", "str5", 10e50, address(this), true); // initialSupply, owner
+        _newStrategyAndToken("Strategy6 token", "str6", 10e50, address(this), true); // initialSupply, owner
 
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
@@ -571,22 +556,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     function _configRand(uint24 _randomSeed, uint256 _assetTypes, uint256 _userTypes) internal {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
-
         random = _hash(_randomSeed);
-
+        
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
         assetTypes = _bitmapToBytes(_assetTypes);
         userTypes = _bitmapToBytes(_userTypes);
-
-        console.log("_configRand: Users will be initialized with these asset types:");
-        for (uint256 i = 0; i < assetTypes.length; i++) {
-            console.log(assetTypeToStr[uint256(uint8(assetTypes[i]))]);
-        }
-
-        console.log("_configRand: these User contracts will be initialized:");
-        for (uint256 i = 0; i < userTypes.length; i++) {
-            console.log(userTypeToStr[uint256(uint8(userTypes[i]))]);
-        }
 
         assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
         assertTrue(userTypes.length != 0, "_configRand: no user types selected");
@@ -599,8 +573,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
      * Note: for non-LOCAL forktypes, upgrade of contracts will be peformed after user initialization.
      */
     function _deployOrFetchContracts() internal {
-        console.log("_deployOrFetchContracts using fork for test", forkTypeToStr[forkType]);
-
         if (forkType == LOCAL) {
             _setUpLocal();
             // Set Upgraded as local setup deploys most up to date contracts
@@ -940,8 +912,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
             // Mask for i-th bit
             uint256 mask = uint256(1 << i);
 
-            // console.log("mask: ", mask);
-
             // If the i-th bit is flipped, add a byte to the return array
             if (bitmap & mask != 0) {
                 bytesArray = bytes.concat(bytesArray, bytes1(uint8(1 << i)));
@@ -957,20 +927,22 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         IStrategy[] memory strategies,
         uint256[] memory tokenBalances
     ) internal view {
-        console.log("\n====== Created User %s ======", name.bold());
-        console.log("   Asset Type:", assetTypeToStr[assetType]);
-        console.log("   User Type:", userTypeToStr[userType]);
-        console.log("   Fork Type:", forkTypeToStr[forkType]);
-        console.log("   Total Assets:", strategies.length);
+        console.log(
+            "\nCreated %s %s who holds %s.", 
+            userTypeToStr[userType],
+            _colorByRole(name), 
+            assetTypeToStr[assetType]
+        );
 
+        console.log("   Balances:");
         for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                console.log("       Native ETH balance: %s", _toStringWad(tokenBalances[i]));
+                console.log("       Native ETH: %s", _toStringWad(tokenBalances[i]));
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
                 console.log(
-                    "       %s balance: %s",
+                    "       %s: %s",
                     IERC20Metadata(address(underlyingToken)).name(),
                     cheats.toString(tokenBalances[i])
                 );

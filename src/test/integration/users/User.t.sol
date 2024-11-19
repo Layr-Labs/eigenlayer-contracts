@@ -12,6 +12,7 @@ import "src/contracts/pods/EigenPod.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/utils/Logger.t.sol";
+import "src/test/utils/SingleItemArrayLib.sol";
 
 struct Validator {
     uint40 index;
@@ -27,6 +28,8 @@ interface IUserDeployer {
 }
 
 contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
+    using SingleItemArrayLib for *;
+
     Vm cheats = Vm(VM_ADDRESS);
 
     AllocationManager allocationManager;
@@ -51,6 +54,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
+        allocationManager = deployer.allocationManager();
         delegationManager = deployer.delegationManager();
         strategyManager = deployer.strategyManager();
         eigenPodManager = deployer.eigenPodManager();
@@ -77,21 +81,91 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// Allocation Manager Methods
     /// -----------------------------------------------------------------------
 
-    // TODO(integration): Implement these methods
-    function modifyAllocations() public virtual createSnapshot {
-        _logM("modifyAllocations");
+    /// @dev Allocates randomly accross the operator set's strategies with a sum of `magnitudeSum`.
+    /// NOTE: Calling more than once will lead to deallocations...
+    function modifyAllocations(OperatorSet memory operatorSet, uint256 magnitudeSum) public virtual createSnapshot {
+        _logM(
+            "modifyAllocations",
+            string.concat(
+                "{avs: ",
+                Logger(operatorSet.avs).NAME_COLORED(),
+                ", operatorSetId: ",
+                cheats.toString(operatorSet.id),
+                ", magnitudeSum: ",
+                _toStringWad(magnitudeSum),
+                "}"
+            )
+        );
+
+        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+
+        AllocateParams[] memory params = AllocateParams({
+            operatorSet: operatorSet,
+            strategies: strategies,
+            newMagnitudes: _randomMagnitudes(magnitudeSum, strategies.length)
+        }).toArray();
+
+        allocationManager.modifyAllocations(params);
     }
 
-    function registerForOperatorSets() public virtual createSnapshot {
-        _logM("registerForOperatorSets");
+    function allocateAll(
+        OperatorSet memory operatorSet
+    ) public virtual createSnapshot {
+        modifyAllocations(operatorSet, 1.0 ether);
     }
 
-    function deregisterFromOperatorSets() public virtual createSnapshot {
-        _logM("deregisterFromOperatorSets");
+    function deallocateAll(
+        OperatorSet memory operatorSet
+    ) public virtual createSnapshot {
+        modifyAllocations(operatorSet, 0.0 ether);
     }
 
-    function setAllocationDelay() public virtual createSnapshot {
+    function registerForOperatorSet(
+        OperatorSet memory operatorSet
+    ) public virtual createSnapshot {
+        _logM(
+            "registerForOperatorSet",
+            string.concat(
+                "{avs: ",
+                Logger(operatorSet.avs).NAME_COLORED(),
+                ", operatorSetId: ",
+                cheats.toString(operatorSet.id),
+                "}"
+            )
+        );
+
+        allocationManager.registerForOperatorSets(
+            RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
+        );
+    }
+
+    function deregisterFromOperatorSet(
+        OperatorSet memory operatorSet
+    ) public virtual createSnapshot {
+        _logM(
+            "deregisterFromOperatorSet",
+            string.concat(
+                "{avs: ",
+                Logger(operatorSet.avs).NAME_COLORED(),
+                ", operatorSetId: ",
+                cheats.toString(operatorSet.id),
+                "}"
+            )
+        );
+
+        allocationManager.deregisterFromOperatorSets(
+            DeregisterParams({
+                operator: address(this),
+                avs: operatorSet.avs,
+                operatorSetIds: operatorSet.id.toArrayU32()
+            })
+        );
+    }
+
+    function setAllocationDelay(uint32 delay) public virtual createSnapshot {
         _logM("setAllocationDelay");
+
+        allocationManager.setAllocationDelay(delay);
     }
 
     /// -----------------------------------------------------------------------
@@ -116,7 +190,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function delegateTo(
         User operator
     ) public virtual createSnapshot {
-        _logM("delegateTo", operator.NAME());
+        _logM("delegateTo", operator.NAME_COLORED());
 
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
@@ -471,8 +545,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, checkpointTimestamp);
         console.log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
 
-
-
         pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
         cheats.resumeTracing();
     }
@@ -560,6 +632,30 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }
 
         return activeValidators;
+    }
+
+    function _randomMagnitudes(uint256 sum, uint256 len) internal returns (uint64[] memory) {
+        unchecked {
+            uint64[] memory mags = new uint64[](len);
+
+            if (sum == 0 || len == 0) return mags;
+
+            uint256 remaining = sum;
+
+            for (uint256 i; i < len; ++i) {
+                // Last iteration - assign remaining to ensure total is exact
+                if (i == len - 1) {
+                    mags[i] = uint64(remaining);
+                } else {
+                    // Use cheats.randomUint to generate random fraction
+                    uint256 randomFraction = cheats.randomUint(0, remaining / (len - i));
+                    mags[i] = uint64(randomFraction);
+                    remaining -= randomFraction;
+                }
+            }
+
+            return mags;
+        }
     }
 }
 

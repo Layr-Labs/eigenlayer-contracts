@@ -7,40 +7,13 @@ abstract contract Logger is Test {
     using StdStyle for *;
 
     /// -----------------------------------------------------------------------
-    /// Must Override
-    /// -----------------------------------------------------------------------
-
-    /// @dev Provide a name for the inheriting contract.
-    function NAME() public view virtual returns (string memory);
-
-    /// -----------------------------------------------------------------------
     /// Storage
     /// -----------------------------------------------------------------------
 
     bool on = true;
 
     /// -----------------------------------------------------------------------
-    /// Colored Names
-    /// -----------------------------------------------------------------------
-
-    /// @dev Returns `NAME` colored based on the inheriting contract's role.
-    function NAME_COLORED() internal view returns (string memory) {
-        vm.pauseTracing();
-        bool isOperator = _contains(NAME(), "operator");
-        bool isStaker = _contains(NAME(), "staker");
-        vm.resumeTracing();
-
-        if (isOperator) {
-            return NAME().blue();
-        } else if (isStaker) {
-            return NAME().magenta();
-        } else {
-            return NAME().yellow();
-        }
-    }
-
-    /// -----------------------------------------------------------------------
-    /// Logging
+    /// Modifiers
     /// -----------------------------------------------------------------------
 
     modifier noTracing() {
@@ -55,6 +28,42 @@ abstract contract Logger is Test {
         _resumeLogging();
     }
 
+    /// -----------------------------------------------------------------------
+    /// Must Override
+    /// -----------------------------------------------------------------------
+
+    /// @dev Provide a name for the inheriting contract.
+    function NAME() public view virtual returns (string memory);
+
+    /// -----------------------------------------------------------------------
+    /// Colored Names
+    /// -----------------------------------------------------------------------
+
+    /// @dev Returns `NAME` colored based on the inheriting contract's role.
+    function NAME_COLORED() public view returns (string memory) {
+        return _colorByRole(NAME());
+    }
+
+    function _colorByRole(string memory name) internal noTracing view returns (string memory colored) {
+        bool isOperator = _contains(name, "operator");
+        bool isStaker = _contains(name, "staker");
+        bool isAVS = _contains(name, "avs");
+
+        if (isOperator) {
+            colored = name.blue();
+        } else if (isStaker) {
+            colored = name.cyan();
+        } else if (isAVS) {
+            colored = name.magenta();
+        } else {
+            colored = name.yellow();
+        }
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Logging
+    /// -----------------------------------------------------------------------
+
     function _pauseLogging() internal {
         console.log("\n%s logging paused...", NAME_COLORED());
         on = false;
@@ -65,22 +74,23 @@ abstract contract Logger is Test {
         on = true;
     }
 
-    /// -----------------------------------------------------------------------
-    /// Logging
-    /// -----------------------------------------------------------------------
-
     function _logM(
         string memory method
     ) internal view {
-        console.log("\n%s.%s()", NAME_COLORED(), method.italic());
+        if (on) console.log("\n%s.%s()", NAME_COLORED(), method.italic());
     }
 
-    function _logM(string memory method, string memory arg) internal view {
-        console.log("\n%s.%s(%s)", NAME_COLORED(), method.italic(), arg.dim());
+    function _logM(string memory method, string memory args) internal view {
+        if (on) console.log("\n%s.%s(%s)", NAME_COLORED(), method.italic(), args);
+    }
+    
+    function _rollForward(uint256 blocks) internal {
+        vm.roll(block.timestamp + blocks);
+        if (on) console.log("\n%s.roll(%d)", _colorByRole("cheats"), block.timestamp);
     }
 
     /// -----------------------------------------------------------------------
-    /// Helpers
+    /// Strings
     /// -----------------------------------------------------------------------
 
     /// @dev Returns `true` if `needle` is found in `haystack`.

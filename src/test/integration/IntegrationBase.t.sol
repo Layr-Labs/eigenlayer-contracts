@@ -106,9 +106,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         numOperators++;
         return (operator, strategies, tokenBalances);
     }
-
+    
     function _newRandomAVS(IStrategy[] memory strategies) internal returns (AVS avs, uint32 operatorSetId) {
-        string memory avsName = string.concat("M1Operator", numOperators.toString());
+        string memory avsName = string.concat("avs", numAVSs.toString());
         avs = _genRandAVS(avsName);
         operatorSetId = avs.createOperatorSet(strategies);
         ++numAVSs;
@@ -124,8 +124,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ///
     /// Total sent == `gweiSent + remainderSent`
     function _sendRandomETH(address destination) internal returns (uint64 gweiSent, uint remainderSent) {
-        gweiSent = uint64(_randUint({ min: 1 , max: 10 }));
-        remainderSent = _randUint({ min: 1, max: 100 });
+        gweiSent = uint64(cheats.randomUint({ min: 1 , max: 10 }));
+        remainderSent = cheats.randomUint({ min: 1, max: 100 });
         uint totalSent = (gweiSent * GWEI_TO_WEI) + remainderSent;
 
         cheats.deal(address(this), address(this).balance + totalSent);
@@ -175,7 +175,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     /// @dev Choose a random subset of validators (selects AT LEAST ONE)
     function _choose(uint40[] memory validators) internal returns (uint40[] memory) {
-        uint rand = _randUint({ min: 1, max: validators.length ** 2 });
+        uint rand = cheats.randomUint({ min: 1, max: validators.length ** 2 });
 
         uint40[] memory result = new uint40[](validators.length);
         uint newLen;
@@ -903,7 +903,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies, 
         uint[] memory shares
     ) internal returns (IStrategy[] memory, uint[] memory) {
-        uint stratsToWithdraw = _randUint({ min: 1, max: strategies.length });
+        uint stratsToWithdraw = cheats.randomUint({ min: 1, max: strategies.length });
 
         IStrategy[] memory withdrawStrats = new IStrategy[](stratsToWithdraw);
         uint[] memory withdrawShares = new uint[](stratsToWithdraw);
@@ -913,13 +913,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
                 // For native eth, withdraw a random amount of gwei (at least 1)
-                uint portion = _randUint({ min: 1, max: shares[i] / GWEI_TO_WEI });
+                uint portion = cheats.randomUint({ min: 1, max: shares[i] / GWEI_TO_WEI });
                 portion *= GWEI_TO_WEI;
 
                 sharesToWithdraw = shares[i] - portion;
             } else {
                 // For LSTs, withdraw a random amount of shares (at least 1)
-                uint portion = _randUint({ min: 1, max: shares[i] });
+                uint portion = cheats.randomUint({ min: 1, max: shares[i] });
 
                 sharesToWithdraw = shares[i] - portion;
             }
@@ -977,7 +977,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 emit log_named_int("operator share delta (gwei): ", operatorShareDeltas[i] / int(GWEI_TO_WEI));
             } else {
                 // For LSTs, mint a random token amount
-                uint portion = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
+                uint portion = cheats.randomUint({ min: MIN_BALANCE, max: MAX_BALANCE });
                 StdCheats.deal(address(strat.underlyingToken()), address(staker), portion);
 
                 int delta = int(portion);
