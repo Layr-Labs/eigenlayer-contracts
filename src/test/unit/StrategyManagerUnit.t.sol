@@ -1452,7 +1452,7 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
-        uint256 balanceBefore = token.balanceOf(staker);
+        uint256 balanceBefore = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
         cheats.prank(address(delegationManagerMock));
         strategyManager.burnShares(strategy, sharesToBurn);
         uint256 balanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());

@@ -40,7 +40,6 @@ library Snapshots {
     }
 
     error InvalidSnapshotOrdering();
-    error BlocknumberDoesNotExist();
 
     /**
      * @dev Pushes a (`key`, `value`) pair into a DefaultWadHistory so that it is stored as the snapshot.

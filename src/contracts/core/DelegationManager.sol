@@ -760,7 +760,7 @@ contract DelegationManager is
         uint256 currCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
         // Note: this will simply return 0 if no history exists, same for latest() as well
         uint256 pastCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookup({
-            key: uint32(block.number - MIN_WITHDRAWAL_DELAY_BLOCKS)
+            key: uint32(block.number) - MIN_WITHDRAWAL_DELAY_BLOCKS
         });
         uint256 slashableShareInQueue =
             SlashingLib.scaleSharesForBurning(pastCumulativeScaledShares, currCumulativeScaledShares, maxMagnitude);
