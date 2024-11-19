@@ -351,7 +351,7 @@ contract DelegationManager is
         /// forgefmt: disable-next-item
         (uint256 sharesToDecrement, uint256 sharesToBurn) = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
-            slashableSharesInQueue: _getSlashableSharesInQueue(operator, strategy, newMaxMagnitude),
+            slashableSharesInQueue: _getSlashedSharesInQueue(operator, strategy, prevMaxMagnitude, newMaxMagnitude),
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });
@@ -751,19 +751,26 @@ contract DelegationManager is
         _beaconChainSlashingFactor[staker] = bsf;
     }
 
-    /// @dev Calculate amount of slashable shares that are queued withdrawn from an operator for a strategy.
-    function _getSlashableSharesInQueue(
+    /**
+     * @dev Calculate amount of slashable shares that would be slashed from the queued withdrawals from an operator for a strategy
+     * given the previous maxMagnitude and the new maxMagnitude.
+     * Note: To get the total amount of slashable shares in the queue withdrawable, set newMaxMagnitude to 0 and prevMaxMagnitude
+     * is the current maxMagnitude of the operator.
+     */
+    function _getSlashedSharesInQueue(
         address operator,
         IStrategy strategy,
-        uint64 maxMagnitude
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
     ) internal view returns (uint256) {
         uint256 currCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
         // Note: this will simply return 0 if no history exists, same for latest() as well
         uint256 pastCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookup({
             key: uint32(block.number) - MIN_WITHDRAWAL_DELAY_BLOCKS
         });
-        uint256 slashableShareInQueue =
-            SlashingLib.scaleSharesForBurning(pastCumulativeScaledShares, currCumulativeScaledShares, maxMagnitude);
+        uint256 slashableShareInQueue = SlashingLib.scaleSharesForBurning(
+            pastCumulativeScaledShares, currCumulativeScaledShares, prevMaxMagnitude, newMaxMagnitude
+        );
 
         return slashableShareInQueue;
     }
@@ -864,7 +871,13 @@ contract DelegationManager is
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = strategy;
         uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategies)[0];
-        return _getSlashableSharesInQueue(operator, strategy, maxMagnitude);
+        // Return amount of shares slashed if all remaining magnitude were to be slashed
+        return _getSlashedSharesInQueue({
+            operator: operator,
+            strategy: strategy,
+            prevMaxMagnitude: maxMagnitude,
+            newMaxMagnitude: 0
+        });
     }
 
     /// @inheritdoc IDelegationManager

@@ -88,9 +88,10 @@ library SlashingLib {
     function scaleSharesForBurning(
         uint256 pastCumulativeScaledShares,
         uint256 currCumulativeScaledShares,
-        uint64 maxMagnitude
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
     ) internal pure returns (uint256) {
-        return (currCumulativeScaledShares - pastCumulativeScaledShares).mulWad(maxMagnitude);
+        return (currCumulativeScaledShares - pastCumulativeScaledShares).mulWad(prevMaxMagnitude - newMaxMagnitude);
     }
 
     function update(

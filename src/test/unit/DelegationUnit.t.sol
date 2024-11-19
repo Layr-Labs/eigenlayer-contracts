@@ -4097,7 +4097,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         // 1. Randomize operator and staker info
         // Operator info
         address operator = r.Address();
-        uint64 newMagnitude = 5e17;
+        uint64 newMagnitude = 25e16;
         // First staker
         address staker1 = r.Address();
         uint256 shares = r.Uint256(1, MAX_STRATEGY_SHARES);
@@ -4143,12 +4143,12 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         uint256 operatorSharesBefore = delegationManager.operatorShares(operator, strategyMock);
         uint256 queuedSlashableSharesBefore = delegationManager.getSlashableSharesInQueue(operator, strategyMock);
 
-        // calculate burned shares, should be halved
-        // staker2 queue withdraws shares and we roll blocks to after the withdrawal is no longer slashable.
+        // calculate burned shares, should be 3/4 of the original shares
+        // staker2 queue withdraws shares
         // Therefore amount of shares to burn should be what the staker still has remaining + staker1 shares and then
         // divided by 2 since the operator was slashed 50%
-        uint256 sharesToDecrease = (shares + depositAmount - withdrawAmount) / 2;
-        uint256 sharesToBurn = sharesToDecrease + (delegationManager.getSlashableSharesInQueue(operator, strategyMock) / 2);
+        uint256 sharesToDecrease = (shares + depositAmount - withdrawAmount) * 3 / 4;
+        uint256 sharesToBurn = sharesToDecrease + withdrawAmount * 3 / 4;
 
         // 4. Burn shares
         _setOperatorMagnitude(operator, strategyMock, newMagnitude);
@@ -4168,7 +4168,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         uint256 queuedSlashableSharesAfter = delegationManager.getSlashableSharesInQueue(operator, strategyMock);
         uint256 operatorSharesAfter = delegationManager.operatorShares(operator, strategyMock);
         assertEq(queuedSlashableSharesBefore, withdrawAmount, "Slashable shares in queue should be full withdraw amount");
-        assertEq(queuedSlashableSharesAfter, withdrawAmount / 2, "Slashable shares in queue should be half withdraw amount after slashing");
+        assertEq(queuedSlashableSharesAfter, withdrawAmount / 4, "Slashable shares in queue should be 1/4 withdraw amount after slashing");
         assertEq(operatorSharesAfter, operatorSharesBefore - sharesToDecrease, "operator shares should be decreased by sharesToBurn");
     }
 
@@ -4180,7 +4180,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         // 1. Randomize operator and staker info
         // Operator info
         address operator = r.Address();
-        uint64 newMagnitude = 5e17;
+        uint64 newMagnitude = 25e16;
         // Staker and withdrawing amounts
         address staker = r.Address();
         uint256 depositAmount = r.Uint256(3, MAX_STRATEGY_SHARES);
@@ -4238,9 +4238,9 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         uint256 queuedSlashableSharesBefore = delegationManager.getSlashableSharesInQueue(operator, strategyMock);
 
         // calculate burned shares, should be halved for both operatorShares and slashable shares in queue
-        // staker queue withdraws shares twice and both withdrawals should be slashed 50%.
-        uint256 sharesToDecrease = (depositAmount - withdrawAmount1 - withdrawAmount2) / 2;
-        uint256 sharesToBurn = sharesToDecrease + (delegationManager.getSlashableSharesInQueue(operator, strategyMock) / 2);
+        // staker queue withdraws shares twice and both withdrawals should be slashed 75%.
+        uint256 sharesToDecrease = (depositAmount - withdrawAmount1 - withdrawAmount2) * 3 / 4;
+        uint256 sharesToBurn = sharesToDecrease + (delegationManager.getSlashableSharesInQueue(operator, strategyMock) * 3 / 4);
 
         // 4. Burn shares
         _setOperatorMagnitude(operator, strategyMock, newMagnitude);
@@ -4260,7 +4260,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         uint256 queuedSlashableSharesAfter = delegationManager.getSlashableSharesInQueue(operator, strategyMock);
         uint256 operatorSharesAfter = delegationManager.operatorShares(operator, strategyMock);
         assertEq(queuedSlashableSharesBefore, (withdrawAmount1 + withdrawAmount2), "Slashable shares in queue should be full withdraw amount");
-        assertEq(queuedSlashableSharesAfter, (withdrawAmount1 + withdrawAmount2) / 2, "Slashable shares in queue should be half withdraw amount after slashing");
+        assertEq(queuedSlashableSharesAfter, (withdrawAmount1 + withdrawAmount2) / 4, "Slashable shares in queue should be 1/4 withdraw amount after slashing");
         assertEq(operatorSharesAfter, operatorSharesBefore - sharesToDecrease, "operator shares should be decreased by sharesToBurn");
     }
 
@@ -4268,6 +4268,14 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
      * @notice TODO Test burning shares for an operator with slashable queued withdrawals in past MIN_WITHDRAWAL_DELAY_BLOCKS window.
      * There exists multiple withdrawals that are slashable but queued with different maxMagnitudes at
      * time of queuing.
+     *
+     * Test Setup:  
+     * - staker1 deposits, queues withdrawal for some amount,
+     * - operator slashed 50% 
+     * - staker 2 deposits, queues withdrawal for some amount
+     * - operator is then slashed another 50%
+     * slashed amount for staker 1 should be 75% and staker 2 should be 50% where the total
+     * slashed amount is the sum of both
      */
     function testFuzz_burnOperatorShares_MultipleWithdrawalsMultipleSlashings(Randomness r) public {}
 
@@ -4280,7 +4288,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         // 1. Randomize operator and staker info
         // Operator info
         address operator = r.Address();
-        uint64 newMagnitude = 5e17;
+        uint64 newMagnitude = 25e16;
         // staker
         address staker = r.Address();
         uint256 depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
@@ -4345,7 +4353,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
 
         uint256 operatorSharesBefore = delegationManager.operatorShares(operator, strategyMock);
 
-        // 4. Burn shares
+        // 4. Burn 0 shares when new magnitude is set
         _setOperatorMagnitude(operator, strategyMock, newMagnitude);
         cheats.prank(address(allocationManagerMock));
         cheats.expectEmit(true, true, true, true, address(delegationManager));
