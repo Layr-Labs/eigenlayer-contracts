@@ -12,8 +12,8 @@ contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionCo
     address account = address(0x1);
     address admin = address(0x2);
     address admin2 = address(0x3);
-    address delegate1 = address(0x4);
-    address delegate2 = address(0x5);
+    address appointee1 = address(0x4);
+    address appointee2 = address(0x5);
 
     address target1;
     address target2;
@@ -134,7 +134,7 @@ contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTe
     }
 }
 
-contract PermissionControllerUnitTests_SetDelegate is PermissionControllerUnitTests {
+contract PermissionControllerUnitTests_SetAppointee is PermissionControllerUnitTests {
     function setUp() virtual public override {
         // Setup
         PermissionControllerUnitTests.setUp();
@@ -146,53 +146,53 @@ contract PermissionControllerUnitTests_SetDelegate is PermissionControllerUnitTe
 
     function test_revert_notAdmin() public {
         cheats.expectRevert(IPermissionControllerErrors.NotAdmin.selector);
-        permissionController.setDelegate(account, delegate1, address(0), bytes4(0));
+        permissionController.setAppointee(account, appointee1, address(0), bytes4(0));
     }
 
-    function test_setDelegate() public {
+    function test_setAppointee() public {
         // Expect emit
         cheats.expectEmit(true, true, true, true);
-        emit DelegateSet(account, delegate1, target1, selector1);
+        emit AppointeeSet(account, appointee1, target1, selector1);
 
         cheats.prank(admin);
-        permissionController.setDelegate(account, delegate1, target1, selector1);
+        permissionController.setAppointee(account, appointee1, target1, selector1);
 
         // Validate Permissions
-        _validateSetDelegate(account, delegate1, target1, selector1);
+        _validateSetAppointee(account, appointee1, target1, selector1);
     }
 
-    function test_revert_delegateAlreadySet() public {
-        // Set delegate 
+    function test_revert_appointeeAlreadySet() public {
+        // Set appointee 
         cheats.startPrank(admin);
-        permissionController.setDelegate(account, delegate1, target1, selector1);
+        permissionController.setAppointee(account, appointee1, target1, selector1);
 
-        cheats.expectRevert(IPermissionControllerErrors.DelegateAlreadySet.selector);
-        permissionController.setDelegate(account, delegate1, target1, selector1);
+        cheats.expectRevert(IPermissionControllerErrors.AppointeeAlreadySet.selector);
+        permissionController.setAppointee(account, appointee1, target1, selector1);
         cheats.stopPrank();
     }
 
-    function test_setMultipleDelegates() public {
-        // Set delegates
+    function test_setMultipleAppointees() public {
+        // Set appointees
         cheats.startPrank(admin);
-        permissionController.setDelegate(account, delegate1, target1, selector1);
-        permissionController.setDelegate(account, delegate1, target2, selector2);
-        permissionController.setDelegate(account, delegate2, target1, selector1);
+        permissionController.setAppointee(account, appointee1, target1, selector1);
+        permissionController.setAppointee(account, appointee1, target2, selector2);
+        permissionController.setAppointee(account, appointee2, target1, selector1);
         cheats.stopPrank();
 
         // Validate Permissions
-        _validateSetDelegate(account, delegate1, target1, selector1);
-        _validateSetDelegate(account, delegate1, target2, selector2);
-        _validateSetDelegate(account, delegate2, target1, selector1);
+        _validateSetAppointee(account, appointee1, target1, selector1);
+        _validateSetAppointee(account, appointee1, target2, selector2);
+        _validateSetAppointee(account, appointee2, target1, selector1);
     }
 
-    function _validateSetDelegate(address accountToCheck, address delegate, address target, bytes4 selector) internal view {
-        assertTrue(permissionController.canCall(accountToCheck, delegate, target, selector));
-        _validateDelegatePermissions(accountToCheck, delegate, target, selector);
-        _validateGetDelegates(accountToCheck, delegate, target, selector);
+    function _validateSetAppointee(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+        assertTrue(permissionController.canCall(accountToCheck, appointee, target, selector));
+        _validateAppointeePermissions(accountToCheck, appointee, target, selector);
+        _validateGetAppointees(accountToCheck, appointee, target, selector);
     }
 
-    function _validateDelegatePermissions(address accountToCheck, address delegate, address target, bytes4 selector) internal view {
-       (address[] memory targets, bytes4[] memory selectors) = permissionController.getDelegatePermissions(accountToCheck, delegate);
+    function _validateAppointeePermissions(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+       (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(accountToCheck, appointee);
        bool foundTargetSelector = false;
        for (uint256 i = 0; i < targets.length; ++i) {
            if (targets[i] == target) {
@@ -201,23 +201,23 @@ contract PermissionControllerUnitTests_SetDelegate is PermissionControllerUnitTe
                 break;
            }
        }
-       assertTrue(foundTargetSelector, "Delegate does not have permission for given target and selector");
+       assertTrue(foundTargetSelector, "Appointee does not have permission for given target and selector");
     }
 
-    function _validateGetDelegates(address accountToCheck, address delegate, address target, bytes4 selector) internal view {
-        (address[] memory delegates) = permissionController.getDelegates(accountToCheck, target, selector);
-        bool foundDelegate = false;
-        for (uint256 i = 0; i < delegates.length; ++i) {
-            if (delegates[i] == delegate) {
-                foundDelegate = true;
+    function _validateGetAppointees(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+        (address[] memory appointees) = permissionController.getAppointees(accountToCheck, target, selector);
+        bool foundAppointee = false;
+        for (uint256 i = 0; i < appointees.length; ++i) {
+            if (appointees[i] == appointee) {
+                foundAppointee = true;
                 break;
             }
         }
-        assertTrue(foundDelegate, "Delegate not in list of delegates for given target and selector");
+        assertTrue(foundAppointee, "Appointee not in list of appointees for given target and selector");
     }
 }
 
-contract PermissionControllerUnitTests_RemoveDelegate is PermissionControllerUnitTests {
+contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUnitTests {
     function setUp() virtual public override {
         // Setup
         PermissionControllerUnitTests.setUp();
@@ -226,60 +226,60 @@ contract PermissionControllerUnitTests_RemoveDelegate is PermissionControllerUni
         cheats.prank(account);
         permissionController.setAdmin(account, admin);
 
-        // Set delegates
+        // Set appointees
         cheats.startPrank(admin);
-        permissionController.setDelegate(account, delegate1, target1, selector1);
-        permissionController.setDelegate(account, delegate1, target2, selector2);
-        permissionController.setDelegate(account, delegate2, target1, selector1);
+        permissionController.setAppointee(account, appointee1, target1, selector1);
+        permissionController.setAppointee(account, appointee1, target2, selector2);
+        permissionController.setAppointee(account, appointee2, target1, selector1);
         cheats.stopPrank();
     }
 
     function test_revert_notAdmin() public {
         cheats.expectRevert(IPermissionControllerErrors.NotAdmin.selector);
-        permissionController.removeDelegate(account, delegate1, target1, selector1);
+        permissionController.removeAppointee(account, appointee1, target1, selector1);
     }
 
-    function test_removeDelegate() public {
+    function test_removeAppointee() public {
         // Expect emit
         cheats.expectEmit(true, true, true, true);
-        emit DelegateRemoved(account, delegate1, target1, selector1);
+        emit AppointeeRemoved(account, appointee1, target1, selector1);
 
         cheats.prank(admin);
-        permissionController.removeDelegate(account, delegate1, target1, selector1);
+        permissionController.removeAppointee(account, appointee1, target1, selector1);
 
         // Validate Permissions
-        _validateRemoveDelegate(account, delegate1, target1, selector1);
+        _validateRemoveAppointee(account, appointee1, target1, selector1);
     }
 
-    function test_revert_delegateNotSet() public {
-        cheats.expectRevert(IPermissionControllerErrors.DelegateNotSet.selector);
+    function test_revert_appointeeNotSet() public {
+        cheats.expectRevert(IPermissionControllerErrors.AppointeeNotSet.selector);
         cheats.prank(admin);
-        permissionController.removeDelegate(account, delegate2, target2, selector2);
+        permissionController.removeAppointee(account, appointee2, target2, selector2);
     }
 
-    function test_removeMultipleDelegates() public {
-        // Remove delegates
+    function test_removeMultipleAppointees() public {
+        // Remove appointees
         cheats.startPrank(admin);
-        permissionController.removeDelegate(account, delegate1, target1, selector1);
-        permissionController.removeDelegate(account, delegate1, target2, selector2);
-        permissionController.removeDelegate(account, delegate2, target1, selector1);
+        permissionController.removeAppointee(account, appointee1, target1, selector1);
+        permissionController.removeAppointee(account, appointee1, target2, selector2);
+        permissionController.removeAppointee(account, appointee2, target1, selector1);
         cheats.stopPrank();
 
         // Validate Permissions
-        _validateRemoveDelegate(account, delegate1, target1, selector1);
-        _validateRemoveDelegate(account, delegate1, target2, selector2);
-        _validateRemoveDelegate(account, delegate2, target1, selector1);
+        _validateRemoveAppointee(account, appointee1, target1, selector1);
+        _validateRemoveAppointee(account, appointee1, target2, selector2);
+        _validateRemoveAppointee(account, appointee2, target1, selector1);
     }
 
 
-    function _validateRemoveDelegate(address accountToCheck, address delegate, address target, bytes4 selector) internal view {
-        assertFalse(permissionController.canCall(accountToCheck, delegate, target, selector));
-        _validateDelegatePermissionsRemoved(accountToCheck, delegate, target, selector);
-        _validateGetDelegatesRemoved(accountToCheck, delegate, target, selector);
+    function _validateRemoveAppointee(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+        assertFalse(permissionController.canCall(accountToCheck, appointee, target, selector));
+        _validateAppointeePermissionsRemoved(accountToCheck, appointee, target, selector);
+        _validateGetAppointeesRemoved(accountToCheck, appointee, target, selector);
     }
 
-    function _validateDelegatePermissionsRemoved(address accountToCheck, address delegate, address target, bytes4 selector) internal view {
-       (address[] memory targets, bytes4[] memory selectors) = permissionController.getDelegatePermissions(accountToCheck, delegate);
+    function _validateAppointeePermissionsRemoved(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+       (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(accountToCheck, appointee);
        bool foundTargetSelector = false;
        for (uint256 i = 0; i < targets.length; ++i) {
            if (targets[i] == target && selectors[i] == selector) {
@@ -287,18 +287,18 @@ contract PermissionControllerUnitTests_RemoveDelegate is PermissionControllerUni
                 break;
            }
        }
-       assertFalse(foundTargetSelector, "Delegate still has permission for given target and selector");
+       assertFalse(foundTargetSelector, "Appointee still has permission for given target and selector");
     }
 
-    function _validateGetDelegatesRemoved(address accountToCheck, address delegate, address target, bytes4 selector) internal view {
-        (address[] memory delegates) = permissionController.getDelegates(accountToCheck, target, selector);
-        bool foundDelegate = false;
-        for (uint256 i = 0; i < delegates.length; ++i) {
-            if (delegates[i] == delegate) {
-                foundDelegate = true;
+    function _validateGetAppointeesRemoved(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+        (address[] memory appointees) = permissionController.getAppointees(accountToCheck, target, selector);
+        bool foundAppointee = false;
+        for (uint256 i = 0; i < appointees.length; ++i) {
+            if (appointees[i] == appointee) {
+                foundAppointee = true;
                 break;
             }
         }
-        assertFalse(foundDelegate, "Delegate still in list of delegates for given target and selector");
+        assertFalse(foundAppointee, "Appointee still in list of appointees for given target and selector");
     }
 }

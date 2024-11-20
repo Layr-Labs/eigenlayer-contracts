@@ -8,18 +8,18 @@ interface IPermissionControllerErrors {
     error AdminAlreadySet();
     /// @notice Thrown when the admin to remove is not an admin
     error AdminNotSet();
-    /// @notice Thrown when a delegate is already set for the account's function
-    error DelegateAlreadySet();
-    /// @notice Thrown when a delegate is not set for the account's function
-    error DelegateNotSet();
+    /// @notice Thrown when an appointee is already set for the account's function
+    error AppointeeAlreadySet();
+    /// @notice Thrown when an appointee is not set for the account's function
+    error AppointeeNotSet();
 }
 
 interface IPermissionControllerEvents {
-    /// @notice Emitted when a delegate is set
-    event DelegateSet(address indexed account, address indexed delegate, address target, bytes4 selector);
+    /// @notice Emitted when an appointee is set
+    event AppointeeSet(address indexed account, address indexed appointee, address target, bytes4 selector);
 
-    /// @notice Emitted when a delegate is revoked
-    event DelegateRemoved(address indexed account, address indexed delegate, address target, bytes4 selector);
+    /// @notice Emitted when an appointee is revoked
+    event AppointeeRemoved(address indexed account, address indexed appointee, address target, bytes4 selector);
 
     /// @notice Emitted when an admin is set for a given account
     event AdminSet(address indexed account, address admin);
@@ -46,25 +46,25 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
     function removeAdmin(address account, address admin) external;
 
     /**
-     * @notice Set a delegate for a given account
-     * @param account to set delegate for
-     * @param delegate to set
-     * @param target to set delegate for
-     * @param selector to set delegate for
-     * @dev Only the admin of the account can set a delegate
+     * @notice Set an appointee for a given account
+     * @param account to set appointee for
+     * @param appointee to set
+     * @param target to set appointee for
+     * @param selector to set appointee for
+     * @dev Only the admin of the account can set an appointee
      */
-    function setDelegate(address account, address delegate, address target, bytes4 selector) external;
+    function setAppointee(address account, address appointee, address target, bytes4 selector) external;
 
     /**
-     * Removes a delegate for a given account
-     * @param account to remove delegate for
-     * @param delegate to remove
-     * @param target to remove delegate for
-     * @param selector to remove delegate for
-     * @dev Only the admin of the account can remove a delegate
+     * Removes an appointee for a given account
+     * @param account to remove appointee for
+     * @param appointee to remove
+     * @param target to remove appointee for
+     * @param selector to remove appointee for
+     * @dev Only the admin of the account can remove an appointee
      * @dev If all admins are removed, the original account is now the admin
      */
-    function removeDelegate(address account, address delegate, address target, bytes4 selector) external;
+    function removeAppointee(address account, address appointee, address target, bytes4 selector) external;
 
     /**
      * @notice Checks if the given caller is an admin of the account
@@ -87,26 +87,26 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @param caller to check permission for
      * @param target to check permission for
      * @param selector to check permission for
-     * @dev Returns `true` if the admin OR the delegate is the caller
+     * @dev Returns `true` if the admin OR the appointee is the caller
      */
     function canCall(address account, address caller, address target, bytes4 selector) external returns (bool);
 
     /**
-     * @notice Gets the list of permissions of a delegate for a given account
-     * @param account to get delegate permissions for
-     * @param delegate to get permissions
+     * @notice Gets the list of permissions of an appointee for a given account
+     * @param account to get appointee permissions for
+     * @param appointee to get permissions
      */
-    function getDelegatePermissions(
+    function getAppointeePermissions(
         address account,
-        address delegate
+        address appointee
     ) external returns (address[] memory, bytes4[] memory);
 
     /**
-     * @notice Returns the list of delegates for a given account and function
-     * @param account to get delegates for
-     * @param target to get delegates for
-     * @param selector to get delegates for
-     * @dev Does NOT include admin as a delegate, even though it can call
+     * @notice Returns the list of appointees for a given account and function
+     * @param account to get appointees for
+     * @param target to get appointees for
+     * @param selector to get appointees for
+     * @dev Does NOT include admin as an appointee, even though it can call
      */
-    function getDelegates(address account, address target, bytes4 selector) external returns (address[] memory);
+    function getAppointees(address account, address target, bytes4 selector) external returns (address[] memory);
 }

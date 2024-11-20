@@ -1109,7 +1109,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
     ) public {
         // Set admin
         cheats.prank(defaultOperator);
-        permissionController.setDelegate(
+        permissionController.setAppointee(
             defaultOperator,
             address(this),
             address(delegationManager),
@@ -1127,7 +1127,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
     function testFuzz_UAM_updateOperatorMetadataURI(string memory metadataURI) public {
         // Set admin
         cheats.prank(defaultOperator);
-        permissionController.setDelegate(
+        permissionController.setAppointee(
             defaultOperator,
             address(this),
             address(delegationManager),
@@ -3196,7 +3196,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
 
         // Set delegate
         cheats.prank(defaultOperator);
-        permissionController.setDelegate(
+        permissionController.setAppointee(
             defaultOperator,
             address(this),
             address(delegationManager),
