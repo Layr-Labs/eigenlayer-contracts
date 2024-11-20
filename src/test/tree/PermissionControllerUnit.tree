@@ -11,17 +11,17 @@
     │   │   └── it should revert
     │   └── given that a valid caller sets a valid admin
     │       └── it should update the permissions of the account & emit an AdminSet event
-    ├── when setDelegate is called
+    ├── when setAppointee is called
     │   ├── given that the caller is not the admin
     │   │   └── it should revert
-    │   ├── given that the delegate already has permissions
+    │   ├── given that the appointee already has permissions
     │   │   └── it should revert
     │   └── given that proper permissions are set
-    │       └── it should emit a DelegateSet event, and update the `delegatePermissions` and `permissionDelegate` mappings for the account
-    └── when removeDelegate is called
+    │       └── it should emit a DelegateSet event, and update the `appointeePermissions` and `permissionAppointee` mappings for the account
+    └── when removeAppointee is called
         ├── given that the caller is not the admin
         │   └── it should revert
-        ├── given that the delegate does not have permissions
+        ├── given that the appointee does not have permissions
         │   └── it should revert
         └── given that proper permissions are set
-            └── it should emit a DelegateRemoved event, and update the `delegatePermissions` and `permissionDelegate` mappings for the account
+            └── it should emit a DelegateRemoved event, and update the `appointeePermissions` and `permissionAppointee` mappings for the account

@@ -52,41 +52,41 @@ contract PermissionController is Initializable, PermissionControllerStorage {
     }
 
     /// @inheritdoc IPermissionController
-    function setDelegate(
+    function setAppointee(
         address account,
-        address delegate,
+        address appointee,
         address target,
         bytes4 selector
     ) external onlyAdmin(account) {
         AccountPermissions storage permissions = _permissions[account];
 
         bytes32 targetSelector = _encodeTargetSelector(target, selector);
-        require(!permissions.delegatePermissions[delegate].contains(targetSelector), DelegateAlreadySet());
+        require(!permissions.appointeePermissions[appointee].contains(targetSelector), AppointeeAlreadySet());
 
-        // Add the delegate to the account's permissions
-        permissions.delegatePermissions[delegate].add(targetSelector);
-        permissions.permissionDelegates[targetSelector].add(delegate);
+        // Add the appointee to the account's permissions
+        permissions.appointeePermissions[appointee].add(targetSelector);
+        permissions.permissionAppointees[targetSelector].add(appointee);
 
-        emit DelegateSet(account, delegate, target, selector);
+        emit AppointeeSet(account, appointee, target, selector);
     }
 
     /// @inheritdoc IPermissionController
-    function removeDelegate(
+    function removeAppointee(
         address account,
-        address delegate,
+        address appointee,
         address target,
         bytes4 selector
     ) external onlyAdmin(account) {
         AccountPermissions storage permissions = _permissions[account];
 
         bytes32 targetSelector = _encodeTargetSelector(target, selector);
-        require(permissions.delegatePermissions[delegate].contains(targetSelector), DelegateNotSet());
+        require(permissions.appointeePermissions[appointee].contains(targetSelector), AppointeeNotSet());
 
-        // Remove the delegate from the account's permissions
-        permissions.delegatePermissions[delegate].remove(targetSelector);
-        permissions.permissionDelegates[targetSelector].remove(delegate);
+        // Remove the appointee from the account's permissions
+        permissions.appointeePermissions[appointee].remove(targetSelector);
+        permissions.permissionAppointees[targetSelector].remove(appointee);
 
-        emit DelegateRemoved(account, delegate, target, selector);
+        emit AppointeeRemoved(account, appointee, target, selector);
     }
 
     /**
@@ -144,23 +144,23 @@ contract PermissionController is Initializable, PermissionControllerStorage {
     /// @inheritdoc IPermissionController
     function canCall(address account, address caller, address target, bytes4 selector) external view returns (bool) {
         return isAdmin(account, caller)
-            || _permissions[account].delegatePermissions[caller].contains(_encodeTargetSelector(target, selector));
+            || _permissions[account].appointeePermissions[caller].contains(_encodeTargetSelector(target, selector));
     }
 
     /// @inheritdoc IPermissionController
-    function getDelegatePermissions(
+    function getAppointeePermissions(
         address account,
-        address delegate
+        address appointee
     ) external view returns (address[] memory, bytes4[] memory) {
-        EnumerableSet.Bytes32Set storage delegatePermissions = _permissions[account].delegatePermissions[delegate];
+        EnumerableSet.Bytes32Set storage appointeePermissions = _permissions[account].appointeePermissions[appointee];
 
-        uint256 length = delegatePermissions.length();
+        uint256 length = appointeePermissions.length();
 
         address[] memory targets = new address[](length);
         bytes4[] memory selectors = new bytes4[](length);
 
         for (uint256 i = 0; i < length; i++) {
-            (address target, bytes4 selector) = _decodeTargetSelector(delegatePermissions.at(i));
+            (address target, bytes4 selector) = _decodeTargetSelector(appointeePermissions.at(i));
             targets[i] = target;
             selectors[i] = selector;
         }
@@ -169,8 +169,8 @@ contract PermissionController is Initializable, PermissionControllerStorage {
     }
 
     /// @inheritdoc IPermissionController
-    function getDelegates(address account, address target, bytes4 selector) external view returns (address[] memory) {
+    function getAppointees(address account, address target, bytes4 selector) external view returns (address[] memory) {
         bytes32 targetSelector = _encodeTargetSelector(target, selector);
-        return _permissions[account].permissionDelegates[targetSelector].values();
+        return _permissions[account].permissionAppointees[targetSelector].values();
     }
 }

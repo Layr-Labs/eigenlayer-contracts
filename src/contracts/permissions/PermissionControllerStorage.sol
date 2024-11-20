@@ -12,10 +12,10 @@ abstract contract PermissionControllerStorage is IPermissionController {
     struct AccountPermissions {
         /// @notice The admins of the account
         EnumerableSet.AddressSet admins;
-        /// @notice Mapping from a delegate to the list of encoded target & selectors
-        mapping(address delegate => EnumerableSet.Bytes32Set) delegatePermissions;
-        /// @notice Mapping from encoded target & selector to the list of delegates
-        mapping(bytes32 targetSelector => EnumerableSet.AddressSet) permissionDelegates;
+        /// @notice Mapping from an appointee to the list of encoded target & selectors
+        mapping(address appointee => EnumerableSet.Bytes32Set) appointeePermissions;
+        /// @notice Mapping from encoded target & selector to the list of appointees
+        mapping(bytes32 targetSelector => EnumerableSet.AddressSet) permissionAppointees;
     }
 
     /// @notice Mapping from an account to its permission
