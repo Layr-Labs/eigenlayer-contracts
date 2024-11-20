@@ -37,6 +37,15 @@ contract StrategyManagerMock is Test {
     }
 
     /**
+     * @notice Adds deposit to the staker's deposits. Note that this function does not check if the staker
+     * has already deposited for the strategy.
+     */
+    function addDeposit(address staker, IStrategy strategy, uint256 shares) external {
+        strategiesToReturn[staker].push(strategy);
+        sharesToReturn[staker].push(shares);
+    }
+
+    /**
      * @notice Get all details on the staker's deposits and corresponding shares
      * @return (staker's strategies, shares in these strategies)
      */
