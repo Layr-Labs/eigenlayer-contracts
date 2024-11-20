@@ -836,6 +836,39 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         return userType;
     }
 
+    function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {        
+        // Fisher-Yates shuffle algorithm
+        for (uint i = strats.length - 1; i > 0; i--)  {
+            uint randomIndex = _randUint({ min: 0, max: i });
+            
+            // Swap elements
+            IStrategy temp = strats[i];
+            strats[i] = strats[randomIndex];
+            strats[randomIndex] = temp;
+        }
+        
+        return strats;
+    }
+
+    function _randomStrategies() internal returns (IStrategy[][] memory strategies) {
+        uint numOpSets = _randUint({ min: 1, max: 5 });
+
+        strategies = new IStrategy[][](numOpSets);
+        
+        for (uint i; i < numOpSets; ++i) {
+            IStrategy[] memory randomStrategies = _shuffle(allStrats);
+
+            uint numStrategies = _randUint({ min: 1, max: allStrats.length });
+
+            // Modify the length of the array in memory (thus ignoring remaining elements).
+            assembly {
+                mstore(randomStrategies, numStrategies)
+            }
+
+            strategies[i] = randomStrategies;
+        }
+    }
+
     /**
      * @dev Converts a bitmap into an array of bytes
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap

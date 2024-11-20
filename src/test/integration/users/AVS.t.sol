@@ -12,6 +12,7 @@ import "src/test/integration/TimeMachine.t.sol";
 import "src/test/utils/Logger.t.sol";
 
 import "src/test/utils/SingleItemArrayLib.sol";
+import "src/contracts/interfaces/IAVSRegistrar.sol";
 
 interface IAVSDeployer {
     function allocationManager() external view returns (AllocationManager);
@@ -19,7 +20,7 @@ interface IAVSDeployer {
     function timeMachine() external view returns (TimeMachine);
 }
 
-contract AVS is Logger, IAllocationManagerTypes {
+contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     using SingleItemArrayLib for *;
 
     AllocationManager immutable allocationManager;
@@ -51,41 +52,36 @@ contract AVS is Logger, IAllocationManagerTypes {
     }
 
     /// -----------------------------------------------------------------------
-    /// AllocationManager Interactions
+    /// AllocationManager
     /// -----------------------------------------------------------------------
-    
+
     function createOperatorSets(
-        uint256 numOpSets,
-        uint256 numStrategies
-    ) public createSnapshot returns (uint32[] memory operatorSetIds, IStrategy[][] memory strategies) {
+        IStrategy[][] memory strategies
+    ) public createSnapshot returns (OperatorSet[] memory operatorSets) {
         print.method("createOperatorSets");
 
-        CreateSetParams[] memory p = new CreateSetParams[](numOpSets);
-        operatorSetIds = new uint32[](numOpSets);
-        strategies = new IStrategy[][](numOpSets);
+        uint256 len = strategies.length;
+        CreateSetParams[] memory p = new CreateSetParams[](len);
+        operatorSets = new OperatorSet[](len);
 
-        for (uint256 i; i < numOpSets; ++i) {
-            p[i].operatorSetId = totalOperatorSets++;
-            for (uint256 j; j < numStrategies; ++j) {
-                IERC20 token = IERC20(new ERC20Mock());
-                p[i].strategies[j] = strategyFactory.deployNewStrategy(token);
-            }
+        for (uint256 i; i < len; ++i) {
+            p[i] = CreateSetParams({operatorSetId: totalOperatorSets++, strategies: strategies[i]});
 
-            operatorSetIds[i] = p[i].operatorSetId;
-            strategies[i] = p[i].strategies;
+            operatorSets[i] = OperatorSet(address(this), p[i].operatorSetId);
         }
 
         print.createOperatorSets(p);
         allocationManager.createOperatorSets(p);
     }
 
-    function createOperatorSet(IStrategy[] memory strategies) public createSnapshot returns (uint32 operatorSetId) {
+    function createOperatorSet(
+        IStrategy[] memory strategies
+    ) public createSnapshot returns (OperatorSet memory operatorSet) {
         print.method("createOperatorSets");
 
-        CreateSetParams[] memory p = CreateSetParams({
-            operatorSetId: operatorSetId,
-            strategies: strategies
-        }).toArray();
+        operatorSet = OperatorSet(address(this), totalOperatorSets++);
+
+        CreateSetParams[] memory p = CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray();
 
         print.createOperatorSets(p);
         allocationManager.createOperatorSets(p);
@@ -108,11 +104,8 @@ contract AVS is Logger, IAllocationManagerTypes {
     function deregisterFromOperatorSets(User operator, uint32[] memory operatorSetIds) public createSnapshot {
         print.method("deregisterFromOperatorSets");
 
-        DeregisterParams memory p = DeregisterParams({
-            operator: address(operator),
-            avs: address(this),
-            operatorSetIds: operatorSetIds
-        });
+        DeregisterParams memory p =
+            DeregisterParams({operator: address(operator), avs: address(this), operatorSetIds: operatorSetIds});
 
         print.deregisterFromOperatorSets(p);
         allocationManager.deregisterFromOperatorSets(p);
@@ -152,4 +145,16 @@ contract AVS is Logger, IAllocationManagerTypes {
 
         allocationManager.removeStrategiesFromOperatorSet(operatorSetId, strategies);
     }
+
+    /// -----------------------------------------------------------------------
+    /// IAVSRegistrar
+    /// -----------------------------------------------------------------------
+
+    function registerOperator(
+        address operator,
+        uint32[] calldata operatorSetIds,
+        bytes calldata data
+    ) external override {}
+
+    function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external override {}
 }

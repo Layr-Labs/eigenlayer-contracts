@@ -190,7 +190,7 @@ library print {
     ) internal pure {
         console.log("Creating operator sets:");
         for (uint256 i; i < p.length; ++i) {
-            console.log("   Creating operator set: %d", p[i].operatorSetId);
+            console.log("   operatorSet%d:".yellow(), p[i].operatorSetId);
             for (uint256 j; j < p[i].strategies.length; ++j) {
                 console.log("       strategy: %s", address(p[i].strategies[j]));
             }
@@ -203,7 +203,7 @@ library print {
         console.log("Deregistering operator: %s", address(p.operator));
         console.log("   from operator sets:");
         for (uint256 i; i < p.operatorSetIds.length; ++i) {
-            console.log("       operatorSetId: %d", p.operatorSetIds[i]);
+            console.log("       operatorSet%d:".yellow(), p.operatorSetIds[i]);
         }
     }
 

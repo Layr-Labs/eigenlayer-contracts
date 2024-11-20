@@ -5,7 +5,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
-    // TODO: extend this
     function testFuzz_deposit_delegate_allocate(uint24 _random) public {
         // Configure the random parameters for the test
         _configRand({
@@ -13,10 +12,12 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS
         });
+        
         // Create a staker and an operator with a nonzero balance and corresponding strategies
+        (AVS avs, OperatorSet[] memory operatorSets) = _newRandomAVS();
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
-        (AVS avs, uint32 operatorSetId) = _newRandomAVS(strategies);
+
         // Upgrade contracts if forkType is not local
         _upgradeEigenLayerContracts();
 
@@ -32,14 +33,20 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         check_Deposit_State(staker, strategies, shares);
         assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
-        OperatorSet memory operatorSet = OperatorSet(address(avs), operatorSetId);
+        operator.registerForOperatorSets(operatorSets);
 
-        // 3. Allocate all magnitude
-        operator.allocateAll(operatorSet);
+        for (uint i; i < operatorSets.length; ++i) {
+            uint256 len = allocationManager.getStrategiesInOperatorSet(operatorSets[i]).length;
+            operator.modifyAllocations(operatorSets[i], _randomMagnitudes({ sum: 1 ether / uint64(operatorSets.length), len: len }));
+        }
 
         rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
 
-        // 3. Deallocate all magnitude
-        operator.deallocateAll(operatorSet);
+        for (uint i; i < operatorSets.length; ++i) {
+            uint256 wadToSlash = _randUint({min: 0.01 ether, max: 1 ether});
+            avs.slashOperator(operator, operatorSets[i].id, wadToSlash);
+        }
+
+        // TODO: write checks for slashing...
     }
 }

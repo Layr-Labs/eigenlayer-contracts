@@ -78,7 +78,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     /// @dev Allocates randomly accross the operator set's strategies with a sum of `magnitudeSum`.
     /// NOTE: Calling more than once will lead to deallocations...
-    function modifyAllocations(OperatorSet memory operatorSet, uint256 magnitudeSum) public virtual createSnapshot {
+    function modifyAllocations(OperatorSet memory operatorSet, uint64[] memory magnitudes) public virtual createSnapshot {
         print.method(
             "modifyAllocations",
             string.concat(
@@ -86,33 +86,35 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 Logger(operatorSet.avs).NAME_COLORED(),
                 ", operatorSetId: ",
                 cheats.toString(operatorSet.id),
-                ", magnitudeSum: ",
-                magnitudeSum.asWad(),
                 "}"
             )
         );
 
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
 
+        require(strategies.length == magnitudes.length, "User.modifyAllocations: length mismatch");
+
         AllocateParams[] memory params = AllocateParams({
             operatorSet: operatorSet,
             strategies: strategies,
-            newMagnitudes: _randomMagnitudes(magnitudeSum, strategies.length)
+            newMagnitudes: magnitudes
         }).toArray();
 
         allocationManager.modifyAllocations(params);
     }
-
-    function allocateAll(
-        OperatorSet memory operatorSet
-    ) public virtual createSnapshot {
-        modifyAllocations(operatorSet, 1.0 ether);
-    }
-
+    
     function deallocateAll(
         OperatorSet memory operatorSet
+    ) public virtual {
+        modifyAllocations(operatorSet, new uint64[](allocationManager.getStrategiesInOperatorSet(operatorSet).length));
+    }
+
+    function registerForOperatorSets(
+        OperatorSet[] memory operatorSets
     ) public virtual createSnapshot {
-        modifyAllocations(operatorSet, 0.0 ether);
+        for (uint256 i; i < operatorSets.length; ++i) {
+            registerForOperatorSet(operatorSets[i]);
+        }
     }
 
     function registerForOperatorSet(
@@ -627,30 +629,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }
 
         return activeValidators;
-    }
-
-    function _randomMagnitudes(uint256 sum, uint256 len) internal returns (uint64[] memory) {
-        unchecked {
-            uint64[] memory mags = new uint64[](len);
-
-            if (sum == 0 || len == 0) return mags;
-
-            uint256 remaining = sum;
-
-            for (uint256 i; i < len; ++i) {
-                // Last iteration - assign remaining to ensure total is exact
-                if (i == len - 1) {
-                    mags[i] = uint64(remaining);
-                } else {
-                    // Use cheats.randomUint to generate random fraction
-                    uint256 randomFraction = cheats.randomUint(0, remaining / (len - i));
-                    mags[i] = uint64(randomFraction);
-                    remaining -= randomFraction;
-                }
-            }
-
-            return mags;
-        }
     }
 }
 

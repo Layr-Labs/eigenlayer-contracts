@@ -107,16 +107,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
         numOperators++;
         return (operator, strategies, tokenBalances);
     }
-    
-    function _newRandomAVS(IStrategy[] memory strategies) internal returns (AVS avs, uint32 operatorSetId) {
+
+    function _newRandomAVS() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
         string memory avsName = string.concat("avs", numAVSs.toString());
         avs = _genRandAVS(avsName);
-        operatorSetId = avs.createOperatorSet(strategies);
+        operatorSets = avs.createOperatorSets(_randomStrategies());
         ++numAVSs;
-    }
-
-    function _newRandomAVS() internal returns (AVS avs, uint32 operatorSetId) {
-        return _newRandomAVS(allStrats);
     }
 
     /// @dev Send a random amount of ETH (up to 10 gwei) to the destination via `call`,
@@ -890,6 +886,23 @@ abstract contract IntegrationBase is IntegrationDeployer {
     /*******************************************************************************
                                 UTILITY METHODS
     *******************************************************************************/
+
+    function _randomMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
+        magnitudes = new uint64[](len);
+
+        if (sum == 0 || len == 0) return magnitudes;
+        
+        uint64 remaining = sum;
+
+        for (uint256 i; i < len; ++i) {
+            if (i == len - 1) {
+                magnitudes[i] = remaining;
+            } else {
+                magnitudes[i] = uint64(_randUint(0, remaining / (len - i)));
+                remaining -= magnitudes[i];
+            }
+        }
+    }
 
     function _randWithdrawal(
         IStrategy[] memory strategies, 
