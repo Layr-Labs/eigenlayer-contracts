@@ -5777,20 +5777,18 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             "withdrawableShares should be less than or equal to operatorShares"
         );
 
-        try cheats.envBool("WRITE_CSV_TESTS") returns (bool writeCSV) {
-            if (writeCSV) {
-                cheats.writeLine(
-                    "./test.csv",
-                    string(abi.encodePacked(
-                        cheats.toString(initMagnitude), ", ",
-                        cheats.toString(shares), ", ",
-                        cheats.toString(delegationManager.operatorShares(defaultOperator, strategyMock)), ", ",
-                        cheats.toString(withdrawableShares[0]),  ", ",
-                        cheats.toString(stdMath.delta(delegationManager.operatorShares(defaultOperator, strategyMock), withdrawableShares[0]))
-                    ))
-                );
-            }
-        } catch {}
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
+            cheats.writeLine(
+                "./test.csv",
+                string(abi.encodePacked(
+                    cheats.toString(initMagnitude), ", ",
+                    cheats.toString(shares), ", ",
+                    cheats.toString(delegationManager.operatorShares(defaultOperator, strategyMock)), ", ",
+                    cheats.toString(withdrawableShares[0]),  ", ",
+                    cheats.toString(stdMath.delta(delegationManager.operatorShares(defaultOperator, strategyMock), withdrawableShares[0]))
+                ))
+            );
+        }
     }
 
     /**
@@ -5866,21 +5864,19 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             "withdrawableShares should be less than or equal to operatorShares"
         );
 
-        try cheats.envBool("WRITE_CSV_TESTS") returns (bool writeCSV) {
-            if (writeCSV) {
-                cheats.writeLine(
-                    "./test2.csv",
-                    string(abi.encodePacked(
-                        cheats.toString(initMagnitude), ", ",
-                        cheats.toString(shares), ", ",
-                        cheats.toString(depositAmount), ", ",
-                        cheats.toString(delegationManager.operatorShares(defaultOperator, strategyMock)), ", ",
-                        cheats.toString(withdrawableShares[0]), ", ",
-                        cheats.toString(stdMath.delta(delegationManager.operatorShares(defaultOperator, strategyMock), withdrawableShares[0]))
-                    ))
-                );
-            }
-        } catch {}
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
+            cheats.writeLine(
+                "./test2.csv",
+                string(abi.encodePacked(
+                    cheats.toString(initMagnitude), ", ",
+                    cheats.toString(shares), ", ",
+                    cheats.toString(depositAmount), ", ",
+                    cheats.toString(delegationManager.operatorShares(defaultOperator, strategyMock)), ", ",
+                    cheats.toString(withdrawableShares[0]), ", ",
+                    cheats.toString(stdMath.delta(delegationManager.operatorShares(defaultOperator, strategyMock), withdrawableShares[0]))
+                ))
+            );
+        }
     }
 
 
@@ -5948,20 +5944,19 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             "withdrawableShares should be less than or equal to operatorShares"
         );
 
-        try cheats.envBool("WRITE_CSV_TESTS") returns (bool writeCSV) {
-            if (writeCSV) {
-                cheats.writeLine(
-                    "./test3.csv",
-                    string(abi.encodePacked(
-                        cheats.toString(initMagnitude), ", ",               // initial magnitude
-                        cheats.toString(shares), ", ",                      // amount each staker deposits
-                        cheats.toString(operatorSharesAfter), ", ",         // operator shares after all slashing and deposits
-                        cheats.toString(totalWithdrawableShares), ", ",     // total withdrawable shares from all stakers
-                        cheats.toString(stdMath.delta(operatorSharesAfter, totalWithdrawableShares)) // delta difference between opShares and total withdrawable
-                    ))
-                );
-            }
-        } catch {}
+        
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
+            cheats.writeLine(
+                "./test3.csv",
+                string(abi.encodePacked(
+                    cheats.toString(initMagnitude), ", ",               // initial magnitude
+                    cheats.toString(shares), ", ",                      // amount each staker deposits
+                    cheats.toString(operatorSharesAfter), ", ",         // operator shares after all slashing and deposits
+                    cheats.toString(totalWithdrawableShares), ", ",     // total withdrawable shares from all stakers
+                    cheats.toString(stdMath.delta(operatorSharesAfter, totalWithdrawableShares)) // delta difference between opShares and total withdrawable
+                ))
+            );
+        }
     }
 
     /**
@@ -6029,20 +6024,18 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             "withdrawableShares should be less than or equal to operatorShares"
         );
 
-        try cheats.envBool("WRITE_CSV_TESTS") returns (bool writeCSV) {
-            if (writeCSV) {
-                cheats.writeLine(
-                    "./test4.csv",
-                    string(abi.encodePacked(
-                        cheats.toString(initMagnitude), ", ",               // initial magnitude
-                        cheats.toString(shares), ", ",                      // amount each staker deposits
-                        cheats.toString(operatorSharesAfter), ", ",         // operator shares after all slashing and deposits
-                        cheats.toString(totalWithdrawableShares), ", ",     // total withdrawable shares from all stakers
-                        cheats.toString(stdMath.delta(operatorSharesAfter, totalWithdrawableShares)) // delta difference between opShares and total withdrawable
-                    ))
-                );
-            }
-        } catch {}
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
+            cheats.writeLine(
+                "./test4.csv",
+                string(abi.encodePacked(
+                    cheats.toString(initMagnitude), ", ",               // initial magnitude
+                    cheats.toString(shares), ", ",                      // amount each staker deposits
+                    cheats.toString(operatorSharesAfter), ", ",         // operator shares after all slashing and deposits
+                    cheats.toString(totalWithdrawableShares), ", ",     // total withdrawable shares from all stakers
+                    cheats.toString(stdMath.delta(operatorSharesAfter, totalWithdrawableShares)) // delta difference between opShares and total withdrawable
+                ))
+            );
+        }
     }
 
     /**
@@ -6108,21 +6101,19 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             operatorSharesAfter,
             "withdrawableShares should be less than or equal to operatorShares"
         );
-
-        try cheats.envBool("WRITE_CSV_TESTS") returns (bool writeCSV) {
-            if (writeCSV) {
-                cheats.writeLine(
-                    "./test5.csv",
-                    string(abi.encodePacked(
-                        cheats.toString(initMagnitude), ", ",               // initial magnitude
-                        cheats.toString(shares), ", ",                      // amount each staker deposits
-                        cheats.toString(operatorSharesAfter), ", ",         // operator shares after all slashing and deposits
-                        cheats.toString(totalWithdrawableShares), ", ",     // total withdrawable shares from all stakers
-                        cheats.toString(stdMath.delta(operatorSharesAfter, totalWithdrawableShares)) // delta difference between opShares and total withdrawable
-                    ))
-                );
-            }
-        } catch {}
+        
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
+            cheats.writeLine(
+                "./test5.csv",
+                string(abi.encodePacked(
+                    cheats.toString(initMagnitude), ", ",               // initial magnitude
+                    cheats.toString(shares), ", ",                      // amount each staker deposits
+                    cheats.toString(operatorSharesAfter), ", ",         // operator shares after all slashing and deposits
+                    cheats.toString(totalWithdrawableShares), ", ",     // total withdrawable shares from all stakers
+                    cheats.toString(stdMath.delta(operatorSharesAfter, totalWithdrawableShares)) // delta difference between opShares and total withdrawable
+                ))
+            );
+        }
     }
 
     /**
@@ -6193,20 +6184,18 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             "withdrawableShares should be less than or equal to operatorShares"
         );
 
-        try cheats.envBool("WRITE_CSV_TESTS") returns (bool writeCSV) {
-            if (writeCSV) {
-                cheats.writeLine(
-                    "./test6.csv",
-                    string(abi.encodePacked(
-                        cheats.toString(initMagnitude), ", ",               // initial magnitude
-                        cheats.toString(shares), ", ",                      // amount each staker deposits
-                        cheats.toString(operatorSharesAfter), ", ",         // operator shares after all slashing and deposits
-                        cheats.toString(totalWithdrawableShares), ", ",     // total withdrawable shares from all stakers
-                        cheats.toString(stdMath.delta(operatorSharesAfter, totalWithdrawableShares)) // delta difference between opShares and total withdrawable
-                    ))
-                );
-            }
-        } catch {}
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
+            cheats.writeLine(
+                "./test6.csv",
+                string(abi.encodePacked(
+                    cheats.toString(initMagnitude), ", ",               // initial magnitude
+                    cheats.toString(shares), ", ",                      // amount each staker deposits
+                    cheats.toString(operatorSharesAfter), ", ",         // operator shares after all slashing and deposits
+                    cheats.toString(totalWithdrawableShares), ", ",     // total withdrawable shares from all stakers
+                    cheats.toString(stdMath.delta(operatorSharesAfter, totalWithdrawableShares)) // delta difference between opShares and total withdrawable
+                ))
+            );
+        }
     }
 }
 
