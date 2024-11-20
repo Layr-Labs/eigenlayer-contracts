@@ -43,7 +43,7 @@ interface IDelegationManagerErrors {
     /// @dev Thrown when an operator has been fully slashed(maxMagnitude is 0) for a strategy.
     /// or if the staker has had been natively slashed to the point of their beaconChainScalingFactor equalling 0.
     error FullySlashed();
-    /// @dev Thrown when decreaseAndBurnOperatorShares is called and newMaxMagnitude is greater than or equal to the previous maxMagnitude
+    /// @dev Thrown when burnOperatorShares is called and newMaxMagnitude is greater than or equal to the previous maxMagnitude
     error MaxMagnitudeCantIncrease();
 
     /// Signatures
