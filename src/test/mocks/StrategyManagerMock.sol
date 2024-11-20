@@ -107,6 +107,8 @@ contract StrategyManagerMock is Test {
         return (existingShares, addedShares);
     }
 
+    function burnShares(IStrategy strategy, uint256 sharesToBurn) external {}
+
     function _getStrategyIndex(address staker, IStrategy strategy) internal view returns (uint256) {
         IStrategy[] memory strategies = strategiesToReturn[staker];
         uint256 strategyIndex = type(uint256).max;

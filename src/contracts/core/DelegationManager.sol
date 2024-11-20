@@ -8,6 +8,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
+import "../libraries/Snapshots.sol";
 import "./DelegationManagerStorage.sol";
 
 /**
@@ -29,6 +30,7 @@ contract DelegationManager is
     SignatureUtils
 {
     using SlashingLib for *;
+    using Snapshots for Snapshots.DefaultZeroHistory;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
@@ -338,23 +340,41 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function decreaseOperatorShares(
+    function burnOperatorShares(
         address operator,
         IStrategy strategy,
-        uint256 wadSlashed
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
     ) external onlyAllocationManager {
+        require(newMaxMagnitude < prevMaxMagnitude, MaxMagnitudeCantIncrease());
+
         /// forgefmt: disable-next-item
-        uint256 amountSlashed = SlashingLib.calcSlashedAmount({
-            operatorShares: operatorShares[operator][strategy], 
-            wadSlashed: wadSlashed
+        uint256 sharesToDecrement = SlashingLib.calcSlashedAmount({
+            operatorShares: operatorShares[operator][strategy],
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
         });
 
+        // While `sharesToDecrement` describes the amount we should directly remove from the operator's delegated
+        // shares, `sharesToBurn` also includes any shares that have been queued for withdrawal and are still
+        // slashable given the withdrawal delay.
+        uint256 sharesToBurn =
+            sharesToDecrement + _getSlashedSharesInQueue(operator, strategy, prevMaxMagnitude, newMaxMagnitude);
+
+        // Remove shares from operator
         _decreaseDelegation({
             operator: operator,
             staker: address(0), // we treat this as a decrease for the zero address staker
             strategy: strategy,
-            sharesToDecrease: amountSlashed
+            sharesToDecrease: sharesToDecrement
         });
+
+        /// TODO: implement EPM.burnShares interface. Likely requires more complex interface than just shares
+        /// so not adding a burnShares method in IShareManager
+        if (strategy != beaconChainETHStrategy) {
+            strategyManager.burnShares(strategy, sharesToBurn);
+            emit OperatorSharesBurned(operator, strategy, sharesToBurn);
+        }
     }
 
     /**
@@ -479,7 +499,7 @@ contract DelegationManager is
             IShareManager shareManager = _getShareManager(withdrawal.strategies[i]);
 
             // Calculate how much slashing to apply, as well as shares to withdraw
-            uint256 sharesToWithdraw = SlashingLib.scaleSharesForCompleteWithdrawal({
+            uint256 sharesToWithdraw = SlashingLib.scaleForCompleteWithdrawal({
                 scaledShares: withdrawal.scaledShares[i],
                 slashingFactor: prevSlashingFactors[i]
             });
@@ -627,13 +647,18 @@ contract DelegationManager is
             sharesToWithdraw[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
 
             // Apply slashing. If the staker or operator has been fully slashed, this will return 0
-            scaledShares[i] = SlashingLib.scaleSharesForQueuedWithdrawal({
+            scaledShares[i] = SlashingLib.scaleForQueueWithdrawal({
                 sharesToWithdraw: sharesToWithdraw[i],
                 slashingFactor: slashingFactors[i]
             });
 
             // Remove delegated shares from the operator
             if (operator != address(0)) {
+                // Staker was delegated and remains slashable during the withdrawal delay period
+                // Cumulative withdrawn scaled shares are updated for the strategy, this is for accounting
+                // purposes for burning shares if slashed
+                _addQueuedSlashableShares(operator, strategies[i], scaledShares[i]);
+
                 // forgefmt: disable-next-item
                 _decreaseDelegation({
                     operator: operator,
@@ -732,6 +757,48 @@ contract DelegationManager is
         _beaconChainSlashingFactor[staker] = bsf;
     }
 
+    /**
+     * @dev Calculate amount of slashable shares that would be slashed from the queued withdrawals from an operator for a strategy
+     * given the previous maxMagnitude and the new maxMagnitude.
+     * Note: To get the total amount of slashable shares in the queue withdrawable, set newMaxMagnitude to 0 and prevMaxMagnitude
+     * is the current maxMagnitude of the operator.
+     */
+    function _getSlashedSharesInQueue(
+        address operator,
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) internal view returns (uint256) {
+        // Fetch the cumulative scaled shares sitting in the withdrawal queue both now and before
+        // the withdrawal delay.
+        uint256 curCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
+        uint256 prevCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookup({
+            key: uint32(block.number) - MIN_WITHDRAWAL_DELAY_BLOCKS
+        });
+
+        // The difference between these values represents the number of scaled shares that entered the
+        // withdrawal queue less than `MIN_WITHDRAWAL_DELAY_BLOCKS` ago. These shares are still slashable,
+        // so we use them to calculate the number of slashable shares in the withdrawal queue.
+        uint256 slashableScaledShares = curCumulativeScaledShares - prevCumulativeScaledShares;
+
+        return SlashingLib.scaleForBurning({
+            scaledShares: slashableScaledShares,
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
+    }
+
+    /// @dev Add to the cumulative withdrawn scaled shares from an operator for a given strategy
+    function _addQueuedSlashableShares(address operator, IStrategy strategy, uint256 scaledShares) internal {
+        if (strategy != beaconChainETHStrategy) {
+            uint256 currCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
+            _cumulativeScaledSharesHistory[operator][strategy].push({
+                key: uint32(block.number),
+                value: currCumulativeScaledShares + scaledShares
+            });
+        }
+    }
+
     /// @dev Depending on the strategy used, determine which ShareManager contract to make external calls to
     function _getShareManager(
         IStrategy strategy
@@ -813,6 +880,20 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
+    function getSlashableSharesInQueue(address operator, IStrategy strategy) public view returns (uint256) {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = strategy;
+        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategies)[0];
+        // Return amount of shares slashed if all remaining magnitude were to be slashed
+        return _getSlashedSharesInQueue({
+            operator: operator,
+            strategy: strategy,
+            prevMaxMagnitude: maxMagnitude,
+            newMaxMagnitude: 0
+        });
+    }
+
+    /// @inheritdoc IDelegationManager
     function getWithdrawableShares(
         address staker,
         IStrategy[] memory strategies
@@ -884,7 +965,7 @@ contract DelegationManager is
             uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, withdrawals[i].strategies);
 
             for (uint256 j; j < withdrawals[i].strategies.length; ++j) {
-                shares[i][j] = SlashingLib.scaleSharesForCompleteWithdrawal({
+                shares[i][j] = SlashingLib.scaleForCompleteWithdrawal({
                     scaledShares: withdrawals[i].scaledShares[j],
                     slashingFactor: slashingFactors[i]
                 });

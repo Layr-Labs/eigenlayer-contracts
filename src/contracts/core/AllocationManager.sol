@@ -88,6 +88,7 @@ contract AllocationManager is
             uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(params.wadToSlash));
             uint256 sharesWadSlashed = uint256(slashedMagnitude).divWad(info.maxMagnitude);
             wadSlashed[i] = sharesWadSlashed;
+            uint64 prevMaxMagnitude = info.maxMagnitude;
 
             allocation.currentMagnitude -= slashedMagnitude;
             info.maxMagnitude -= slashedMagnitude;
@@ -113,11 +114,12 @@ contract AllocationManager is
             _updateAllocationInfo(params.operator, operatorSet.key(), strategy, info, allocation);
             _updateMaxMagnitude(params.operator, strategy, info.maxMagnitude);
 
-            // 6. Decrease operators shares in the DelegationManager
-            delegation.decreaseOperatorShares({
+            // 6. Decrease and burn operators shares in the DelegationManager
+            delegation.burnOperatorShares({
                 operator: params.operator,
                 strategy: strategy,
-                wadSlashed: sharesWadSlashed
+                prevMaxMagnitude: prevMaxMagnitude,
+                newMaxMagnitude: info.maxMagnitude
             });
         }
 
@@ -662,7 +664,7 @@ contract AllocationManager is
         uint64[] memory maxMagnitudes = new uint64[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
-            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup(blockNumber);
+            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup({key: blockNumber});
         }
 
         return maxMagnitudes;

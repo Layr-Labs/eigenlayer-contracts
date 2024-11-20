@@ -62,7 +62,9 @@ contract AllocationManagerMock is Test {
         uint64[] memory maxMagnitudes = new uint64[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
-            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup(blockNumber);
+            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup({
+                key: blockNumber
+            });
         }
 
         return maxMagnitudes;

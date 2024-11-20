@@ -25,10 +25,16 @@ contract DelegationManagerMock is Test {
         isOperator[operator] = _isOperatorReturnValue;
     }
 
-    function decreaseOperatorShares(address operator, IStrategy strategy, uint256 wadSlashed) external {
+    function burnOperatorShares(
+        address operator,
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) external {
         uint256 amountSlashed = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
-            wadSlashed: wadSlashed
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
         });
 
         operatorShares[operator][strategy] -= amountSlashed;

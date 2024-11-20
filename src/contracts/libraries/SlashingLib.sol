@@ -62,7 +62,7 @@ library SlashingLib {
         return dsf._scalingFactor == 0 ? WAD : dsf._scalingFactor;
     }
 
-    function scaleSharesForQueuedWithdrawal(
+    function scaleForQueueWithdrawal(
         uint256 sharesToWithdraw,
         uint256 slashingFactor
     ) internal pure returns (uint256) {
@@ -73,11 +73,22 @@ library SlashingLib {
         return sharesToWithdraw.divWad(slashingFactor);
     }
 
-    function scaleSharesForCompleteWithdrawal(
-        uint256 scaledShares,
-        uint256 slashingFactor
-    ) internal pure returns (uint256) {
+    function scaleForCompleteWithdrawal(uint256 scaledShares, uint256 slashingFactor) internal pure returns (uint256) {
         return scaledShares.mulWad(slashingFactor);
+    }
+
+    /**
+     * @notice Scales shares according to the difference in an operator's magnitude before and
+     * after being slashed. This is used to calculate the number of slashable shares in the
+     * withdrawal queue.
+     * NOTE: max magnitude is guaranteed to only ever decrease.
+     */
+    function scaleForBurning(
+        uint256 scaledShares,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) internal pure returns (uint256) {
+        return scaledShares.mulWad(prevMaxMagnitude - newMaxMagnitude);
     }
 
     function update(
@@ -141,7 +152,12 @@ library SlashingLib {
             .mulWad(slashingFactor);
     }
 
-    function calcSlashedAmount(uint256 operatorShares, uint256 wadSlashed) internal pure returns (uint256) {
-        return operatorShares.mulWad(wadSlashed);
+    function calcSlashedAmount(
+        uint256 operatorShares,
+        uint256 prevMaxMagnitude,
+        uint256 newMaxMagnitude
+    ) internal pure returns (uint256) {
+        // round up mulDiv so we don't overslash
+        return operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
     }
 }
