@@ -5777,8 +5777,7 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             "withdrawableShares should be less than or equal to operatorShares"
         );
 
-
-        if (cheats.envBool("WRITE_CSV_TESTS")) {
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
             cheats.writeLine(
                 "./test.csv",
                 string(abi.encodePacked(
@@ -5865,7 +5864,7 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             "withdrawableShares should be less than or equal to operatorShares"
         );
 
-        if (cheats.envBool("WRITE_CSV_TESTS")) {
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
             cheats.writeLine(
                 "./test2.csv",
                 string(abi.encodePacked(
@@ -5945,7 +5944,8 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             "withdrawableShares should be less than or equal to operatorShares"
         );
 
-        if (cheats.envBool("WRITE_CSV_TESTS")) {
+        
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
             cheats.writeLine(
                 "./test3.csv",
                 string(abi.encodePacked(
@@ -6024,7 +6024,7 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             "withdrawableShares should be less than or equal to operatorShares"
         );
 
-        if (cheats.envBool("WRITE_CSV_TESTS")) {
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
             cheats.writeLine(
                 "./test4.csv",
                 string(abi.encodePacked(
@@ -6101,8 +6101,8 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             operatorSharesAfter,
             "withdrawableShares should be less than or equal to operatorShares"
         );
-
-        if (cheats.envBool("WRITE_CSV_TESTS")) {
+        
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
             cheats.writeLine(
                 "./test5.csv",
                 string(abi.encodePacked(
@@ -6184,7 +6184,7 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             "withdrawableShares should be less than or equal to operatorShares"
         );
 
-        if (cheats.envBool("WRITE_CSV_TESTS")) {
+        if (cheats.envOr("WRITE_CSV_TESTS", false)) {
             cheats.writeLine(
                 "./test6.csv",
                 string(abi.encodePacked(
