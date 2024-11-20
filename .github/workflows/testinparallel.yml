@@ -48,7 +48,6 @@ jobs:
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
         RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
         CHAIN_ID: ${{ secrets.CHAIN_ID }}
-        WRITE_CSV_TESTS: "false"
 
     - name: Run integration tests
       run: forge test --match-contract Integration
