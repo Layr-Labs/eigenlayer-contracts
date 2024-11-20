@@ -27,7 +27,7 @@ contract AVS is Logger, IAllocationManagerTypes {
     TimeMachine immutable timeMachine;
     string _NAME;
 
-    uint256 operatorSetId;
+    uint32 totalOperatorSets;
 
     constructor(
         string memory name
@@ -65,7 +65,7 @@ contract AVS is Logger, IAllocationManagerTypes {
         strategies = new IStrategy[][](numOpSets);
 
         for (uint256 i; i < numOpSets; ++i) {
-            p[i].operatorSetId = operatorSetId++;
+            p[i].operatorSetId = totalOperatorSets++;
             for (uint256 j; j < numStrategies; ++j) {
                 IERC20 token = IERC20(new ERC20Mock());
                 p[i].strategies[j] = strategyFactory.deployNewStrategy(token);
