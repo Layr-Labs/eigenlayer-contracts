@@ -204,17 +204,17 @@ contract ExistingDeploymentParser is Script, Test {
         );
         emptyContract = EmptyContract(stdJson.readAddress(existingDeploymentData, ".deployment.emptyContract"));
 
-        // TODO: this is now broken, potentially fix it
         // Strategies Deployed, load strategy list
         // numStrategiesDeployed = stdJson.readUint(existingDeploymentData, ".addresses.numStrategiesDeployed");
-        // for (uint256 i = 0; i < numStrategiesDeployed; ++i) {
-        //     // Form the key for the current element
-        //     string memory key = string.concat(".addresses.strategyAddresses[", vm.toString(i), "]");
+        numStrategiesDeployed = 12;
+        for (uint256 i = 0; i < numStrategiesDeployed; ++i) {
+            // Form the key for the current element
+            string memory key = string.concat(".deployment.strategies.preLongtailStrats.addrs[", vm.toString(i), "]");
 
-        //     // Use the key and parse the strategy address
-        //     address strategyAddress = abi.decode(stdJson.parseRaw(existingDeploymentData, key), (address));
-        //     deployedStrategyArray.push(StrategyBase(strategyAddress));
-        // }
+            // Use the key and parse the strategy address
+            address strategyAddress = abi.decode(stdJson.parseRaw(existingDeploymentData, key), (address));
+            deployedStrategyArray.push(StrategyBase(strategyAddress));
+        }
 
         // token
         eigenTokenProxyAdmin = ProxyAdmin(stdJson.readAddress(existingDeploymentData, ".deployment.token.EIGEN.proxyAdmin"));
