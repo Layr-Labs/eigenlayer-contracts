@@ -1419,6 +1419,7 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
 contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
+        cheats.prank(address(invalidDelegationManager));
         cheats.expectRevert(IStrategyManagerErrors.OnlyDelegationManager.selector);
         strategyManager.burnShares(dummyStrat, 1);
     }
@@ -1435,7 +1436,6 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         cheats.assume(staker != address(0));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesToBurn);
         IStrategy strategy = dummyStrat;
-        IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
         cheats.expectRevert(IStrategyErrors.WithdrawalAmountExceedsTotalDeposits.selector);
         cheats.prank(address(delegationManagerMock));
