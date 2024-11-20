@@ -29,8 +29,7 @@ interface IUserDeployer {
 
 contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     using SingleItemArrayLib for *;
-
-    Vm cheats = Vm(VM_ADDRESS);
+    using print for *;
 
     AllocationManager allocationManager;
     DelegationManager delegationManager;
@@ -44,10 +43,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     // User's EigenPod and each of their validator indices within that pod
     EigenPod public pod;
     uint40[] validators;
-
-    IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-    IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-    uint256 constant GWEI_TO_WEI = 1e9;
 
     constructor(
         string memory name
@@ -84,7 +79,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// @dev Allocates randomly accross the operator set's strategies with a sum of `magnitudeSum`.
     /// NOTE: Calling more than once will lead to deallocations...
     function modifyAllocations(OperatorSet memory operatorSet, uint256 magnitudeSum) public virtual createSnapshot {
-        _logM(
+        print.method(
             "modifyAllocations",
             string.concat(
                 "{avs: ",
@@ -92,7 +87,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 ", operatorSetId: ",
                 cheats.toString(operatorSet.id),
                 ", magnitudeSum: ",
-                _toStringWad(magnitudeSum),
+                magnitudeSum.asWad(),
                 "}"
             )
         );
@@ -123,7 +118,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function registerForOperatorSet(
         OperatorSet memory operatorSet
     ) public virtual createSnapshot {
-        _logM(
+        print.method(
             "registerForOperatorSet",
             string.concat(
                 "{avs: ",
@@ -142,7 +137,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function deregisterFromOperatorSet(
         OperatorSet memory operatorSet
     ) public virtual createSnapshot {
-        _logM(
+        print.method(
             "deregisterFromOperatorSet",
             string.concat(
                 "{avs: ",
@@ -163,9 +158,9 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     }
 
     function setAllocationDelay(uint32 delay) public virtual createSnapshot {
-        _logM("setAllocationDelay");
-
+        print.method("setAllocationDelay");
         allocationManager.setAllocationDelay(delay);
+        rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
     }
 
     /// -----------------------------------------------------------------------
@@ -175,7 +170,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     uint32 withdrawalDelay = 1;
 
     function registerAsOperator() public virtual createSnapshot {
-        _logM("registerAsOperator");
+        print.method("registerAsOperator");
 
         OperatorDetails memory details = OperatorDetails({
             __deprecated_earningsReceiver: address(this),
@@ -190,7 +185,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function delegateTo(
         User operator
     ) public virtual createSnapshot {
-        _logM("delegateTo", operator.NAME_COLORED());
+        print.method("delegateTo", operator.NAME_COLORED());
 
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
@@ -198,7 +193,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     /// @dev Undelegate from operator
     function undelegate() public virtual createSnapshot returns (Withdrawal[] memory) {
-        _logM("undelegate");
+        print.method("undelegate");
 
         Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
         delegationManager.undelegate(address(this));
@@ -217,7 +212,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function forceUndelegate(
         User staker
     ) public virtual createSnapshot returns (Withdrawal[] memory) {
-        _logM("forceUndelegate", staker.NAME());
+        print.method("forceUndelegate", staker.NAME());
 
         Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(staker));
         delegationManager.undelegate(address(staker));
@@ -229,7 +224,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         IStrategy[] memory strategies,
         uint256[] memory depositShares
     ) public virtual createSnapshot returns (Withdrawal[] memory) {
-        _logM("queueWithdrawals");
+        print.method("queueWithdrawals");
 
         address operator = delegationManager.delegatedTo(address(this));
         address withdrawer = address(this);
@@ -263,7 +258,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function completeWithdrawalsAsTokens(
         Withdrawal[] memory withdrawals
     ) public virtual createSnapshot returns (IERC20[][] memory) {
-        _logM("completeWithdrawalsAsTokens");
+        print.method("completeWithdrawalsAsTokens");
 
         IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
 
@@ -277,7 +272,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function completeWithdrawalAsTokens(
         Withdrawal memory withdrawal
     ) public virtual createSnapshot returns (IERC20[] memory) {
-        _logM("completeWithdrawalsAsTokens");
+        print.method("completeWithdrawalsAsTokens");
 
         return _completeQueuedWithdrawal(withdrawal, true);
     }
@@ -285,7 +280,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function completeWithdrawalsAsShares(
         Withdrawal[] memory withdrawals
     ) public virtual createSnapshot returns (IERC20[][] memory) {
-        _logM("completeWithdrawalAsShares");
+        print.method("completeWithdrawalAsShares");
 
         IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
 
@@ -299,7 +294,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function completeWithdrawalAsShares(
         Withdrawal memory withdrawal
     ) public virtual createSnapshot returns (IERC20[] memory) {
-        _logM("completeWithdrawalAsShares");
+        print.method("completeWithdrawalAsShares");
 
         return _completeQueuedWithdrawal(withdrawal, false);
     }
@@ -315,7 +310,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
     function startValidators() public virtual createSnapshot returns (uint40[] memory, uint64) {
-        _logM("startValidators");
+        print.method("startValidators");
 
         return _startValidators();
     }
@@ -323,7 +318,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function exitValidators(
         uint40[] memory _validators
     ) public virtual createSnapshot returns (uint64 exitedBalanceGwei) {
-        _logM("exitValidators");
+        print.method("exitValidators");
 
         return _exitValidators(_validators);
     }
@@ -335,19 +330,19 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function verifyWithdrawalCredentials(
         uint40[] memory _validators
     ) public virtual createSnapshot {
-        _logM("verifyWithdrawalCredentials");
+        print.method("verifyWithdrawalCredentials");
 
         _verifyWithdrawalCredentials(_validators);
     }
 
     function startCheckpoint() public virtual createSnapshot {
-        _logM("startCheckpoint");
+        print.method("startCheckpoint");
 
         _startCheckpoint();
     }
 
     function completeCheckpoint() public virtual createSnapshot {
-        _logM("completeCheckpoint");
+        print.method("completeCheckpoint");
 
         _completeCheckpoint();
     }
@@ -355,7 +350,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function verifyStaleBalance(
         uint40 validatorIndex
     ) public virtual createSnapshot {
-        _logM("verifyStaleBalance");
+        print.method("verifyStaleBalance");
 
         StaleBalanceProofs memory proof = beaconChain.getStaleBalanceProofs(validatorIndex);
 
@@ -377,7 +372,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         IStrategy[] memory strategies,
         uint256[] memory tokenBalances
     ) public virtual createSnapshot {
-        _logM("depositIntoEigenlayer");
+        print.method("depositIntoEigenlayer");
 
         for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
@@ -397,7 +392,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     }
 
     function updateBalances(IStrategy[] memory strategies, int256[] memory tokenDeltas) public virtual createSnapshot {
-        _logM("updateBalances");
+        print.method("updateBalances");
 
         for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
@@ -671,7 +666,7 @@ contract User_AltMethods is User {
         IStrategy[] memory strategies,
         uint256[] memory tokenBalances
     ) public override createSnapshot {
-        _logM("depositIntoEigenlayer_ALT");
+        print.method("depositIntoEigenlayer_ALT");
 
         uint256 expiry = type(uint256).max;
         for (uint256 i = 0; i < strategies.length; i++) {

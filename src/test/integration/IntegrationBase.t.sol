@@ -18,6 +18,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     using StdStyle for *;
     using SlashingLib for *;
     using Strings for *;
+    using print for *;
 
     uint numStakers = 0;
     uint numOperators = 0;
@@ -659,17 +660,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
         for (uint i = 0; i < tokens.length; i++) {
             uint prevBalance = prevTokenBalances[i];
             uint curBalance = curTokenBalances[i];
-            uint expected = prevBalance + addedTokens[i];
-            bool isError = expected != curBalance;
 
-            if (isError) {
-                console.log("\nCurrent `%s` balance != previous balance + added tokens".red(), _getTokenName(tokens[i]));
-                console.log("   Previous Balance:", _toStringWad(prevBalance));
-                console.log("   Tokens Added:", _toStringWad(addedTokens[i]));
-                console.log("   Current Balance:", _toStringWad(curBalance));
-            }
-
-            assertEq(expected, curBalance, err);
+            assertEq(prevBalance + addedTokens[i], curBalance, err);
         }
     }
 

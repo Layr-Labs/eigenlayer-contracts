@@ -37,7 +37,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         // 3. Allocate all magnitude
         operator.allocateAll(operatorSet);
 
-        _rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
+        rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
 
         // 3. Deallocate all magnitude
         operator.deallocateAll(operatorSet);

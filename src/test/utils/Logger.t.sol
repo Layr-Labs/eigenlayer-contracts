@@ -2,6 +2,35 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "src/contracts/interfaces/IStrategy.sol";
+import {IAllocationManagerTypes} from "src/contracts/interfaces/IAllocationManager.sol";
+
+Vm constant cheats = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
+uint256 constant MIN_BALANCE = 1e6;
+uint256 constant MAX_BALANCE = 5e6;
+uint256 constant GWEI_TO_WEI = 1e9;
+
+uint256 constant FLAG = 1;
+
+/// @dev Types representing the different types of assets a ranomized users can hold.
+uint256 constant NO_ASSETS = (FLAG << 0); // will have no assets
+uint256 constant HOLDS_LST = (FLAG << 1); // will hold some random amount of LSTs
+uint256 constant HOLDS_ETH = (FLAG << 2); // will hold some random amount of ETH
+uint256 constant HOLDS_ALL = (FLAG << 3); // will hold every LST and ETH
+
+/// @dev Types representing the different types of users that can be created.
+uint256 constant DEFAULT = (FLAG << 0);
+uint256 constant ALT_METHODS = (FLAG << 1);
+
+/// @dev Types representing the different types of forks that can be simulated.
+uint256 constant LOCAL = (FLAG << 0);
+uint256 constant MAINNET = (FLAG << 1);
+uint256 constant HOLESKY = (FLAG << 2);
 
 abstract contract Logger is Test {
     using StdStyle for *;
@@ -17,9 +46,9 @@ abstract contract Logger is Test {
     /// -----------------------------------------------------------------------
 
     modifier noTracing() {
-        vm.pauseTracing();
+        cheats.pauseTracing();
         _;
-        vm.resumeTracing();
+        cheats.resumeTracing();
     }
 
     modifier noLogging() {
@@ -41,10 +70,13 @@ abstract contract Logger is Test {
 
     /// @dev Returns `NAME` colored based on the inheriting contract's role.
     function NAME_COLORED() public view returns (string memory) {
-        return _colorByRole(NAME());
+        return colorByRole(NAME());
     }
 
-    function _colorByRole(string memory name) internal noTracing view returns (string memory colored) {
+    /// @dev Returns `name` colored based on its role.
+    function colorByRole(
+        string memory name
+    ) public view noTracing returns (string memory colored) {
         bool isOperator = _contains(name, "operator");
         bool isStaker = _contains(name, "staker");
         bool isAVS = _contains(name, "avs");
@@ -60,6 +92,22 @@ abstract contract Logger is Test {
         }
     }
 
+    /// @dev Returns `true` if `needle` is found in `haystack`.
+    function _contains(string memory haystack, string memory needle) internal pure returns (bool) {
+        return cheats.indexOf(haystack, needle) != type(uint256).max;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Cheats
+    /// -----------------------------------------------------------------------
+
+    function rollForward(
+        uint256 blocks
+    ) internal {
+        cheats.roll(block.timestamp + blocks);
+        console.log("\n%s.roll(%d)", colorByRole("cheats"), block.timestamp);
+    }
+
     /// -----------------------------------------------------------------------
     /// Logging
     /// -----------------------------------------------------------------------
@@ -73,54 +121,178 @@ abstract contract Logger is Test {
         console.log("\n%s logging unpaused...", NAME_COLORED());
         on = true;
     }
+}
 
-    function _logM(
-        string memory method
-    ) internal view {
-        if (on) console.log("\n%s.%s()", NAME_COLORED(), method.italic());
-    }
+/// @dev Assumes the user is a `Logger`.
+library print {
+    using print for *;
+    using StdStyle for *;
 
-    function _logM(string memory method, string memory args) internal view {
-        if (on) console.log("\n%s.%s(%s)", NAME_COLORED(), method.italic(), args);
-    }
+    /// -----------------------------------------------------------------------
+    /// Logging
+    /// -----------------------------------------------------------------------
     
-    function _rollForward(uint256 blocks) internal {
-        vm.roll(block.timestamp + blocks);
-        if (on) console.log("\n%s.roll(%d)", _colorByRole("cheats"), block.timestamp);
+    function method(
+        string memory m
+    ) internal view {
+        console.log("\n%s.%s()", _name(), m.italic());
+    }
+
+    function method(string memory m, string memory args) internal view {
+        console.log("\n%s.%s(%s)", _name(), m.italic(), args);
+    }
+
+    function user(
+        string memory name,
+        uint256 assetType,
+        uint256 userType,
+        IStrategy[] memory strategies,
+        uint256[] memory tokenBalances
+    ) internal view {
+        console.log(
+            "\nCreated %s %s who holds %s.", 
+            userType.asUserType(),
+            _logger().colorByRole(name), 
+            assetType.asAssetType()
+        );
+
+        console.log("   Balances:");
+        for (uint256 i = 0; i < strategies.length; i++) {
+            IStrategy strat = strategies[i];
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                console.log("       Native ETH: %s", print.asWad(tokenBalances[i]));
+            } else {
+                IERC20 underlyingToken = strat.underlyingToken();
+                console.log(
+                    "       %s: %s",
+                    IERC20Metadata(address(underlyingToken)).name(),
+                    print.asGwei(tokenBalances[i])
+                );
+            }
+        }
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Logging
+    /// -----------------------------------------------------------------------
+    
+    function slashOperator(
+        IAllocationManagerTypes.SlashingParams memory p
+    ) internal pure {
+        console.log("Slashing operator: %s", address(p.operator));
+        console.log("   operatorSetId: %d", p.operatorSetId);
+        console.log("   wadToSlash: %d", p.wadToSlash);
+        console.log("   description: %s", p.description);
+    }
+
+    function createOperatorSets(
+        IAllocationManagerTypes.CreateSetParams[] memory p
+    ) internal pure {
+        console.log("Creating operator sets:");
+        for (uint256 i; i < p.length; ++i) {
+            console.log("   Creating operator set: %d", p[i].operatorSetId);
+            for (uint256 j; j < p[i].strategies.length; ++j) {
+                console.log("       strategy: %s", address(p[i].strategies[j]));
+            }
+        }
+    }
+
+    function deregisterFromOperatorSets(
+        IAllocationManagerTypes.DeregisterParams memory p
+    ) internal pure {
+        console.log("Deregistering operator: %s", address(p.operator));
+        console.log("   from operator sets:");
+        for (uint256 i; i < p.operatorSetIds.length; ++i) {
+            console.log("       operatorSetId: %d", p.operatorSetIds[i]);
+        }
     }
 
     /// -----------------------------------------------------------------------
     /// Strings
     /// -----------------------------------------------------------------------
 
-    /// @dev Returns `true` if `needle` is found in `haystack`.
-    function _contains(string memory haystack, string memory needle) internal pure returns (bool) {
-        return vm.indexOf(haystack, needle) != type(uint256).max;
+    function asAssetType(uint256 t) internal pure returns (string memory s) {
+        if (t == HOLDS_ALL) {
+            s = "ALL_ASSETS";
+        } else if (t == HOLDS_LST) {
+            s = "LST";
+        } else if (t == HOLDS_ETH) {
+            s = "ETH";
+        } else if (t == NO_ASSETS) {
+            s = "NO_ASSETS";
+        }
     }
 
-    /// @dev Returns a string representation of a `uint256` in wad format (with decimal place).
-    function _toStringWad(
-        uint256 wad
-    ) public pure returns (string memory s) {
-        if (wad == 0) return "0.0 (wad)";
+    function asUserType(uint256 t) internal pure returns (string memory s) {
+        if (t == DEFAULT) {
+            s = "DEFAULT";
+        } else if (t == ALT_METHODS) {
+            s = "ALT_METHODS";
+        }
+    }
 
-        s = vm.toString(wad);
+    function asForkType(uint256 t) internal pure returns (string memory s) {
+        if (t == LOCAL) {
+            s = "LOCAL";
+        } else if (t == MAINNET) {
+            s = "MAINNET";
+        } else if (t == HOLESKY) {
+            s = "HOLESKY";
+        }
+    }
 
-        while (bytes(s).length < 18) s = string.concat("0", s);
+    function asGwei(
+        uint256 x
+    ) internal pure returns (string memory) {
+        return x.asDecimal(9, " gwei");
+    }
+
+    function asWad(
+        uint256 x
+    ) internal pure returns (string memory) {
+        return x.asDecimal(18, " wad");
+    }
+
+    function asDecimal(
+        uint256 x,
+        uint8 decimals,
+        string memory denomination
+    ) internal pure returns (string memory s) {
+        if (x == 0) return string.concat("0.0", denomination);
+
+        s = cheats.toString(x);
+
+        while (bytes(s).length < decimals) s = string.concat("0", s);
 
         uint256 len = bytes(s).length;
         bytes memory b = bytes(s);
-        bytes memory left = new bytes(len > 18 ? len - 18 : 0);
-        bytes memory right = new bytes(18);
+        bytes memory left = new bytes(len > decimals ? len - decimals : 0);
+        bytes memory right = new bytes(decimals);
 
         for (uint256 i; i < left.length; ++i) {
             left[i] = b[i];
         }
 
-        for (uint256 i; i < 18; ++i) {
-            right[i] = b[len - 18 + i];
+        for (uint256 i; i < decimals; ++i) {
+            right[i] = b[len - decimals + i];
         }
 
-        return string.concat(left.length > 0 ? string(left) : "0", ".", string(right), " (wad)");
+        return string.concat(left.length > 0 ? string(left) : "0", ".", string(right), denomination);
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Helpers
+    /// -----------------------------------------------------------------------
+
+    function _name() internal view returns (string memory) {
+        try _logger().NAME_COLORED() returns (string memory name) {
+            return name;
+        } catch {
+            revert ("This contract is not a `Logger`.");
+        }
+    }
+
+    function _logger() internal view returns (Logger) {
+        return Logger(address(this));
     }
 }

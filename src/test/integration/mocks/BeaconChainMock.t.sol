@@ -40,8 +40,7 @@ struct StaleBalanceProofs {
 
 contract BeaconChainMock is Logger {
     using StdStyle for *;
-
-    Vm cheats = Vm(VM_ADDRESS);
+    using print for *;
 
     struct Validator {
         bool isDummy;
@@ -54,7 +53,6 @@ contract BeaconChainMock is Logger {
     }
 
     /// @dev All withdrawals are processed with index == 0
-    uint constant GWEI_TO_WEI = 1e9;
     uint constant ZERO_NODES_LENGTH = 100;
 
     // Rewards given to each validator during epoch processing
@@ -156,7 +154,7 @@ contract BeaconChainMock is Logger {
     function newValidator(
         bytes memory withdrawalCreds
     ) public payable returns (uint40) {
-        _logM("newValidator");
+        print.method("newValidator");
 
         uint balanceWei = msg.value;
 
@@ -192,7 +190,7 @@ contract BeaconChainMock is Logger {
     ///
     /// TODO we may need to advance a slot here to maintain the properties we want in startCheckpoint
     function exitValidator(uint40 validatorIndex) public returns (uint64 exitedBalanceGwei) {
-        _logM("exitValidator");
+        print.method("exitValidator");
 
         // Update validator.exitEpoch
         Validator storage v = validators[validatorIndex];
@@ -212,7 +210,7 @@ contract BeaconChainMock is Logger {
     }
 
     function slashValidators(uint40[] memory _validators) public returns (uint64 slashedBalanceGwei) {
-        _logM("slashValidators");
+        print.method("slashValidators");
 
         for (uint i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
@@ -255,7 +253,7 @@ contract BeaconChainMock is Logger {
     /// - DOES generate consensus rewards for ALL non-exited validators
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch() public {
-        _logM("advanceEpoch");
+        print.method("advanceEpoch");
         _generateRewards();
         _withdrawExcess();
         _advanceEpoch();
@@ -269,7 +267,7 @@ contract BeaconChainMock is Logger {
     /// - does NOT generate consensus rewards
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch_NoRewards() public {
-        _logM("advanceEpoch_NoRewards");
+        print.method("advanceEpoch_NoRewards");
         _withdrawExcess();
         _advanceEpoch();
     }
@@ -283,7 +281,7 @@ contract BeaconChainMock is Logger {
     /// - does NOT withdraw in excess of 32 ETH
     /// - does NOT withdraw if validator is exited
     function advanceEpoch_NoWithdraw() public {
-        _logM("advanceEpoch_NoWithdraw");
+        print.method("advanceEpoch_NoWithdraw");
         _generateRewards();
         _advanceEpoch();
     }
@@ -344,7 +342,7 @@ contract BeaconChainMock is Logger {
         }
 
         if (totalExcessWei != 0)
-            console.log("- Withdrew excess balance:", _toStringWad(totalExcessWei));
+            console.log("- Withdrew excess balance:", totalExcessWei.asGwei());
     }
 
     function _advanceEpoch() public {

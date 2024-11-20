@@ -32,14 +32,12 @@ import "script/utils/ExistingDeploymentParser.sol";
 abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     using StdStyle for *;
 
-    Vm cheats = Vm(VM_ADDRESS);
-
     // Fork ids for specific fork tests
     bool isUpgraded;
-    uint256 mainnetForkBlock = 19_280_000;
-    uint256 mainnetForkId;
-    uint256 holeskyForkBLock = 1_213_950;
-    uint256 holeskyForkId;
+    uint mainnetForkBlock = 19_280_000;
+    uint mainnetForkId;
+    uint holeskyForkBLock = 1_213_950;
+    uint holeskyForkId;
     uint64 constant DENEB_FORK_TIMESTAMP = 1_705_473_120;
 
     // Beacon chain genesis time when running locally
@@ -77,75 +75,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     bytes assetTypes;
     bytes userTypes;
     // Set only once in setUp, if FORK_MAINNET env is set
-    uint256 forkType;
+    uint forkType;
 
     // Constants
     uint64 constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
 
-    IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-    IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
-    uint256 constant MIN_BALANCE = 1e6;
-    uint256 constant MAX_BALANCE = 5e6;
-    uint256 constant GWEI_TO_WEI = 1e9;
-
-    // Flags
-    uint256 constant FLAG = 1;
-
-    /// @dev Asset flags
-    /// These are used with _configRand to determine what assets are given
-    /// to a user when they are created.
-    uint256 constant NO_ASSETS = (FLAG << 0); // will have no assets
-    uint256 constant HOLDS_LST = (FLAG << 1); // will hold some random amount of LSTs
-    uint256 constant HOLDS_ETH = (FLAG << 2); // will hold some random amount of ETH
-    uint256 constant HOLDS_ALL = (FLAG << 3); // will hold every LST and ETH
-
-    /// @dev User contract flags
-    /// These are used with _configRand to determine what User contracts can be deployed
-    uint256 constant DEFAULT = (FLAG << 0);
-    uint256 constant ALT_METHODS = (FLAG << 1);
-
-    /// @dev Shadow Fork flags
-    /// These are used for upgrade integration testing.
-    uint256 constant LOCAL = (FLAG << 0);
-    uint256 constant MAINNET = (FLAG << 1);
-    uint256 constant HOLESKY = (FLAG << 2);
-
-    // /// @dev Withdrawal flags
-    // /// These are used with _configRand to determine how a user conducts a withdrawal
-    // uint constant FULL_WITHDRAW_SINGLE = (FLAG << 0); // stakers will withdraw all assets using a single queued withdrawal
-    // uint constant FULL_WITHDRAW_MULTI  = (FLAG << 1); // stakers will withdraw all assets using multiple queued withdrawals
-    // uint constant PART_WITHDRAW_SINGLE = (FLAG << 2); // stakers will withdraw some, but not all assets
-
-    /// Note: Thought about the following flags (but did not implement) -
-    ///
-    /// WithdrawerType (SELF_WITHDRAWER, OTHER_WITHDRAWER)
-    ///     - especially with EPM share handling, this felt like it deserved its own test rather than a fuzzy state
-    /// CompletionType (AS_TOKENS, AS_SHARES)
-    ///     - same reason as above
-    ///
-    /// WithdrawalMethod (QUEUE_WITHDRAWAL, UNDELEGATE, REDELEGATE)
-    ///     - could still do this!
-    ///     - This would trigger staker.queueWithdrawals to use either `queueWithdrawals` or `undelegate` under the hood
-    ///     - "redelegate" would be like the above, but adding a new `delegateTo` step after undelegating
-
-    mapping(uint256 => string) assetTypeToStr;
-    mapping(uint256 => string) userTypeToStr;
-    mapping(uint256 => string) forkTypeToStr;
-
     constructor() {
-        assetTypeToStr[NO_ASSETS] = "NO_ASSETS";
-        assetTypeToStr[HOLDS_LST] = "LST";
-        assetTypeToStr[HOLDS_ETH] = "ETH";
-        assetTypeToStr[HOLDS_ALL] = "ALL_ASSETS";
-
-        userTypeToStr[DEFAULT] = "DEFAULT";
-        userTypeToStr[ALT_METHODS] = "ALT_METHODS";
-
-        forkTypeToStr[LOCAL] = "LOCAL";
-        forkTypeToStr[MAINNET] = "MAINNET";
-        forkTypeToStr[HOLESKY] = "HOLESKY";
-
         address stETH_Holesky = 0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034;
         address stETH_Mainnet = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
         address OETH_Mainnet = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
@@ -253,9 +188,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
-        uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
+        uint withdrawalDelayBlocks = 7 days / 12 seconds;
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
-        uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
+        uint[] memory initializeWithdrawalDelayBlocks = new uint[](0);
         // DelegationManager
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(delegationManager))),
@@ -409,7 +344,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Upgrade All deployed strategy contracts to new base strategy
-        for (uint256 i = 0; i < numStrategiesDeployed; i++) {
+        for (uint i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
             eigenLayerProxyAdmin.upgrade(
                 ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
@@ -486,7 +421,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Upgrade All deployed strategy contracts to new base strategy
-        for (uint256 i = 0; i < numStrategiesDeployed; i++) {
+        for (uint i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
             eigenLayerProxyAdmin.upgrade(
                 ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
@@ -511,7 +446,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     function _newStrategyAndToken(
         string memory tokenName,
         string memory tokenSymbol,
-        uint256 initialSupply,
+        uint initialSupply,
         address owner,
         bool useFactory
     ) internal {
@@ -541,7 +476,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
             cheats.prank(strategyManager.strategyWhitelister());
             IStrategyManager_DeprecatedM1(address(strategyManager)).addStrategiesToDepositWhitelist(strategies);
             cheats.prank(eigenLayerPauserReg.unpauser());
-            StrategyBaseTVLLimits(address(strategy)).setTVLLimits(type(uint256).max, type(uint256).max);
+            StrategyBaseTVLLimits(address(strategy)).setTVLLimits(type(uint).max, type(uint).max);
         } else {
             cheats.prank(strategyManager.strategyWhitelister());
             strategyManager.addStrategiesToDepositWhitelist(strategies);
@@ -553,7 +488,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         allTokens.push(underlyingToken);
     }
 
-    function _configRand(uint24 _randomSeed, uint256 _assetTypes, uint256 _userTypes) internal {
+    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) internal {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
         random = _hash(_randomSeed);
@@ -587,7 +522,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
             strategyManager.unpause(0);
 
             // Add deployed strategies to lstStrats and allStrats
-            for (uint256 i; i < deployedStrategyArray.length; i++) {
+            for (uint i; i < deployedStrategyArray.length; i++) {
                 IStrategy strategy = IStrategy(deployedStrategyArray[i]);
 
                 if (tokensNotTested[address(strategy.underlyingToken())]) {
@@ -654,38 +589,38 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
      */
     function _randUser(
         string memory name
-    ) internal returns (User, IStrategy[] memory, uint256[] memory) {
+    ) internal returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
         // The values selected here are in the ranges configured via `_configRand`
-        uint256 assetType = _randAssetType();
-        uint256 userType = _randUserType();
+        uint assetType = _randAssetType();
+        uint userType = _randUserType();
 
         // Deploy new User contract
         User user = _genRandUser(name, userType);
 
         // For the specific asset selection we made, get a random assortment of
         // strategies and deal the user some corresponding underlying token balances
-        (IStrategy[] memory strategies, uint256[] memory tokenBalances) = _dealRandAssets(user, assetType);
+        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
 
-        _printUserInfo(name, assetType, userType, strategies, tokenBalances);
+        print.user(name, assetType, userType, strategies, tokenBalances);
         return (user, strategies, tokenBalances);
     }
 
     /// @dev Create a new user without native ETH. See _randUser above for standard usage
     function _randUser_NoETH(
         string memory name
-    ) internal returns (User, IStrategy[] memory, uint256[] memory) {
+    ) internal returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
         // The values selected here are in the ranges configured via `_configRand`
-        uint256 userType = _randUserType();
+        uint userType = _randUserType();
 
         // Pick the user's asset distribution, removing "native ETH" as an option
         // I'm sorry if this eventually leads to a bug that's really hard to track down
-        uint256 assetType = _randAssetType();
+        uint assetType = _randAssetType();
         if (assetType == HOLDS_ETH) {
             assetType = NO_ASSETS;
         } else if (assetType == HOLDS_ALL) {
@@ -697,13 +632,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
 
         // For the specific asset selection we made, get a random assortment of
         // strategies and deal the user some corresponding underlying token balances
-        (IStrategy[] memory strategies, uint256[] memory tokenBalances) = _dealRandAssets(user, assetType);
+        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
 
-        _printUserInfo(name, assetType, userType, strategies, tokenBalances);
+        print.user(name, assetType, userType, strategies, tokenBalances);
         return (user, strategies, tokenBalances);
     }
 
-    function _genRandUser(string memory name, uint256 userType) internal returns (User user) {
+    function _genRandUser(string memory name, uint userType) internal returns (User user) {
         // Create User contract based on userType:
         if (forkType == LOCAL) {
             user = new User(name);
@@ -766,24 +701,24 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     ///             `tokenBalances` will contain the user's eth balance
     /// HOLDS_ALL - `strategies` will contain ALL initialized strategies AND BEACONCHAIN_ETH_STRAT, and
     ///             `tokenBalances` will contain random token/eth balances accordingly
-    function _dealRandAssets(User user, uint256 assetType) internal returns (IStrategy[] memory, uint256[] memory) {
+    function _dealRandAssets(User user, uint assetType) internal returns (IStrategy[] memory, uint[] memory) {
         IStrategy[] memory strategies;
-        uint256[] memory tokenBalances;
+        uint[] memory tokenBalances;
         if (assetType == NO_ASSETS) {
             strategies = new IStrategy[](0);
-            tokenBalances = new uint256[](0);
+            tokenBalances = new uint[](0);
         } else if (assetType == HOLDS_LST) {
             assetType = HOLDS_LST;
             // Select a random number of assets
-            uint256 numAssets = _randUint({min: 1, max: lstStrats.length});
+            uint numAssets = _randUint({min: 1, max: lstStrats.length});
             strategies = new IStrategy[](numAssets);
-            tokenBalances = new uint256[](numAssets);
+            tokenBalances = new uint[](numAssets);
 
             // For each asset, award the user a random balance of the underlying token
-            for (uint256 i = 0; i < numAssets; i++) {
+            for (uint i = 0; i < numAssets; i++) {
                 IStrategy strat = lstStrats[i];
                 IERC20 underlyingToken = strat.underlyingToken();
-                uint256 balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
+                uint balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
 
                 StdCheats.deal(address(underlyingToken), address(user), balance);
                 tokenBalances[i] = balance;
@@ -791,25 +726,25 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
             }
         } else if (assetType == HOLDS_ETH) {
             strategies = new IStrategy[](1);
-            tokenBalances = new uint256[](1);
+            tokenBalances = new uint[](1);
 
             // Award the user with a random amount of ETH
             // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
-            uint256 amount = 32 ether * _randUint({min: 1, max: 5});
+            uint amount = 32 ether * _randUint({min: 1, max: 5});
             cheats.deal(address(user), amount);
 
             strategies[0] = BEACONCHAIN_ETH_STRAT;
             tokenBalances[0] = amount;
         } else if (assetType == HOLDS_ALL) {
-            uint256 numLSTs = lstStrats.length;
+            uint numLSTs = lstStrats.length;
             strategies = new IStrategy[](numLSTs + 1);
-            tokenBalances = new uint256[](numLSTs + 1);
+            tokenBalances = new uint[](numLSTs + 1);
 
             // For each LST, award the user a random balance of the underlying token
-            for (uint256 i = 0; i < numLSTs; i++) {
+            for (uint i = 0; i < numLSTs; i++) {
                 IStrategy strat = lstStrats[i];
                 IERC20 underlyingToken = strat.underlyingToken();
-                uint256 balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
+                uint balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
 
                 StdCheats.deal(address(underlyingToken), address(user), balance);
                 tokenBalances[i] = balance;
@@ -818,7 +753,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
 
             // Award the user with a random amount of ETH
             // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
-            uint256 amount = 32 ether * _randUint({min: 1, max: 5});
+            uint amount = 32 ether * _randUint({min: 1, max: 5});
             cheats.deal(address(user), amount);
 
             // Add BEACONCHAIN_ETH_STRAT and eth balance
@@ -834,18 +769,18 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     /// @dev By default will have a assetType of HOLDS_LST
     function _dealRandAssets_M1(
         User user
-    ) internal returns (IStrategy[] memory, uint256[] memory) {
+    ) internal returns (IStrategy[] memory, uint[] memory) {
         // Select a random number of assets
-        uint256 numAssets = _randUint({min: 1, max: lstStrats.length});
+        uint numAssets = _randUint({min: 1, max: lstStrats.length});
 
         IStrategy[] memory strategies = new IStrategy[](numAssets);
-        uint256[] memory tokenBalances = new uint256[](numAssets);
+        uint[] memory tokenBalances = new uint[](numAssets);
 
         // For each asset, award the user a random balance of the underlying token
-        for (uint256 i = 0; i < numAssets; i++) {
+        for (uint i = 0; i < numAssets; i++) {
             IStrategy strat = lstStrats[i];
             IERC20 underlyingToken = strat.underlyingToken();
-            uint256 balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
+            uint balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
 
             StdCheats.deal(address(underlyingToken), address(user), balance);
             tokenBalances[i] = balance;
@@ -857,12 +792,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
 
     /// @dev Uses `random` to return a random uint, with a range given by `min` and `max` (inclusive)
     /// @return `min` <= result <= `max`
-    function _randUint(uint256 min, uint256 max) internal returns (uint256) {
-        uint256 range = max - min + 1;
+    function _randUint(uint min, uint max) internal returns (uint) {
+        uint range = max - min + 1;
 
         // calculate the number of bits needed for the range
-        uint256 bitsNeeded = 0;
-        uint256 tempRange = range;
+        uint bitsNeeded = 0;
+        uint tempRange = range;
         while (tempRange > 0) {
             bitsNeeded++;
             tempRange >>= 1;
@@ -870,8 +805,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
 
         // create a mask for the required number of bits
         // and extract the value from the hash
-        uint256 mask = (1 << bitsNeeded) - 1;
-        uint256 value = uint256(random) & mask;
+        uint mask = (1 << bitsNeeded) - 1;
+        uint value = uint(random) & mask;
 
         // in case value is out of range, wrap around or retry
         while (value >= range) {
@@ -879,7 +814,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         }
 
         // Hash `random` with itself so the next value we generate is different
-        random = _hash(uint256(random));
+        random = _hash(uint(random));
         return min + value;
     }
 
@@ -887,16 +822,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         return _randUint({min: 0, max: 1}) == 0;
     }
 
-    function _randAssetType() internal returns (uint256) {
-        uint256 idx = _randUint({min: 0, max: assetTypes.length - 1});
-        uint256 assetType = uint256(uint8(assetTypes[idx]));
+    function _randAssetType() internal returns (uint) {
+        uint idx = _randUint({min: 0, max: assetTypes.length - 1});
+        uint assetType = uint(uint8(assetTypes[idx]));
 
         return assetType;
     }
 
-    function _randUserType() internal returns (uint256) {
-        uint256 idx = _randUint({min: 0, max: userTypes.length - 1});
-        uint256 userType = uint256(uint8(userTypes[idx]));
+    function _randUserType() internal returns (uint) {
+        uint idx = _randUint({min: 0, max: userTypes.length - 1});
+        uint userType = uint(uint8(userTypes[idx]));
 
         return userType;
     }
@@ -906,11 +841,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
      */
     function _bitmapToBytes(
-        uint256 bitmap
+        uint bitmap
     ) internal pure returns (bytes memory bytesArray) {
-        for (uint256 i = 0; i < 256; ++i) {
+        for (uint i = 0; i < 256; ++i) {
             // Mask for i-th bit
-            uint256 mask = uint256(1 << i);
+            uint mask = uint(1 << i);
 
             // If the i-th bit is flipped, add a byte to the return array
             if (bitmap & mask != 0) {
@@ -920,36 +855,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         return bytesArray;
     }
 
-    function _printUserInfo(
-        string memory name,
-        uint256 assetType,
-        uint256 userType,
-        IStrategy[] memory strategies,
-        uint256[] memory tokenBalances
-    ) internal view {
-        console.log(
-            "\nCreated %s %s who holds %s.", 
-            userTypeToStr[userType],
-            _colorByRole(name), 
-            assetTypeToStr[assetType]
-        );
-
-        console.log("   Balances:");
-        for (uint256 i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-            if (strat == BEACONCHAIN_ETH_STRAT) {
-                console.log("       Native ETH: %s", _toStringWad(tokenBalances[i]));
-            } else {
-                IERC20 underlyingToken = strat.underlyingToken();
-                console.log(
-                    "       %s: %s",
-                    IERC20Metadata(address(underlyingToken)).name(),
-                    cheats.toString(tokenBalances[i])
-                );
-            }
-        }
-    }
-
     function _hash(
         string memory x
     ) internal pure returns (bytes32) {
@@ -957,7 +862,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     }
 
     function _hash(
-        uint256 x
+        uint x
     ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(x));
     }

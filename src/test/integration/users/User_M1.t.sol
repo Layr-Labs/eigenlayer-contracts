@@ -42,7 +42,7 @@ contract User_M1 is User {
         IStrategy[] memory strategies,
         uint256[] memory tokenBalances
     ) public virtual createSnapshot {
-        _logM("depositIntoEigenlayer_M1");
+        print.method("depositIntoEigenlayer_M1");
 
         for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
@@ -82,7 +82,7 @@ contract User_M1_AltMethods is User_M1 {
         IStrategy[] memory strategies,
         uint256[] memory tokenBalances
     ) public override createSnapshot {
-        _logM(".depositIntoEigenlayer_M1_ALT");
+        print.method(".depositIntoEigenlayer_M1_ALT");
 
         uint256 expiry = type(uint256).max;
         for (uint256 i = 0; i < strategies.length; i++) {
