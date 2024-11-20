@@ -31,7 +31,7 @@ import "forge-std/Test.sol";
 // source .env
 
 // # To deploy and verify our contract
-// forge script script/deploy/local/Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/deploy_from_scratch.anvil.config.json
+// forge script script/deploy/local/Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --sig "run(string memory configFile)" -- local/deploy_from_scratch.anvil.config.json
 contract DeployFromScratch is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
@@ -344,6 +344,11 @@ contract DeployFromScratch is Script, Test {
                 )
             );
         }
+
+        // Transfer ownership 
+        eigenLayerProxyAdmin.transferOwnership(executorMultisig);
+        eigenPodBeacon.transferOwnership(executorMultisig);
+
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();

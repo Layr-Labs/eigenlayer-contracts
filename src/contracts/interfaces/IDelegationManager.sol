@@ -292,19 +292,19 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         QueuedWithdrawalParams[] calldata params
     ) external returns (bytes32[] memory);
 
-    /**
-     * @notice Used to complete the all queued withdrawals.
-     * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
-     * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
-     * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
-     * @param numToComplete The number of withdrawals to complete. This must be less than or equal to the number of queued withdrawals.
-     * @dev See `completeQueuedWithdrawal` for relevant dev tags
-     */
-    function completeQueuedWithdrawals(
-        IERC20[][] calldata tokens,
-        bool[] calldata receiveAsTokens,
-        uint256 numToComplete
-    ) external;
+    // /**
+    //  * @notice Used to complete the all queued withdrawals.
+    //  * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
+    //  * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
+    //  * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
+    //  * @param numToComplete The number of withdrawals to complete. This must be less than or equal to the number of queued withdrawals.
+    //  * @dev See `completeQueuedWithdrawal` for relevant dev tags
+    //  */
+    // function completeQueuedWithdrawals(
+    //     IERC20[][] calldata tokens,
+    //     bool[] calldata receiveAsTokens,
+    //     uint256 numToComplete
+    // ) external;
 
     /**
      * @notice Used to complete the lastest queued withdrawal.
@@ -392,30 +392,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         uint64 newMaxMagnitude
     ) external;
 
-    /**
-     *
-     *                         BACKWARDS COMPATIBLE LEGACY FUNCTIONS
-     *                         TO BE DEPRECATED IN FUTURE
-     *
-     */
-
-    /// @notice Overloaded version of `completeQueuedWithdrawal` that includes a `middlewareTimesIndex` parameter
-    /// for backwards compatibility with the M2 release. To be deprecated in a future release.
-    function completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
-        bool receiveAsTokens
-    ) external;
-
-    /// @notice Overloaded version of `completeQueuedWithdrawals` that includes a `middlewareTimesIndexes` parameter
-    /// for backwards compatibility with the M2 release. To be deprecated in a future release.
-    function completeQueuedWithdrawals(
-        Withdrawal[] calldata withdrawals,
-        IERC20[][] calldata tokens,
-        uint256[] calldata middlewareTimesIndexes,
-        bool[] calldata receiveAsTokens
-    ) external;
 
     /**
      *

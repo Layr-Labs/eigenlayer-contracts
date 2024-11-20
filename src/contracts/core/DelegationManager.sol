@@ -263,27 +263,27 @@ contract DelegationManager is
         }
     }
 
-    /// @inheritdoc IDelegationManager
-    function completeQueuedWithdrawals(
-        IERC20[][] calldata tokens,
-        bool[] calldata receiveAsTokens,
-        uint256 numToComplete
-    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
-        EnumerableSet.Bytes32Set storage withdrawalRoots = _stakerQueuedWithdrawalRoots[msg.sender];
-        uint256 length = withdrawalRoots.length();
-        numToComplete = numToComplete > length ? length : numToComplete;
+    // /// @inheritdoc IDelegationManager
+    // function completeQueuedWithdrawals(
+    //     IERC20[][] calldata tokens,
+    //     bool[] calldata receiveAsTokens,
+    //     uint256 numToComplete
+    // ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
+    //     EnumerableSet.Bytes32Set storage withdrawalRoots = _stakerQueuedWithdrawalRoots[msg.sender];
+    //     uint256 length = withdrawalRoots.length();
+    //     numToComplete = numToComplete > length ? length : numToComplete;
 
-        // Read withdrawals to complete. We use 2 seperate loops here because the second
-        // loop will remove elements by index from `withdrawalRoots`.
-        Withdrawal[] memory withdrawals = new Withdrawal[](numToComplete);
-        for (uint256 i; i < withdrawals.length; ++i) {
-            withdrawals[i] = queuedWithdrawals[withdrawalRoots.at(i)];
-        }
+    //     // Read withdrawals to complete. We use 2 seperate loops here because the second
+    //     // loop will remove elements by index from `withdrawalRoots`.
+    //     Withdrawal[] memory withdrawals = new Withdrawal[](numToComplete);
+    //     for (uint256 i; i < withdrawals.length; ++i) {
+    //         withdrawals[i] = queuedWithdrawals[withdrawalRoots.at(i)];
+    //     }
 
-        for (uint256 i; i < withdrawals.length; ++i) {
-            _completeQueuedWithdrawal(withdrawals[i], tokens[i], receiveAsTokens[i]);
-        }
-    }
+    //     for (uint256 i; i < withdrawals.length; ++i) {
+    //         _completeQueuedWithdrawal(withdrawals[i], tokens[i], receiveAsTokens[i]);
+    //     }
+    // }
 
     /// @inheritdoc IDelegationManager
     function increaseDelegatedShares(
@@ -374,35 +374,6 @@ contract DelegationManager is
         if (strategy != beaconChainETHStrategy) {
             strategyManager.burnShares(strategy, sharesToBurn);
             emit OperatorSharesBurned(operator, strategy, sharesToBurn);
-        }
-    }
-
-    /**
-     *
-     *                         BACKWARDS COMPATIBLE LEGACY FUNCTIONS
-     *                         TO BE DEPRECATED IN FUTURE
-     *
-     */
-
-    /// @inheritdoc IDelegationManager
-    function completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
-        uint256, // middlewareTimesIndex
-        bool receiveAsTokens
-    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
-        _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
-    }
-
-    /// @inheritdoc IDelegationManager
-    function completeQueuedWithdrawals(
-        Withdrawal[] calldata withdrawals,
-        IERC20[][] calldata tokens,
-        uint256[] calldata, // middlewareTimesIndexes
-        bool[] calldata receiveAsTokens
-    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
-        for (uint256 i = 0; i < withdrawals.length; ++i) {
-            _completeQueuedWithdrawal(withdrawals[i], tokens[i], receiveAsTokens[i]);
         }
     }
 
