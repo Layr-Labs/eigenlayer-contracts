@@ -349,8 +349,6 @@ contract DelegationManager is
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
     ) external onlyAllocationManager {
-        require(newMaxMagnitude < prevMaxMagnitude, MaxMagnitudeCantIncrease());
-
         /// forgefmt: disable-next-item
         uint256 sharesToDecrement = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
