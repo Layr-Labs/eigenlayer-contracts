@@ -271,7 +271,7 @@ contract EigenPodManager is
         // balance that remains. Note that underflow here should be impossible given
         // the invariants pods use to calculate these values.
         uint256 newRestakedBalanceWei = prevRestakedBalanceWei - balanceDecreasedWei;
-        uint256 balanceRemainingWad = newRestakedBalanceWei.divWad(prevRestakedBalanceWei);
+        uint256 balanceRemainingWad = newRestakedBalanceWei.divWadRoundUp(prevRestakedBalanceWei);
 
         // Update pod owner's beacon chain slashing factor. Note that `newBeaconSlashingFactor`
         // should be less than `prevBeaconSlashingFactor` because `balanceRemainingWad` is
