@@ -43,8 +43,6 @@ interface IDelegationManagerErrors {
     /// @dev Thrown when an operator has been fully slashed(maxMagnitude is 0) for a strategy.
     /// or if the staker has had been natively slashed to the point of their beaconChainScalingFactor equalling 0.
     error FullySlashed();
-    /// @dev Thrown when burnOperatorShares is called and newMaxMagnitude is greater than or equal to the previous maxMagnitude
-    error MaxMagnitudeCantIncrease();
 
     /// Signatures
 
@@ -351,24 +349,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
-     * @notice Decreases the operators shares in storage after a slash and burns the corresponding Strategy shares
-     * by calling into the StrategyManager or EigenPodManager to burn the shares.
-     * @param operator The operator to decrease shares for
-     * @param strategy The strategy to decrease shares for
-     * @param prevMaxMagnitude the previous maxMagnitude of the operator
-     * @param newMaxMagnitude the new maxMagnitude of the operator
-     * @dev Callable only by the AllocationManager
-     * @dev Reverts if the newMaxMagnitude is >= the previous maxMagnitude. Shares can only decrease
-     * if the newMaxMagnitude has decreased.
-     */
-    function burnOperatorShares(
-        address operator,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external;
-
-    /**
      * @notice If the staker is delegated, decreases its operator's shares in response to
      * a decrease in balance in the beaconChainETHStrategy
      * @param staker the staker whose operator's balance will be decreased
@@ -383,6 +363,24 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         uint256 curDepositShares,
         uint64 prevBeaconChainSlashingFactor,
         uint256 wadSlashed
+    ) external;
+
+    /**
+     * @notice Decreases the operators shares in storage after a slash and burns the corresponding Strategy shares
+     * by calling into the StrategyManager or EigenPodManager to burn the shares.
+     * @param operator The operator to decrease shares for
+     * @param strategy The strategy to decrease shares for
+     * @param prevMaxMagnitude the previous maxMagnitude of the operator
+     * @param newMaxMagnitude the new maxMagnitude of the operator
+     * @dev Callable only by the AllocationManager
+     * @dev Note: Assumes `prevMaxMagnitude <= newMaxMagnitude`. This invariant is maintained in
+     * the AllocationManager.
+     */
+    function burnOperatorShares(
+        address operator,
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
     ) external;
 
     /**

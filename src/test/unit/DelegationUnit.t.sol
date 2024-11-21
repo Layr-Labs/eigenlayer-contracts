@@ -2878,17 +2878,6 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
     }
 
-    /// @notice Verifies that `DelegationManager.burnOperatorShares` reverts if the newMaxMagnitude
-    /// is less than prevMaxMagnitude.
-    function testFuzz_Revert_burnOperatorShares_InvalidNewMaxMagnitude(Randomness r) public {
-        uint64 prevMaxMagnitude = r.Uint64(1, WAD);
-        uint64 newMaxMagnitude = r.Uint64(prevMaxMagnitude, WAD);
-
-        cheats.prank(address(allocationManagerMock));
-        cheats.expectRevert(IDelegationManagerErrors.MaxMagnitudeCantIncrease.selector);
-        delegationManager.burnOperatorShares(defaultOperator, strategyMock, prevMaxMagnitude, newMaxMagnitude);        
-    }
-
     /**
      * @notice Verifies that `DelegationManager.burnOperatorShares` properly decreases the delegated `shares` that the operator
      * who the `defaultStaker` is delegated to has in the strategies
