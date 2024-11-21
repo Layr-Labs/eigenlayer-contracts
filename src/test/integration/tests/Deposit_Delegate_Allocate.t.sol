@@ -34,17 +34,11 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
         operator.registerForOperatorSets(operatorSets);
-
+        
         for (uint i; i < operatorSets.length; ++i) {
             uint256 len = allocationManager.getStrategiesInOperatorSet(operatorSets[i]).length;
             operator.modifyAllocations(operatorSets[i], _randomMagnitudes({ sum: 1 ether / uint64(operatorSets.length), len: len }));
-        }
-
-        rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
-
-        for (uint i; i < operatorSets.length; ++i) {
-            uint256 wadToSlash = _randUint({min: 0.01 ether, max: 1 ether});
-            avs.slashOperator(operator, operatorSets[i].id, wadToSlash);
+            avs.slashOperator(operator, operatorSets[i].id, _randUint({min: 0.01 ether, max: 1 ether}));
         }
 
         // TODO: write checks for slashing...

@@ -75,7 +75,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// -----------------------------------------------------------------------
     /// Allocation Manager Methods
     /// -----------------------------------------------------------------------
-
+    
     /// @dev Allocates randomly accross the operator set's strategies with a sum of `magnitudeSum`.
     /// NOTE: Calling more than once will lead to deallocations...
     function modifyAllocations(OperatorSet memory operatorSet, uint64[] memory magnitudes) public virtual createSnapshot {
@@ -101,6 +101,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }).toArray();
 
         allocationManager.modifyAllocations(params);
+
+        rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
     }
     
     function deallocateAll(
