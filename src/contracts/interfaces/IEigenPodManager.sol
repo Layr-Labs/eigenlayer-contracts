@@ -102,12 +102,16 @@ interface IEigenPodManager is
      * @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager
      * to ensure that delegated shares are also tracked correctly
      * @param podOwner is the pod owner whose balance is being updated.
-     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @param wadSlashed is the proportion (of WAD) of the podOwner's balance that has changed
+     * @param prevRestakedBalanceWei is the total amount restaked through the pod before the balance update
+     * @param balanceDeltaWei is the amount the balance changed
      * @dev Callable only by the podOwner's EigenPod contract.
      * @dev Reverts if `sharesDelta` is not a whole Gwei amount
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta, uint256 wadSlashed) external;
+    function recordBeaconChainETHBalanceUpdate(
+        address podOwner,
+        uint256 prevRestakedBalanceWei,
+        int256 balanceDeltaWei
+    ) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
     function ownerToPod(

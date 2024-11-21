@@ -331,8 +331,9 @@ contract DelegationManager is
         uint256 sharesToRemove = dsf.calcWithdrawable({
             depositShares: curDepositShares,
             slashingFactor: prevSlashingFactor
-        }).mulWad(uint256(WAD) - wadSlashed); // ? TODO verify
+        }).mulWad(wadSlashed);
 
+        // Decrease the operator's shares
         _decreaseDelegation({
             operator: operator,
             staker: staker,

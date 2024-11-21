@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/BeaconChainProofs.sol";
 import "../libraries/BytesLib.sol";
-import "../libraries/SlashingLib.sol";
 
 import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPodManager.sol";
@@ -27,7 +26,6 @@ import "./EigenPodStorage.sol";
 contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, EigenPodStorage {
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
-    using SlashingLib for *;
     using BeaconChainProofs for *;
 
     /**
@@ -264,7 +262,11 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         }
 
         // Update the EigenPodManager on this pod's new balance
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, int256(totalAmountToBeRestakedWei), 0); // no decrease
+        eigenPodManager.recordBeaconChainETHBalanceUpdate({
+            podOwner: podOwner,
+            prevRestakedBalanceWei: 0, // only used for checkpoint balance updates
+            balanceDeltaWei: int256(totalAmountToBeRestakedWei)
+        });
     }
 
     /**
@@ -532,12 +534,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // Calculate change in the validator's balance since the last proof
         if (newBalanceGwei != prevBalanceGwei) {
-            // forgefmt: disable-next-item
-            balanceDeltaGwei = _calcBalanceDelta({
-                newAmountGwei: newBalanceGwei,
-                previousAmountGwei: prevBalanceGwei
-            });
-
+            balanceDeltaGwei = int64(newBalanceGwei) - int64(prevBalanceGwei);
             emit ValidatorBalanceUpdated(validatorIndex, checkpointTimestamp, newBalanceGwei);
         }
 
@@ -634,32 +631,34 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             return;
         }
 
-        // Calculate the total change in shares
-        int64 totalShareDeltaGwei = int64(checkpoint.podBalanceGwei) + checkpoint.balanceDeltasGwei;
+        // Calculate the previous total restaked balance and change in restaked balance
+        // Note: due to how these values are calculated, a negative `balanceDeltaGwei`
+        // should NEVER be greater in magnitude than `prevRestakedBalanceGwei`
+        uint64 prevRestakedBalanceGwei = restakedExecutionLayerGwei + checkpoint.prevBeaconBalanceGwei;
+        int64 balanceDeltaGwei = int64(checkpoint.podBalanceGwei) + checkpoint.balanceDeltasGwei;
 
-        // If shares have decreased due to slashing or liveness leak, calculate the proportion
-        // by which shares have decreased
-        uint256 wadSlashed = 0;
-        if (totalShareDeltaGwei < 0) {
-            uint64 totalRestakedBeforeGwei = restakedExecutionLayerGwei + checkpoint.prevBeaconBalanceGwei;
-            uint64 totalRestakedAfterGwei = totalRestakedBeforeGwei - uint64(-totalShareDeltaGwei);
-
-            //TODO: analyze effects of rounding errors here see `test_VerifyWC_Slash_StartCP_VerifyWC_CompleteCP` for example
-            wadSlashed = uint256(totalRestakedAfterGwei).divWad(totalRestakedBeforeGwei);
-        }
-
-        // Add any native ETH in the pod to `restakedExecutionLayerGwei`
-        // ... this amount can be withdrawn via the `DelegationManager` withdrawal queue
+        // And native ETH when the checkpoint was started is now considered restaked.
+        // Add it to `restakedExecutionLayerGwei`, which allows it to be withdrawn via
+        // the `DelegationManager` withdrawal queue.
         restakedExecutionLayerGwei += checkpoint.podBalanceGwei;
 
-        // Finalize the checkpoint
+        // Finalize the checkpoint by resetting `currentCheckpointTimestamp`.
+        // Note: `_currentCheckpoint` is not deleted, as it is overwritten
+        // when a new checkpoint is started
         lastCheckpointTimestamp = currentCheckpointTimestamp;
         delete currentCheckpointTimestamp;
 
+        // Convert shares and delta to wei
+        uint256 prevRestakedBalanceWei = prevRestakedBalanceGwei * GWEI_TO_WEI;
+        int256 balanceDeltaWei = balanceDeltaGwei * int256(GWEI_TO_WEI);
+
         // Update pod owner's shares
-        int256 totalShareDeltaWei = totalShareDeltaGwei * int256(GWEI_TO_WEI);
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei, wadSlashed);
-        emit CheckpointFinalized(lastCheckpointTimestamp, totalShareDeltaWei);
+        emit CheckpointFinalized(lastCheckpointTimestamp, balanceDeltaWei);
+        eigenPodManager.recordBeaconChainETHBalanceUpdate({
+            podOwner: podOwner,
+            prevRestakedBalanceWei: prevRestakedBalanceWei,
+            balanceDeltaWei: balanceDeltaWei
+        });
     }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
@@ -672,11 +671,6 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     ) internal pure returns (bytes32) {
         require(validatorPubkey.length == 48, InvalidPubKeyLength());
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
-    }
-
-    /// @dev Calculates the delta between two Gwei amounts and returns as an int256
-    function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int64) {
-        return int64(newAmountGwei) - int64(previousAmountGwei);
     }
 
     /**
