@@ -21,6 +21,7 @@ interface IAVSDeployer {
 }
 
 contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
+    using print for *;
     using SingleItemArrayLib for *;
 
     AllocationManager immutable allocationManager;
@@ -88,7 +89,18 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     }
 
     function slashOperator(User operator, uint32 operatorSetId, uint256 wadToSlash) public createSnapshot {
-        print.method("slashOperator");
+        print.method(
+            "slashOperator",
+            string.concat(
+                "{operator: ",
+                operator.NAME_COLORED(),
+                ", operatorSetId: ",
+                cheats.toString(operatorSetId),
+                ", wadToSlash: ",
+                wadToSlash.asWad(),
+                "}"
+            )
+        );
 
         SlashingParams memory p = SlashingParams({
             operator: address(operator),
@@ -97,7 +109,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             description: "bad operator"
         });
 
-        print.slashOperator(p);
         allocationManager.slashOperator(p);
     }
 

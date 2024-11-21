@@ -362,19 +362,19 @@ contract BeaconChainMock is Logger {
             v.effectiveBalanceGwei = balanceGwei;
         }
 
-        console.log("   Updated effective balances...".dim());
-        console.log("       timestamp:", block.timestamp);
-        console.log("       epoch:", currentEpoch());
+        // console.log("   Updated effective balances...".dim());
+        // console.log("       timestamp:", block.timestamp);
+        // console.log("       epoch:", currentEpoch());
 
         uint64 curEpoch = currentEpoch();
         cheats.warp(_nextEpochStartTimestamp(curEpoch));
         curTimestamp = uint64(block.timestamp);
 
-        console.log("   Jumping to next epoch...".dim());
-        console.log("       timestamp:", block.timestamp);
-        console.log("       epoch:", currentEpoch());
+        // console.log("   Jumping to next epoch...".dim());
+        // console.log("       timestamp:", block.timestamp);
+        // console.log("       epoch:", currentEpoch());
                 
-        console.log("   Building beacon state trees...".dim());
+        // console.log("   Building beacon state trees...".dim());
 
         // Log total number of validators and number being processed for the first time
         if (validators.length > 0) {
@@ -383,7 +383,7 @@ contract BeaconChainMock is Logger {
             // generate an empty root if we don't have any validators
             EIP_4788_ORACLE.setBlockRoot(curTimestamp, keccak256(""));
 
-            console.log("-- no validators; added empty block root");
+            // console.log("-- no validators; added empty block root");
             return;
         }
         

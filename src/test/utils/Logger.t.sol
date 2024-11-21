@@ -105,7 +105,7 @@ abstract contract Logger is Test {
         uint256 blocks
     ) internal {
         cheats.roll(block.timestamp + blocks);
-        console.log("\n%s.roll(%d)", colorByRole("cheats"), block.timestamp);
+        console.log("%s.roll(%d)", colorByRole("cheats"), block.timestamp);
     }
 
     /// -----------------------------------------------------------------------
@@ -131,15 +131,15 @@ library print {
     /// -----------------------------------------------------------------------
     /// Logging
     /// -----------------------------------------------------------------------
-    
+
     function method(
         string memory m
     ) internal view {
-        console.log("\n%s.%s()", _name(), m.italic());
+        console.log("%s.%s()", _name(), m.italic());
     }
 
     function method(string memory m, string memory args) internal view {
-        console.log("\n%s.%s(%s)", _name(), m.italic(), args);
+        console.log("%s.%s(%s)", _name(), m.italic(), args);
     }
 
     function user(
@@ -150,10 +150,7 @@ library print {
         uint256[] memory tokenBalances
     ) internal view {
         console.log(
-            "\nCreated %s %s who holds %s.", 
-            userType.asUserType(),
-            _logger().colorByRole(name), 
-            assetType.asAssetType()
+            "\nCreated %s %s who holds %s.", userType.asUserType(), _logger().colorByRole(name), assetType.asAssetType()
         );
 
         console.log("   Balances:");
@@ -164,9 +161,7 @@ library print {
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
                 console.log(
-                    "       %s: %s",
-                    IERC20Metadata(address(underlyingToken)).name(),
-                    print.asGwei(tokenBalances[i])
+                    "       %s: %s", IERC20Metadata(address(underlyingToken)).name(), print.asGwei(tokenBalances[i])
                 );
             }
         }
@@ -175,15 +170,6 @@ library print {
     /// -----------------------------------------------------------------------
     /// Logging
     /// -----------------------------------------------------------------------
-    
-    function slashOperator(
-        IAllocationManagerTypes.SlashingParams memory p
-    ) internal pure {
-        console.log("Slashing operator: %s", address(p.operator));
-        console.log("   operatorSetId: %d", p.operatorSetId);
-        console.log("   wadToSlash: %d", p.wadToSlash);
-        console.log("   description: %s", p.description);
-    }
 
     function createOperatorSets(
         IAllocationManagerTypes.CreateSetParams[] memory p
@@ -192,7 +178,7 @@ library print {
         for (uint256 i; i < p.length; ++i) {
             console.log("   operatorSet%d:".yellow(), p[i].operatorSetId);
             for (uint256 j; j < p[i].strategies.length; ++j) {
-                console.log("       strategy: %s", address(p[i].strategies[j]));
+                console.log("       strategy%s: %s", cheats.toString(j), address(p[i].strategies[j]));
             }
         }
     }
@@ -211,7 +197,9 @@ library print {
     /// Strings
     /// -----------------------------------------------------------------------
 
-    function asAssetType(uint256 t) internal pure returns (string memory s) {
+    function asAssetType(
+        uint256 t
+    ) internal pure returns (string memory s) {
         if (t == HOLDS_ALL) {
             s = "ALL_ASSETS";
         } else if (t == HOLDS_LST) {
@@ -223,7 +211,9 @@ library print {
         }
     }
 
-    function asUserType(uint256 t) internal pure returns (string memory s) {
+    function asUserType(
+        uint256 t
+    ) internal pure returns (string memory s) {
         if (t == DEFAULT) {
             s = "DEFAULT";
         } else if (t == ALT_METHODS) {
@@ -231,7 +221,9 @@ library print {
         }
     }
 
-    function asForkType(uint256 t) internal pure returns (string memory s) {
+    function asForkType(
+        uint256 t
+    ) internal pure returns (string memory s) {
         if (t == LOCAL) {
             s = "LOCAL";
         } else if (t == MAINNET) {
@@ -253,11 +245,7 @@ library print {
         return x.asDecimal(18, " wad");
     }
 
-    function asDecimal(
-        uint256 x,
-        uint8 decimals,
-        string memory denomination
-    ) internal pure returns (string memory s) {
+    function asDecimal(uint256 x, uint8 decimals, string memory denomination) internal pure returns (string memory s) {
         if (x == 0) return string.concat("0.0", denomination);
 
         s = cheats.toString(x);
@@ -288,7 +276,7 @@ library print {
         try _logger().NAME_COLORED() returns (string memory name) {
             return name;
         } catch {
-            revert ("This contract is not a `Logger`.");
+            revert("This contract is not a `Logger`.");
         }
     }
 
