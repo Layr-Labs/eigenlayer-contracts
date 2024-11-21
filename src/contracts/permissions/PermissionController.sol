@@ -32,7 +32,7 @@ contract PermissionController is Initializable, PermissionControllerStorage {
      */
 
     /// @inheritdoc IPermissionController
-    function setAdmin(address account, address admin) external onlyAdmin(account) {
+    function addAdmin(address account, address admin) external onlyAdmin(account) {
         // Add the admin to the account's admins
         // If the admin is already set, the set will fail
         EnumerableSet.AddressSet storage admins = _permissions[account].admins;
@@ -41,6 +41,7 @@ contract PermissionController is Initializable, PermissionControllerStorage {
         emit AdminSet(account, admin);
     }
 
+    /// @inheritdoc IPermissionController
     function removeAdmin(address account, address admin) external onlyAdmin(account) {
         EnumerableSet.AddressSet storage admins = _permissions[account].admins;
 
