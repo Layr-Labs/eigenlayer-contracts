@@ -430,7 +430,7 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         cheats.assume(sharesDelta % int256(GWEI_TO_WEI) != 0);
         cheats.prank(address(defaultPod));
         cheats.expectRevert(IEigenPodManagerErrors.SharesNotMultipleOfGwei.selector);
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, sharesDelta, 0);
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, 0, sharesDelta);
     }
 
     function testFuzz_revert_negativeDepositShares(int224 sharesBefore) public {
@@ -445,33 +445,61 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, 0, 0);
     }
 
-    function testFuzz_recordBalanceUpdate(int256 sharesBefore, int256 sharesDelta) public {
+    function testFuzz_recordPositiveBalanceUpdate(
+        uint256 sharesBefore, 
+        uint256 sharesDelta,
+        uint256 prevRestakedBalanceWei
+    ) public {
         // Constrain inputs
-        sharesBefore = int224(bound(sharesBefore, type(int224).min, type(int224).max)) * int256(GWEI_TO_WEI);
-        sharesDelta = int224(bound(sharesDelta, type(int224).min, type(int224).max)) * int256(GWEI_TO_WEI);
+        sharesBefore = bound(sharesBefore, 0, type(uint224).max) * uint(GWEI_TO_WEI);
+        sharesDelta = bound(sharesDelta, 0, type(uint224).max) * uint(GWEI_TO_WEI);
+        prevRestakedBalanceWei = bound(prevRestakedBalanceWei, 0, type(uint256).max);
 
         // Initialize shares
-        _initializePodWithShares(defaultStaker, sharesBefore);
+        _initializePodWithShares(defaultStaker, int(sharesBefore));
 
-        if (sharesBefore < 0) {
-            cheats.expectRevert(IEigenPodManagerErrors.LegacyWithdrawalsNotCompleted.selector);
-        } else if (sharesDelta > 0) {
-            // Add shares
-            cheats.expectEmit(true, true, true, true);
-            emit PodSharesUpdated(defaultStaker, sharesDelta);
-            cheats.expectEmit(true, true, true, true);
-            emit NewTotalShares(defaultStaker, sharesBefore + sharesDelta);
-        }
+        uint64 prevSlashingFactor = eigenPodManager.beaconChainSlashingFactor(defaultStaker);
+
+        // Add shares
+        cheats.expectEmit(true, true, true, true);
+        emit PodSharesUpdated(defaultStaker, int(sharesDelta));
+        cheats.expectEmit(true, true, true, true);
+        emit NewTotalShares(defaultStaker, int(sharesBefore + sharesDelta));
+
         cheats.prank(address(defaultPod));
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, sharesDelta, 0);
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, prevRestakedBalanceWei, int(sharesDelta));
 
         // Check storage
         // Note that this is a unit test, we don't validate that the withdrawable shares are updated correctly
         // See the integration tests for checking scaling factors and withdrawable shares
-        if (sharesBefore >= 0 && sharesDelta > 0) {
-            assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), sharesBefore + sharesDelta, "Shares not updated correctly");
-        } else {
-            assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), sharesBefore, "Shares should not be adjusted");
-        }
+        assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), int(sharesBefore + sharesDelta), "Shares not updated correctly");
+        assertEq(eigenPodManager.beaconChainSlashingFactor(defaultStaker), prevSlashingFactor, "bcsf should not change");
+    }
+
+    function testFuzz_recordNegativeBalanceUpdate(
+        uint256 sharesBefore,
+        uint256 sharesDelta,
+        uint256 prevRestakedBalanceWei
+    ) public {
+        // Constrain inputs
+        sharesBefore = bound(sharesBefore, 0, type(uint224).max) * uint(GWEI_TO_WEI);
+        prevRestakedBalanceWei = bound(prevRestakedBalanceWei, 1, type(uint224).max);
+        sharesDelta = bound(sharesDelta, 1, prevRestakedBalanceWei) * uint(GWEI_TO_WEI);
+        prevRestakedBalanceWei *= GWEI_TO_WEI;
+
+        // Initialize shares
+        _initializePodWithShares(defaultStaker, int(sharesBefore));
+
+        uint64 prevSlashingFactor = eigenPodManager.beaconChainSlashingFactor(defaultStaker);
+
+        // Not checking the new slashing factor - just checking the invariant that new <= prev
+        cheats.expectEmit(true, true, true, false);
+        emit BeaconChainSlashingFactorDecreased(defaultStaker, 0);
+
+        cheats.prank(address(defaultPod));
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, prevRestakedBalanceWei, -int(sharesDelta));
+
+        assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), int(sharesBefore), "Shares should not be adjusted");
+        assertTrue(eigenPodManager.beaconChainSlashingFactor(defaultStaker) <= prevSlashingFactor, "bcsf should always decrease");
     }
 }

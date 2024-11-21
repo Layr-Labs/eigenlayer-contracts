@@ -87,40 +87,44 @@ contract EigenPodManager is
     /// @inheritdoc IEigenPodManager
     function recordBeaconChainETHBalanceUpdate(
         address podOwner,
-        int256 sharesDelta,
-        uint256 wadSlashed
+        uint256 prevRestakedBalanceWei,
+        int256 balanceDeltaWei
     ) external onlyEigenPod(podOwner) nonReentrant {
         require(podOwner != address(0), InputAddressZero());
-        require(sharesDelta % int256(GWEI_TO_WEI) == 0, SharesNotMultipleOfGwei());
-        // shares can only be negative if they were due to negative shareDeltas after queued withdrawals in before
-        // the slashing upgrade. Make people complete queued withdrawals before completing any further checkpoints.
-        // the only effects podOwner UX, not AVS UX, since the podOwner already has 0 shares in the DM if they
-        // have a negative shares in EPM.
+        require(balanceDeltaWei % int256(GWEI_TO_WEI) == 0, SharesNotMultipleOfGwei());
+        // Negative shares only exist in certain cases where, prior to the slashing release, negative balance
+        // deltas were reported after a pod owner queued a withdrawal for all their shares.
+        //
+        // The new system treats negative balance deltas differently, decreasing the pod owner's slashing factor
+        // proportional to the decrease. This check was added to ensure the new system does not need to handle
+        // negative shares - instead, stakers will need to go complete any existing withdrawals before their pod
+        // can process a balance update.
         require(podOwnerDepositShares[podOwner] >= 0, LegacyWithdrawalsNotCompleted());
 
-        if (sharesDelta > 0) {
-            (uint256 curDepositShares, uint256 addedShares) = _addShares(podOwner, uint256(sharesDelta));
+        // Shares are only added to the pod owner's balance when `balanceDeltaWei` >= 0. When a pod reports
+        // a negative balance delta, the pod owner's beacon chain slashing factor is decreased, devaluing
+        // their shares.
+        if (balanceDeltaWei >= 0) {
+            (uint256 curDepositShares, uint256 addedShares) = _addShares(podOwner, uint256(balanceDeltaWei));
+
+            // Update operator shares
             delegationManager.increaseDelegatedShares({
                 staker: podOwner,
                 strategy: beaconChainETHStrategy,
                 curDepositShares: curDepositShares,
                 addedShares: addedShares
             });
-        } else if (sharesDelta < 0 && podOwnerDepositShares[podOwner] > 0) {
-            // TODO correct condition above to >=
-            uint64 prevBeaconSlashingFactor = beaconChainSlashingFactor(podOwner);
-            uint64 newBeaconSlashingFactor = uint64(prevBeaconSlashingFactor.mulWad(wadSlashed));
-
-            emit BeaconChainSlashingFactorDecreased(podOwner, newBeaconSlashingFactor);
-            /// forgefmt: disable-next-item
-            _beaconChainSlashingFactor[podOwner] = BeaconChainSlashingFactor({
-                slashingFactor: newBeaconSlashingFactor,
-                isSet: true
+        } else {
+            (uint256 curDepositShares, uint64 prevBeaconSlashingFactor, uint256 wadSlashed) = _reduceSlashingFactor({
+                podOwner: podOwner,
+                prevRestakedBalanceWei: prevRestakedBalanceWei,
+                balanceDecreasedWei: uint256(-balanceDeltaWei)
             });
 
+            // Update operator shares
             delegationManager.decreaseDelegatedShares({
                 staker: podOwner,
-                curDepositShares: uint256(podOwnerDepositShares[podOwner]),
+                curDepositShares: curDepositShares,
                 prevBeaconChainSlashingFactor: prevBeaconSlashingFactor,
                 wadSlashed: wadSlashed
             });
@@ -253,6 +257,39 @@ contract EigenPodManager is
         }
 
         return (currentDepositShares < 0 ? 0 : uint256(currentDepositShares), shares);
+    }
+
+    /// @dev Calculates the proportion a pod owner's restaked balance has decreased, and
+    /// reduces their beacon slashing factor accordingly.
+    /// Note: `balanceDecreasedWei` is assumed to be less than `prevRestakedBalanceWei`
+    function _reduceSlashingFactor(
+        address podOwner,
+        uint256 prevRestakedBalanceWei,
+        uint256 balanceDecreasedWei
+    ) internal returns (uint256, uint64, uint256) {
+        // Apply negative balance delta to calculate the proportion of the original
+        // balance that remains. Note that underflow here should be impossible given
+        // the invariants pods use to calculate these values.
+        uint256 newRestakedBalanceWei = prevRestakedBalanceWei - balanceDecreasedWei;
+        uint256 balanceRemainingWad = newRestakedBalanceWei.divWad(prevRestakedBalanceWei);
+
+        // Update pod owner's beacon chain slashing factor. Note that `newBeaconSlashingFactor`
+        // should be less than `prevBeaconSlashingFactor` because `balanceRemainingWad` is
+        // guaranteed to be less than WAD.
+        uint64 prevBeaconSlashingFactor = beaconChainSlashingFactor(podOwner);
+        uint64 newBeaconSlashingFactor = uint64(prevBeaconSlashingFactor.mulWad(balanceRemainingWad));
+        emit BeaconChainSlashingFactorDecreased(podOwner, newBeaconSlashingFactor);
+        /// forgefmt: disable-next-item
+        _beaconChainSlashingFactor[podOwner] = BeaconChainSlashingFactor({
+            slashingFactor: newBeaconSlashingFactor,
+            isSet: true
+        });
+
+        uint256 curDepositShares = uint256(podOwnerDepositShares[podOwner]);
+        // Note that underflow here should be impossible given
+        // `balanceRemainingWad` is guaranteed to be less than WAD.
+        uint256 wadSlashed = uint256(WAD) - balanceRemainingWad;
+        return (curDepositShares, prevBeaconSlashingFactor, wadSlashed);
     }
 
     // VIEW FUNCTIONS
