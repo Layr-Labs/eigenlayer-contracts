@@ -328,8 +328,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         uint64 amountToDeposit = 1e12;
 
         // shadow-fork mainnet
-        try cheats.createFork("mainnet") returns (uint256 forkId) {
-            cheats.selectFork(forkId);
+        try cheats.createSelectFork(cheats.rpcUrl("mainnet")) {
         // If RPC_MAINNET ENV not set, default to this mainnet RPC endpoint
         } catch  {
             cheats.createSelectFork("https://eth.llamarpc.com");
