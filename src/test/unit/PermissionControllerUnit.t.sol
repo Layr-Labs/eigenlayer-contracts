@@ -33,7 +33,7 @@ contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionCo
 contract PermissionControllerUnitTests_SetAdmin is PermissionControllerUnitTests {
     modifier initializeAdmin() {
         cheats.prank(account);
-        permissionController.setAdmin(account, admin);
+        permissionController.addAdmin(account, admin);
         _;
     }
 
@@ -46,7 +46,7 @@ contract PermissionControllerUnitTests_SetAdmin is PermissionControllerUnitTests
     /// @notice Tests the setAdmin function when it has not been initialized
     function test_revert_caller_not_account() public {
         cheats.expectRevert(IPermissionControllerErrors.NotAdmin.selector);
-        permissionController.setAdmin(account, admin);
+        permissionController.addAdmin(account, admin);
     }
 
     function test_setAdmin_initialSet() public {
@@ -55,7 +55,7 @@ contract PermissionControllerUnitTests_SetAdmin is PermissionControllerUnitTests
         emit AdminSet(account, admin);
 
         cheats.prank(account);
-        permissionController.setAdmin(account, admin);
+        permissionController.addAdmin(account, admin);
 
         // Check storage
         address[] memory admins = permissionController.getAdmins(account);
@@ -67,13 +67,13 @@ contract PermissionControllerUnitTests_SetAdmin is PermissionControllerUnitTests
     function test_revert_invalidAdmin_alreadySet() public initializeAdmin {
         cheats.prank(admin);
         cheats.expectRevert(IPermissionControllerErrors.AdminAlreadySet.selector);
-        permissionController.setAdmin(account, admin);
+        permissionController.addAdmin(account, admin);
     }
 
     function test_revert_caller_not_admin() public initializeAdmin {
         cheats.prank(account);
         cheats.expectRevert(IPermissionControllerErrors.NotAdmin.selector);
-        permissionController.setAdmin(account, admin2);
+        permissionController.addAdmin(account, admin2);
     }
 
     function test_addAdditionalAdmin() public initializeAdmin {
@@ -82,7 +82,7 @@ contract PermissionControllerUnitTests_SetAdmin is PermissionControllerUnitTests
         emit AdminSet(account, admin2);
 
         cheats.prank(admin);
-        permissionController.setAdmin(account, admin2);
+        permissionController.addAdmin(account, admin2);
 
         // Check storage
         address[] memory admins = permissionController.getAdmins(account);
@@ -100,7 +100,7 @@ contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTe
 
         // Set admin
         cheats.prank(account);
-        permissionController.setAdmin(account, admin);
+        permissionController.addAdmin(account, admin);
     }
 
     function test_revert_notAdmin() public {
@@ -141,7 +141,7 @@ contract PermissionControllerUnitTests_SetAppointee is PermissionControllerUnitT
 
         // Set admin
         cheats.prank(account);
-        permissionController.setAdmin(account, admin);
+        permissionController.addAdmin(account, admin);
     }
 
     function test_revert_notAdmin() public {
@@ -224,7 +224,7 @@ contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUn
 
         // Set admin
         cheats.prank(account);
-        permissionController.setAdmin(account, admin);
+        permissionController.addAdmin(account, admin);
 
         // Set appointees
         cheats.startPrank(admin);

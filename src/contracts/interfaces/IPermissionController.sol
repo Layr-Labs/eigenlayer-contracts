@@ -35,7 +35,7 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @param admin to set
      * @dev Multiple admins can be set for an account
      */
-    function setAdmin(address account, address admin) external;
+    function addAdmin(address account, address admin) external;
 
     /**
      * @notice Remove an admin of an account
