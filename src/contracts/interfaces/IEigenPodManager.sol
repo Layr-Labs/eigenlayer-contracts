@@ -49,6 +49,25 @@ interface IEigenPodManagerEvents {
         address withdrawer,
         bytes32 withdrawalRoot
     );
+
+    /// @notice Emitted when a staker's beaconChainSlashingFactor is updated
+    event BeaconChainSlashingFactorDecreased(address staker, uint256 wadSlashed, uint64 newBeaconChainSlashingFactor);
+}
+
+interface IEigenPodManagerTypes {
+    /**
+     * @notice The amount of beacon chain slashing experienced by a pod owner as a proportion of WAD
+     * @param isSet whether the slashingFactor has ever been updated. Used to distinguish between
+     * a value of "0" and an uninitialized value.
+     * @param slashingFactor the proportion of the pod owner's balance that has been decreased due to
+     * slashing or other beacon chain balance decreases.
+     * @dev NOTE: if !isSet, `slashingFactor` should be treated as WAD. `slashingFactor` is monotonically
+     * decreasing and can hit 0 if fully slashed.
+     */
+    struct BeaconChainSlashingFactor {
+        bool isSet;
+        uint64 slashingFactor;
+    }
 }
 
 /**
@@ -56,7 +75,13 @@ interface IEigenPodManagerEvents {
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-interface IEigenPodManager is IEigenPodManagerErrors, IEigenPodManagerEvents, IShareManager, IPausable {
+interface IEigenPodManager is
+    IEigenPodManagerErrors,
+    IEigenPodManagerEvents,
+    IEigenPodManagerTypes,
+    IShareManager,
+    IPausable
+{
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -77,15 +102,15 @@ interface IEigenPodManager is IEigenPodManagerErrors, IEigenPodManagerEvents, IS
      * @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager
      * to ensure that delegated shares are also tracked correctly
      * @param podOwner is the pod owner whose balance is being updated.
-     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @param proportionPodBalanceDecrease is the proportion (of WAD) of the podOwner's balance that has changed
+     * @param prevRestakedBalanceWei is the total amount restaked through the pod before the balance update
+     * @param balanceDeltaWei is the amount the balance changed
      * @dev Callable only by the podOwner's EigenPod contract.
      * @dev Reverts if `sharesDelta` is not a whole Gwei amount
      */
     function recordBeaconChainETHBalanceUpdate(
         address podOwner,
-        int256 sharesDelta,
-        uint64 proportionPodBalanceDecrease
+        uint256 prevRestakedBalanceWei,
+        int256 balanceDeltaWei
     ) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
@@ -129,4 +154,12 @@ interface IEigenPodManager is IEigenPodManagerErrors, IEigenPodManagerEvents, IS
 
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
+
+    /**
+     * @notice Returns the historical sum of proportional balance decreases a pod owner has experienced when
+     * updating their pod's balance.
+     */
+    function beaconChainSlashingFactor(
+        address staker
+    ) external view returns (uint64);
 }

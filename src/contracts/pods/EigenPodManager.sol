@@ -61,11 +61,7 @@ contract EigenPodManager is
         _setPausedStatus(_initPausedStatus);
     }
 
-    /**
-     * @notice Creates an EigenPod for the sender.
-     * @dev Function will revert if the `msg.sender` already has an EigenPod.
-     * @dev Returns EigenPod address
-     */
+    /// @inheritdoc IEigenPodManager
     function createPod() external onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (address) {
         require(!hasPod(msg.sender), EigenPodAlreadyExists());
         // deploy a pod if the sender doesn't have one already
@@ -74,13 +70,7 @@ contract EigenPodManager is
         return address(pod);
     }
 
-    /**
-     * @notice Stakes for a new beacon chain validator on the sender's EigenPod.
-     * Also creates an EigenPod for the sender if they don't have one already.
-     * @param pubkey The 48 bytes public key of the beacon chain validator.
-     * @param signature The validator's signature of the deposit data.
-     * @param depositDataRoot The root/hash of the deposit data for the validator's deposit.
-     */
+    /// @inheritdoc IEigenPodManager
     function stake(
         bytes calldata pubkey,
         bytes calldata signature,
@@ -94,40 +84,50 @@ contract EigenPodManager is
         pod.stake{value: msg.value}(pubkey, signature, depositDataRoot);
     }
 
-    /**
-     * @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager
-     * to ensure that delegated shares are also tracked correctly
-     * @param podOwner is the pod owner whose balance is being updated.
-     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @param proportionOfOldBalance is the proportion (of WAD) of the podOwner's previous balance before the delta
-     * @dev Callable only by the podOwner's EigenPod contract.
-     * @dev Reverts if `sharesDelta` is not a whole Gwei amount
-     */
+    /// @inheritdoc IEigenPodManager
     function recordBeaconChainETHBalanceUpdate(
         address podOwner,
-        int256 sharesDelta,
-        uint64 proportionOfOldBalance
+        uint256 prevRestakedBalanceWei,
+        int256 balanceDeltaWei
     ) external onlyEigenPod(podOwner) nonReentrant {
         require(podOwner != address(0), InputAddressZero());
-        require(sharesDelta % int256(GWEI_TO_WEI) == 0, SharesNotMultipleOfGwei());
-        // shares can only be negative if they were due to negative shareDeltas after queued withdrawals in before
-        // the slashing upgrade. Make people complete queued withdrawals before completing any further checkpoints.
-        // the only effects podOwner UX, not AVS UX, since the podOwner already has 0 shares in the DM if they
-        // have a negative shares in EPM.
+        require(balanceDeltaWei % int256(GWEI_TO_WEI) == 0, SharesNotMultipleOfGwei());
+        // Negative shares only exist in certain cases where, prior to the slashing release, negative balance
+        // deltas were reported after a pod owner queued a withdrawal for all their shares.
+        //
+        // The new system treats negative balance deltas differently, decreasing the pod owner's slashing factor
+        // proportional to the decrease. This check was added to ensure the new system does not need to handle
+        // negative shares - instead, stakers will need to go complete any existing withdrawals before their pod
+        // can process a balance update.
         require(podOwnerDepositShares[podOwner] >= 0, LegacyWithdrawalsNotCompleted());
 
-        if (sharesDelta > 0) {
-            (uint256 existingDepositShares, uint256 addedShares) = _addShares(podOwner, uint256(sharesDelta));
+        // Shares are only added to the pod owner's balance when `balanceDeltaWei` >= 0. When a pod reports
+        // a negative balance delta, the pod owner's beacon chain slashing factor is decreased, devaluing
+        // their shares.
+        if (balanceDeltaWei >= 0) {
+            (uint256 curDepositShares, uint256 addedShares) = _addShares(podOwner, uint256(balanceDeltaWei));
+
+            // Update operator shares
             delegationManager.increaseDelegatedShares({
                 staker: podOwner,
                 strategy: beaconChainETHStrategy,
-                existingDepositShares: existingDepositShares,
+                curDepositShares: curDepositShares,
                 addedShares: addedShares
             });
-        } else if (sharesDelta < 0 && podOwnerDepositShares[podOwner] > 0) {
-            delegationManager.decreaseBeaconChainScalingFactor(
-                podOwner, uint256(podOwnerDepositShares[podOwner]), proportionOfOldBalance
-            );
+        } else {
+            (uint256 curDepositShares, uint64 prevBeaconSlashingFactor, uint256 wadSlashed) = _reduceSlashingFactor({
+                podOwner: podOwner,
+                prevRestakedBalanceWei: prevRestakedBalanceWei,
+                balanceDecreasedWei: uint256(-balanceDeltaWei)
+            });
+
+            // Update operator shares
+            delegationManager.decreaseDelegatedShares({
+                staker: podOwner,
+                curDepositShares: curDepositShares,
+                prevBeaconChainSlashingFactor: prevBeaconSlashingFactor,
+                wadSlashed: wadSlashed
+            });
         }
     }
 
@@ -189,17 +189,23 @@ contract EigenPodManager is
 
         int256 currentDepositShares = podOwnerDepositShares[staker];
         uint256 sharesToWithdraw = shares;
-        // if there is an existing shares deficit, prioritize decreasing the deficit first
-        // this is an M2 legacy codepath. TODO: gross
+
+        // Negative shares only exist in certain cases where, prior to the slashing release, negative balance
+        // deltas were reported after a pod owner queued a withdrawal for all their shares.
+        //
+        // The new system treats negative balance deltas differently, decreasing the pod owner's slashing factor
+        // proportional to the decrease. This legacy codepath handles completion of withdrawals queued before
+        // the slashing release.
         if (currentDepositShares < 0) {
             uint256 currentDepositShareDeficit = uint256(-currentDepositShares);
             uint256 depositSharesToAdd;
+
             if (shares > currentDepositShareDeficit) {
-                // get rid of the whole deficit if possible, and pass any remaining shares onto destination
+                // Get rid of the whole deficit and withdraw any remaining shares
                 depositSharesToAdd = currentDepositShareDeficit;
                 sharesToWithdraw = shares - currentDepositShareDeficit;
             } else {
-                // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
+                // Get rid of as much deficit as possible and don't withdraw any shares
                 depositSharesToAdd = shares;
                 sharesToWithdraw = 0;
             }
@@ -209,18 +215,11 @@ contract EigenPodManager is
             emit PodSharesUpdated(staker, int256(depositSharesToAdd));
             emit NewTotalShares(staker, updatedShares);
         }
+
+        // Withdraw ETH from EigenPod
         if (sharesToWithdraw > 0) {
-            // Actually withdraw to the destination
             ownerToPod[staker].withdrawRestakedBeaconChainETH(staker, sharesToWithdraw);
         }
-    }
-
-    /// @notice Returns the current shares of `user` in `strategy`
-    /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
-    /// @dev returns 0 if the user has negative shares
-    function stakerDepositShares(address user, IStrategy strategy) public view returns (uint256 depositShares) {
-        require(strategy == beaconChainETHStrategy, InvalidStrategy());
-        return podOwnerDepositShares[user] < 0 ? 0 : uint256(podOwnerDepositShares[user]);
     }
 
     // INTERNAL FUNCTIONS
@@ -267,8 +266,43 @@ contract EigenPodManager is
         return (currentDepositShares < 0 ? 0 : uint256(currentDepositShares), shares);
     }
 
+    /// @dev Calculates the proportion a pod owner's restaked balance has decreased, and
+    /// reduces their beacon slashing factor accordingly.
+    /// Note: `balanceDecreasedWei` is assumed to be less than `prevRestakedBalanceWei`
+    function _reduceSlashingFactor(
+        address podOwner,
+        uint256 prevRestakedBalanceWei,
+        uint256 balanceDecreasedWei
+    ) internal returns (uint256, uint64, uint256) {
+        // Apply negative balance delta to calculate the proportion of the original
+        // balance that remains. Note that underflow here should be impossible given
+        // the invariants pods use to calculate these values.
+        uint256 newRestakedBalanceWei = prevRestakedBalanceWei - balanceDecreasedWei;
+        uint256 proportionRemainingWad = newRestakedBalanceWei.divWadRoundUp(prevRestakedBalanceWei);
+
+        // Note that underflow here should be impossible given
+        // `proportionRemainingWad` is guaranteed to be less than WAD.
+        uint256 wadSlashed = uint256(WAD) - proportionRemainingWad;
+
+        // Update pod owner's beacon chain slashing factor. Note that `newBeaconSlashingFactor`
+        // should be less than `prevBeaconSlashingFactor` because `proportionRemainingWad` is
+        // guaranteed to be less than WAD.
+        uint64 prevBeaconSlashingFactor = beaconChainSlashingFactor(podOwner);
+        uint64 newBeaconSlashingFactor = uint64(prevBeaconSlashingFactor.mulWad(proportionRemainingWad));
+        emit BeaconChainSlashingFactorDecreased(podOwner, wadSlashed, newBeaconSlashingFactor);
+        /// forgefmt: disable-next-item
+        _beaconChainSlashingFactor[podOwner] = BeaconChainSlashingFactor({
+            slashingFactor: newBeaconSlashingFactor,
+            isSet: true
+        });
+
+        uint256 curDepositShares = uint256(podOwnerDepositShares[podOwner]);
+        return (curDepositShares, prevBeaconSlashingFactor, wadSlashed);
+    }
+
     // VIEW FUNCTIONS
-    /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
+
+    /// @inheritdoc IEigenPodManager
     function getPod(
         address podOwner
     ) public view returns (IEigenPod) {
@@ -285,10 +319,26 @@ contract EigenPodManager is
         return pod;
     }
 
-    /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
+    /// @inheritdoc IEigenPodManager
     function hasPod(
         address podOwner
     ) public view returns (bool) {
         return address(ownerToPod[podOwner]) != address(0);
+    }
+
+    /// @notice Returns the current shares of `user` in `strategy`
+    /// @dev strategy must be beaconChainETHStrategy
+    /// @dev returns 0 if the user has negative shares
+    function stakerDepositShares(address user, IStrategy strategy) public view returns (uint256 depositShares) {
+        require(strategy == beaconChainETHStrategy, InvalidStrategy());
+        return podOwnerDepositShares[user] < 0 ? 0 : uint256(podOwnerDepositShares[user]);
+    }
+
+    /// @inheritdoc IEigenPodManager
+    function beaconChainSlashingFactor(
+        address podOwner
+    ) public view returns (uint64) {
+        BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[podOwner];
+        return bsf.isSet ? bsf.slashingFactor : WAD;
     }
 }

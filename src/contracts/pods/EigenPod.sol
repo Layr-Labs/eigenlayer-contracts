@@ -197,7 +197,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             });
 
             checkpoint.proofsRemaining--;
-            checkpoint.beaconChainBalanceBeforeGwei += prevBalanceGwei;
+            checkpoint.prevBeaconBalanceGwei += prevBalanceGwei;
             checkpoint.balanceDeltasGwei += balanceDeltaGwei;
             exitedBalancesGwei += exitedBalanceGwei;
 
@@ -261,12 +261,12 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             );
         }
 
-        if (currentCheckpointTimestamp != 0) {
-            _currentCheckpoint.beaconChainBalanceBeforeGwei += uint64(totalAmountToBeRestakedWei / GWEI_TO_WEI);
-        }
-
         // Update the EigenPodManager on this pod's new balance
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, int256(totalAmountToBeRestakedWei), 0); // no decrease
+        eigenPodManager.recordBeaconChainETHBalanceUpdate({
+            podOwner: podOwner,
+            prevRestakedBalanceWei: 0, // only used for checkpoint balance updates
+            balanceDeltaWei: int256(totalAmountToBeRestakedWei)
+        });
     }
 
     /**
@@ -392,15 +392,15 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     /**
      * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
      * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
-     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `withdrawableRestakedExecutionLayerGwei` exceeds the
+     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `restakedExecutionLayerGwei` exceeds the
      * `amountWei` input (when converted to GWEI).
      * @dev Reverts if `amountWei` is not a whole Gwei amount
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
         require(amountWei % GWEI_TO_WEI == 0, AmountMustBeMultipleOfGwei());
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
-        require(amountGwei <= withdrawableRestakedExecutionLayerGwei, InsufficientWithdrawableBalance());
-        withdrawableRestakedExecutionLayerGwei -= amountGwei;
+        require(amountGwei <= restakedExecutionLayerGwei, InsufficientWithdrawableBalance());
+        restakedExecutionLayerGwei -= amountGwei;
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);
         // transfer ETH from pod to `recipient` directly
         Address.sendValue(payable(recipient), amountWei);
@@ -506,6 +506,11 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             status: VALIDATOR_STATUS.ACTIVE
         });
 
+        // Add the validator's balance to the checkpoint's previous beacon balance
+        // Note that even if this checkpoint is not active, the next one will include
+        // the validator's restaked balance during the checkpoint process
+        _currentCheckpoint.prevBeaconBalanceGwei += restakedBalanceGwei;
+
         emit ValidatorRestaked(validatorIndex);
         emit ValidatorBalanceUpdated(validatorIndex, lastCheckpointedAt, restakedBalanceGwei);
         return restakedBalanceGwei * GWEI_TO_WEI;
@@ -529,12 +534,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // Calculate change in the validator's balance since the last proof
         if (newBalanceGwei != prevBalanceGwei) {
-            // forgefmt: disable-next-item
-            balanceDeltaGwei = _calcBalanceDelta({
-                newAmountGwei: newBalanceGwei,
-                previousAmountGwei: prevBalanceGwei
-            });
-
+            balanceDeltaGwei = int64(newBalanceGwei) - int64(prevBalanceGwei);
             emit ValidatorBalanceUpdated(validatorIndex, checkpointTimestamp, newBalanceGwei);
         }
 
@@ -584,12 +584,12 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         // previously been credited with shares. Once the checkpoint is finalized, `podBalanceGwei`
         // will be added to the total validator balance delta and credited as shares.
         //
-        // Note: On finalization, `podBalanceGwei` is added to `withdrawableRestakedExecutionLayerGwei`
+        // Note: On finalization, `podBalanceGwei` is added to `restakedExecutionLayerGwei`
         // to denote that it has been credited with shares. Because this value is denominated in gwei,
         // `podBalanceGwei` is also converted to a gwei amount here. This means that any sub-gwei amounts
         // sent to the pod are not credited with shares and are therefore not withdrawable.
         // This can be addressed by topping up a pod's balance to a value divisible by 1 gwei.
-        uint64 podBalanceGwei = uint64(address(this).balance / GWEI_TO_WEI) - withdrawableRestakedExecutionLayerGwei;
+        uint64 podBalanceGwei = uint64(address(this).balance / GWEI_TO_WEI) - restakedExecutionLayerGwei;
 
         // If the caller doesn't want a "0 balance" checkpoint, revert
         if (revertIfNoBalance && podBalanceGwei == 0) {
@@ -604,7 +604,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             proofsRemaining: uint24(activeValidatorCount),
             podBalanceGwei: podBalanceGwei,
             balanceDeltasGwei: 0,
-            beaconChainBalanceBeforeGwei: 0
+            prevBeaconBalanceGwei: 0
         });
 
         // Place checkpoint in storage. If `proofsRemaining` is 0, the checkpoint
@@ -619,42 +619,46 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      * @dev Finish progress on a checkpoint and store it in state.
      * @dev If the checkpoint has no proofs remaining, it is finalized:
      * - a share delta is calculated and sent to the `EigenPodManager`
-     * - the checkpointed `podBalanceGwei` is added to `withdrawableRestakedExecutionLayerGwei`
+     * - the checkpointed `podBalanceGwei` is added to `restakedExecutionLayerGwei`
      * - `lastCheckpointTimestamp` is updated
      * - `_currentCheckpoint` and `currentCheckpointTimestamp` are deleted
      */
     function _updateCheckpoint(
         Checkpoint memory checkpoint
     ) internal {
-        if (checkpoint.proofsRemaining == 0) {
-            int256 totalShareDeltaWei =
-                (int128(uint128(checkpoint.podBalanceGwei)) + checkpoint.balanceDeltasGwei) * int256(GWEI_TO_WEI);
-
-            // Calculate the slashing proportion
-            uint64 proportionOfOldBalance = 0;
-            if (totalShareDeltaWei < 0) {
-                uint256 totalRestakedBeforeWei =
-                    (withdrawableRestakedExecutionLayerGwei + checkpoint.beaconChainBalanceBeforeGwei) * GWEI_TO_WEI;
-                proportionOfOldBalance =
-                    uint64((totalRestakedBeforeWei - uint256(-totalShareDeltaWei)) * WAD / totalRestakedBeforeWei);
-                //TODO: analyze effects of rounding errors here see `test_VerifyWC_Slash_StartCP_VerifyWC_CompleteCP` for example
-            }
-
-            // Add any native ETH in the pod to `withdrawableRestakedExecutionLayerGwei`
-            // ... this amount can be withdrawn via the `DelegationManager` withdrawal queue
-            withdrawableRestakedExecutionLayerGwei += checkpoint.podBalanceGwei;
-
-            // Finalize the checkpoint
-            lastCheckpointTimestamp = currentCheckpointTimestamp;
-            delete currentCheckpointTimestamp;
-            delete _currentCheckpoint;
-
-            // Update pod owner's shares
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei, proportionOfOldBalance);
-            emit CheckpointFinalized(lastCheckpointTimestamp, totalShareDeltaWei);
-        } else {
+        if (checkpoint.proofsRemaining != 0) {
             _currentCheckpoint = checkpoint;
+            return;
         }
+
+        // Calculate the previous total restaked balance and change in restaked balance
+        // Note: due to how these values are calculated, a negative `balanceDeltaGwei`
+        // should NEVER be greater in magnitude than `prevRestakedBalanceGwei`
+        uint64 prevRestakedBalanceGwei = restakedExecutionLayerGwei + checkpoint.prevBeaconBalanceGwei;
+        int64 balanceDeltaGwei = int64(checkpoint.podBalanceGwei) + checkpoint.balanceDeltasGwei;
+
+        // And native ETH when the checkpoint was started is now considered restaked.
+        // Add it to `restakedExecutionLayerGwei`, which allows it to be withdrawn via
+        // the `DelegationManager` withdrawal queue.
+        restakedExecutionLayerGwei += checkpoint.podBalanceGwei;
+
+        // Finalize the checkpoint by resetting `currentCheckpointTimestamp`.
+        // Note: `_currentCheckpoint` is not deleted, as it is overwritten
+        // when a new checkpoint is started
+        lastCheckpointTimestamp = currentCheckpointTimestamp;
+        delete currentCheckpointTimestamp;
+
+        // Convert shares and delta to wei
+        uint256 prevRestakedBalanceWei = prevRestakedBalanceGwei * GWEI_TO_WEI;
+        int256 balanceDeltaWei = balanceDeltaGwei * int256(GWEI_TO_WEI);
+
+        // Update pod owner's shares
+        emit CheckpointFinalized(lastCheckpointTimestamp, balanceDeltaWei);
+        eigenPodManager.recordBeaconChainETHBalanceUpdate({
+            podOwner: podOwner,
+            prevRestakedBalanceWei: prevRestakedBalanceWei,
+            balanceDeltaWei: balanceDeltaWei
+        });
     }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
@@ -669,16 +673,16 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
     }
 
-    /// @dev Calculates the delta between two Gwei amounts and returns as an int256
-    function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int64) {
-        return int64(newAmountGwei) - int64(previousAmountGwei);
-    }
-
     /**
      *
      *                         VIEW FUNCTIONS
      *
      */
+
+    /// @inheritdoc IEigenPod
+    function withdrawableRestakedExecutionLayerGwei() external view returns (uint64) {
+        return restakedExecutionLayerGwei;
+    }
 
     /// @notice Returns the validatorInfo for a given validatorPubkeyHash
     function validatorPubkeyHashToInfo(

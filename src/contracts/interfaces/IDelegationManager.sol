@@ -43,8 +43,6 @@ interface IDelegationManagerErrors {
     /// @dev Thrown when an operator has been fully slashed(maxMagnitude is 0) for a strategy.
     /// or if the staker has had been natively slashed to the point of their beaconChainScalingFactor equalling 0.
     error FullySlashed();
-    /// @dev Thrown when burnOperatorShares is called and newMaxMagnitude is greater than or equal to the previous maxMagnitude
-    error MaxMagnitudeCantIncrease();
 
     /// Signatures
 
@@ -135,11 +133,6 @@ interface IDelegationManagerTypes {
         // The address of the withdrawer
         address withdrawer;
     }
-
-    struct BeaconChainSlashingFactor {
-        bool isSet;
-        uint64 slashingFactor;
-    }
 }
 
 interface IDelegationManagerEvents is IDelegationManagerTypes {
@@ -175,9 +168,6 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted when a staker's depositScalingFactor is updated
     event DepositScalingFactorUpdated(address staker, IStrategy strategy, uint256 newDepositScalingFactor);
-
-    /// @notice Emitted when a staker's beaconChainScalingFactor is updated
-    event BeaconChainScalingFactorDecreased(address staker, uint64 newBeaconChainScalingFactor);
 
     /**
      * @notice Emitted when a new withdrawal is queued.
@@ -342,7 +332,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * the delegated delegatedShares. The staker's depositScalingFactor is updated here.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
-     * @param existingDepositShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
+     * @param curDepositShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
      * @param addedShares The number of shares added to the staker's shares in the strategy
      *
@@ -354,24 +344,25 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 existingDepositShares,
+        uint256 curDepositShares,
         uint256 addedShares
     ) external;
 
     /**
-     * @notice Decreases a native restaker's delegated share balance in a strategy due to beacon chain slashing. This updates their beaconChainScalingFactor.
-     * Their operator's stakeShares are also updated (if they are delegated).
-     * @param staker The address to increase the delegated stakeShares for their operator.
-     * @param existingShares The number of shares the staker already has in the EPM. This does not change upon decreasing shares.
-     * @param proportionOfOldBalance The current pod owner shares proportion of the previous pod owner shares
-     *
-     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated stakeShares in `strategy` by `proportionPodBalanceDecrease` proportion. Otherwise does nothing.
-     * @dev Callable only by the EigenPodManager.
+     * @notice If the staker is delegated, decreases its operator's shares in response to
+     * a decrease in balance in the beaconChainETHStrategy
+     * @param staker the staker whose operator's balance will be decreased
+     * @param curDepositShares the current deposit shares held by the staker
+     * @param prevBeaconChainSlashingFactor the amount of beacon chain slashing experienced before the balance decrease
+     * @param wadSlashed the additional slashing experienced by the staker
+     * @dev Note: `wadSlashed` and `prevBeaconChainSlashingFactor` are assumed to ALWAYS be < 1 WAD.
+     * These invariants are maintained in the EigenPodManager.
      */
-    function decreaseBeaconChainScalingFactor(
+    function decreaseDelegatedShares(
         address staker,
-        uint256 existingShares,
-        uint64 proportionOfOldBalance
+        uint256 curDepositShares,
+        uint64 prevBeaconChainSlashingFactor,
+        uint256 wadSlashed
     ) external;
 
     /**
@@ -382,8 +373,8 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @param prevMaxMagnitude the previous maxMagnitude of the operator
      * @param newMaxMagnitude the new maxMagnitude of the operator
      * @dev Callable only by the AllocationManager
-     * @dev Reverts if the newMaxMagnitude is >= the previous maxMagnitude. Shares can only decrease
-     * if the newMaxMagnitude has decreased.
+     * @dev Note: Assumes `prevMaxMagnitude <= newMaxMagnitude`. This invariant is maintained in
+     * the AllocationManager.
      */
     function burnOperatorShares(
         address operator,
@@ -526,13 +517,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @notice Returns the scaling factor applied to a staker's deposits for a given strategy
      */
     function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256);
-
-    /**
-     * @notice Returns the slashing factor applied to the staker's beacon chain ETH shares
-     */
-    function getBeaconChainSlashingFactor(
-        address staker
-    ) external view returns (uint64);
 
     /**
      * @notice Returns the minimum withdrawal delay in blocks to pass for withdrawals queued to be completable.

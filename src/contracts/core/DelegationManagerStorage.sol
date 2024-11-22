@@ -106,10 +106,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice Returns the scaling factor applied to a `staker` for a given `strategy`
     mapping(address staker => mapping(IStrategy strategy => DepositScalingFactor)) internal _depositScalingFactor;
 
-    /// @notice Returns the slashing factor applied to the `staker` for the `beaconChainETHStrategy`
-    /// Note: this is specifically updated when the staker's beacon chain balance decreases
-    mapping(address staker => BeaconChainSlashingFactor) internal _beaconChainSlashingFactor;
-
     /// @notice Returns a list of queued withdrawals for a given `staker`.
     /// @dev Entrys are removed when the withdrawal is completed.
     /// @dev This variable only reflects withdrawals that were made after the slashing release.
@@ -146,5 +142,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[34] private __gap;
+    uint256[35] private __gap;
 }

@@ -246,7 +246,7 @@ contract StrategyManager is
         delegation.increaseDelegatedShares({
             staker: staker,
             strategy: strategy,
-            existingDepositShares: existingShares,
+            curDepositShares: existingShares,
             addedShares: addedShares
         });
 
