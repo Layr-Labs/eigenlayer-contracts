@@ -353,6 +353,12 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
         emit PodSharesUpdated(defaultStaker, 100e18);
         cheats.expectEmit(true, true, true, true);
         emit NewTotalShares(defaultStaker, 0);
+        // Expect call to EigenPod for the withdrawal
+        cheats.expectCall(
+            address(defaultPod),
+            abi.encodeWithSelector(IEigenPod.withdrawRestakedBeaconChainETH.selector, defaultStaker, 1e18),
+            1
+        );
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, beaconChainETHStrategy, IERC20(address(0)), sharesToWithdraw);
 
         // Check storage update
@@ -370,6 +376,17 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
 
         // Withdraw shares
         cheats.prank(address(delegationManagerMock));
+        cheats.expectEmit(true, true, true, true);
+        emit PodSharesUpdated(defaultStaker, 50e18);
+        cheats.expectEmit(true, true, true, true);
+        emit NewTotalShares(defaultStaker, -50e18);
+        // Assert that no call is made by passing in zero for the count
+        bytes memory emptyBytes;
+        cheats.expectCall(
+            address(defaultPod), 
+            emptyBytes, // Cheatcode checks a partial match starting at the first byte of the calldata
+            0
+        );
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, beaconChainETHStrategy, IERC20(address(0)), sharesToWithdraw);
 
         // Check storage update
@@ -387,6 +404,12 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
 
         // Withdraw shares
         cheats.prank(address(delegationManagerMock));
+        // Expect call to EigenPod for the withdrawal
+        cheats.expectCall(
+            address(defaultPod),
+            abi.encodeWithSelector(IEigenPod.withdrawRestakedBeaconChainETH.selector, defaultStaker, sharesToWithdraw), 
+            1
+        );
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, beaconChainETHStrategy, IERC20(address(0)), sharesToWithdraw);
 
         // Check storage remains the same
