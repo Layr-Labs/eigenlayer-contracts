@@ -94,28 +94,28 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function registerAsOperator(
-        OperatorDetails calldata registeringOperatorDetails,
+        address initDelegationApprover,
         uint32 allocationDelay,
         string calldata metadataURI
     ) external {
         require(!isDelegated(msg.sender), ActivelyDelegated());
 
         allocationManager.setAllocationDelay(msg.sender, allocationDelay);
-        _setOperatorDetails(msg.sender, registeringOperatorDetails);
+        _setDelegationApprover(msg.sender, initDelegationApprover);
 
         // delegate from the operator to themselves
         _delegate(msg.sender, msg.sender);
 
-        emit OperatorRegistered(msg.sender, registeringOperatorDetails);
+        emit OperatorRegistered(msg.sender, initDelegationApprover);
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /// @inheritdoc IDelegationManager
     function modifyOperatorDetails(
-        OperatorDetails calldata newOperatorDetails
+        address newDelegationApprover
     ) external {
         require(isOperator(msg.sender), OperatorNotRegistered());
-        _setOperatorDetails(msg.sender, newOperatorDetails);
+        _setDelegationApprover(msg.sender, newDelegationApprover);
     }
 
     /// @inheritdoc IDelegationManager
@@ -387,11 +387,11 @@ contract DelegationManager is
     /**
      * @notice Sets operator parameters in the `_operatorDetails` mapping.
      * @param operator The account registered as an operator updating their operatorDetails
-     * @param newOperatorDetails The new parameters for the operator
+     * @param newDelegationApprover The new parameters for the operator
      */
-    function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
-        _operatorDetails[operator] = newOperatorDetails;
-        emit OperatorDetailsModified(msg.sender, newOperatorDetails);
+    function _setDelegationApprover(address operator, address newDelegationApprover) internal {
+        _operatorDetails[operator].delegationApprover = newDelegationApprover;
+        emit DelegationApproverUpdated(msg.sender, newDelegationApprover);
     }
 
     /**

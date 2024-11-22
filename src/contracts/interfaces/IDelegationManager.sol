@@ -136,11 +136,11 @@ interface IDelegationManagerTypes {
 }
 
 interface IDelegationManagerEvents is IDelegationManagerTypes {
-    // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
-    event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
+    // @notice Emitted when a new operator registers in EigenLayer and provides their delegation approver.
+    event OperatorRegistered(address indexed operator, address delegationApprover);
 
-    /// @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
-    event OperatorDetailsModified(address indexed operator, OperatorDetails newOperatorDetails);
+    /// @notice Emitted when an operator updates their delegation approver
+    event DelegationApproverUpdated(address indexed operator, address newDelegationApprover);
 
     /**
      * @notice Emitted when @param operator indicates that they are updating their MetadataURI string
@@ -199,7 +199,8 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.
-     * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
+     * @param initDelegationApprover is an address that, if set, must provide a signature when stakers delegate
+     * to an operator.
      * @param allocationDelay The delay before allocations take effect.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      *
@@ -208,19 +209,19 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
     function registerAsOperator(
-        OperatorDetails calldata registeringOperatorDetails,
+        address initDelegationApprover,
         uint32 allocationDelay,
         string calldata metadataURI
     ) external;
 
     /**
-     * @notice Updates an operator's stored `OperatorDetails`.
-     * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
+     * @notice Updates an operator's stored `delegationApprover`.
+     * @param newDelegationApprover is the new delegationApprover for the operator
      *
      * @dev The caller must have previously registered as an operator in EigenLayer.
      */
     function modifyOperatorDetails(
-        OperatorDetails calldata newOperatorDetails
+        address newDelegationApprover
     ) external;
 
     /**
