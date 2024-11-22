@@ -29,6 +29,20 @@ import "src/test/integration/users/User_M1.t.sol";
 
 import "script/utils/ExistingDeploymentParser.sol";
 
+// DelegationManager
+uint8 constant PAUSED_NEW_DELEGATION = 0;
+uint8 constant PAUSED_ENTER_WITHDRAWAL_QUEUE = 1;
+uint8 constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
+// StrategyManager
+uint8 constant PAUSED_DEPOSITS = 0;
+// EigenpodManager
+uint8 constant PAUSED_NEW_EIGENPODS = 0;
+uint8 constant PAUSED_WITHDRAW_RESTAKED_ETH = 1;
+uint8 constant PAUSED_EIGENPODS_VERIFY_CREDENTIALS = 2;
+uint8 constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
+uint8 constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
+uint8 constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
+
 abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     using StdStyle for *;
 
