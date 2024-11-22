@@ -15,11 +15,14 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer {
+    using StdStyle for *;
     using SlashingLib for *;
     using Strings for *;
+    using print for *;
 
     uint numStakers = 0;
     uint numOperators = 0;
+    uint numAVSs = 0;
 
     // Lists of stakers/operators created before the m2 upgrade
     //
@@ -45,13 +48,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            stakerName = string.concat("M1_Staker", numStakers.toString());
+            stakerName = string.concat("M1Staker", cheats.toString(numStakers));
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
 
             stakersToMigrate.push(staker);
         } else {
-            stakerName = string.concat("Staker", numStakers.toString());
+            stakerName = string.concat("staker", cheats.toString(numStakers));
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
         }
@@ -74,7 +77,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            string memory operatorName = string.concat("M1_Operator", numOperators.toString());
+            string memory operatorName = string.concat("M1Operator", numOperators.toString());
 
             // Create an operator for M1. We omit native ETH because we want to
             // check staker/operator shares, and we don't award native ETH shares in M1
@@ -87,7 +90,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             operatorsToMigrate.push(operator);
         } else {
-            string memory operatorName = string.concat("Operator", numOperators.toString());
+            string memory operatorName = string.concat("operator", numOperators.toString());
 
             (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
 
@@ -103,6 +106,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         numOperators++;
         return (operator, strategies, tokenBalances);
+    }
+
+    function _newRandomAVS() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
+        string memory avsName = string.concat("avs", numAVSs.toString());
+        avs = _genRandAVS(avsName);
+        operatorSets = avs.createOperatorSets(_randomStrategies());
+        ++numAVSs;
     }
 
     /// @dev Send a random amount of ETH (up to 10 gwei) to the destination via `call`,
@@ -179,7 +189,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return result;
     }
-
+    
+    function _getTokenName(IERC20 token) internal view returns (string memory) {
+        if (token == NATIVE_ETH) {
+            return "Native ETH";
+        }
+        return IERC20Metadata(address(token)).name();
+    }
     /*******************************************************************************
                                 COMMON ASSERTIONS
     *******************************************************************************/
@@ -870,6 +886,27 @@ abstract contract IntegrationBase is IntegrationDeployer {
     /*******************************************************************************
                                 UTILITY METHODS
     *******************************************************************************/
+    
+    function _randWadToSlash() internal returns (uint) {
+        return _randUint({ min: 0.01 ether, max: 1 ether });
+    }
+    
+    function _randMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
+        magnitudes = new uint64[](len);
+
+        if (sum == 0 || len == 0) return magnitudes;
+        
+        uint64 remaining = sum;
+
+        for (uint256 i; i < len; ++i) {
+            if (i == len - 1) {
+                magnitudes[i] = remaining;
+            } else {
+                magnitudes[i] = uint64(_randUint(0, remaining / (len - i)));
+                remaining -= magnitudes[i];
+            }
+        }
+    }
 
     function _randWithdrawal(
         IStrategy[] memory strategies, 
@@ -1057,17 +1094,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
         timeMachine.warpToPresent(curState);
     }
 
+    // TODO
     /// @dev Given a list of strategies, roll the block number forward to the
     /// a valid blocknumber to completeWithdrawals
-    function _rollBlocksForCompleteWithdrawals(IStrategy[] memory strategies) internal {
-        // uint256 blocksToRoll = delegationManager.minWithdrawalDelayBlocks();
-        // for (uint i = 0; i < strategies.length; i++) {
-        //     uint256 withdrawalDelayBlocks = delegationManager.strategyWithdrawalDelayBlocks(strategies[i]);
-        //     if (withdrawalDelayBlocks > blocksToRoll) {
-        //         blocksToRoll = withdrawalDelayBlocks;
-        //     }
-        // }
-        // cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
+    function _rollBlocksForCompleteWithdrawals() internal {        
+        cheats.roll(block.number + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot
@@ -1180,7 +1211,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function _getTokenBalances(User staker, IERC20[] memory tokens) internal view returns (uint[] memory) {
         uint[] memory balances = new uint[](tokens.length);
-
+        
         for (uint i = 0; i < tokens.length; i++) {
             if (tokens[i] == NATIVE_ETH) {
                 balances[i] = address(staker).balance;

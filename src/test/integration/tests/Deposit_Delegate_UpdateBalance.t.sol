@@ -5,8 +5,7 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
-
-    // TODO: fix test
+    // TODO: fix for slashing
     /// Generates a random stake and operator. The staker:
     /// 1. deposits all assets into strategies
     /// 2. delegates to an operator
@@ -16,8 +15,8 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
     // function testFuzz_deposit_delegate_updateBalance_completeAsTokens(uint24 _random) public {
     //     _configRand({
     //         _randomSeed: _random,
-    //         _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-    //         _userTypes: DEFAULT | ALT_METHODS
+    //         _assetTypes: HOLDS_ETH, // HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+    //         _userTypes: DEFAULT //| ALT_METHODS
     //     });
 
     //     /// 0. Create an operator and staker with some underlying assets
@@ -62,8 +61,10 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
     //     assert_Snap_Delta_StakerShares(staker, strategies, stakerShareDeltas, "staker should have applied deltas correctly");
     //     assert_Snap_Delta_OperatorShares(operator, strategies, operatorShareDeltas, "operator should have applied deltas correctly");
 
+    //     console.log("withdrawble: ", staker.pod().withdrawableRestakedExecutionLayerGwei());
+
     //     // Fast forward to when we can complete the withdrawal
-    //     _rollBlocksForCompleteWithdrawals(strategies);
+    //     _rollBlocksForCompleteWithdrawals();
 
     //     // 5. Complete queued withdrawals as tokens
     //     staker.completeWithdrawalsAsTokens(withdrawals);

@@ -6,6 +6,7 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/MockAVSRegistrar.sol";
 
 contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManagerErrors, IAllocationManagerEvents {
+    using StdStyle for *;
     using SingleItemArrayLib for *;
 
     /// -----------------------------------------------------------------------
@@ -162,7 +163,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         int256 expectedPendingDiff,
         uint256 expectedEffectBlock
     ) internal view {
-        console.log(StdStyle.yellow("Check Allocation Storage:"));
+        console.log("Check Allocation Storage:".yellow());
         console.log("   currentMagnitude = %d", allocation.currentMagnitude);
         console.log("   pendingDiff = %d", allocation.pendingDiff);
         console.log("   effectBlock = %d", allocation.effectBlock);
