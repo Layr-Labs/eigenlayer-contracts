@@ -289,7 +289,7 @@ contract DelegationManager is
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 curDepositShares,
+        uint256 prevDepositShares,
         uint256 addedShares
     ) external onlyStrategyManagerOrEigenPodManager {
         address operator = delegatedTo[staker];
@@ -301,7 +301,7 @@ contract DelegationManager is
             operator: operator,
             staker: staker,
             strategy: strategy,
-            curDepositShares: curDepositShares,
+            prevDepositShares: prevDepositShares,
             addedShares: addedShares,
             slashingFactor: slashingFactor
         });
@@ -450,7 +450,7 @@ contract DelegationManager is
                 operator: operator, 
                 staker: staker, 
                 strategy: strategies[i],
-                curDepositShares: uint256(0),
+                prevDepositShares: uint256(0),
                 addedShares: depositedShares[i],
                 slashingFactor: slashingFactors[i]
             });
@@ -517,7 +517,7 @@ contract DelegationManager is
                 });
             } else {
                 // Award shares back in StrategyManager/EigenPodManager.
-                (uint256 curDepositShares, uint256 addedShares) = shareManager.addShares({
+                (uint256 prevDepositShares, uint256 addedShares) = shareManager.addShares({
                     staker: withdrawal.staker,
                     strategy: withdrawal.strategies[i],
                     token: tokens[i],
@@ -529,7 +529,7 @@ contract DelegationManager is
                     operator: newOperator,
                     staker: withdrawal.staker,
                     strategy: withdrawal.strategies[i],
-                    curDepositShares: curDepositShares,
+                    prevDepositShares: prevDepositShares,
                     addedShares: addedShares,
                     slashingFactor: newSlashingFactors[i]
                 });
@@ -550,7 +550,7 @@ contract DelegationManager is
      * @param operator The operator to increase the delegated delegatedShares for
      * @param staker The staker to increase the depositScalingFactor for
      * @param strategy The strategy to increase the delegated delegatedShares and the depositScalingFactor for
-     * @param curDepositShares The number of deposit shares the staker already has in the strategy.
+     * @param prevDepositShares The number of deposit shares the staker had in the strategy prior to the increase
      * @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
      * @param slashingFactor The current slashing factor for the staker/operator/strategy
      */
@@ -558,7 +558,7 @@ contract DelegationManager is
         address operator,
         address staker,
         IStrategy strategy,
-        uint256 curDepositShares,
+        uint256 prevDepositShares,
         uint256 addedShares,
         uint256 slashingFactor
     ) internal {
@@ -569,7 +569,7 @@ contract DelegationManager is
         // Update the staker's depositScalingFactor. This only results in an update
         // if the slashing factor has changed for this strategy.
         DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategy];
-        dsf.update(curDepositShares, addedShares, slashingFactor);
+        dsf.update(prevDepositShares, addedShares, slashingFactor);
         emit DepositScalingFactorUpdated(staker, strategy, dsf.scalingFactor());
 
         // If the staker is delegated to an operator, update the operator's shares

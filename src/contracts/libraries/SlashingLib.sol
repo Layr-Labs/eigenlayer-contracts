@@ -100,13 +100,13 @@ library SlashingLib {
 
     function update(
         DepositScalingFactor storage dsf,
-        uint256 curDepositShares,
+        uint256 prevDepositShares,
         uint256 addedShares,
         uint256 slashingFactor
     ) internal {
-        // If this is the staker's first deposit for this operator, set the scaling factor to
+        // If this is the staker's first deposit, set the scaling factor to
         // the inverse of slashingFactor
-        if (curDepositShares == 0) {
+        if (prevDepositShares == 0) {
             dsf._scalingFactor = uint256(WAD).divWad(slashingFactor);
             return;
         }
@@ -114,7 +114,7 @@ library SlashingLib {
         /**
          * Base Equations:
          * (1) newShares = currentShares + addedShares
-         * (2) newDepositShares = curDepositShares + addedShares
+         * (2) newDepositShares = prevDepositShares + addedShares
          * (3) newShares = newDepositShares * newDepositScalingFactor * slashingFactor
          *
          * Plugging (1) into (3):
@@ -124,15 +124,15 @@ library SlashingLib {
          * (5) newDepositScalingFactor = (currentShares + addedShares) / (newDepositShares * slashingFactor)
          *
          * Plugging in (2) into (5):
-         * (7) newDepositScalingFactor = (currentShares + addedShares) / ((curDepositShares + addedShares) * slashingFactor)
+         * (7) newDepositScalingFactor = (currentShares + addedShares) / ((prevDepositShares + addedShares) * slashingFactor)
          * Note that magnitudes must be divided by WAD for precision. Thus,
          *
-         * (8) newDepositScalingFactor = WAD * (currentShares + addedShares) / ((curDepositShares + addedShares) * slashingFactor / WAD)
-         * (9) newDepositScalingFactor = (currentShares + addedShares) * WAD / (curDepositShares + addedShares) * WAD / slashingFactor
+         * (8) newDepositScalingFactor = WAD * (currentShares + addedShares) / ((prevDepositShares + addedShares) * slashingFactor / WAD)
+         * (9) newDepositScalingFactor = (currentShares + addedShares) * WAD / (prevDepositShares + addedShares) * WAD / slashingFactor
          */
 
         // Step 1: Calculate Numerator
-        uint256 currentShares = dsf.calcWithdrawable(curDepositShares, slashingFactor);
+        uint256 currentShares = dsf.calcWithdrawable(prevDepositShares, slashingFactor);
 
         // Step 2: Compute currentShares + addedShares
         uint256 newShares = currentShares + addedShares;
@@ -140,7 +140,7 @@ library SlashingLib {
         // Step 3: Calculate newDepositScalingFactor
         /// forgefmt: disable-next-item
         uint256 newDepositScalingFactor = newShares
-            .divWad(curDepositShares + addedShares)
+            .divWad(prevDepositShares + addedShares)
             .divWad(slashingFactor);
 
         dsf._scalingFactor = newDepositScalingFactor;

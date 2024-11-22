@@ -332,7 +332,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * the delegated delegatedShares. The staker's depositScalingFactor is updated here.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
-     * @param curDepositShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
+     * @param prevDepositShares The number of deposit shares the staker already had in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
      * @param addedShares The number of shares added to the staker's shares in the strategy
      *
@@ -344,7 +344,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 curDepositShares,
+        uint256 prevDepositShares,
         uint256 addedShares
     ) external;
 
