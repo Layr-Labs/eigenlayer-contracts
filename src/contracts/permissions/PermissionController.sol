@@ -98,17 +98,25 @@ contract PermissionController is Initializable, PermissionControllerStorage {
      *
      */
 
-    /// @dev Encodes the target and selector into a single bytes32 value
+    /// @dev Encodes the target and selector into a single bytes32 values
+    /// @dev Encoded Format: [160 bits target][32 bits selector][64 bits padding],
     function _encodeTargetSelector(address target, bytes4 selector) internal pure returns (bytes32) {
-        return bytes32(abi.encodePacked(target, uint96(bytes12((selector)))));
+        // Reserve 96 bits for the target
+        uint256 shiftedTarget = uint256(uint160(target)) << 96;
+        // Reserve 32 bits for the selector
+        uint256 shiftedSelector = uint256(uint32(selector)) << 64;
+        // Combine the target and selector
+        return bytes32(shiftedTarget | shiftedSelector);
     }
 
     /// @dev Decodes the target and selector from a single bytes32 value
+    /// @dev Encoded Format: [160 bits target][32 bits selector][64 bits padding], 
     function _decodeTargetSelector(
         bytes32 targetSelector
-    ) internal view returns (address, bytes4) {
+    ) internal pure returns (address, bytes4) {
+        // The target is in the upper 160 bits of the targetSelector
         address target = address(uint160(uint256(targetSelector) >> 96));
-        // The selector is in the lower 32 bits of the targetSelector
+        // The selector is in the lower 32 bits after the padding is removed
         bytes4 selector = bytes4(uint32(uint256(targetSelector) >> 64));
 
         return (target, selector);
