@@ -189,17 +189,23 @@ contract EigenPodManager is
 
         int256 currentDepositShares = podOwnerDepositShares[staker];
         uint256 sharesToWithdraw = shares;
-        // if there is an existing shares deficit, prioritize decreasing the deficit first
-        // this is an M2 legacy codepath. TODO: gross
+
+        // Negative shares only exist in certain cases where, prior to the slashing release, negative balance
+        // deltas were reported after a pod owner queued a withdrawal for all their shares.
+        //
+        // The new system treats negative balance deltas differently, decreasing the pod owner's slashing factor
+        // proportional to the decrease. This legacy codepath handles completion of withdrawals queued before
+        // the slashing release.
         if (currentDepositShares < 0) {
             uint256 currentDepositShareDeficit = uint256(-currentDepositShares);
             uint256 depositSharesToAdd;
+
             if (shares > currentDepositShareDeficit) {
-                // get rid of the whole deficit if possible, and pass any remaining shares onto destination
+                // Get rid of the whole deficit and withdraw any remaining shares
                 depositSharesToAdd = currentDepositShareDeficit;
                 sharesToWithdraw = shares - currentDepositShareDeficit;
             } else {
-                // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
+                // Get rid of as much deficit as possible and don't withdraw any shares
                 depositSharesToAdd = shares;
                 sharesToWithdraw = 0;
             }
@@ -209,8 +215,9 @@ contract EigenPodManager is
             emit PodSharesUpdated(staker, int256(depositSharesToAdd));
             emit NewTotalShares(staker, updatedShares);
         }
+
+        // Withdraw ETH from EigenPod
         if (sharesToWithdraw > 0) {
-            // Actually withdraw to the destination
             ownerToPod[staker].withdrawRestakedBeaconChainETH(staker, sharesToWithdraw);
         }
     }
