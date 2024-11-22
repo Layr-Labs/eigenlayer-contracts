@@ -284,6 +284,16 @@ contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUn
         _validateRemoveAppointee(account, appointee2, target1, selector1);
     }
 
+    // Tests that the encoding from adding an appointee is properly decoded
+    function test_symmetricalTargetSelector() public {
+        // Test Decoding
+        (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(account, appointee2);
+        assertEq(targets.length, 1, "Incorrect number of targets");
+        assertEq(selectors.length, 1, "Incorrect number of selectors");
+        assertEq(targets[0], target1, "Incorrect target");
+        assertEq(selectors[0], selector1, "Incorrect selector");
+    }
+
 
     function _validateRemoveAppointee(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
         assertFalse(permissionController.canCall(accountToCheck, appointee, target, selector));
