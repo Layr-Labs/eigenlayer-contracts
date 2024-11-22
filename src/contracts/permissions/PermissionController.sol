@@ -32,13 +32,45 @@ contract PermissionController is Initializable, PermissionControllerStorage {
      */
 
     /// @inheritdoc IPermissionController
-    function addAdmin(address account, address admin) external onlyAdmin(account) {
-        // Add the admin to the account's admins
-        // If the admin is already set, the set will fail
-        EnumerableSet.AddressSet storage admins = _permissions[account].admins;
-        require(admins.add(admin), AdminAlreadySet());
+    function addPendingAdmin(address account, address admin) external onlyAdmin(account) {
+        AccountPermissions storage permissions = _permissions[account];
 
-        emit AdminSet(account, admin);
+        // Revert if the admin is already set
+        require(!permissions.admins.contains(admin), AdminAlreadySet());
+
+        // Add the admin to the account's pending admins
+        // If the admin is already pending, the add will fail
+        require(permissions.pendingAdmins.add(admin), AdminAlreadyPending());
+
+        emit PendingAdminAdded(account, admin);
+    }
+
+    /// @inheritdoc IPermissionController
+    function removePendingAdmin(address account, address admin) external onlyAdmin(account) {
+        EnumerableSet.AddressSet storage pendingAdmins = _permissions[account].pendingAdmins;
+
+        // Remove the admin from the account's pending admins
+        // Revert if the admin is not pending
+        require(pendingAdmins.remove(admin), AdminNotPending());
+
+        emit PendingAdminRemoved(account, admin);
+    }
+
+    /// @inheritdoc IPermissionController
+    function acceptAdmin(
+        address account
+    ) external {
+        AccountPermissions storage permissions = _permissions[account];
+
+        // Remove the admin from the pending list
+        // Revert if the admin is not pending
+        require(permissions.pendingAdmins.remove(msg.sender), AdminNotPending());
+
+        // Add the admin to the account's admins
+        // Not wrapped in a require since it must be the case the admin is not one
+        permissions.admins.add(msg.sender);
+
+        emit AdminSet(account, msg.sender);
     }
 
     /// @inheritdoc IPermissionController
@@ -110,7 +142,7 @@ contract PermissionController is Initializable, PermissionControllerStorage {
     }
 
     /// @dev Decodes the target and selector from a single bytes32 value
-    /// @dev Encoded Format: [160 bits target][32 bits selector][64 bits padding], 
+    /// @dev Encoded Format: [160 bits target][32 bits selector][64 bits padding],
     function _decodeTargetSelector(
         bytes32 targetSelector
     ) internal pure returns (address, bytes4) {
@@ -140,6 +172,11 @@ contract PermissionController is Initializable, PermissionControllerStorage {
     }
 
     /// @inheritdoc IPermissionController
+    function isPendingAdmin(address account, address pendingAdmin) external view returns (bool) {
+        return _permissions[account].pendingAdmins.contains(pendingAdmin);
+    }
+
+    /// @inheritdoc IPermissionController
     function getAdmins(
         address account
     ) external view returns (address[] memory) {
@@ -150,6 +187,13 @@ contract PermissionController is Initializable, PermissionControllerStorage {
         } else {
             return _permissions[account].admins.values();
         }
+    }
+
+    /// @inheritdoc IPermissionController
+    function getPendingAdmins(
+        address account
+    ) external view returns (address[] memory) {
+        return _permissions[account].pendingAdmins.values();
     }
 
     /// @inheritdoc IPermissionController
