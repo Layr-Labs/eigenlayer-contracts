@@ -335,6 +335,10 @@ contract DeployFromScratch is Script, Test {
         // Deploy a WETH strategy
         strategyFactory.deployNewStrategy(IERC20(address(0x94373a4919B3240D86eA41593D5eBa789FEF3848)));
 
+        // Transfer ownership 
+        eigenLayerProxyAdmin.transferOwnership(executorMultisig);
+        eigenPodBeacon.transferOwnership(executorMultisig);
+
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
 

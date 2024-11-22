@@ -345,6 +345,11 @@ contract DeployFromScratch is Script, Test {
             );
         }
 
+        // Transfer ownership 
+        eigenLayerProxyAdmin.transferOwnership(executorMultisig);
+        eigenPodBeacon.transferOwnership(executorMultisig);
+
+
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
 
