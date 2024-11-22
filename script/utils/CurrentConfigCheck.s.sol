@@ -274,7 +274,16 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
 
     // forge script script/utils/CurrentConfigCheck.s.sol:CurrentConfigCheck -vvv --sig "simulateProtocolCouncilUpgrade(string)" $NETWORK_NAME
     function simulateProtocolCouncilUpgrade(string memory networkName) public virtual {
-        run(networkName);
+        startChainFork(networkName);
+
+        _parseDeployedContracts(deployedContractsConfig);
+        _parseInitialDeploymentParams(intialDeploymentParams);
+
+        // Sanity Checks
+        _verifyContractPointers();
+        _verifyImplementations();
+        _verifyContractsInitialized(false);
+        // _verifyInitializationParams();
 
         // deployment steps
         // deployTimelockControllers();
@@ -282,10 +291,14 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         // configureTimelockController(protocolTimelockController);
         // configureTimelockController(protocolTimelockController_BEIGEN);
 
+
         // simulate transferring powers
-        simulateLegacyTimelockActions();
-        simulateEigenTokenTimelockControllerActions();
-        simulateBEIGENTokenTimelockControllerActions();
+        // modified to reflect deployment state differing between environments
+        if (block.chainid == 1) {
+            simulateLegacyTimelockActions();
+            simulateEigenTokenTimelockControllerActions();
+            simulateBEIGENTokenTimelockControllerActions();
+        }
 
         // check correctness after deployment + simulation
         checkGovernanceConfiguration_WithProtocolCouncil();
@@ -435,7 +448,8 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
             data: data_swapTimelockToProtocolTimelock,
             operation: ISafe.Operation.Call 
         });
-        uint256 timelockEta = block.timestamp + NoDelayTimelock(payable(timelock)).delay();
+        // add 10 minute grace period for queuing transaction after simulation
+        uint256 timelockEta = block.timestamp + NoDelayTimelock(payable(timelock)).delay() + 10 minutes;
         (bytes memory calldata_to_timelock_queuing_action, bytes memory calldata_to_timelock_executing_action) =
             encodeForTimelock({
                 to: address(executorMultisig),
