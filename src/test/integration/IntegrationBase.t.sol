@@ -886,8 +886,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
     /*******************************************************************************
                                 UTILITY METHODS
     *******************************************************************************/
-
-    function _randomMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
+    
+    function _randWadToSlash() internal returns (uint) {
+        return _randUint({ min: 0.01 ether, max: 1 ether });
+    }
+    
+    function _randMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
         magnitudes = new uint64[](len);
 
         if (sum == 0 || len == 0) return magnitudes;

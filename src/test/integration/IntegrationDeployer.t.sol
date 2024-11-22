@@ -188,9 +188,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         );
 
         // Third, upgrade the proxy contracts to point to the implementations
-        uint withdrawalDelayBlocks = 7 days / 12 seconds;
-        IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
-        uint[] memory initializeWithdrawalDelayBlocks = new uint[](0);
         // DelegationManager
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(delegationManager))),
@@ -198,10 +195,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
-                0, /* initialPausedStatus */
-                withdrawalDelayBlocks,
-                initializeStrategiesToSetDelayBlocks,
-                initializeWithdrawalDelayBlocks
+                0 /* initialPausedStatus */
             )
         );
         // StrategyManager
