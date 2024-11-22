@@ -51,7 +51,7 @@ interface IEigenPodManagerEvents {
     );
 
     /// @notice Emitted when a staker's beaconChainSlashingFactor is updated
-    event BeaconChainSlashingFactorDecreased(address staker, uint64 newBeaconChainSlashingFactor);
+    event BeaconChainSlashingFactorUpdated(address staker, uint64 newBeaconChainSlashingFactor);
 }
 
 interface IEigenPodManagerTypes {
@@ -156,8 +156,8 @@ interface IEigenPodManager is
     function beaconChainETHStrategy() external view returns (IStrategy);
 
     /**
-     * @notice Returns the amount of reported slashing a staker has experienced on the
-     * beacon chain.
+     * @notice Returns the historical sum of proportional balance decreases a pod owner has experienced when
+     * updating their pod's balance.
      */
     function beaconChainSlashingFactor(
         address staker

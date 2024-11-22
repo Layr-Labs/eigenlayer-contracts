@@ -494,7 +494,7 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
 
         // Not checking the new slashing factor - just checking the invariant that new <= prev
         cheats.expectEmit(true, true, true, false);
-        emit BeaconChainSlashingFactorDecreased(defaultStaker, 0);
+        emit BeaconChainSlashingFactorUpdated(defaultStaker, 0);
 
         cheats.prank(address(defaultPod));
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, prevRestakedBalanceWei, -int(sharesDelta));
