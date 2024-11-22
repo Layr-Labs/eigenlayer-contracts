@@ -273,12 +273,16 @@ contract EigenPodManager is
         uint256 newRestakedBalanceWei = prevRestakedBalanceWei - balanceDecreasedWei;
         uint256 proportionRemainingWad = newRestakedBalanceWei.divWadRoundUp(prevRestakedBalanceWei);
 
+        // Note that underflow here should be impossible given
+        // `proportionRemainingWad` is guaranteed to be less than WAD.
+        uint256 wadSlashed = uint256(WAD) - proportionRemainingWad;
+
         // Update pod owner's beacon chain slashing factor. Note that `newBeaconSlashingFactor`
         // should be less than `prevBeaconSlashingFactor` because `proportionRemainingWad` is
         // guaranteed to be less than WAD.
         uint64 prevBeaconSlashingFactor = beaconChainSlashingFactor(podOwner);
         uint64 newBeaconSlashingFactor = uint64(prevBeaconSlashingFactor.mulWad(proportionRemainingWad));
-        emit BeaconChainSlashingFactorUpdated(podOwner, newBeaconSlashingFactor);
+        emit BeaconChainSlashingFactorDecreased(podOwner, wadSlashed, newBeaconSlashingFactor);
         /// forgefmt: disable-next-item
         _beaconChainSlashingFactor[podOwner] = BeaconChainSlashingFactor({
             slashingFactor: newBeaconSlashingFactor,
@@ -286,9 +290,6 @@ contract EigenPodManager is
         });
 
         uint256 curDepositShares = uint256(podOwnerDepositShares[podOwner]);
-        // Note that underflow here should be impossible given
-        // `proportionRemainingWad` is guaranteed to be less than WAD.
-        uint256 wadSlashed = uint256(WAD) - proportionRemainingWad;
         return (curDepositShares, prevBeaconSlashingFactor, wadSlashed);
     }
 
