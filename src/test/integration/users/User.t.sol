@@ -102,7 +102,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         allocationManager.modifyAllocations(params);
 
-        rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
+        rollForward({blocks: allocationManager.getAllocationDelay(address(this))});
     }
     
     function deallocateAll(
