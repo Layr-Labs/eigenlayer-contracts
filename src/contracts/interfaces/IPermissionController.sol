@@ -4,8 +4,6 @@ pragma solidity ^0.8.27;
 interface IPermissionControllerErrors {
     /// @notice Thrown when the caller is not the admin
     error NotAdmin();
-    /// @notice Thrown when an admin is set to the zero address
-    error AdminAlreadySet();
     /// @notice Thrown when the admin to remove is not an admin
     error AdminNotSet();
     /// @notice Thrown when an appointee is already set for the account's function
@@ -14,6 +12,12 @@ interface IPermissionControllerErrors {
     error AppointeeNotSet();
     /// @notice Thrown when the account attempts to remove the only admin
     error CannotHaveZeroAdmins();
+    /// @notice Thrown when an admin is already set
+    error AdminAlreadySet();
+    /// @notice Thrown when an admin is not pending
+    error AdminNotPending();
+    /// @notice Thrown when an admin is already pending
+    error AdminAlreadyPending();
 }
 
 interface IPermissionControllerEvents {
@@ -22,6 +26,12 @@ interface IPermissionControllerEvents {
 
     /// @notice Emitted when an appointee is revoked
     event AppointeeRemoved(address indexed account, address indexed appointee, address target, bytes4 selector);
+
+    /// @notice Emitted when an admin is set as pending for an account
+    event PendingAdminAdded(address indexed account, address admin);
+
+    /// @notice Emitted when an admin is removed as pending for an account
+    event PendingAdminRemoved(address indexed account, address admin);
 
     /// @notice Emitted when an admin is set for a given account
     event AdminSet(address indexed account, address admin);
@@ -32,12 +42,29 @@ interface IPermissionControllerEvents {
 
 interface IPermissionController is IPermissionControllerErrors, IPermissionControllerEvents {
     /**
-     * @notice Set the admin of an account
-     * @param account to set admin for
+     * @notice Sets a pending admin of an account
+     * @param account to set pending admin for
      * @param admin to set
      * @dev Multiple admins can be set for an account
      */
-    function addAdmin(address account, address admin) external;
+    function addPendingAdmin(address account, address admin) external;
+
+    /**
+     * @notice Removes a pending admin of an account
+     * @param account to remove pending admin for
+     * @param admin to remove
+     * @dev Only the admin of the account can remove a pending admin
+     */
+    function removePendingAdmin(address account, address admin) external;
+
+    /**
+     * @notice Accepts the admin role of an account
+     * @param account to accept admin for
+     * @dev Only a pending admin for the account can become an admin
+     */
+    function acceptAdmin(
+        address account
+    ) external;
 
     /**
      * @notice Remove an admin of an account
@@ -75,11 +102,24 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
     function isAdmin(address account, address caller) external view returns (bool);
 
     /**
+     * @notice Checks if the `pendingAdmin` is a pending admin of the `account`
+     */
+    function isPendingAdmin(address account, address pendingAdmin) external view returns (bool);
+
+    /**
      * @notice Get the admins of an account
      * @param account The account to get the admin of
      * @dev If the account has no admin, the account itself is returned
      */
     function getAdmins(
+        address account
+    ) external view returns (address[] memory);
+
+    /**
+     * @notice Get the pending admins of an account
+     * @param account The account to get the pending admin of
+     */
+    function getPendingAdmins(
         address account
     ) external view returns (address[] memory);
 

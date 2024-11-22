@@ -30,13 +30,7 @@ contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionCo
     }
 }
 
-contract PermissionControllerUnitTests_SetAdmin is PermissionControllerUnitTests {
-    modifier initializeAdmin() {
-        cheats.prank(account);
-        permissionController.addAdmin(account, admin);
-        _;
-    }
-
+contract PermissionControllerUnitTests_AddPendingAdmin is PermissionControllerUnitTests {
     function testFuzz_getAdmin_notSet(address account) public view filterFuzzedAddressInputs(account) {
         address[] memory admins = permissionController.getAdmins(account);
         assertEq(admins[0], account, "Account is not admin");
@@ -46,49 +40,148 @@ contract PermissionControllerUnitTests_SetAdmin is PermissionControllerUnitTests
     /// @notice Tests the setAdmin function when it has not been initialized
     function test_revert_caller_not_account() public {
         cheats.expectRevert(IPermissionControllerErrors.NotAdmin.selector);
-        permissionController.addAdmin(account, admin);
+        permissionController.addPendingAdmin(account, admin);
     }
 
-    function test_setAdmin_initialSet() public {
+    function test_revert_adminPending() public {
+        // Set admin to be pending
+        cheats.startPrank(account);
+        permissionController.addPendingAdmin(account, admin);
+
+        // Expect revert
+        cheats.expectRevert(IPermissionControllerErrors.AdminAlreadyPending.selector);
+        permissionController.addPendingAdmin(account, admin);
+    }
+
+    function test_addPendingAdmin_initialSet() public {
+        // Expect emit
+        cheats.expectEmit(true, true, true, true);
+        emit PendingAdminAdded(account, admin);
+
+        cheats.prank(account);
+        permissionController.addPendingAdmin(account, admin);
+
+        // Check storage
+        address[] memory pendingAdmins = permissionController.getPendingAdmins(account);
+        assertEq(pendingAdmins[0], admin, "Admin not set to pending");
+        assertTrue(permissionController.isPendingAdmin(account, admin), "Pending admin not set correctly");
+        assertFalse(permissionController.isAdmin(account, admin), "Pending admin not set correctly");
+    }
+}
+
+contract PermissionControllerUnitTests_RemovePendingAdmin is PermissionControllerUnitTests {
+    function setUp() virtual public override {
+        // Setup
+        PermissionControllerUnitTests.setUp();
+
+        // Set admin to be pending
+        cheats.prank(account);
+        permissionController.addPendingAdmin(account, admin);
+    }
+
+    function test_revert_notAdmin() public {
+        cheats.expectRevert(IPermissionControllerErrors.NotAdmin.selector);
+        permissionController.removePendingAdmin(account, admin);
+    }
+
+    function test_revert_notPending() public {
+        // Expect revert
+        cheats.prank(account);
+        cheats.expectRevert(IPermissionControllerErrors.AdminNotPending.selector);
+        permissionController.removePendingAdmin(account, admin2);
+    }
+
+    function test_removePendingAdmin() public {
+        // Expect emit
+        cheats.expectEmit(true, true, true, true);
+        emit PendingAdminRemoved(account, admin);
+
+        cheats.prank(account);
+        permissionController.removePendingAdmin(account, admin);
+
+        // Check storage
+        address[] memory pendingAdmins = permissionController.getPendingAdmins(account);
+        assertEq(pendingAdmins.length, 0, "Pending admin not removed");
+    }
+}
+
+contract PermissionControllerUnitTests_AcceptAdmin is PermissionControllerUnitTests {
+    function setUp() virtual public override {
+        // Setup
+        PermissionControllerUnitTests.setUp();
+
+        // Set admin
+        cheats.prank(account);
+        permissionController.addPendingAdmin(account, admin);
+    }
+
+    function test_revert_adminNotPending() public {
+        cheats.prank(admin2);
+        cheats.expectRevert(IPermissionControllerErrors.AdminNotPending.selector);
+        permissionController.acceptAdmin(account);
+    }
+
+    function test_acceptAdmin() public {
         // Expect emit
         cheats.expectEmit(true, true, true, true);
         emit AdminSet(account, admin);
 
-        cheats.prank(account);
-        permissionController.addAdmin(account, admin);
+        cheats.prank(admin);
+        permissionController.acceptAdmin(account);
 
         // Check storage
         address[] memory admins = permissionController.getAdmins(account);
-        assertEq(admins[0], admin, "Admin not set correctly");
-        assertTrue(permissionController.isAdmin(account, admin), "Admin not set correctly");
+        address[] memory pendingAdmins = permissionController.getPendingAdmins(account);
+        assertEq(pendingAdmins.length, 0, "Pending admin not removed");
+        assertEq(admins.length, 1, "Additional admin not added");
+        assertFalse(permissionController.isAdmin(account, account), "Account should no longer be admin");
+        assertTrue(permissionController.isAdmin(account, admin), "Admin not set");
         assertTrue(permissionController.canCall(account, admin, address(0), bytes4(0)), "Admin cannot call");
     }
 
-    function test_revert_invalidAdmin_alreadySet() public initializeAdmin {
-        cheats.prank(admin);
-        cheats.expectRevert(IPermissionControllerErrors.AdminAlreadySet.selector);
-        permissionController.addAdmin(account, admin);
-    }
-
-    function test_revert_caller_not_admin() public initializeAdmin {
+    function test_addMultipleAdmin_fromAccount() public {
+        // Add another pending admin
         cheats.prank(account);
-        cheats.expectRevert(IPermissionControllerErrors.NotAdmin.selector);
-        permissionController.addAdmin(account, admin2);
-    }
+        permissionController.addPendingAdmin(account, admin2);
 
-    function test_addAdditionalAdmin() public initializeAdmin {
-        // Expect emit
-        cheats.expectEmit(true, true, true, true);
-        emit AdminSet(account, admin2);
+        // Assert pending admins length
+        address[] memory pendingAdmins = permissionController.getPendingAdmins(account);
+        assertEq(pendingAdmins.length, 2, "Additional pending admin not added");
 
+        // Accept admins
         cheats.prank(admin);
-        permissionController.addAdmin(account, admin2);
+        permissionController.acceptAdmin(account);
+        cheats.prank(admin2);
+        permissionController.acceptAdmin(account);
 
         // Check storage
         address[] memory admins = permissionController.getAdmins(account);
         assertEq(admins.length, 2, "Additional admin not added");
         assertTrue(permissionController.isAdmin(account, admin), "Old admin should still be admin");
         assertTrue(permissionController.isAdmin(account, admin2), "New admin not set correctly");
+        assertTrue(permissionController.canCall(account, admin, address(0), bytes4(0)), "Admin cannot call");
+        assertTrue(permissionController.canCall(account, admin2, address(0), bytes4(0)), "Admin cannot call");
+    }
+    
+    function test_addMultipleAdmin_newAdminAdds() public {
+        // Accept admin
+        cheats.startPrank(admin);
+        permissionController.acceptAdmin(account);
+
+        // Add another pending admin
+        permissionController.addPendingAdmin(account, admin2);
+        cheats.stopPrank();
+
+        // Accept admins
+        cheats.prank(admin2);
+        permissionController.acceptAdmin(account);
+
+        // Check storage
+        address[] memory admins = permissionController.getAdmins(account);
+        assertEq(admins.length, 2, "Additional admin not added");
+        assertTrue(permissionController.isAdmin(account, admin), "Old admin should still be admin");
+        assertTrue(permissionController.isAdmin(account, admin2), "New admin not set correctly");
+        assertTrue(permissionController.canCall(account, admin, address(0), bytes4(0)), "Admin cannot call");
         assertTrue(permissionController.canCall(account, admin2, address(0), bytes4(0)), "Admin cannot call");
     }
 }
@@ -99,10 +192,16 @@ contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTe
         PermissionControllerUnitTests.setUp();
 
         // Set admins
-        cheats.prank(account);
-        permissionController.addAdmin(account, admin);
+        cheats.startPrank(account);
+        permissionController.addPendingAdmin(account, admin);
+        permissionController.addPendingAdmin(account, admin2);
+        cheats.stopPrank();
+
+        // Accept admins
         cheats.prank(admin);
-        permissionController.addAdmin(account, admin2);
+        permissionController.acceptAdmin(account);
+        cheats.prank(admin2);
+        permissionController.acceptAdmin(account);
     }
 
     function test_revert_notAdmin() public {
@@ -152,9 +251,11 @@ contract PermissionControllerUnitTests_SetAppointee is PermissionControllerUnitT
         // Setup
         PermissionControllerUnitTests.setUp();
 
-        // Set admin
+        // Set & accept admin
         cheats.prank(account);
-        permissionController.addAdmin(account, admin);
+        permissionController.addPendingAdmin(account, admin);
+        cheats.prank(admin);
+        permissionController.acceptAdmin(account);
     }
 
     function test_revert_notAdmin() public {
@@ -235,9 +336,11 @@ contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUn
         // Setup
         PermissionControllerUnitTests.setUp();
 
-        // Set admin
+        // Set & accept admin
         cheats.prank(account);
-        permissionController.addAdmin(account, admin);
+        permissionController.addPendingAdmin(account, admin);
+        cheats.prank(admin);
+        permissionController.acceptAdmin(account);
 
         // Set appointees
         cheats.startPrank(admin);

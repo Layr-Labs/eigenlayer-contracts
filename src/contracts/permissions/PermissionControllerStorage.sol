@@ -10,6 +10,8 @@ abstract contract PermissionControllerStorage is IPermissionController {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     struct AccountPermissions {
+        /// @notice The pending admins of the account
+        EnumerableSet.AddressSet pendingAdmins;
         /// @notice The admins of the account
         EnumerableSet.AddressSet admins;
         /// @notice Mapping from an appointee to the list of encoded target & selectors
