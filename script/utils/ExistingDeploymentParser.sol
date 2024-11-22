@@ -93,6 +93,10 @@ contract ExistingDeploymentParser is Script, Test {
     address pauserMultisig;
     address foundationMultisig;
     address timelock;
+    TimelockController public protocolTimelockController;
+    TimelockController public protocolTimelockController_BEIGEN;
+    address public protocolCouncilMultisig;
+    address public beigenExecutorMultisig;
 
     // strategies deployed
     uint256 numStrategiesDeployed;
@@ -156,6 +160,14 @@ contract ExistingDeploymentParser is Script, Test {
         pauserMultisig = stdJson.readAddress(existingDeploymentData, ".deployment.admin.pauserMultisig");
         foundationMultisig = stdJson.readAddress(existingDeploymentData, ".deployment.admin.foundationMultisig");
         timelock = stdJson.readAddress(existingDeploymentData, ".deployment.admin.timelock");
+        protocolTimelockController = TimelockController(
+            payable(stdJson.readAddress(existingDeploymentData, ".deployment.admin.timelockController"))
+        );
+        protocolTimelockController_BEIGEN = TimelockController(
+            payable(stdJson.readAddress(existingDeploymentData, ".deployment.admin.timelockController_BEIGEN"))
+        );
+        protocolCouncilMultisig = stdJson.readAddress(existingDeploymentData, ".deployment.admin.protocolCouncilMultisig");
+        beigenExecutorMultisig = stdJson.readAddress(existingDeploymentData, ".deployment.admin.beigenExecutorMultisig");
 
         eigenLayerProxyAdmin = ProxyAdmin(
             stdJson.readAddress(existingDeploymentData, ".deployment.admin.proxyAdmin")

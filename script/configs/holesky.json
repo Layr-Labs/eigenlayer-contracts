@@ -27,7 +27,11 @@
             "pauserRegistry": "0x85Ef7299F8311B25642679edBF02B62FA2212F06",
             "proxyAdmin": "0xDB023566064246399b4AE851197a97729C93A6cf",
             "timelock": "0xFddd03C169E3FD9Ea4a9548dDC4BedC6502FE239",
-            "foundationMultisig": "0x7Cb5d96A8D67304E51E022979Eb9C63a17484076"
+            "foundationMultisig": "0x7Cb5d96A8D67304E51E022979Eb9C63a17484076",
+            "timelockController": "0x5e83c7d195318A5acf46B29E5810DdC323b2F6fD",
+            "timelockController_BEIGEN": "0xE4Babe38afBdc3F67B3E179519F0277c75D0E537",
+            "protocolCouncilMultisig": "0xd140eE77d9e62901d8cEFf199d3ef4Dd1F4Eaff4",
+            "beigenExecutorMultisig": "0xe5806869775B50a4938F9553759Ba609C02D5e63"
         },
         "core": {
             "avsDirectory": {

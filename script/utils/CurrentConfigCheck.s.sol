@@ -15,11 +15,6 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
     string forkUrl;  
     string emptyString;
 
-    address public protocolCouncilMultisig;
-    TimelockController public protocolTimelockController;
-    TimelockController public protocolTimelockController_BEIGEN;
-
-    address public beigenExecutorMultisig;
 
     function run(string memory networkName) public virtual {
         startChainFork(networkName);
@@ -33,32 +28,7 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         _verifyContractsInitialized(false);
         // _verifyInitializationParams();
 
-        // bytes memory data = abi.encodeWithSelector(ProxyAdmin.changeProxyAdmin.selector, address(bEIGEN), address(beigenTokenProxyAdmin));
-        // bytes memory data = abi.encodeWithSignature("swapOwner(address,address,address)",
-        //     0xCb8d2f9e55Bc7B1FA9d089f9aC80C583D2BDD5F7,
-        //     0xcF19CE0561052a7A7Ff21156730285997B350A7D,
-        //     0xFddd03C169E3FD9Ea4a9548dDC4BedC6502FE239
-        // );
-        // bytes memory callToExecutor = encodeForExecutor({
-        //     from: communityMultisig,
-        //     to: address(executorMultisig),
-        //     value: 0,
-        //     data: data,
-        //     operation: ISafe.Operation.Call 
-        // });
-
-        // vm.prank(communityMultisig);
-        // (bool success, /*bytes memory returndata*/) = executorMultisig.call(callToExecutor);
-        // require(success, "call to executorMultisig failed");
-
-        // vm.startPrank(foundationMultisig);
-        // Ownable(address(bEIGEN)).transferOwnership(address(eigenTokenTimelockController));
-        // Ownable(address(EIGEN)).transferOwnership(address(eigenTokenTimelockController));
-        // vm.stopPrank();
-
         checkGovernanceConfiguration_Current();
-
-        // simulateProtocolCouncilUpgrade(networkName);
     }
 
     function startChainFork(string memory networkName) public virtual {
@@ -307,10 +277,10 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         run(networkName);
 
         // deployment steps
-        deployTimelockControllers();
-        deployBeigenExecutorMultisig();
-        configureTimelockController(protocolTimelockController);
-        configureTimelockController(protocolTimelockController_BEIGEN);
+        // deployTimelockControllers();
+        // deployBeigenExecutorMultisig();
+        // configureTimelockController(protocolTimelockController);
+        // configureTimelockController(protocolTimelockController_BEIGEN);
 
         // simulate transferring powers
         simulateLegacyTimelockActions();
@@ -321,6 +291,7 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         checkGovernanceConfiguration_WithProtocolCouncil();
     }
 
+    // forge script script/utils/CurrentConfigCheck.s.sol:CurrentConfigCheck -vvv --sig "deployTimelockControllers(string)"
     function deployTimelockControllers() public {
         // set up initially with sender as a proposer & executor, to be renounced prior to finalizing deployment
         address[] memory proposers = new address[](1);
@@ -349,7 +320,6 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         require(address(beigenTokenTimelockController) != address(0),
             "must deploy beigenTokenTimelockController before beigenExecutorMultisig");
         // TODO: solution for local network?
-        // TODO: verify this also works for Holesky
         address safeFactory = 0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2;
         address safeSingleton = 0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552;
         address safeFallbackHandler = 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99;
@@ -416,12 +386,15 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         // 9. add communityMultisig as admin
         payloads[8] = abi.encodeWithSelector(AccessControl.grantRole.selector, timelockController.TIMELOCK_ADMIN_ROLE(), communityMultisig);
 
-        // TODO: get appropriate value for chain instead of hardcoding
         uint256 delayToSet;
-        if (timelockController == protocolTimelockController) {
-            delayToSet = 10 days;
-        } else if (timelockController == protocolTimelockController_BEIGEN) {
-            delayToSet = 14 days;
+        if (block.chainid == 1) {
+            if (timelockController == protocolTimelockController) {
+                delayToSet = 10 days;
+            } else if (timelockController == protocolTimelockController_BEIGEN) {
+                delayToSet = 24 days;
+            }
+        } else {
+            delayToSet = 1;
         }
         require(delayToSet != 0, "delay not calculated");
         // 10. set min delay to appropriate length
@@ -449,12 +422,8 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
     }
 
     function simulateLegacyTimelockActions() public {
-        // TODO
-        // give proxy admin ownership to timelock controller
-        // eigenTokenProxyAdmin.transferOwnership(address(timelockController));
-
         // swapOwner(address previousOwner, address oldOwner, address newOwner)
-        // TODO: figure out if this is the correct input for all chains or the communityMultisig is correct on some
+        // input is required to the Safe `swapOwner` function, in order to maintain its linked list
         address previousOwner = address(1);
         // address previousOwner = communityMultisig;
         bytes memory data_swapTimelockToProtocolTimelock =
@@ -466,9 +435,7 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
             data: data_swapTimelockToProtocolTimelock,
             operation: ISafe.Operation.Call 
         });
-        // TODO: get appropriate value for chain instead of hardcoding
-        // uint256 timelockEta = block.timestamp + timelock.delay();
-        uint256 timelockEta = block.timestamp + 10 days;
+        uint256 timelockEta = block.timestamp + NoDelayTimelock(payable(timelock)).delay();
         (bytes memory calldata_to_timelock_queuing_action, bytes memory calldata_to_timelock_executing_action) =
             encodeForTimelock({
                 to: address(executorMultisig),
@@ -483,7 +450,7 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
 
         vm.warp(timelockEta);
         (success, /*bytes memory returndata*/) = timelock.call(calldata_to_timelock_executing_action);
-        require(success, "call to timelock executing action 1 failed");
+        require(success, "call to timelock executing action 2 failed");
 
         vm.stopPrank();
     }
