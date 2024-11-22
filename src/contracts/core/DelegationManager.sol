@@ -380,35 +380,6 @@ contract DelegationManager is
 
     /**
      *
-     *                         BACKWARDS COMPATIBLE LEGACY FUNCTIONS
-     *                         TO BE DEPRECATED IN FUTURE
-     *
-     */
-
-    /// @inheritdoc IDelegationManager
-    function completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
-        uint256, // middlewareTimesIndex
-        bool receiveAsTokens
-    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
-        _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
-    }
-
-    /// @inheritdoc IDelegationManager
-    function completeQueuedWithdrawals(
-        Withdrawal[] calldata withdrawals,
-        IERC20[][] calldata tokens,
-        uint256[] calldata, // middlewareTimesIndexes
-        bool[] calldata receiveAsTokens
-    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
-        for (uint256 i = 0; i < withdrawals.length; ++i) {
-            _completeQueuedWithdrawal(withdrawals[i], tokens[i], receiveAsTokens[i]);
-        }
-    }
-
-    /**
-     *
      *                         INTERNAL FUNCTIONS
      *
      */
@@ -818,13 +789,6 @@ contract DelegationManager is
         address operator
     ) public view returns (bool) {
         return operator != address(0) && delegatedTo[operator] == operator;
-    }
-
-    /// @inheritdoc IDelegationManager
-    function operatorDetails(
-        address operator
-    ) external view returns (OperatorDetails memory) {
-        return _operatorDetails[operator];
     }
 
     /// @inheritdoc IDelegationManager
