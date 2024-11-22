@@ -98,13 +98,15 @@ contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTe
         // Setup
         PermissionControllerUnitTests.setUp();
 
-        // Set admin
+        // Set admins
         cheats.prank(account);
         permissionController.addAdmin(account, admin);
+        cheats.prank(admin);
+        permissionController.addAdmin(account, admin2);
     }
 
     function test_revert_notAdmin() public {
-        cheats.prank(admin2);
+        cheats.prank(appointee1);
         cheats.expectRevert(IPermissionControllerErrors.NotAdmin.selector);
         permissionController.removeAdmin(account, admin);
     }
@@ -112,8 +114,18 @@ contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTe
     function test_revert_adminNotSet() public {
         cheats.prank(admin);
         cheats.expectRevert(IPermissionControllerErrors.AdminNotSet.selector);
-        permissionController.removeAdmin(account, admin2);
+        permissionController.removeAdmin(account, appointee1);
     }   
+
+    function test_revert_cannotHaveZeroAdmins() public {
+        // Remove admin2
+        cheats.startPrank(admin);
+        permissionController.removeAdmin(account, admin2);
+
+        // Remove admin
+        cheats.expectRevert(IPermissionControllerErrors.CannotHaveZeroAdmins.selector);
+        permissionController.removeAdmin(account, admin);
+    }
 
     function test_removeAdmin() public {
         // Expect emit
@@ -127,10 +139,11 @@ contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTe
         assertFalse(permissionController.isAdmin(account, admin), "Admin not removed");
         assertFalse(permissionController.canCall(account, admin, address(0), bytes4(0)), "Admin can still call");
 
-        // Assert that the account is now the admin
+        // Assert that admin2 is now the only admin
         address[] memory admins = permissionController.getAdmins(account);
-        assertEq(admins[0], account, "Account is not admin");
-        assertTrue(permissionController.isAdmin(account, account), "Account is not admin");
+        assertEq(admins[0], admin2, "Account is not admin");
+        assertTrue(permissionController.isAdmin(account, admin2), "Admin2 is not admin");
+        assertFalse(permissionController.isAdmin(account, admin), "Account should not be admin");
     }
 }
 

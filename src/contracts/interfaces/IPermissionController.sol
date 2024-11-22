@@ -12,6 +12,8 @@ interface IPermissionControllerErrors {
     error AppointeeAlreadySet();
     /// @notice Thrown when an appointee is not set for the account's function
     error AppointeeNotSet();
+    /// @notice Thrown when the account attempts to remove the only admin
+    error CannotHaveZeroAdmins();
 }
 
 interface IPermissionControllerEvents {
@@ -42,6 +44,7 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @param account to remove admin for
      * @param admin to remove
      * @dev Only the admin of the account can remove an admin
+     * @dev Reverts when an admin is removed such that no admins are remaining
      */
     function removeAdmin(address account, address admin) external;
 
@@ -62,7 +65,6 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @param target to remove appointee for
      * @param selector to remove appointee for
      * @dev Only the admin of the account can remove an appointee
-     * @dev If all admins are removed, the original account is now the admin
      */
     function removeAppointee(address account, address appointee, address target, bytes4 selector) external;
 
