@@ -45,6 +45,8 @@ contract PermissionController is Initializable, PermissionControllerStorage {
     function removeAdmin(address account, address admin) external onlyAdmin(account) {
         EnumerableSet.AddressSet storage admins = _permissions[account].admins;
 
+        require(admins.length() > 1, CannotHaveZeroAdmins());
+
         // Remove the admin from the account's admins
         // If the admin is not set, the remove will fail
         require(admins.remove(admin), AdminNotSet());
