@@ -14,9 +14,7 @@ interface IAllocationManagerErrors {
     error InvalidWadToSlash();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
-    /// @dev Thrown when calling a view function that requires a valid block number.
-    error InvalidBlockNumber();
-
+    
     /// Caller
 
     /// @dev Thrown when caller is not the delegation manager.
@@ -28,12 +26,8 @@ interface IAllocationManagerErrors {
 
     /// @dev Thrown when an invalid operator is provided.
     error InvalidOperator();
-    /// @dev Thrown when `operator` is not a registered operator.
-    error OperatorNotRegistered();
     /// @dev Thrown when an operator's allocation delay has yet to be set.
     error UninitializedAllocationDelay();
-    /// @dev Thrown when attempting to slash an operator when they are not slashable.
-    error OperatorNotSlashable();
     /// @dev Thrown when trying to add an operator to a set they are already a member of
     error AlreadyMemberOfSet();
     /// @dev Thrown when trying to slash/remove an operator from a set they are not a member of
@@ -43,8 +37,6 @@ interface IAllocationManagerErrors {
 
     /// @dev Thrown when an invalid operator set is provided.
     error InvalidOperatorSet();
-    /// @dev Thrown when a strategy is referenced that does not belong to an operator set.
-    error InvalidStrategy();
     /// @dev Thrown when trying to add a strategy to an operator set that already contains it.
     error StrategyAlreadyInOperatorSet();
     /// @dev Thrown when trying to remove a strategy from an operator set it is not a part of.
@@ -235,6 +227,8 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @param params array of magnitude adjustments for one or more operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
      * @dev msg.sender is used as operator
+     * @dev If an operator is unaware of a slash that occurs before the modification, the end 
+     *      result may be differ from expected
      */
     function modifyAllocations(
         AllocateParams[] calldata params
