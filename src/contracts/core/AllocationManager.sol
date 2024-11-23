@@ -98,6 +98,7 @@ contract AllocationManager is
             uint64 prevMaxMagnitude = info.maxMagnitude;
 
             allocation.currentMagnitude -= slashedMagnitude;
+
             info.maxMagnitude -= slashedMagnitude;
             info.encumberedMagnitude -= slashedMagnitude;
 
@@ -118,7 +119,18 @@ contract AllocationManager is
             }
 
             // 5. Update state
+            // The slash is effective immediately for the allocation
             _updateAllocationInfo(params.operator, operatorSet.key(), strategy, info, allocation);
+            
+            // Emit an event for the updated allocation
+            emit AllocationUpdated(
+                params.operator,
+                operatorSet,
+                strategy,
+                allocation.currentMagnitude,
+                uint32(block.number)
+            );
+
             _updateMaxMagnitude(params.operator, strategy, info.maxMagnitude);
 
             // 6. Decrease and burn operators shares in the DelegationManager
@@ -197,6 +209,7 @@ contract AllocationManager is
 
                         allocation.currentMagnitude = params[i].newMagnitudes[j];
                         allocation.pendingDiff = 0;
+                        allocation.effectBlock = uint32(block.number);
                     }
                 } else if (allocation.pendingDiff > 0) {
                     // Allocation immediately consumes available magnitude, but the additional
@@ -209,6 +222,11 @@ contract AllocationManager is
 
                 // 5. Update state
                 _updateAllocationInfo(operator, operatorSet.key(), strategy, info, allocation);
+
+                // 6. Emit an event for the updated allocation
+                emit AllocationUpdated(
+                    operator, OperatorSetLib.decode(operatorSet.key()), strategy, _addInt128(allocation.currentMagnitude, allocation.pendingDiff), allocation.effectBlock
+                );
             }
         }
     }
@@ -490,15 +508,18 @@ contract AllocationManager is
         StrategyInfo memory info,
         Allocation memory allocation
     ) internal {
-        // Update encumbered magnitude
-        encumberedMagnitude[operator][strategy] = info.encumberedMagnitude;
-        emit EncumberedMagnitudeUpdated(operator, strategy, info.encumberedMagnitude);
+        // Update encumbered magnitude if it has changed
+        // The mapping should NOT be updated when there is a deallocation on a delay
+        if (encumberedMagnitude[operator][strategy] != info.encumberedMagnitude) {
+            encumberedMagnitude[operator][strategy] = info.encumberedMagnitude;
+            emit EncumberedMagnitudeUpdated(operator, strategy, info.encumberedMagnitude);
+        }
 
         // Update allocation for this operator set from the strategy
+        // We emit an `AllocationUpdated` from the `modifyAllocations` and `slashOperator` functions.
+        // `clearDeallocationQueue` does not emit an `AllocationUpdated` event since it was 
+        // emitted when the deallocation was queued 
         allocations[operator][operatorSetKey][strategy] = allocation;
-        emit AllocationUpdated(
-            operator, OperatorSetLib.decode(operatorSetKey), strategy, allocation.currentMagnitude, uint32(block.number)
-        );
 
         // Note: these no-op if the sets already contain the added values (or do not contain removed ones)
         if (allocation.pendingDiff != 0) {
