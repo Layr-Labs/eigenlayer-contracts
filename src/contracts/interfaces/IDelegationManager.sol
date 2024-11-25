@@ -238,11 +238,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @param operator The account (`msg.sender`) is delegating its assets to for use in serving applications built on EigenLayer.
      * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
      * @param approverSalt A unique single use value tied to an individual signature.
-     * @dev The approverSignatureAndExpiry is used in the event that:
-     *          1) the operator's `delegationApprover` address is set to a non-zero value.
-     *                  AND
-     *          2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator
-     *             or their delegationApprover is the `msg.sender`, then approval is assumed.
+     * @dev The approverSignatureAndExpiry is used in the event that the operator's `delegationApprover` address is set to a non-zero value.
      * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
      * in this case to save on complexity + gas costs
      * @dev If the staker delegating has shares in a strategy that the operator was slashed 100% for (the operator's maxMagnitude = 0),
