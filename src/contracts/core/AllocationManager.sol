@@ -26,7 +26,7 @@ contract AllocationManager is
     using OperatorSetLib for OperatorSet;
     using SlashingLib for uint256;
 
-    modifier validateAVS(
+    modifier onlyAVS(
         address avs
     ) {
         require(isAVS(avs), AVSNotRegistered());
@@ -312,7 +312,7 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function updateAVSRegistrar(address avs, IAVSRegistrar registrar) external checkCanCall(avs) validateAVS(avs) {
+    function updateAVSRegistrar(address avs, IAVSRegistrar registrar) external checkCanCall(avs) onlyAVS(avs) {
         _updateAVSRegistrar(avs, registrar);
     }
 
@@ -320,7 +320,7 @@ contract AllocationManager is
     function updateAVSMetadataURI(
         address avs,
         string calldata metadataURI
-    ) external checkCanCall(avs) validateAVS(avs) {
+    ) external checkCanCall(avs) onlyAVS(avs) {
         _updateAVSMetadataURI(avs, metadataURI);
     }
 
@@ -328,7 +328,7 @@ contract AllocationManager is
     function createOperatorSets(
         address avs,
         CreateSetParams[] calldata params
-    ) external checkCanCall(avs) validateAVS(avs) {
+    ) external checkCanCall(avs) onlyAVS(avs) {
         _createOperatorSets(avs, params);
     }
 
@@ -337,7 +337,7 @@ contract AllocationManager is
         address avs,
         uint32 operatorSetId,
         IStrategy[] calldata strategies
-    ) external checkCanCall(avs) validateAVS(avs) {
+    ) external checkCanCall(avs) onlyAVS(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
         require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
 
@@ -353,7 +353,7 @@ contract AllocationManager is
         address avs,
         uint32 operatorSetId,
         IStrategy[] calldata strategies
-    ) external checkCanCall(avs) validateAVS(avs) {
+    ) external checkCanCall(avs) onlyAVS(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
         require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
 
