@@ -16,6 +16,8 @@ interface IAllocationManagerErrors {
     error InputArrayLengthMismatch();
     /// @dev Thrown when calling a view function that requires a valid block number.
     error InvalidBlockNumber();
+    /// @dev Thrown when an invalid registrar is set (zero address)
+    error InvalidRegistrar();
 
     /// Caller
 
@@ -167,6 +169,16 @@ interface IAllocationManagerTypes {
         uint32 operatorSetId;
         IStrategy[] strategies;
     }
+
+    /**
+     * @notice Parameters of an AVS
+     * @param registrar the address that handles registration/deregistration for the AVS
+     * @param metadataURI the URI for metadata associated with the AVS
+     */
+    struct AVSDetails {
+        IAVSRegistrar registrar;
+        string metadataURI;
+    }
 }
 
 interface IAllocationManagerEvents is IAllocationManagerTypes {
@@ -281,10 +293,24 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function setAllocationDelay(address operator, uint32 delay) external;
 
     /**
+     * @notice Registers an AVS with the allocation manager
+     * @param registrar the address that handles registration/deregistration for the AVS
+     * @param metadataURI the URI for metadata associated with the AVS
+     * @param params the operator sets to create
+     * @dev This function is NOT UAM enabled. The address that calls this function
+     *      is the `account` that identifies the AVS
+     */
+    function registerAsAVS(
+        IAVSRegistrar registrar,
+        string calldata metadataURI,
+        CreateSetParams[] calldata params
+    ) external;
+
+    /**
      * @notice Called by an AVS to configure the address that is called when an operator registers
-     * or is deregistered from the AVS's operator sets. If not set (or set to 0), defaults
-     * to the AVS's address.
+     * or is deregistered from the AVS's operator sets.
      * @param registrar the new registrar address
+     * @dev Must be set to a non-zero address
      */
     function setAVSRegistrar(address avs, IAVSRegistrar registrar) external;
 
@@ -496,11 +522,25 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
 
     /**
      * @notice Returns the address that handles registration/deregistration for the AVS
-     * If not set, defaults to the input address (`avs`)
      */
     function getAVSRegistrar(
         address avs
     ) external view returns (IAVSRegistrar);
+
+    /**
+     * @notice Returns the metadata URI for the AVS
+     */
+    function getAVSMetadataURI(
+        address avs
+    ) external view returns (string memory);
+
+    /**
+     * @notice Returns whether the address is an AVS
+     * @dev Validates an address is an AVS by checking if the registrar is set
+     */
+    function isAVS(
+        address avs
+    ) external view returns (bool);
 
     /**
      * @notice Returns an array of strategies in the operatorSet.

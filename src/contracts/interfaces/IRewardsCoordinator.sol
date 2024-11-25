@@ -8,8 +8,8 @@ import "./IStrategy.sol";
 interface IRewardsCoordinatorErrors {
     /// @dev Thrown when msg.sender is not allowed to call a function
     error UnauthorizedCaller();
-    /// @dev Thrown when a earner is not an operator
-    error EarnerNotOperator();
+    /// @dev Thrown when a earner is not an operator or AVS
+    error InvalidEarner();
 
     /// Invalid Inputs
 

@@ -292,32 +292,29 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
+    function registerAsAVS(
+        IAVSRegistrar registrar,
+        string calldata metadataURI,
+        CreateSetParams[] calldata params
+    ) external {
+        _setAVSRegistrar(msg.sender, registrar);
+        _updateAVSMetadataURI(msg.sender, metadataURI);
+        _createOperatorSets(msg.sender, params);
+    }
+
+    /// @inheritdoc IAllocationManager
     function setAVSRegistrar(address avs, IAVSRegistrar registrar) external checkCanCall(avs) {
-        _avsRegistrar[avs] = registrar;
-        emit AVSRegistrarSet(avs, getAVSRegistrar(avs));
+        _setAVSRegistrar(avs, registrar);
     }
 
     /// @inheritdoc IAllocationManager
     function updateAVSMetadataURI(address avs, string calldata metadataURI) external checkCanCall(avs) {
-        emit AVSMetadataURIUpdated(avs, metadataURI);
+        _updateAVSMetadataURI(avs, metadataURI);
     }
 
     /// @inheritdoc IAllocationManager
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
-        for (uint256 i = 0; i < params.length; i++) {
-            OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
-
-            // Create the operator set, ensuring it does not already exist
-            require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
-            emit OperatorSetCreated(OperatorSet(avs, operatorSet.id));
-
-            // Add strategies to the operator set
-            bytes32 operatorSetKey = operatorSet.key();
-            for (uint256 j = 0; j < params[i].strategies.length; j++) {
-                _operatorSetStrategies[operatorSetKey].add(address(params[i].strategies[j]));
-                emit StrategyAddedToOperatorSet(operatorSet, params[i].strategies[j]);
-            }
-        }
+        _createOperatorSets(avs, params);
     }
 
     /// @inheritdoc IAllocationManager
@@ -526,6 +523,34 @@ contract AllocationManager is
 
     function _addInt128(uint64 a, int128 b) internal pure returns (uint64) {
         return uint64(uint128(int128(uint128(a)) + b));
+    }
+
+    function _setAVSRegistrar(address avs, IAVSRegistrar registrar) internal {
+        require(address(registrar) != address(0), InvalidRegistrar());
+        _avsDetails[avs].registrar = registrar;
+        emit AVSRegistrarSet(avs, registrar);
+    }
+
+    function _updateAVSMetadataURI(address avs, string calldata metadataURI) internal {
+        _avsDetails[avs].metadataURI = metadataURI;
+        emit AVSMetadataURIUpdated(avs, metadataURI);
+    }
+
+    function _createOperatorSets(address avs, CreateSetParams[] calldata params) internal {
+        for (uint256 i = 0; i < params.length; i++) {
+            OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
+
+            // Create the operator set, ensuring it does not already exist
+            require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
+            emit OperatorSetCreated(OperatorSet(avs, operatorSet.id));
+
+            // Add strategies to the operator set
+            bytes32 operatorSetKey = operatorSet.key();
+            for (uint256 j = 0; j < params[i].strategies.length; j++) {
+                _operatorSetStrategies[operatorSetKey].add(address(params[i].strategies[j]));
+                emit StrategyAddedToOperatorSet(operatorSet, params[i].strategies[j]);
+            }
+        }
     }
 
     /**
@@ -741,9 +766,21 @@ contract AllocationManager is
     function getAVSRegistrar(
         address avs
     ) public view returns (IAVSRegistrar) {
-        IAVSRegistrar registrar = _avsRegistrar[avs];
+        return _avsDetails[avs].registrar;
+    }
 
-        return address(registrar) == address(0) ? IAVSRegistrar(avs) : registrar;
+    /// @inheritdoc IAllocationManager
+    function getAVSMetadataURI(
+        address avs
+    ) external view returns (string memory) {
+        return _avsDetails[avs].metadataURI;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isAVS(
+        address avs
+    ) external view returns (bool) {
+        return _avsDetails[avs].registrar != IAVSRegistrar(address(0));
     }
 
     /// @inheritdoc IAllocationManager

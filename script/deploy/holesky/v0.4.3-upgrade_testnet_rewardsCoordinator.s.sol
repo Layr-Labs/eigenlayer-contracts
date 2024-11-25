@@ -24,6 +24,7 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            allocationManager,
             eigenLayerPauserReg,
             permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,

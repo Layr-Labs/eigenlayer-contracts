@@ -7,7 +7,6 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/Merkle.sol";
-import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
 import "./RewardsCoordinatorStorage.sol";
 import "../mixins/PermissionControllerMixin.sol";
@@ -45,6 +44,7 @@ contract RewardsCoordinator is
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
+        IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry,
         IPermissionController _permissionController,
         uint32 _CALCULATION_INTERVAL_SECONDS,
@@ -56,6 +56,7 @@ contract RewardsCoordinator is
         RewardsCoordinatorStorage(
             _delegationManager,
             _strategyManager,
+            _allocationManager,
             _CALCULATION_INTERVAL_SECONDS,
             _MAX_REWARDS_DURATION,
             _MAX_RETROACTIVE_LENGTH,
@@ -226,7 +227,7 @@ contract RewardsCoordinator is
 
     /// @inheritdoc IRewardsCoordinator
     function setClaimerFor(address earner, address claimer) external checkCanCall(earner) {
-        require(delegationManager.isOperator(earner), EarnerNotOperator());
+        require(delegationManager.isOperator(earner) || allocationManager.isAVS(earner), InvalidEarner());
         _setClaimer(earner, claimer);
     }
 

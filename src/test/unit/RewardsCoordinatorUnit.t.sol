@@ -92,6 +92,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IDelegationManager(address(delegationManagerMock)),
             IStrategyManager(address(strategyManagerMock)),
+            IAllocationManager(address(allocationManagerMock)),
             pauserRegistry,
             IPermissionController(address(permissionController)),
             CALCULATION_INTERVAL_SECONDS,
@@ -292,6 +293,46 @@ contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorU
         rewardsCoordinator.setClaimerFor(claimer);
         assertEq(claimer, rewardsCoordinator.claimerFor(earner), "claimerFor not set");
         cheats.stopPrank();
+    }
+
+    function test_setClaimerFor_UAM_revert_staker(address earner, address claimer) public filterFuzzedAddressInputs(earner) {
+        cheats.prank(earner);
+        cheats.expectRevert(IRewardsCoordinatorErrors.InvalidEarner.selector);
+        rewardsCoordinator.setClaimerFor(earner, claimer);
+    }
+
+    function test_setCLaimerFor_UAM_AVS() public {
+        address avs = address(1000);
+        address claimer = address(1001);
+
+        // Set AVS
+        allocationManagerMock.setIsAVS(avs, true);
+
+        // Set claimer for AVS
+        cheats.startPrank(avs);
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit ClaimerForSet(avs, rewardsCoordinator.claimerFor(avs), claimer);
+        rewardsCoordinator.setClaimerFor(avs, claimer);
+        cheats.stopPrank();
+
+        assertEq(claimer, rewardsCoordinator.claimerFor(avs), "claimerFor not set");
+    }
+
+    function test_setClaimerFor_UAM_Operator() public {
+        address operator = address(1000);
+        address claimer = address(1001);
+
+        // Set operator
+        delegationManagerMock.setIsOperator(operator, true);
+
+        // Set claimer for operator
+        cheats.startPrank(operator);
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit ClaimerForSet(operator, rewardsCoordinator.claimerFor(operator), claimer);
+        rewardsCoordinator.setClaimerFor(operator, claimer);
+        cheats.stopPrank();
+
+        assertEq(claimer, rewardsCoordinator.claimerFor(operator), "claimerFor not set");
     }
 
     function testFuzz_setActivationDelay(uint32 activationDelay) public {

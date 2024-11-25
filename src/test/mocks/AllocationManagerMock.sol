@@ -8,6 +8,8 @@ import "../../contracts/libraries/Snapshots.sol";
 contract AllocationManagerMock is Test {
     using Snapshots for Snapshots.DefaultWadHistory;
 
+    mapping(address => bool) internal _isAVS;
+
     receive() external payable {}
     fallback() external payable {}
 
@@ -68,5 +70,13 @@ contract AllocationManagerMock is Test {
         }
 
         return maxMagnitudes;
+    }
+
+    function isAVS(address avs) external view returns (bool) {
+        return _isAVS[avs];
+    }
+
+    function setIsAVS(address avs, bool isAVS) external {
+        _isAVS[avs] = isAVS;
     }
 }

@@ -67,6 +67,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         defaultStrategies = strategyMock.toArray();
         defaultOperatorSet = OperatorSet(defaultAVS, 0);
 
+        _setRegistrar(defaultAVS, defaultAVS);
         _createOperatorSet(defaultOperatorSet, defaultStrategies);
         _registerOperator(defaultOperator);
         _setAllocationDelay(defaultOperator, DEFAULT_OPERATOR_ALLOCATION_DELAY);
@@ -106,6 +107,14 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         address operator
     ) internal {
         delegationManagerMock.setIsOperator(operator, true);
+    }
+
+    function _setRegistrar(
+        address avs,
+        address registrar
+    ) internal {
+        cheats.prank(avs);
+        allocationManager.setAVSRegistrar(avs, IAVSRegistrar(registrar));
     }
 
     function _setAllocationDelay(address operator, uint32 delay) internal {
@@ -3272,5 +3281,58 @@ contract AllocationManagerUnitTests_getStrategyAllocations is AllocationManagerU
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
         });
+    }
+}
+
+contract AllocationManagerUnitTests_registerAsAVS is AllocationManagerUnitTests {
+    function testFuzz_correctness(
+        Randomness r
+    ) public rand(r) {
+        address avs = r.Address();
+        IAVSRegistrar avsRegistrar = IAVSRegistrar(r.Address());
+        string memory metadataURI = "metadataURI";
+        uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
+        uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
+
+        CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
+
+        // Check events
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit AVSRegistrarSet(avs, avsRegistrar);
+        cheats.expectEmit(true, true, true, true, address(allocationManager));
+        emit AVSMetadataURIUpdated(avs, metadataURI);
+        for (uint256 i; i < numOpSets; ++i) {
+            createSetParams[i].operatorSetId = r.Uint32(1, type(uint32).max);
+            createSetParams[i].strategies = r.StrategyArray(numStrategies);
+            cheats.expectEmit(true, false, false, false, address(allocationManager));
+            emit OperatorSetCreated(OperatorSet(avs, createSetParams[i].operatorSetId));
+            for (uint256 j; j < numStrategies; ++j) {
+                cheats.expectEmit(true, false, false, false, address(allocationManager));
+                emit StrategyAddedToOperatorSet(
+                    OperatorSet(avs, createSetParams[i].operatorSetId), createSetParams[i].strategies[j]
+                );
+            }
+        }
+
+        // Register
+        cheats.prank(avs);
+        allocationManager.registerAsAVS(avsRegistrar, metadataURI, createSetParams);
+
+        // Validate storage
+        assertTrue(allocationManager.isAVS(avs), "should be AVS");
+        assertEq(address(avsRegistrar), address(allocationManager.getAVSRegistrar(avs)), "registrar should be set");
+        assertEq(metadataURI, allocationManager.getAVSMetadataURI(avs), "metadataURI should be set");
+        for (uint256 k; k < numOpSets; ++k) {
+            OperatorSet memory opSet = OperatorSet(avs, createSetParams[k].operatorSetId);
+            assertTrue(allocationManager.isOperatorSet(opSet), "should be operator set");
+            IStrategy[] memory strategiesInSet = allocationManager.getStrategiesInOperatorSet(opSet);
+            assertEq(strategiesInSet.length, numStrategies, "strategiesInSet length should be numStrategies");
+            for (uint256 l; l < numStrategies; ++l) {
+                assertTrue(
+                    allocationManager.getStrategiesInOperatorSet(opSet)[l] == createSetParams[k].strategies[l],
+                    "should be strat of set"
+                );
+            }
+        }
     }
 }
