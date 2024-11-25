@@ -344,7 +344,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @notice Sets the address of the entity that can call `processClaim` on behalf of an earner
      * @param earner The address to set the claimer for
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
-     * @dev Only callable by operators or AVSs. We define an AVS that has created at least one 
+     * @dev Only callable by operators or AVSs. We define an AVS that has created at least one
      *      operatorSet in the `AllocationManager`
      */
     function setClaimerFor(address earner, address claimer) external;
