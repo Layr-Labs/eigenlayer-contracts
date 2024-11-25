@@ -94,28 +94,28 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function registerAsOperator(
-        OperatorDetails calldata registeringOperatorDetails,
+        address initDelegationApprover,
         uint32 allocationDelay,
         string calldata metadataURI
     ) external {
         require(!isDelegated(msg.sender), ActivelyDelegated());
 
         allocationManager.setAllocationDelay(msg.sender, allocationDelay);
-        _setOperatorDetails(msg.sender, registeringOperatorDetails);
+        _setDelegationApprover(msg.sender, initDelegationApprover);
 
         // delegate from the operator to themselves
         _delegate(msg.sender, msg.sender);
 
-        emit OperatorRegistered(msg.sender, registeringOperatorDetails);
+        emit OperatorRegistered(msg.sender, initDelegationApprover);
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /// @inheritdoc IDelegationManager
     function modifyOperatorDetails(
-        OperatorDetails calldata newOperatorDetails
+        address newDelegationApprover
     ) external {
         require(isOperator(msg.sender), OperatorNotRegistered());
-        _setOperatorDetails(msg.sender, newOperatorDetails);
+        _setDelegationApprover(msg.sender, newDelegationApprover);
     }
 
     /// @inheritdoc IDelegationManager
@@ -289,7 +289,7 @@ contract DelegationManager is
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 curDepositShares,
+        uint256 prevDepositShares,
         uint256 addedShares
     ) external onlyStrategyManagerOrEigenPodManager {
         address operator = delegatedTo[staker];
@@ -301,7 +301,7 @@ contract DelegationManager is
             operator: operator,
             staker: staker,
             strategy: strategy,
-            curDepositShares: curDepositShares,
+            prevDepositShares: prevDepositShares,
             addedShares: addedShares,
             slashingFactor: slashingFactor
         });
@@ -380,35 +380,6 @@ contract DelegationManager is
 
     /**
      *
-     *                         BACKWARDS COMPATIBLE LEGACY FUNCTIONS
-     *                         TO BE DEPRECATED IN FUTURE
-     *
-     */
-
-    /// @inheritdoc IDelegationManager
-    function completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
-        uint256, // middlewareTimesIndex
-        bool receiveAsTokens
-    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
-        _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
-    }
-
-    /// @inheritdoc IDelegationManager
-    function completeQueuedWithdrawals(
-        Withdrawal[] calldata withdrawals,
-        IERC20[][] calldata tokens,
-        uint256[] calldata, // middlewareTimesIndexes
-        bool[] calldata receiveAsTokens
-    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
-        for (uint256 i = 0; i < withdrawals.length; ++i) {
-            _completeQueuedWithdrawal(withdrawals[i], tokens[i], receiveAsTokens[i]);
-        }
-    }
-
-    /**
-     *
      *                         INTERNAL FUNCTIONS
      *
      */
@@ -416,11 +387,11 @@ contract DelegationManager is
     /**
      * @notice Sets operator parameters in the `_operatorDetails` mapping.
      * @param operator The account registered as an operator updating their operatorDetails
-     * @param newOperatorDetails The new parameters for the operator
+     * @param newDelegationApprover The new parameters for the operator
      */
-    function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
-        _operatorDetails[operator] = newOperatorDetails;
-        emit OperatorDetailsModified(msg.sender, newOperatorDetails);
+    function _setDelegationApprover(address operator, address newDelegationApprover) internal {
+        _operatorDetails[operator].delegationApprover = newDelegationApprover;
+        emit DelegationApproverUpdated(msg.sender, newDelegationApprover);
     }
 
     /**
@@ -450,7 +421,7 @@ contract DelegationManager is
                 operator: operator, 
                 staker: staker, 
                 strategy: strategies[i],
-                curDepositShares: uint256(0),
+                prevDepositShares: uint256(0),
                 addedShares: depositedShares[i],
                 slashingFactor: slashingFactors[i]
             });
@@ -517,7 +488,7 @@ contract DelegationManager is
                 });
             } else {
                 // Award shares back in StrategyManager/EigenPodManager.
-                (uint256 curDepositShares, uint256 addedShares) = shareManager.addShares({
+                (uint256 prevDepositShares, uint256 addedShares) = shareManager.addShares({
                     staker: withdrawal.staker,
                     strategy: withdrawal.strategies[i],
                     token: tokens[i],
@@ -529,7 +500,7 @@ contract DelegationManager is
                     operator: newOperator,
                     staker: withdrawal.staker,
                     strategy: withdrawal.strategies[i],
-                    curDepositShares: curDepositShares,
+                    prevDepositShares: prevDepositShares,
                     addedShares: addedShares,
                     slashingFactor: newSlashingFactors[i]
                 });
@@ -550,7 +521,7 @@ contract DelegationManager is
      * @param operator The operator to increase the delegated delegatedShares for
      * @param staker The staker to increase the depositScalingFactor for
      * @param strategy The strategy to increase the delegated delegatedShares and the depositScalingFactor for
-     * @param curDepositShares The number of deposit shares the staker already has in the strategy.
+     * @param prevDepositShares The number of delegated deposit shares the staker had in the strategy prior to the increase
      * @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
      * @param slashingFactor The current slashing factor for the staker/operator/strategy
      */
@@ -558,7 +529,7 @@ contract DelegationManager is
         address operator,
         address staker,
         IStrategy strategy,
-        uint256 curDepositShares,
+        uint256 prevDepositShares,
         uint256 addedShares,
         uint256 slashingFactor
     ) internal {
@@ -569,7 +540,7 @@ contract DelegationManager is
         // Update the staker's depositScalingFactor. This only results in an update
         // if the slashing factor has changed for this strategy.
         DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategy];
-        dsf.update(curDepositShares, addedShares, slashingFactor);
+        dsf.update(prevDepositShares, addedShares, slashingFactor);
         emit DepositScalingFactorUpdated(staker, strategy, dsf.scalingFactor());
 
         // If the staker is delegated to an operator, update the operator's shares
@@ -818,13 +789,6 @@ contract DelegationManager is
         address operator
     ) public view returns (bool) {
         return operator != address(0) && delegatedTo[operator] == operator;
-    }
-
-    /// @inheritdoc IDelegationManager
-    function operatorDetails(
-        address operator
-    ) external view returns (OperatorDetails memory) {
-        return _operatorDetails[operator];
     }
 
     /// @inheritdoc IDelegationManager

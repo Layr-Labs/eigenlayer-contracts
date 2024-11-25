@@ -33,15 +33,8 @@ contract RegisterAsOperator is Script, Test {
         // Attach the delegationManager
         DelegationManager delegation = DelegationManager(delegationManager);
 
-        // Define OperatorDetails struct instance
-        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
-            __deprecated_earningsReceiver: address(0),
-            delegationApprover: operator,
-            __deprecated_stakerOptOutWindowBlocks: 0
-        });
-
         // Register the sender as an Operator
-        delegation.registerAsOperator(operatorDetails, 0, metadataURI);
+        delegation.registerAsOperator(operator, 0, metadataURI);
         
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();

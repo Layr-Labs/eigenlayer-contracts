@@ -203,19 +203,19 @@ contract StrategyManager is
         require(staker != address(0), StakerAddressZero());
         require(shares != 0, SharesAmountZero());
 
-        uint256 existingShares = stakerDepositShares[staker][strategy];
+        uint256 prevDepositShares = stakerDepositShares[staker][strategy];
 
-        // if they dont have existingShares of this strategy, add it to their strats
-        if (existingShares == 0) {
+        // if they dont have prevDepositShares of this strategy, add it to their strats
+        if (prevDepositShares == 0) {
             require(stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, MaxStrategiesExceeded());
             stakerStrategyList[staker].push(strategy);
         }
 
         // add the returned depositedShares to their existing shares for this strategy
-        stakerDepositShares[staker][strategy] = existingShares + shares;
+        stakerDepositShares[staker][strategy] = prevDepositShares + shares;
 
         emit Deposit(staker, token, strategy, shares);
-        return (existingShares, shares);
+        return (prevDepositShares, shares);
     }
 
     /**
@@ -240,13 +240,13 @@ contract StrategyManager is
         shares = strategy.deposit(token, amount);
 
         // add the returned shares to the staker's existing shares for this strategy
-        (uint256 existingShares, uint256 addedShares) = _addShares(staker, token, strategy, shares);
+        (uint256 prevDepositShares, uint256 addedShares) = _addShares(staker, token, strategy, shares);
 
         // Increase shares delegated to operator
         delegation.increaseDelegatedShares({
             staker: staker,
             strategy: strategy,
-            curDepositShares: existingShares,
+            prevDepositShares: prevDepositShares,
             addedShares: addedShares
         });
 

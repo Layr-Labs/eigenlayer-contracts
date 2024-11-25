@@ -108,14 +108,9 @@ contract Devnet_Lifecycle_Test is Test {
 
     function _registerOperator() internal {
         // Register operator
-        IDelegationManagerTypes.OperatorDetails memory operatorDetails = IDelegationManagerTypes.OperatorDetails({
-            __deprecated_earningsReceiver: msg.sender,
-            delegationApprover: address(0),
-            __deprecated_stakerOptOutWindowBlocks: 0
-        });
         string memory emptyStringForMetadataURI;
         cheats.prank(operator);
-        delegationManager.registerAsOperator(operatorDetails, 1, emptyStringForMetadataURI);
+        delegationManager.registerAsOperator(address(0), 1, emptyStringForMetadataURI);
         // Warp passed configuration delay
         cheats.roll(block.number + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
 

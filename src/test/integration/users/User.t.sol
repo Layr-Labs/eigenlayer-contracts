@@ -176,13 +176,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function registerAsOperator() public virtual createSnapshot {
         print.method("registerAsOperator");
 
-        OperatorDetails memory details = OperatorDetails({
-            __deprecated_earningsReceiver: address(this),
-            delegationApprover: address(0),
-            __deprecated_stakerOptOutWindowBlocks: 0
-        });
-
-        delegationManager.registerAsOperator(details, withdrawalDelay, "metadata");
+        delegationManager.registerAsOperator(address(0), withdrawalDelay, "metadata");
     }
 
     /// @dev Delegate to the operator without a signature

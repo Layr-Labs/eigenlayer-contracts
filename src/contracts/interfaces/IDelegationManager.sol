@@ -136,11 +136,11 @@ interface IDelegationManagerTypes {
 }
 
 interface IDelegationManagerEvents is IDelegationManagerTypes {
-    // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
-    event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
+    // @notice Emitted when a new operator registers in EigenLayer and provides their delegation approver.
+    event OperatorRegistered(address indexed operator, address delegationApprover);
 
-    /// @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
-    event OperatorDetailsModified(address indexed operator, OperatorDetails newOperatorDetails);
+    /// @notice Emitted when an operator updates their delegation approver
+    event DelegationApproverUpdated(address indexed operator, address newDelegationApprover);
 
     /**
      * @notice Emitted when @param operator indicates that they are updating their MetadataURI string
@@ -199,7 +199,8 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.
-     * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
+     * @param initDelegationApprover is an address that, if set, must provide a signature when stakers delegate
+     * to an operator.
      * @param allocationDelay The delay before allocations take effect.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      *
@@ -208,19 +209,19 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
     function registerAsOperator(
-        OperatorDetails calldata registeringOperatorDetails,
+        address initDelegationApprover,
         uint32 allocationDelay,
         string calldata metadataURI
     ) external;
 
     /**
-     * @notice Updates an operator's stored `OperatorDetails`.
-     * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
+     * @notice Updates an operator's stored `delegationApprover`.
+     * @param newDelegationApprover is the new delegationApprover for the operator
      *
      * @dev The caller must have previously registered as an operator in EigenLayer.
      */
     function modifyOperatorDetails(
-        OperatorDetails calldata newOperatorDetails
+        address newDelegationApprover
     ) external;
 
     /**
@@ -332,7 +333,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * the delegated delegatedShares. The staker's depositScalingFactor is updated here.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
-     * @param curDepositShares The number of deposit shares the staker already has in the strategy. This is the shares amount stored in the
+     * @param prevDepositShares The number of deposit shares the staker already had in the strategy. This is the shares amount stored in the
      * StrategyManager/EigenPodManager for the staker's shares.
      * @param addedShares The number of shares added to the staker's shares in the strategy
      *
@@ -344,7 +345,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 curDepositShares,
+        uint256 prevDepositShares,
         uint256 addedShares
     ) external;
 
@@ -381,31 +382,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
-    ) external;
-
-    /**
-     *
-     *                         BACKWARDS COMPATIBLE LEGACY FUNCTIONS
-     *                         TO BE DEPRECATED IN FUTURE
-     *
-     */
-
-    /// @notice Overloaded version of `completeQueuedWithdrawal` that includes a `middlewareTimesIndex` parameter
-    /// for backwards compatibility with the M2 release. To be deprecated in a future release.
-    function completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
-        bool receiveAsTokens
-    ) external;
-
-    /// @notice Overloaded version of `completeQueuedWithdrawals` that includes a `middlewareTimesIndexes` parameter
-    /// for backwards compatibility with the M2 release. To be deprecated in a future release.
-    function completeQueuedWithdrawals(
-        Withdrawal[] calldata withdrawals,
-        IERC20[][] calldata tokens,
-        uint256[] calldata middlewareTimesIndexes,
-        bool[] calldata receiveAsTokens
     ) external;
 
     /**
@@ -449,13 +425,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     function isOperator(
         address operator
     ) external view returns (bool);
-
-    /**
-     * @notice Returns the OperatorDetails struct associated with an `operator`.
-     */
-    function operatorDetails(
-        address operator
-    ) external view returns (OperatorDetails memory);
 
     /**
      * @notice Returns the delegationApprover account for an operator

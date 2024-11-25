@@ -105,13 +105,13 @@ contract EigenPodManager is
         // a negative balance delta, the pod owner's beacon chain slashing factor is decreased, devaluing
         // their shares.
         if (balanceDeltaWei >= 0) {
-            (uint256 curDepositShares, uint256 addedShares) = _addShares(podOwner, uint256(balanceDeltaWei));
+            (uint256 prevDepositShares, uint256 addedShares) = _addShares(podOwner, uint256(balanceDeltaWei));
 
             // Update operator shares
             delegationManager.increaseDelegatedShares({
                 staker: podOwner,
                 strategy: beaconChainETHStrategy,
-                curDepositShares: curDepositShares,
+                prevDepositShares: prevDepositShares,
                 addedShares: addedShares
             });
         } else {
@@ -244,15 +244,15 @@ contract EigenPodManager is
 
     /// @dev Adds the shares to the staker's balance, returning their current/added shares
     /// NOTE: if the staker ends with a non-positive balance, this returns (0, 0)
-    /// @return existingDepositShares the shares the staker had before any were added
+    /// @return prevDepositShares the shares the staker had before any were added
     /// @return addedShares the shares added to the staker's balance
     function _addShares(address staker, uint256 shares) internal returns (uint256, uint256) {
         require(staker != address(0), InputAddressZero());
         require(int256(shares) >= 0, SharesNegative());
 
         int256 sharesToAdd = int256(shares);
-        int256 currentDepositShares = podOwnerDepositShares[staker];
-        int256 updatedDepositShares = currentDepositShares + sharesToAdd;
+        int256 prevDepositShares = podOwnerDepositShares[staker];
+        int256 updatedDepositShares = prevDepositShares + sharesToAdd;
         podOwnerDepositShares[staker] = updatedDepositShares;
 
         emit PodSharesUpdated(staker, sharesToAdd);
@@ -263,7 +263,7 @@ contract EigenPodManager is
             return (0, 0);
         }
 
-        return (currentDepositShares < 0 ? 0 : uint256(currentDepositShares), shares);
+        return (prevDepositShares < 0 ? 0 : uint256(prevDepositShares), shares);
     }
 
     /// @dev Calculates the proportion a pod owner's restaked balance has decreased, and
