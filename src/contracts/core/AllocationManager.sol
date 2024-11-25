@@ -29,7 +29,7 @@ contract AllocationManager is
     modifier validateAVS(
         address avs
     ) {
-        require(isAVS(avs), InvalidAVS());
+        require(isAVS(avs), AVSNotRegistered());
         _;
     }
 
@@ -239,7 +239,6 @@ contract AllocationManager is
         RegisterParams calldata params
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) checkCanCall(operator) {
         // Check that the operator exists
-        require(isAVS(params.avs), InvalidAVS());
         require(delegation.isOperator(operator), InvalidOperator());
 
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {

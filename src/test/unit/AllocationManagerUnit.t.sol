@@ -2945,9 +2945,9 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         allocationManager.registerForOperatorSets(defaultOperator, defaultRegisterParams);
     }
 
-    function test_registerForOperatorSets_revert_invalidAVS() public {
+    function test_registerForOperatorSets_revert_AVSNotRegistered() public {
         cheats.prank(defaultOperator);
-        cheats.expectRevert(InvalidAVS.selector);
+        cheats.expectRevert(AVSNotRegistered.selector);
         allocationManager.registerForOperatorSets(defaultOperator, RegisterParams(address(0x1), defaultOperatorSet.id.toArrayU32(), ""));
     }
 
@@ -3119,7 +3119,7 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
 contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationManagerUnitTests {
 
     function test_revert_notAVS() public {
-        cheats.expectRevert(InvalidAVS.selector);
+        cheats.expectRevert(AVSNotRegistered.selector);
         allocationManager.addStrategiesToOperatorSet(address(this), 1, defaultStrategies);
     }
 
@@ -3163,7 +3163,7 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
     using SingleItemArrayLib for *;
 
     function test_revert_notAVS() public {
-        cheats.expectRevert(InvalidAVS.selector);
+        cheats.expectRevert(AVSNotRegistered.selector);
         allocationManager.addStrategiesToOperatorSet(address(this), 1, defaultStrategies);
     }
 
@@ -3213,7 +3213,7 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
     using SingleItemArrayLib for *;
 
     function test_revert_notAVS() public {
-        cheats.expectRevert(InvalidAVS.selector);
+        cheats.expectRevert(AVSNotRegistered.selector);
         allocationManager.createOperatorSets(address(this), CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
     }
 
@@ -3270,7 +3270,7 @@ contract AllocationManagerUnitTests_updateAVSRegistrar is AllocationManagerUnitT
     function test_revert_notAVS(
         Randomness r
     ) public rand(r) {
-        cheats.expectRevert(InvalidAVS.selector);
+        cheats.expectRevert(AVSNotRegistered.selector);
         allocationManager.updateAVSRegistrar(address(this), IAVSRegistrar(address(this)));
     }
 
@@ -3293,7 +3293,7 @@ contract AllocationManagerUnitTests_updateAVSRegistrar is AllocationManagerUnitT
 contract AllocationManagerUnitTests_updateAVSMetadataURI is AllocationManagerUnitTests {
     function test_revert_notAVS(
     ) public {
-        cheats.expectRevert(InvalidAVS.selector);
+        cheats.expectRevert(AVSNotRegistered.selector);
         allocationManager.updateAVSMetadataURI(address(this), "dummyURI");
     }
 

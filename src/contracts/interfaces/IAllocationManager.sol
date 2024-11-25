@@ -18,8 +18,8 @@ interface IAllocationManagerErrors {
     error InvalidBlockNumber();
     /// @dev Thrown when an invalid registrar is set (zero address)
     error InvalidRegistrar();
-    /// @dev Thrown when an address attempts to mutate state to an AVS that does not exist
-    error InvalidAVS();
+    /// @dev Thrown when an AVS is not registered
+    error AVSNotRegistered();
 
     /// Caller
 
