@@ -11,6 +11,7 @@ contract AllocationManagerMock is Test {
     receive() external payable {}
     fallback() external payable {}
 
+    mapping(address avs => uint256) public getAVSSetCount;
     mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
 
     function setMaxMagnitudes(
@@ -68,5 +69,9 @@ contract AllocationManagerMock is Test {
         }
 
         return maxMagnitudes;
+    }
+
+    function setAVSSetCount(address avs, uint256 numSets) external {
+        getAVSSetCount[avs] = numSets;
     }
 }

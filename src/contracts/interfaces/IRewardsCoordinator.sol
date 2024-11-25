@@ -8,8 +8,8 @@ import "./IStrategy.sol";
 interface IRewardsCoordinatorErrors {
     /// @dev Thrown when msg.sender is not allowed to call a function
     error UnauthorizedCaller();
-    /// @dev Thrown when a earner is not an operator
-    error EarnerNotOperator();
+    /// @dev Thrown when a earner not an AVS or Operator
+    error InvalidEarner();
 
     /// Invalid Inputs
 
@@ -344,9 +344,8 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @notice Sets the address of the entity that can call `processClaim` on behalf of an earner
      * @param earner The address to set the claimer for
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
-     * @dev Only callable by operators, because we have no way of determining whether an address
-     *      is an AVS via the AVS Directory. Once we deprecate that contract this function
-     *      will be updated to allow AVSs to set their own claimers.
+     * @dev Only callable by operators or AVSs. We define an AVS that has created at least one 
+     *      operatorSet in the `AllocationManager`
      */
     function setClaimerFor(address earner, address claimer) external;
 

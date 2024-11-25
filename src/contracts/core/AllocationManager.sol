@@ -537,6 +537,11 @@ contract AllocationManager is
      */
 
     /// @inheritdoc IAllocationManager
+    function getAVSSetCount(address avs) external view returns (uint256) {
+        return _operatorSets[avs].length();
+    }
+
+    /// @inheritdoc IAllocationManager
     function getAllocatedSets(
         address operator
     ) external view returns (OperatorSet[] memory) {

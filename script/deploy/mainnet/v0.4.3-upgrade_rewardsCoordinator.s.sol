@@ -49,6 +49,7 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            allocationManager,
             eigenLayerPauserReg,
             permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,

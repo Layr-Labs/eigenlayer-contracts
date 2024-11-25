@@ -331,6 +331,12 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      */
 
     /**
+     * @notice Returns the number of operator sets for the AVS
+     * @param avs the AVS to query
+     */
+    function getAVSSetCount(address avs) external view returns (uint256);
+
+    /**
      * @notice Returns the list of operator sets the operator has current or pending allocations/deallocations in
      * @param operator the operator to query
      * @return the list of operator sets the operator has current or pending allocations/deallocations in

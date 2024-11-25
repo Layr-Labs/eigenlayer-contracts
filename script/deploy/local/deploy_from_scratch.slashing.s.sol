@@ -254,6 +254,7 @@ contract DeployFromScratch is Script, Test {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegation,
             strategyManager,
+            allocationManager,
             eigenLayerPauserReg,
             permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,

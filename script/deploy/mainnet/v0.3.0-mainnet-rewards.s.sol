@@ -52,6 +52,7 @@ contract MainnetRewardsCoordinatorDeploy is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            allocationManager,
             eigenLayerPauserReg,
             permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
@@ -86,6 +87,7 @@ contract MainnetRewardsCoordinatorDeploy is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            allocationManager,
             eigenLayerPauserReg,
             permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
