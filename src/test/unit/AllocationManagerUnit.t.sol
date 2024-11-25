@@ -971,12 +971,12 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         );
 
         cheats.prank(defaultAVS);
-        allocationManager.createOperatorSets(createSetParams);
+        allocationManager.createOperatorSets(defaultAVS, createSetParams);
         cheats.startPrank(defaultOperator);
-        allocationManager.registerForOperatorSets(registerParams);
-        allocationManager.modifyAllocations(allocateParams);
+        allocationManager.registerForOperatorSets(defaultOperator, registerParams);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
-        allocationManager.modifyAllocations(deallocateParams);
+        allocationManager.modifyAllocations(defaultOperator, deallocateParams);
         uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
         cheats.stopPrank();
 
@@ -3240,7 +3240,7 @@ contract AllocationManagerUnitTests_updateAVSMetadataURI is AllocationManagerUni
         cheats.expectEmit(true, false, false, false, address(allocationManager));
         emit AVSMetadataURIUpdated(defaultAVS, newURI);
         cheats.prank(defaultAVS);
-        allocationManager.updateAVSMetadataURI(newURI);
+        allocationManager.updateAVSMetadataURI(defaultAVS, newURI);
     }
 }
 
@@ -3252,10 +3252,10 @@ contract AllocationManagerUnitTests_getStrategyAllocations is AllocationManagerU
         CreateSetParams[] memory createSetParams = r.CreateSetParams(allocateParams);
 
         cheats.prank(defaultAVS);
-        allocationManager.createOperatorSets(createSetParams);
+        allocationManager.createOperatorSets(defaultAVS, createSetParams);
 
         cheats.startPrank(defaultOperator);
-        allocationManager.modifyAllocations(allocateParams);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
         cheats.stopPrank();
 
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);

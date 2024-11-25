@@ -59,7 +59,9 @@ contract AllocationManager is
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
+        // Check that the msg.sender can call - we don't use a modifier to avoid `stack too deep` errors
+        require(_checkCanCall(avs), InvalidCaller());
         require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
 
         // Check that the operator set exists and the operator is registered to it

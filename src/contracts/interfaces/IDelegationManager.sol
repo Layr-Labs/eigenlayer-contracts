@@ -215,13 +215,13 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
-     * @notice Updates an operator's stored `OperatorDetails`.
-     * @param operator is the operator to update.
-     * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
+     * @notice Updates an operator's stored `delegationApprover`.
+     * @param operator is the operator to update the delegationApprover for
+     * @param newDelegationApprover is the new delegationApprover for the operator
      *
      * @dev The caller must have previously registered as an operator in EigenLayer.
      */
-    function modifyOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) external;
+    function modifyOperatorDetails(address operator, address newDelegationApprover) external;
 
     /**
      * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
