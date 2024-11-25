@@ -1061,8 +1061,8 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         cheats.startPrank(defaultOperator);
 
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit OperatorDetailsModified(defaultOperator, modifiedOperatorDetails);
-        delegationManager.modifyOperatorDetails(defaultOperator, modifiedOperatorDetails);
+        emit DelegationApproverUpdated(defaultOperator, delegationApprover2);
+        delegationManager.modifyOperatorDetails(defaultOperator, delegationApprover2);
 
         assertEq(
             delegationApprover2,
@@ -1084,16 +1084,17 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         delegationManager.updateOperatorMetadataURI(defaultOperator, emptyStringForMetadataURI);
     }
 
+
+    function test_Revert_updateOperatorMetadataUri_notOperator() public {
+        cheats.expectRevert(OperatorNotRegistered.selector);
+        delegationManager.modifyOperatorDetails(defaultOperator, defaultOperator);
+    }
+
     /**
      * @notice Verifies that a staker cannot call cannot modify their `OperatorDetails` without first registering as an operator
      * @dev This is an important check to ensure that our definition of 'operator' remains consistent, in particular for preserving the
      * invariant that 'operators' are always delegated to themselves
      */
-    function testFuzz_Revert_updateOperatorMetadataUri_notOperator(
-        address delegationApprover
-    ) public {
-        cheats.expectRevert(OperatorNotRegistered.selector);
-        delegationManager.modifyOperatorDetails(defaultOperator, operatorDetails);
     function testFuzz_UpdateOperatorMetadataURI(string memory metadataURI) public {
         _registerOperatorWithBaseDetails(defaultOperator);
 
@@ -1105,7 +1106,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
     }
 
     function testFuzz_UAM_modifyOperatorDetails(
-        OperatorDetails memory operatorDetails
+        address delegationApprover
     ) public {
         // Set admin
         cheats.prank(defaultOperator);
@@ -1120,8 +1121,15 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 
         // Modify operator details
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit OperatorDetailsModified(defaultOperator, operatorDetails);
-        delegationManager.modifyOperatorDetails(defaultOperator, operatorDetails);
+        emit DelegationApproverUpdated(defaultOperator, delegationApprover);
+        delegationManager.modifyOperatorDetails(defaultOperator, delegationApprover);
+
+        // Check storage
+        assertEq(
+            delegationApprover,
+            delegationManager.delegationApprover(defaultOperator),
+            "delegationApprover not set correctly"
+        );
     }
 
     function testFuzz_UAM_updateOperatorMetadataURI(string memory metadataURI) public {

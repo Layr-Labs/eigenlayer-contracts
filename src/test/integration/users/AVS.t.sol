@@ -56,6 +56,15 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     /// AllocationManager
     /// -----------------------------------------------------------------------
 
+    function registerAsAVS() public {
+        print.method("registerAsAVS");
+        CreateSetParams[] memory emptyParams = new CreateSetParams[](0);
+        allocationManager.registerAsAVS(
+            IAVSRegistrar(address(this)),
+            "dummy URI",
+            emptyParams
+        );
+    }
     function createOperatorSets(
         IStrategy[][] memory strategies
     ) public createSnapshot returns (OperatorSet[] memory operatorSets) {
@@ -72,7 +81,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         print.createOperatorSets(p);
-        allocationManager.createOperatorSets(p);
+        allocationManager.createOperatorSets(address(this), p);
     }
 
     function createOperatorSet(
@@ -85,7 +94,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         CreateSetParams[] memory p = CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray();
 
         print.createOperatorSets(p);
-        allocationManager.createOperatorSets(p);
+        allocationManager.createOperatorSets(address(this), p);
     }
 
     function slashOperator(User operator, uint32 operatorSetId, uint256 wadToSlash) public createSnapshot {
@@ -109,7 +118,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             description: "bad operator"
         });
 
-        allocationManager.slashOperator(p);
+        allocationManager.slashOperator(address(this), p);
     }
 
     function deregisterFromOperatorSets(User operator, uint32[] memory operatorSetIds) public createSnapshot {
@@ -122,12 +131,12 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         allocationManager.deregisterFromOperatorSets(p);
     }
 
-    function setAVSRegistrar(
+    function updateAVSRegistrar(
         IAVSRegistrar registrar
     ) public createSnapshot {
-        print.method("setAVSRegistrar");
+        print.method("updateAVSRegistrar");
         console.log("Setting AVS registrar to: %s", address(registrar));
-        allocationManager.setAVSRegistrar(registrar);
+        allocationManager.updateAVSRegistrar(address(this), registrar);
     }
 
     function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) public createSnapshot {
@@ -139,7 +148,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             console.log("   strategy: %s", address(strategies[i]));
         }
 
-        allocationManager.addStrategiesToOperatorSet(operatorSetId, strategies);
+        allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
     }
 
     function removeStrategiesFromOperatorSet(
@@ -154,7 +163,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             console.log("   strategy: %s", address(strategies[i]));
         }
 
-        allocationManager.removeStrategiesFromOperatorSet(operatorSetId, strategies);
+        allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
     }
 
     /// -----------------------------------------------------------------------

@@ -26,6 +26,13 @@ contract AllocationManager is
     using OperatorSetLib for OperatorSet;
     using SlashingLib for uint256;
 
+    modifier validateAVS(
+        address avs
+    ) {
+        require(isAVS(avs), InvalidAVS());
+        _;
+    }
+
     /**
      *
      *                         INITIALIZING FUNCTIONS
@@ -59,7 +66,9 @@ contract AllocationManager is
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
+        // We do not use a modifier to avoid stack too deep errors
+        require(_checkCanCall(avs), InvalidCaller());
         require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
 
         // Check that the operator set exists and the operator is registered to it
@@ -230,6 +239,7 @@ contract AllocationManager is
         RegisterParams calldata params
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) checkCanCall(operator) {
         // Check that the operator exists
+        require(isAVS(params.avs), InvalidAVS());
         require(delegation.isOperator(operator), InvalidOperator());
 
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {
@@ -297,23 +307,29 @@ contract AllocationManager is
         string calldata metadataURI,
         CreateSetParams[] calldata params
     ) external {
-        _setAVSRegistrar(msg.sender, registrar);
+        _updateAVSRegistrar(msg.sender, registrar);
         _updateAVSMetadataURI(msg.sender, metadataURI);
         _createOperatorSets(msg.sender, params);
     }
 
     /// @inheritdoc IAllocationManager
-    function setAVSRegistrar(address avs, IAVSRegistrar registrar) external checkCanCall(avs) {
-        _setAVSRegistrar(avs, registrar);
+    function updateAVSRegistrar(address avs, IAVSRegistrar registrar) external checkCanCall(avs) validateAVS(avs) {
+        _updateAVSRegistrar(avs, registrar);
     }
 
     /// @inheritdoc IAllocationManager
-    function updateAVSMetadataURI(address avs, string calldata metadataURI) external checkCanCall(avs) {
+    function updateAVSMetadataURI(
+        address avs,
+        string calldata metadataURI
+    ) external checkCanCall(avs) validateAVS(avs) {
         _updateAVSMetadataURI(avs, metadataURI);
     }
 
     /// @inheritdoc IAllocationManager
-    function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
+    function createOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params
+    ) external checkCanCall(avs) validateAVS(avs) {
         _createOperatorSets(avs, params);
     }
 
@@ -322,7 +338,7 @@ contract AllocationManager is
         address avs,
         uint32 operatorSetId,
         IStrategy[] calldata strategies
-    ) external checkCanCall(avs) {
+    ) external checkCanCall(avs) validateAVS(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
         require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
 
@@ -338,7 +354,7 @@ contract AllocationManager is
         address avs,
         uint32 operatorSetId,
         IStrategy[] calldata strategies
-    ) external checkCanCall(avs) {
+    ) external checkCanCall(avs) validateAVS(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
         require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
 
@@ -525,7 +541,7 @@ contract AllocationManager is
         return uint64(uint128(int128(uint128(a)) + b));
     }
 
-    function _setAVSRegistrar(address avs, IAVSRegistrar registrar) internal {
+    function _updateAVSRegistrar(address avs, IAVSRegistrar registrar) internal {
         require(address(registrar) != address(0), InvalidRegistrar());
         _avsDetails[avs].registrar = registrar;
         emit AVSRegistrarSet(avs, registrar);
@@ -779,7 +795,7 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function isAVS(
         address avs
-    ) external view returns (bool) {
+    ) public view returns (bool) {
         return _avsDetails[avs].registrar != IAVSRegistrar(address(0));
     }
 

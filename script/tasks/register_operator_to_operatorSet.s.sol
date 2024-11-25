@@ -68,7 +68,7 @@ contract RegisterOperatorToOperatorSets is Script, Test {
         );
 
         // Deploy and set registrar.
-        allocationManager.setAVSRegistrar(msg.sender, new AVSRegistrar());
+        allocationManager.updateAVSRegistrar(msg.sender, new AVSRegistrar());
 
         // Register OperatorSet(s)
         IAllocationManagerTypes.RegisterParams memory register = IAllocationManagerTypes.RegisterParams({

@@ -115,12 +115,9 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function modifyOperatorDetails(
-        address operator,
-        OperatorDetails calldata newOperatorDetails
-    ) external checkCanCall(operator) {
+    function modifyOperatorDetails(address operator, address newDelegationApprover) external checkCanCall(operator) {
         require(isOperator(operator), OperatorNotRegistered());
-        _setOperatorDetails(operator, newOperatorDetails);
+        _setDelegationApprover(operator, newDelegationApprover);
     }
 
     /// @inheritdoc IDelegationManager

@@ -76,7 +76,7 @@ contract AllocationManagerMock is Test {
         return _isAVS[avs];
     }
 
-    function setIsAVS(address avs, bool isAVS) external {
-        _isAVS[avs] = isAVS;
+    function setIsAVS(address avs, bool valToSet) external {
+        _isAVS[avs] = valToSet;
     }
 }

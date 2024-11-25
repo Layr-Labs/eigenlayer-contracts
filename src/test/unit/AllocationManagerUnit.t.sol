@@ -67,8 +67,13 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         defaultStrategies = strategyMock.toArray();
         defaultOperatorSet = OperatorSet(defaultAVS, 0);
 
-        _setRegistrar(defaultAVS, defaultAVS);
-        _createOperatorSet(defaultOperatorSet, defaultStrategies);
+        cheats.prank(defaultAVS);
+        allocationManager.registerAsAVS(
+            IAVSRegistrar(defaultAVS), // registrar
+            "dummy URI",
+            CreateSetParams({operatorSetId: defaultOperatorSet.id, strategies: defaultStrategies}).toArray()
+        );
+
         _registerOperator(defaultOperator);
         _setAllocationDelay(defaultOperator, DEFAULT_OPERATOR_ALLOCATION_DELAY);
         _registerForOperatorSet(defaultOperator, defaultOperatorSet);
@@ -103,6 +108,15 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         );
     }
 
+    /// @dev Registers an AVS with dummy parameters
+    function _registerAVS(
+        address avs
+    ) internal {
+        CreateSetParams[] memory createParams = new CreateSetParams[](0);
+        cheats.prank(avs);
+        allocationManager.registerAsAVS(IAVSRegistrar(avs), "dummy URI", createParams);
+    }
+
     function _registerOperator(
         address operator
     ) internal {
@@ -114,7 +128,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         address registrar
     ) internal {
         cheats.prank(avs);
-        allocationManager.setAVSRegistrar(avs, IAVSRegistrar(registrar));
+        allocationManager.updateAVSRegistrar(avs, IAVSRegistrar(registrar));
     }
 
     function _setAllocationDelay(address operator, uint32 delay) internal {
@@ -980,12 +994,12 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         );
 
         cheats.prank(defaultAVS);
-        allocationManager.createOperatorSets(createSetParams);
+        allocationManager.createOperatorSets(defaultAVS, createSetParams);
         cheats.startPrank(defaultOperator);
-        allocationManager.registerForOperatorSets(registerParams);
-        allocationManager.modifyAllocations(allocateParams);
+        allocationManager.registerForOperatorSets(defaultOperator, registerParams);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
-        allocationManager.modifyAllocations(deallocateParams);
+        allocationManager.modifyAllocations(defaultOperator, deallocateParams);
         uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
         cheats.stopPrank();
 
@@ -1566,7 +1580,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
     function test_revert_invalidOperatorSet() public {
         AllocateParams[] memory allocateParams = AllocateParams({
-            operatorSet: OperatorSet(random().Address(), 0),
+            operatorSet: OperatorSet(defaultAVS, 2),
             strategies: defaultStrategies,
             newMagnitudes: uint64(0.5 ether).toArrayU64()
         }).toArray();
@@ -2931,6 +2945,12 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         allocationManager.registerForOperatorSets(defaultOperator, defaultRegisterParams);
     }
 
+    function test_registerForOperatorSets_revert_invalidAVS() public {
+        cheats.prank(defaultOperator);
+        cheats.expectRevert(InvalidAVS.selector);
+        allocationManager.registerForOperatorSets(defaultOperator, RegisterParams(address(0x1), defaultOperatorSet.id.toArrayU32(), ""));
+    }
+
     function testFuzz_registerForOperatorSets_InvalidOperator_x(
         Randomness r
     ) public rand(r) {
@@ -3097,6 +3117,12 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
 }
 
 contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationManagerUnitTests {
+
+    function test_revert_notAVS() public {
+        cheats.expectRevert(InvalidAVS.selector);
+        allocationManager.addStrategiesToOperatorSet(address(this), 1, defaultStrategies);
+    }
+
     function test_addStrategiesToOperatorSet_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidOperatorSet.selector);
@@ -3135,6 +3161,11 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
 
 contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is AllocationManagerUnitTests {
     using SingleItemArrayLib for *;
+
+    function test_revert_notAVS() public {
+        cheats.expectRevert(InvalidAVS.selector);
+        allocationManager.addStrategiesToOperatorSet(address(this), 1, defaultStrategies);
+    }
 
     function test_removeStrategiesFromOperatorSet_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
@@ -3181,6 +3212,11 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
 contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitTests {
     using SingleItemArrayLib for *;
 
+    function test_revert_notAVS() public {
+        cheats.expectRevert(InvalidAVS.selector);
+        allocationManager.createOperatorSets(address(this), CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
+    }
+
     function test_createOperatorSets_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidOperatorSet.selector);
@@ -3193,6 +3229,9 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
         address avs = r.Address();
         uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
         uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
+
+        // Register AVS
+        _registerAVS(avs);
 
         CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
 
@@ -3227,29 +3266,43 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
     }
 }
 
-contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTests {
-    function testFuzz_setAVSRegistrar_Correctness(
+contract AllocationManagerUnitTests_updateAVSRegistrar is AllocationManagerUnitTests {
+    function test_revert_notAVS(
+        Randomness r
+    ) public rand(r) {
+        cheats.expectRevert(InvalidAVS.selector);
+        allocationManager.updateAVSRegistrar(address(this), IAVSRegistrar(address(this)));
+    }
+
+    function testFuzz_updateAVSRegistrar_Correctness(
         Randomness r
     ) public rand(r) {
         address avs = r.Address();
+        _registerAVS(avs);
         IAVSRegistrar avsRegistrar = IAVSRegistrar(r.Address());
 
         cheats.expectEmit(true, false, false, false, address(allocationManager));
         emit AVSRegistrarSet(avs, avsRegistrar);
 
         cheats.prank(avs);
-        allocationManager.setAVSRegistrar(avs, avsRegistrar);
+        allocationManager.updateAVSRegistrar(avs, avsRegistrar);
         assertTrue(avsRegistrar == allocationManager.getAVSRegistrar(avs), "should be set");
     }
 }
 
 contract AllocationManagerUnitTests_updateAVSMetadataURI is AllocationManagerUnitTests {
+    function test_revert_notAVS(
+    ) public {
+        cheats.expectRevert(InvalidAVS.selector);
+        allocationManager.updateAVSMetadataURI(address(this), "dummyURI");
+    }
+
     function test_updateAVSMetadataURI_Correctness() public {
         string memory newURI = "test";
         cheats.expectEmit(true, false, false, false, address(allocationManager));
         emit AVSMetadataURIUpdated(defaultAVS, newURI);
         cheats.prank(defaultAVS);
-        allocationManager.updateAVSMetadataURI(newURI);
+        allocationManager.updateAVSMetadataURI(defaultAVS, newURI);
     }
 }
 
@@ -3261,10 +3314,10 @@ contract AllocationManagerUnitTests_getStrategyAllocations is AllocationManagerU
         CreateSetParams[] memory createSetParams = r.CreateSetParams(allocateParams);
 
         cheats.prank(defaultAVS);
-        allocationManager.createOperatorSets(createSetParams);
+        allocationManager.createOperatorSets(defaultAVS, createSetParams);
 
         cheats.startPrank(defaultOperator);
-        allocationManager.modifyAllocations(allocateParams);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
         cheats.stopPrank();
 
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);

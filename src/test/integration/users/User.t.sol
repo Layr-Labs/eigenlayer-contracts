@@ -100,7 +100,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             newMagnitudes: magnitudes
         }).toArray();
 
-        allocationManager.modifyAllocations(params);
+        allocationManager.modifyAllocations(address(this), params);
         (, uint32 delay) = allocationManager.getAllocationDelay(address(this));
         rollForward({blocks: delay});
     }
@@ -134,6 +134,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         );
 
         allocationManager.registerForOperatorSets(
+            address(this), 
             RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
         );
     }
@@ -163,7 +164,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     function setAllocationDelay(uint32 delay) public virtual createSnapshot {
         print.method("setAllocationDelay");
-        allocationManager.setAllocationDelay(delay);
+        allocationManager.setAllocationDelay(address(this), delay);
         rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
     }
 

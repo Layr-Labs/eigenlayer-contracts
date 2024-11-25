@@ -18,6 +18,8 @@ interface IAllocationManagerErrors {
     error InvalidBlockNumber();
     /// @dev Thrown when an invalid registrar is set (zero address)
     error InvalidRegistrar();
+    /// @dev Thrown when an address attempts to mutate state to an AVS that does not exist
+    error InvalidAVS();
 
     /// Caller
 
@@ -312,7 +314,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @param registrar the new registrar address
      * @dev Must be set to a non-zero address
      */
-    function setAVSRegistrar(address avs, IAVSRegistrar registrar) external;
+    function updateAVSRegistrar(address avs, IAVSRegistrar registrar) external;
 
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
