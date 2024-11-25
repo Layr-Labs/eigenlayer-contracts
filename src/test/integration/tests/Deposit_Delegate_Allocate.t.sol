@@ -38,7 +38,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         for (uint i; i < operatorSets.length; ++i) {
             uint256 len = allocationManager.getStrategiesInOperatorSet(operatorSets[i]).length;
             operator.modifyAllocations(operatorSets[i], _randMagnitudes({ sum: 1 ether / uint64(operatorSets.length), len: len }));
-            // avs.slashOperator(operator, operatorSets[i].id, _randWadToSlash());
+            avs.slashOperator(operator, operatorSets[i].id, _randWadToSlash());
         }
 
         // TODO: write checks for slashing...
