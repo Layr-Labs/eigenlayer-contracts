@@ -521,7 +521,7 @@ contract DelegationManager is
      * @param operator The operator to increase the delegated delegatedShares for
      * @param staker The staker to increase the depositScalingFactor for
      * @param strategy The strategy to increase the delegated delegatedShares and the depositScalingFactor for
-     * @param prevDepositShares The number of deposit shares the staker had in the strategy prior to the increase
+     * @param prevDepositShares The number of delegated deposit shares the staker had in the strategy prior to the increase
      * @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
      * @param slashingFactor The current slashing factor for the staker/operator/strategy
      */
