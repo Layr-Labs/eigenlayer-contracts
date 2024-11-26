@@ -228,7 +228,9 @@ contract RewardsCoordinator is
     /// @inheritdoc IRewardsCoordinator
     function setClaimerFor(address earner, address claimer) external checkCanCall(earner) {
         // Require that the earner is an operator or AVS
-        require(delegationManager.isOperator(earner) || allocationManager.getOperatorSetCount(earner) > 0, InvalidEarner());
+        require(
+            delegationManager.isOperator(earner) || allocationManager.getOperatorSetCount(earner) > 0, InvalidEarner()
+        );
         _setClaimer(earner, claimer);
     }
 
