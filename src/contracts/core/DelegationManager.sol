@@ -391,7 +391,7 @@ contract DelegationManager is
      */
     function _setDelegationApprover(address operator, address newDelegationApprover) internal {
         _operatorDetails[operator].delegationApprover = newDelegationApprover;
-        emit DelegationApproverUpdated(msg.sender, newDelegationApprover);
+        emit DelegationApproverUpdated(operator, newDelegationApprover);
     }
 
     /**
