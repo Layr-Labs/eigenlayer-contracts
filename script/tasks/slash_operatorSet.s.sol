@@ -35,7 +35,7 @@ contract SlashOperatorSet is Script, Test {
         });
 
         // Perform slashing
-        am.slashOperator(slashing);
+        am.slashOperator(operator, slashing);
         
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();

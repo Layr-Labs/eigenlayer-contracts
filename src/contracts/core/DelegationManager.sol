@@ -6,6 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../mixins/SignatureUtils.sol";
+import "../mixins/PermissionControllerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "../libraries/Snapshots.sol";
@@ -27,7 +28,8 @@ contract DelegationManager is
     Pausable,
     DelegationManagerStorage,
     ReentrancyGuardUpgradeable,
-    SignatureUtils
+    SignatureUtils,
+    PermissionControllerMixin
 {
     using SlashingLib for *;
     using Snapshots for Snapshots.DefaultZeroHistory;
@@ -67,6 +69,7 @@ contract DelegationManager is
         IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry,
+        IPermissionController _permissionController,
         uint32 _MIN_WITHDRAWAL_DELAY
     )
         DelegationManagerStorage(
@@ -77,6 +80,7 @@ contract DelegationManager is
             _MIN_WITHDRAWAL_DELAY
         )
         Pausable(_pauserRegistry)
+        PermissionControllerMixin(_permissionController)
     {
         _disableInitializers();
     }
@@ -111,19 +115,15 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function modifyOperatorDetails(
-        address newDelegationApprover
-    ) external {
-        require(isOperator(msg.sender), OperatorNotRegistered());
-        _setDelegationApprover(msg.sender, newDelegationApprover);
+    function modifyOperatorDetails(address operator, address newDelegationApprover) external checkCanCall(operator) {
+        require(isOperator(operator), OperatorNotRegistered());
+        _setDelegationApprover(operator, newDelegationApprover);
     }
 
     /// @inheritdoc IDelegationManager
-    function updateOperatorMetadataURI(
-        string calldata metadataURI
-    ) external {
-        require(isOperator(msg.sender), OperatorNotRegistered());
-        emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
+    function updateOperatorMetadataURI(address operator, string calldata metadataURI) external checkCanCall(operator) {
+        require(isOperator(operator), OperatorNotRegistered());
+        emit OperatorMetadataURIUpdated(operator, metadataURI);
     }
 
     /// @inheritdoc IDelegationManager
@@ -166,7 +166,7 @@ contract DelegationManager is
         require(staker != address(0), InputAddressZero());
         address operator = delegatedTo[staker];
         require(
-            msg.sender == staker || msg.sender == operator
+            msg.sender == staker || _checkCanCall(operator)
                 || msg.sender == _operatorDetails[operator].delegationApprover,
             CallerCannotUndelegate()
         );
@@ -391,7 +391,7 @@ contract DelegationManager is
      */
     function _setDelegationApprover(address operator, address newDelegationApprover) internal {
         _operatorDetails[operator].delegationApprover = newDelegationApprover;
-        emit DelegationApproverUpdated(msg.sender, newDelegationApprover);
+        emit DelegationApproverUpdated(operator, newDelegationApprover);
     }
 
     /**

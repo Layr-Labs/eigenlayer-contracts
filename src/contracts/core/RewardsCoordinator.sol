@@ -7,9 +7,9 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/Merkle.sol";
-import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
 import "./RewardsCoordinatorStorage.sol";
+import "../mixins/PermissionControllerMixin.sol";
 
 /**
  * @title RewardsCoordinator
@@ -25,7 +25,8 @@ contract RewardsCoordinator is
     OwnableUpgradeable,
     Pausable,
     ReentrancyGuardUpgradeable,
-    RewardsCoordinatorStorage
+    RewardsCoordinatorStorage,
+    PermissionControllerMixin
 {
     using SafeERC20 for IERC20;
 
@@ -43,7 +44,9 @@ contract RewardsCoordinator is
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
+        IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry,
+        IPermissionController _permissionController,
         uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
@@ -53,6 +56,7 @@ contract RewardsCoordinator is
         RewardsCoordinatorStorage(
             _delegationManager,
             _strategyManager,
+            _allocationManager,
             _CALCULATION_INTERVAL_SECONDS,
             _MAX_REWARDS_DURATION,
             _MAX_RETROACTIVE_LENGTH,
@@ -60,6 +64,7 @@ contract RewardsCoordinator is
             _GENESIS_REWARDS_TIMESTAMP
         )
         Pausable(_pauserRegistry)
+        PermissionControllerMixin(_permissionController)
     {
         _disableInitializers();
     }
@@ -90,8 +95,9 @@ contract RewardsCoordinator is
 
     /// @inheritdoc IRewardsCoordinator
     function createAVSRewardsSubmission(
+        address avs,
         RewardsSubmission[] calldata rewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) checkCanCall(avs) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -216,9 +222,16 @@ contract RewardsCoordinator is
         address claimer
     ) external {
         address earner = msg.sender;
-        address prevClaimer = claimerFor[earner];
-        claimerFor[earner] = claimer;
-        emit ClaimerForSet(earner, prevClaimer, claimer);
+        _setClaimer(earner, claimer);
+    }
+
+    /// @inheritdoc IRewardsCoordinator
+    function setClaimerFor(address earner, address claimer) external checkCanCall(earner) {
+        // Require that the earner is an operator or AVS
+        require(
+            delegationManager.isOperator(earner) || allocationManager.getOperatorSetCount(earner) > 0, InvalidEarner()
+        );
+        _setClaimer(earner, claimer);
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -393,6 +406,12 @@ contract RewardsCoordinator is
     ) internal {
         emit RewardsUpdaterSet(rewardsUpdater, _rewardsUpdater);
         rewardsUpdater = _rewardsUpdater;
+    }
+
+    function _setClaimer(address earner, address claimer) internal {
+        address prevClaimer = claimerFor[earner];
+        claimerFor[earner] = claimer;
+        emit ClaimerForSet(earner, prevClaimer, claimer);
     }
 
     /**

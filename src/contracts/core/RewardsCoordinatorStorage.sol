@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "../interfaces/IRewardsCoordinator.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IStrategyManager.sol";
+import "../interfaces/IAllocationManager.sol";
 
 /**
  * @title Storage variables for the `RewardsCoordinator` contract.
@@ -43,6 +44,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
 
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
+
+    /// @notice The AllocationManager contract for EigenLayer
+    IAllocationManager public immutable allocationManager;
 
     /// @notice The interval in seconds at which the calculation for rewards distribution is done.
     /// @dev RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 week
@@ -106,6 +110,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
+        IAllocationManager _allocationManager,
         uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
@@ -118,6 +123,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         require(_CALCULATION_INTERVAL_SECONDS % SNAPSHOT_CADENCE == 0, InvalidCalculationIntervalSecondsRemainder());
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
+        allocationManager = _allocationManager;
         CALCULATION_INTERVAL_SECONDS = _CALCULATION_INTERVAL_SECONDS;
         MAX_REWARDS_DURATION = _MAX_REWARDS_DURATION;
         MAX_RETROACTIVE_LENGTH = _MAX_RETROACTIVE_LENGTH;

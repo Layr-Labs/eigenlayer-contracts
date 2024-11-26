@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 import "src/contracts/permissions/PauserRegistry.sol";
+import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 
 import "src/test/mocks/AVSDirectoryMock.sol";
@@ -19,6 +20,8 @@ import "src/test/mocks/EmptyContract.sol";
 
 import "src/test/utils/SingleItemArrayLib.sol";
 import "src/test/utils/Random.sol";
+
+import "src/test/utils/SingleItemArrayLib.sol";
 
 abstract contract EigenLayerUnitTestSetup is Test {
     using SingleItemArrayLib for *;
@@ -32,6 +35,8 @@ abstract contract EigenLayerUnitTestSetup is Test {
 
     PauserRegistry pauserRegistry;
     ProxyAdmin eigenLayerProxyAdmin;
+    PermissionController permissionControllerImplementation;
+    PermissionController permissionController;
 
     AVSDirectoryMock avsDirectoryMock;
     AllocationManagerMock allocationManagerMock;
@@ -64,7 +69,17 @@ abstract contract EigenLayerUnitTestSetup is Test {
 
         pauserRegistry = new PauserRegistry(pausers, unpauser);
         eigenLayerProxyAdmin = new ProxyAdmin();
-        
+
+        // Deploy permission controller
+        permissionControllerImplementation = new PermissionController();
+        permissionController = PermissionController(address(new TransparentUpgradeableProxy(
+            address(permissionControllerImplementation),
+            address(eigenLayerProxyAdmin),
+            abi.encodeWithSelector(
+                PermissionController.initialize.selector
+            )
+        )));
+
         avsDirectoryMock = AVSDirectoryMock(payable(address(new AVSDirectoryMock())));
         allocationManagerMock = AllocationManagerMock(payable(address(new AllocationManagerMock())));
         strategyManagerMock = StrategyManagerMock(payable(address(new StrategyManagerMock(IDelegationManager(address(delegationManagerMock))))));
@@ -72,8 +87,10 @@ abstract contract EigenLayerUnitTestSetup is Test {
         eigenPodManagerMock = EigenPodManagerMock(payable(address(new EigenPodManagerMock(pauserRegistry))));
         emptyContract = new EmptyContract();
 
+
         isExcludedFuzzAddress[address(0)] = true;
         isExcludedFuzzAddress[address(pauserRegistry)] = true;
+        isExcludedFuzzAddress[address(permissionController)] = true;
         isExcludedFuzzAddress[address(eigenLayerProxyAdmin)] = true;
         isExcludedFuzzAddress[address(avsDirectoryMock)] = true;
         isExcludedFuzzAddress[address(allocationManagerMock)] = true;
