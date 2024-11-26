@@ -137,7 +137,7 @@ contract DelegationManager is
 
         // Checking the `approverSignatureAndExpiry` if applicable
         address approver = _operatorDetails[operator].delegationApprover;
-        if (approver != address(0) && msg.sender != approver && msg.sender != operator) {
+        if (approver != address(0)) {
             // check that the salt hasn't been used previously, then mark the salt as spent
             require(!delegationApproverSaltIsSpent[approver][approverSalt], SaltSpent());
             // actually check that the signature is valid
