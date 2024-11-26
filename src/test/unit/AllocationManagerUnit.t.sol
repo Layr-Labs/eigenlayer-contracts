@@ -3216,7 +3216,7 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
             }
         }
 
-        assertEq(createSetParams.length, allocationManager.getAVSSetCount(avs), "should be correct number of sets");
+        assertEq(createSetParams.length, allocationManager.getOperatorSetCount(avs), "should be correct number of sets");
     }
 }
 
