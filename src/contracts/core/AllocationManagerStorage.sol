@@ -83,6 +83,8 @@ abstract contract AllocationManagerStorage is IAllocationManager {
         _maxMagnitudeHistory;
 
     /// @dev For a strategy, contains the amount of magnitude an operator has allocated to operator sets
+    /// @dev This value should be read with caution, as deallocations that are completable but not
+    ///      popped off the queue are still included in the encumbered magnitude
     mapping(address operator => mapping(IStrategy strategy => uint64)) public encumberedMagnitude;
 
     /// @dev For a strategy, keeps an ordered queue of operator sets that have pending deallocations
