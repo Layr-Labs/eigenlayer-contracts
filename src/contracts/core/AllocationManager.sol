@@ -630,7 +630,7 @@ contract AllocationManager is
             Allocation memory allocation = allocations[operator][operatorSetKey][strategy];
 
             // If we've reached a pending deallocation that isn't completable yet,
-            // we can stop. Any subsequent modificaitons will also be uncompletable.
+            // we can stop. Any subsequent modifications will also be uncompletable.
             if (block.number < allocation.effectBlock) {
                 break;
             }
