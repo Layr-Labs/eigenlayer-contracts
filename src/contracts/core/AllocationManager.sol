@@ -306,7 +306,7 @@ contract AllocationManager is
     function setAllocationDelay(address operator, uint32 delay) external {
         if (msg.sender != address(delegation)) {
             require(_checkCanCall(operator), InvalidCaller());
-            require(delegation.isOperator(operator), OperatorNotRegistered());
+            require(delegation.isOperator(operator), InvalidOperator());
         }
         _setAllocationDelay(operator, delay);
     }
