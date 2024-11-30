@@ -186,7 +186,14 @@ contract User_M2 is User {
     /// Eigenpod Methods
     /// -----------------------------------------------------------------------
 
-    function completeCheckpoint() public virtual override createSnapshot {
+    function startCheckpoint_M2() public virtual createSnapshot {
+        print.method("startCheckpoint_M2");
+
+        // We use parent method since starting a checkpoint doesn't depend on old interfaces
+        _startCheckpoint();
+    }
+
+    function completeCheckpoint_M2() public virtual createSnapshot {
         print.method("completeCheckpoint_M2");
 
         _completeCheckpoint_M2();
@@ -246,11 +253,16 @@ contract User_M2 is User {
     /// Internal Methods
     /// -----------------------------------------------------------------------
 
+    function _createPod() internal virtual override {
+        pod = EigenPod(payable(eigenPodManager.createPod()));
+        isSlashingPod = false;
+    }
+
     function _completeCheckpoint_M2() internal {
         cheats.pauseTracing();
+        IEigenPod_DeprecatedM2 pod = IEigenPod_DeprecatedM2(address(pod));
         console.log("- active validator count", pod.activeValidatorCount());
-        // Comment out this method due to interface incompatability
-        // console.log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
+        console.log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
 
         uint64 checkpointTimestamp = pod.currentCheckpointTimestamp();
         if (checkpointTimestamp == 0) {

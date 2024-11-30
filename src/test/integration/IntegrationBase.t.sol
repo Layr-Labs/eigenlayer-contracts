@@ -30,6 +30,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     // these lists and migrate perform the standard migration actions
     // for each user
     User[] operatorsToMigrate;
+    User[] stakersToMigrate;
 
     /**
      * Gen/Init methods:
@@ -50,6 +51,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
             stakerName = string.concat("M2Staker", cheats.toString(numStakers));
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
+
+            stakersToMigrate.push(staker);
         } else {
             stakerName = string.concat("staker", cheats.toString(numStakers));
 
@@ -146,12 +149,17 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 operatorsToMigrate[i].registerAsOperator();
             }
 
+            // Set `isSlashingPod` to true for checkpoint interface introspection compatibility
+            for (uint i = 0; i < stakersToMigrate.length; i++) {
+                stakersToMigrate[i].setIsSlashingPod();
+            }
+
             emit log("======");
 
             // Bump block.timestamp forward to allow verifyWC proofs for migrated pods
             emit log("advancing block time to start of next epoch:");
 
-            beaconChain.advanceEpoch();
+            beaconChain.advanceEpoch_NoRewards();
 
             emit log("======");
 
@@ -1290,8 +1298,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getCheckpointPodBalanceGwei(User staker) internal view returns (uint64) {
-        EigenPod pod = staker.pod();
-        return uint64(pod.currentCheckpoint().podBalanceGwei);
+        if (staker.isSlashingPod()) {
+            EigenPod pod = staker.pod();
+            return uint64(pod.currentCheckpoint().podBalanceGwei);
+        } else {
+            IEigenPod_DeprecatedM2 pod = IEigenPod_DeprecatedM2(address(staker.pod()));
+            return uint64(pod.currentCheckpoint().podBalanceGwei);
+        }
     }
 
     function _getPrevCheckpointPodBalanceGwei(User staker) internal timewarp() returns (uint64) {

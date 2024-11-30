@@ -339,11 +339,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         permissionControllerImplementation = new PermissionController();
         delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, MIN_WITHDRAWAL_DELAY);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        console.log("Rewards coordiantor calc interval: %s", REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS);
-        console.log("Rewards coordiantor max rewards duration: %s", REWARDS_COORDINATOR_MAX_REWARDS_DURATION);
-        console.log("Rewards coordiantor max retroactive length: %s", REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH);
-        console.log("Rewards coordiantor max future length: %s", REWARDS_COORDINATOR_MAX_FUTURE_LENGTH);
-        console.log("Rewards coordiantor genesis rewards timestamp: %s", REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
