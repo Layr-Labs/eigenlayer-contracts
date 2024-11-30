@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
-contract EigenPod_Slashing_Migration is IntegrationCheckUtils, EigenPodPausingConstants {
+contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, EigenPodPausingConstants {
     modifier r(uint24 _rand) {
         _configRand({
             _randomSeed: _rand,
@@ -24,7 +24,7 @@ contract EigenPod_Slashing_Migration is IntegrationCheckUtils, EigenPodPausingCo
      * 5. Upgrade EigenPod contracts
      * 6. Exit subset of Validators 
      */
-    function test_eigenpod_migration_lifecycle(uint24 _rand) public r(_rand) {
+    function test_eigenpod_migration(uint24 _rand) public r(_rand) {
         // Only run this test as a fork test
         if (forkType == LOCAL) {
             return;
