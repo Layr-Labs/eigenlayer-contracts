@@ -24,12 +24,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
     uint numOperators = 0;
     uint numAVSs = 0;
 
-    // Lists of stakers/operators created before the m2 upgrade
+    // Lists of operators created before the m2 (not slashing) upgrade
     //
     // When we call _upgradeEigenLayerContracts, we iterate over
     // these lists and migrate perform the standard migration actions
     // for each user
-    User[] stakersToMigrate;
     User[] operatorsToMigrate;
 
     /**
@@ -48,11 +47,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            stakerName = string.concat("M1Staker", cheats.toString(numStakers));
+            stakerName = string.concat("M2Staker", cheats.toString(numStakers));
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
-
-            stakersToMigrate.push(staker);
         } else {
             stakerName = string.concat("staker", cheats.toString(numStakers));
 
@@ -76,6 +73,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies;
         uint[] memory tokenBalances;
 
+        // TODO make this M2Operator
         if (forkType == MAINNET && !isUpgraded) {
             string memory operatorName = string.concat("M1Operator", numOperators.toString());
 
@@ -133,12 +131,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return (gweiSent, remainderSent);
     }
 
-    /// @dev If we're on mainnet, upgrade contracts to M2 and migrate stakers/operators
+    /// @dev If we're on mainnet, upgrade contracts to slashing and migrate stakers/operators
     function _upgradeEigenLayerContracts() internal {
         if (forkType == MAINNET) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already performed m2 upgrade");
+            require(!isUpgraded, "_upgradeEigenLayerContracts: already performed slashing upgrade");
 
-            emit log("_upgradeEigenLayerContracts: upgrading mainnet to m2");
+            emit log("_upgradeEigenLayerContracts: upgrading mainnet to slashing");
             _upgradeMainnetContracts();
 
             emit log("===Migrating Stakers/Operators===");
@@ -158,15 +156,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
             emit log("======");
 
             isUpgraded = true;
-            emit log("_upgradeEigenLayerContracts: m2 upgrade complete");
+            emit log("_upgradeEigenLayerContracts: slashing upgrade complete");
         } else if (forkType == HOLESKY) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already performed m2 upgrade");
+            require(!isUpgraded, "_upgradeEigenLayerContracts: already performed slashing upgrade");
 
-            emit log("_upgradeEigenLayerContracts: upgrading holesky to m2");
+            emit log("_upgradeEigenLayerContracts: upgrading holesky to slashing");
             _upgradeHoleskyContracts();
 
             isUpgraded = true;
-            emit log("_upgradeEigenLayerContracts: m2 upgrade complete");
+            emit log("_upgradeEigenLayerContracts: slashing upgrade complete");
         }
     }
 

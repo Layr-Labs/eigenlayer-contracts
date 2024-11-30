@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationBase.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
+import "src/test/integration/users/User_M2.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
@@ -11,6 +12,17 @@ contract IntegrationCheckUtils is IntegrationBase {
     /*******************************************************************************
                                  EIGENPOD CHECKS
     *******************************************************************************/
+
+    function check_VerifyWC_State(
+        User_M2 staker,
+        uint40[] memory validators,
+        uint64 beaconBalanceGwei
+    ) internal {
+        uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
+        assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, beaconBalanceWei, "staker should have added deposit shares to beacon chain strat");
+        assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
+        assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
+    }
 
     function check_VerifyWC_State(
         User staker,
