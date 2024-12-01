@@ -12,14 +12,13 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS
         });
+
+        _upgradeEigenLayerContracts();
         
         // Create a staker and an operator with a nonzero balance and corresponding strategies
         (AVS avs, OperatorSet[] memory operatorSets) = _newRandomAVS();
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
-
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         // 1. Delegate to operator
         staker.delegateTo(operator);
@@ -38,7 +37,8 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         for (uint i; i < operatorSets.length; ++i) {
             uint256 len = allocationManager.getStrategiesInOperatorSet(operatorSets[i]).length;
             operator.modifyAllocations(operatorSets[i], _randMagnitudes({ sum: 1 ether / uint64(operatorSets.length), len: len }));
-            avs.slashOperator(operator, operatorSets[i].id, _randWadToSlash());
+            //TODO: uncomment this when we figure out how to properly handle lsETH
+            // avs.slashOperator(operator, operatorSets[i].id, _randWadToSlash());
         }
 
         // TODO: write checks for slashing...

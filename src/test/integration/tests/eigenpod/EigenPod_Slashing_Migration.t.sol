@@ -24,7 +24,7 @@ contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, Eigen
      * 5. Upgrade EigenPod contracts
      * 6. Exit subset of Validators 
      */
-    function test_eigenpod_migration(uint24 _rand) public r(_rand) {
+    function test_upgrade_eigenpod_migration(uint24 _rand) public r(_rand) {
         // Only run this test as a fork test
         if (forkType == LOCAL) {
             return;
@@ -44,17 +44,17 @@ contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, Eigen
         uint64 expectedWithdrawnGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
 
         // 2. Start a checkpoint
-        User_M2(payable(staker)).startCheckpoint_M2();
+        staker.startCheckpoint();
 
         // 3. Pause checkpoint starting
         cheats.prank(pauserMultisig);
         eigenPodManager.pause(2 ** PAUSED_START_CHECKPOINT);
 
         cheats.expectRevert("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager");
-        User_M2(payable(staker)).startCheckpoint_M2();
+        staker.startCheckpoint();
 
         // 4. Complete in progress checkpoint
-        User_M2(payable(staker)).completeCheckpoint_M2();
+        staker.completeCheckpoint();
         check_CompleteCheckpoint_WithPodBalance_State(staker, expectedWithdrawnGwei);
 
         // 5. Upgrade Contracts for slashing

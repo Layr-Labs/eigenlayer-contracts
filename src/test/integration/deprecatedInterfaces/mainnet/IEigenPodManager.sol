@@ -14,28 +14,6 @@ import "src/contracts/interfaces/IPausable.sol";
  */
 
 interface IEigenPodManager_DeprecatedM2 is IPausable {
-    /// @notice Emitted to notify the deployment of an EigenPod
-    event PodDeployed(address indexed eigenPod, address indexed podOwner);
-
-    /// @notice Emitted to notify a deposit of beacon chain ETH recorded in the strategy manager
-    event BeaconChainETHDeposited(address indexed podOwner, uint256 amount);
-
-    /// @notice Emitted when the balance of an EigenPod is updated
-    event PodSharesUpdated(address indexed podOwner, int256 sharesDelta);
-
-    /// @notice Emitted every time the total shares of a pod are updated
-    event NewTotalShares(address indexed podOwner, int256 newTotalShares);
-
-    /// @notice Emitted when a withdrawal of beacon chain ETH is completed
-    event BeaconChainETHWithdrawalCompleted(
-        address indexed podOwner,
-        uint256 shares,
-        uint96 nonce,
-        address delegatedAddress,
-        address withdrawer,
-        bytes32 withdrawalRoot
-    );
-
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.

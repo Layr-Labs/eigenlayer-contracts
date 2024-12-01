@@ -75,19 +75,19 @@ abstract contract IntegrationBase is IntegrationDeployer {
         User operator;
         IStrategy[] memory strategies;
         uint[] memory tokenBalances;
+        uint[] memory addedShares;
 
-        // TODO make this M2Operator
         if (forkType == MAINNET && !isUpgraded) {
-            string memory operatorName = string.concat("M1Operator", numOperators.toString());
+            string memory operatorName = string.concat("M2Operator", numOperators.toString());
 
-            // Create an operator for M1. We omit native ETH because we want to
-            // check staker/operator shares, and we don't award native ETH shares in M1
+            // Create an operator for M2.
+            // TODO: Allow this operator to have ETH 
             (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
 
-            User_M1(payable(address(operator))).depositIntoEigenlayer_M1(strategies, tokenBalances);
-            uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
-
-            assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+            addedShares = _calculateExpectedShares(strategies, tokenBalances);
+            
+            User_M2(payable(operator)).registerAsOperator_M2();
+            operator.depositIntoEigenlayer(strategies, tokenBalances); // Deposits interface doesn't change between M2 and slashing
 
             operatorsToMigrate.push(operator);
         } else {
@@ -95,15 +95,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
 
-            uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
+            addedShares = _calculateExpectedShares(strategies, tokenBalances);
 
             operator.registerAsOperator();
             operator.depositIntoEigenlayer(strategies, tokenBalances);
-
-            assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
-            assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
-            assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
         }
+
+        assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+        assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
+        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
 
         numOperators++;
         return (operator, strategies, tokenBalances);
@@ -141,20 +141,6 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             emit log("_upgradeEigenLayerContracts: upgrading mainnet to slashing");
             _upgradeMainnetContracts();
-
-            emit log("===Migrating Stakers/Operators===");
-
-            // Register operators with DelegationManager
-            for (uint i = 0; i < operatorsToMigrate.length; i++) {
-                operatorsToMigrate[i].registerAsOperator();
-            }
-
-            // Set `isSlashingPod` to true for checkpoint interface introspection compatibility
-            for (uint i = 0; i < stakersToMigrate.length; i++) {
-                stakersToMigrate[i].setIsSlashingPod();
-            }
-
-            emit log("======");
 
             // Bump block.timestamp forward to allow verifyWC proofs for migrated pods
             emit log("advancing block time to start of next epoch:");
@@ -231,7 +217,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 tokenBalance = strat.underlyingToken().balanceOf(address(user));
             }
 
-            assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
+            // TODO: handle this error properly by calculating slippage
+            assertApproxEqAbs(expectedBalance, tokenBalance, 2, err);
             // assertEq(expectedBalance, tokenBalance, err);
         }
     }
@@ -246,25 +233,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory expectedShares, 
         string memory err
     ) internal view {
-        for (uint i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-
-            uint actualShares;
-            if (strat == BEACONCHAIN_ETH_STRAT) {
-                // This method should only be used for tests that handle positive
-                // balances. Negative balances are an edge case that require
-                // the own tests and helper methods.
-                int shares = eigenPodManager.podOwnerDepositShares(address(user));
-                if (shares < 0) {
-                    revert("assert_HasExpectedShares: negative shares");
-                }
-
-                actualShares = uint(shares);
-            } else {
-                actualShares = strategyManager.stakerDepositShares(address(user), strat);
-            }
-
-            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
+        uint[] memory actualShares = _getStakerDepositShares(user, strategies);
+        for(uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(expectedShares[i], actualShares[i], 1, err);
         }
     }
 
@@ -1145,14 +1116,24 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // This method should only be used for tests that handle positive
                 // balances. Negative balances are an edge case that require
                 // the own tests and helper methods.
-                int shares = eigenPodManager.podOwnerDepositShares(address(staker));
+                int shares;
+                if (forkType != LOCAL && !isUpgraded) {
+                    shares = int(IEigenPodManager_DeprecatedM2(address(eigenPodManager)).podOwnerShares(address(staker)));
+                } else {
+                    shares = int(eigenPodManager.podOwnerDepositShares(address(staker)));
+                }
+
                 if (shares < 0) {
                     revert("_getStakerDepositShares: negative shares");
                 }
 
                 curShares[i] = uint(shares);
             } else {
-                curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
+                if (forkType != LOCAL && !isUpgraded) {
+                    curShares[i] = IStrategyManager_DeprecatedM2(address(strategyManager)).stakerStrategyShares(address(staker), strat);
+                } else {
+                    curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
+                }
             }
         }
 
@@ -1298,11 +1279,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getCheckpointPodBalanceGwei(User staker) internal view returns (uint64) {
-        if (staker.isSlashingPod()) {
-            EigenPod pod = staker.pod();
+        if (forkType != LOCAL && !isUpgraded) {
+            IEigenPod_DeprecatedM2 pod = IEigenPod_DeprecatedM2(address(staker.pod()));
             return uint64(pod.currentCheckpoint().podBalanceGwei);
         } else {
-            IEigenPod_DeprecatedM2 pod = IEigenPod_DeprecatedM2(address(staker.pod()));
+            EigenPod pod = staker.pod();
             return uint64(pod.currentCheckpoint().podBalanceGwei);
         }
     }

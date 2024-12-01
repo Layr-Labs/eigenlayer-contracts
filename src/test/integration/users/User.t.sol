@@ -43,7 +43,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     // User's EigenPod and each of their validator indices within that pod
     EigenPod public pod;
     uint40[] validators;
-    bool public isSlashingPod;
 
     constructor(
         string memory name
@@ -71,11 +70,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     function NAME() public view override returns (string memory) {
         return _NAME;
-    }
-
-    /// @notice Set when upgrading an M2 user and handling proper checkpoint introspection
-    function setIsSlashingPod() public {
-        isSlashingPod = true;
     }
 
     /// -----------------------------------------------------------------------
@@ -459,7 +453,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     function _createPod() internal virtual {
         pod = EigenPod(payable(eigenPodManager.createPod()));
-        isSlashingPod = true;
     }
 
     /// @dev Uses any ETH held by the User to start validators on the beacon chain

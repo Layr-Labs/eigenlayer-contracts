@@ -58,7 +58,7 @@ jobs:
 
     # TODO: Add full integration testing suite once fixed
     - name: Run integration mainnet fork tests
-      run: forge test --match-contract Integration --mt test_eigenpod_migration
+      run: forge test --match-contract Integration 
       env:
         FOUNDRY_PROFILE: "forktest"
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}

@@ -64,49 +64,12 @@ contract User_M2 is User {
         delegationManager_M2.registerAsOperator(details, "metadata");
     }
 
-    /// @dev Delegate to the operator without a signature
-    function delegateTo_M2(
-        User operator
-    ) public virtual createSnapshot {
-        print.method("delegateTo_M2", operator.NAME_COLORED());
-
-        ISignatureUtils.SignatureWithExpiry memory emptySig;
-        delegationManager_M2.delegateTo(address(operator), emptySig, bytes32(0));
-    }
-
-    /// @dev Undelegate from operator
-    function undelegate_M2() public virtual createSnapshot returns (IDelegationManager_DeprecatedM2.Withdrawal[] memory) {
-        print.method("undelegate_M2");
-
-        IDelegationManager_DeprecatedM2.Withdrawal[] memory expectedWithdrawals = _getExpectedM2WithdrawalStructsForStaker(address(this));
-        delegationManager_M2.undelegate(address(this));
-
-        for (uint256 i = 0; i < expectedWithdrawals.length; i++) {
-            emit log("expecting withdrawal:");
-            emit log_named_uint("nonce: ", expectedWithdrawals[i].nonce);
-            emit log_named_address("strat: ", address(expectedWithdrawals[i].strategies[0]));
-            emit log_named_uint("shares: ", expectedWithdrawals[i].shares[0]);
-        }
-
-        return expectedWithdrawals;
-    }
-
-    /// @dev Force undelegate staker
-    function forceUndelegate_M2(
-        User staker
-    ) public virtual createSnapshot returns (IDelegationManager_DeprecatedM2.Withdrawal[] memory) {
-        print.method("forceUndelegate_M2", staker.NAME());
-
-        IDelegationManager_DeprecatedM2.Withdrawal[] memory expectedWithdrawals = _getExpectedM2WithdrawalStructsForStaker(address(this));
-        delegationManager_M2.undelegate(address(staker));
-        return expectedWithdrawals;
-    }
-
     /// @dev Queues a single withdrawal for every share and strategy pair
-    function queueWithdrawals_M2(
+    /// @dev Returns the withdrawal struct of the new slashing interface
+    function queueWithdrawals(
         IStrategy[] memory strategies,
         uint256[] memory shares
-    ) public virtual createSnapshot returns (IDelegationManager_DeprecatedM2.Withdrawal[] memory) {
+    ) public virtual override createSnapshot returns (Withdrawal[] memory) {
         print.method("queueWithdrawals_M2");
 
         address operator = delegationManager_M2.delegatedTo(address(this));
@@ -135,65 +98,25 @@ contract User_M2 is User {
         // Basic sanity check - we do all other checks outside this file
         assertEq(withdrawals.length, withdrawalRoots.length, "User.queueWithdrawals: length mismatch");
 
-        return (withdrawals);
-    }
+        Withdrawal[] memory withdrawalsToReturn = new Withdrawal[](1);
+        withdrawalsToReturn[0] = Withdrawal({
+            staker: address(this),
+            delegatedTo: operator,
+            withdrawer: withdrawer,
+            nonce: nonce,
+            startBlock: uint32(block.number),
+            strategies: strategies,
+            scaledShares: shares
+        });
 
-    function completeWithdrawalsAsTokens_M2(
-        IDelegationManager_DeprecatedM2.Withdrawal[] memory withdrawals
-    ) public virtual createSnapshot returns (IERC20[][] memory) {
-        print.method("completeWithdrawalsAsTokens_M2");
-
-        IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
-
-        for (uint256 i = 0; i < withdrawals.length; i++) {
-            tokens[i] = _completeQueuedWithdrawal_M2(withdrawals[i], true);
-        }
-
-        return tokens;
-    }
-
-    function completeWithdrawalAsTokens_M2(
-        IDelegationManager_DeprecatedM2.Withdrawal memory withdrawal
-    ) public virtual createSnapshot returns (IERC20[] memory) {
-        print.method("completeWithdrawalsAsTokens_M2");
-
-        return _completeQueuedWithdrawal_M2(withdrawal, true);
-    }
-
-    function completeWithdrawalsAsShares_M2(
-        IDelegationManager_DeprecatedM2.Withdrawal[] memory withdrawals
-    ) public virtual createSnapshot returns (IERC20[][] memory) {
-        print.method("completeWithdrawalAsShares_M2");
-
-        IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
-
-        for (uint256 i = 0; i < withdrawals.length; i++) {
-            tokens[i] = _completeQueuedWithdrawal_M2(withdrawals[i], false);
-        }
-
-        return tokens;
-    }
-
-    function completeWithdrawalAsShares_M2(
-        IDelegationManager_DeprecatedM2.Withdrawal memory withdrawal
-    ) public virtual createSnapshot returns (IERC20[] memory) {
-        print.method("completeWithdrawalAsShares_M2");
-
-        return _completeQueuedWithdrawal_M2(withdrawal, false);
+        return (withdrawalsToReturn);
     }
 
     /// -----------------------------------------------------------------------
     /// Eigenpod Methods
     /// -----------------------------------------------------------------------
 
-    function startCheckpoint_M2() public virtual createSnapshot {
-        print.method("startCheckpoint_M2");
-
-        // We use parent method since starting a checkpoint doesn't depend on old interfaces
-        _startCheckpoint();
-    }
-
-    function completeCheckpoint_M2() public virtual createSnapshot {
+    function completeCheckpoint() public virtual override createSnapshot {
         print.method("completeCheckpoint_M2");
 
         _completeCheckpoint_M2();
@@ -203,31 +126,7 @@ contract User_M2 is User {
     /// Strategy Methods
     /// -----------------------------------------------------------------------
 
-    /// @dev For each strategy/token balance, call the relevant deposit method
-    function depositIntoEigenlayer_M2(
-        IStrategy[] memory strategies,
-        uint256[] memory tokenBalances
-    ) public virtual createSnapshot {
-        print.method("depositIntoEigenlayer_M2");
-
-        for (uint256 i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-            uint256 tokenBalance = tokenBalances[i];
-
-            if (strat == BEACONCHAIN_ETH_STRAT) {
-                (uint40[] memory newValidators,) = _startValidators();
-                // Advance forward one epoch and generate credential and balance proofs for each validator
-                beaconChain.advanceEpoch_NoRewards();
-                _verifyWithdrawalCredentials(newValidators);
-            } else {
-                IERC20 underlyingToken = strat.underlyingToken();
-                underlyingToken.approve(address(strategyManager), tokenBalance);
-                strategyManager_M2.depositIntoStrategy(strat, underlyingToken, tokenBalance);
-            }
-        }
-    }
-
-    function updateBalances_M2(IStrategy[] memory strategies, int256[] memory tokenDeltas) public virtual createSnapshot {
+    function updateBalances(IStrategy[] memory strategies, int256[] memory tokenDeltas) public virtual override createSnapshot {
         print.method("updateBalances_M2");
 
         for (uint256 i = 0; i < strategies.length; i++) {
@@ -252,11 +151,6 @@ contract User_M2 is User {
     /// -----------------------------------------------------------------------
     /// Internal Methods
     /// -----------------------------------------------------------------------
-
-    function _createPod() internal virtual override {
-        pod = EigenPod(payable(eigenPodManager.createPod()));
-        isSlashingPod = false;
-    }
 
     function _completeCheckpoint_M2() internal {
         cheats.pauseTracing();
