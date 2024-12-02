@@ -407,8 +407,7 @@ contract RewardsCoordinator is
 
     /**
      * @notice Validate a OperatorDirectedRewardsSubmission. Called from `createOperatorDirectedAVSRewardsSubmission`.
-     * @dev Not checking for `MAX_FUTURE_LENGTH` (Since operator-directed reward submissions are strictly retroactive)
-     * or `MAX_REWARDS_AMOUNT` (Since we no longer have the `1e38 - 1` limitation in the offchain rewards calculation)
+     * @dev Not checking for `MAX_FUTURE_LENGTH` (Since operator-directed reward submissions are strictly retroactive).
      * @param operatorDirectedRewardsSubmission OperatorDirectedRewardsSubmission to validate.
      * @return total amount to be transferred from the avs to the contract.
      */
@@ -444,6 +443,10 @@ contract RewardsCoordinator is
             );
             totalAmount += operatorReward.amount;
         }
+        require(
+            totalAmount <= MAX_REWARDS_AMOUNT,
+            "RewardsCoordinator._validateOperatorDirectedRewardsSubmission: total amount too large"
+        );
 
         require(
             operatorDirectedRewardsSubmission.startTimestamp + operatorDirectedRewardsSubmission.duration <
