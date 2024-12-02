@@ -263,6 +263,22 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external returns (bytes32[] memory withdrawalRoots);
 
     /**
+     * @notice Undelegates the staker from their current operator, and redelegates to `newOperator`
+     * Queues a withdrawal for all of the staker's withdrawable shares.
+     * @dev This method acts like a call to `undelegate`, then `delegateTo`
+     * @param newOperator the new operator that will be delegated all assets
+     * @dev NOTE: the following 2 params are ONLY checked if `newOperator` has a `delegationApprover`.
+     * If not, they can be left empty.
+     * @param newOperatorApproverSig A signature from the operator's `delegationApprover`
+     * @param approverSalt A unique single use value tied to the approver's signature
+     */
+    function redelegate(
+        address newOperator,
+        SignatureWithExpiry memory newOperatorApproverSig,
+        bytes32 approverSalt
+    ) external returns (bytes32[] memory withdrawalRoots);
+
+    /**
      * @notice Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
      * from the staker. If the staker is delegated, withdrawn shares/strategies are also removed from
      * their operator.

@@ -135,23 +135,13 @@ contract DelegationManager is
         require(!isDelegated(msg.sender), ActivelyDelegated());
         require(isOperator(operator), OperatorNotRegistered());
 
-        // Checking the `approverSignatureAndExpiry` if applicable
-        address approver = _operatorDetails[operator].delegationApprover;
-        if (approver != address(0)) {
-            // check that the salt hasn't been used previously, then mark the salt as spent
-            require(!delegationApproverSaltIsSpent[approver][approverSalt], SaltSpent());
-            // actually check that the signature is valid
-            _checkIsValidSignatureNow({
-                signer: approver,
-                signableDigest: calculateDelegationApprovalDigestHash(
-                    msg.sender, operator, approver, approverSalt, approverSignatureAndExpiry.expiry
-                ),
-                signature: approverSignatureAndExpiry.signature,
-                expiry: approverSignatureAndExpiry.expiry
-            });
-
-            delegationApproverSaltIsSpent[approver][approverSalt] = true;
-        }
+        // If the operator has a `delegationApprover`, check the provided signature
+        _checkApproverSignature({
+            staker: msg.sender,
+            operator: operator,
+            signature: approverSignatureAndExpiry,
+            salt: approverSalt
+        });
 
         // Delegate msg.sender to the operator
         _delegate(msg.sender, operator);
@@ -160,9 +150,12 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function undelegate(
         address staker
-    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
+    ) external returns (bytes32[] memory withdrawalRoots) {
+        // Check that the `staker` can undelegate
         require(isDelegated(staker), NotActivelyDelegated());
         require(!isOperator(staker), OperatorsCannotUndelegate());
+
+        // Validate caller is the staker, the operator, or the operator's `delegationApprover`
         require(staker != address(0), InputAddressZero());
         address operator = delegatedTo[staker];
         require(
@@ -171,46 +164,38 @@ contract DelegationManager is
             CallerCannotUndelegate()
         );
 
-        // Gather strategies and shares from the staker. Calculate depositedShares to remove from operator during undelegation
-        // Undelegation removes ALL currently-active strategies and shares
-        (IStrategy[] memory strategies, uint256[] memory depositedShares) = getDepositedShares(staker);
-
-        // Undelegate the staker
-        delegatedTo[staker] = address(0);
-        emit StakerUndelegated(staker, operator);
         // Emit an event if this action was not initiated by the staker themselves
         if (msg.sender != staker) {
             emit StakerForceUndelegated(staker, operator);
         }
 
-        // if no deposited shares, return an empty array, and don't queue a withdrawal
-        if (strategies.length == 0) {
-            return withdrawalRoots;
-        }
+        return _undelegate(staker);
+    }
 
-        withdrawalRoots = new bytes32[](strategies.length);
-        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
+    /// @inheritdoc IDelegationManager
+    function redelegate(
+        address newOperator,
+        SignatureWithExpiry memory newOperatorApproverSig,
+        bytes32 approverSalt
+    ) external returns (bytes32[] memory withdrawalRoots) {
+        // Check that the staker can undelegate, and `newOperator` can be delegated to
+        require(isDelegated(msg.sender), NotActivelyDelegated());
+        require(!isOperator(msg.sender), OperatorsCannotUndelegate());
+        require(isOperator(newOperator), OperatorNotRegistered());
 
-        for (uint256 i = 0; i < strategies.length; i++) {
-            IStrategy[] memory singleStrategy = new IStrategy[](1);
-            uint256[] memory singleDepositShares = new uint256[](1);
-            uint256[] memory singleSlashingFactor = new uint256[](1);
-            singleStrategy[0] = strategies[i];
-            singleDepositShares[0] = depositedShares[i];
-            singleSlashingFactor[0] = slashingFactors[i];
+        // Undelegate the staker and queue any deposited assets for withdrawal
+        withdrawalRoots = _undelegate(msg.sender);
 
-            // Remove shares from staker's strategies and place strategies/shares in queue.
-            // The operator's delegated shares are also reduced.
-            withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
-                staker: staker,
-                operator: operator,
-                strategies: singleStrategy,
-                depositSharesToWithdraw: singleDepositShares,
-                slashingFactors: singleSlashingFactor
-            });
-        }
+        // If the operator has a `delegationApprover`, check the provided signature
+        _checkApproverSignature({
+            staker: msg.sender,
+            operator: newOperator,
+            signature: newOperatorApproverSig,
+            salt: approverSalt
+        });
 
-        return withdrawalRoots;
+        // Delegate to the new operator
+        _delegate(msg.sender, newOperator);
     }
 
     /// @inheritdoc IDelegationManager
@@ -401,9 +386,9 @@ contract DelegationManager is
      * @dev Assumes the following is checked before calling this function:
      *          1) the `staker` is not already delegated to an operator
      *          2) the `operator` has indeed registered as an operator in EigenLayer
+     *          3) if applicable, the `operator's` `delegationApprover` signed off on delegation
      * Ensures that:
-     *          1) if applicable, that the approver signature is valid and non-expired
-     *          2) new delegations are not paused (PAUSED_NEW_DELEGATION)
+     *          1) new delegations are not paused (PAUSED_NEW_DELEGATION)
      */
     function _delegate(address staker, address operator) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
         // record the delegation relation between the staker and operator, and emit an event
@@ -426,6 +411,158 @@ contract DelegationManager is
                 slashingFactor: slashingFactors[i]
             });
         }
+    }
+
+    /**
+     * @dev Undelegates `staker` from their operator, queueing a withdrawal for all
+     * their deposited shares in the process.
+     * @dev Assumes the following is checked before calling this function:
+     *          1) the `staker` is currently delegated to an operator
+     *          2) the `staker` is not an operator themselves
+     * Ensures that:
+     *          1) the withdrawal queue is not paused (PAUSED_ENTER_WITHDRAWAL_QUEUE)
+     */
+    function _undelegate(
+        address staker
+    ) internal onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
+        // Undelegate the staker
+        address operator = delegatedTo[staker];
+        delegatedTo[staker] = address(0);
+        emit StakerUndelegated(staker, operator);
+
+        // Get all of the staker's deposited strategies/shares. These will be removed from the operator
+        // and queued for withdrawal.
+        (IStrategy[] memory strategies, uint256[] memory depositedShares) = getDepositedShares(staker);
+        if (strategies.length == 0) {
+            return withdrawalRoots;
+        }
+
+        // For the operator and each of the staker's strategies, get the slashing factors to apply
+        // when queueing for withdrawal
+        withdrawalRoots = new bytes32[](strategies.length);
+        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
+
+        // Queue a withdrawal for each strategy independently. This is done for UX reasons.
+        for (uint256 i = 0; i < strategies.length; i++) {
+            IStrategy[] memory singleStrategy = new IStrategy[](1);
+            uint256[] memory singleDepositShares = new uint256[](1);
+            uint256[] memory singleSlashingFactor = new uint256[](1);
+            singleStrategy[0] = strategies[i];
+            singleDepositShares[0] = depositedShares[i];
+            singleSlashingFactor[0] = slashingFactors[i];
+
+            // Remove shares from staker's strategies and place strategies/shares in queue.
+            // The operator's delegated shares are also reduced.
+            withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
+                staker: staker,
+                operator: operator,
+                strategies: singleStrategy,
+                depositSharesToWithdraw: singleDepositShares,
+                slashingFactors: singleSlashingFactor
+            });
+        }
+
+        return withdrawalRoots;
+    }
+
+    /**
+     * @notice Removes `sharesToWithdraw` in `strategies` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
+     * @param staker The staker queuing a withdrawal
+     * @param operator The operator the staker is delegated to
+     * @param strategies The strategies to queue a withdrawal for
+     * @param depositSharesToWithdraw The amount of deposit shares the staker wishes to withdraw, must be less than staker's depositShares in storage
+     * @param slashingFactors The corresponding slashing factor for the staker/operator for each strategy
+     *
+     * @dev The amount withdrawable by the staker may not actually be the same as the depositShares that are in storage in the StrategyManager/EigenPodManager.
+     * This is a result of any slashing that has occurred during the time the staker has been delegated to an operator. So the proportional amount that is withdrawn
+     * out of the amount withdrawable for the staker has to also be decremented from the staker's deposit shares.
+     * So the amount of depositShares withdrawn out has to be proportionally scaled down depending on the slashing that has occurred.
+     * Ex. Suppose as a staker, I have 100 depositShares for a strategy thats sitting in the StrategyManager in the `stakerDepositShares` mapping but I actually have been slashed 50%
+     * and my real withdrawable amount is 50 shares.
+     * Now when I go to withdraw 40 depositShares, I'm proportionally withdrawing 40% of my withdrawable shares. We calculate below the actual shares withdrawn via the `toShares()` function to
+     * get 20 shares to queue withdraw. The end state is that I have 60 depositShares and 30 withdrawable shares now, this still accurately reflects a 50% slashing that has occurred on my existing stake.
+     * @dev depositSharesToWithdraw are converted to sharesToWithdraw using the `toShares` library function. sharesToWithdraw are then divided by the current maxMagnitude of the operator (at queue time)
+     * and this value is stored in the Withdrawal struct as `scaledShares.
+     * Upon completion the `scaledShares` are then multiplied by the maxMagnitude of the operator at completion time. This is how we factor in any slashing events
+     * that occurred during the withdrawal delay period. Shares in a withdrawal are no longer slashable once the withdrawal is completable.
+     * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
+     */
+    function _removeSharesAndQueueWithdrawal(
+        address staker,
+        address operator,
+        IStrategy[] memory strategies,
+        uint256[] memory depositSharesToWithdraw,
+        uint256[] memory slashingFactors
+    ) internal returns (bytes32) {
+        require(staker != address(0), InputAddressZero());
+        require(strategies.length != 0, InputArrayLengthZero());
+
+        uint256[] memory scaledShares = new uint256[](strategies.length);
+        uint256[] memory sharesToWithdraw = new uint256[](strategies.length);
+
+        // Remove shares from staker and operator
+        // Each of these operations fail if we attempt to remove more shares than exist
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            IShareManager shareManager = _getShareManager(strategies[i]);
+            DepositScalingFactor memory dsf = _depositScalingFactor[staker][strategies[i]];
+
+            // Check withdrawing deposit shares amount doesn't exceed balance
+            require(
+                depositSharesToWithdraw[i] <= shareManager.stakerDepositShares(staker, strategies[i]),
+                WithdrawalExceedsMax()
+            );
+
+            // Calculate how many shares can be withdrawn after factoring in slashing
+            sharesToWithdraw[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
+
+            // Apply slashing. If the staker or operator has been fully slashed, this will return 0
+            scaledShares[i] = SlashingLib.scaleForQueueWithdrawal({
+                sharesToWithdraw: sharesToWithdraw[i],
+                slashingFactor: slashingFactors[i]
+            });
+
+            // Remove delegated shares from the operator
+            if (operator != address(0)) {
+                // Staker was delegated and remains slashable during the withdrawal delay period
+                // Cumulative withdrawn scaled shares are updated for the strategy, this is for accounting
+                // purposes for burning shares if slashed
+                _addQueuedSlashableShares(operator, strategies[i], scaledShares[i]);
+
+                // forgefmt: disable-next-item
+                _decreaseDelegation({
+                    operator: operator,
+                    staker: staker,
+                    strategy: strategies[i],
+                    sharesToDecrease: sharesToWithdraw[i]
+                });
+            }
+
+            // Remove deposit shares from EigenPodManager/StrategyManager
+            shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
+        }
+
+        // Create queue entry and increment withdrawal nonce
+        uint256 nonce = cumulativeWithdrawalsQueued[staker];
+        cumulativeWithdrawalsQueued[staker]++;
+
+        Withdrawal memory withdrawal = Withdrawal({
+            staker: staker,
+            delegatedTo: operator,
+            withdrawer: staker,
+            nonce: nonce,
+            startBlock: uint32(block.number),
+            strategies: strategies,
+            scaledShares: scaledShares
+        });
+
+        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+
+        pendingWithdrawals[withdrawalRoot] = true;
+        queuedWithdrawals[withdrawalRoot] = withdrawal;
+        _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
+
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, sharesToWithdraw);
+        return withdrawalRoot;
     }
 
     /**
@@ -568,104 +705,30 @@ contract DelegationManager is
         emit OperatorSharesDecreased(operator, staker, strategy, sharesToDecrease);
     }
 
-    /**
-     * @notice Removes `sharesToWithdraw` in `strategies` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
-     * @param staker The staker queuing a withdrawal
-     * @param operator The operator the staker is delegated to
-     * @param strategies The strategies to queue a withdrawal for
-     * @param depositSharesToWithdraw The amount of deposit shares the staker wishes to withdraw, must be less than staker's depositShares in storage
-     * @param slashingFactors The corresponding slashing factor for the staker/operator for each strategy
-     *
-     * @dev The amount withdrawable by the staker may not actually be the same as the depositShares that are in storage in the StrategyManager/EigenPodManager.
-     * This is a result of any slashing that has occurred during the time the staker has been delegated to an operator. So the proportional amount that is withdrawn
-     * out of the amount withdrawable for the staker has to also be decremented from the staker's deposit shares.
-     * So the amount of depositShares withdrawn out has to be proportionally scaled down depending on the slashing that has occurred.
-     * Ex. Suppose as a staker, I have 100 depositShares for a strategy thats sitting in the StrategyManager in the `stakerDepositShares` mapping but I actually have been slashed 50%
-     * and my real withdrawable amount is 50 shares.
-     * Now when I go to withdraw 40 depositShares, I'm proportionally withdrawing 40% of my withdrawable shares. We calculate below the actual shares withdrawn via the `toShares()` function to
-     * get 20 shares to queue withdraw. The end state is that I have 60 depositShares and 30 withdrawable shares now, this still accurately reflects a 50% slashing that has occurred on my existing stake.
-     * @dev depositSharesToWithdraw are converted to sharesToWithdraw using the `toShares` library function. sharesToWithdraw are then divided by the current maxMagnitude of the operator (at queue time)
-     * and this value is stored in the Withdrawal struct as `scaledShares.
-     * Upon completion the `scaledShares` are then multiplied by the maxMagnitude of the operator at completion time. This is how we factor in any slashing events
-     * that occurred during the withdrawal delay period. Shares in a withdrawal are no longer slashable once the withdrawal is completable.
-     * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
-     */
-    function _removeSharesAndQueueWithdrawal(
+    /// @dev If `operator` has configured a `delegationApprover`, check that `signature` and `salt`
+    /// are a valid approval for `staker` delegating to `operator`.
+    function _checkApproverSignature(
         address staker,
         address operator,
-        IStrategy[] memory strategies,
-        uint256[] memory depositSharesToWithdraw,
-        uint256[] memory slashingFactors
-    ) internal returns (bytes32) {
-        require(staker != address(0), InputAddressZero());
-        require(strategies.length != 0, InputArrayLengthZero());
-
-        uint256[] memory scaledShares = new uint256[](strategies.length);
-        uint256[] memory sharesToWithdraw = new uint256[](strategies.length);
-
-        // Remove shares from staker and operator
-        // Each of these operations fail if we attempt to remove more shares than exist
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            IShareManager shareManager = _getShareManager(strategies[i]);
-            DepositScalingFactor memory dsf = _depositScalingFactor[staker][strategies[i]];
-
-            // Check withdrawing deposit shares amount doesn't exceed balance
-            require(
-                depositSharesToWithdraw[i] <= shareManager.stakerDepositShares(staker, strategies[i]),
-                WithdrawalExceedsMax()
-            );
-
-            // Calculate how many shares can be withdrawn after factoring in slashing
-            sharesToWithdraw[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
-
-            // Apply slashing. If the staker or operator has been fully slashed, this will return 0
-            scaledShares[i] = SlashingLib.scaleForQueueWithdrawal({
-                sharesToWithdraw: sharesToWithdraw[i],
-                slashingFactor: slashingFactors[i]
-            });
-
-            // Remove delegated shares from the operator
-            if (operator != address(0)) {
-                // Staker was delegated and remains slashable during the withdrawal delay period
-                // Cumulative withdrawn scaled shares are updated for the strategy, this is for accounting
-                // purposes for burning shares if slashed
-                _addQueuedSlashableShares(operator, strategies[i], scaledShares[i]);
-
-                // forgefmt: disable-next-item
-                _decreaseDelegation({
-                    operator: operator,
-                    staker: staker,
-                    strategy: strategies[i],
-                    sharesToDecrease: sharesToWithdraw[i]
-                });
-            }
-
-            // Remove deposit shares from EigenPodManager/StrategyManager
-            shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
+        SignatureWithExpiry memory signature,
+        bytes32 salt
+    ) internal {
+        address approver = _operatorDetails[operator].delegationApprover;
+        if (approver == address(0)) {
+            return;
         }
 
-        // Create queue entry and increment withdrawal nonce
-        uint256 nonce = cumulativeWithdrawalsQueued[staker];
-        cumulativeWithdrawalsQueued[staker]++;
+        // Check that the salt hasn't been used previously, then mark the salt as spent
+        require(!delegationApproverSaltIsSpent[approver][salt], SaltSpent());
+        delegationApproverSaltIsSpent[approver][salt] = true;
 
-        Withdrawal memory withdrawal = Withdrawal({
-            staker: staker,
-            delegatedTo: operator,
-            withdrawer: staker,
-            nonce: nonce,
-            startBlock: uint32(block.number),
-            strategies: strategies,
-            scaledShares: scaledShares
+        // Validate the signature
+        _checkIsValidSignatureNow({
+            signer: approver,
+            signableDigest: calculateDelegationApprovalDigestHash(staker, operator, approver, salt, signature.expiry),
+            signature: signature.signature,
+            expiry: signature.expiry
         });
-
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
-
-        pendingWithdrawals[withdrawalRoot] = true;
-        queuedWithdrawals[withdrawalRoot] = withdrawal;
-        _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
-
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, sharesToWithdraw);
-        return withdrawalRoot;
     }
 
     /// @dev Calculate the amount of slashing to apply to the staker's shares
