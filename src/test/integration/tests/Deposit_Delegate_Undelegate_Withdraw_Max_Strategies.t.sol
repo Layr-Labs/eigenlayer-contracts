@@ -69,7 +69,7 @@ contract Integration_Deposit_Delegate_Undelegate_Withdraw_Max_Strategies is
         cheats.roll(block.number + allocationManager.ALLOCATION_CONFIGURATION_DELAY());
 
         // 5. Slash operator
-        avs.slashOperator(operator, operatorSet.id, 0.5 ether);
+        avs.slashOperator(operator, operatorSet.id, _randWadToSlash());
 
         // 6. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
