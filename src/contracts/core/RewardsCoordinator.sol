@@ -341,6 +341,76 @@ contract RewardsCoordinator is
      */
 
     /**
+     * @notice Internal helper to process reward claims.
+     * @param claim The RewardsMerkleClaims to be processed.
+     * @param recipient The address recipient that receives the ERC20 rewards
+     */
+    function _processClaim(RewardsMerkleClaim calldata claim, address recipient) internal {
+        DistributionRoot memory root = _distributionRoots[claim.rootIndex];
+        _checkClaim(claim, root);
+        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
+        address earner = claim.earnerLeaf.earner;
+        address claimer = claimerFor[earner];
+        if (claimer == address(0)) {
+            claimer = earner;
+        }
+        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
+        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
+            TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
+
+            uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
+            require(
+                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
+                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
+            );
+
+            // Calculate amount to claim and update cumulativeClaimed
+            uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
+            cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
+
+            tokenLeaf.token.safeTransfer(recipient, claimAmount);
+            emit RewardsClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
+        }
+    }
+
+    function _setActivationDelay(uint32 _activationDelay) internal {
+        emit ActivationDelaySet(activationDelay, _activationDelay);
+        activationDelay = _activationDelay;
+    }
+
+    function _setDefaultOperatorSplit(uint16 split) internal {
+        emit DefaultOperatorSplitBipsSet(defaultOperatorSplitBips, split);
+        defaultOperatorSplitBips = split;
+    }
+
+    function _setRewardsUpdater(address _rewardsUpdater) internal {
+        emit RewardsUpdaterSet(rewardsUpdater, _rewardsUpdater);
+        rewardsUpdater = _rewardsUpdater;
+    }
+
+    /**
+     * @notice Internal helper to set the operator split.
+     * @param operatorSplit The split struct for an Operator
+     * @param split The split in basis points.
+     * @param activatedAt The timestamp when the split is activated.
+     */
+    function _setOperatorSplit(OperatorSplit storage operatorSplit, uint16 split, uint32 activatedAt) internal {
+        // If, the earlier 'new' split is activated, we update the 'old' split with the earlier 'new' split.
+        // Else, the earlier 'old' split remains the same. This is essentially resetting the activation delay window
+        // since the earlier split setting didn't complete.
+        if (block.timestamp >= operatorSplit.activatedAt) {
+            if (operatorSplit.activatedAt == 0) {
+                // If the operator split has not been initialized yet, set the old split to the default split.
+                operatorSplit.oldSplitBips = defaultOperatorSplitBips;
+            } else {
+                operatorSplit.oldSplitBips = operatorSplit.newSplitBips;
+            }
+        }
+        operatorSplit.newSplitBips = split;
+        operatorSplit.activatedAt = activatedAt;
+    }
+
+    /**
      * @notice Common checks for all RewardsSubmissions.
      */
     function _validateCommonRewardsSubmission(
@@ -557,76 +627,6 @@ contract RewardsCoordinator is
     }
 
     /**
-     * @notice Internal helper to process reward claims.
-     * @param claim The RewardsMerkleClaims to be processed.
-     * @param recipient The address recipient that receives the ERC20 rewards
-     */
-    function _processClaim(RewardsMerkleClaim calldata claim, address recipient) internal {
-        DistributionRoot memory root = _distributionRoots[claim.rootIndex];
-        _checkClaim(claim, root);
-        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address earner = claim.earnerLeaf.earner;
-        address claimer = claimerFor[earner];
-        if (claimer == address(0)) {
-            claimer = earner;
-        }
-        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
-        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
-            TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
-
-            uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
-            require(
-                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
-                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
-            );
-
-            // Calculate amount to claim and update cumulativeClaimed
-            uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
-            cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
-
-            tokenLeaf.token.safeTransfer(recipient, claimAmount);
-            emit RewardsClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
-        }
-    }
-
-    function _setActivationDelay(uint32 _activationDelay) internal {
-        emit ActivationDelaySet(activationDelay, _activationDelay);
-        activationDelay = _activationDelay;
-    }
-
-    function _setDefaultOperatorSplit(uint16 split) internal {
-        emit DefaultOperatorSplitBipsSet(defaultOperatorSplitBips, split);
-        defaultOperatorSplitBips = split;
-    }
-
-    function _setRewardsUpdater(address _rewardsUpdater) internal {
-        emit RewardsUpdaterSet(rewardsUpdater, _rewardsUpdater);
-        rewardsUpdater = _rewardsUpdater;
-    }
-
-    /**
-     * @notice Internal helper to set the operator split.
-     * @param operatorSplit The split struct for an Operator
-     * @param split The split in basis points.
-     * @param activatedAt The timestamp when the split is activated.
-     */
-    function _setOperatorSplit(OperatorSplit storage operatorSplit, uint16 split, uint32 activatedAt) internal {
-        // If, the earlier 'new' split is activated, we update the 'old' split with the earlier 'new' split.
-        // Else, the earlier 'old' split remains the same. This is essentially resetting the activation delay window
-        // since the earlier split setting didn't complete.
-        if (block.timestamp >= operatorSplit.activatedAt) {
-            if (operatorSplit.activatedAt == 0) {
-                // If the operator split has not been initialized yet, set the old split to the default split.
-                operatorSplit.oldSplitBips = defaultOperatorSplitBips;
-            } else {
-                operatorSplit.oldSplitBips = operatorSplit.newSplitBips;
-            }
-        }
-        operatorSplit.newSplitBips = split;
-        operatorSplit.activatedAt = activatedAt;
-    }
-
-    /**
      * @notice Internal helper to get the operator split in basis points.
      * @dev It takes default split and activation delay into account while calculating the split.
      * @param operatorSplit The split struct for an Operator
@@ -643,6 +643,13 @@ contract RewardsCoordinator is
                     ? operatorSplit.newSplitBips
                     : operatorSplit.oldSplitBips;
         }
+    }
+
+    /**
+     * @dev Recalculates the domain separator when the chainid changes due to a fork.
+     */
+    function _calculateDomainSeparator() internal view returns (bytes32) {
+        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
 
     /**
@@ -721,12 +728,5 @@ contract RewardsCoordinator is
         } else {
             return _calculateDomainSeparator();
         }
-    }
-
-    /**
-     * @dev Recalculates the domain separator when the chainid changes due to a fork.
-     */
-    function _calculateDomainSeparator() internal view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
 }
