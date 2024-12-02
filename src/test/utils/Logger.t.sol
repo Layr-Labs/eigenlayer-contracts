@@ -21,7 +21,8 @@ uint256 constant FLAG = 1;
 uint256 constant NO_ASSETS = (FLAG << 0); // will have no assets
 uint256 constant HOLDS_LST = (FLAG << 1); // will hold some random amount of LSTs
 uint256 constant HOLDS_ETH = (FLAG << 2); // will hold some random amount of ETH
-uint256 constant HOLDS_ALL = (FLAG << 3); // will hold every LST and ETH
+uint256 constant HOLDS_ALL = (FLAG << 3); // will always hold ETH, and some LSTs
+uint256 constant HOLDS_MAX = (FLAG << 4); // will hold every LST and ETH (used for testing max strategies)
 
 /// @dev Types representing the different types of users that can be created.
 uint256 constant DEFAULT = (FLAG << 0);
