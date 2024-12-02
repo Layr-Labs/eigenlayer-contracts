@@ -3198,11 +3198,12 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         assertFalse(delegationManager.isDelegated(staker), "staker not undelegated");
     }
 
-    function testFuzz_undelegate_UAM(address staker, bytes32 salt) public {
+    function testFuzz_undelegate_UAM(Randomness r) public rand(r) {
+        address staker = r.Address();
+        bytes32 salt = r.Bytes32();
         _registerOperatorWithBaseDetails(defaultOperator);
         _delegateToOperatorWhoRequiresSig(staker, defaultOperator, salt);
 
-        // Set delegate
         cheats.prank(defaultOperator);
         permissionController.setAppointee(
             defaultOperator,
