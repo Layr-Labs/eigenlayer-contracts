@@ -871,13 +871,8 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-<<<<<<< HEAD
+
         cheats.expectRevert(IRewardsCoordinatorErrors.StrategiesNotInAscendingOrder.selector);
-=======
-        cheats.expectRevert(
-            IRewardsCoordinatorErrors.StrategiesNotInAscendingOrder.selector
-        );
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
         rewardsCoordinator.createAVSRewardsSubmission(avs, rewardsSubmissions);
     }
 

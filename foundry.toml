@@ -7,10 +7,7 @@ show_progress=true
 gas_reports = ["*"]
 # ignore upgrade testing in scripts by default
 no_match_test = "queueUpgrade"
-<<<<<<< HEAD
 no_match_path = "script/releases/**/*.sol"
-=======
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
 remappings = [
     "@openzeppelin/=lib/openzeppelin-contracts-v4.9.0/",
     "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable-v4.9.0/",

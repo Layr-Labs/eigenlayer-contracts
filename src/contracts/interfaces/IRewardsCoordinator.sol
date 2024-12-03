@@ -13,11 +13,8 @@ interface IRewardsCoordinatorErrors {
 
     /// Invalid Inputs
 
-<<<<<<< HEAD
     /// @dev Thrown when an input address is zero
     error InvalidAddressZero();
-=======
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
     /// @dev Thrown when an invalid root is provided.
     error InvalidRoot();
     /// @dev Thrown when an invalid root index is provided.
@@ -37,11 +34,8 @@ interface IRewardsCoordinatorErrors {
     error AmountIsZero();
     /// @dev Thrown when input `amount` exceeds maximum.
     error AmountExceedsMax();
-<<<<<<< HEAD
     /// @dev Thrown when input `split` exceeds `ONE_HUNDRED_IN_BIPS`
     error SplitExceedsMax();
-=======
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
     /// @dev Thrown when input `duration` exceeds maximum.
     error DurationExceedsMax();
     /// @dev Thrown when input `duration` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
@@ -60,13 +54,10 @@ interface IRewardsCoordinatorErrors {
     error StrategyNotWhitelisted();
     /// @dev Thrown when `strategies` is not sorted in ascending order.
     error StrategiesNotInAscendingOrder();
-<<<<<<< HEAD
     /// @dev Thrown when `operators` are not sorted in ascending order
     error OperatorsNotInAscendingOrder();
     /// @dev Thrown when an operator-directed rewards submission is not retroactive
     error SubmissionNotRetroactive();
-=======
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
 
     /// Claims
 
@@ -268,7 +259,6 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         RewardsSubmission rewardsSubmission
     );
 
-<<<<<<< HEAD
     /**
      * @notice Emitted when an AVS creates a valid `OperatorDirectedRewardsSubmission`
      * @param caller The address calling `createOperatorDirectedAVSRewardsSubmission`.
@@ -285,8 +275,6 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         OperatorDirectedRewardsSubmission operatorDirectedRewardsSubmission
     );
 
-=======
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
 
@@ -295,7 +283,6 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
     );
 
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
-<<<<<<< HEAD
     event DefaultOperatorSplitBipsSet(uint16 oldDefaultOperatorSplitBips, uint16 newDefaultOperatorSplitBips);
 
     /**
@@ -331,10 +318,6 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         uint16 oldOperatorPISplitBips,
         uint16 newOperatorPISplitBips
     );
-=======
-
-    event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
 
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
 
@@ -358,7 +341,6 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         uint256 claimedAmount
     );
 }
-<<<<<<< HEAD
 
 /**
  * @title Interface for the `IRewardsCoordinator` contract.
@@ -551,152 +533,8 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @param _newValue The new value for isRewardsForAllSubmitter
      */
     function setRewardsForAllSubmitter(address _submitter, bool _newValue) external;
-=======
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
-
-/**
- * @title Interface for the `IRewardsCoordinator` contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice Allows AVSs to make "Rewards Submissions", which get distributed amongst the AVSs' confirmed
- * Operators and the Stakers delegated to those Operators.
- * Calculations are performed based on the completed RewardsSubmission, with the results posted in
- * a Merkle root against which Stakers & Operators can make claims.
- */
-interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorEvents {
-    /**
-<<<<<<< HEAD
-=======
-     * @dev Initializes the addresses of the initial owner, rewardsUpdater, and
-     * configures the initial paused status, activationDelay, and globalOperatorCommissionBips.
-     */
-    function initialize(
-        address initialOwner,
-        uint256 initialPausedStatus,
-        address _rewardsUpdater,
-        uint32 _activationDelay,
-        uint16 _globalCommissionBips
-    ) external;
 
     /**
-     * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
-     * set of stakers delegated to operators who are registered to the `avs`
-     * @param rewardsSubmissions The rewards submissions being created
-     * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
-     * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
-     * @dev The tokens are sent to the `RewardsCoordinator` contract
-     * @dev Strategies must be in ascending order of addresses to check for duplicates
-     * @dev This function will revert if the `rewardsSubmission` is malformed,
-     * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
-     */
-    function createAVSRewardsSubmission(address avs, RewardsSubmission[] calldata rewardsSubmissions) external;
-
-    /**
-     * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
-     * rather than just those delegated to operators who are registered to a single avs and is
-     * a permissioned call based on isRewardsForAllSubmitter mapping.
-     * @param rewardsSubmissions The rewards submissions being created
-     */
-    function createRewardsForAllSubmission(
-        RewardsSubmission[] calldata rewardsSubmissions
-    ) external;
-
-    /**
-     * @notice Creates a new rewards submission for all earners across all AVSs.
-     * Earners in this case indicating all operators and their delegated stakers. Undelegated stake
-     * is not rewarded from this RewardsSubmission. This interface is only callable
-     * by the token hopper contract from the Eigen Foundation
-     * @param rewardsSubmissions The rewards submissions being created
-     */
-    function createRewardsForAllEarners(
-        RewardsSubmission[] calldata rewardsSubmissions
-    ) external;
-
-    /**
-     * @notice Claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
-     * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
-     * they can simply claim against the latest root and the contract will calculate the difference between
-     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
-     * @param claim The RewardsMerkleClaim to be processed.
-     * Contains the root index, earner, token leaves, and required proofs
-     * @param recipient The address recipient that receives the ERC20 rewards
-     * @dev only callable by the valid claimer, that is
-     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
-     * claimerFor[claim.earner] can claim the rewards.
-     */
-    function processClaim(RewardsMerkleClaim calldata claim, address recipient) external;
-
-    /**
-     * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
-     * @param root The merkle root of the distribution
-     * @param rewardsCalculationEndTimestamp The timestamp until which rewards have been calculated
-     * @dev Only callable by the rewardsUpdater
-     */
-    function submitRoot(bytes32 root, uint32 rewardsCalculationEndTimestamp) external;
-
-    /**
-     * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
-     * @param rootIndex The index of the root to be disabled
-     */
-    function disableRoot(
-        uint32 rootIndex
-    ) external;
-
-    /**
-     * @notice Sets the address of the entity that can call `processClaim` on ehalf of an earner
-     * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
-     * @dev Assumes msg.sender is the earner
-     */
-    function setClaimerFor(
-        address claimer
-    ) external;
-
-    /**
-     * @notice Sets the address of the entity that can call `processClaim` on behalf of an earner
-     * @param earner The address to set the claimer for
-     * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
-     * @dev Only callable by operators or AVSs. We define an AVS that has created at least one
-     *      operatorSet in the `AllocationManager`
-     */
-    function setClaimerFor(address earner, address claimer) external;
-
-    /**
-     * @notice Sets the delay in timestamp before a posted root can be claimed against
-     * @dev Only callable by the contract owner
-     * @param _activationDelay The new value for activationDelay
-     */
-    function setActivationDelay(
-        uint32 _activationDelay
-    ) external;
-
-    /**
-     * @notice Sets the global commission for all operators across all avss
-     * @dev Only callable by the contract owner
-     * @param _globalCommissionBips The commission for all operators across all avss
-     */
-    function setGlobalOperatorCommission(
-        uint16 _globalCommissionBips
-    ) external;
-
-    /**
-     * @notice Sets the permissioned `rewardsUpdater` address which can post new roots
-     * @dev Only callable by the contract owner
-     * @param _rewardsUpdater The address of the new rewardsUpdater
-     */
-    function setRewardsUpdater(
-        address _rewardsUpdater
-    ) external;
-
-    /**
-     * @notice Sets the permissioned `rewardsForAllSubmitter` address which can submit createRewardsForAllSubmission
-     * @dev Only callable by the contract owner
-     * @param _submitter The address of the rewardsForAllSubmitter
-     * @param _newValue The new value for isRewardsForAllSubmitter
-     */
-    function setRewardsForAllSubmitter(address _submitter, bool _newValue) external;
-
-    /**
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
      *
      *                         VIEW FUNCTIONS
      *
@@ -716,7 +554,6 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     /// @notice Mapping: claimer => token => total amount claimed
     function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
 
-<<<<<<< HEAD
     /// @notice the defautl split for all operators across all avss
     function defaultOperatorSplitBips() external view returns (uint16);
 
@@ -727,10 +564,6 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     function getOperatorPISplit(
         address operator
     ) external view returns (uint16);
-=======
-    /// @notice the commission for all operators across all avss
-    function globalOperatorCommissionBips() external view returns (uint16);
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(
@@ -748,13 +581,6 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
         RewardsMerkleClaim calldata claim
     ) external view returns (bool);
 
-<<<<<<< HEAD
-=======
-    /// @notice the commission for a specific operator for a specific avs
-    /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16);
-
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
     /// @notice returns the number of distribution roots posted
     function getDistributionRootsLength() external view returns (uint256);
 

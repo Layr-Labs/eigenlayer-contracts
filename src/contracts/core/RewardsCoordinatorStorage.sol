@@ -15,12 +15,6 @@ import "../interfaces/IAllocationManager.sol";
 abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     // Constants
 
-<<<<<<< HEAD
-=======
-    /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
-    uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
-
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
     /// @dev Index for flag that pauses calling createRewardsForAllSubmission
@@ -31,22 +25,18 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
     /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
     uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
-<<<<<<< HEAD
     /// @dev Index for flag that pauses calling createOperatorDirectedAVSRewardsSubmission
     uint8 internal constant PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION = 5;
     /// @dev Index for flag that pauses calling setOperatorAVSSplit
     uint8 internal constant PAUSED_OPERATOR_AVS_SPLIT = 6;
     /// @dev Index for flag that pauses calling setOperatorPISplit
     uint8 internal constant PAUSED_OPERATOR_PI_SPLIT = 7;
-=======
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
     /// @dev Salt for the token leaf, meant to distinguish from earnerLeaf since they have the same sized data
     uint8 internal constant TOKEN_LEAF_SALT = 1;
 
-<<<<<<< HEAD
     /// @notice The maximum rewards token amount for a single rewards submission, constrained by off-chain calculation
     uint256 internal constant MAX_REWARDS_AMOUNT = 1e38 - 1;
     /// @notice Equivalent to 100%, but in basis points.
@@ -56,12 +46,6 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     // Immutables
-=======
-    /// @notice Canonical, virtual beacon chain ETH strategy
-    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
-    // Immtuables
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegationManager;
@@ -130,7 +114,6 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     mapping(address avs => mapping(bytes32 hash => bool valid)) public isRewardsSubmissionForAllEarnersHash;
 
     // Construction
-<<<<<<< HEAD
 
     /// @notice Mapping: avs => operatorDirectedAVSRewardsSubmissionHash => bool to check if operator-directed rewards submission hash has been submitted
     mapping(address => mapping(bytes32 => bool)) public isOperatorDirectedAVSRewardsSubmissionHash;
@@ -140,8 +123,6 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
 
     /// @notice Mapping: operator => OperatorPISplit. The split an operator takes for Programmatic Incentives.
     mapping(address => OperatorSplit) internal operatorPISplitBips;
-=======
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
 
     constructor(
         IDelegationManager _delegationManager,

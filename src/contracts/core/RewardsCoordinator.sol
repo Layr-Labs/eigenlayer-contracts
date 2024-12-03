@@ -185,7 +185,6 @@ contract RewardsCoordinator is
         RewardsMerkleClaim calldata claim,
         address recipient
     ) external onlyWhenNotPaused(PAUSED_PROCESS_CLAIM) nonReentrant {
-<<<<<<< HEAD
         _processClaim(claim, recipient);
     }
 
@@ -196,29 +195,6 @@ contract RewardsCoordinator is
     ) external onlyWhenNotPaused(PAUSED_PROCESS_CLAIM) nonReentrant {
         for (uint256 i = 0; i < claims.length; i++) {
             _processClaim(claims[i], recipient);
-=======
-        DistributionRoot memory root = _distributionRoots[claim.rootIndex];
-        _checkClaim(claim, root);
-        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address earner = claim.earnerLeaf.earner;
-        address claimer = claimerFor[earner];
-        if (claimer == address(0)) {
-            claimer = earner;
-        }
-        require(msg.sender == claimer, UnauthorizedCaller());
-        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
-            TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
-
-            uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
-            require(tokenLeaf.cumulativeEarnings > currCumulativeClaimed, EarningsNotGreaterThanClaimed());
-
-            // Calculate amount to claim and update cumulativeClaimed
-            uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
-            cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
-
-            tokenLeaf.token.safeTransfer(recipient, claimAmount);
-            emit RewardsClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
         }
     }
 
@@ -282,7 +258,6 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-<<<<<<< HEAD
     function setDefaultOperatorSplit(
         uint16 split
     ) external onlyOwner {
@@ -318,15 +293,6 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-=======
-    function setGlobalOperatorCommission(
-        uint16 _globalCommissionBips
-    ) external onlyOwner {
-        _setGlobalOperatorCommission(_globalCommissionBips);
-    }
-
-    /// @inheritdoc IRewardsCoordinator
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
     function setRewardsUpdater(
         address _rewardsUpdater
     ) external onlyOwner {
@@ -351,7 +317,6 @@ contract RewardsCoordinator is
      * @param claim The RewardsMerkleClaims to be processed.
      * @param recipient The address recipient that receives the ERC20 rewards
      */
-<<<<<<< HEAD
     function _processClaim(RewardsMerkleClaim calldata claim, address recipient) internal {
         DistributionRoot memory root = _distributionRoots[claim.rootIndex];
         _checkClaim(claim, root);
@@ -459,23 +424,8 @@ contract RewardsCoordinator is
         require(startTimestamp % CALCULATION_INTERVAL_SECONDS == 0, InvalidStartTimestampRemainder());
         require(
             block.timestamp - MAX_RETROACTIVE_LENGTH <= startTimestamp && GENESIS_REWARDS_TIMESTAMP <= startTimestamp,
-=======
-    function _validateRewardsSubmission(
-        RewardsSubmission calldata rewardsSubmission
-    ) internal view {
-        require(rewardsSubmission.strategiesAndMultipliers.length > 0, InputArrayLengthZero());
-        require(rewardsSubmission.amount > 0, AmountIsZero());
-        require(rewardsSubmission.amount <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
-        require(rewardsSubmission.duration <= MAX_REWARDS_DURATION, DurationExceedsMax());
-        require(rewardsSubmission.duration % CALCULATION_INTERVAL_SECONDS == 0, InvalidDurationRemainder());
-        require(rewardsSubmission.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0, InvalidStartTimestampRemainder());
-        require(
-            block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp
-                && GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp,
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
             StartTimestampTooFarInPast()
         );
-        require(rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH, StartTimestampTooFarInFuture());
 
         // Require reward submission is for whitelisted strategy or beaconChainETHStrategy
         address currAddress = address(0);
@@ -624,36 +574,6 @@ contract RewardsCoordinator is
         );
     }
 
-<<<<<<< HEAD
-=======
-    function _setActivationDelay(
-        uint32 _activationDelay
-    ) internal {
-        emit ActivationDelaySet(activationDelay, _activationDelay);
-        activationDelay = _activationDelay;
-    }
-
-    function _setGlobalOperatorCommission(
-        uint16 _globalCommissionBips
-    ) internal {
-        emit GlobalCommissionBipsSet(globalOperatorCommissionBips, _globalCommissionBips);
-        globalOperatorCommissionBips = _globalCommissionBips;
-    }
-
-    function _setRewardsUpdater(
-        address _rewardsUpdater
-    ) internal {
-        emit RewardsUpdaterSet(rewardsUpdater, _rewardsUpdater);
-        rewardsUpdater = _rewardsUpdater;
-    }
-
-    function _setClaimer(address earner, address claimer) internal {
-        address prevClaimer = claimerFor[earner];
-        claimerFor[earner] = claimer;
-        emit ClaimerForSet(earner, prevClaimer, claimer);
-    }
-
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
     /**
      *
      *                         VIEW FUNCTIONS
@@ -683,7 +603,6 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-<<<<<<< HEAD
     function getOperatorAVSSplit(address operator, address avs) external view returns (uint16) {
         return _getOperatorSplit(operatorAVSSplitBips[operator][avs]);
     }
@@ -693,13 +612,6 @@ contract RewardsCoordinator is
         address operator
     ) external view returns (uint16) {
         return _getOperatorSplit(operatorPISplitBips[operator]);
-=======
-    function operatorCommissionBips(
-        address, // operator
-        address // avs
-    ) external view returns (uint16) {
-        return globalOperatorCommissionBips;
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
     }
 
     /// @inheritdoc IRewardsCoordinator
