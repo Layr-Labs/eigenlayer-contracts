@@ -19,6 +19,8 @@ contract Execute is Queue {
     using SafeTxUtils for SafeTx;
     using EigenLabsUpgrade for *;
 
+    event Upgraded(address indexed implementation);
+
     /**
      * @dev Overrides the previous _execute function to execute the queued transactions.
      */
@@ -60,6 +62,8 @@ contract Execute is Queue {
         assertEq(timelock.isOperationReady(txHash), true, "Transaction should be executable.");
 
         zSetMultisigContext(this._protocolCouncilMultisig());
+        vm.expectEmit(true, true, true, true, address(rewardsCoordinatorProxy));
+        emit Upgraded(zDeployedImpl(type(RewardsCoordinator).name));
         execute();
 
         // 3. assert that the execute did something
