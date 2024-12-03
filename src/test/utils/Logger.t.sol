@@ -40,7 +40,7 @@ abstract contract Logger is Test {
     /// Storage
     /// -----------------------------------------------------------------------
 
-    bool on = true;
+    bool public isLoggingOn = true;
 
     /// -----------------------------------------------------------------------
     /// Modifiers
@@ -69,12 +69,12 @@ abstract contract Logger is Test {
     /// Colored Names
     /// -----------------------------------------------------------------------
 
-    /// @dev Returns `NAME` colored based on the inheriting contract's role.
+    /// @dev Returns `NAME` colored based isLoggingOn the inheriting contract's role.
     function NAME_COLORED() public view returns (string memory) {
         return colorByRole(NAME());
     }
 
-    /// @dev Returns `name` colored based on its role.
+    /// @dev Returns `name` colored based isLoggingOn its role.
     function colorByRole(
         string memory name
     ) public view noTracing returns (string memory colored) {
@@ -115,12 +115,12 @@ abstract contract Logger is Test {
 
     function _pauseLogging() internal {
         console.log("\n%s logging paused...", NAME_COLORED());
-        on = false;
+        isLoggingOn = false;
     }
 
     function _resumeLogging() internal {
         console.log("\n%s logging unpaused...", NAME_COLORED());
-        on = true;
+        isLoggingOn = true;
     }
 }
 
@@ -136,10 +136,12 @@ library print {
     function method(
         string memory m
     ) internal view {
+        if (!_on()) return;
         console.log("%s.%s()", _name(), m.italic());
     }
 
     function method(string memory m, string memory args) internal view {
+        if (!_on()) return;
         console.log("%s.%s(%s)", _name(), m.italic(), args);
     }
 
@@ -150,6 +152,7 @@ library print {
         IStrategy[] memory strategies,
         uint256[] memory tokenBalances
     ) internal view {
+        if (!_on()) return;
         console.log(
             "\nCreated %s %s who holds %s.", userType.asUserType(), _logger().colorByRole(name), assetType.asAssetType()
         );
@@ -166,6 +169,12 @@ library print {
                 );
             }
         }
+    }
+
+    function gasUsed() internal {
+        if (!_on()) return;
+        uint256 used = cheats.snapshotGasLastCall("gasUsed");
+        console.log("Gas used: %d", used.asGwei());
     }
 
     /// -----------------------------------------------------------------------
@@ -283,5 +292,9 @@ library print {
 
     function _logger() internal view returns (Logger) {
         return Logger(address(this));
+    }
+
+    function _on() internal view returns (bool) {
+        return _logger().isLoggingOn();
     }
 }
