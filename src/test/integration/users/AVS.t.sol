@@ -73,6 +73,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         print.createOperatorSets(p);
         allocationManager.createOperatorSets(address(this), p);
+        print.gasUsed();
     }
 
     function createOperatorSet(
@@ -86,6 +87,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         print.createOperatorSets(p);
         allocationManager.createOperatorSets(address(this), p);
+        print.gasUsed();
     }
 
     function slashOperator(User operator, uint32 operatorSetId, uint256 wadToSlash) public createSnapshot {
@@ -110,6 +112,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         });
 
         allocationManager.slashOperator(address(this), p);
+        print.gasUsed();
     }
 
     function deregisterFromOperatorSets(User operator, uint32[] memory operatorSetIds) public createSnapshot {
@@ -120,6 +123,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         print.deregisterFromOperatorSets(p);
         allocationManager.deregisterFromOperatorSets(p);
+        print.gasUsed();
     }
 
     function setAVSRegistrar(
@@ -128,6 +132,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         print.method("setAVSRegistrar");
         console.log("Setting AVS registrar to: %s", address(registrar));
         allocationManager.setAVSRegistrar(address(this), registrar);
+        print.gasUsed();
     }
 
     function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) public createSnapshot {
@@ -140,6 +145,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
+        print.gasUsed();
     }
 
     function removeStrategiesFromOperatorSet(
@@ -155,6 +161,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
+        print.gasUsed();
     }
 
     /// -----------------------------------------------------------------------

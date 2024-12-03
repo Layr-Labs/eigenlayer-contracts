@@ -104,6 +104,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }).toArray();
 
         allocationManager.modifyAllocations(address(this), params);
+        print.gasUsed();
+
         (, uint32 delay) = allocationManager.getAllocationDelay(address(this));
         rollForward({blocks: delay});
     }
@@ -112,6 +114,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         OperatorSet memory operatorSet
     ) public virtual {
         modifyAllocations(operatorSet, new uint64[](allocationManager.getStrategiesInOperatorSet(operatorSet).length));
+        print.gasUsed();
     }
 
     function registerForOperatorSets(
@@ -140,6 +143,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             address(this),
             RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
         );
+        print.gasUsed();
     }
 
     function deregisterFromOperatorSet(
@@ -163,11 +167,13 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 operatorSetIds: operatorSet.id.toArrayU32()
             })
         );
+        print.gasUsed();
     }
 
     function setAllocationDelay(uint32 delay) public virtual createSnapshot {
         print.method("setAllocationDelay");
         allocationManager.setAllocationDelay(address(this), delay);
+        print.gasUsed();
         rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
     }
 
@@ -179,8 +185,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     function registerAsOperator() public virtual createSnapshot {
         print.method("registerAsOperator");
-
         delegationManager.registerAsOperator(address(0), withdrawalDelay, "metadata");
+        print.gasUsed();
     }
 
     /// @dev Delegate to the operator without a signature
@@ -191,6 +197,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
+        print.gasUsed();
     }
 
     /// @dev Undelegate from operator
@@ -199,6 +206,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
         delegationManager.undelegate(address(this));
+        print.gasUsed();
 
         for (uint256 i = 0; i < expectedWithdrawals.length; i++) {
             emit log("expecting withdrawal:");
@@ -218,6 +226,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(staker));
         delegationManager.undelegate(address(staker));
+        print.gasUsed();
+
         return expectedWithdrawals;
     }
 
@@ -250,6 +260,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         });
 
         bytes32[] memory withdrawalRoots = delegationManager.queueWithdrawals(params);
+        print.gasUsed();
 
         // Basic sanity check - we do all other checks outside this file
         assertEq(withdrawals.length, withdrawalRoots.length, "User.queueWithdrawals: length mismatch");
@@ -389,6 +400,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(strategyManager), tokenBalance);
                 strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
+                print.gasUsed();
             }
         }
     }
@@ -411,6 +423,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(strategyManager), tokens);
                 strategyManager.depositIntoStrategy(strat, underlyingToken, tokens);
+                print.gasUsed();
             }
         }
     }
@@ -450,6 +463,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }
 
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
+        print.gasUsed();
 
         return tokens;
     }
