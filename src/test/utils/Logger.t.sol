@@ -172,9 +172,9 @@ library print {
     }
 
     function gasUsed() internal {
-        if (!_on()) return;
         uint256 used = cheats.snapshotGasLastCall("gasUsed");
-        console.log("Gas used: %d", used.asGwei());
+        if (!_on()) return;
+        console.log("   Gas used: %d", used);
     }
 
     /// -----------------------------------------------------------------------
