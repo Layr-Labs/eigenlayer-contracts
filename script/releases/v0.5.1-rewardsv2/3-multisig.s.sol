@@ -35,6 +35,9 @@ contract Execute is Queue {
     }
 
     function testDeploy() public override {
+        // save the previous implementation address to assert its change later
+        address prevRewardsCoordinator = zDeployedImpl(type(RewardsCoordinator).name);
+
         // 0. Deploy the Implementation contract.
         runAsEOA();
 
@@ -68,6 +71,7 @@ contract Execute is Queue {
             TransparentUpgradeableProxy(payable(zDeployedProxy(type(RewardsCoordinator).name)))
         );
         assertEq(rewardsCoordinatorImpl, zDeployedImpl(type(RewardsCoordinator).name));
+        assertNotEq(prevRewardsCoordinator, rewardsCoordinatorImpl, "expected rewardsCoordinatorImpl to be different");
 
         uint256 pausedStatusAfter = rewardsCoordinatorProxy.paused();
         address owner = this._operationsMultisig();
