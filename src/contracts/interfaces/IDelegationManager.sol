@@ -264,7 +264,8 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
 
     /**
      * @notice Undelegates the staker from their current operator, and redelegates to `newOperator`
-     * Queues a withdrawal for all of the staker's withdrawable shares.
+     * Queues a withdrawal for all of the staker's withdrawable shares. These shares will only be
+     * delegated to `newOperator` AFTER the withdrawal is completed.
      * @dev This method acts like a call to `undelegate`, then `delegateTo`
      * @param newOperator the new operator that will be delegated all assets
      * @dev NOTE: the following 2 params are ONLY checked if `newOperator` has a `delegationApprover`.
