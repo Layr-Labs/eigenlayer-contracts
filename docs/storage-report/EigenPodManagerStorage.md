@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 | Name                            | Type                                                                       | Slot | Offset | Bytes | Contract                                                             |
 |---------------------------------|----------------------------------------------------------------------------|------|--------|-------|----------------------------------------------------------------------|
 | __deprecated_beaconChainOracle  | address                                                                    | 0    | 0      | 20    | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
@@ -9,14 +8,3 @@
 | __deprecated_denebForkTimestamp | uint64                                                                     | 5    | 0      | 8     | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
 | _beaconChainSlashingFactor      | mapping(address => struct IEigenPodManagerTypes.BeaconChainSlashingFactor) | 6    | 0      | 32    | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
 | __gap                           | uint256[43]                                                                | 7    | 0      | 1376  | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
-=======
-| Name                            | Type                                   | Slot | Offset | Bytes | Contract                                                             |
-|---------------------------------|----------------------------------------|------|--------|-------|----------------------------------------------------------------------|
-| __deprecated_beaconChainOracle  | address                                | 0    | 0      | 20    | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
-| ownerToPod                      | mapping(address => contract IEigenPod) | 1    | 0      | 32    | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
-| numPods                         | uint256                                | 2    | 0      | 32    | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
-| __deprecated_maxPods            | uint256                                | 3    | 0      | 32    | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
-| podOwnerDepositShares           | mapping(address => int256)             | 4    | 0      | 32    | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
-| __deprecated_denebForkTimestamp | uint64                                 | 5    | 0      | 8     | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
-| __gap                           | uint256[44]                            | 6    | 0      | 1408  | src/contracts/pods/EigenPodManagerStorage.sol:EigenPodManagerStorage |
->>>>>>> 22abccf7 (Fix: Get Dev to Compile (#835))
