@@ -120,6 +120,15 @@ contract ServiceManagerMock is OwnableUpgradeable {
     }
 
     /**
+     * @notice Forwards a call to Eigenlayer's RewardsCoordinator contract to set the address of the entity that can call `processClaim` on behalf of this contract.
+     * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
+     * @dev Only callabe by the owner.
+     */
+    function setClaimerFor(address claimer) public virtual onlyOwner {
+        _rewardsCoordinator.setClaimerFor(claimer);
+    }
+
+    /**
      * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
      * @param operator The address of the operator to get restaked strategies for
      * @dev This function is intended to be called off-chain
