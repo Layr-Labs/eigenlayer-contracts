@@ -43,6 +43,8 @@ contract Execute is Queue {
         super._runAsMultisig();
         vm.stopPrank();
 
+        RewardsCoordinator rewardsCoordinatorProxy = RewardsCoordinator(zDeployedProxy(type(RewardsCoordinator).name));
+        uint256 pausedStatusBefore = rewardsCoordinatorProxy.paused();
         TimelockController timelock = this._timelock();
 
         // 2. run the execute script above.
@@ -67,8 +69,7 @@ contract Execute is Queue {
         );
         assertEq(rewardsCoordinatorImpl, zDeployedImpl(type(RewardsCoordinator).name));
 
-        RewardsCoordinator rewardsCoordinatorProxy = RewardsCoordinator(zDeployedProxy(type(RewardsCoordinator).name));
-
+        uint256 pausedStatusAfter = rewardsCoordinatorProxy.paused();
         address owner = this._operationsMultisig();
         IPauserRegistry pauserRegistry = IPauserRegistry(this._pauserRegistry());
         uint64 initPausedStatus = zUint64("REWARDS_COORDINATOR_INIT_PAUSED_STATUS");
@@ -97,7 +98,11 @@ contract Execute is Queue {
             defaultOperatorSplitBips,
             "expected defaultOperatorSplitBips"
         );
-
+        assertEq(
+            pausedStatusBefore,
+            pausedStatusAfter,
+            "expected paused status to be the same before and after initialization"
+        );
         assertEq(
             address(rewardsCoordinatorProxy.delegationManager()),
             zDeployedProxy(type(DelegationManager).name),
