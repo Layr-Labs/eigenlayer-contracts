@@ -172,6 +172,9 @@ contract TestRewardsV2 is ZeusScript {
     ) internal {
         ServiceManagerMock serviceManager = _rewardingServiceManager();
         vm.startBroadcast();
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            rewardsSubmissions[i].token.approve(address(serviceManager), type(uint256).max);
+        }
         serviceManager.createAVSRewardsSubmission(rewardsSubmissions);
         vm.stopBroadcast();
     }
@@ -180,6 +183,9 @@ contract TestRewardsV2 is ZeusScript {
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions
     ) internal {
         vm.startBroadcast();
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            rewardsSubmissions[i].token.approve(address(_rewardsCoordinator()), type(uint256).max);
+        }
         _rewardsCoordinator().createRewardsForAllEarners(rewardsSubmissions);
         vm.stopBroadcast();
     }
