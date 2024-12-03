@@ -6,6 +6,7 @@ fs_permissions = [{ access = "read-write", path = "./"}, { access = "read-write"
 gas_reports = ["*"]
 # ignore upgrade testing in scripts by default
 no_match_test = "queueUpgrade"
+no_match_path = "script/releases/**/*.sol"
 
 # A list of ignored solc error codes
 
