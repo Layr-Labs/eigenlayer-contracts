@@ -28,8 +28,11 @@ interface IUserDeployer {
 }
 
 contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
+    using SlashingLib for *;
     using SingleItemArrayLib for *;
     using print for *;
+
+    IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     AllocationManager allocationManager;
     DelegationManager delegationManager;
@@ -577,34 +580,53 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(pod));
     }
 
+    function _getSlashingFactor(
+        address staker,
+        IStrategy strategy
+    ) internal view returns (uint256) {
+        address operator = delegationManager.delegatedTo(staker);
+        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
+        if (strategy == beaconChainETHStrategy) {
+            return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(staker));
+        }
+        return maxMagnitude;
+    }
+
     /// @notice Gets the expected withdrawals to be created when the staker is undelegated via a call to `DelegationManager.undelegate()`
     /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
     function _getExpectedWithdrawalStructsForStaker(
         address staker
-    ) internal view returns (Withdrawal[] memory) {
-        (IStrategy[] memory strategies, uint256[] memory shares) = delegationManager.getDepositedShares(staker);
+    ) internal view returns (Withdrawal[] memory expectedWithdrawals) {
+        (IStrategy[] memory strategies, )
+             = delegationManager.getDepositedShares(staker);
 
-        Withdrawal[] memory expectedWithdrawals = new Withdrawal[](strategies.length);
+        expectedWithdrawals = new Withdrawal[](strategies.length);
+
+        (uint256[] memory withdrawableShares,)
+             = delegationManager.getWithdrawableShares(staker, strategies);
+
         address delegatedTo = delegationManager.delegatedTo(staker);
         uint256 nonce = delegationManager.cumulativeWithdrawalsQueued(staker);
-
+        
         for (uint256 i = 0; i < strategies.length; ++i) {
-            IStrategy[] memory singleStrategy = new IStrategy[](1);
-            uint256[] memory singleShares = new uint256[](1);
-            singleStrategy[0] = strategies[i];
-            singleShares[0] = shares[i];
+            uint256 scaledShares = withdrawableShares[i].scaleForQueueWithdrawal(
+                _getSlashingFactor(staker, strategies[i])
+            );
+
+            if (strategies[i] == beaconChainETHStrategy) {
+                scaledShares -= scaledShares % 1 gwei;
+            }
+
             expectedWithdrawals[i] = Withdrawal({
                 staker: staker,
                 delegatedTo: delegatedTo,
                 withdrawer: staker,
                 nonce: (nonce + i),
                 startBlock: uint32(block.number),
-                strategies: singleStrategy,
-                scaledShares: singleShares
+                strategies: strategies[i].toArray(),
+                scaledShares: scaledShares.toArrayU256()
             });
         }
-
-        return expectedWithdrawals;
     }
 
     function getActiveValidators() public view returns (uint40[] memory) {
