@@ -40,7 +40,7 @@ abstract contract Logger is Test {
     /// Storage
     /// -----------------------------------------------------------------------
 
-    bool public isLoggingOn = true;
+    bool public logging = true;
 
     /// -----------------------------------------------------------------------
     /// Modifiers
@@ -53,9 +53,9 @@ abstract contract Logger is Test {
     }
 
     modifier noLogging() {
-        _pauseLogging();
+        logging = false;
         _;
-        _resumeLogging();
+        logging = true;
     }
 
     /// -----------------------------------------------------------------------
@@ -69,12 +69,12 @@ abstract contract Logger is Test {
     /// Colored Names
     /// -----------------------------------------------------------------------
 
-    /// @dev Returns `NAME` colored based isLoggingOn the inheriting contract's role.
+    /// @dev Returns `NAME` colored based logging the inheriting contract's role.
     function NAME_COLORED() public view returns (string memory) {
         return colorByRole(NAME());
     }
 
-    /// @dev Returns `name` colored based isLoggingOn its role.
+    /// @dev Returns `name` colored based logging its role.
     function colorByRole(
         string memory name
     ) public view noTracing returns (string memory colored) {
@@ -113,14 +113,9 @@ abstract contract Logger is Test {
     /// Logging
     /// -----------------------------------------------------------------------
 
-    function _pauseLogging() internal {
-        console.log("\n%s logging paused...", NAME_COLORED());
-        isLoggingOn = false;
-    }
-
-    function _resumeLogging() internal {
-        console.log("\n%s logging unpaused...", NAME_COLORED());
-        isLoggingOn = true;
+    function _toggleLog() internal {
+        logging = !logging;
+        console.log("\n%s logging %s...", NAME_COLORED(), logging ? "enabled" : "disabled");
     }
 }
 
@@ -136,12 +131,12 @@ library print {
     function method(
         string memory m
     ) internal view {
-        if (!_on()) return;
+        if (!_logging()) return;
         console.log("%s.%s()", _name(), m.italic());
     }
 
     function method(string memory m, string memory args) internal view {
-        if (!_on()) return;
+        if (!_logging()) return;
         console.log("%s.%s(%s)", _name(), m.italic(), args);
     }
 
@@ -152,7 +147,7 @@ library print {
         IStrategy[] memory strategies,
         uint256[] memory tokenBalances
     ) internal view {
-        if (!_on()) return;
+        if (!_logging()) return;
         console.log(
             "\nCreated %s %s who holds %s.", userType.asUserType(), _logger().colorByRole(name), assetType.asAssetType()
         );
@@ -173,8 +168,8 @@ library print {
 
     function gasUsed() internal {
         uint256 used = cheats.snapshotGasLastCall("gasUsed");
-        if (!_on()) return;
-        console.log("   Gas used: %d", used);
+        if (!_logging()) return;
+        console.log("   Gas used: %d".dim().bold(), used);
     }
 
     /// -----------------------------------------------------------------------
@@ -294,7 +289,7 @@ library print {
         return Logger(address(this));
     }
 
-    function _on() internal view returns (bool) {
-        return _logger().isLoggingOn();
+    function _logging() internal view returns (bool) {
+        return _logger().logging();
     }
 }
