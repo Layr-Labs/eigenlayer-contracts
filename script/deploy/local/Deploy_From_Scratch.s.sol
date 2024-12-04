@@ -335,12 +335,9 @@ contract DeployFromScratch is Script, Test {
             )
         );
 
-        eigenLayerProxyAdmin.upgradeAndCall(
+        eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(permissionController))),
-            address(permissionControllerImplementation),
-            abi.encodeWithSelector(
-                PermissionController.initialize.selector
-            )
+            address(permissionControllerImplementation)
         );
 
         // deploy StrategyBaseTVLLimits contract implementation
