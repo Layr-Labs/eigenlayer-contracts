@@ -81,7 +81,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     
     /// @dev Allocates randomly accross the operator set's strategies with a sum of `magnitudeSum`.
     /// NOTE: Calling more than once will lead to deallocations...
-    function modifyAllocations(OperatorSet memory operatorSet, uint64[] memory magnitudes) public virtual createSnapshot {
+    function modifyAllocations(
+        OperatorSet memory operatorSet, 
+        uint64[] memory magnitudes
+    ) public virtual createSnapshot return (AllocateParams memory) {
         print.method(
             "modifyAllocations",
             string.concat(
@@ -97,17 +100,19 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         require(strategies.length == magnitudes.length, "User.modifyAllocations: length mismatch");
 
-        AllocateParams[] memory params = AllocateParams({
+        AllocateParams[] memory allocateParams = AllocateParams({
             operatorSet: operatorSet,
             strategies: strategies,
             newMagnitudes: magnitudes
         }).toArray();
 
-        allocationManager.modifyAllocations(address(this), params);
+        allocationManager.modifyAllocations(address(this), allocateParams);
         print.gasUsed();
 
         (, uint32 delay) = allocationManager.getAllocationDelay(address(this));
         rollForward({blocks: delay});
+
+        return allocateParams[0]
     }
     
     function deallocateAll(
