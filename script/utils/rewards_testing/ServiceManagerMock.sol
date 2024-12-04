@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ISignatureUtils} from "src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "src/contracts/interfaces/IAVSDirectory.sol";
 import {IRewardsCoordinator} from "src/contracts/interfaces/IRewardsCoordinator.sol";
@@ -11,7 +11,7 @@ import {IRewardsCoordinator} from "src/contracts/interfaces/IRewardsCoordinator.
  * This contract can be inherited from or simply used as a point-of-reference.
  * @author Layr Labs, Inc.
  */
-contract ServiceManagerMock is OwnableUpgradeable {
+contract ServiceManagerMock is Ownable {
 
     IAVSDirectory internal immutable _avsDirectory;
     IRewardsCoordinator internal immutable _rewardsCoordinator;
@@ -21,19 +21,12 @@ contract ServiceManagerMock is OwnableUpgradeable {
 
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
+        address initialOwner,
         IAVSDirectory __avsDirectory,
         IRewardsCoordinator ___rewardsCoordinator
     ) {
         _avsDirectory = __avsDirectory;
         _rewardsCoordinator = ___rewardsCoordinator;
-        _disableInitializers();
-    }
-
-    function initialize(address _initialOwner) public initializer {
-        _transferOwnership(_initialOwner);
-    }
-
-    function __ServiceManagerBase_init(address initialOwner) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
     }
 

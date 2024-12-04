@@ -91,7 +91,7 @@ contract TransactionSubmitter {
      */
     function deployAVSs(uint16 numAVSsToDeploy) external {
         for (uint16 i = 0; i < numAVSsToDeploy; i++) {
-            address avs = address(new ServiceManagerMock(avsDirectory, rewardsCoordinator));
+            address avs = address(new ServiceManagerMock(msg.sender, avsDirectory, rewardsCoordinator));
             avss[numAVSs] = avs;
             numAVSs++;
         }

@@ -1,4 +1,3 @@
 zeus run --env preprod -c "forge script --rpc-url $ETH_RPC_URL --private-key $PRIVATE_KEY  --broadcast script/utils/rewards_testing/TransactionBuilder.s.sol:TransactionBuilder --sig \"deployTransactionSubmitter()\""
-zeus run --env preprod -c "forge script --rpc-url $ETH_RPC_URL --private-key $PRIVATE_KEY  --broadcast script/utils/rewards_testing/TransactionBuilder.s.sol:TransactionBuilder --sig \"seedOperators()\""
 zeus run --env preprod -c "forge script --rpc-url $ETH_RPC_URL --private-key $PRIVATE_KEY  --broadcast script/utils/rewards_testing/TransactionBuilder.s.sol:TransactionBuilder --sig \"deployAVSs()\""
 zeus run --env preprod -c "forge script --rpc-url $ETH_RPC_URL --private-key $PRIVATE_KEY  --broadcast script/utils/rewards_testing/TransactionBuilder.s.sol:TransactionBuilder --sig \"registerOperatorsToAVSs()\""

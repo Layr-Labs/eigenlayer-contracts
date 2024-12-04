@@ -128,7 +128,7 @@ contract TestRewardsV2 is ZeusScript {
         uint32 calculationIntervalSeconds = _rewardsCoordinator().CALCULATION_INTERVAL_SECONDS();
         uint32 moddedCurrTimestamp = uint32(block.timestamp) - (uint32(block.timestamp) % calculationIntervalSeconds);
         uint32 startTimestamp = moddedCurrTimestamp;
-        uint32 duration = calculationIntervalSeconds;
+        uint32 duration = 2 weeks;
 
         rewardsSubmission[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategyAndMultipliers,
@@ -270,7 +270,7 @@ contract TestRewardsV2 is ZeusScript {
     }
 
     function _getAVStrategies() internal pure returns (IStrategy[] memory) {
-        IStrategy[] memory strategies = new IStrategy[](15);
+        IStrategy[] memory strategies = new IStrategy[](14);
 
         strategies[0] = IStrategy(0x08f8544E61Ebfa22e7c6ef9af9eFd428091b27AF);
         strategies[1] = IStrategy(0x31741340ab31e90f0624d2C843B323a97755f43a);
@@ -278,15 +278,14 @@ contract TestRewardsV2 is ZeusScript {
         strategies[3] = IStrategy(0xcD6EDf68a5Fc79BBc14A0eCa1C8bbDe495fB1a5f);
         strategies[4] = IStrategy(0x77335a08a877cd874165bDC766feeD951a0d84c8);
         strategies[5] = IStrategy(0x53C916338FcA4f5541bc2eA5E5f7F0Ca6f0dAf6a);
-        strategies[6] = IStrategy(0x77335a08a877cd874165bDC766feeD951a0d84c8);
-        strategies[7] = IStrategy(0x51366AEf35475e82B864f2E7867B293c3BC61D86);
-        strategies[8] = IStrategy(0x5803f7D0D273aa0B9774C0aDAB98A23ec348Ea77);
-        strategies[9] = IStrategy(0xe5e8BcBd1DDD07460fA67f617a2D018ce0f5b7bf);
-        strategies[10] = IStrategy(0x419B6Ba569169826d9A45565E651F03B8DdfA332);
-        strategies[11] = IStrategy(0x9b5F92ed40e1436Ac8E31fd7f7bc6083edBd5E71);
-        strategies[12] = IStrategy(0xE34b1Da874E6B9f091540c850095b99B4D3B475D);
-        strategies[13] = IStrategy(0x8EF42562E9F1b81010a54615673739dd91E10016);
-        strategies[14] = IStrategy(0xdE2788cb747b51a1747Bd59342b6214652Ddeb10);
+        strategies[6] = IStrategy(0x51366AEf35475e82B864f2E7867B293c3BC61D86);
+        strategies[7] = IStrategy(0x5803f7D0D273aa0B9774C0aDAB98A23ec348Ea77);
+        strategies[8] = IStrategy(0xe5e8BcBd1DDD07460fA67f617a2D018ce0f5b7bf);
+        strategies[9] = IStrategy(0x419B6Ba569169826d9A45565E651F03B8DdfA332);
+        strategies[10] = IStrategy(0x9b5F92ed40e1436Ac8E31fd7f7bc6083edBd5E71);
+        strategies[11] = IStrategy(0xE34b1Da874E6B9f091540c850095b99B4D3B475D);
+        strategies[12] = IStrategy(0x8EF42562E9F1b81010a54615673739dd91E10016);
+        strategies[13] = IStrategy(0xdE2788cb747b51a1747Bd59342b6214652Ddeb10);
 
         // sort strategies by address
         for (uint256 i = 0; i < strategies.length; i++) {
