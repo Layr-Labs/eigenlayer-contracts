@@ -27,6 +27,13 @@ contract Queue is MultisigBuilder, Deploy {
     MultisigCall[] private _executorCalls;
     MultisigCall[] private _opsCalls;
 
+    function options() internal virtual override view returns (MultisigOptions memory) {
+        return MultisigOptions(
+            this._operationsMultisig(),
+            Operation.Call
+        );
+    }
+
     function _getMultisigTransactionCalldata() internal view returns (bytes memory) {
         ProxyAdmin pa = ProxyAdmin(this._proxyAdmin());
 
@@ -47,7 +54,7 @@ contract Queue is MultisigBuilder, Deploy {
         return (executorMultisigCalldata);
     }
 
-    function _runAsMultisig() internal virtual override {
+    function runAsMultisig() internal virtual override {
         bytes memory executorMultisigCalldata = _getMultisigTransactionCalldata();
 
         TimelockController timelock = TimelockController(payable(this._timelock()));
@@ -64,7 +71,6 @@ contract Queue is MultisigBuilder, Deploy {
     function testDeploy() public virtual override {
         runAsEOA();
 
-        zSetMultisigContext(this._operationsMultisig()); // this test will run as if the ops multisig ran the step
         execute();
         TimelockController timelock = TimelockController(payable(this._timelock()));
 

@@ -21,10 +21,17 @@ contract Execute is Queue {
 
     event Upgraded(address indexed implementation);
 
+    function options() internal override view returns (MultisigOptions memory) {
+        return MultisigOptions(
+            this._protocolCouncilMultisig(),
+            Operation.Call
+        );
+    }
+
     /**
      * @dev Overrides the previous _execute function to execute the queued transactions.
      */
-    function _runAsMultisig() internal override {
+    function runAsMultisig() internal override {
         bytes memory executorMultisigCalldata = _getMultisigTransactionCalldata();
         TimelockController timelock = TimelockController(payable(this._timelock()));
         timelock.execute(
@@ -45,7 +52,7 @@ contract Execute is Queue {
 
         // 1. run the queue script.
         vm.startPrank(this._operationsMultisig());
-        super._runAsMultisig();
+        super.runAsMultisig();
         vm.stopPrank();
 
         RewardsCoordinator rewardsCoordinatorProxy = RewardsCoordinator(zDeployedProxy(type(RewardsCoordinator).name));
@@ -61,7 +68,6 @@ contract Execute is Queue {
 
         assertEq(timelock.isOperationReady(txHash), true, "Transaction should be executable.");
 
-        zSetMultisigContext(this._protocolCouncilMultisig());
         vm.expectEmit(true, true, true, true, address(rewardsCoordinatorProxy));
         emit Upgraded(zDeployedImpl(type(RewardsCoordinator).name));
         execute();
