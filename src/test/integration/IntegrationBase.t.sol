@@ -352,12 +352,13 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
     /*******************************************************************************
                          SNAPSHOT ASSERTIONS: ALLOCATIONS
     *******************************************************************************/
-
-    function assert_Snap_Allocations_Updated_Before_Delay(
+    
+    function assert_Snap_Allocations_Updated(
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies,
         uint64[] memory newMagnitudes,
+        bool completed,
         string memory err
     ) internal {
         Allocation[] memory curAllocs = _getAllocations(operator, operatorSet, strategies);
@@ -365,31 +366,33 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
 
         for (uint i = 0; i < strategies.length; i++) {
             Allocation memory curAlloc = curAllocs[i];
-            Allocation memory prevAlloc = prevAllocs[i];
 
-            assertEq(curAlloc.currentMagnitude, prevAlloc.currentMagnitude, err);
-            assertEq(curAlloc.pendingDiff, prevAlloc.pendingDiff + int128(int64(newMagnitudes[i])), err);
-            assertEq(curAlloc.effectBlock, block.number + allocationManager.ALLOCATION_CONFIGURATION_DELAY(), err);
-        }
-    }
+            if (completed) {
+                assertEq(curAlloc.currentMagnitude, newMagnitudes[i], string.concat(err, " (currentMagnitude)"));
+                assertEq(curAlloc.pendingDiff, 0, string.concat(err, " (pendingDiff)"));
+                assertEq(curAlloc.effectBlock, 0, string.concat(err, " (effectBlock)"));
+            } else {
+                Allocation memory prevAlloc = prevAllocs[i]; 
 
-    function assert_Snap_Allocations_Updated_After_Delay(
-        User operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies,
-        uint64[] memory newMagnitudes,
-        string memory err
-    ) internal {
-        Allocation[] memory curAllocs = _getAllocations(operator, operatorSet, strategies);
-        Allocation[] memory prevAllocs = _getPrevAllocations(operator, operatorSet, strategies);
+                assertEq(
+                    curAlloc.currentMagnitude, 
+                    prevAlloc.currentMagnitude, 
+                    string.concat(err, " (currentMagnitude)")
+                );
+                assertEq(
+                    curAlloc.pendingDiff, 
+                    prevAlloc.pendingDiff + int128(int64(newMagnitudes[i])), 
+                    string.concat(err, " (pendingDiff)")
+                );
 
-        for (uint i = 0; i < strategies.length; i++) {
-            Allocation memory curAlloc = curAllocs[i];
-            Allocation memory prevAlloc = prevAllocs[i];
+                (, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
 
-            assertEq(curAlloc.currentMagnitude, newMagnitudes[i], err);
-            assertEq(curAlloc.pendingDiff, 0, err);
-            assertEq(curAlloc.effectBlock, 0, err);
+                assertEq(
+                    curAlloc.effectBlock, 
+                    block.number + delay, 
+                    string.concat(err, " (effectBlock)")
+                );
+            }
         }
     }
 
@@ -1133,19 +1136,20 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
     }
 
     modifier timewarp() {
-        uint curState = timeMachine.warpToLast();
+        uint curState = timeMachine.travelToLast();
         _;
-        timeMachine.warpToPresent(curState);
+        timeMachine.travel(curState);
     }
 
     /// @dev Rolls forward by the minimum withdrawal delay blocks.
     function _rollBlocksForCompleteWithdrawals() internal {        
-        cheats.roll(block.number + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
+        rollForward({blocks: delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS()});
     }
 
     /// @dev Rolls forward by the default allocation delay blocks.
     function _rollBlocksForCompleteAllocation() internal {
-        cheats.roll(block.number + allocationManager.ALLOCATION_CONFIGURATION_DELAY());
+        (, uint32 delay) = allocationManager.getAllocationDelay(address(this));
+        rollForward({blocks: delay});
     }
 
     /// @dev Rolls forward by the default deallocation delay blocks.

@@ -81,13 +81,26 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils, IDelega
         // 3. Allocate to operator set.
         AllocateParams memory allocateParams =
             operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Updated_Before_Delay(
-            operator, operatorSet, strategies, allocateParams.newMagnitudes, "operator allocations should be updated before delay"
+
+        assert_Snap_Allocations_Updated(
+            operator,
+            operatorSet,
+            strategies,
+            allocateParams.newMagnitudes,
+            false,
+            "operator allocations should be updated before delay"
         );
-        cheats.roll(block.number + allocationManager.ALLOCATION_CONFIGURATION_DELAY());
-        // assert_Snap_Allocations_Updated_After_Delay(
-        //     operator, operatorSet, strategies, allocateParams.newMagnitudes, "operator allocations should be updated after delay"
-        // );
+
+        _rollBlocksForCompleteAllocation();
+
+        assert_Snap_Allocations_Updated(
+            operator,
+            operatorSet,
+            strategies,
+            allocateParams.newMagnitudes,
+            true,
+            "operator allocations should be updated after delay"
+        );
 
         // TODO: check_Allocation_State()
 
