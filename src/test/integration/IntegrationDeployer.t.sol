@@ -263,12 +263,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
             )
         );
         //PermissionController
-        eigenLayerProxyAdmin.upgradeAndCall(
+        eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(permissionController))),
-            address(permissionControllerImplementation),
-            abi.encodeWithSelector(
-                PermissionController.initialize.selector
-            )
+            address(permissionControllerImplementation)
         );
         // Create base strategy implementation and deploy a few strategies
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);

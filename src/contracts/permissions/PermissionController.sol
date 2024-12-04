@@ -23,8 +23,6 @@ contract PermissionController is Initializable, PermissionControllerStorage {
         _disableInitializers();
     }
 
-    function initialize() external initializer {}
-
     /**
      *
      *                         EXTERNAL FUNCTIONS
@@ -214,10 +212,8 @@ contract PermissionController is Initializable, PermissionControllerStorage {
         address[] memory targets = new address[](length);
         bytes4[] memory selectors = new bytes4[](length);
 
-        for (uint256 i = 0; i < length; i++) {
-            (address target, bytes4 selector) = _decodeTargetSelector(appointeePermissions.at(i));
-            targets[i] = target;
-            selectors[i] = selector;
+        for (uint256 i = 0; i < length; ++i) {
+            (targets[i], selectors[i]) = _decodeTargetSelector(appointeePermissions.at(i));
         }
 
         return (targets, selectors);
