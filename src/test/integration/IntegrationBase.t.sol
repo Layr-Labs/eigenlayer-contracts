@@ -14,7 +14,7 @@ import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 
-abstract contract IntegrationBase is IntegrationDeployer {
+abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerTypes {
     using StdStyle for *;
     using SlashingLib for *;
     using Strings for *;
@@ -348,6 +348,50 @@ abstract contract IntegrationBase is IntegrationDeployer {
                                 SNAPSHOT ASSERTIONS
                        TIME TRAVELERS ONLY BEYOND THIS POINT
     *******************************************************************************/
+
+    /*******************************************************************************
+                         SNAPSHOT ASSERTIONS: ALLOCATIONS
+    *******************************************************************************/
+
+    function assert_Snap_Allocations_Updated_Before_Delay(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        uint64[] memory newMagnitudes,
+        string memory err
+    ) internal {
+        Allocation[] memory curAllocs = _getAllocations(operator, operatorSet, strategies);
+        Allocation[] memory prevAllocs = _getPrevAllocations(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            Allocation memory curAlloc = curAllocs[i];
+            Allocation memory prevAlloc = prevAllocs[i];
+
+            assertEq(curAlloc.currentMagnitude, prevAlloc.currentMagnitude, err);
+            assertEq(curAlloc.pendingDiff, prevAlloc.pendingDiff + int128(int64(newMagnitudes[i])), err);
+            assertEq(curAlloc.effectBlock, block.number + allocationManager.ALLOCATION_CONFIGURATION_DELAY(), err);
+        }
+    }
+
+    function assert_Snap_Allocations_Updated_After_Delay(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        uint64[] memory newMagnitudes,
+        string memory err
+    ) internal {
+        Allocation[] memory curAllocs = _getAllocations(operator, operatorSet, strategies);
+        Allocation[] memory prevAllocs = _getPrevAllocations(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            Allocation memory curAlloc = curAllocs[i];
+            Allocation memory prevAlloc = prevAllocs[i];
+
+            assertEq(curAlloc.currentMagnitude, newMagnitudes[i], err);
+            assertEq(curAlloc.pendingDiff, 0, err);
+            assertEq(curAlloc.effectBlock, 0, err);
+        }
+    }
 
     /*******************************************************************************
                         SNAPSHOT ASSERTIONS: OPERATOR SHARES
@@ -1094,11 +1138,40 @@ abstract contract IntegrationBase is IntegrationDeployer {
         timeMachine.warpToPresent(curState);
     }
 
-    // TODO
-    /// @dev Given a list of strategies, roll the block number forward to the
-    /// a valid blocknumber to completeWithdrawals
+    /// @dev Rolls forward by the minimum withdrawal delay blocks.
     function _rollBlocksForCompleteWithdrawals() internal {        
         cheats.roll(block.number + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
+    }
+
+    /// @dev Rolls forward by the default allocation delay blocks.
+    function _rollBlocksForCompleteAllocation() internal {
+        cheats.roll(block.number + allocationManager.ALLOCATION_CONFIGURATION_DELAY());
+    }
+
+    /// @dev Rolls forward by the default deallocation delay blocks.
+    function _rollBlocksForCompleteDeallocation() internal {
+        cheats.roll(block.number + allocationManager.DEALLOCATION_DELAY());
+    }
+
+    /// @dev Uses timewarp modifier to get the operator set strategy allocations at the last snapshot.
+    function _getPrevAllocations(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (Allocation[] memory) {
+        return _getAllocations(operator, operatorSet, strategies);
+    }
+
+    /// @dev Looks up each strategy for an operator set and returns a list of operator allocations.
+    function _getAllocations(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (Allocation[] memory allocations) {
+        allocations = new Allocation[](strategies.length);
+        for (uint i = 0; i < strategies.length; ++i) {
+            allocations[i] = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]);
+        }
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot
