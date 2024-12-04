@@ -75,9 +75,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
         permissionController = PermissionController(address(new TransparentUpgradeableProxy(
             address(permissionControllerImplementation),
             address(eigenLayerProxyAdmin),
-            abi.encodeWithSelector(
-                PermissionController.initialize.selector
-            )
+            ""
         )));
 
         avsDirectoryMock = AVSDirectoryMock(payable(address(new AVSDirectoryMock())));
