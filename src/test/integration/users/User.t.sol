@@ -84,7 +84,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function modifyAllocations(
         OperatorSet memory operatorSet, 
         uint64[] memory magnitudes
-    ) public virtual createSnapshot return (AllocateParams memory) {
+    ) public virtual createSnapshot returns (AllocateParams memory) {
         print.method(
             "modifyAllocations",
             string.concat(
@@ -112,14 +112,16 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         (, uint32 delay) = allocationManager.getAllocationDelay(address(this));
         rollForward({blocks: delay});
 
-        return allocateParams[0]
+        return allocateParams[0];
     }
     
     function deallocateAll(
         OperatorSet memory operatorSet
-    ) public virtual {
-        modifyAllocations(operatorSet, new uint64[](allocationManager.getStrategiesInOperatorSet(operatorSet).length));
-        print.gasUsed();
+    ) public virtual returns (AllocateParams memory) {
+        return modifyAllocations(
+            operatorSet, 
+            new uint64[](allocationManager.getStrategiesInOperatorSet(operatorSet).length)
+        );
     }
 
     function registerForOperatorSets(

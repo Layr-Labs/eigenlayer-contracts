@@ -115,7 +115,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             description: "bad operator"
         });
 
-        allocationManager.slashOperator(address(this), p);
+        allocationManager.slashOperator(address(this), slashingParams);
         print.gasUsed();
     }
 

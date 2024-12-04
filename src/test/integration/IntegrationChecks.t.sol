@@ -7,6 +7,11 @@ import "src/test/integration/users/User_M1.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
+    /*******************************************************************************
+                                 ALLOCATION MANAGER CHECKS
+    *******************************************************************************/
+
+    
 
     /*******************************************************************************
                                  EIGENPOD CHECKS
