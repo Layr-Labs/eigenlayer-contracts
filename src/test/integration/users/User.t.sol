@@ -109,9 +109,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         allocationManager.modifyAllocations(address(this), allocateParams);
         print.gasUsed();
 
-        (, uint32 delay) = allocationManager.getAllocationDelay(address(this));
-        rollForward({blocks: delay});
-
         return allocateParams[0];
     }
     

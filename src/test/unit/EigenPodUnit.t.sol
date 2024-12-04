@@ -93,9 +93,9 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
     *******************************************************************************/
 
     modifier timewarp() {
-        uint curState = timeMachine.warpToLast();
+        uint curState = timeMachine.travelToLast();
         _;
-        timeMachine.warpToPresent(curState);
+        timeMachine.travel(curState);
     }
 
     function _seedPodWithETH(uint256 ethAmount) internal {
