@@ -15,20 +15,22 @@ contract TestRewardsV2 is ZeusScript {
 
 
     function tx_prep() public parseState {
+        address rewardingServiceManager = address(_rewardingServiceManager());
+        IRewardsCoordinator rewardsCoordinator = _rewardsCoordinator();
         // Deploy token 
-        (address[] memory operatorsRegisteredToAVS, uint256[] memory privateKeys) = _getAllOperatorsRegisteredToAVS(address(_rewardingServiceManager()));
+        (address[] memory operatorsRegisteredToAVS, uint256[] memory privateKeys) = _getAllOperatorsRegisteredToAVS(rewardingServiceManager);
 
         // for the first 3/5 of the operators, set the AVS split to random values
         for (uint256 i = 0; i < operatorsRegisteredToAVS.length*3/5; i++) {
-            vm.startBroadcast(privateKeys[i]);
-            _rewardsCoordinator().setOperatorAVSSplit(operatorsRegisteredToAVS[i], address(_rewardingServiceManager()), uint16(vm.randomUint(1, 10000)));
+            vm.startBroadcast(operatorsRegisteredToAVS[i]);
+            rewardsCoordinator.setOperatorAVSSplit(operatorsRegisteredToAVS[i], rewardingServiceManager, uint16(vm.randomUint(1, 10000)));
             vm.stopBroadcast();
         }
 
         // for 1/5 through 4/5 of the operators, set the PI split to random values
         for (uint256 i = operatorsRegisteredToAVS.length*1/5; i < operatorsRegisteredToAVS.length*4/5; i++) {
-            vm.startBroadcast(privateKeys[i]);
-            _rewardsCoordinator().setOperatorPISplit(operatorsRegisteredToAVS[i], uint16(vm.randomUint(1, 10000)));
+            vm.startBroadcast(operatorsRegisteredToAVS[i]);
+            rewardsCoordinator.setOperatorPISplit(operatorsRegisteredToAVS[i], uint16(vm.randomUint(1, 10000)));
             vm.stopBroadcast();
         }
 
