@@ -200,8 +200,8 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
             "bEIGEN.owner() != executorMultisig");
         assertEq(eigenLayerProxyAdmin.owner(), address(executorMultisig),
             "eigenLayerProxyAdmin.owner() != executorMultisig");
-        assertEq(beigenTokenProxyAdmin.owner(), address(protocolTimelockController_BEIGEN),
-            "beigenTokenProxyAdmin.owner() != protocolTimelockController_BEIGEN");
+        assertEq(beigenTokenProxyAdmin.owner(), address(beigenExecutorMultisig),
+            "beigenTokenProxyAdmin.owner() != beigenExecutorMultisig");
 
         assertEq(eigenLayerProxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(EIGEN)))),
             address(eigenLayerProxyAdmin),
@@ -518,9 +518,9 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         address[] memory targets = new address[](tx_array_length);
         uint256[] memory values = new uint256[](tx_array_length);
         bytes[] memory payloads = new bytes[](tx_array_length);
-        // 1. transfer ownership rights over beigenTokenProxyAdmin to protocolTimelockController_BEIGEN
+        // 1. transfer ownership rights over beigenTokenProxyAdmin to beigenExecutorMultisig
         targets[0] = address(beigenTokenProxyAdmin);
-        payloads[0] = abi.encodeWithSelector(Ownable.transferOwnership.selector, address(protocolTimelockController_BEIGEN));
+        payloads[0] = abi.encodeWithSelector(Ownable.transferOwnership.selector, address(beigenExecutorMultisig));
 
         // schedule the batch
         uint256 minDelay = beigenTokenTimelockController.getMinDelay();
