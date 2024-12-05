@@ -415,6 +415,8 @@ contract DeployFromScratch is Script, Test {
         vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
         vm.serializeAddress(deployed_addresses, "allocationManager", address(allocationManager));
         vm.serializeAddress(deployed_addresses, "allocationManagerImplementation", address(allocationManagerImplementation));
+        vm.serializeAddress(deployed_addresses, "permissionController", address(permissionController));
+        vm.serializeAddress(deployed_addresses, "permissionControllerImplementation", address(permissionControllerImplementation));
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
         vm.serializeAddress(
             deployed_addresses,
