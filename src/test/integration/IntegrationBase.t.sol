@@ -225,8 +225,7 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
                 tokenBalance = strat.underlyingToken().balanceOf(address(user));
             }
 
-            assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
-            // assertEq(expectedBalance, tokenBalance, err);
+            assertEq(expectedBalance, tokenBalance, err);
         }
     }
 
@@ -258,7 +257,7 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
                 actualShares = strategyManager.stakerDepositShares(address(user), strat);
             }
 
-            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
+            assertEq(expectedShares[i], actualShares, err);
         }
     }
 
@@ -269,11 +268,8 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
         string memory err
     ) internal view {
         for (uint i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-
-            uint actualShares = delegationManager.operatorShares(address(user), strat);
-
-            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
+            uint actualShares = delegationManager.operatorShares(address(user), strategies[i]);
+            assertEq(expectedShares[i], actualShares, err);
         }
     }
 
@@ -414,7 +410,7 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);
+            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
         }
     }
 
@@ -493,8 +489,8 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
         uint[] memory prevShares = _getPrevStakerDepositShares(staker, strategies);
 
         // For each strategy, check (prev + added == cur)
-        for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);            
+        for (uint i = 0; i < strategies.length; i++) {        
+            assertEq(prevShares[i] + addedShares[i], curShares[i], err);     
         }
     }
 
