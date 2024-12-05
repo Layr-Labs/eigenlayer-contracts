@@ -326,12 +326,15 @@ contract RewardsCoordinator is
         if (claimer == address(0)) {
             claimer = earner;
         }
-        require(msg.sender == claimer, UnauthorizedCaller());
+        require(msg.sender == claimer, "RewardsCoordinator.processClaim: caller is not valid claimer");
         for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
 
             uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
-            require(tokenLeaf.cumulativeEarnings > currCumulativeClaimed, EarningsNotGreaterThanClaimed());
+            require(
+                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
+                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
+            );
 
             // Calculate amount to claim and update cumulativeClaimed
             uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
@@ -342,31 +345,19 @@ contract RewardsCoordinator is
         }
     }
 
-    function _setActivationDelay(
-        uint32 _activationDelay
-    ) internal {
+    function _setActivationDelay(uint32 _activationDelay) internal {
         emit ActivationDelaySet(activationDelay, _activationDelay);
         activationDelay = _activationDelay;
     }
 
-    function _setDefaultOperatorSplit(
-        uint16 split
-    ) internal {
+    function _setDefaultOperatorSplit(uint16 split) internal {
         emit DefaultOperatorSplitBipsSet(defaultOperatorSplitBips, split);
         defaultOperatorSplitBips = split;
     }
 
-    function _setRewardsUpdater(
-        address _rewardsUpdater
-    ) internal {
+    function _setRewardsUpdater(address _rewardsUpdater) internal {
         emit RewardsUpdaterSet(rewardsUpdater, _rewardsUpdater);
         rewardsUpdater = _rewardsUpdater;
-    }
-
-    function _setClaimer(address earner, address claimer) internal {
-        address prevClaimer = claimerFor[earner];
-        claimerFor[earner] = claimer;
-        emit ClaimerForSet(earner, prevClaimer, claimer);
     }
 
     /**
@@ -389,25 +380,6 @@ contract RewardsCoordinator is
         }
         operatorSplit.newSplitBips = split;
         operatorSplit.activatedAt = activatedAt;
-    }
-
-    /**
-     * @notice Internal helper to get the operator split in basis points.
-     * @dev It takes default split and activation delay into account while calculating the split.
-     * @param operatorSplit The split struct for an Operator
-     * @return The split in basis points.
-     */
-    function _getOperatorSplit(
-        OperatorSplit memory operatorSplit
-    ) internal view returns (uint16) {
-        if (operatorSplit.activatedAt == 0) {
-            // Return the Default Operator Split if the operator split has not been initialized.
-            return defaultOperatorSplitBips;
-        } else {
-            // Return the new split if the new split has been activated, else return the old split.
-            return
-                (block.timestamp >= operatorSplit.activatedAt) ? operatorSplit.newSplitBips : operatorSplit.oldSplitBips;
-        }
     }
 
     /**
@@ -575,6 +547,32 @@ contract RewardsCoordinator is
     }
 
     /**
+     * @notice Internal helper to get the operator split in basis points.
+     * @dev It takes default split and activation delay into account while calculating the split.
+     * @param operatorSplit The split struct for an Operator
+     * @return The split in basis points.
+     */
+    function _getOperatorSplit(OperatorSplit memory operatorSplit) internal view returns (uint16) {
+        if (operatorSplit.activatedAt == 0) {
+            // Return the Default Operator Split if the operator split has not been initialized.
+            return defaultOperatorSplitBips;
+        } else {
+            // Return the new split if the new split has been activated, else return the old split.
+            return
+                (block.timestamp >= operatorSplit.activatedAt)
+                    ? operatorSplit.newSplitBips
+                    : operatorSplit.oldSplitBips;
+        }
+    }
+
+    /**
+     * @dev Recalculates the domain separator when the chainid changes due to a fork.
+     */
+    function _calculateDomainSeparator() internal view returns (bytes32) {
+        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
+    }
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
@@ -653,5 +651,14 @@ contract RewardsCoordinator is
             }
         }
         revert InvalidRoot();
+    }
+
+    /// @inheritdoc IRewardsCoordinator
+    function domainSeparator() public view returns (bytes32) {
+        if (block.chainid == ORIGINAL_CHAIN_ID) {
+            return _DOMAIN_SEPARATOR;
+        } else {
+            return _calculateDomainSeparator();
+        }
     }
 }
