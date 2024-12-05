@@ -423,6 +423,7 @@ interface IRewardsCoordinator {
      * @dev only callable by the valid claimer, that is
      * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
      * claimerFor[claim.earner] can claim the rewards.
+     * @dev This function may fail to execute with a large number of claims due to gas limits. Use a smaller array of claims if necessary.
      */
     function processClaims(RewardsMerkleClaim[] calldata claims, address recipient) external;
 
