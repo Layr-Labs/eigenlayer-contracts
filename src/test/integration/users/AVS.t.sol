@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "forge-std/Test.sol";
 
 import "src/contracts/core/AllocationManager.sol";
+import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 
 import "src/test/mocks/ERC20Mock.sol";
@@ -17,6 +18,7 @@ import "src/contracts/interfaces/IAVSRegistrar.sol";
 interface IAVSDeployer {
     function allocationManager() external view returns (AllocationManager);
     function strategyFactory() external view returns (StrategyFactory);
+    function permissionController() external view returns (PermissionController);
     function timeMachine() external view returns (TimeMachine);
 }
 
@@ -25,6 +27,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     using SingleItemArrayLib for *;
 
     AllocationManager immutable allocationManager;
+    PermissionController immutable permissionController;
     StrategyFactory immutable strategyFactory;
     TimeMachine immutable timeMachine;
     string _NAME;
@@ -115,6 +118,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             description: "bad operator"
         });
 
+        _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
         allocationManager.slashOperator(address(this), slashingParams);
         print.gasUsed();
     }
@@ -126,6 +130,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             DeregisterParams({operator: address(operator), avs: address(this), operatorSetIds: operatorSetIds});
 
         print.deregisterFromOperatorSets(p);
+        _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
         allocationManager.deregisterFromOperatorSets(p);
         print.gasUsed();
     }
@@ -135,6 +140,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     ) public createSnapshot {
         print.method("setAVSRegistrar");
         console.log("Setting AVS registrar to: %s", address(registrar));
+        _tryPrankAppointee_AllocationManager(IAllocationManager.setAVSRegistrar.selector);
         allocationManager.setAVSRegistrar(address(this), registrar);
         print.gasUsed();
     }
@@ -147,7 +153,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         for (uint256 i; i < strategies.length; ++i) {
             console.log("   strategy: %s", address(strategies[i]));
         }
-
+        _tryPrankAppointee_AllocationManager(IAllocationManager.addStrategiesToOperatorSet.selector);
         allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
         print.gasUsed();
     }
@@ -163,7 +169,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         for (uint256 i; i < strategies.length; ++i) {
             console.log("   strategy: %s", address(strategies[i]));
         }
-
+        _tryPrankAppointee_AllocationManager(IAllocationManager.removeStrategiesFromOperatorSet.selector);
         allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
         print.gasUsed();
     }
@@ -179,4 +185,22 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     ) external override {}
 
     function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external override {}
+
+    /// -----------------------------------------------------------------------
+    /// Internal Helpers
+    /// -----------------------------------------------------------------------
+
+    function _tryPrankAppointee(
+        address target,
+        bytes4 selector
+    ) internal {
+        address[] memory appointees = permissionController.getAppointees(address(this), target, selector);
+        if (appointees.length != 0) cheats.prank(appointees[0]);
+    }
+
+    function _tryPrankAppointee_AllocationManager(
+        bytes4 selector
+    ) internal {
+        return _tryPrankAppointee(address(allocationManager), selector);
+    }
 }
