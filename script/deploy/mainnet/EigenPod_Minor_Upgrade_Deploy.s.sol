@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
 
 import "../../../src/contracts/core/StrategyManager.sol";
-import "../../../src/contracts/core/Slasher.sol";
 import "../../../src/contracts/core/DelegationManager.sol";
 
 import "../../../src/contracts/pods/EigenPod.sol";
@@ -32,7 +31,6 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
     string public freshOutputPath;
 
     // EigenLayer core contracts
-    ISlasher public slasher;
     IDelegationManager public delegation;
     DelegationManager public delegationImplementation;
     IStrategyManager public strategyManager;
@@ -70,10 +68,9 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
 
         // Read json data
         string memory deployment_data = vm.readFile(m2DeploymentOutputPath);
-        slasher = Slasher(stdJson.readAddress(deployment_data, ".addresses.slasher"));
         delegation = DelegationManager(stdJson.readAddress(deployment_data, ".addresses.delegationManager"));
         strategyManager = DelegationManager(address(delegation)).strategyManager();
-        eigenPodManager = strategyManager.eigenPodManager();
+        eigenPodManager = DelegationManager(address(delegation)).eigenPodManager();
         eigenPodBeacon = eigenPodManager.eigenPodBeacon();
         ethPOS = eigenPodManager.ethPOS();
 

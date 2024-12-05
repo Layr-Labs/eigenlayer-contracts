@@ -24,6 +24,9 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
@@ -39,7 +42,7 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
         // Create Upgrade Tx via Community Multisig
         bytes memory calldata_to_proxy_admin = abi.encodeWithSelector(
             ProxyAdmin.upgrade.selector,
-            TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
+            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
             rewardsCoordinatorImplementation
         );
         
@@ -63,7 +66,7 @@ contract Upgrade_Testnet_RewardsCoordinator is Deploy_Test_RewardsCoordinator, T
         _verifyInitializationParams();
     }
 
-    function _sanityCheckImplementations(RewardsCoordinator oldRc, RewardsCoordinator newRc) internal {
+    function _sanityCheckImplementations(RewardsCoordinator oldRc, RewardsCoordinator newRc) internal view {
         // Verify configs between both rewardsCoordinatorImplementations
         assertEq(
             address(oldRc.delegationManager()),

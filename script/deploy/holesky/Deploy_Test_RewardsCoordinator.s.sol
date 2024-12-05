@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../../utils/ExistingDeploymentParser.sol";
 
@@ -46,6 +46,9 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
@@ -60,7 +63,6 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
                     abi.encodeWithSelector(
                         RewardsCoordinator.initialize.selector,
                         executorMultisig,
-                        eigenLayerPauserReg,
                         REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                         REWARDS_COORDINATOR_UPDATER,
                         REWARDS_COORDINATOR_ACTIVATION_DELAY,
@@ -79,6 +81,9 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
@@ -87,7 +92,7 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         );
 
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
+            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
             address(rewardsCoordinatorImplementation)
         );
     }
@@ -119,6 +124,9 @@ contract Deploy_Test_RewardsCoordinator is ExistingDeploymentParser {
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,

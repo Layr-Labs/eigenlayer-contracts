@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../../utils/ExistingDeploymentParser.sol";
 
@@ -33,7 +33,6 @@ contract PEPE_Deploy_Preprod is ExistingDeploymentParser {
         emit log_named_address("- epm.ethPOS", address(eigenPodManagerImplementation.ethPOS()));
         emit log_named_address("- epm.eigenPodBeacon", address(eigenPodManagerImplementation.eigenPodBeacon()));
         emit log_named_address("- epm.strategyManager", address(eigenPodManagerImplementation.strategyManager()));
-        emit log_named_address("- epm.slasher", address(eigenPodManagerImplementation.slasher()));
         emit log_named_address("- epm.delegationManager", address(eigenPodManagerImplementation.delegationManager()));
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
@@ -60,8 +59,8 @@ contract PEPE_Deploy_Preprod is ExistingDeploymentParser {
             IETHPOSDeposit(ETHPOSDepositAddress),
             eigenPodBeacon,
             strategyManager,
-            slasher,
-            delegationManager
+            delegationManager,
+            eigenLayerPauserReg
         );
     }
 
@@ -71,7 +70,7 @@ contract PEPE_Deploy_Preprod is ExistingDeploymentParser {
 
         // upgrade TUPS
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
         );
     }

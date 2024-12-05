@@ -61,11 +61,11 @@ contract Preprod_Upgrade_bEIGEN_and_EIGEN is Script, Test {
         // Perform upgrade
         vm.startBroadcast();
         EIGEN_ProxyAdmin.upgrade(
-                TransparentUpgradeableProxy(payable(address(bEIGEN_proxy))),
+                ITransparentUpgradeableProxy(payable(address(bEIGEN_proxy))),
                 address(bEIGEN_implementation)
             );
         EIGEN_ProxyAdmin.upgrade(
-                TransparentUpgradeableProxy(payable(address(EIGEN_proxy))),
+                ITransparentUpgradeableProxy(payable(address(EIGEN_proxy))),
                 address(EIGEN_implementation)
             );
         vm.stopBroadcast();
@@ -77,11 +77,11 @@ contract Preprod_Upgrade_bEIGEN_and_EIGEN is Script, Test {
 
     function checkUpgradeCorrectness() public {
         cheats.startPrank(address(proxyAdminOwner));
-        require(EIGEN_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(EIGEN_proxy)))) == address(EIGEN_implementation),
+        require(EIGEN_ProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(EIGEN_proxy)))) == address(EIGEN_implementation),
             "implementation set incorrectly");
         require(EIGEN_proxy.bEIGEN() == bEIGEN_addressBefore,
             "bEIGEN address changed unexpectedly");
-        require(EIGEN_ProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(bEIGEN_proxy)))) == address(bEIGEN_implementation),
+        require(EIGEN_ProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(bEIGEN_proxy)))) == address(bEIGEN_implementation),
             "implementation set incorrectly");
         require(bEIGEN_proxy.EIGEN() == EIGEN_addressBefore,
             "EIGEN address changed unexpectedly");

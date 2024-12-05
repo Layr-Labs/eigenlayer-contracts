@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../../utils/ExistingDeploymentParser.sol";
 
@@ -30,7 +30,7 @@ contract Eigen_Strategy_Deploy is ExistingDeploymentParser {
     }
 
     function _deployStrategy() internal {
-        eigenStrategyImpl = new EigenStrategy(strategyManager);
+        eigenStrategyImpl = new EigenStrategy(strategyManager, eigenLayerPauserReg);
 
         eigenStrategy = EigenStrategy(
             address(
@@ -40,8 +40,7 @@ contract Eigen_Strategy_Deploy is ExistingDeploymentParser {
                     abi.encodeWithSelector(
                         EigenStrategy.initialize.selector,
                         EIGEN,
-                        bEIGEN,
-                        eigenLayerPauserReg
+                        bEIGEN
                     )
                 )
             )
@@ -58,11 +57,9 @@ contract Eigen_Strategy_Deploy is ExistingDeploymentParser {
     function _verifyDeployment() internal {
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = eigenStrategy;
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
-        thirdPartyTransfersForbiddenValues[0] = true;
 
         vm.prank(executorMultisig);
-        strategyManager.addStrategiesToDepositWhitelist(strategies, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategies);
 
         vm.startPrank(msg.sender);
         EIGEN.approve(address(strategyManager), type(uint256).max);

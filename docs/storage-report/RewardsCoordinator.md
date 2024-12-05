@@ -5,13 +5,13 @@
 | __gap                                | uint256[50]                                             | 1    | 0      | 1600  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | _owner                               | address                                                 | 51   | 0      | 20    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | __gap                                | uint256[49]                                             | 52   | 0      | 1568  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
-| pauserRegistry                       | contract IPauserRegistry                                | 101  | 0      | 20    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
+| __deprecated_pauserRegistry          | contract IPauserRegistry                                | 101  | 0      | 20    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | _paused                              | uint256                                                 | 102  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | __gap                                | uint256[48]                                             | 103  | 0      | 1536  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | _status                              | uint256                                                 | 151  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | __gap                                | uint256[49]                                             | 152  | 0      | 1568  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
-| _DOMAIN_SEPARATOR                    | bytes32                                                 | 201  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
-| _distributionRoots                   | struct IRewardsCoordinator.DistributionRoot[]           | 202  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
+| __deprecated_DOMAIN_SEPARATOR        | bytes32                                                 | 201  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
+| _distributionRoots                   | struct IRewardsCoordinatorTypes.DistributionRoot[]      | 202  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | rewardsUpdater                       | address                                                 | 203  | 0      | 20    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | activationDelay                      | uint32                                                  | 203  | 20     | 4     | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | currRewardsCalculationEndTimestamp   | uint32                                                  | 203  | 24     | 4     | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
@@ -23,4 +23,4 @@
 | isRewardsSubmissionForAllHash        | mapping(address => mapping(bytes32 => bool))            | 208  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | isRewardsForAllSubmitter             | mapping(address => bool)                                | 209  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
 | isRewardsSubmissionForAllEarnersHash | mapping(address => mapping(bytes32 => bool))            | 210  | 0      | 32    | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
-| __gap                                | uint256[39]                                             | 211  | 0      | 1248  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |
+| __gap                                | uint256[40]                                             | 211  | 0      | 1280  | src/contracts/core/RewardsCoordinator.sol:RewardsCoordinator |

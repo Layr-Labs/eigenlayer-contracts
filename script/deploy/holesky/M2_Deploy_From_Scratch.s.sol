@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../../utils/ExistingDeploymentParser.sol";
 
@@ -61,12 +61,13 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         strategyManager = StrategyManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slasher = Slasher(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
         eigenPodManager = EigenPodManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        allocationManager = AllocationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
             IETHPOSDeposit(ETHPOSDepositAddress),
@@ -75,24 +76,25 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
-        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
-        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
+        delegationManagerImplementation = new DelegationManager(avsDirectory, strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             IETHPOSDeposit(ETHPOSDepositAddress),
             eigenPodBeacon,
             strategyManager,
-            slasher,
-            delegationManager
+            delegationManager,
+            eigenLayerPauserReg
         );
+        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        permissionControllerImplementation = new PermissionController();
 
         // Third, upgrade the proxy contracts to point to the implementations
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         // AVSDirectory
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
             address(avsDirectoryImplementation),
             abi.encodeWithSelector(
                 AVSDirectory.initialize.selector,
@@ -103,7 +105,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         );
         // DelegationManager
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delegationManager))),
+            ITransparentUpgradeableProxy(payable(address(delegationManager))),
             address(delegationManagerImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
@@ -117,7 +119,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         );
         // StrategyManager
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
@@ -127,20 +129,9 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
                 STRATEGY_MANAGER_INIT_PAUSED_STATUS
             )
         );
-        // Slasher
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation),
-            abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                SLASHER_INIT_PAUSED_STATUS
-            )
-        );
         // EigenPodManager
         eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
@@ -149,13 +140,31 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
             )
         );
+        // AllocationManager
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation),
+            abi.encodeWithSelector(
+                AllocationManager.initialize.selector,
+                msg.sender, // initialOwner is msg.sender for now to set forktimestamp later
+                eigenLayerPauserReg,
+                ALLOCATION_MANAGER_INIT_PAUSED_STATUS
+            )
+        );
+        // PermissionController
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(permissionController))),
+            address(permissionControllerImplementation),
+            abi.encodeWithSelector(
+                PermissionController.initialize.selector
+            )
+        );
 
         // Deploy Strategies
-        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
+        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg);
         uint256 numStrategiesToDeploy = strategiesToDeploy.length;
         // whitelist params
         IStrategy[] memory strategiesToWhitelist = new IStrategy[](numStrategiesToDeploy);
-        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](numStrategiesToDeploy);
 
         for (uint256 i = 0; i < numStrategiesToDeploy; i++) {
             StrategyUnderlyingTokenConfig memory strategyConfig = strategiesToDeploy[i];
@@ -165,25 +174,23 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
                 address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
             );
             eigenLayerProxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(payable(address(strategy))),
+                ITransparentUpgradeableProxy(payable(address(strategy))),
                 address(baseStrategyImplementation),
                 abi.encodeWithSelector(
                     StrategyBaseTVLLimits.initialize.selector,
                     STRATEGY_MAX_PER_DEPOSIT,
                     STRATEGY_MAX_TOTAL_DEPOSITS,
-                    IERC20(strategyConfig.tokenAddress),
-                    eigenLayerPauserReg
+                    IERC20(strategyConfig.tokenAddress)
                 )
             );
 
             strategiesToWhitelist[i] = strategy;
-            thirdPartyTransfersForbiddenValues[i] = false;
 
             deployedStrategyArray.push(strategy);
         }
 
         // Add strategies to whitelist and set whitelister to STRATEGY_MANAGER_WHITELISTER
-        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
+        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
         strategyManager.setStrategyWhitelister(STRATEGY_MANAGER_WHITELISTER);
 
         // Transfer ownership

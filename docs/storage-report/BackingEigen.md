@@ -26,3 +26,4 @@
 | transferRestrictionsDisabledAfter | uint256                                                       | 304  | 0      | 32    | src/contracts/token/BackingEigen.sol:BackingEigen |
 | allowedFrom                       | mapping(address => bool)                                      | 305  | 0      | 32    | src/contracts/token/BackingEigen.sol:BackingEigen |
 | allowedTo                         | mapping(address => bool)                                      | 306  | 0      | 32    | src/contracts/token/BackingEigen.sol:BackingEigen |
+| isMinter                          | mapping(address => bool)                                      | 307  | 0      | 32    | src/contracts/token/BackingEigen.sol:BackingEigen |

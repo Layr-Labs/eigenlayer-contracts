@@ -112,7 +112,6 @@ Allows an Operator to emit an `OperatorMetadataURIUpdated` event. No other state
 Stakers interact with the following functions to delegate their shares to an Operator:
 
 * [`DelegationManager.delegateTo`](#delegateto)
-* [`DelegationManager.delegateToBySignature`](#delegatetobysignature)
 
 #### `delegateTo`
 
@@ -137,30 +136,6 @@ Allows the caller (a Staker) to delegate their shares to an Operator. Delegation
 * The caller MUST NOT already be delegated to an Operator
 * The `operator` MUST already be an Operator
 * If the `operator` has a `delegationApprover`, the caller MUST provide a valid `approverSignatureAndExpiry` and `approverSalt`
-
-#### `delegateToBySignature`
-
-```solidity
-function delegateToBySignature(
-    address staker,
-    address operator,
-    SignatureWithExpiry memory stakerSignatureAndExpiry,
-    SignatureWithExpiry memory approverSignatureAndExpiry,
-    bytes32 approverSalt
-) 
-    external
-```
-
-Allows a Staker to delegate to an Operator by way of signature. This function can be called by three different parties:
-* If the Operator calls this method, they need to submit only the `stakerSignatureAndExpiry`
-* If the Operator's `delegationApprover` calls this method, they need to submit only the `stakerSignatureAndExpiry`
-* If the anyone else calls this method, they need to submit both the `stakerSignatureAndExpiry` AND `approverSignatureAndExpiry`
-
-*Effects*: See `delegateTo` above.
-
-*Requirements*: See `delegateTo` above. Additionally:
-* If caller is either the Operator's `delegationApprover` or the Operator, the `approverSignatureAndExpiry` and `approverSalt` can be empty
-* `stakerSignatureAndExpiry` MUST be a valid, unexpired signature over the correct hash and nonce
 
 ---
 
@@ -275,9 +250,9 @@ For each strategy/share pair in the `Withdrawal`:
 
 `Withdrawals` concerning `EigenPodManager` shares have some additional nuance depending on whether a withdrawal is specified to be received as tokens vs shares (read more about "why" in [`EigenPodManager.md`](./EigenPodManager.md)):
 * `EigenPodManager` withdrawals received as shares: 
-    * Shares ALWAYS go back to the originator of the withdrawal (rather than the `withdrawer` address). 
-    * Shares are also delegated to the originator's Operator, rather than the `withdrawer's` Operator.
-    * Shares received by the originator may be lower than the shares originally withdrawn if the originator has debt.
+    * OwnedShares ALWAYS go back to the originator of the withdrawal (rather than the `withdrawer` address). 
+    * OwnedShares are also delegated to the originator's Operator, rather than the `withdrawer's` Operator.
+    * OwnedShares received by the originator may be lower than the shares originally withdrawn if the originator has debt.
 * `EigenPodManager` withdrawals received as tokens:
     * Before the withdrawal can be completed, the originator needs to prove that a withdrawal occurred on the beacon chain (see [`EigenPod.verifyAndProcessWithdrawals`](./EigenPodManager.md#eigenpodverifyandprocesswithdrawals)).
 
@@ -288,10 +263,10 @@ For each strategy/share pair in the `Withdrawal`:
     * See [`EigenPodManager.withdrawSharesAsTokens`](./EigenPodManager.md#eigenpodmanagerwithdrawsharesastokens)
 * If `!receiveAsTokens`:
     * For `StrategyManager` strategies:
-        * Shares are awarded to the `withdrawer` and delegated to the `withdrawer's` Operator
+        * OwnedShares are awarded to the `withdrawer` and delegated to the `withdrawer's` Operator
         * See [`StrategyManager.addShares`](./StrategyManager.md#addshares)
     * For the native beacon chain ETH strategy (`EigenPodManager`):
-        * Shares are awarded to `withdrawal.staker`, and delegated to the Staker's Operator
+        * OwnedShares are awarded to `withdrawal.staker`, and delegated to the Staker's Operator
         * See [`EigenPodManager.addShares`](./EigenPodManager.md#eigenpodmanageraddshares)
 
 *Requirements*:

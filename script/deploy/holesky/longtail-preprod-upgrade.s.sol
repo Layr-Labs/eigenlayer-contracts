@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../../utils/ExistingDeploymentParser.sol";
 
@@ -39,8 +39,8 @@ contract Longtail_Upgrade_Preprod is ExistingDeploymentParser {
 
     function _deployLongtail() internal {
         // Deploy implementations
-        strategyFactoryImplementation = new StrategyFactory(strategyManager);
-        strategyFactoryBeaconImplementation = new StrategyBase(strategyManager);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
+        strategyFactoryBeaconImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Deploy and initialize proxies
         strategyBeacon = new UpgradeableBeacon(address(strategyFactoryBeaconImplementation));
@@ -88,8 +88,8 @@ contract Longtail_Upgrade_Preprod is ExistingDeploymentParser {
     function _sanityChecks() internal {
         // Sanity checks
 
-        require(eigenLayerProxyAdmin.getProxyAdmin(TransparentUpgradeableProxy(payable(address(strategyFactory)))) == address(eigenLayerProxyAdmin), "proxy admin not set correctly");
-        require(eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(strategyFactory)))) == address(strategyFactoryImplementation), "proxy impl not set correctly");
+        require(eigenLayerProxyAdmin.getProxyAdmin(ITransparentUpgradeableProxy(payable(address(strategyFactory)))) == address(eigenLayerProxyAdmin), "proxy admin not set correctly");
+        require(eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(strategyFactory)))) == address(strategyFactoryImplementation), "proxy impl not set correctly");
 
         require(strategyFactory.owner() == initOwner, "owner not set correctly");
         require(strategyFactory.pauserRegistry() == eigenLayerPauserReg, "pauser not set correctly");

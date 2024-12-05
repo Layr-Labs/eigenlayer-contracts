@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "../../utils/ExistingDeploymentParser.sol";
@@ -58,8 +58,8 @@ contract MainnetPEPEDeploy is ExistingDeploymentParser {
             IETHPOSDeposit(ETHPOSDepositAddress),
             eigenPodBeacon,
             strategyManager,
-            slasher,
-            delegationManager
+            delegationManager,
+            eigenLayerPauserReg
         );
     }
 
@@ -71,7 +71,7 @@ contract MainnetPEPEDeploy is ExistingDeploymentParser {
 
         // upgrade TUPS
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation)
         );
 

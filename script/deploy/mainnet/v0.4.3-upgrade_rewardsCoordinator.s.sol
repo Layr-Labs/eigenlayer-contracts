@@ -49,6 +49,9 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
             REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
@@ -120,7 +123,7 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         emit log_named_bytes("calldata_to_timelock_executing_action", calldata_to_timelock_executing_action);
     }
 
-    function test_mainnet_rc_upgrade() public {
+    function run_mainnet_rc_upgrade() public {
         run();  
 
         vm.warp(dayToQueueAction);
@@ -146,7 +149,7 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         _verifyInitializationParams();
     }
 
-    function _sanityCheckImplementations(RewardsCoordinator oldRc, RewardsCoordinator newRc) internal {
+    function _sanityCheckImplementations(RewardsCoordinator oldRc, RewardsCoordinator newRc) internal view {
         // Verify configs between both rewardsCoordinatorImplementations
         assertEq(
             address(oldRc.delegationManager()),
@@ -185,8 +188,8 @@ contract Upgrade_Mainnet_RewardsCoordinator is ExistingDeploymentParser, Timeloc
         );
     }
 
-    function test_set_reward_for_all_submitter(address hopper) public {
-        test_mainnet_rc_upgrade();
+    function run_set_reward_for_all_submitter(address hopper) public {
+        run_mainnet_rc_upgrade();
     
         // Set reward for all submitters
         vm.prank(operationsMultisig);

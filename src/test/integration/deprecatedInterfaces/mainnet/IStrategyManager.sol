@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "src/contracts/interfaces/IStrategy.sol";
-import "src/contracts/interfaces/ISlasher.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
 
 /**
@@ -102,7 +101,7 @@ interface IStrategyManager_DeprecatedM1 {
         returns (uint256 shares);
 
     /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
+    function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 shares);
 
     /**
      * @notice Get all details on the depositor's deposits and corresponding shares
@@ -246,9 +245,6 @@ interface IStrategyManager_DeprecatedM1 {
 
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
-
-    /// @notice Returns the single, central Slasher contract of EigenLayer
-    function slasher() external view returns (ISlasher);
 
     /// @notice returns the enshrined, virtual 'beaconChainETH' Strategy
     function beaconChainETHStrategy() external view returns (IStrategy);

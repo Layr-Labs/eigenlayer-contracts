@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
@@ -7,18 +7,22 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "src/contracts/libraries/BeaconChainProofs.sol";
+import "src/contracts/libraries/SlashingLib.sol";
 
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 
-abstract contract IntegrationBase is IntegrationDeployer {
-
+abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerTypes {
+    using StdStyle for *;
+    using SlashingLib for *;
     using Strings for *;
+    using print for *;
 
     uint numStakers = 0;
     uint numOperators = 0;
+    uint numAVSs = 0;
 
     // Lists of stakers/operators created before the m2 upgrade
     //
@@ -44,13 +48,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            stakerName = string.concat("M1_Staker", numStakers.toString());
+            stakerName = string.concat("M1Staker", cheats.toString(numStakers));
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
 
             stakersToMigrate.push(staker);
         } else {
-            stakerName = string.concat("Staker", numStakers.toString());
+            stakerName = string.concat("staker", cheats.toString(numStakers));
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
         }
@@ -73,7 +77,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
 
         if (forkType == MAINNET && !isUpgraded) {
-            string memory operatorName = string.concat("M1_Operator", numOperators.toString());
+            string memory operatorName = string.concat("M1Operator", numOperators.toString());
 
             // Create an operator for M1. We omit native ETH because we want to
             // check staker/operator shares, and we don't award native ETH shares in M1
@@ -82,11 +86,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
             User_M1(payable(address(operator))).depositIntoEigenlayer_M1(strategies, tokenBalances);
             uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
 
-            assert_Snap_Added_StakerShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+            assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
 
             operatorsToMigrate.push(operator);
         } else {
-            string memory operatorName = string.concat("Operator", numOperators.toString());
+            string memory operatorName = string.concat("operator", numOperators.toString());
 
             (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
 
@@ -95,13 +99,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
             operator.registerAsOperator();
             operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-            assert_Snap_Added_StakerShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+            assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
             assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
             assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
         }
 
         numOperators++;
         return (operator, strategies, tokenBalances);
+    }
+
+    function _newRandomAVS() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
+        string memory avsName = string.concat("avs", numAVSs.toString());
+        avs = _genRandAVS(avsName);
+        operatorSets = avs.createOperatorSets(_randomStrategies());
+        ++numAVSs;
     }
 
     /// @dev Send a random amount of ETH (up to 10 gwei) to the destination via `call`,
@@ -178,14 +189,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return result;
     }
-
+    
+    function _getTokenName(IERC20 token) internal view returns (string memory) {
+        if (token == NATIVE_ETH) {
+            return "Native ETH";
+        }
+        return IERC20Metadata(address(token)).name();
+    }
     /*******************************************************************************
                                 COMMON ASSERTIONS
     *******************************************************************************/
 
-    function assert_HasNoDelegatableShares(User user, string memory err) internal {
+    function assert_HasNoDelegatableShares(User user, string memory err) internal view {
         (IStrategy[] memory strategies, uint[] memory shares) = 
-            delegationManager.getDelegatableShares(address(user));
+            delegationManager.getDepositedShares(address(user));
         
         assertEq(strategies.length, 0, err);
         assertEq(strategies.length, shares.length, "assert_HasNoDelegatableShares: return length mismatch");
@@ -196,7 +213,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies, 
         uint[] memory expectedBalances, 
         string memory err
-    ) internal {
+    ) internal view {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
             
@@ -208,12 +225,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 tokenBalance = strat.underlyingToken().balanceOf(address(user));
             }
 
-            assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
-            // assertEq(expectedBalance, tokenBalance, err);
+            assertEq(expectedBalance, tokenBalance, err);
         }
     }
 
-    function assert_HasNoUnderlyingTokenBalance(User user, IStrategy[] memory strategies, string memory err) internal {
+    function assert_HasNoUnderlyingTokenBalance(User user, IStrategy[] memory strategies, string memory err) internal view {
         assert_HasUnderlyingTokenBalances(user, strategies, new uint[](strategies.length), err);
     }
 
@@ -222,7 +238,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies, 
         uint[] memory expectedShares, 
         string memory err
-    ) internal {
+    ) internal view {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
 
@@ -231,17 +247,17 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // This method should only be used for tests that handle positive
                 // balances. Negative balances are an edge case that require
                 // the own tests and helper methods.
-                int shares = eigenPodManager.podOwnerShares(address(user));
+                int shares = eigenPodManager.podOwnerDepositShares(address(user));
                 if (shares < 0) {
                     revert("assert_HasExpectedShares: negative shares");
                 }
 
                 actualShares = uint(shares);
             } else {
-                actualShares = strategyManager.stakerStrategyShares(address(user), strat);
+                actualShares = strategyManager.stakerDepositShares(address(user), strat);
             }
 
-            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
+            assertEq(expectedShares[i], actualShares, err);
         }
     }
 
@@ -250,54 +266,51 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies, 
         uint[] memory expectedShares, 
         string memory err
-    ) internal {
+    ) internal view {
         for (uint i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-
-            uint actualShares = delegationManager.operatorShares(address(user), strat);
-
-            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
+            uint actualShares = delegationManager.operatorShares(address(user), strategies[i]);
+            assertEq(expectedShares[i], actualShares, err);
         }
     }
 
     /// @dev Asserts that ALL of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
-    function assert_AllWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal {
+    function assert_AllWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal view {
         for (uint i = 0; i < withdrawalRoots.length; i++) {
             assert_WithdrawalPending(withdrawalRoots[i], err);
         }
     }
 
     /// @dev Asserts that NONE of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
-    function assert_NoWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal {
+    function assert_NoWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal view {
         for (uint i = 0; i < withdrawalRoots.length; i++) {
             assert_WithdrawalNotPending(withdrawalRoots[i], err);
         }
     }
 
     /// @dev Asserts that the hash of each withdrawal corresponds to the provided withdrawal root
-    function assert_WithdrawalPending(bytes32 withdrawalRoot, string memory err) internal {
+    function assert_WithdrawalPending(bytes32 withdrawalRoot, string memory err) internal view {
         assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), err);
     }
 
-    function assert_WithdrawalNotPending(bytes32 withdrawalRoot, string memory err) internal {
+    function assert_WithdrawalNotPending(bytes32 withdrawalRoot, string memory err) internal view {
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), err);
     }
 
     function assert_ValidWithdrawalHashes(
-        IDelegationManager.Withdrawal[] memory withdrawals,
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         string memory err
-    ) internal {
+    ) internal view {
         for (uint i = 0; i < withdrawals.length; i++) {
             assert_ValidWithdrawalHash(withdrawals[i], withdrawalRoots[i], err);
         }
     }
 
     function assert_ValidWithdrawalHash(
-        IDelegationManager.Withdrawal memory withdrawal,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
         bytes32 withdrawalRoot,
         string memory err
-    ) internal {
+    ) internal view {
         assertEq(withdrawalRoot, delegationManager.calculateWithdrawalRoot(withdrawal), err);
     }
 
@@ -305,7 +318,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         User staker,
         uint expectedBalance,
         string memory err
-    ) internal {
+    ) internal view {
         EigenPod pod = staker.pod();
         assertEq(address(pod).balance, expectedBalance, err);
     }
@@ -313,7 +326,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function assert_ProofsRemainingEqualsActive(
         User staker,
         string memory err
-    ) internal {
+    ) internal view {
         EigenPod pod = staker.pod();
         assertEq(pod.currentCheckpoint().proofsRemaining, pod.activeValidatorCount(), err);
     }
@@ -322,7 +335,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         User staker,
         uint64 expectedPodBalanceGwei,
         string memory err
-    ) internal {
+    ) internal view {
         EigenPod pod = staker.pod();
         assertEq(pod.currentCheckpoint().podBalanceGwei, expectedPodBalanceGwei, err);
     }
@@ -331,6 +344,53 @@ abstract contract IntegrationBase is IntegrationDeployer {
                                 SNAPSHOT ASSERTIONS
                        TIME TRAVELERS ONLY BEYOND THIS POINT
     *******************************************************************************/
+
+    /*******************************************************************************
+                         SNAPSHOT ASSERTIONS: ALLOCATIONS
+    *******************************************************************************/
+    
+    function assert_Snap_Allocations_Updated(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        uint64[] memory newMagnitudes,
+        bool completed,
+        string memory err
+    ) internal {
+        Allocation[] memory curAllocs = _getAllocations(operator, operatorSet, strategies);
+        Allocation[] memory prevAllocs = _getPrevAllocations(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            Allocation memory curAlloc = curAllocs[i];
+
+            if (completed) {
+                assertEq(curAlloc.currentMagnitude, newMagnitudes[i], string.concat(err, " (currentMagnitude)"));
+                assertEq(curAlloc.pendingDiff, 0, string.concat(err, " (pendingDiff)"));
+                assertEq(curAlloc.effectBlock, 0, string.concat(err, " (effectBlock)"));
+            } else {
+                Allocation memory prevAlloc = prevAllocs[i]; 
+
+                assertEq(
+                    curAlloc.currentMagnitude, 
+                    prevAlloc.currentMagnitude, 
+                    string.concat(err, " (currentMagnitude)")
+                );
+                assertEq(
+                    curAlloc.pendingDiff, 
+                    prevAlloc.pendingDiff + int128(int64(newMagnitudes[i])), 
+                    string.concat(err, " (pendingDiff)")
+                );
+
+                (, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
+
+                assertEq(
+                    curAlloc.effectBlock, 
+                    block.number + delay, 
+                    string.concat(err, " (effectBlock)")
+                );
+            }
+        }
+    }
 
     /*******************************************************************************
                         SNAPSHOT ASSERTIONS: OPERATOR SHARES
@@ -350,7 +410,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);
+            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
         }
     }
 
@@ -416,25 +476,25 @@ abstract contract IntegrationBase is IntegrationDeployer {
                             SNAPSHOT ASSERTIONS: STAKER SHARES
     *******************************************************************************/
 
-    /// @dev Check that the staker has `addedShares` additional delegatable shares
+    /// @dev Check that the staker has `addedShares` additional deposit shares
     /// for each strategy since the last snapshot
-    function assert_Snap_Added_StakerShares(
+    function assert_Snap_Added_Staker_DepositShares(
         User staker, 
         IStrategy[] memory strategies, 
         uint[] memory addedShares,
         string memory err
     ) internal {
-        uint[] memory curShares = _getStakerShares(staker, strategies);
+        uint[] memory curShares = _getStakerDepositShares(staker, strategies);
         // Use timewarp to get previous staker shares
-        uint[] memory prevShares = _getPrevStakerShares(staker, strategies);
+        uint[] memory prevShares = _getPrevStakerDepositShares(staker, strategies);
 
         // For each strategy, check (prev + added == cur)
-        for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);            
+        for (uint i = 0; i < strategies.length; i++) {        
+            assertEq(prevShares[i] + addedShares[i], curShares[i], err);     
         }
     }
 
-    function assert_Snap_Added_StakerShares(
+    function assert_Snap_Added_Staker_DepositShares(
         User staker, 
         IStrategy strat, 
         uint _addedShares,
@@ -445,20 +505,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
         strategies[0] = strat;
         addedShares[0] = _addedShares;
 
-        assert_Snap_Added_StakerShares(staker, strategies, addedShares, err);
+        assert_Snap_Added_Staker_DepositShares(staker, strategies, addedShares, err);
     }
 
     /// @dev Check that the staker has `removedShares` fewer delegatable shares
     /// for each strategy since the last snapshot
-    function assert_Snap_Removed_StakerShares(
+    function assert_Snap_Removed_StakerDepositShares(
         User staker, 
         IStrategy[] memory strategies, 
         uint[] memory removedShares,
         string memory err
     ) internal {
-        uint[] memory curShares = _getStakerShares(staker, strategies);
+        uint[] memory curShares = _getStakerDepositShares(staker, strategies);
         // Use timewarp to get previous staker shares
-        uint[] memory prevShares = _getPrevStakerShares(staker, strategies);
+        uint[] memory prevShares = _getPrevStakerDepositShares(staker, strategies);
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
@@ -466,7 +526,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    function assert_Snap_Removed_StakerShares(
+    function assert_Snap_Removed_StakerDepositShares(
         User staker, 
         IStrategy strat, 
         uint _removedShares,
@@ -477,20 +537,83 @@ abstract contract IntegrationBase is IntegrationDeployer {
         strategies[0] = strat;
         removedShares[0] = _removedShares;
 
-        assert_Snap_Removed_StakerShares(staker, strategies, removedShares, err);
+        assert_Snap_Removed_StakerDepositShares(staker, strategies, removedShares, err);
+    }
+
+    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
+    function assert_Snap_Removed_StakerWithdrawableShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        uint[] memory removedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i] - removedShares[i], curShares[i], err);
+        }
+    }
+
+    function assert_Snap_Removed_StakerWithdrawableShares(
+        User staker, 
+        IStrategy strat, 
+        uint _removedShares,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        uint[] memory removedShares = new uint[](1);
+        strategies[0] = strat;
+        removedShares[0] = _removedShares;
+
+        assert_Snap_Removed_StakerWithdrawableShares(staker, strategies, removedShares, err);
+    }
+
+    /// @dev Check that the staker's withdrawable shares have decreased by at least `removedShares`
+    /// @dev Used to handle overslashing of beacon chain
+    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory removedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check diff between (prev-removed) and curr is at most 1 gwei
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(prevShares[i] - removedShares[i], curShares[i], 1e9, err);
+        }
+    }
+
+    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy strat,
+        uint removedShares,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        uint[] memory removedSharesArr = new uint[](1);
+        strategies[0] = strat;
+        removedSharesArr[0] = removedShares;
+
+        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strategies, removedSharesArr, err);
     }
 
     /// @dev Check that the staker's delegatable shares in ALL strategies have not changed
     /// since the last snapshot
-    function assert_Snap_Unchanged_StakerShares(
+    function assert_Snap_Unchanged_StakerDepositShares(
         User staker,
         string memory err
     ) internal {
         IStrategy[] memory strategies = allStrats;
 
-        uint[] memory curShares = _getStakerShares(staker, strategies);
+        uint[] memory curShares = _getStakerDepositShares(staker, strategies);
         // Use timewarp to get previous staker shares
-        uint[] memory prevShares = _getPrevStakerShares(staker, strategies);
+        uint[] memory prevShares = _getPrevStakerDepositShares(staker, strategies);
 
         // For each strategy, check (prev == cur)
         for (uint i = 0; i < strategies.length; i++) {
@@ -504,9 +627,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         int[] memory shareDeltas,
         string memory err
     ) internal {
-        int[] memory curShares = _getStakerSharesInt(staker, strategies);
+        int[] memory curShares = _getStakerDepositSharesInt(staker, strategies);
         // Use timewarp to get previous staker shares
-        int[] memory prevShares = _getPrevStakerSharesInt(staker, strategies);
+        int[] memory prevShares = _getPrevStakerDepositSharesInt(staker, strategies);
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
@@ -626,7 +749,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawals(
         User staker, 
-        IDelegationManager.Withdrawal[] memory withdrawals,
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         string memory err
     ) internal {
         uint curQueuedWithdrawals = _getCumulativeWithdrawals(staker);
@@ -638,7 +761,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawal(
         User staker, 
-        IDelegationManager.Withdrawal memory /*withdrawal*/,
+        IDelegationManagerTypes.Withdrawal memory /*withdrawal*/,
         string memory err
     ) internal {
         uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
@@ -691,12 +814,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal {
         bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(addedValidators);
 
-        IEigenPod.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
-        IEigenPod.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
         for (uint i = 0; i < curStatuses.length; i++) {
-            assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.INACTIVE, err);
-            assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(prevStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.INACTIVE, err);
+            assertTrue(curStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, err);
         }
     }
 
@@ -707,12 +830,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal {
         bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(exitedValidators);
 
-        IEigenPod.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
-        IEigenPod.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
         for (uint i = 0; i < curStatuses.length; i++) {
-            assertTrue(prevStatuses[i] == IEigenPod.VALIDATOR_STATUS.ACTIVE, err);
-            assertTrue(curStatuses[i] == IEigenPod.VALIDATOR_STATUS.WITHDRAWN, err);
+            assertTrue(prevStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(curStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.WITHDRAWN, err);
         }
     }
 
@@ -806,6 +929,27 @@ abstract contract IntegrationBase is IntegrationDeployer {
     /*******************************************************************************
                                 UTILITY METHODS
     *******************************************************************************/
+    
+    function _randWadToSlash() internal returns (uint) {
+        return _randUint({ min: 0.01 ether, max: 1 ether });
+    }
+    
+    function _randMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
+        magnitudes = new uint64[](len);
+
+        if (sum == 0 || len == 0) return magnitudes;
+        
+        uint64 remaining = sum;
+
+        for (uint256 i; i < len; ++i) {
+            if (i == len - 1) {
+                magnitudes[i] = remaining;
+            } else {
+                magnitudes[i] = uint64(_randUint(0, remaining / (len - i)));
+                remaining -= magnitudes[i];
+            }
+        }
+    }
 
     function _randWithdrawal(
         IStrategy[] memory strategies, 
@@ -898,7 +1042,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
-        int curPodOwnerShares = eigenPodManager.podOwnerShares(address(staker));
+        int curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
         int newPodOwnerShares = curPodOwnerShares + shareDelta;
 
         if (curPodOwnerShares <= 0) {
@@ -959,7 +1103,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getWithdrawalHashes(
-        IDelegationManager.Withdrawal[] memory withdrawals
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals
     ) internal view returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](withdrawals.length);
 
@@ -988,22 +1132,46 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     modifier timewarp() {
-        uint curState = timeMachine.warpToLast();
+        uint curState = timeMachine.travelToLast();
         _;
-        timeMachine.warpToPresent(curState);
+        timeMachine.travel(curState);
     }
 
-    /// @dev Given a list of strategies, roll the block number forward to the
-    /// a valid blocknumber to completeWithdrawals
-    function _rollBlocksForCompleteWithdrawals(IStrategy[] memory strategies) internal {
-        // uint256 blocksToRoll = delegationManager.minWithdrawalDelayBlocks();
-        // for (uint i = 0; i < strategies.length; i++) {
-        //     uint256 withdrawalDelayBlocks = delegationManager.strategyWithdrawalDelayBlocks(strategies[i]);
-        //     if (withdrawalDelayBlocks > blocksToRoll) {
-        //         blocksToRoll = withdrawalDelayBlocks;
-        //     }
-        // }
-        cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
+    /// @dev Rolls forward by the minimum withdrawal delay blocks.
+    function _rollBlocksForCompleteWithdrawals() internal {        
+        rollForward({blocks: delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS()});
+    }
+
+    /// @dev Rolls forward by the default allocation delay blocks.
+    function _rollBlocksForCompleteAllocation() internal {
+        (, uint32 delay) = allocationManager.getAllocationDelay(address(this));
+        rollForward({blocks: delay});
+    }
+
+    /// @dev Rolls forward by the default deallocation delay blocks.
+    function _rollBlocksForCompleteDeallocation() internal {
+        cheats.roll(block.number + allocationManager.DEALLOCATION_DELAY());
+    }
+
+    /// @dev Uses timewarp modifier to get the operator set strategy allocations at the last snapshot.
+    function _getPrevAllocations(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (Allocation[] memory) {
+        return _getAllocations(operator, operatorSet, strategies);
+    }
+
+    /// @dev Looks up each strategy for an operator set and returns a list of operator allocations.
+    function _getAllocations(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (Allocation[] memory allocations) {
+        allocations = new Allocation[](strategies.length);
+        for (uint i = 0; i < strategies.length; ++i) {
+            allocations[i] = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]);
+        }
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot
@@ -1026,15 +1194,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     /// @dev Uses timewarp modifier to get staker shares at the last snapshot
-    function _getPrevStakerShares(
+    function _getPrevStakerDepositShares(
         User staker, 
         IStrategy[] memory strategies
     ) internal timewarp() returns (uint[] memory) {
-        return _getStakerShares(staker, strategies);
+        return _getStakerDepositShares(staker, strategies);
     }
 
     /// @dev Looks up each strategy and returns a list of the staker's shares
-    function _getStakerShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
+    function _getStakerDepositShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
         uint[] memory curShares = new uint[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
@@ -1044,14 +1212,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // This method should only be used for tests that handle positive
                 // balances. Negative balances are an edge case that require
                 // the own tests and helper methods.
-                int shares = eigenPodManager.podOwnerShares(address(staker));
+                int shares = eigenPodManager.podOwnerDepositShares(address(staker));
                 if (shares < 0) {
-                    revert("_getStakerShares: negative shares");
+                    revert("_getStakerDepositShares: negative shares");
                 }
 
                 curShares[i] = uint(shares);
             } else {
-                curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat);
+                curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
             }
         }
 
@@ -1059,28 +1227,47 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     /// @dev Uses timewarp modifier to get staker shares at the last snapshot
-    function _getPrevStakerSharesInt(
+    function _getPrevStakerDepositSharesInt(
         User staker, 
         IStrategy[] memory strategies
     ) internal timewarp() returns (int[] memory) {
-        return _getStakerSharesInt(staker, strategies);
+        return _getStakerDepositSharesInt(staker, strategies);
     }
 
     /// @dev Looks up each strategy and returns a list of the staker's shares
-    function _getStakerSharesInt(User staker, IStrategy[] memory strategies) internal view returns (int[] memory) {
+    function _getStakerDepositSharesInt(User staker, IStrategy[] memory strategies) internal view returns (int[] memory) {
         int[] memory curShares = new int[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                curShares[i] = eigenPodManager.podOwnerShares(address(staker));
+                curShares[i] = eigenPodManager.podOwnerDepositShares(address(staker));
             } else {
-                curShares[i] = int(strategyManager.stakerStrategyShares(address(staker), strat));
+                curShares[i] = int(strategyManager.stakerDepositShares(address(staker), strat));
             }
         }
 
         return curShares;
+    }
+
+    function _getPrevStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getStakerWithdrawableShares(staker, strategies);
+    }
+
+    function _getStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
+        (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        return withdrawableShares; 
+    }
+
+    /// @dev Uses timewarp modifier to get staker beacon chain scaling factor at the last snapshot
+    function _getPrevBeaconChainSlashingFactor(User staker) internal timewarp() returns (uint64) {
+        return _getBeaconChainSlashingFactor(staker);
+    }
+
+    /// @dev Looks up the staker's beacon chain scaling factor
+    function _getBeaconChainSlashingFactor(User staker) internal view returns (uint64) {
+        return eigenPodManager.beaconChainSlashingFactor(address(staker));
     }
 
     function _getPrevCumulativeWithdrawals(User staker) internal timewarp() returns (uint) {
@@ -1097,7 +1284,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function _getTokenBalances(User staker, IERC20[] memory tokens) internal view returns (uint[] memory) {
         uint[] memory balances = new uint[](tokens.length);
-
+        
         for (uint i = 0; i < tokens.length; i++) {
             if (tokens[i] == NATIVE_ETH) {
                 balances[i] = address(staker).balance;
@@ -1135,9 +1322,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return _getActiveValidatorCount(staker);
     }
 
-    function _getValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal view returns (IEigenPod.VALIDATOR_STATUS[] memory) {
+    function _getValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal view returns (IEigenPodTypes.VALIDATOR_STATUS[] memory) {
         EigenPod pod = staker.pod();
-        IEigenPod.VALIDATOR_STATUS[] memory statuses = new IEigenPod.VALIDATOR_STATUS[](pubkeyHashes.length);
+        IEigenPodTypes.VALIDATOR_STATUS[] memory statuses = new IEigenPodTypes.VALIDATOR_STATUS[](pubkeyHashes.length);
 
         for (uint i = 0; i < statuses.length; i++) {
             statuses[i] = pod.validatorStatus(pubkeyHashes[i]);
@@ -1146,7 +1333,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return statuses;
     }
 
-    function _getPrevValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (IEigenPod.VALIDATOR_STATUS[] memory) {
+    function _getPrevValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (IEigenPodTypes.VALIDATOR_STATUS[] memory) {
         return _getValidatorStatuses(staker, pubkeyHashes);
     }
 
