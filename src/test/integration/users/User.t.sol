@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 
 import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/DelegationManager.sol";
+import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
@@ -21,6 +22,7 @@ struct Validator {
 interface IUserDeployer {
     function allocationManager() external view returns (AllocationManager);
     function delegationManager() external view returns (DelegationManager);
+    function permissionController() external view returns (PermissionController);
     function strategyManager() external view returns (StrategyManager);
     function eigenPodManager() external view returns (EigenPodManager);
     function timeMachine() external view returns (TimeMachine);
@@ -36,6 +38,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     AllocationManager allocationManager;
     DelegationManager delegationManager;
+    PermissionController permissionController;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
     TimeMachine timeMachine;
@@ -54,13 +57,14 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         allocationManager = deployer.allocationManager();
         delegationManager = deployer.delegationManager();
+        permissionController = deployer.permissionController();
         strategyManager = deployer.strategyManager();
         eigenPodManager = deployer.eigenPodManager();
+        
         timeMachine = deployer.timeMachine();
-
         beaconChain = deployer.beaconChain();
-        _createPod();
 
+        _createPod();
         _NAME = name;
     }
 
@@ -78,7 +82,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// -----------------------------------------------------------------------
     /// Allocation Manager Methods
     /// -----------------------------------------------------------------------
-    
+
     /// @dev Allocates randomly accross the operator set's strategies with a sum of `magnitudeSum`.
     /// NOTE: Calling more than once will lead to deallocations...
     function modifyAllocations(
@@ -106,6 +110,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             newMagnitudes: magnitudes
         }).toArray();
 
+        _tryPrankAppointee_AllocationManager(IAllocationManager.modifyAllocations.selector);
         allocationManager.modifyAllocations(address(this), allocateParams);
         print.gasUsed();
 
@@ -142,7 +147,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 "}"
             )
         );
-
+        
+        _tryPrankAppointee_AllocationManager(IAllocationManager.registerForOperatorSets.selector);
         allocationManager.registerForOperatorSets(
             address(this),
             RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
@@ -163,7 +169,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 "}"
             )
         );
-
+        
+        _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
         allocationManager.deregisterFromOperatorSets(
             DeregisterParams({
                 operator: address(this),
@@ -176,6 +183,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     function setAllocationDelay(uint32 delay) public virtual createSnapshot {
         print.method("setAllocationDelay");
+        _tryPrankAppointee_AllocationManager(IAllocationManager.setAllocationDelay.selector);
         allocationManager.setAllocationDelay(address(this), delay);
         print.gasUsed();
         rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
@@ -209,6 +217,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         print.method("undelegate");
 
         Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
+        _tryPrankAppointee_DelegationManager(IDelegationManager.undelegate.selector);
         delegationManager.undelegate(address(this));
         print.gasUsed();
 
@@ -274,45 +283,35 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     function completeWithdrawalsAsTokens(
         Withdrawal[] memory withdrawals
-    ) public virtual createSnapshot returns (IERC20[][] memory) {
+    ) public virtual createSnapshot returns (IERC20[][] memory tokens) {
         print.method("completeWithdrawalsAsTokens");
-
-        IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
-
+        tokens = new IERC20[][](withdrawals.length);
         for (uint256 i = 0; i < withdrawals.length; i++) {
             tokens[i] = _completeQueuedWithdrawal(withdrawals[i], true);
         }
-
-        return tokens;
     }
 
     function completeWithdrawalAsTokens(
         Withdrawal memory withdrawal
     ) public virtual createSnapshot returns (IERC20[] memory) {
         print.method("completeWithdrawalsAsTokens");
-
         return _completeQueuedWithdrawal(withdrawal, true);
     }
 
     function completeWithdrawalsAsShares(
         Withdrawal[] memory withdrawals
-    ) public virtual createSnapshot returns (IERC20[][] memory) {
+    ) public virtual createSnapshot returns (IERC20[][] memory tokens) {
         print.method("completeWithdrawalAsShares");
-
-        IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
-
+        tokens = new IERC20[][](withdrawals.length);
         for (uint256 i = 0; i < withdrawals.length; i++) {
             tokens[i] = _completeQueuedWithdrawal(withdrawals[i], false);
         }
-
-        return tokens;
     }
 
     function completeWithdrawalAsShares(
         Withdrawal memory withdrawal
     ) public virtual createSnapshot returns (IERC20[] memory) {
         print.method("completeWithdrawalAsShares");
-
         return _completeQueuedWithdrawal(withdrawal, false);
     }
 
@@ -328,7 +327,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// withdrawal credential proofs are generated for each validator.
     function startValidators() public virtual createSnapshot returns (uint40[] memory, uint64) {
         print.method("startValidators");
-
         return _startValidators();
     }
 
@@ -336,7 +334,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         uint40[] memory _validators
     ) public virtual createSnapshot returns (uint64 exitedBalanceGwei) {
         print.method("exitValidators");
-
         return _exitValidators(_validators);
     }
 
@@ -348,19 +345,16 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         uint40[] memory _validators
     ) public virtual createSnapshot {
         print.method("verifyWithdrawalCredentials");
-
         _verifyWithdrawalCredentials(_validators);
     }
 
     function startCheckpoint() public virtual createSnapshot {
         print.method("startCheckpoint");
-
         _startCheckpoint();
     }
 
     function completeCheckpoint() public virtual createSnapshot {
         print.method("completeCheckpoint");
-
         _completeCheckpoint();
     }
 
@@ -666,6 +660,26 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }
 
         return activeValidators;
+    }
+
+    function _tryPrankAppointee(
+        address target,
+        bytes4 selector
+    ) internal {
+        address[] memory appointees = permissionController.getAppointees(address(this), target, selector);
+        if (appointees.length != 0) cheats.prank(appointees[0]);
+    }
+
+    function _tryPrankAppointee_AllocationManager(
+        bytes4 selector
+    ) internal {
+        return _tryPrankAppointee(address(allocationManager), selector);
+    }
+
+    function _tryPrankAppointee_DelegationManager(
+        bytes4 selector
+    ) internal {
+        return _tryPrankAppointee(address(delegationManager), selector);
     }
 }
 
