@@ -111,14 +111,16 @@ interface IAllocationManagerTypes {
      * @notice Struct containing parameters to slashing
      * @param operator the address to slash
      * @param operatorSetId the ID of the operatorSet the operator is being slashed on behalf of
-     * @param wadToSlash the parts in 1e18 to slash, this will be proportional to the operator's
+     * @param strategies the set of strategies to slash
+     * @param wadsToSlash the parts in 1e18 to slash, this will be proportional to the operator's
      * slashable stake allocation for the operatorSet
      * @param description the description of the slashing provided by the AVS for legibility
      */
     struct SlashingParams {
         address operator;
         uint32 operatorSetId;
-        uint256 wadToSlash;
+        IStrategy[] strategies;
+        uint256[] wadsToSlash;
         string description;
     }
 

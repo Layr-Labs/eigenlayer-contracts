@@ -24,6 +24,8 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     using print for *;
     using SingleItemArrayLib for *;
 
+    IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
     AllocationManager immutable allocationManager;
     StrategyFactory immutable strategyFactory;
     TimeMachine immutable timeMachine;
@@ -88,26 +90,35 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         allocationManager.createOperatorSets(address(this), p);
     }
 
-    function slashOperator(User operator, uint32 operatorSetId, uint256 wadToSlash) public createSnapshot {
-        print.method(
-            "slashOperator",
-            string.concat(
-                "{operator: ",
-                operator.NAME_COLORED(),
-                ", operatorSetId: ",
-                cheats.toString(operatorSetId),
-                ", wadToSlash: ",
-                wadToSlash.asWad(),
-                "}"
-            )
-        );
-
+    function slashOperator(User operator, uint32 operatorSetId, IStrategy[] memory strategies, uint256[] memory wadsToSlash) public createSnapshot {
         SlashingParams memory p = SlashingParams({
             operator: address(operator),
             operatorSetId: operatorSetId,
-            wadToSlash: wadToSlash,
+            strategies: strategies,
+            wadsToSlash: wadsToSlash,
             description: "bad operator"
         });
+
+        for (uint256 i; i < strategies.length; ++i) {
+            string memory strategyName = strategies[i] == beaconChainETHStrategy ? 
+                "Native ETH" : 
+                IERC20Metadata(address(strategies[i].underlyingToken())).name();
+
+            print.method(
+                "slashOperator",
+                string.concat(
+                    "{operator: ",
+                    operator.NAME_COLORED(),
+                    ", operatorSetId: ",
+                    cheats.toString(operatorSetId),
+                    ", strategy: ",
+                    strategyName,
+                    ", wadToSlash: ",
+                    wadsToSlash[i].asWad(),
+                    "}"
+                )
+            );
+        }
 
         allocationManager.slashOperator(address(this), p);
     }

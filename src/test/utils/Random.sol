@@ -296,10 +296,26 @@ library Random {
         address operator,
         IAllocationManagerTypes.AllocateParams memory allocateParams
     ) internal returns (IAllocationManagerTypes.SlashingParams memory params) {
+        IStrategy[] memory strategies = allocateParams.strategies;
+
         params.operator = operator;
         params.operatorSetId = allocateParams.operatorSet.id;
-        params.wadToSlash = r.Uint256(0.01 ether, 1 ether);
-        params.description = "test";
+
+        // Randomly select a subset of strategies to slash.
+        uint len = r.Uint256({ min: 1, max: strategies.length });
+
+        // Update length of strategies array.
+        assembly {
+            mstore(strategies, len)
+        }
+        
+        params.strategies = strategies;
+        params.wadsToSlash = new uint[](len);
+        
+        // Randomly select a `wadToSlash` for each strategy.
+        for (uint i; i < len; ++i) {
+            params.wadsToSlash[i] = r.Uint256({ min: 0.001 ether, max: 1 ether });
+        }
     }
 
     /// -----------------------------------------------------------------------
