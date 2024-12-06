@@ -14,10 +14,18 @@ contract Execute is Queue {
     using SafeTxUtils for SafeTx;
     using EigenLabsUpgrade for *;
 
+
+    function options() internal override view returns (MultisigOptions memory) {
+        return MultisigOptions(
+            this._operationsMultisig(),
+            Operation.Call
+        );
+    }
+
     /**
      * @dev Overrides the previous _execute function to execute the queued transactions.
      */
-    function _runAsMultisig() internal override {
+    function runAsMultisig() internal override {
         bytes memory call = _getMultisigTransactionCalldata();
         TimelockController timelock = TimelockController(payable(this._timelock()));
         timelock.execute(
@@ -34,7 +42,7 @@ contract Execute is Queue {
     function testExecute() public { 
         // 1- run queueing logic
         vm.startPrank(this._operationsMultisig());
-        super._runAsMultisig();
+        super.runAsMultisig();
         vm.stopPrank();
 
         TimelockController timelock = this._timelock();
@@ -48,7 +56,6 @@ contract Execute is Queue {
         assertEq(timelock.isOperationReady(txHash), true, "Transaction should be executable.");
         
         // 3- execute
-        zSetMultisigContext(this._protocolCouncilMultisig());
         execute();
 
         // 3. TODO: assert that the execute did something

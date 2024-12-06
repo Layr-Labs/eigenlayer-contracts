@@ -35,7 +35,14 @@ contract Queue is MultisigBuilder {
         return (executorMultisigCalldata);
     }
 
-    function _runAsMultisig() internal virtual override {
+    function options() internal virtual override returns (MultisigOptions memory) {
+        return MultisigOptions(
+            this._protocolCouncilMultisig(),
+            Operation.Call
+        );
+    }
+
+    function runAsMultisig() internal virtual override {
         (bytes memory call) = _getMultisigTransactionCalldata();
 
         TimelockController timelock = TimelockController(payable(this._timelock()));
@@ -50,7 +57,6 @@ contract Queue is MultisigBuilder {
     }
 
     function testDeploy() virtual public {
-        zSetMultisigContext(this._protocolCouncilMultisig());
         execute();
 
         TimelockController timelock = TimelockController(payable(this._timelock()));

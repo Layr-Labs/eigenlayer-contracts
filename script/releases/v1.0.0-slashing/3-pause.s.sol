@@ -20,14 +20,21 @@ contract Pause is MultisigBuilder {
     MultisigCall[] private _executorCalls;
     MultisigCall[] private _opsCalls;
 
-    function _runAsMultisig() internal virtual override {
+
+    function options() internal override view returns (MultisigOptions memory) {
+        return MultisigOptions(
+            // TODO: should this run from the pauser multisig
+            this._operationsMultisig(),
+            Operation.Call
+        );
+    }
+
+    function runAsMultisig() internal virtual override {
         // TODO: set: 
         //     EigenPodManager.PAUSED_START_CHECKPOINT = true;
     }
 
     function testDeploy() virtual public {
-        // TODO: this should run from pauser multisig
-        zSetMultisigContext(this._operationsMultisig()); 
         execute();
 
         // TODO: assert side effects
