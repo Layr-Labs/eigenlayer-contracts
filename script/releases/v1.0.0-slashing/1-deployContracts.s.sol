@@ -39,8 +39,11 @@ contract Deploy is EOADeployer {
 
         /// permissions/
 
-        address[] memory pausers = new address[](1);
+        address[] memory pausers = new address[](3);
         pausers[0] = zAddress("pauserMultisig");
+        pausers[1] = zAddress("operationsMultisig");
+        pausers[2] = zAddress("executorMultisig");
+
         PauserRegistry pauserRegistry_impl = new PauserRegistry({
             _pausers: pausers,
             _unpauser: zAddress("executorMultisig")
