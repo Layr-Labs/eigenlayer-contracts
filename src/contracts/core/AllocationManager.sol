@@ -60,9 +60,6 @@ contract AllocationManager is
         address avs,
         SlashingParams calldata params
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
-        // // Check that the msg.sender can call - we don't use a modifier to avoid `stack too deep` errors
-        // require(_checkCanCall(avs), InvalidCaller());
-
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
         bool isRegistered = _isRegistered(params.operator, operatorSet);
