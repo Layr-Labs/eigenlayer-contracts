@@ -8,18 +8,18 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 /// core/
-import {AllocationManager} from "src/contracts/core/AllocationManager.sol";
-import {AVSDirectory} from "src/contracts/core/AVSDirectory.sol";
-import {DelegationManager} from "src/contracts/core/DelegationManager.sol";
-import {RewardsCoordinator} from "src/contracts/core/RewardsCoordinator.sol";
-import {StrategyManager} from "src/contracts/core/StrategyManager.sol";
+import "src/contracts/core/AllocationManager.sol";
+import "src/contracts/core/AVSDirectory.sol";
+import "src/contracts/core/DelegationManager.sol";
+import "src/contracts/core/RewardsCoordinator.sol";
+import "src/contracts/core/StrategyManager.sol";
 
 /// permissions/
-import {PauserRegistry} from "src/contracts/permissions/PauserRegistry.sol";
-import {PermissionController} from "src/contracts/permissions/PermissionController.sol";
+import "src/contracts/permissions/PauserRegistry.sol";
+import "src/contracts/permissions/PermissionController.sol";
 
 /// pods/
-import {EigenPod} from "src/contracts/pods/EigenPod.sol";
+import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
 /// strategies/
@@ -223,7 +223,7 @@ contract Deploy is EOADeployer {
         vm.stopBroadcast();
     }
 
-    function testDeploy() public {
+    function testDeploy() public virtual {
         _runAsEOA();
         Deployment[] memory deploys = deploys();
 
