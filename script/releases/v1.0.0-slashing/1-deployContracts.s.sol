@@ -39,7 +39,17 @@ contract Deploy is EOADeployer {
 
         /// permissions/
 
-        // TODO: pauser registry?
+        address[] memory pausers = new address[](1);
+        pausers[0] = zAddress("pauserMultisig");
+        PauserRegistry pauserRegistry_impl = new PauserRegistry({
+            _pausers: pausers,
+            _unpauser: zAddress("executorMultisig")
+        });
+
+        deploySingleton({
+            deployedTo: address(pauserRegistry_impl),
+            name: type(PauserRegistry).name 
+        });
 
         PermissionController permissionController_impl = new PermissionController();
 
@@ -72,6 +82,17 @@ contract Deploy is EOADeployer {
         deploySingleton({
             deployedTo: address(allocationManager_impl),
             name: this.impl(type(AllocationManager).name)
+        });
+
+        TransparentUpgradeableProxy allocationManager_proxy = new TransparentUpgradeableProxy({
+            _logic: address(allocationManager_impl),
+            admin_: zDeployedContract(type(ProxyAdmin).name),
+            _data: ""
+        });
+
+        deploySingleton({
+            deployedTo: address(allocationManager_proxy),
+            name: this.proxy(type(AllocationManager).name)
         });
 
         AVSDirectory avsDirectory_impl = new AVSDirectory({

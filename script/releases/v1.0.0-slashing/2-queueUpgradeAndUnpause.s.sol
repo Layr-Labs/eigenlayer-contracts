@@ -40,7 +40,7 @@ contract QueueAndUnpause is MultisigBuilder {
 
     function options() internal virtual override returns (MultisigOptions memory) {
         return MultisigOptions(
-            this._protocolCouncilMultisig(),
+            this._operationsMultisig(),
             Operation.Call
         );
     }
