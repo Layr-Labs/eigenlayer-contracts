@@ -70,8 +70,18 @@ contract AllocationManager is
 
         // For each strategy in the operator set, slash any existing allocation
         for (uint256 i = 0; i < params.strategies.length; i++) {
+            // Check that `strategies` is in ascending order.
+            require(
+                i == 0 || uint160(address(params.strategies[i])) > uint160(address(params.strategies[i - 1])),
+                StrategiesMustBeInAscendingOrder()
+            );
             // Check that `wadToSlash` is within acceptable bounds.
             require(0 < params.wadsToSlash[i] && params.wadsToSlash[i] <= WAD, InvalidWadToSlash());
+            // Check that the operator set contains the strategy.
+            require(
+                _operatorSetStrategies[operatorSet.key()].contains(address(params.strategies[i])),
+                StrategyNotInOperatorSet()
+            );
 
             // 1. Get the operator's allocation info for the strategy and operator set
             (StrategyInfo memory info, Allocation memory allocation) =

@@ -45,6 +45,8 @@ interface IAllocationManagerErrors {
     error InvalidOperatorSet();
     /// @dev Thrown when a strategy is referenced that does not belong to an operator set.
     error InvalidStrategy();
+    /// @dev Thrown when provided `strategies` are not in ascending order.
+    error StrategiesMustBeInAscendingOrder();
     /// @dev Thrown when trying to add a strategy to an operator set that already contains it.
     error StrategyAlreadyInOperatorSet();
     /// @dev Thrown when trying to remove a strategy from an operator set it is not a part of.
