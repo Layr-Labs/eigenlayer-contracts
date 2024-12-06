@@ -5,6 +5,7 @@ import {MultisigCall, MultisigCallUtils, MultisigBuilder} from "zeus-templates/t
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {EigenLabsUpgrade} from "../EigenLabsUpgrade.s.sol";
+import {EigenPodManager} from "src/contracts/pods/EigenPodManager.sol";
 import {EncGnosisSafe} from "zeus-templates/utils/EncGnosisSafe.sol";
 import {MultisigCallUtils, MultisigCall} from "zeus-templates/utils/MultisigCallUtils.sol";
 
@@ -23,15 +24,14 @@ contract Pause is MultisigBuilder {
 
     function options() internal override view returns (MultisigOptions memory) {
         return MultisigOptions(
-            // TODO: should this run from the pauser multisig
-            this._operationsMultisig(),
+            this._pauserMultisig(),
             Operation.Call
         );
     }
 
     function runAsMultisig() internal virtual override {
         // TODO: set: 
-        //     EigenPodManager.PAUSED_START_CHECKPOINT = true;
+        //    pause EigenPodManager
     }
 
     function testDeploy() virtual public {

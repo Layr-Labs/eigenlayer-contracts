@@ -16,7 +16,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *             - unpauses the system.
  *  This should be run via the protocol council multisig.
  */
-contract Queue is MultisigBuilder {
+contract QueueAndUnpause is MultisigBuilder {
     using MultisigCallUtils for MultisigCall[];
     using EigenLabsUpgrade for *;
     using EncGnosisSafe for *;
@@ -29,6 +29,9 @@ contract Queue is MultisigBuilder {
         ProxyAdmin pa = ProxyAdmin(this._proxyAdmin());
 
         // TODO(alex): multisig transaction calldata for upgrading all contracts from phase 1.
+
+
+
         bytes memory executorMultisigCalldata = new bytes(0);
         // for syntax, see rewardsv2 upgrade script
 

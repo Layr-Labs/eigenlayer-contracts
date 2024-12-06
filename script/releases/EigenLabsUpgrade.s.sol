@@ -32,6 +32,12 @@ library EigenLabsUpgrade {
         return self.zAddress("operationsMultisig");
     }
 
+    function _pauserMultisig(
+        ZeusScript self
+    ) internal view returns (address) {
+        return self.zAddress("pauserMultisig");
+    }
+
     function _pauserRegistry(
         ZeusScript self
     ) internal view returns (address) {

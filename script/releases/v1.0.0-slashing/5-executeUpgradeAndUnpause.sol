@@ -3,21 +3,20 @@ pragma solidity ^0.8.12;
 
 import {MultisigCall, MultisigCallUtils} from "zeus-templates/templates/MultisigBuilder.sol";
 import {SafeTx, SafeTxUtils} from "zeus-templates/utils/SafeTxUtils.sol";
-import {Queue} from "./2-queueUpgradeAndUnpause.s.sol";
+import {QueueAndUnpause} from "./2-queueUpgradeAndUnpause.s.sol";
 import {EigenLabsUpgrade} from "../EigenLabsUpgrade.s.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-contract Execute is Queue {
+contract Execute is QueueAndUnpause {
     using MultisigCallUtils for MultisigCall[];
     using SafeTxUtils for SafeTx;
     using EigenLabsUpgrade for *;
 
-
     function options() internal override view returns (MultisigOptions memory) {
         return MultisigOptions(
-            this._operationsMultisig(),
+            this._protocolCouncilMultisig(),
             Operation.Call
         );
     }
