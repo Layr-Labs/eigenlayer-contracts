@@ -16,6 +16,8 @@ interface IAllocationManagerErrors {
     error InputArrayLengthMismatch();
     /// @dev Thrown when calling a view function that requires a valid block number.
     error InvalidBlockNumber();
+    /// @dev Thrown when creating an operator set with more than max strategies.
+    error MaxStrategiesExceeded();
 
     /// Caller
 

@@ -18,6 +18,8 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     uint256 internal constant FUZZ_MAX_STRATS = 8;
     uint256 internal constant FUZZ_MAX_OP_SETS = 8;
 
+    uint8 internal constant MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH = 33;
+
     uint8 internal constant PAUSED_MODIFY_ALLOCATIONS = 0;
     uint8 internal constant PAUSED_OPERATOR_SLASHING = 1;
     uint8 internal constant PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION = 2;
@@ -3088,6 +3090,8 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
 }
 
 contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationManagerUnitTests {
+    using SingleItemArrayLib for *;
+
     function test_addStrategiesToOperatorSet_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidOperatorSet.selector);
@@ -3098,6 +3102,29 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
         cheats.prank(defaultAVS);
         cheats.expectRevert(StrategyAlreadyInOperatorSet.selector);
         allocationManager.addStrategiesToOperatorSet(defaultAVS, defaultOperatorSet.id, defaultStrategies);
+    }
+
+    function test_addStrategiesToOperatorSet_MaxStrategiesExceeded() public {
+        cheats.startPrank(defaultAVS);
+        cheats.expectRevert(MaxStrategiesExceeded.selector);
+        allocationManager.addStrategiesToOperatorSet(
+            defaultAVS, defaultOperatorSet.id, new IStrategy[](MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH + 1)
+        );
+        
+        for (uint256 i; i < MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH - 1; ++i) {
+            allocationManager.addStrategiesToOperatorSet(
+                defaultAVS, 
+                defaultOperatorSet.id, 
+                IStrategy(cheats.randomAddress()).toArray()
+            );
+        }
+
+        cheats.expectRevert(MaxStrategiesExceeded.selector);
+        allocationManager.addStrategiesToOperatorSet(
+            defaultAVS, 
+            defaultOperatorSet.id, 
+            IStrategy(cheats.randomAddress()).toArray()
+        );        
     }
 
     function testFuzz_addStrategiesToOperatorSet_Correctness(
@@ -3172,10 +3199,22 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
 contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitTests {
     using SingleItemArrayLib for *;
 
-    function test_createOperatorSets_InvalidOperatorSet() public {
+    function testRevert_createOperatorSets_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidOperatorSet.selector);
         allocationManager.createOperatorSets(defaultAVS, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
+    }
+
+    function testRevert_createOperatorSets_MaxStrategiesExceeded() public {
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(MaxStrategiesExceeded.selector);
+        allocationManager.createOperatorSets(
+            defaultAVS, 
+            CreateSetParams(
+                defaultOperatorSet.id, 
+                new IStrategy[](MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH + 1)
+            ).toArray()
+        );
     }
 
     function testFuzz_createOperatorSets_Correctness(

@@ -307,6 +307,8 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
         for (uint256 i = 0; i < params.length; i++) {
+            require(params[i].strategies.length <= MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH, MaxStrategiesExceeded());
+
             OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
 
             // Create the operator set, ensuring it does not already exist
@@ -315,6 +317,7 @@ contract AllocationManager is
 
             // Add strategies to the operator set
             bytes32 operatorSetKey = operatorSet.key();
+
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 _operatorSetStrategies[operatorSetKey].add(address(params[i].strategies[j]));
                 emit StrategyAddedToOperatorSet(operatorSet, params[i].strategies[j]);
@@ -329,9 +332,15 @@ contract AllocationManager is
         IStrategy[] calldata strategies
     ) external checkCanCall(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
+        bytes32 operatorSetKey = operatorSet.key();
+
+        require(
+            _operatorSetStrategies[operatorSetKey].length() + strategies.length <= MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH,
+            MaxStrategiesExceeded()
+        );
+
         require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
 
-        bytes32 operatorSetKey = operatorSet.key();
         for (uint256 i = 0; i < strategies.length; i++) {
             require(_operatorSetStrategies[operatorSetKey].add(address(strategies[i])), StrategyAlreadyInOperatorSet());
             emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
