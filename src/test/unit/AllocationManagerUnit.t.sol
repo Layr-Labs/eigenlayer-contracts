@@ -3090,6 +3090,8 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
 }
 
 contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationManagerUnitTests {
+    using SingleItemArrayLib for *;
+
     function test_addStrategiesToOperatorSet_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidOperatorSet.selector);
@@ -3103,13 +3105,26 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
     }
 
     function test_addStrategiesToOperatorSet_MaxStrategiesExceeded() public {
-        cheats.prank(defaultAVS);
+        cheats.startPrank(defaultAVS);
+        cheats.expectRevert(MaxStrategiesExceeded.selector);
+        allocationManager.addStrategiesToOperatorSet(
+            defaultAVS, defaultOperatorSet.id, new IStrategy[](MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH + 1)
+        );
+        
+        for (uint256 i; i < MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH - 1; ++i) {
+            allocationManager.addStrategiesToOperatorSet(
+                defaultAVS, 
+                defaultOperatorSet.id, 
+                IStrategy(cheats.randomAddress()).toArray()
+            );
+        }
+
         cheats.expectRevert(MaxStrategiesExceeded.selector);
         allocationManager.addStrategiesToOperatorSet(
             defaultAVS, 
             defaultOperatorSet.id, 
-            new IStrategy[](MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH + 1)
-        );
+            IStrategy(cheats.randomAddress()).toArray()
+        );        
     }
 
     function testFuzz_addStrategiesToOperatorSet_Correctness(
