@@ -245,11 +245,11 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         address operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies,
-        uint256[] memory wadToSlash,
+        uint256[] memory wadsToSlash,
         string memory description
     ) internal {
         cheats.expectEmit(true, false, false, false, address(allocationManager));
-        emit OperatorSlashed(operator, operatorSet, strategies, wadToSlash, description);
+        emit OperatorSlashed(operator, operatorSet, strategies, wadsToSlash, description);
     }
 
     /// -----------------------------------------------------------------------
@@ -445,7 +445,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         return SlashingParams({
             operator: operator,
             operatorSetId: operatorSetId,
-            wadToSlash: random().Uint256(1, WAD),
+            strategies: defaultStrategies,
+            wadsToSlash: random().Uint256(1, WAD).toArrayU256(),
             description: "test"
         });
     }
@@ -458,7 +459,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
     function test_revert_slashZero() public {
         SlashingParams memory slashingParams = _randSlashingParams(defaultOperator, 0);
-        slashingParams.wadToSlash = 0;
+        slashingParams.wadsToSlash[0] = 0;
 
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidWadToSlash.selector);
@@ -467,7 +468,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
     function test_revert_slashGreaterThanWAD() public {
         SlashingParams memory slashingParams = _randSlashingParams(defaultOperator, 0);
-        slashingParams.wadToSlash = WAD + 1;
+        slashingParams.wadsToSlash[0] = WAD + 1;
 
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidWadToSlash.selector);
@@ -492,7 +493,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             SlashingParams({
                 operator: defaultOperator,
                 operatorSetId: allocateParams[0].operatorSet.id,
-                wadToSlash: WAD,
+                strategies: defaultStrategies,
+                wadsToSlash: WAD.toArrayU256(),
                 description: "test"
             })
         );
@@ -545,7 +547,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             SlashingParams({
                 operator: defaultOperator,
                 operatorSetId: defaultOperatorSet.id,
-                wadToSlash: 25e16,
+                strategies: defaultStrategies,
+                wadsToSlash: 25e16.toArrayU256(),
                 description: "test"
             })
         );
@@ -595,7 +598,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         uint64 allocatedMagnitude = allocateParams[0].newMagnitudes[0];
         uint64 expectedSlashedMagnitude =
-            uint64(SlashingLib.mulWadRoundUp(allocatedMagnitude, slashingParams.wadToSlash));
+            uint64(SlashingLib.mulWadRoundUp(allocatedMagnitude, slashingParams.wadsToSlash[0]));
         uint64 expectedEncumberedMagnitude = allocatedMagnitude - expectedSlashedMagnitude;
         uint64 maxMagnitudeAfterSlash = WAD - expectedSlashedMagnitude;
         uint256 slashedStake = DEFAULT_OPERATOR_SHARES.mulWad(expectedSlashedMagnitude);
@@ -605,7 +608,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategies: defaultStrategies,
-            wadToSlash: uint256(expectedSlashedMagnitude).toArrayU256(),
+            wadsToSlash: uint256(expectedSlashedMagnitude).toArrayU256(),
             description: "test"
         });
 
@@ -695,7 +698,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: defaultOperatorSet.id,
-            wadToSlash: wadToSlash,
+            strategies: defaultStrategies,
+            wadsToSlash: wadToSlash.toArrayU256(),
             description: "test"
         });
 
@@ -704,7 +708,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         uint64 magnitudeAfterSlash = totalAllocated - uint64(uint256(totalAllocated) * uint256(wadToSlash) / WAD);
         uint64 maxMagnitudeAfterSlash = expectedEncumberedMagnitude;
 
-        uint64 expectedSlashedMagnitude = uint64(totalAllocated.mulWadRoundUp(slashingParams.wadToSlash));
+        uint64 expectedSlashedMagnitude = uint64(totalAllocated.mulWadRoundUp(slashingParams.wadsToSlash[0]));
         uint256 newSlashableMagnitude = uint256(magnitudeAfterSlash).divWad(maxMagnitudeAfterSlash);
         uint256 slashedStake = DEFAULT_OPERATOR_SHARES.mulWad(expectedSlashedMagnitude);
         uint256 newTotalStake = DEFAULT_OPERATOR_SHARES - slashedStake;
@@ -714,7 +718,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         // //     operator: defaultOperator,
         // //     operatorSet: defaultOperatorSet,
         // //     strategies: defaultStrategies,
-        // //     wadToSlash: uint256(wadToSlash).toArrayU256(),
+        // //     wadsToSlash: uint256(wadToSlash).toArrayU256(),
         // //     description: "test"
         // // });
 
@@ -812,7 +816,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: defaultOperatorSet.id,
-            wadToSlash: 99e16,
+            strategies: defaultStrategies,
+            wadsToSlash: 99e16.toArrayU256(),
             description: "test"
         });
 
@@ -824,7 +829,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategies: defaultStrategies,
-            wadToSlash: uint256(99e16).toArrayU256(),
+            wadsToSlash: uint256(99e16).toArrayU256(),
             description: "test"
         });
 
@@ -859,7 +864,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: defaultOperatorSet.id,
-            wadToSlash: 9999e14,
+            strategies: defaultStrategies,
+            wadsToSlash: 9999e14.toArrayU256(),
             description: "test"
         });
         expectedEncumberedMagnitude = 1e12; // After slashing 99.99%, only 0.01% expected encumberedMagnitude
@@ -870,7 +876,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategies: defaultStrategies,
-            wadToSlash: uint256(9999e14).toArrayU256(),
+            wadsToSlash: uint256(9999e14).toArrayU256(),
             description: "test"
         });
 
@@ -903,7 +909,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: defaultOperatorSet.id,
-            wadToSlash: WAD - 1e3,
+            strategies: defaultStrategies,
+            wadsToSlash: (WAD - 1e3).toArrayU256(),
             description: "test"
         });
         // Should technically be 1e3 remaining but with rounding error and rounding up slashed amounts
@@ -916,7 +923,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategies: defaultStrategies,
-            wadToSlash: uint256(WAD - 1e3).toArrayU256(),
+            wadsToSlash: uint256(WAD - 1e3).toArrayU256(),
             description: "test"
         });
 
@@ -966,7 +973,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         RegisterParams memory registerParams = r.RegisterParams(allocateParams);
         SlashingParams memory slashingParams = r.SlashingParams(defaultOperator, allocateParams[0]);
 
-        console.log("wadToSlash: %d", slashingParams.wadToSlash);
+        console.log("wadsToSlash: %d", slashingParams.wadsToSlash[0]);
 
         delegationManagerMock.setOperatorShares(
             defaultOperator, allocateParams[0].strategies[0], DEFAULT_OPERATOR_SHARES
@@ -1001,16 +1008,16 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         uint256 magnitudeAllocated = allocateParams[0].newMagnitudes[0];
         uint256 magnitudeDeallocated = magnitudeAllocated - deallocateParams[0].newMagnitudes[0];
-        uint256 magnitudeSlashed = magnitudeAllocated.mulWad(slashingParams.wadToSlash);
+        uint256 magnitudeSlashed = magnitudeAllocated.mulWad(slashingParams.wadsToSlash[0]);
         uint256 expectedCurrentMagnitude = magnitudeAllocated - magnitudeSlashed;
         int128 expectedPendingDiff =
-            -int128(uint128(magnitudeDeallocated - magnitudeDeallocated.mulWadRoundUp(slashingParams.wadToSlash)));
+            -int128(uint128(magnitudeDeallocated - magnitudeDeallocated.mulWadRoundUp(slashingParams.wadsToSlash[0])));
 
         _checkSlashEvents({
             operator: defaultOperator,
             operatorSet: allocateParams[0].operatorSet,
             strategies: allocateParams[0].strategies,
-            wadToSlash: slashingParams.wadToSlash.toArrayU256(),
+            wadsToSlash: slashingParams.wadsToSlash,
             description: "test"
         });
 
@@ -1049,7 +1056,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             "encumberedMagnitude not updated"
         );
         assertEq(
-            WAD - slashingParams.wadToSlash,
+            WAD - slashingParams.wadsToSlash[0],
             allocationManager.getMaxMagnitudes(defaultOperator, allocateParams[0].strategies)[0],
             "maxMagnitude not updated"
         );
@@ -1062,7 +1069,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operatorSet: allocateParams[0].operatorSet,
             strategy: allocateParams[0].strategies[0],
             expectedCurrentMagnitude: deallocateParams[0].newMagnitudes[0]
-                - deallocateParams[0].newMagnitudes[0] * slashingParams.wadToSlash / WAD,
+                - deallocateParams[0].newMagnitudes[0] * slashingParams.wadsToSlash[0] / WAD,
             expectedPendingDiff: 0,
             expectedEffectBlock: 0
         });
@@ -1092,7 +1099,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategies: defaultStrategies,
-            wadToSlash: WAD.toArrayU256(),
+            wadsToSlash: WAD.toArrayU256(),
             description: "test"
         });
 
@@ -1103,7 +1110,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             SlashingParams({
                 operator: defaultOperator,
                 operatorSetId: allocateParams[0].operatorSet.id,
-                wadToSlash: WAD,
+                strategies: defaultStrategies,
+                wadsToSlash: WAD.toArrayU256(),
                 description: "test"
             })
         );
@@ -1138,7 +1146,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategies: defaultStrategies,
-            wadToSlash: WAD.toArrayU256(),
+            wadsToSlash: WAD.toArrayU256(),
             description: "test"
         });
 
@@ -1149,7 +1157,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             SlashingParams({
                 operator: defaultOperator,
                 operatorSetId: defaultOperatorSet.id,
-                wadToSlash: WAD,
+                strategies: defaultStrategies,
+                wadsToSlash: WAD.toArrayU256(),
                 description: "test"
             })
         );
@@ -1206,7 +1215,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: defaultOperatorSet.id,
-            wadToSlash: 25e16,
+            strategies: defaultStrategies,
+            wadsToSlash: 25e16.toArrayU256(),
             description: "test"
         });
 
@@ -1218,7 +1228,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategies: defaultStrategies,
-            wadToSlash: uint256(25e16).toArrayU256(),
+            wadsToSlash: uint256(25e16).toArrayU256(),
             description: "test"
         });
 
@@ -1301,7 +1311,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: allocateParams[0].operatorSet.id,
-            wadToSlash: 5e17,
+            strategies: defaultStrategies,
+            wadsToSlash: 5e17.toArrayU256(),
             description: "test"
         });
 
@@ -1309,7 +1320,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: operatorSet,
             strategies: defaultStrategies,
-            wadToSlash: uint256(5e17).toArrayU256(),
+            wadsToSlash: slashingParams.wadsToSlash,
             description: "test"
         });
 
@@ -1369,11 +1380,16 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.modifyAllocations(defaultOperator, allocateParams.toArray());
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
+        uint256[] memory wadsToSlash = new uint256[](2);
+        wadsToSlash[0] = 6e17;
+        wadsToSlash[1] = 6e17;
+
         // Slash operator on both strategies for 60%
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: operatorSet.id,
-            wadToSlash: 6e17,
+            strategies: strategies,
+            wadsToSlash: wadsToSlash,
             description: "test"
         });
 
@@ -1393,7 +1409,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: operatorSet,
             strategies: strategies,
-            wadToSlash: uint256(6e17).toArrayU256(),
+            wadsToSlash: wadsToSlash,
             description: "test"
         });
 
@@ -1451,12 +1467,13 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
             operatorSetId: operatorSet.id,
-            wadToSlash: r.Uint64(0.01 ether, 0.99 ether),
+            strategies: strategy.toArray(),
+            wadsToSlash: r.Uint64(0.01 ether, 0.99 ether).toArrayU256(),
             description: "test"
         });
 
         uint256 magnitudeBeforeSlash = deallocateParams[0].newMagnitudes[0];
-        uint256 slashedMagnitude = magnitudeBeforeSlash * slashingParams.wadToSlash / WAD;
+        uint256 slashedMagnitude = magnitudeBeforeSlash * slashingParams.wadsToSlash[0] / WAD;
         uint256 currentMagnitude = magnitudeBeforeSlash - slashedMagnitude - 1;
         uint256 maxMagnitude = WAD - slashedMagnitude - 1;
 
@@ -1464,7 +1481,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: operatorSet,
             strategies: strategy.toArray(),
-            wadToSlash: uint256(slashingParams.wadToSlash).toArrayU256(),
+            wadsToSlash: slashingParams.wadsToSlash,
             description: "test"
         });
 

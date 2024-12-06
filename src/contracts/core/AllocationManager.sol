@@ -59,10 +59,9 @@ contract AllocationManager is
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
-        // Check that the msg.sender can call - we don't use a modifier to avoid `stack too deep` errors
-        require(_checkCanCall(avs), InvalidCaller());
-        require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
+        // // Check that the msg.sender can call - we don't use a modifier to avoid `stack too deep` errors
+        // require(_checkCanCall(avs), InvalidCaller());
 
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
@@ -70,17 +69,16 @@ contract AllocationManager is
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
         require(isRegistered, NotMemberOfSet());
 
-        uint256 length = _operatorSetStrategies[operatorSet.key()].length();
-        IStrategy[] memory strategiesSlashed = new IStrategy[](length);
-        uint256[] memory wadSlashed = new uint256[](length);
+        uint256[] memory wadSlashed = new uint256[](params.strategies.length);
 
         // For each strategy in the operator set, slash any existing allocation
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < params.strategies.length; i++) {
+            // Check that `wadToSlash` is within acceptable bounds.
+            require(0 < params.wadsToSlash[i] && params.wadsToSlash[i] <= WAD, InvalidWadToSlash());
+
             // 1. Get the operator's allocation info for the strategy and operator set
-            IStrategy strategy = IStrategy(_operatorSetStrategies[operatorSet.key()].at(i));
             (StrategyInfo memory info, Allocation memory allocation) =
-                _getUpdatedAllocation(params.operator, operatorSet.key(), strategy);
-            strategiesSlashed[i] = strategy;
+                _getUpdatedAllocation(params.operator, operatorSet.key(), params.strategies[i]);
 
             // 2. Skip if the operator does not have a slashable allocation
             // NOTE: this "if" is equivalent to: `if (!_isAllocationSlashable)`, because the other
@@ -92,10 +90,9 @@ contract AllocationManager is
             // 3. Calculate the amount of magnitude being slashed, and subtract from
             // the operator's currently-allocated magnitude, as well as the strategy's
             // max and encumbered magnitudes
-            uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(params.wadToSlash));
-            uint256 sharesWadSlashed = uint256(slashedMagnitude).divWad(info.maxMagnitude);
-            wadSlashed[i] = sharesWadSlashed;
+            uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(params.wadsToSlash[i]));
             uint64 prevMaxMagnitude = info.maxMagnitude;
+            wadSlashed[i] = uint256(slashedMagnitude).divWad(info.maxMagnitude);
 
             allocation.currentMagnitude -= slashedMagnitude;
             info.maxMagnitude -= slashedMagnitude;
@@ -105,32 +102,32 @@ contract AllocationManager is
             // This ensures that when the deallocation is completed, less magnitude is freed.
             if (allocation.pendingDiff < 0) {
                 uint64 slashedPending =
-                    uint64(uint256(uint128(-allocation.pendingDiff)).mulWadRoundUp(params.wadToSlash));
+                    uint64(uint256(uint128(-allocation.pendingDiff)).mulWadRoundUp(params.wadsToSlash[i]));
                 allocation.pendingDiff += int128(uint128(slashedPending));
 
                 emit AllocationUpdated(
                     params.operator,
                     operatorSet,
-                    strategy,
+                    params.strategies[i],
                     _addInt128(allocation.currentMagnitude, allocation.pendingDiff),
                     allocation.effectBlock
                 );
             }
 
             // 5. Update state
-            _updateAllocationInfo(params.operator, operatorSet.key(), strategy, info, allocation);
-            _updateMaxMagnitude(params.operator, strategy, info.maxMagnitude);
+            _updateAllocationInfo(params.operator, operatorSet.key(), params.strategies[i], info, allocation);
+            _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
 
             // 6. Decrease and burn operators shares in the DelegationManager
             delegation.burnOperatorShares({
                 operator: params.operator,
-                strategy: strategy,
+                strategy: params.strategies[i],
                 prevMaxMagnitude: prevMaxMagnitude,
                 newMaxMagnitude: info.maxMagnitude
             });
         }
 
-        emit OperatorSlashed(params.operator, operatorSet, strategiesSlashed, wadSlashed, params.description);
+        emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
     }
 
     /// @inheritdoc IAllocationManager
