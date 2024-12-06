@@ -8,7 +8,7 @@ import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/AllocationManager.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
 
-import "src/test/utils/SingleItemArrayLib.sol";
+import "src/test/utils/ArrayLib.sol";
 
 // Test
 import "forge-std/Test.sol";
@@ -16,7 +16,7 @@ import "forge-std/Test.sol";
 /// @notice Tests deployed contracts as part of the public devnet
 /// Run with: forge test --mc Devnet_Lifecycle_Test --rpc-url $RPC_HOLESKY
 contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
     
     // Contracts
     DelegationManager public delegationManager;

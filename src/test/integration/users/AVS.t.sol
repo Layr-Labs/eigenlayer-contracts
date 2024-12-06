@@ -11,7 +11,7 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/utils/Logger.t.sol";
 
-import "src/test/utils/SingleItemArrayLib.sol";
+import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
 
 interface IAVSDeployer {
@@ -22,7 +22,7 @@ interface IAVSDeployer {
 
 contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     using print for *;
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 

@@ -7,7 +7,7 @@ import "src/test/mocks/MockAVSRegistrar.sol";
 
 contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManagerErrors, IAllocationManagerEvents {
     using StdStyle for *;
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     /// -----------------------------------------------------------------------
     /// Constants
@@ -434,7 +434,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
 }
 
 contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
     using SlashingLib for *;
 
     /// -----------------------------------------------------------------------
@@ -1531,7 +1531,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 }
 
 contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
     using OperatorSetLib for *;
 
     function test_revert_paused() public {
@@ -2560,7 +2560,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 }
 
 contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     /// -----------------------------------------------------------------------
     /// clearModificationQueue()
@@ -2926,7 +2926,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
 }
 
 contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     RegisterParams defaultRegisterParams;
 
@@ -3011,7 +3011,7 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
 }
 
 contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     DeregisterParams defaultDeregisterParams;
 
@@ -3107,7 +3107,7 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
 }
 
 contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     function test_addStrategiesToOperatorSet_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
@@ -3169,7 +3169,7 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
 }
 
 contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is AllocationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     function test_removeStrategiesFromOperatorSet_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
@@ -3214,7 +3214,7 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
 }
 
 contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     function testRevert_createOperatorSets_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
