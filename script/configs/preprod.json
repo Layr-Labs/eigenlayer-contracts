@@ -47,7 +47,7 @@
             },
             "rewardsCoordinator": {
                 "proxy": "0xb22Ef643e1E067c994019A4C19e403253C05c2B0",
-                "impl": "0x7523b42b081C30fA245AA4039c645e36746fC400",
+                "impl": "0x096694a4C8c2C13a005a200309d64995C08eD065",
                 "pendingImpl": "0x0000000000000000000000000000000000000000"
             },
             "slasher": {
