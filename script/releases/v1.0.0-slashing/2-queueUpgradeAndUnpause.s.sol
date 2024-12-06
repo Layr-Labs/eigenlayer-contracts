@@ -146,25 +146,18 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
                 )
             });
 
-        // uint count = zDeployedInstanceCount("PreLongtailStrats"); // TODO - needs to be `StrategyBaseTVLLimits.name`
-        // for (uint i = 0; i < count; i++) {
-        //     string memory contractName = string.concat(
-        //         type(StrategyBaseTVLLimits).name,
-        //         "_",
-        //         i.toString()
-        //     );
-
-        //     _executorCalls.append({
-        //         to: zDeployedContract(type(ProxyAdmin).name),
-        //         data: abi.encodeCall(
-        //             ProxyAdmin.upgrade,
-        //             (
-        //                 ITransparentUpgradeableProxy(payable(zDeployedContract(contractName))),
-        //                 zDeployedContract("PreLongtailStrats")
-        //             )
-        //         )
-        //     });
-        // }
+        for (uint i = 0; i < zDeployedInstanceCount("PreLongtailStrats"); i++) {
+            _executorCalls.append({
+                to: zDeployedInstance(type(ProxyAdmin).name, i),
+                data: abi.encodeCall(
+                    ProxyAdmin.upgrade,
+                    (
+                        ITransparentUpgradeableProxy(payable(zDeployedContract(contractName))),
+                        zDeployedContract("PreLongtailStrats")
+                    )
+                )
+            });
+        }
 
         return EncGnosisSafe.calldataToExecTransaction({
             from: zAddress("timelockController"),
