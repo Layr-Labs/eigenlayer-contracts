@@ -39,6 +39,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     ) {
         IAVSDeployer deployer = IAVSDeployer(msg.sender);
         allocationManager = deployer.allocationManager();
+        permissionController = deployer.permissionController();
         strategyFactory = deployer.strategyFactory();
         timeMachine = deployer.timeMachine();
         _NAME = name;
