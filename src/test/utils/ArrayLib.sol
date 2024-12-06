@@ -128,105 +128,30 @@ library ArrayLib {
     /// -----------------------------------------------------------------------
     
     function sort(
-        uint256[] memory array
-    ) internal pure returns (uint256[] memory) {
+        IStrategy[] memory array
+    ) internal pure returns (IStrategy[] memory) {
         if (array.length <= 1) {
             return array;
         }
 
-        return quickSort(array, 0, array.length - 1);
-    }
-
-    function sort(
-        address[] memory array
-    ) internal pure returns (address[] memory) {
-        return array.toArrayU256().sort().toArrayAddr();
-    }
-
-    function sort(
-        IStrategy[] memory array
-    ) internal pure returns (IStrategy[] memory) {
-        return array.toArrayU256().sort().toArrayStrategy();
-    }
-    
-    function quickSort(
-        uint256[] memory array,
-        uint256 left,
-        uint256 right
-    ) private pure returns (uint256[] memory) {
-        uint256 i = left;
-        uint256 j = right;
-
-        if (i == j) {
-            return array;
-        }
-
-        uint256 pivot = array[left + (right - left) >> 1];
-
-        while (i <= j) {
-            while (array[i] < pivot) {
-                i++;
-            }
-
-            while (array[j] > pivot) {
+        for (uint256 i = 1; i < array.length; i++) {
+            IStrategy key = array[i];
+            uint256 j = i - 1;
+            
+            while (j > 0 && uint256(uint160(address(array[j]))) > uint256(uint160(address(key)))) {
+                array[j + 1] = array[j];
                 j--;
             }
-
-            if (i <= j) {
-                (array[i], array[j]) = (array[j], array[i]);
-                i++;
-                j--;
+            
+            // Special case for the first element
+            if (j == 0 && uint256(uint160(address(array[j]))) > uint256(uint160(address(key)))) {
+                array[j + 1] = array[j];
+                array[j] = key;
+            } else if (j < i - 1) {
+                array[j + 1] = key;
             }
         }
-
-        if (left < j) {
-            array = quickSort(array, left, j);
-        }
-
-        if (i < right) {
-            array = quickSort(array, i, right);
-        }
-
+        
         return array;
-    }
-
-    /// -----------------------------------------------------------------------
-    /// Type Conversions
-    /// -----------------------------------------------------------------------
-    
-    function toArrayU256(
-        address[] memory array
-    ) internal pure returns (uint256[] memory result) {
-        /// @solidity memory-safe-assembly
-        assembly {
-            result := array
-        }
-    }
-
-    function toArrayAddr(
-        uint256[] memory array
-    ) internal pure returns (address[] memory result) {
-        /// @solidity memory-safe-assembly
-        assembly {
-            result := array
-        }
-    }
-
-    function toArrayU256(
-        IStrategy[] memory array
-    ) internal pure returns (uint256[] memory result) {
-        /// @solidity memory-safe-assembly
-        assembly {
-            result := array
-        }
-    }
-
-    function toArrayStrategy(
-        uint256[] memory array
-    ) internal pure returns (IStrategy[] memory result) {
-        /// @solidity memory-safe-assembly
-        assembly {
-            result := array
-        }
     }
 }

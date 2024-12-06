@@ -20,6 +20,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
     using Strings for *;
     using print for *;
 
+    using ArrayLib for IStrategy[];
+
     uint numStakers = 0;
     uint numOperators = 0;
     uint numAVSs = 0;
@@ -911,6 +913,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
         for (uint i; i < len; ++i) {
             wadsToSlash[i] = _randWadToSlash();
         }
+
+        return (strategies.sort(), wadsToSlash);
     }
     
     function _randMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
