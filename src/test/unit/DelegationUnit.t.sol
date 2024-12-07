@@ -708,12 +708,12 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     function _undelegate_expectEmit_singleStrat(
         UndelegateEmitStruct memory params
     ) internal {
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit StakerUndelegated(params.staker, params.operator);
         if (params.forceUndelegated) {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit StakerForceUndelegated(params.staker, params.operator);
         }
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerUndelegated(params.staker, params.operator);
 
         if (address(params.strategy) != address(0)) {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
@@ -3505,6 +3505,9 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
     // @notice Verifies that undelegating is not possible when the "undelegation paused" switch is flipped
     function testFuzz_Revert_undelegate_paused(Randomness r) public rand(r) {
         address staker = r.Address();
+        address operator = r.Address();
+        _registerOperatorWithBaseDetails(operator);
+        _delegateToOperatorWhoAcceptsAllStakers(staker, operator);
         // set the pausing flag
         cheats.prank(pauser);
         delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
