@@ -11,7 +11,6 @@ import "src/contracts/libraries/SlashingLib.sol";
 import "src/test/utils/ArrayLib.sol";
 import "src/test/harnesses/DelegationManagerHarness.sol";
 
-// TODO: add upgrade tests for completing withdrawals queued before upgrade in integration tests
 // TODO: add slashing cases for withdrawing as shares (can also be in integration tests)
 
 /**
@@ -48,7 +47,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     // Fuzz bound checks
     uint256 constant MIN_FUZZ_SHARES = 10_000;
     uint256 constant MIN_FUZZ_MAGNITUDE = 10_000;
-    uint256 constant APPROX_REL_DIFF = 1e6; // 0.0.0000000001000000% relative difference for assertion checks. Needed due to rounding errors
+    uint256 constant APPROX_REL_DIFF = 1e8; // 0.0.0000000100000000% relative difference for assertion checks. Needed due to rounding errors
     // Max shares in a strategy, see StrategyBase.sol
     uint256 constant MAX_STRATEGY_SHARES = 1e38 - 1;
     uint256 constant MAX_ETH_SUPPLY = 120_400_000 ether;
@@ -77,7 +76,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     mapping(IStrategy => uint256) public delegatedSharesBefore;
     mapping(address => uint256) public stakerDepositShares;
     // Keep track of queued withdrawals
-    mapping(address => IDelegationManagerTypes.Withdrawal[]) public stakerQueuedWithdrawals;
+    mapping(address => Withdrawal[]) public stakerQueuedWithdrawals;
 
     function setUp() public virtual override {
         // Setup
@@ -387,8 +386,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     /// later assertions
     function _queueWithdrawals(
         address staker,
-        IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
-        IDelegationManagerTypes.Withdrawal memory withdrawal
+        QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+        Withdrawal memory withdrawal
     ) internal {
         stakerQueuedWithdrawals[staker].push(withdrawal);
         cheats.prank(staker);
@@ -464,7 +463,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         uint256 depositAmount,
         uint256 withdrawalAmount,
         bool isBeaconChainStrategy
-    ) internal returns (IDelegationManagerTypes.Withdrawal memory, IERC20[] memory, bytes32) {
+    ) internal returns (Withdrawal memory, IERC20[] memory, bytes32) {
         uint256[] memory depositAmounts = new uint256[](1);
         depositAmounts[0] = depositAmount;
         IStrategy[] memory strategies = _deployAndDepositIntoStrategies(staker, depositAmounts, isBeaconChainStrategy);
@@ -506,7 +505,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         uint256 depositAmount,
         uint256 numWithdrawals
     ) internal returns (
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals, 
+        Withdrawal[] memory withdrawals, 
         IERC20[][] memory tokens, 
         bytes32[] memory withdrawalRoots
     ) {
@@ -520,8 +519,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
         for (uint i = 0; i < numWithdrawals; i++) {
             (
-                IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
-                IDelegationManagerTypes.Withdrawal memory withdrawal,
+                QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+                Withdrawal memory withdrawal,
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: staker,
@@ -562,7 +561,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         uint256[] memory depositAmounts,
         uint256[] memory withdrawalAmounts,
         bool depositBeaconChainShares
-    ) internal returns (IDelegationManagerTypes.Withdrawal memory, IERC20[] memory, bytes32) {
+    ) internal returns (Withdrawal memory, IERC20[] memory, bytes32) {
         IStrategy[] memory strategies = _deployAndDepositIntoStrategies(staker, depositAmounts, depositBeaconChainShares);
 
         IERC20[] memory tokens = new IERC20[](strategies.length);
@@ -600,35 +599,29 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         int256 beaconShares,
         uint256 sharesDecrease
     ) internal returns (
-        uint64 prevBeaconChainSlashingFactor,
-        uint256 wadSlashed,
-        uint64 newBeaconChainScalingFactor
+        uint64 prevBeaconSlashingFactor,
+        uint64 newBeaconSlashingFactor
     ) {
         uint256 newRestakedBalanceWei = uint256(beaconShares) - sharesDecrease;
-        uint256 proportionRemainingWad = newRestakedBalanceWei.divWadRoundUp(uint256(beaconShares));
-        wadSlashed = uint256(WAD) - proportionRemainingWad;
-        prevBeaconChainSlashingFactor = eigenPodManagerMock.beaconChainSlashingFactor(staker);
-
-        newBeaconChainScalingFactor = uint64(prevBeaconChainSlashingFactor.mulWad(proportionRemainingWad));
-        eigenPodManagerMock.setBeaconChainSlashingFactor(staker, newBeaconChainScalingFactor);
+        prevBeaconSlashingFactor = eigenPodManagerMock.beaconChainSlashingFactor(staker);
+        newBeaconSlashingFactor = uint64(prevBeaconSlashingFactor.mulDiv(newRestakedBalanceWei, uint256(beaconShares)));
+        eigenPodManagerMock.setBeaconChainSlashingFactor(staker, newBeaconSlashingFactor);
     }
 
     function _decreaseBeaconChainShares(
         address staker,
         int256 beaconShares,
         uint256 sharesDecrease
-    ) internal returns (uint64 prevBeaconChainSlashingFactor, uint256 wadSlashed, uint64 newBeaconChainSlashingFactor) {
+    ) internal returns (uint64 prevBeaconSlashingFactor, uint64 newBeaconSlashingFactor) {
         (
-            prevBeaconChainSlashingFactor,
-            wadSlashed,
-            newBeaconChainSlashingFactor
+            prevBeaconSlashingFactor,
+            newBeaconSlashingFactor
         ) = _setNewBeaconChainSlashingFactor(staker, beaconShares, sharesDecrease);
         cheats.prank(address(eigenPodManagerMock));
         delegationManager.decreaseDelegatedShares({
             staker: staker,
             curDepositShares: uint256(beaconShares),
-            prevBeaconChainSlashingFactor: prevBeaconChainSlashingFactor,
-            wadSlashed: wadSlashed
+            beaconChainSlashingFactorDecrease: prevBeaconSlashingFactor - newBeaconSlashingFactor
         });
     }
 
@@ -697,7 +690,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         IStrategy strategy;
         uint256 depositSharesQueued;
         uint256 operatorSharesDecreased;
-        IDelegationManagerTypes.Withdrawal withdrawal;
+        Withdrawal withdrawal;
         bytes32 withdrawalRoot;
         uint256 depositScalingFactor;
         bool forceUndelegated;
@@ -752,8 +745,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     struct QueueWithdrawalsEmitStruct {
         address staker;
         address operator;
-        IDelegationManagerTypes.QueuedWithdrawalParams[] queuedWithdrawalParams;
-        IDelegationManagerTypes.Withdrawal withdrawal;
+        QueuedWithdrawalParams[] queuedWithdrawalParams;
+        Withdrawal withdrawal;
         bytes32 withdrawalRoot;
     }
 
@@ -791,36 +784,39 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     function _completeQueuedWithdrawal_expectEmit(CompleteQueuedWithdrawalEmitStruct memory params) internal {
         if (!params.receiveAsTokens) {
             address operator = delegationManager.delegatedTo(params.withdrawal.staker);
-            uint64[] memory prevSlashingFactors = new uint64[](params.withdrawal.strategies.length);
-            prevSlashingFactors = allocationManagerMock.getMaxMagnitudes(operator, params.withdrawal.strategies);
+            uint64[] memory slashingFactors = new uint64[](params.withdrawal.strategies.length);
+            slashingFactors = allocationManagerMock.getMaxMagnitudes(operator, params.withdrawal.strategies);
 
             // receiving as shares so check for OperatorSharesIncrease and DepositScalingFactor updated
             for (uint256 i = 0; i < params.withdrawal.strategies.length; i++) {
-                // scale shares for complete withdrawal to get expected withdrawn shares
-                prevSlashingFactors[i] = uint64(delegationManager.getSlashingFactor(
-                    params.withdrawal.staker,
-                    params.withdrawal.strategies[i],
-                    prevSlashingFactors[i]
-                ));
-
-                uint256 sharesToWithdraw = SlashingLib.scaleForCompleteWithdrawal({
-                    scaledShares: params.withdrawal.scaledShares[i],
-                    slashingFactor: prevSlashingFactors[i]
-                });
-
                 // Get updated deposit scaling factor
-                dsf = DepositScalingFactor({
-                    _scalingFactor: delegationManager.depositScalingFactor(params.withdrawal.staker, params.withdrawal.strategies[i])
-                });
                 uint256 curDepositShares;
                 if (params.withdrawal.strategies[i] == beaconChainETHStrategy) {
                     curDepositShares = uint256(eigenPodManagerMock.stakerDepositShares(params.withdrawal.staker, address(0)));
+                    slashingFactors[i] = uint64(slashingFactors[i]
+                        .mulWad(eigenPodManagerMock.beaconChainSlashingFactor(params.withdrawal.staker))
+                    );
                 } else {
                     curDepositShares = strategyManagerMock.stakerDepositShares(params.withdrawal.staker, params.withdrawal.strategies[i]);
                 }
-                dsf.update(curDepositShares, sharesToWithdraw, prevSlashingFactors[i]);
+
+                uint256 sharesToWithdraw = _calcCompletedWithdrawnShares(
+                    params.withdrawal.scaledShares[i],
+                    slashingFactors[i]
+                );
+
+                uint256 expectedDepositScalingFactor = _calcDepositScalingFactor({
+                    prevDsf: delegationManager.depositScalingFactor(params.withdrawal.staker, params.withdrawal.strategies[i]),
+                    prevDepositShares: curDepositShares,
+                    addedDepositShares: sharesToWithdraw,
+                    slashingFactor: slashingFactors[i]
+                });
                 cheats.expectEmit(true, true, true, true, address(delegationManager));
-                emit DepositScalingFactorUpdated(params.withdrawal.staker, params.withdrawal.strategies[i], dsf.scalingFactor());
+                emit DepositScalingFactorUpdated(
+                    params.withdrawal.staker,
+                    params.withdrawal.strategies[i],
+                    expectedDepositScalingFactor
+                );
 
                 if (operator != address(0)) {
                     cheats.expectEmit(true, true, true, true, address(delegationManager));
@@ -888,6 +884,13 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         return depositShares
             .mulWad(depositScalingFactor)
             .mulWad(slashingFactor);
+    }
+
+    function _calcCompletedWithdrawnShares(
+        uint256 scaledShares,
+        uint256 slashingFactor
+    ) internal pure returns (uint256) {
+        return scaledShares.mulWad(slashingFactor);
     }
 
     /// @notice Calculates the new deposit scaling factor after a deposit
@@ -1040,6 +1043,111 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         );
     }
 
+    /**
+     * @notice Asserts for a queuedWithdrawal that its root is no longer pending and the withdrawal no longer exists
+     * Also checks if the withdrawal is completed as shares that the current operator shares are increased appropriately
+     * with the staker's depositScalingFactor updated.
+     * NOTE: assumes no duplicate strategies in the withdrawal
+     */
+    function _assertCompletedWithdrawal(
+        address staker,
+        address currentOperator,
+        Withdrawal memory withdrawal,
+        bool receiveAsTokens,
+        uint256[] memory operatorSharesBefore,
+        uint256[] memory withdrawableSharesBefore,
+        uint256[] memory depositSharesBefore,
+        uint256[] memory prevDepositScalingFactors,
+        uint256[] memory slashingFactors,
+        uint64 beaconChainSlashingFactor
+    ) internal view {
+        assertTrue(
+            delegationManager.delegatedTo(staker) == currentOperator,
+            "staker should be delegated to currentOperator"
+        );
+
+        _assertWithdrawalRootsComplete(staker, withdrawal.toArray());
+        // Check operator and staker shares if receiving as shares
+        if (receiveAsTokens) {
+            for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
+                {
+                    // assert deposit and withdrawable shares unchanged
+                    (
+                        uint256[] memory withdrawableShares,
+                        uint256[] memory depositShares
+                    ) = delegationManager.getWithdrawableShares(staker, withdrawal.strategies[i].toArray());
+                    assertEq(
+                        withdrawableSharesBefore[i],
+                        withdrawableShares[0],
+                        "withdrawableShares should be equal to withdrawableSharesBefore"
+                    );
+                    assertEq(
+                        depositSharesBefore[i],
+                        depositShares[0],
+                        "depositShares should be equal to depositSharesBefore"
+                    );
+                }
+                // assert operatorShares unchanged
+                assertEq(
+                    operatorSharesBefore[i],
+                    delegationManager.operatorShares(currentOperator, withdrawal.strategies[i]),
+                    "OperatorShares should be equal to operatorSharesBefore"
+                );
+                // assert dsf is unchanged
+                assertEq(
+                    prevDepositScalingFactors[i],
+                    delegationManager.depositScalingFactor(staker, withdrawal.strategies[i]),
+                    "depositScalingFactor should be equal to prevDepositScalingFactors"
+                );
+            }
+        } else {
+            for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
+                // calculate shares to complete withdraw and add back as shares
+                if (withdrawal.strategies[i] == beaconChainETHStrategy) {
+                    slashingFactors[i] = uint64(slashingFactors[i].mulWad(beaconChainSlashingFactor));
+                }
+                uint256 sharesToAddBack = _calcCompletedWithdrawnShares(
+                    withdrawal.scaledShares[i],
+                    slashingFactors[i]
+                );
+                // assert deposit shares, withdrawable shares, and operator shares, and depositScalingFactor
+                _assertDeposit({
+                    staker: staker,
+                    operator: currentOperator,
+                    strategy: withdrawal.strategies[i],
+                    operatorSharesBefore: operatorSharesBefore[i],
+                    withdrawableSharesBefore: withdrawableSharesBefore[i],
+                    depositSharesBefore: depositSharesBefore[i],
+                    prevDsf: prevDepositScalingFactors[i],
+                    depositAmount: sharesToAddBack
+                });
+            }
+        }
+    }
+
+    /// @notice assert withdrawals completed are reflected as completed in storage for the withdrawal root and staker
+    function _assertWithdrawalRootsComplete(
+        address staker,
+        Withdrawal[] memory withdrawals
+    ) internal view {
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            // Check the withdrawal root is no longer pending
+            // and also doesn't exist in storage for the staker
+            bytes32 withdrawalRootToCheck = delegationManager.calculateWithdrawalRoot(withdrawals[i]);
+            assertFalse(
+                delegationManager.pendingWithdrawals(withdrawalRootToCheck),
+                "withdrawalRoot not pending"
+            );
+            (Withdrawal[] memory withdrawalsInStorage, ) = delegationManager.getQueuedWithdrawals(staker);
+            for (uint256 j = 0; j < withdrawalsInStorage.length; ++j) {
+                assertTrue(
+                    withdrawalRootToCheck != delegationManager.calculateWithdrawalRoot(withdrawalsInStorage[j]),
+                    "withdrawal should not exist in storage"
+                );
+            }
+        }
+    }
+
     function _assertOperatorSharesAfterSlash(
         address operator,
         IStrategy strategy,
@@ -1093,7 +1201,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         address staker,
         uint256 withdrawableSharesBefore,
         uint256 expectedWithdrawableShares,
-        uint256 prevBeaconChainScalingFactor
+        uint256 prevBeaconSlashingFactor
     ) internal view {
         (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(staker, beaconChainETHStrategy.toArray());
         uint256 currBeaconSlashingFactor = eigenPodManagerMock.beaconChainSlashingFactor(defaultStaker);
@@ -1103,7 +1211,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             "withdrawableShares should be equal to expectedWithdrawableShares"
         );
         assertApproxEqRel(
-            uint256(withdrawableSharesBefore).mulDiv(currBeaconSlashingFactor, prevBeaconChainScalingFactor),
+            uint256(withdrawableSharesBefore).mulDiv(currBeaconSlashingFactor, prevBeaconSlashingFactor),
             withdrawableShares[0],
             APPROX_REL_DIFF,
             "withdrawableShares should be equal to withdrawableSharesBefore * currBeaconSlashingFactor / prevBeaconChainSlashingFactor"
@@ -1117,12 +1225,16 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         uint256 operatorShares,
         string memory errorMessage
     ) internal pure {
-        assertApproxEqRel(
-            withdrawableShares,
-            operatorShares,
-            APPROX_REL_DIFF,
-            errorMessage
-        );
+        if (withdrawableShares > 0 ) {
+            assertApproxEqRel(
+                withdrawableShares,
+                operatorShares,
+                APPROX_REL_DIFF,
+                errorMessage
+            );    
+        } else {
+
+        }
         assertLe(
             withdrawableShares,
             operatorShares,
@@ -1639,7 +1751,6 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         );
         // Set staker shares in StrategyManager
         strategyManagerMock.addDeposit(staker, strategyMock, shares);
-        uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);
         // delegate from the `staker` to the operator
         cheats.prank(staker);
         _delegateTo_expectEmit_singleStrat(
@@ -1673,6 +1784,84 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
                 salt
             ),
             "salt somehow spent too early?"
+        );
+    }
+
+    /**
+     * @notice `staker` delegates to an operator who does not require any signature verification (i.e. the operator’s `delegationApprover` address is set to the zero address)
+     * via the `staker` calling `DelegationManager.delegateTo`. `staker` holds beaconChainETHStrategy Shares
+     * The function should pass with any `operatorSignature` input (since it should be unused)
+     * Assertion Checks
+     * - Properly emitted events from `delegateTo`
+     * - depositShares incremented for staker correctly
+     * - withdrawableShares are correct
+     * - depositScalingFactor is updated correctly
+     * - operatorShares increase by depositShares amount
+     * - defaultOperator is an operator, staker is delegated to defaultOperator, staker is not an operator
+     * - That the staker withdrawableShares is <= operatorShares (less due to rounding from non-WAD maxMagnitude)
+     */
+    function testFuzz_OperatorWhoAcceptsAllStakers_beaconChainStrategyShares(
+        Randomness r,
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry
+    ) public rand(r) {
+        address staker = r.Address();
+        bytes32 salt = r.Bytes32();
+        int256 beaconShares = int256(r.Uint256(1 gwei, MAX_ETH_SUPPLY));
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        // Set the operators magnitude
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, WAD);
+
+        // verify that the salt hasn't been used before
+        assertFalse(
+            delegationManager.delegationApproverSaltIsSpent(
+                delegationManager.delegationApprover(defaultOperator),
+                salt
+            ),
+            "salt somehow spent too early?"
+        );
+        // Set staker shares in BeaconChainStrategy
+        eigenPodManagerMock.setPodOwnerShares(staker, beaconShares);
+
+        // delegate from the `staker` to the operator
+        cheats.startPrank(staker);
+        _delegateTo_expectEmit_singleStrat(
+            DelegateToSingleStratEmitStruct({
+                staker: staker,
+                operator: defaultOperator,
+                strategy: beaconChainETHStrategy,
+                depositShares: uint256(beaconShares),
+                depositScalingFactor: WAD
+            })
+        );
+        delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, salt);
+
+        _assertDeposit({
+            staker: staker,
+            operator: defaultOperator,
+            strategy: beaconChainETHStrategy,
+            operatorSharesBefore: 0,
+            withdrawableSharesBefore: 0,
+            depositSharesBefore: 0,
+            prevDsf: WAD,
+            depositAmount: uint256(beaconShares)
+        });
+        assertTrue(delegationManager.isOperator(defaultOperator), "staker not registered as operator");
+        assertEq(delegationManager.delegatedTo(staker), defaultOperator, "staker delegated to the wrong address");
+        assertFalse(delegationManager.isOperator(staker), "staker incorrectly registered as operator");
+        // verify that the salt is still marked as unused (since it wasn't checked or used)
+        assertFalse(
+            delegationManager.delegationApproverSaltIsSpent(
+                delegationManager.delegationApprover(defaultOperator),
+                salt
+            ),
+            "salt somehow spent too early?"
+        );
+        (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(staker, beaconChainETHStrategy.toArray());
+        _assertWithdrawableAndOperatorShares(
+            withdrawableShares[0],
+            delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy),
+            "withdrawableShares not set correctly"
         );
     }
 
@@ -1850,8 +2039,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
     /**
      * @notice `staker` delegates to an operator who does not require any signature verification (i.e. the operator’s `delegationApprover` address is set to the zero address)
-     * via the `staker` calling `DelegationManager.delegateTo`. `staker` holds beaconChainETHStrategy Shares
-     * The function should pass with any `operatorSignature` input (since it should be unused)
+     * and the strategy has already been slashed for the operator. `staker` holds beaconChainETHStrategy Shares
      * Assertion Checks
      * - Properly emitted events from `delegateTo`
      * - depositShares incremented for staker correctly
@@ -1861,41 +2049,32 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
      * - defaultOperator is an operator, staker is delegated to defaultOperator, staker is not an operator
      * - That the staker withdrawableShares is <= operatorShares (less due to rounding from non-WAD maxMagnitude)
      */
-    function testFuzz_OperatorWhoAcceptsAllStakers_BeaconChainStrategyShares(
-        Randomness r,
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry
+    function testFuzz_OperatorWhoAcceptsAllStakers_AlreadySlashed_beaconChainStrategyShares(
+        Randomness r
     ) public rand(r) {
         address staker = r.Address();
-        bytes32 salt = r.Bytes32();
+        uint64 maxMagnitude = r.Uint64(1, WAD);
         int256 beaconShares = int256(r.Uint256(1 gwei, MAX_ETH_SUPPLY));
 
+        // Register and set operator's magnitude
         _registerOperatorWithBaseDetails(defaultOperator);
-        // Set the operators magnitude
-        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, WAD);
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, maxMagnitude);
 
-        // verify that the salt hasn't been used before
-        assertFalse(
-            delegationManager.delegationApproverSaltIsSpent(
-                delegationManager.delegationApprover(defaultOperator),
-                salt
-            ),
-            "salt somehow spent too early?"
-        );
         // Set staker shares in BeaconChainStrategy
         eigenPodManagerMock.setPodOwnerShares(staker, beaconShares);
 
-        // delegate from the `staker` to the operator
+        // delegate from the `staker` to the operator, check for events emitted
         cheats.startPrank(staker);
         _delegateTo_expectEmit_singleStrat(
             DelegateToSingleStratEmitStruct({
                 staker: staker,
                 operator: defaultOperator,
                 strategy: beaconChainETHStrategy,
-                depositShares: uint256(beaconShares),
-                depositScalingFactor: WAD
+                depositShares: beaconShares > 0 ? uint256(beaconShares) : 0,
+                depositScalingFactor: uint256(WAD).divWad(maxMagnitude)
             })
         );
-        delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, salt);
+        delegationManager.delegateTo(defaultOperator, emptyApproverSignatureAndExpiry, emptySalt);
 
         _assertDeposit({
             staker: staker,
@@ -1914,11 +2093,14 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         assertFalse(
             delegationManager.delegationApproverSaltIsSpent(
                 delegationManager.delegationApprover(defaultOperator),
-                salt
+                emptySalt
             ),
             "salt somehow spent too early?"
         );
-        (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(staker, beaconChainETHStrategy.toArray());
+
+        (
+            uint256[] memory withdrawableShares,
+        ) = delegationManager.getWithdrawableShares(staker, beaconChainETHStrategy.toArray());
         _assertWithdrawableAndOperatorShares(
             withdrawableShares[0],
             delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy),
@@ -1928,7 +2110,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
     /**
      * @notice `staker` delegates to an operator who does not require any signature verification (i.e. the operator’s `delegationApprover` address is set to the zero address)
-     * and the strategy has already been slashed for the operator. `staker` holds beaconChainETHStrategy Shares
+     * and the strategy has already been slashed for the operator. `staker` holds beaconChainETHStrategy Shares and has been
+     * slashed on the beaconChain resulting in a non-WAD beaconChainSlashingFactor.
      * Assertion Checks
      * - Properly emitted events from `delegateTo`
      * - depositShares incremented for staker correctly
@@ -1938,20 +2121,20 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
      * - defaultOperator is an operator, staker is delegated to defaultOperator, staker is not an operator
      * - That the staker withdrawableShares is <= operatorShares (less due to rounding from non-WAD maxMagnitude)
      */
-    function testFuzz_OperatorWhoAcceptsAllStakers_AlreadySlashed_BeaconChainStrategyShares(
+    function testFuzz_OperatorWhoAcceptsAllStakers_AlreadySlashedAVSAndBeaconChain_beaconChainStrategyShares(
         Randomness r
     ) public rand(r) {
         address staker = r.Address();
         uint64 maxMagnitude = r.Uint64(1, WAD);
+        uint64 beaconChainSlashingFactor = r.Uint64(1, WAD - 1);
         int256 beaconShares = int256(r.Uint256(1 gwei, MAX_ETH_SUPPLY));
 
         // Register and set operator's magnitude
         _registerOperatorWithBaseDetails(defaultOperator);
         _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, maxMagnitude);
-
+        eigenPodManagerMock.setBeaconChainSlashingFactor(staker, beaconChainSlashingFactor);
         // Set staker shares in BeaconChainStrategy
         eigenPodManagerMock.setPodOwnerShares(staker, beaconShares);
-        uint256 beaconSharesBefore = delegationManager.operatorShares(staker, beaconChainETHStrategy);
 
         // delegate from the `staker` to the operator, check for events emitted
         cheats.startPrank(staker);
@@ -1961,7 +2144,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
                 operator: defaultOperator,
                 strategy: beaconChainETHStrategy,
                 depositShares: beaconShares > 0 ? uint256(beaconShares) : 0,
-                depositScalingFactor: uint256(WAD).divWad(maxMagnitude)
+                depositScalingFactor: uint256(WAD).divWad(maxMagnitude.mulWad(beaconChainSlashingFactor))
             })
         );
         delegationManager.delegateTo(defaultOperator, emptyApproverSignatureAndExpiry, emptySalt);
@@ -2318,10 +2501,10 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
      * @notice Like `testDelegateToOperatorWhoRequiresECDSASignature` but using an incorrect signature on purpose and checking that reversion occurs
      */
     function testFuzz_Revert_WhenOperatorWhoRequiresECDSASignature_WithBadSignature(
-        Randomness r
-    ) public rand(r) {
-        address staker = r.Address();
-        uint256 expiry = r.Uint256(block.timestamp + 1, type(uint256).max);
+        Randomness random
+    ) public rand(random) {
+        address staker = random.Address();
+        uint256 expiry = random.Uint256(block.timestamp + 1, type(uint256).max);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
 
@@ -3033,7 +3216,7 @@ contract DelegationManagerUnitTests_increaseDelegatedShares is DelegationManager
         );
     }
 
-    /// @notice Verifies that there is no change in shares if the staker is not delegated
+    /// @notice Verifies that there is no change in operatorShares if the staker is not delegated
     function testFuzz_increaseDelegatedShares_noop(Randomness r) public rand(r) {
         address staker = r.Address();
         _registerOperatorWithBaseDetails(defaultOperator);
@@ -3110,6 +3293,55 @@ contract DelegationManagerUnitTests_increaseDelegatedShares is DelegationManager
         }
     }
 
+    function testFuzz_increaseDelegatedShares_beaconChainShares(Randomness r) public rand(r) {
+        address staker = r.Address();
+        uint256 shares = r.Uint256(1, MAX_ETH_SUPPLY);
+        uint64 beaconChainSlashingFactor = r.Uint64(1, WAD);
+
+        // Register operator
+        _registerOperatorWithBaseDetails(defaultOperator);
+        // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
+        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+        uint256 delegatedSharesBefore = delegationManager.operatorShares(
+            delegationManager.delegatedTo(staker),
+            beaconChainETHStrategy
+        );
+
+        // deposit and increase delegated shares
+        eigenPodManagerMock.setPodOwnerShares(staker, int256(shares));
+        eigenPodManagerMock.setBeaconChainSlashingFactor(staker, beaconChainSlashingFactor);
+        _increaseDelegatedShares_expectEmit(
+            IncreaseDelegatedSharesEmitStruct({
+                staker: staker,
+                operator: delegationManager.delegatedTo(staker),
+                strategy: beaconChainETHStrategy,
+                sharesToIncrease: shares,
+                depositScalingFactor: uint256(WAD).divWad(beaconChainSlashingFactor)
+            })
+        );
+        cheats.prank(address(strategyManagerMock));
+        delegationManager.increaseDelegatedShares(staker, beaconChainETHStrategy, 0, shares);
+        _assertDeposit({
+            staker: staker,
+            operator: defaultOperator,
+            strategy: beaconChainETHStrategy,
+            operatorSharesBefore: delegatedSharesBefore,
+            withdrawableSharesBefore: 0,
+            depositSharesBefore: 0,
+            prevDsf: WAD,
+            depositAmount: shares
+        });
+
+        // Assert correct end state values
+        uint256 delegatedSharesAfter = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
+        (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(staker, beaconChainETHStrategy.toArray());
+        _assertWithdrawableAndOperatorShares(
+            withdrawableShares[0],
+            delegatedSharesAfter,
+            "Invalid withdrawable shares"
+        );
+    }
+
     /**
      * @notice Verifies that `DelegationManager.increaseDelegatedShares` properly increases the delegated `shares` that the operator
      * who the `staker` is delegated to has in the strategy
@@ -3176,6 +3408,63 @@ contract DelegationManagerUnitTests_increaseDelegatedShares is DelegationManager
             assertEq(delegatedSharesAfter, delegatedSharesBefore, "delegated shares incremented incorrectly");
             assertEq(delegatedSharesBefore, 0, "nonzero shares delegated to zero address!");
         }
+    }
+
+    /**
+     * @notice Verifies that `DelegationManager.increaseDelegatedShares` properly increases the delegated `shares` for the
+     * `defaultOperator` who the staker is delegated to. Asserts for proper events emitted and correct withdrawable shares, 
+     * despoitScalingFactor for the staker, and operator shares after deposit.
+     */
+    function testFuzz_increaseDelegatedShares_slashedOperatorAndBeaconChainShares(Randomness r) public rand(r) {
+        address staker = r.Address();
+        uint256 shares = r.Uint256(1, MAX_ETH_SUPPLY);
+        uint64 maxMagnitude = r.Uint64(1, WAD);
+        uint64 beaconChainSlashingFactor = r.Uint64(1, WAD);
+
+        // Register operator
+        _registerOperatorWithBaseDetails(defaultOperator);
+        // Set operator magnitude
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, maxMagnitude);
+        // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
+        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+        uint256 delegatedSharesBefore = delegationManager.operatorShares(
+            delegationManager.delegatedTo(staker),
+            beaconChainETHStrategy
+        );
+
+        // deposit and increase delegated shares
+        eigenPodManagerMock.setPodOwnerShares(staker, int256(shares));
+        eigenPodManagerMock.setBeaconChainSlashingFactor(staker, beaconChainSlashingFactor);
+        _increaseDelegatedShares_expectEmit(
+            IncreaseDelegatedSharesEmitStruct({
+                staker: staker,
+                operator: delegationManager.delegatedTo(staker),
+                strategy: beaconChainETHStrategy,
+                sharesToIncrease: shares,
+                depositScalingFactor: uint256(WAD).divWad(maxMagnitude.mulWad(beaconChainSlashingFactor))
+            })
+        );
+        cheats.prank(address(strategyManagerMock));
+        delegationManager.increaseDelegatedShares(staker, beaconChainETHStrategy, 0, shares);
+        _assertDeposit({
+            staker: staker,
+            operator: defaultOperator,
+            strategy: beaconChainETHStrategy,
+            operatorSharesBefore: delegatedSharesBefore,
+            withdrawableSharesBefore: 0,
+            depositSharesBefore: 0,
+            prevDsf: WAD,
+            depositAmount: shares
+        });
+
+        // Assert correct end state values
+        uint256 delegatedSharesAfter = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
+        (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(staker, beaconChainETHStrategy.toArray());
+        _assertWithdrawableAndOperatorShares(
+            withdrawableShares[0],
+            delegatedSharesAfter,
+            "Invalid withdrawable shares"
+        );
     }
 
     /**
@@ -3306,41 +3595,46 @@ contract DelegationManagerUnitTests_decreaseDelegatedShares is DelegationManager
     using SlashingLib for *;
     using Math for *;
 
-    function testFuzz_Revert_decreaseDelegatedShares_onlyEPM(Randomness r) public rand(r) {
+    function testFuzz_Revert_decreaseDelegatedShares_invalidCaller(Randomness r) public rand(r) {
         address invalidCaller = r.Address();
         address staker = r.Address();
         uint256 shares = r.Uint256(1, MAX_STRATEGY_SHARES);
-        uint64 prevBeaconChainSlashingFactor = uint64(r.Uint256(0, WAD));
+        uint64 beaconChainSlashingFactorDecrease = uint64(r.Uint256(0, WAD));
         cheats.expectRevert(IDelegationManagerErrors.OnlyEigenPodManager.selector);
         cheats.prank(invalidCaller);
-        delegationManager.decreaseDelegatedShares(staker, 0, prevBeaconChainSlashingFactor, shares);
+        delegationManager.decreaseDelegatedShares(staker, shares, beaconChainSlashingFactorDecrease);
     }
 
+    /// @notice Verifies that there is no change in operatorShares if the staker is not delegated
     function testFuzz_decreaseDelegatedShares_noop(Randomness r) public rand(r) {
         address staker = r.Address();
         uint256 shares = r.Uint256(1, MAX_STRATEGY_SHARES);
-        uint64 prevBeaconChainSlashingFactor = uint64(r.Uint256(0, WAD));
+        uint64 beaconChainSlashingFactorDecrease = uint64(r.Uint256(0, WAD));
 
         // Register operator
         _registerOperatorWithBaseDetails(defaultOperator);
         assertFalse(delegationManager.isDelegated(staker), "bad test setup");
 
         cheats.prank(address(eigenPodManagerMock));
-        delegationManager.decreaseDelegatedShares(staker, 0, prevBeaconChainSlashingFactor, shares);
+        delegationManager.decreaseDelegatedShares(staker, shares, beaconChainSlashingFactorDecrease);
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
     }
 
-    function testFuzz_decreaseDelegatedShares(Randomness r) public rand(r) {
+    /**
+     * @notice Verifies that `decreaseDelegatedShares` properly updates the staker's withdrawable shares
+     * and their delegated operator's shares are decreased by the correct amount.
+     * Ensures that after the decrease, the staker's withdrawableShares <= operatorShares,
+     * preventing any underflow for the operator's shares if they were all to be withdrawn.
+     */
+    function testFuzz_decreaseDelegatedShares_nonSlashedOperator(Randomness r) public rand(r) {
         int256 beaconShares = int256(r.Uint256(1, MAX_ETH_SUPPLY));
         uint256 sharesDecrease = r.Uint256(0, uint256(beaconShares) - 1);
-        uint64 maxMagnitude = r.Uint64(1, WAD);
-        uint64 beaconChainScalingFactor = r.Uint64(0, WAD);
+        uint64 beaconChainSlashingFactor = r.Uint64(1, WAD);
 
         // 1. Setup staker and delegate to operator
         _registerOperatorWithBaseDetails(defaultOperator);
-        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, maxMagnitude);
         eigenPodManagerMock.setPodOwnerShares(defaultStaker, beaconShares);
-        eigenPodManagerMock.setBeaconChainSlashingFactor(defaultStaker, beaconChainScalingFactor);
+        eigenPodManagerMock.setBeaconChainSlashingFactor(defaultStaker, beaconChainSlashingFactor);
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
         _assertDeposit({
             staker: defaultStaker,
@@ -3353,26 +3647,24 @@ contract DelegationManagerUnitTests_decreaseDelegatedShares is DelegationManager
             depositAmount: uint256(beaconShares)
         });
 
-        (uint256[] memory withdrawableSharesBefore,) = delegationManager.getWithdrawableShares(defaultStaker, beaconChainETHStrategy.toArray());
-
         // 2. Perform beaconChain slash + decreaseDelegatedShares()
         (
-            uint64 prevBeaconChainSlashingFactor,
-            uint256 wadSlashed,
-            uint64 newBeaconChainScalingFactor
+            uint64 prevBeaconSlashingFactor,
+            uint64 newBeaconSlashingFactor
         ) = _setNewBeaconChainSlashingFactor(defaultStaker, beaconShares, sharesDecrease);
+        uint64 beaconChainSlashingFactorDecrease = prevBeaconSlashingFactor - newBeaconSlashingFactor;
         assertEq(
-            beaconChainScalingFactor,
-            prevBeaconChainSlashingFactor,
+            beaconChainSlashingFactor,
+            prevBeaconSlashingFactor,
             "Bad test setup"
         );
-        uint256 depositScalingFactor = uint256(WAD).divWad(maxMagnitude.mulWad(beaconChainScalingFactor));
+        uint256 depositScalingFactor = uint256(WAD).divWad(beaconChainSlashingFactor);
         // expected operatorShares decreased for event
         uint256 operatorSharesToDecrease = _calcWithdrawableShares({
             depositShares: uint256(beaconShares),
             depositScalingFactor: depositScalingFactor,
-            slashingFactor: maxMagnitude.mulWad(prevBeaconChainSlashingFactor)
-        }).mulWad(wadSlashed);
+            slashingFactor: beaconChainSlashingFactorDecrease
+        });
         // expected events
         _decreaseDelegatedShares_expectEmit(
             DecreaseDelegatedSharesEmitStruct({
@@ -3382,19 +3674,19 @@ contract DelegationManagerUnitTests_decreaseDelegatedShares is DelegationManager
             })
         );
         cheats.prank(address(eigenPodManagerMock));
-        delegationManager.decreaseDelegatedShares(defaultStaker, uint256(beaconShares), prevBeaconChainSlashingFactor, wadSlashed);
+        delegationManager.decreaseDelegatedShares(defaultStaker, uint256(beaconShares), beaconChainSlashingFactorDecrease);
 
         // 3. Assert correct values
         uint256 expectedWithdrawableShares = _calcWithdrawableShares({
             depositShares: uint256(beaconShares),
             depositScalingFactor: depositScalingFactor,
-            slashingFactor: maxMagnitude.mulWad(newBeaconChainScalingFactor)
+            slashingFactor: newBeaconSlashingFactor
         });
         _assertSharesAfterBeaconSlash({
             staker: defaultStaker,
             withdrawableSharesBefore: uint256(beaconShares),
             expectedWithdrawableShares: expectedWithdrawableShares,
-            prevBeaconChainScalingFactor: prevBeaconChainSlashingFactor
+            prevBeaconSlashingFactor: prevBeaconSlashingFactor
         });
         // Assert correct end state values
         (uint256[] memory withdrawableSharesAfter, ) = delegationManager.getWithdrawableShares(defaultStaker, beaconChainETHStrategy.toArray());
@@ -3412,16 +3704,25 @@ contract DelegationManagerUnitTests_decreaseDelegatedShares is DelegationManager
         );
     }
 
-    function testFuzz_decreaseDelegatedShares_entireBalance(Randomness r) public rand(r) {
+    /**
+     * @notice Similar test to `testFuzz_decreaseDelegatedShares_nonSlashedOperator` but with
+     * a pre-slashed operator (maxMagnitude < WAD).
+     * Verifies that `decreaseDelegatedShares` properly updates the staker's withdrawable shares
+     * and their delegated operator's shares are decreased by the correct amount.
+     * Ensures that after the decrease, the staker's withdrawableShares <= operatorShares,
+     * preventing any underflow for the operator's shares if they were all to be withdrawn.
+     */
+    function testFuzz_decreaseDelegatedShares_slashedOperator(Randomness r) public rand(r) {
         int256 beaconShares = int256(r.Uint256(1, MAX_ETH_SUPPLY));
-        uint64 maxMagnitude = r.Uint64(1, WAD);
-        uint64 beaconChainScalingFactor = r.Uint64(0, WAD);
+        uint256 sharesDecrease = r.Uint256(0, uint256(beaconShares) - 1);
+        uint64 maxMagnitude = r.Uint64(1, WAD - 1);
+        uint64 beaconChainSlashingFactor = r.Uint64(1, WAD);
 
         // 1. Setup staker and delegate to operator
         _registerOperatorWithBaseDetails(defaultOperator);
         _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, maxMagnitude);
         eigenPodManagerMock.setPodOwnerShares(defaultStaker, beaconShares);
-        eigenPodManagerMock.setBeaconChainSlashingFactor(defaultStaker, beaconChainScalingFactor);
+        eigenPodManagerMock.setBeaconChainSlashingFactor(defaultStaker, beaconChainSlashingFactor);
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
         _assertDeposit({
             staker: defaultStaker,
@@ -3434,26 +3735,24 @@ contract DelegationManagerUnitTests_decreaseDelegatedShares is DelegationManager
             depositAmount: uint256(beaconShares)
         });
 
-        (uint256[] memory withdrawableSharesBefore,) = delegationManager.getWithdrawableShares(defaultStaker, beaconChainETHStrategy.toArray());
-
         // 2. Perform beaconChain slash + decreaseDelegatedShares()
         (
-            uint64 prevBeaconChainSlashingFactor,
-            uint256 wadSlashed,
-            uint64 newBeaconChainScalingFactor
-        ) = _setNewBeaconChainSlashingFactor(defaultStaker, beaconShares, uint256(beaconShares));
+            uint64 prevBeaconSlashingFactor,
+            uint64 newBeaconSlashingFactor
+        ) = _setNewBeaconChainSlashingFactor(defaultStaker, beaconShares, sharesDecrease);
+        uint64 beaconChainSlashingFactorDecrease = prevBeaconSlashingFactor - newBeaconSlashingFactor;
         assertEq(
-            beaconChainScalingFactor,
-            prevBeaconChainSlashingFactor,
+            beaconChainSlashingFactor,
+            prevBeaconSlashingFactor,
             "Bad test setup"
         );
-        uint256 depositScalingFactor = uint256(WAD).divWad(maxMagnitude.mulWad(beaconChainScalingFactor));
+        uint256 depositScalingFactor = uint256(WAD).divWad(maxMagnitude.mulWad(beaconChainSlashingFactor));
         // expected operatorShares decreased for event
         uint256 operatorSharesToDecrease = _calcWithdrawableShares({
             depositShares: uint256(beaconShares),
             depositScalingFactor: depositScalingFactor,
-            slashingFactor: maxMagnitude.mulWad(prevBeaconChainSlashingFactor)
-        }).mulWad(wadSlashed);
+            slashingFactor: maxMagnitude.mulWad(beaconChainSlashingFactorDecrease)
+        });
         // expected events
         _decreaseDelegatedShares_expectEmit(
             DecreaseDelegatedSharesEmitStruct({
@@ -3463,32 +3762,114 @@ contract DelegationManagerUnitTests_decreaseDelegatedShares is DelegationManager
             })
         );
         cheats.prank(address(eigenPodManagerMock));
-        delegationManager.decreaseDelegatedShares(defaultStaker, uint256(beaconShares), prevBeaconChainSlashingFactor, wadSlashed);
+        delegationManager.decreaseDelegatedShares(defaultStaker, uint256(beaconShares), beaconChainSlashingFactorDecrease);
 
         // 3. Assert correct values
         uint256 expectedWithdrawableShares = _calcWithdrawableShares({
             depositShares: uint256(beaconShares),
             depositScalingFactor: depositScalingFactor,
-            slashingFactor: maxMagnitude.mulWad(newBeaconChainScalingFactor)
+            slashingFactor: maxMagnitude.mulWad(newBeaconSlashingFactor)
+        });
+        _assertSharesAfterBeaconSlash({
+            staker: defaultStaker,
+            withdrawableSharesBefore: uint256(beaconShares),
+            expectedWithdrawableShares: expectedWithdrawableShares,
+            prevBeaconSlashingFactor: prevBeaconSlashingFactor
+        });
+        // Assert correct end state values
+        (uint256[] memory withdrawableSharesAfter, ) = delegationManager.getWithdrawableShares(defaultStaker, beaconChainETHStrategy.toArray());
+
+        assertEq(
+            delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy) + operatorSharesToDecrease,
+            uint256(beaconShares),
+            "operator shares not decreased correctly"
+        );
+
+        _assertWithdrawableAndOperatorShares(
+            withdrawableSharesAfter[0],
+            delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy),
+            "Invalid withdrawable shares"
+        );
+    }
+
+    /**
+     * @notice Verifies that if a staker's beaconChainSlashingFactor is reduced to 0 if their entire balance
+     * is slashed. Their withdrawable shares should be 0 afterwards and decreasing operatorShares should
+     * not underflow and revert either.
+     */
+    function testFuzz_decreaseDelegatedShares_entireBalance(Randomness r) public rand(r) {
+        int256 beaconShares = int256(r.Uint256(1, MAX_ETH_SUPPLY));
+        uint64 maxMagnitude = r.Uint64(1, WAD);
+        uint64 beaconChainSlashingFactor = r.Uint64(1, WAD);
+
+        // 1. Setup staker and delegate to operator
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, maxMagnitude);
+        eigenPodManagerMock.setPodOwnerShares(defaultStaker, beaconShares);
+        eigenPodManagerMock.setBeaconChainSlashingFactor(defaultStaker, beaconChainSlashingFactor);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+        _assertDeposit({
+            staker: defaultStaker,
+            operator: defaultOperator,
+            strategy: beaconChainETHStrategy,
+            operatorSharesBefore: 0,
+            withdrawableSharesBefore: 0,
+            depositSharesBefore: 0,
+            prevDsf: WAD,
+            depositAmount: uint256(beaconShares)
+        });
+
+        // 2. Perform beaconChain slash + decreaseDelegatedShares()
+        (
+            uint64 prevBeaconSlashingFactor,
+            uint64 newBeaconSlashingFactor
+        ) = _setNewBeaconChainSlashingFactor(defaultStaker, beaconShares, uint256(beaconShares));
+        assertEq(
+            beaconChainSlashingFactor,
+            prevBeaconSlashingFactor,
+            "Bad test setup"
+        );
+        uint64 beaconChainSlashingFactorDecrease = prevBeaconSlashingFactor - newBeaconSlashingFactor;
+        uint256 depositScalingFactor = uint256(WAD).divWad(maxMagnitude.mulWad(beaconChainSlashingFactor));
+        // expected operatorShares decreased for event
+        uint256 operatorSharesToDecrease = _calcWithdrawableShares({
+            depositShares: uint256(beaconShares),
+            depositScalingFactor: depositScalingFactor,
+            slashingFactor: maxMagnitude.mulWad(beaconChainSlashingFactorDecrease)
+        });
+        // expected events
+        _decreaseDelegatedShares_expectEmit(
+            DecreaseDelegatedSharesEmitStruct({
+                staker: defaultStaker,
+                operator: defaultOperator,
+                sharesToDecrease: operatorSharesToDecrease
+            })
+        );
+        cheats.prank(address(eigenPodManagerMock));
+        delegationManager.decreaseDelegatedShares(defaultStaker, uint256(beaconShares), prevBeaconSlashingFactor);
+
+        // 3. Assert correct values
+        uint256 expectedWithdrawableShares = _calcWithdrawableShares({
+            depositShares: uint256(beaconShares),
+            depositScalingFactor: depositScalingFactor,
+            slashingFactor: maxMagnitude.mulWad(newBeaconSlashingFactor)
         });
         assertEq(
             expectedWithdrawableShares,
             0,
             "All shares should be slashed"
         );
+        assertEq(
+            eigenPodManagerMock.beaconChainSlashingFactor(defaultStaker),
+            0,
+            "beaconChainSlashingFactor should be 0"
+        );
         _assertSharesAfterBeaconSlash({
             staker: defaultStaker,
             withdrawableSharesBefore: uint256(beaconShares),
             expectedWithdrawableShares: expectedWithdrawableShares,
-            prevBeaconChainScalingFactor: prevBeaconChainSlashingFactor
+            prevBeaconSlashingFactor: prevBeaconSlashingFactor
         });
-        // Assert correct end state values
-        (uint256[] memory withdrawableSharesAfter, ) = delegationManager.getWithdrawableShares(defaultStaker, beaconChainETHStrategy.toArray());
-        _assertWithdrawableAndOperatorShares(
-            withdrawableSharesAfter[0],
-            delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy),
-            "Invalid withdrawable shares"
-        );
         assertEq(
             delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy) + operatorSharesToDecrease,
             uint256(beaconShares),
@@ -3497,7 +3878,7 @@ contract DelegationManagerUnitTests_decreaseDelegatedShares is DelegationManager
     }
 }
 
-contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
+contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
     using SlashingLib for uint256;
     using ArrayLib for *;
     using Math for uint256;
@@ -3632,7 +4013,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
             caller = defaultOperator;
         }
 
-        IDelegationManagerTypes.Withdrawal memory withdrawal;
+        Withdrawal memory withdrawal;
         _undelegate_expectEmit_singleStrat(
             UndelegateEmitStruct({
                 staker: staker,
@@ -3863,14 +4244,14 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         // Set operator magnitude
         {
             (uint256[] memory withdrawableSharesBefore, ) = delegationManager.getWithdrawableShares(defaultStaker, strategy.toArray());
-            uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategy);
+            uint256 delegatedSharesBefore = delegationManager.operatorShares(defaultOperator, strategy);
             _setOperatorMagnitude(defaultOperator, strategy, newMaxMagnitude);
             cheats.prank(address(allocationManagerMock));
             delegationManager.burnOperatorShares(defaultOperator, strategy, prevMaxMagnitude, newMaxMagnitude);
             (, uint256 operatorSharesAfterSlash) = _assertOperatorSharesAfterSlash({
                 operator: defaultOperator,
                 strategy: strategy,
-                operatorSharesBefore: operatorSharesBefore,
+                operatorSharesBefore: delegatedSharesBefore,
                 prevMaxMagnitude: prevMaxMagnitude,
                 newMaxMagnitude: newMaxMagnitude
             });
@@ -3906,7 +4287,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         {
             (
                 ,
-                IDelegationManagerTypes.Withdrawal memory withdrawal,
+                Withdrawal memory withdrawal,
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: defaultStaker,
@@ -3999,7 +4380,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
 
         (
             ,
-            IDelegationManagerTypes.Withdrawal memory withdrawal,
+            Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
@@ -4144,7 +4525,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         for (uint256 i = 0; i < stakers.length; ++i) {
             (
                 ,
-                IDelegationManagerTypes.Withdrawal memory withdrawal,
+                Withdrawal memory withdrawal,
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: stakers[i],
@@ -4339,7 +4720,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         // queued withdrawals done for single strat as this is how undelegate queue withdraws
         (
             ,
-            IDelegationManagerTypes.Withdrawal memory strategyWithdrawal,
+            Withdrawal memory strategyWithdrawal,
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: staker,
             withdrawer: staker,
@@ -4348,7 +4729,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         });
         (
             ,
-            IDelegationManagerTypes.Withdrawal memory beaconWithdrawal,
+            Withdrawal memory beaconWithdrawal,
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: staker,
             withdrawer: staker,
@@ -4733,8 +5114,8 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         });
 
         (
-            IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
-            IDelegationManagerTypes.Withdrawal memory withdrawal,
+            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
@@ -4930,8 +5311,8 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // 2. Setup and call queued withdrawals
         {
             (
-                IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
-                IDelegationManagerTypes.Withdrawal memory withdrawal,
+                QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+                Withdrawal memory withdrawal,
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawals({
                 staker: defaultStaker,
@@ -4997,7 +5378,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // 1. Setup
         // - fuzz numbers of strategies, deposit and withdraw amounts, and prev/new magnitudes for each strategy respectively
         // - deposit into strategies, delegate to operator 
-        uint32 numStrats = r.Uint32(1, 32);
         IStrategy[] memory strategies = r.StrategyArray(r.Uint32(1, 32));
         bool depositBeaconChainShares = r.Boolean();
         if (depositBeaconChainShares) {
@@ -5049,8 +5429,8 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // 3. Setup and call queued withdrawals
         {
             (
-                IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
-                IDelegationManagerTypes.Withdrawal memory withdrawal,
+                QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+                Withdrawal memory withdrawal,
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawals({
                 staker: defaultStaker,
@@ -5143,13 +5523,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             });
         }
 
-        uint256[] memory expectedWithdrawnShares = _getWithdrawableShares({
-            staker: defaultStaker,
-            strategies: strategies,
-            maxMagnitudes: newMaxMagnitudes,
-            depositSharesToWithdraw: withdrawalAmounts
-        });
-
         // 2. Slash operator while staker is delegated and staked
         uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(defaultStaker);
         uint256[] memory slashedOperatorShares = new uint256[](strategies.length);
@@ -5186,8 +5559,8 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // 3. Setup and call queued withdrawals
         {
             (
-                IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
-                IDelegationManagerTypes.Withdrawal memory withdrawal,
+                QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+                Withdrawal memory withdrawal,
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawals({
                 staker: defaultStaker,
@@ -5265,6 +5638,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         });
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
+        // single withdrawal interface
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  false);
 
@@ -5274,6 +5648,14 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         bool[] memory receiveAsTokens = new bool[](1);
         receiveAsTokens[0] = false;
 
+        Withdrawal[] memory withdrawals = new Withdrawal[](1);
+        withdrawals[0] = withdrawal;
+
+        // multiple Withdrawal interface
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        delegationManager.completeQueuedWithdrawals(withdrawals, tokensArray,  receiveAsTokens);
+
+        // numToComplete interface
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         delegationManager.completeQueuedWithdrawals(tokensArray,  receiveAsTokens, 1);
     }
@@ -5416,9 +5798,10 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         address staker = r.Address();
         uint256 depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
         uint256 numWithdrawals = r.Uint256(2, 20);
+        bool receiveAsTokens = r.Boolean();
 
         (
-            IDelegationManagerTypes.Withdrawal[] memory withdrawals,
+            Withdrawal[] memory withdrawals,
             IERC20[][] memory tokens,
             bytes32[] memory withdrawalRoots
         ) = _setUpCompleteQueuedWithdrawalsSingleStrat({
@@ -5435,11 +5818,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         for (uint i = 0; i < withdrawalRoots.length; i++) {
             assertTrue(delegationManager.pendingWithdrawals(withdrawalRoots[i]), "withdrawalRoots should be pending");
         }
-
-        bool[] memory receiveAsTokens = new bool[](withdrawals.length);
-        for (uint i = 0; i < withdrawals.length; i++) {
-            receiveAsTokens[i] = true;
-        }
+        bool[] memory receiveAsTokensArray = receiveAsTokens.toArray(numWithdrawals);
 
         // completeQueuedWithdrawal
         cheats.roll(withdrawals[0].startBlock + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
@@ -5447,17 +5826,42 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             CompleteQueuedWithdrawalsEmitStruct({
                 withdrawals: withdrawals,
                 tokens: tokens,
-                receiveAsTokens: receiveAsTokens
+                receiveAsTokens: receiveAsTokensArray
             })
         );
         cheats.prank(staker);
-        delegationManager.completeQueuedWithdrawals(withdrawals, tokens, receiveAsTokens);
+        delegationManager.completeQueuedWithdrawals(withdrawals, tokens, receiveAsTokensArray);
 
+        // assertion checks
+        (
+            uint256[] memory withdrawableShares,
+            uint256[] memory depositShares
+        ) = delegationManager.getWithdrawableShares(staker, withdrawals[0].strategies);
+        assertEq(
+            withdrawableShares[0],
+            0,
+            "withdrawable shares should be 0 from withdrawing all"
+        );
+        assertEq(
+            depositShares[0],
+            0,
+            "deposit shares should be 0 from withdrawing all"
+        );
+        _assertWithdrawalRootsComplete(staker, withdrawals);
+        assertEq(
+            delegationManager.getDepositScalingFactor(staker, withdrawals[0].strategies[0]),
+            uint256(WAD),
+            "deposit scaling factor should be WAD"
+        );
         uint256 operatorSharesAfter = delegationManager.operatorShares(defaultOperator, withdrawals[0].strategies[0]);
-        assertEq(operatorSharesAfter, operatorSharesBefore, "operator shares should be unchanged");
-
-        for (uint i = 0; i < withdrawals.length; i++) {
-            assertFalse(delegationManager.pendingWithdrawals(withdrawalRoots[i]), "withdrawalRoot should be completed and marked false now");
+        if (receiveAsTokens) {
+            assertEq(operatorSharesAfter, operatorSharesBefore, "operator shares should be unchanged");
+        } else {
+            assertEq(
+                operatorSharesAfter,
+                operatorSharesBefore + depositAmount*numWithdrawals,
+                "operator shares should be unchanged"
+            );
         }
     }
 
@@ -5471,7 +5875,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         uint256 numToComplete = r.Uint256(2, numWithdrawals);
 
         (
-            IDelegationManagerTypes.Withdrawal[] memory withdrawals,
+            Withdrawal[] memory withdrawals,
             IERC20[][] memory tokens,
             bytes32[] memory withdrawalRoots
         ) = _setUpCompleteQueuedWithdrawalsSingleStrat({
@@ -5520,17 +5924,22 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
     /**
      * @notice Verifies that `DelegationManager.completeQueuedWithdrawal` properly completes a queued withdrawal for the `withdrawer`
-     * for a single strategy. Withdraws as tokens so there are no operator shares increase.
+     * for a single strategy.
      * - Asserts that the withdrawalRoot is True before `completeQueuedWithdrawal` and False after
+     * - Asserts that event `WithdrawalCompleted` is emitted with withdrawalRoot
+     * if receiveAsTokens is true
      * - Asserts operatorShares is unchanged after `completeQueuedWithdrawal`
-     * - Checks that event `WithdrawalCompleted` is emitted with withdrawalRoot
+     * - Asserts that the staker's withdrawable shares, deposit shares, and depositScalingFactors are unchanged
+     * if receiveAsTokens is false
+     * - Asserts operatorShares is increased correctly after `completeQueuedWithdrawal`
+     * - Asserts that the staker's withdrawable shares, deposit shares, and depositScalingFactors are updated correctly
      */
-    function test_completeQueuedWithdrawal_SingleStratWithdrawAsTokens(
+    function test_completeQueuedWithdrawal_SingleStrat(
         Randomness r
     ) public rand(r)  {
-        address staker = r.Address();
         uint256 depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
         uint256 withdrawalAmount = r.Uint256(1, depositAmount);
+        bool receiveAsTokens = r.Boolean();
 
         _registerOperatorWithBaseDetails(defaultOperator);
         (
@@ -5538,13 +5947,13 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             IERC20[] memory tokens,
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
-            staker: staker,
-            withdrawer: staker,
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount,
             isBeaconChainStrategy: false
         });
-        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
         uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, withdrawal.strategies[0]);
         assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be pending");
 
@@ -5554,15 +5963,24 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             CompleteQueuedWithdrawalEmitStruct({
                 withdrawal: withdrawal,
                 tokens: tokens,
-                receiveAsTokens: true
+                receiveAsTokens: receiveAsTokens
             })
         );
-        cheats.prank(staker);
-        delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  true);
+        cheats.prank(defaultStaker);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokens,  receiveAsTokens);
 
-        uint256 operatorSharesAfter = delegationManager.operatorShares(defaultOperator, withdrawal.strategies[0]);
-        assertEq(operatorSharesAfter, operatorSharesBefore, "operator shares should be unchanged");
-        assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
+        _assertCompletedWithdrawal({
+            staker: defaultStaker,
+            currentOperator: defaultOperator,
+            withdrawal: withdrawal,
+            receiveAsTokens: receiveAsTokens,
+            operatorSharesBefore: operatorSharesBefore.toArrayU256(),
+            withdrawableSharesBefore: (depositAmount - withdrawalAmount).toArrayU256(),
+            depositSharesBefore: (depositAmount - withdrawalAmount).toArrayU256(),
+            prevDepositScalingFactors: uint256(WAD).toArrayU256(),
+            slashingFactors: uint256(WAD).toArrayU256(),
+            beaconChainSlashingFactor: WAD
+        });
     }
 
     /**
@@ -5658,15 +6076,15 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      * - Checks that event `WithdrawalCompleted` is emitted with withdrawalRoot
      * - Asserts that the shares the staker completed withdrawal for are less than what is expected since the staker is slashed during queue
      */
-    // TODO: fuzz the beacon chain magnitude
+    // TODO: fuzz the beacon chain magnitude, change receiveAsTokens as fuzz bool
     function test_completeQueuedWithdrawal_BeaconStratWithdrawAsTokens_slashStakerDuringQueue(
         Randomness r
     ) public rand(r) {
-        uint128 depositAmount = r.Uint128();
-        uint128 withdrawalAmount = r.Uint128(1, depositAmount);
+        int256 depositAmount = int256(r.Uint256(1, MAX_ETH_SUPPLY));
+        uint256 withdrawalAmount = r.Uint256(1, uint256(depositAmount));
 
         // Deposit Staker
-        eigenPodManagerMock.setPodOwnerShares(defaultStaker, int256(uint256(depositAmount)));
+        eigenPodManagerMock.setPodOwnerShares(defaultStaker, depositAmount);
 
         // Register operator and delegate to it
         _registerOperatorWithBaseDetails(defaultOperator);
@@ -5693,17 +6111,15 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         {
             // Slash the staker for beacon chain shares while it has queued a withdrawal
             // simulate the operations done in EigenPodManager._reduceSlashingFactor
-            uint256 beaconSharesBeforeSlash = uint256(eigenPodManagerMock.podOwnerShares(defaultStaker));
-            uint64 prevBeaconChainSlashingFactor = eigenPodManagerMock.beaconChainSlashingFactor(defaultStaker);
-            uint256 beaconSharesAfterSlash = beaconSharesBeforeSlash / 2;
-            uint256 balanceRemainingWad = beaconSharesAfterSlash.divWadRoundUp(beaconSharesBeforeSlash);
-            uint64 newBeaconChainSlashingFactor = uint64(prevBeaconChainSlashingFactor.mulWad(balanceRemainingWad));
-
-            eigenPodManagerMock.setBeaconChainSlashingFactor(defaultStaker, newBeaconChainSlashingFactor);
-            uint256 wadSlashed = uint256(WAD) - balanceRemainingWad;
+            (uint64 prevBeaconSlashingFactor, uint64 newBeaconSlashingFactor) = _decreaseBeaconChainShares({
+                staker: defaultStaker,
+                beaconShares: depositAmount,
+                sharesDecrease: uint256(depositAmount) / 2
+            });
+            uint64 beaconChainSlashingFactorDecrease = prevBeaconSlashingFactor - newBeaconSlashingFactor;
 
             cheats.prank(address(eigenPodManagerMock));
-            delegationManager.decreaseDelegatedShares(defaultStaker, beaconSharesBeforeSlash, prevBeaconChainSlashingFactor, wadSlashed);
+            delegationManager.decreaseDelegatedShares(defaultStaker, uint256(depositAmount), beaconChainSlashingFactorDecrease);
         }
 
         uint256 operatorSharesAfterBeaconSlash = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
@@ -5740,15 +6156,15 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      * - Checks that event `WithdrawalCompleted` is emitted with withdrawalRoot
      * - Asserts that the shares the staker completed withdrawal for are less than what is expected since both the staker and its operator are slashed during queue
      */
-    // TODO: fuzz the beacon chain magnitude & operator magnitude
+    // TODO: fuzz the beacon chain magnitude & operator magnitude, change receiveAsTokens as fuzz bool
     function test_completeQueuedWithdrawal_BeaconStratWithdrawAsTokens_slashStakerAndOperator(
         Randomness r
     ) public rand(r) {
-        uint128 depositAmount = r.Uint128();
-        uint128 withdrawalAmount = r.Uint128(1, depositAmount);
+        int256 depositAmount = int256(r.Uint256(1, MAX_ETH_SUPPLY));
+        uint256 withdrawalAmount = r.Uint256(1, uint256(depositAmount));
 
         // Deposit Staker
-        eigenPodManagerMock.setPodOwnerShares(defaultStaker, int256(uint256(depositAmount)));
+        eigenPodManagerMock.setPodOwnerShares(defaultStaker, int256(depositAmount));
 
         // Register operator and delegate to it
         _registerOperatorWithBaseDetails(defaultOperator);
@@ -5777,18 +6193,11 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
             // Slash the staker for beacon chain shares while it has queued a withdrawal
             // simulate the operations done in EigenPodManager._reduceSlashingFactor
-            uint256 beaconSharesBeforeSlash = uint256(eigenPodManagerMock.podOwnerShares(defaultStaker));
-            uint64 prevBeaconChainSlashingFactor = eigenPodManagerMock.beaconChainSlashingFactor(defaultStaker);
-            uint256 beaconSharesAfterSlash = beaconSharesBeforeSlash / 2;
-
-            uint256 balanceRemainingWad = beaconSharesAfterSlash.divWadRoundUp(beaconSharesBeforeSlash);
-            uint64 newBeaconChainSlashingFactor = uint64(prevBeaconChainSlashingFactor.mulWad(balanceRemainingWad));
-
-            eigenPodManagerMock.setBeaconChainSlashingFactor(defaultStaker, newBeaconChainSlashingFactor);
-            uint256 wadSlashed = uint256(WAD) - balanceRemainingWad;
-
-            cheats.prank(address(eigenPodManagerMock));
-            delegationManager.decreaseDelegatedShares(defaultStaker, beaconSharesBeforeSlash, prevBeaconChainSlashingFactor, wadSlashed);
+            _decreaseBeaconChainShares({
+                staker: defaultStaker,
+                beaconShares: depositAmount,
+                sharesDecrease: uint256(depositAmount) / 2
+            });
             uint256 operatorSharesAfterBeaconSlash = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
             assertEq(operatorSharesAfterBeaconSlash, operatorSharesAfterQueue.ceilDiv(2), "operator shares should be decreased after beaconChain slash");
 
@@ -6743,7 +7152,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 uint256 beaconSharesBeforeSlash = withdrawableShares[0];
 
                 uint64 prevBeaconChainSlashingFactor;
-                (prevBeaconChainSlashingFactor,,newBeaconSlashingFactor) = _decreaseBeaconChainShares(
+                (prevBeaconChainSlashingFactor, newBeaconSlashingFactor) = _decreaseBeaconChainShares(
                     defaultStaker,
                     beaconShares,
                     sharesDecrease
@@ -6758,7 +7167,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                     staker: defaultStaker,
                     withdrawableSharesBefore: beaconSharesBeforeSlash,
                     expectedWithdrawableShares: expectedWithdrawableShares,
-                    prevBeaconChainScalingFactor: prevBeaconChainSlashingFactor
+                    prevBeaconSlashingFactor: prevBeaconChainSlashingFactor
                 });
             }
             // Slash on EigenLayer second
@@ -6798,7 +7207,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         ////////////////////////////
 
         // restore the staker and operator to their original state
-        // Reset operator's magnitude, beaconChainScalingFactor
+        // Reset operator's magnitude, beaconChainSlashingFactor
         delegationManager.undelegate(defaultStaker);
         _registerOperatorWithBaseDetails(defaultOperator2);
         _setOperatorMagnitude(defaultOperator2, beaconChainETHStrategy, initialMagnitude);
@@ -6848,7 +7257,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 uint256 beaconSharesBeforeSlash = withdrawableShares[0];
 
                 uint64 prevBeaconChainSlashingFactor;
-                (prevBeaconChainSlashingFactor,,newBeaconSlashingFactor) = _decreaseBeaconChainShares(
+                (prevBeaconChainSlashingFactor, newBeaconSlashingFactor) = _decreaseBeaconChainShares(
                     defaultStaker,
                     beaconShares,
                     sharesDecrease
@@ -6863,7 +7272,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                     staker: defaultStaker,
                     withdrawableSharesBefore: beaconSharesBeforeSlash,
                     expectedWithdrawableShares: expectedWithdrawableShares,
-                    prevBeaconChainScalingFactor: prevBeaconChainSlashingFactor
+                    prevBeaconSlashingFactor: prevBeaconChainSlashingFactor
                 });
             }
         }
@@ -7366,6 +7775,8 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
     }
 }
 
+contract DelegationManagerUnitTests_Rounding is DelegationManagerUnitTests {}
+
 /**
  * @notice TODO Lifecycle tests - These tests combine multiple functionalities of the DelegationManager
    1. Old SigP test - registerAsOperator, separate staker delegate to operator, as operator undelegate (reverts),
@@ -7472,7 +7883,7 @@ contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
 
         (
             ,
-            IDelegationManagerTypes.Withdrawal memory withdrawal,
+            Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,

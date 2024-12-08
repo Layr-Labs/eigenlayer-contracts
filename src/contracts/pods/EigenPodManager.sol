@@ -30,6 +30,7 @@ contract EigenPodManager is
     ReentrancyGuardUpgradeable
 {
     using SlashingLib for *;
+    using Math for *;
 
     modifier onlyEigenPod(
         address podOwner
@@ -95,7 +96,8 @@ contract EigenPodManager is
         // proportional to the decrease. This check was added to ensure the new system does not need to handle
         // negative shares - instead, stakers will need to go complete any existing withdrawals before their pod
         // can process a balance update.
-        require(podOwnerDepositShares[podOwner] >= 0, LegacyWithdrawalsNotCompleted());
+        int256 currentDepositShares = podOwnerDepositShares[podOwner];
+        require(currentDepositShares >= 0, LegacyWithdrawalsNotCompleted());
 
         // Shares are only added to the pod owner's balance when `balanceDeltaWei` >= 0. When a pod reports
         // a negative balance delta, the pod owner's beacon chain slashing factor is decreased, devaluing
@@ -111,7 +113,7 @@ contract EigenPodManager is
                 addedShares: addedShares
             });
         } else {
-            (uint256 curDepositShares, uint64 prevBeaconSlashingFactor, uint256 wadSlashed) = _reduceSlashingFactor({
+            uint64 beaconChainSlashingFactorDecrease = _reduceSlashingFactor({
                 podOwner: podOwner,
                 prevRestakedBalanceWei: prevRestakedBalanceWei,
                 balanceDecreasedWei: uint256(-balanceDeltaWei)
@@ -120,9 +122,8 @@ contract EigenPodManager is
             // Update operator shares
             delegationManager.decreaseDelegatedShares({
                 staker: podOwner,
-                curDepositShares: curDepositShares,
-                prevBeaconChainSlashingFactor: prevBeaconSlashingFactor,
-                wadSlashed: wadSlashed
+                curDepositShares: uint256(currentDepositShares),
+                beaconChainSlashingFactorDecrease: beaconChainSlashingFactorDecrease
             });
         }
     }
@@ -269,31 +270,19 @@ contract EigenPodManager is
         address podOwner,
         uint256 prevRestakedBalanceWei,
         uint256 balanceDecreasedWei
-    ) internal returns (uint256, uint64, uint256) {
-        // Apply negative balance delta to calculate the proportion of the original
-        // balance that remains. Note that underflow here should be impossible given
-        // the invariants pods use to calculate these values.
+    ) internal returns (uint64) {
         uint256 newRestakedBalanceWei = prevRestakedBalanceWei - balanceDecreasedWei;
-        uint256 proportionRemainingWad = newRestakedBalanceWei.divWadRoundUp(prevRestakedBalanceWei);
-
-        // Note that underflow here should be impossible given
-        // `proportionRemainingWad` is guaranteed to be less than WAD.
-        uint256 wadSlashed = uint256(WAD) - proportionRemainingWad;
-
-        // Update pod owner's beacon chain slashing factor. Note that `newBeaconSlashingFactor`
-        // should be less than `prevBeaconSlashingFactor` because `proportionRemainingWad` is
-        // guaranteed to be less than WAD.
         uint64 prevBeaconSlashingFactor = beaconChainSlashingFactor(podOwner);
-        uint64 newBeaconSlashingFactor = uint64(prevBeaconSlashingFactor.mulWad(proportionRemainingWad));
-        emit BeaconChainSlashingFactorDecreased(podOwner, wadSlashed, newBeaconSlashingFactor);
-        /// forgefmt: disable-next-item
+        // newBeaconSlashingFactor is less than prevBeaconSlashingFactor because
+        // newRestakedBalanceWei < prevRestakedBalanceWei
+        uint64 newBeaconSlashingFactor = uint64(prevBeaconSlashingFactor.mulDiv(newRestakedBalanceWei, prevRestakedBalanceWei));
+        uint64 beaconChainSlashingFactorDecrease = prevBeaconSlashingFactor - newBeaconSlashingFactor;
         _beaconChainSlashingFactor[podOwner] = BeaconChainSlashingFactor({
             slashingFactor: newBeaconSlashingFactor,
             isSet: true
         });
-
-        uint256 curDepositShares = uint256(podOwnerDepositShares[podOwner]);
-        return (curDepositShares, prevBeaconSlashingFactor, wadSlashed);
+        emit BeaconChainSlashingFactorDecreased(podOwner, beaconChainSlashingFactorDecrease, newBeaconSlashingFactor);
+        return beaconChainSlashingFactorDecrease;
     }
 
     // VIEW FUNCTIONS
