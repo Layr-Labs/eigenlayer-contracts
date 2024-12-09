@@ -52,9 +52,7 @@ interface IEigenPodManagerEvents {
 
     /// @notice Emitted when a staker's beaconChainSlashingFactor is updated
     event BeaconChainSlashingFactorDecreased(
-        address staker,
-        uint64 prevBeaconChainSlashingFactor,
-        uint64 newBeaconChainSlashingFactor
+        address staker, uint64 prevBeaconChainSlashingFactor, uint64 newBeaconChainSlashingFactor
     );
 }
 

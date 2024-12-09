@@ -296,7 +296,7 @@ contract DelegationManager is
         }
         address operator = delegatedTo[staker];
 
-        // Calculate the shares to remove from the operator by calculating difference in shares 
+        // Calculate the shares to remove from the operator by calculating difference in shares
         // from the newly updated beaconChainSlashingFactor
         uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, beaconChainETHStrategy);
         DepositScalingFactor memory dsf = _depositScalingFactor[staker][beaconChainETHStrategy];

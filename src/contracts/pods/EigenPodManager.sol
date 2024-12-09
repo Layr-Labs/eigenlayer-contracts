@@ -275,12 +275,11 @@ contract EigenPodManager is
         uint64 prevBeaconSlashingFactor = beaconChainSlashingFactor(podOwner);
         // newBeaconSlashingFactor is less than prevBeaconSlashingFactor because
         // newRestakedBalanceWei < prevRestakedBalanceWei
-        uint64 newBeaconSlashingFactor = uint64(prevBeaconSlashingFactor.mulDiv(newRestakedBalanceWei, prevRestakedBalanceWei));
+        uint64 newBeaconSlashingFactor =
+            uint64(prevBeaconSlashingFactor.mulDiv(newRestakedBalanceWei, prevRestakedBalanceWei));
         uint64 beaconChainSlashingFactorDecrease = prevBeaconSlashingFactor - newBeaconSlashingFactor;
-        _beaconChainSlashingFactor[podOwner] = BeaconChainSlashingFactor({
-            slashingFactor: newBeaconSlashingFactor,
-            isSet: true
-        });
+        _beaconChainSlashingFactor[podOwner] =
+            BeaconChainSlashingFactor({slashingFactor: newBeaconSlashingFactor, isSet: true});
         emit BeaconChainSlashingFactorDecreased(podOwner, beaconChainSlashingFactorDecrease, newBeaconSlashingFactor);
         return beaconChainSlashingFactorDecrease;
     }
