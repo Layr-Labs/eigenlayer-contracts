@@ -31,7 +31,7 @@ contract Deploy is EOADeployer {
             }))
         });
 
-        address permissionController_impl = deployImpl({
+        deployImpl({
             name: type(PermissionController).name,
             deployedTo: address(new PermissionController())
         });
@@ -39,7 +39,7 @@ contract Deploy is EOADeployer {
         deployProxy({
             name: type(PermissionController).name,
             deployedTo: address(new TransparentUpgradeableProxy({
-                _logic: permissionController_impl,
+                _logic: address(Env.impl.permissionController()),
                 admin_: Env.proxyAdmin(),
                 _data: ""
             }))
