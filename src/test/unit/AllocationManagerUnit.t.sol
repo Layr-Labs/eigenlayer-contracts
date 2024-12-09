@@ -122,8 +122,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     ) internal returns (OperatorSet memory) {
         cheats.prank(operatorSet.avs);
         allocationManager.createOperatorSets(
-            operatorSet.avs,
-            CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray()
+            operatorSet.avs, CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray()
         );
         return operatorSet;
     }
@@ -142,8 +141,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     function _registerForOperatorSet(address operator, OperatorSet memory operatorSet) internal {
         cheats.prank(operator);
         allocationManager.registerForOperatorSets(
-            operator,
-            RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
+            operator, RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
         );
     }
 
@@ -481,6 +479,55 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.slashOperator(defaultAVS, _randSlashingParams(random().Address(), 0));
     }
 
+    function test_revert_StrategiesMustBeInAscendingOrder() public {
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = IStrategy(address(3));
+        strategies[1] = IStrategy(address(2));
+        strategies[2] = IStrategy(address(1));
+
+        _createOperatorSet(OperatorSet(defaultAVS, 1), strategies);
+        _registerForOperatorSet(defaultOperator, OperatorSet(defaultAVS, 1));
+
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(StrategiesMustBeInAscendingOrder.selector);
+        allocationManager.slashOperator(
+            defaultAVS,
+            SlashingParams({
+                operator: defaultOperator,
+                operatorSetId: 1,
+                strategies: strategies,
+                wadsToSlash: uint256(0.5 ether).toArrayU256(3),
+                description: "test"
+            })
+        );
+    }
+
+    function test_revert_StrategyNotInOperatorSet() public {
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = IStrategy(address(1));
+        strategies[1] = IStrategy(address(2));
+        strategies[2] = IStrategy(address(3));
+
+        _createOperatorSet(OperatorSet(defaultAVS, 1), strategies);
+        _registerForOperatorSet(defaultOperator, OperatorSet(defaultAVS, 1));
+
+        strategies = strategies.setLength(4);
+        strategies[3] = IStrategy(address(4));
+
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(StrategyNotInOperatorSet.selector);
+        allocationManager.slashOperator(
+            defaultAVS,
+            SlashingParams({
+                operator: defaultOperator,
+                operatorSetId: 1,
+                strategies: defaultStrategies,
+                wadsToSlash: uint256(0.5 ether).toArrayU256(),
+                description: "test"
+            })
+        );
+    }
+
     function test_revert_operatorAllocated_notActive() public {
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, WAD);
 
@@ -489,7 +536,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         cheats.prank(defaultAVS);
         allocationManager.slashOperator(
-            defaultAVS, 
+            defaultAVS,
             SlashingParams({
                 operator: defaultOperator,
                 operatorSetId: allocateParams[0].operatorSet.id,
@@ -3127,21 +3174,17 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
         allocationManager.addStrategiesToOperatorSet(
             defaultAVS, defaultOperatorSet.id, new IStrategy[](MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH + 1)
         );
-        
+
         for (uint256 i; i < MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH - 1; ++i) {
             allocationManager.addStrategiesToOperatorSet(
-                defaultAVS, 
-                defaultOperatorSet.id, 
-                IStrategy(cheats.randomAddress()).toArray()
+                defaultAVS, defaultOperatorSet.id, IStrategy(cheats.randomAddress()).toArray()
             );
         }
 
         cheats.expectRevert(MaxStrategiesExceeded.selector);
         allocationManager.addStrategiesToOperatorSet(
-            defaultAVS, 
-            defaultOperatorSet.id, 
-            IStrategy(cheats.randomAddress()).toArray()
-        );        
+            defaultAVS, defaultOperatorSet.id, IStrategy(cheats.randomAddress()).toArray()
+        );
     }
 
     function testFuzz_addStrategiesToOperatorSet_Correctness(
@@ -3219,18 +3262,17 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
     function testRevert_createOperatorSets_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidOperatorSet.selector);
-        allocationManager.createOperatorSets(defaultAVS, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
+        allocationManager.createOperatorSets(
+            defaultAVS, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray()
+        );
     }
 
     function testRevert_createOperatorSets_MaxStrategiesExceeded() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(MaxStrategiesExceeded.selector);
         allocationManager.createOperatorSets(
-            defaultAVS, 
-            CreateSetParams(
-                defaultOperatorSet.id, 
-                new IStrategy[](MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH + 1)
-            ).toArray()
+            defaultAVS,
+            CreateSetParams(defaultOperatorSet.id, new IStrategy[](MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH + 1)).toArray()
         );
     }
 

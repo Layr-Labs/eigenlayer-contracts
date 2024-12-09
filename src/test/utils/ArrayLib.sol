@@ -154,4 +154,88 @@ library ArrayLib {
         
         return array;
     }
+
+    /// -----------------------------------------------------------------------
+    /// Length Updates
+    /// -----------------------------------------------------------------------
+
+    function setLength(
+        uint16[] memory array,
+        uint256 len
+    ) internal pure returns (uint16[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        uint32[] memory array,
+        uint256 len
+    ) internal pure returns (uint32[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        uint64[] memory array,
+        uint256 len
+    ) internal pure returns (uint64[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        uint256[] memory array,
+        uint256 len
+    ) internal pure returns (uint256[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        address[] memory array,
+        uint256 len
+    ) internal pure returns (address[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        IERC20[] memory array,
+        uint256 len
+    ) internal pure returns (IERC20[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        IStrategy[] memory array,
+        uint256 len
+    ) internal pure returns (IStrategy[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        OperatorSet[] memory array,
+        uint256 len
+    ) internal pure returns (OperatorSet[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
 }
