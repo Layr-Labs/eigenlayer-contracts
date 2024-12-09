@@ -44,186 +44,156 @@ contract Deploy is EOADeployer {
         pausers[1] = zAddress("operationsMultisig");
         pausers[2] = zAddress("executorMultisig");
 
-        PauserRegistry pauserRegistry_impl = new PauserRegistry({
-            _pausers: pausers,
-            _unpauser: zAddress("executorMultisig")
+        deployContract({
+            name: type(PauserRegistry).name,
+            deployedTo: address(new PauserRegistry({
+                _pausers: pausers,
+                _unpauser: zAddress("executorMultisig")
+            }))
         });
 
-        deploySingleton({
-            deployedTo: address(pauserRegistry_impl),
-            name: type(PauserRegistry).name 
+        address permissionController_impl = deployImpl({
+            name: type(PermissionController).name,
+            deployedTo: address(new PermissionController())
         });
 
-        PermissionController permissionController_impl = new PermissionController();
-
-        deploySingleton({
-            deployedTo: address(permissionController_impl),
-            name: this.impl(type(PermissionController).name)
-        });
-
-        TransparentUpgradeableProxy permissionController_proxy = new TransparentUpgradeableProxy({
-            _logic: address(permissionController_impl),
-            admin_: zDeployedContract(type(ProxyAdmin).name),
-            _data: ""
-        });
-
-        deploySingleton({
-            deployedTo: address(permissionController_proxy),
-            name: this.proxy(type(PermissionController).name)
+        deployProxy({
+            name: type(PermissionController).name,
+            deployedTo: address(new TransparentUpgradeableProxy({
+                _logic: permissionController_impl,
+                admin_: zDeployedContract(type(ProxyAdmin).name),
+                _data: ""
+            }))
         });
 
         /// core/
 
-        AllocationManager allocationManager_impl = new AllocationManager({
-            _delegation: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
-            _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name)),
-            _permissionController: PermissionController(zDeployedProxy(type(PermissionController).name)),
-            _DEALLOCATION_DELAY: zUint32("MIN_WITHDRAWAL_DELAY"),
-            _ALLOCATION_CONFIGURATION_DELAY: zUint32("ALLOCATION_CONFIGURATION_DELAY")
+        address allocationManager_impl = deployImpl({
+            name: type(AllocationManager).name,
+            deployedTo: address(new AllocationManager({
+                _delegation: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
+                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name)),
+                _permissionController: PermissionController(zDeployedProxy(type(PermissionController).name)),
+                _DEALLOCATION_DELAY: zUint32("MIN_WITHDRAWAL_DELAY"),
+                _ALLOCATION_CONFIGURATION_DELAY: zUint32("ALLOCATION_CONFIGURATION_DELAY")
+            }))
         });
 
-        deploySingleton({
-            deployedTo: address(allocationManager_impl),
-            name: this.impl(type(AllocationManager).name)
+        deployProxy({
+            name: type(AllocationManager).name,
+            deployedTo: address(new TransparentUpgradeableProxy({
+                _logic: allocationManager_impl,
+                admin_: zDeployedContract(type(ProxyAdmin).name),
+                _data: ""
+            }))
         });
 
-        TransparentUpgradeableProxy allocationManager_proxy = new TransparentUpgradeableProxy({
-            _logic: address(allocationManager_impl),
-            admin_: zDeployedContract(type(ProxyAdmin).name),
-            _data: ""
+        deployImpl({
+            name: type(AVSDirectory).name,
+            deployedTo: address(new AVSDirectory({
+                _delegation: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
+                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+            }))
         });
 
-        deploySingleton({
-            deployedTo: address(allocationManager_proxy),
-            name: this.proxy(type(AllocationManager).name)
+        deployImpl({
+            name: type(DelegationManager).name,
+            deployedTo: address(new DelegationManager({
+                _avsDirectory: AVSDirectory(zDeployedProxy(type(AVSDirectory).name)),
+                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
+                _eigenPodManager: EigenPodManager(zDeployedProxy(type(EigenPodManager).name)),
+                _allocationManager: AllocationManager(zDeployedProxy(type(AllocationManager).name)),
+                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name)),
+                _permissionController: PermissionController(zDeployedProxy(type(PermissionController).name)),
+                _MIN_WITHDRAWAL_DELAY: zUint32("MIN_WITHDRAWAL_DELAY")
+            }))
         });
 
-        AVSDirectory avsDirectory_impl = new AVSDirectory({
-            _delegation: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
-            _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+        deployImpl({
+            name: type(RewardsCoordinator).name,
+            deployedTo: address(new RewardsCoordinator({
+                _delegationManager: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
+                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
+                _allocationManager: AllocationManager(zDeployedProxy(type(AllocationManager).name)),
+                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name)),
+                _permissionController: PermissionController(zDeployedProxy(type(PermissionController).name)),
+                _CALCULATION_INTERVAL_SECONDS: zUint32("CALCULATION_INTERVAL_SECONDS"),
+                _MAX_REWARDS_DURATION: zUint32("MAX_REWARDS_DURATION"),
+                _MAX_RETROACTIVE_LENGTH: zUint32("MAX_RETROACTIVE_LENGTH"),
+                _MAX_FUTURE_LENGTH: zUint32("MAX_FUTURE_LENGTH"),
+                _GENESIS_REWARDS_TIMESTAMP: zUint32("GENESIS_REWARDS_TIMESTAMP")
+            }))
         });
 
-        deploySingleton({
-            deployedTo: address(avsDirectory_impl),
-            name: this.impl(type(AVSDirectory).name)
-        });
-
-        DelegationManager delegationManager_impl = new DelegationManager({
-            _avsDirectory: AVSDirectory(zDeployedProxy(type(AVSDirectory).name)),
-            _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-            _eigenPodManager: EigenPodManager(zDeployedProxy(type(EigenPodManager).name)),
-            _allocationManager: AllocationManager(zDeployedProxy(type(AllocationManager).name)),
-            _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name)),
-            _permissionController: PermissionController(zDeployedProxy(type(PermissionController).name)),
-            _MIN_WITHDRAWAL_DELAY: zUint32("MIN_WITHDRAWAL_DELAY")
-        });
-
-        deploySingleton({
-            deployedTo: address(delegationManager_impl),
-            name: this.impl(type(DelegationManager).name)
-        });
-
-        RewardsCoordinator rewardsCoordinator_impl = new RewardsCoordinator({
-            _delegationManager: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
-            _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-            _allocationManager: AllocationManager(zDeployedProxy(type(AllocationManager).name)),
-            _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name)),
-            _permissionController: PermissionController(zDeployedProxy(type(PermissionController).name)),
-            _CALCULATION_INTERVAL_SECONDS: zUint32("CALCULATION_INTERVAL_SECONDS"),
-            _MAX_REWARDS_DURATION: zUint32("MAX_REWARDS_DURATION"),
-            _MAX_RETROACTIVE_LENGTH: zUint32("MAX_RETROACTIVE_LENGTH"),
-            _MAX_FUTURE_LENGTH: zUint32("MAX_FUTURE_LENGTH"),
-            _GENESIS_REWARDS_TIMESTAMP: zUint32("GENESIS_REWARDS_TIMESTAMP")
-        });
-
-        deploySingleton({
-            deployedTo: address(rewardsCoordinator_impl),
-            name: this.impl(type(RewardsCoordinator).name)
-        });
-
-        StrategyManager strategyManager_impl = new StrategyManager({
-            _delegation: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
-            _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
-        });
-
-        deploySingleton({
-            deployedTo: address(strategyManager_impl),
-            name: this.impl(type(StrategyManager).name)
+        deployImpl({
+            name: type(StrategyManager).name,
+            deployedTo: address(new StrategyManager({
+                _delegation: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
+                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+            }))
         });
 
         /// pods/
 
-        EigenPodManager eigenPodManager_impl = new EigenPodManager({
-            _ethPOS: IETHPOSDeposit(zAddress("ethPOS")),
-            _eigenPodBeacon: IBeacon(zDeployedProxy(type(EigenPod).name)),
-            _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-            _delegationManager: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
-            _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+        deployImpl({
+            name: type(EigenPodManager).name,
+            deployedTo: address(new EigenPodManager({
+                _ethPOS: IETHPOSDeposit(zAddress("ethPOS")),
+                _eigenPodBeacon: IBeacon(zDeployedProxy(type(EigenPod).name)),
+                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
+                _delegationManager: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
+                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+            }))
         });
 
-        deploySingleton({
-            deployedTo: address(eigenPodManager_impl),
-            name: this.impl(type(EigenPodManager).name)
-        });
-
-        EigenPod eigenPod_impl = new EigenPod({
-            _ethPOS: IETHPOSDeposit(zAddress("ethPOS")),
-            _eigenPodManager: EigenPodManager(zDeployedProxy(type(EigenPodManager).name)),
-            _GENESIS_TIME: zUint64("EIGENPOD_GENESIS_TIME")
-        });
-
-        deploySingleton({
-            deployedTo: address(eigenPod_impl),
-            name: this.impl(type(EigenPod).name)
+        deployImpl({
+            name: type(EigenPod).name,
+            deployedTo: address(new EigenPod({
+                _ethPOS: IETHPOSDeposit(zAddress("ethPOS")),
+                _eigenPodManager: EigenPodManager(zDeployedProxy(type(EigenPodManager).name)),
+                _GENESIS_TIME: zUint64("EIGENPOD_GENESIS_TIME")
+            }))
         });
 
         /// strategies/
 
-        StrategyBaseTVLLimits preLongtailStrategy_impl = new StrategyBaseTVLLimits({
-            _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-            _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+        deployImpl({
+            name: type(StrategyBaseTVLLimits).name,
+            deployedTo: address(new StrategyBaseTVLLimits({
+                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
+                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+            }))
         });
 
-        deploySingleton({
-            deployedTo: address(preLongtailStrategy_impl),
-            name: this.impl(type(StrategyBaseTVLLimits).name)
+        deployImpl({
+            name: type(EigenStrategy).name,
+            deployedTo: address(new EigenStrategy({
+                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
+                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+            }))
         });
 
-        EigenStrategy eigenStrategy_impl = new EigenStrategy({
-            _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-            _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
-        });
-
-        deploySingleton({
-            deployedTo: address(eigenStrategy_impl),
-            name: this.impl(type(EigenStrategy).name)
-        });
-
-        StrategyFactory strategyFactory_impl = new StrategyFactory({
-            _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-            _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
-        });
-
-        deploySingleton({
-            deployedTo: address(strategyFactory_impl),
-            name: this.impl(type(StrategyFactory).name)
+        deployImpl({
+            name: type(StrategyFactory).name,
+            deployedTo: address(new StrategyFactory({
+                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
+                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+            }))
         });
 
         // for strategies deployed via factory
-        StrategyBase strategyBase_impl = new StrategyBase({
-            _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-            _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
-        });
-
-        deploySingleton({
-            deployedTo: address(strategyBase_impl),
-            name: this.impl(type(StrategyBase).name)
+        deployImpl({
+            name: type(StrategyBase).name,
+            deployedTo: address(new StrategyBase({
+                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
+                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+            }))
         });
 
         vm.stopBroadcast();
     }
 
-    function testDeploy() public virtual {
+    function testDeploy() public virtual {       
         _runAsEOA();
         Deployment[] memory deploys = deploys();
 

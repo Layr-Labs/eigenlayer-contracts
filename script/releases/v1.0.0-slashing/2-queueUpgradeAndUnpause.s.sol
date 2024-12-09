@@ -116,16 +116,16 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
                     )
                 )
             })
-            // .append({
-            //     to: zDeployedContract(type(ProxyAdmin).name),
-            //     data: abi.encodeCall(
-            //         ProxyAdmin.upgrade,
-            //         (
-            //             ITransparentUpgradeableProxy(payable(zDeployedProxy(type(EigenStrategy).name))),
-            //             zDeployedImpl(type(EigenStrategy).name)
-            //         )
-            //     )
-            // })  
+            .append({
+                to: zDeployedContract(type(ProxyAdmin).name),
+                data: abi.encodeCall(
+                    ProxyAdmin.upgrade,
+                    (
+                        ITransparentUpgradeableProxy(payable(zDeployedProxy(type(EigenStrategy).name))),
+                        zDeployedImpl(type(EigenStrategy).name)
+                    )
+                )
+            })  
             .append({
                 to: zDeployedContract(type(ProxyAdmin).name),
                 data: abi.encodeCall(
