@@ -405,10 +405,6 @@ contract ExistingDeploymentParser is Script, Test {
             "eigenPodManager: eigenPodBeacon contract address not set correctly"
         );
         require(
-            eigenPodManager.strategyManager() == strategyManager,
-            "eigenPodManager: strategyManager contract address not set correctly"
-        );
-        require(
             eigenPodManager.delegationManager() == delegationManager,
             "eigenPodManager: delegationManager contract address not set correctly"
         );

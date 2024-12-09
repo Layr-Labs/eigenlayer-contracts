@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import "../libraries/SlashingLib.sol";
 import "../interfaces/IDelegationManager.sol";
-import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IAllocationManager.sol";
 
@@ -40,11 +39,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     // Immutables
-
-    /// @notice The AVSDirectory contract for EigenLayer
-    IAVSDirectory public immutable avsDirectory;
-
-    // TODO: Switch these to ShareManagers, but this breaks a lot of tests
 
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
@@ -124,13 +118,11 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     // Construction
 
     constructor(
-        IAVSDirectory _avsDirectory,
         IStrategyManager _strategyManager,
         IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
         uint32 _MIN_WITHDRAWAL_DELAY_BLOCKS
     ) {
-        avsDirectory = _avsDirectory;
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
         allocationManager = _allocationManager;

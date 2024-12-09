@@ -46,11 +46,10 @@ contract EigenPodManager is
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
-        IStrategyManager _strategyManager,
         IDelegationManager _delegationManager,
         IPauserRegistry _pauserRegistry
     )
-        EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _strategyManager, _delegationManager)
+        EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _delegationManager)
         Pausable(_pauserRegistry)
     {
         _disableInitializers();

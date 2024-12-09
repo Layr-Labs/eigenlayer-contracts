@@ -388,7 +388,7 @@ contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUn
     }
 
     // Tests that the encoding from adding an appointee is properly decoded
-    function test_symmetricalTargetSelector() public {
+    function test_symmetricalTargetSelector() public view {
         // Test Decoding
         (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(account, appointee2);
         assertEq(targets.length, 1, "Incorrect number of targets");

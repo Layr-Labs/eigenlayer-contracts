@@ -23,9 +23,6 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice Beacon proxy to which the EigenPods point
     IBeacon public immutable eigenPodBeacon;
 
-    /// @notice EigenLayer's StrategyManager contract
-    IStrategyManager public immutable strategyManager;
-
     /// @notice EigenLayer's DelegationManager contract
     IDelegationManager public immutable delegationManager;
 
@@ -84,12 +81,10 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
-        IStrategyManager _strategyManager,
         IDelegationManager _delegationManager
     ) {
         ethPOS = _ethPOS;
         eigenPodBeacon = _eigenPodBeacon;
-        strategyManager = _strategyManager;
         delegationManager = _delegationManager;
     }
 

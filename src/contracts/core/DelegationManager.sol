@@ -64,7 +64,6 @@ contract DelegationManager is
      * @dev Initializes the immutable addresses of the strategy mananger, eigenpod manager, and allocation manager.
      */
     constructor(
-        IAVSDirectory _avsDirectory,
         IStrategyManager _strategyManager,
         IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
@@ -73,7 +72,6 @@ contract DelegationManager is
         uint32 _MIN_WITHDRAWAL_DELAY
     )
         DelegationManagerStorage(
-            _avsDirectory,
             _strategyManager,
             _eigenPodManager,
             _allocationManager,

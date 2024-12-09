@@ -87,10 +87,6 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
             "eigenPodManager: eigenPodBeacon contract address not set correctly"
         );
         require(
-            eigenPodManager.strategyManager() == strategyManager,
-            "eigenPodManager: strategyManager contract address not set correctly"
-        );
-        require(
             eigenPodManager.delegationManager() == delegationManager,
             "eigenPodManager: delegationManager contract address not set correctly"
         );
