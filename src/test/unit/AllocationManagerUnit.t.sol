@@ -475,7 +475,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
     function test_revert_NotMemberOfSet() public {
         cheats.prank(defaultAVS);
-        cheats.expectRevert(NotMemberOfSet.selector);
+        cheats.expectRevert(OperatorNotSlashable.selector);
         allocationManager.slashOperator(defaultAVS, _randSlashingParams(random().Address(), 0));
     }
 

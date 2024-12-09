@@ -14,19 +14,6 @@ interface IAVSDirectoryErrors {
     error OperatorNotRegisteredToAVS();
     /// @dev Thrown when `operator` is already registered to the AVS.
     error OperatorAlreadyRegisteredToAVS();
-
-    /// @notice Enum representing the status of an operator's registration with an AVS
-    /// @dev Thrown when an invalid AVS is provided.
-    error InvalidAVS();
-    /// @dev Thrown when an invalid operator is provided.
-    error InvalidOperator();
-    /// @dev Thrown when an invalid operator set is provided.
-    error InvalidOperatorSet();
-    /// @dev Thrown when a strategy is already added to an operator set.
-    error StrategyAlreadyInOperatorSet();
-    /// @dev Thrown when a strategy is not in an operator set.
-    error StrategyNotInOperatorSet();
-
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
     error SaltSpent();
 }

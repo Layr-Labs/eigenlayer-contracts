@@ -431,7 +431,7 @@ contract AllocationManager is
     function _isOperatorSlashable(address operator, OperatorSet memory operatorSet) internal view returns (bool) {
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
 
-        return status.registered || block.number < status.registeredUntil;
+        return status.registered || block.number < status.slashableUntil;
     }
 
     /// @notice returns whether the operator's allocation is slashable in the given operator set

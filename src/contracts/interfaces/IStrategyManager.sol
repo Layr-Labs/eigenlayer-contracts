@@ -9,8 +9,6 @@ import "./IEigenPodManager.sol";
 interface IStrategyManagerErrors {
     /// @dev Thrown when total strategies deployed exceeds max.
     error MaxStrategiesExceeded();
-    /// @dev Thrown when two array parameters have mismatching lengths.
-    error InputArrayLengthMismatch();
     /// @dev Thrown when call attempted from address that's not delegation manager.
     error OnlyDelegationManager();
     /// @dev Thrown when call attempted from address that's not strategy whitelister.
