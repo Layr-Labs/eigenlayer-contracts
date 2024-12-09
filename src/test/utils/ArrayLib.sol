@@ -3,10 +3,13 @@ pragma solidity ^0.8.27;
 
 import "src/contracts/interfaces/IAllocationManager.sol";
 
-/// @dev Helper library for simplifying the syntax for creating single item arrays for inputs.
-library SingleItemArrayLib {
+library ArrayLib {
+    using ArrayLib for *;
+    using ArrayLib for uint256[];
+    using ArrayLib for address[];
+
     /// -----------------------------------------------------------------------
-    /// Native Types
+    /// Single Item Arrays
     /// -----------------------------------------------------------------------
 
     function toArrayU16(
@@ -85,10 +88,6 @@ library SingleItemArrayLib {
         array[0] = x;
     }
 
-    /// -----------------------------------------------------------------------
-    /// EigenLayer Types
-    /// -----------------------------------------------------------------------
-
     function toArray(
         IERC20 token
     ) internal pure returns (IERC20[] memory array) {
@@ -122,5 +121,121 @@ library SingleItemArrayLib {
     ) internal pure returns (IAllocationManagerTypes.AllocateParams[] memory array) {
         array = new IAllocationManagerTypes.AllocateParams[](1);
         array[0] = allocateParams;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Sorting
+    /// -----------------------------------------------------------------------
+    
+    function sort(
+        IStrategy[] memory array
+    ) internal pure returns (IStrategy[] memory) {
+        if (array.length <= 1) {
+            return array;
+        }
+
+        for (uint256 i = 1; i < array.length; i++) {
+            IStrategy key = array[i];
+            uint256 j = i - 1;
+            
+            while (j > 0 && uint256(uint160(address(array[j]))) > uint256(uint160(address(key)))) {
+                array[j + 1] = array[j];
+                j--;
+            }
+            
+            // Special case for the first element
+            if (j == 0 && uint256(uint160(address(array[j]))) > uint256(uint160(address(key)))) {
+                array[j + 1] = array[j];
+                array[j] = key;
+            } else if (j < i - 1) {
+                array[j + 1] = key;
+            }
+        }
+        
+        return array;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Length Updates
+    /// -----------------------------------------------------------------------
+
+    function setLength(
+        uint16[] memory array,
+        uint256 len
+    ) internal pure returns (uint16[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        uint32[] memory array,
+        uint256 len
+    ) internal pure returns (uint32[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        uint64[] memory array,
+        uint256 len
+    ) internal pure returns (uint64[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        uint256[] memory array,
+        uint256 len
+    ) internal pure returns (uint256[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        address[] memory array,
+        uint256 len
+    ) internal pure returns (address[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        IERC20[] memory array,
+        uint256 len
+    ) internal pure returns (IERC20[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        IStrategy[] memory array,
+        uint256 len
+    ) internal pure returns (IStrategy[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
+    function setLength(
+        OperatorSet[] memory array,
+        uint256 len
+    ) internal pure returns (OperatorSet[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
     }
 }

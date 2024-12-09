@@ -46,6 +46,8 @@ uint8 constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
 
 abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     using StdStyle for *;
+    using ArrayLib for *;
+    using ArrayLib for IStrategy[];
 
     // Fork ids for specific fork tests
     bool isUpgraded;
