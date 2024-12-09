@@ -96,8 +96,13 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         print.gasUsed();
     }
 
-    function slashOperator(User operator, uint32 operatorSetId, IStrategy[] memory strategies, uint256[] memory wadsToSlash) public createSnapshot {
-        SlashingParams memory p = SlashingParams({
+    function slashOperator(
+        User operator, 
+        uint32 operatorSetId, 
+        IStrategy[] memory strategies, 
+        uint256[] memory wadsToSlash
+    ) public createSnapshot returns (SlashingParams memory p) {
+        p = SlashingParams({
             operator: address(operator),
             operatorSetId: operatorSetId,
             strategies: strategies,
@@ -127,7 +132,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
-        allocationManager.slashOperator(address(this), slashingParams);
+        allocationManager.slashOperator(address(this), p);
         print.gasUsed();
     }
 

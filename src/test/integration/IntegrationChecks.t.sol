@@ -7,11 +7,8 @@ import "src/test/integration/users/User_M1.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
-    /*******************************************************************************
-                                 ALLOCATION MANAGER CHECKS
-    *******************************************************************************/
-
-    
+    using ArrayLib for IStrategy[];
+    using SlashingLib for *;
 
     /*******************************************************************************
                                  EIGENPOD CHECKS
@@ -274,9 +271,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         // Checks specific to an operator that the Staker has delegated to
         if (operator != User(payable(0))) {
             if (operator != staker) {
-                assert_Snap_Unchanged_TokenBalances(User(operator), "operator token balances should not have changed");
+                assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
             }
-            assert_Snap_Unchanged_OperatorShares(User(operator), "operator shares should not have changed");
+            assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
         }
     }
 
@@ -296,9 +293,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         // Additional checks or handling for the non-user operator scenario
         if (operator != User(User(payable(0)))) {
             if (operator != staker) {
-                assert_Snap_Unchanged_TokenBalances(User(operator), "operator should not have any change in underlying token balances");
+                assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
             }
-            assert_Snap_Added_OperatorShares(User(operator), withdrawal.strategies, withdrawal.scaledShares, "operator should have received shares");
+            assert_Snap_Added_OperatorShares(operator, withdrawal.strategies, withdrawal.scaledShares, "operator should have received shares");
         }
     }
 
@@ -322,5 +319,42 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should have received expected shares");
         assert_Snap_Unchanged_OperatorShares(operator, "operator should have shares unchanged");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
+    }
+
+    /*******************************************************************************
+                                 ALLOCATION MANAGER CHECKS
+    *******************************************************************************/
+
+    function check_Withdrawal_AsTokens_State_AfterSlash(
+        User staker,
+        User operator,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        uint[] memory expectedTokens
+    ) internal {
+        IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
+
+        for (uint256 i; i < withdrawal.strategies.length; i++) {
+            IStrategy strat = withdrawal.strategies[i];
+
+            bool isBeaconChainETHStrategy = strat == beaconChainETHStrategy;
+
+            tokens[i] = isBeaconChainETHStrategy ? NATIVE_ETH : withdrawal.strategies[i].underlyingToken();
+            
+            if (slashingParams.strategies.contains(strat)) {
+                uint256 wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
+
+                expectedTokens[i] -= expectedTokens[i]
+                    .mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
+
+                // Round down to the nearest gwei for beaconchain ETH strategy.
+                if (isBeaconChainETHStrategy) {
+                    expectedTokens[i] -= expectedTokens[i] % 1 gwei;
+                }
+            }
+        }
+
+        check_Withdrawal_AsTokens_State(staker, operator, withdrawal, withdrawal.strategies, withdrawal.scaledShares, tokens, expectedTokens);
     }
 }

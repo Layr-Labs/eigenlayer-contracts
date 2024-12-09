@@ -14,7 +14,7 @@ import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 
-abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerTypes {
+abstract contract IntegrationBase is IntegrationDeployer {
     using StdStyle for *;
     using SlashingLib for *;
     using Strings for *;
@@ -353,27 +353,25 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
 
     function assert_Snap_Allocations_Modified(
         User operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies,
-        uint64[] memory newMagnitudes,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
         bool completed,
         string memory err
     ) internal {
-        // TODO: magnitudes (max, encumbered)
+        IAllocationManagerTypes.Allocation[] memory curAllocs = _getAllocations(operator, allocateParams.operatorSet, allocateParams.strategies);
+        IAllocationManagerTypes.Allocation[] memory prevAllocs = _getPrevAllocations(operator, allocateParams.operatorSet, allocateParams.strategies);
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, allocateParams.strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, allocateParams.strategies);
 
-        Allocation[] memory curAllocs = _getAllocations(operator, operatorSet, strategies);
-        Allocation[] memory prevAllocs = _getPrevAllocations(operator, operatorSet, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            Allocation memory curAlloc = curAllocs[i];
-
+        for (uint i = 0; i < allocateParams.strategies.length; i++) {
+            IAllocationManagerTypes.Allocation memory curAlloc = curAllocs[i];
+            IAllocationManagerTypes.Allocation memory prevAlloc = prevAllocs[i]; 
+            
+            // Check allocations
             if (completed) {
-                assertEq(curAlloc.currentMagnitude, newMagnitudes[i], string.concat(err, " (currentMagnitude)"));
+                assertEq(curAlloc.currentMagnitude, allocateParams.newMagnitudes[i], string.concat(err, " (currentMagnitude)"));
                 assertEq(curAlloc.pendingDiff, 0, string.concat(err, " (pendingDiff)"));
                 assertEq(curAlloc.effectBlock, 0, string.concat(err, " (effectBlock)"));
             } else {
-                Allocation memory prevAlloc = prevAllocs[i]; 
-
                 assertEq(
                     curAlloc.currentMagnitude, 
                     prevAlloc.currentMagnitude, 
@@ -381,7 +379,7 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
                 );
                 assertEq(
                     curAlloc.pendingDiff, 
-                    prevAlloc.pendingDiff + int128(int64(newMagnitudes[i])), 
+                    prevAlloc.pendingDiff + int128(int64(allocateParams.newMagnitudes[i])), 
                     string.concat(err, " (pendingDiff)")
                 );
 
@@ -393,28 +391,88 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
                     string.concat(err, " (effectBlock)")
                 );
             }
+
+            // Check magnitudes
+            Magnitudes memory curMagnitude = curMagnitudes[i];
+            Magnitudes memory prevMagnitude = prevMagnitudes[i];
+
+            // if (isAllocation) ...
+            if (prevAlloc.currentMagnitude < allocateParams.newMagnitudes[i]) {
+                uint256 delta = allocateParams.newMagnitudes[i] - prevAlloc.currentMagnitude;
+                
+                assertEq(
+                    curMagnitude.encumbered, 
+                    prevMagnitude.encumbered + delta, 
+                    string.concat(err, " (encumbered magnitude)")
+                );
+
+                assertEq(
+                    curMagnitude.allocatable, 
+                    prevMagnitude.allocatable - delta, 
+                    string.concat(err, " (allocatable magnitude)")
+                );
+            } else {
+                uint256 delta = prevAlloc.currentMagnitude - allocateParams.newMagnitudes[i];
+
+                // if deallocated, and completed
+                if (completed) {
+                    assertEq(
+                        curMagnitude.encumbered - delta, 
+                        prevMagnitude.encumbered, 
+                        string.concat(err, " (encumbered magnitude)")
+                    );
+
+                    assertEq(
+                        curMagnitude.allocatable, 
+                        prevMagnitude.allocatable + delta, 
+                        string.concat(err, " (allocatable magnitude)")
+                    );
+                } else {
+                    assertEq(
+                        curMagnitude.encumbered, 
+                        prevMagnitude.encumbered, 
+                        string.concat(err, " (encumbered magnitude)")
+                    );
+
+                    assertEq(
+                        curMagnitude.allocatable, 
+                        prevMagnitude.allocatable, 
+                        string.concat(err, " (allocatable magnitude)")
+                    );
+                }
+            }
+
+            // Max magnitude should not have mutated.
+            assertEq(
+                curMagnitude.max, 
+                prevMagnitude.max, 
+                string.concat(err, " (max magnitude)")
+            );
         }
     }
 
     function assert_Snap_Allocations_Slashed(
-        User operator,
+        IAllocationManagerTypes.SlashingParams memory slashingParams,
         OperatorSet memory operatorSet,
-        IStrategy[] memory strategies,
-        uint256[] memory wadsToSlash,
         bool completed,
         string memory err
     ) internal {
-        // TODO: slashable stake
+        User op = User(payable(slashingParams.operator));
+        
+        IAllocationManagerTypes.Allocation[] memory curAllocs = _getAllocations(op, operatorSet, slashingParams.strategies);
+        IAllocationManagerTypes.Allocation[] memory prevAllocs = _getPrevAllocations(op, operatorSet, slashingParams.strategies);
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(op, slashingParams.strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(op, slashingParams.strategies);
 
-        Allocation[] memory curAllocs = _getAllocations(operator, operatorSet, strategies);
-        Allocation[] memory prevAllocs = _getPrevAllocations(operator, operatorSet, strategies);
-    
-        for (uint i = 0; i < strategies.length; i++) {
-            Allocation memory curAlloc = curAllocs[i];
-            Allocation memory prevAlloc = prevAllocs[i]; 
+        (, uint32 delay) = allocationManager.getAllocationDelay(slashingParams.operator);
 
-            uint64 slashedMagnitude = uint64(uint256(prevAlloc.currentMagnitude).mulWadRoundUp(wadsToSlash[i]));
+        for (uint i = 0; i < slashingParams.strategies.length; i++) {
+            IAllocationManagerTypes.Allocation memory curAlloc = curAllocs[i];
+            IAllocationManagerTypes.Allocation memory prevAlloc = prevAllocs[i]; 
 
+            uint64 slashedMagnitude = uint64(uint256(prevAlloc.currentMagnitude).mulWadRoundUp(slashingParams.wadsToSlash[i]));
+            
+            // Check Allocations
             assertEq(
                 curAlloc.currentMagnitude, 
                 prevAlloc.currentMagnitude - slashedMagnitude, 
@@ -431,18 +489,19 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
                     string.concat(err, " (currentMagnitude)")
                 );
 
+                // If (isDeallocation) ... 
                 if (prevAlloc.pendingDiff < 0) {
                     uint64 slashedPending =
-                        uint64(uint256(uint128(-prevAlloc.pendingDiff)).mulWadRoundUp(wadsToSlash[i]));
+                        uint64(uint256(uint128(-prevAlloc.pendingDiff)).mulWadRoundUp(slashingParams.wadsToSlash[i]));
                     
                     assertEq(
                         curAlloc.pendingDiff, 
                         prevAlloc.pendingDiff + int128(uint128(slashedPending)), 
                         string.concat(err, " (pendingDiff)")
                     );
-                }
 
-                (, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
+                    delay = DEALLOCATION_DELAY;
+                }
 
                 assertEq(
                     curAlloc.effectBlock, 
@@ -450,8 +509,61 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
                     string.concat(err, " (effectBlock)")
                 );
             }
+
+            // Check Magnitudes
+            Magnitudes memory curMagnitude = curMagnitudes[i];
+            Magnitudes memory prevMagnitude = prevMagnitudes[i];
+
+            assertEq(
+                curMagnitude.encumbered, 
+                prevMagnitude.encumbered - slashedMagnitude, 
+                string.concat(err, " (encumbered magnitude)")
+            );
+
+            assertEq(
+                curMagnitude.allocatable, 
+                prevMagnitude.allocatable, 
+                string.concat(err, " (allocatable magnitude)")
+            );
+
+            assertEq(
+                curMagnitude.max, 
+                prevMagnitude.max - slashedMagnitude, 
+                string.concat(err, " (max magnitude)")
+            );
         }
     }
+
+    function assert_HasUnderlyingTokenBalances_AfterSlash(
+        User staker,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        uint[] memory expectedBalances,
+        string memory err
+    ) internal view {
+        for (uint i; i < allocateParams.strategies.length; ++i) {
+            IStrategy strat = allocateParams.strategies[i];
+            
+            uint balance = strat == BEACONCHAIN_ETH_STRAT 
+                ? address(staker).balance 
+                : strat.underlyingToken().balanceOf(address(staker));
+
+            if (slashingParams.strategies.contains(strat)) {
+                uint256 wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
+
+                expectedBalances[i] -= expectedBalances[i]
+                    .mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
+
+                uint256 maxDelta = strat == BEACONCHAIN_ETH_STRAT ? 1 gwei : 1;
+
+                assertApproxEqAbs(expectedBalances[i], balance, maxDelta, err);
+            } else {
+                assertEq(expectedBalances[i], balance, err);
+            }
+        }
+    }
+
+    // TODO: slashable stake
 
     /*******************************************************************************
                         SNAPSHOT ASSERTIONS: OPERATOR SHARES
@@ -1243,7 +1355,7 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal timewarp() returns (Allocation[] memory) {
+    ) internal timewarp() returns (IAllocationManagerTypes.Allocation[] memory) {
         return _getAllocations(operator, operatorSet, strategies);
     }
 
@@ -1252,10 +1364,37 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal view returns (Allocation[] memory allocations) {
-        allocations = new Allocation[](strategies.length);
+    ) internal view returns (IAllocationManagerTypes.Allocation[] memory allocations) {
+        allocations = new IAllocationManagerTypes.Allocation[](strategies.length);
         for (uint i = 0; i < strategies.length; ++i) {
             allocations[i] = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]);
+        }
+    }
+
+    struct Magnitudes {
+        uint256 encumbered;
+        uint256 allocatable;
+        uint256 max;
+    }
+
+    function _getPrevMagnitudes(
+        User operator,
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (Magnitudes[] memory) {
+        return _getMagnitudes(operator, strategies);
+    }
+
+    function _getMagnitudes(
+        User operator,
+        IStrategy[] memory strategies
+    ) internal view returns (Magnitudes[] memory magnitudes) {
+        magnitudes = new Magnitudes[](strategies.length);
+        for (uint i = 0; i < strategies.length; ++i) {
+            magnitudes[i] = Magnitudes({
+                encumbered: allocationManager.encumberedMagnitude(address(operator), strategies[i]),
+                allocatable: allocationManager.getAllocatableMagnitude(address(operator), strategies[i]),
+                max: allocationManager.getMaxMagnitude(address(operator), strategies[i])
+            });
         }
     }
 

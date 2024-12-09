@@ -397,8 +397,8 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      * @dev Reverts if `amountWei` is not a whole Gwei amount
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
-        require(amountWei % GWEI_TO_WEI == 0, AmountMustBeMultipleOfGwei());
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
+        amountWei = amountGwei * GWEI_TO_WEI;
         require(amountGwei <= restakedExecutionLayerGwei, InsufficientWithdrawableBalance());
         restakedExecutionLayerGwei -= amountGwei;
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);

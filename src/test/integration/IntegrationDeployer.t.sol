@@ -44,6 +44,8 @@ uint8 constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
 uint8 constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
 uint8 constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
 
+IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
 abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     using StdStyle for *;
     using ArrayLib for *;

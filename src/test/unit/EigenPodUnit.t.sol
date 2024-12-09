@@ -450,26 +450,6 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         pod.withdrawRestakedBeaconChainETH(recipient, randAmount);
     }
 
-    function testFuzz_withdrawRestakedBeaconChainETH_revert_notFullGweiAmount(
-        address recipient,
-        uint256 randAmount
-    ) public {
-        // Setup EigenPod Staker
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
-        EigenPod pod = staker.pod();
-        (uint40[] memory validators,) = staker.startValidators();
-        staker.verifyWithdrawalCredentials(validators);
-        beaconChain.advanceEpoch();
-        staker.startCheckpoint();
-        staker.completeCheckpoint();
-
-        // ensure amount is not a full gwei
-        randAmount = (randAmount % 1 gwei) + bound(randAmount, 1, 1 gwei - 1);
-        cheats.expectRevert(IEigenPodErrors.AmountMustBeMultipleOfGwei.selector);
-        cheats.prank(address(eigenPodManagerMock));
-        pod.withdrawRestakedBeaconChainETH(recipient, randAmount);
-    }
-
     function testFuzz_withdrawRestakedBeaconChainETH_revert_withdrawAmountTooLarge(
         uint256 rand,
         address recipient,
@@ -527,6 +507,44 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         assertEq(
             pod.withdrawableRestakedExecutionLayerGwei(), 
             withdrawableRestakedExecutionLayerGwei - uint64(randAmountWei / 1 gwei),
+            "withdrawableRestakedExecutionLayerGwei should have decreased by amount withdrawn"
+        );
+    }
+
+    function testFuzz_withdrawRestakedBeaconChainETH_AmountGweiNotDivisibleByGwei(
+        uint256 rand,
+        uint256 randAmountWei
+    ) public {
+        // Setup EigenPod Staker
+        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        EigenPod pod = staker.pod();
+        (uint40[] memory validators,) = staker.startValidators();
+        staker.verifyWithdrawalCredentials(validators);
+        beaconChain.advanceEpoch();
+        staker.startCheckpoint();
+        staker.completeCheckpoint();
+
+        // ensure valid fuzzed wei amounts
+        uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
+        uint256 randAmountWeiAdjusted = randAmountWei - (randAmountWei % 1 gwei);
+        cheats.assume((randAmountWei / 1 gwei) <= withdrawableRestakedExecutionLayerGwei);
+
+        address recipient = cheats.addr(uint256(123_456_789));
+
+        cheats.prank(address(eigenPodManagerMock));
+        cheats.expectEmit(true, true, true, true, address(pod));
+        emit RestakedBeaconChainETHWithdrawn(recipient, randAmountWeiAdjusted);
+        pod.withdrawRestakedBeaconChainETH(recipient, randAmountWei);
+
+        assertEq(address(recipient).balance, randAmountWeiAdjusted, "recipient should have received withdrawn balance");
+        assertEq(
+            address(pod).balance, 
+            uint(withdrawableRestakedExecutionLayerGwei * 1 gwei) - randAmountWeiAdjusted,
+            "pod balance should have decreased by withdrawn eth"
+        );
+        assertEq(
+            pod.withdrawableRestakedExecutionLayerGwei(), 
+            withdrawableRestakedExecutionLayerGwei - uint64(randAmountWeiAdjusted / 1 gwei),
             "withdrawableRestakedExecutionLayerGwei should have decreased by amount withdrawn"
         );
     }

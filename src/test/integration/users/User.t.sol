@@ -30,6 +30,7 @@ interface IUserDeployer {
 }
 
 contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
+    using StdStyle for *;
     using SlashingLib for *;
     using ArrayLib for *;
     using print for *;
@@ -222,10 +223,18 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         print.gasUsed();
 
         for (uint256 i = 0; i < expectedWithdrawals.length; i++) {
-            emit log("expecting withdrawal:");
-            emit log_named_uint("nonce: ", expectedWithdrawals[i].nonce);
-            emit log_named_address("strat: ", address(expectedWithdrawals[i].strategies[0]));
-            emit log_named_uint("shares: ", expectedWithdrawals[i].scaledShares[0]);
+            IStrategy strat = expectedWithdrawals[i].strategies[0];
+
+            string memory name = strat == beaconChainETHStrategy 
+                ? "Native ETH" 
+                : IERC20Metadata(address(strat.underlyingToken())).name();
+            
+            console.log(
+                "   Expecting withdrawal with nonce %s of %s for %s scaled shares.", 
+                expectedWithdrawals[i].nonce,
+                name,
+                expectedWithdrawals[i].scaledShares[0]
+            );
         }
 
         return expectedWithdrawals;
