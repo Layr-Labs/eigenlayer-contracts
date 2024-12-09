@@ -147,8 +147,6 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
             });
 
         uint count = Env.instance.strategyBaseTVLLimits_Count();
-        
-        // zDeployedInstanceCount("PreLongtailStrats");
         for (uint i = 0; i < count; i++) {
             address instance = address(Env.instance.strategyBaseTVLLimits(i));
 
