@@ -486,10 +486,7 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
      * @param operator The operator to query
      * @param operatorSet The operator set to query
      */
-    function isMemberOfOperatorSet(
-        address operator,
-        OperatorSet memory operatorSet
-    ) external view returns (bool);
+    function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
     /**
      * @notice Returns whether the operator set exists

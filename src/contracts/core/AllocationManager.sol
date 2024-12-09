@@ -441,6 +441,7 @@ contract AllocationManager is
         Allocation memory allocation,
         bool isOperatorSlashable
     ) internal view returns (bool) {
+        /// forgefmt: disable-next-item
         return 
             // If the operator set does not use this strategy, any allocation from it is not slashable
             _operatorSetStrategies[operatorSet.key()].contains(address(strategy)) &&
@@ -732,10 +733,7 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function isMemberOfOperatorSet(
-        address operator,
-        OperatorSet memory operatorSet
-    ) public view returns (bool) {
+    function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         return _operatorSetMembers[operatorSet.key()].contains(operator);
     }
 

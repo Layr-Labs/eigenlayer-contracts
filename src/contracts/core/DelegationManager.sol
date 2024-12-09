@@ -71,12 +71,7 @@ contract DelegationManager is
         IPermissionController _permissionController,
         uint32 _MIN_WITHDRAWAL_DELAY
     )
-        DelegationManagerStorage(
-            _strategyManager,
-            _eigenPodManager,
-            _allocationManager,
-            _MIN_WITHDRAWAL_DELAY
-        )
+        DelegationManagerStorage(_strategyManager, _eigenPodManager, _allocationManager, _MIN_WITHDRAWAL_DELAY)
         Pausable(_pauserRegistry)
         PermissionControllerMixin(_permissionController)
     {

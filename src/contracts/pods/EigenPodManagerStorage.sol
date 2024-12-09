@@ -78,11 +78,7 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// Note: this is specifically updated when the staker's beacon chain balance decreases
     mapping(address staker => BeaconChainSlashingFactor) internal _beaconChainSlashingFactor;
 
-    constructor(
-        IETHPOSDeposit _ethPOS,
-        IBeacon _eigenPodBeacon,
-        IDelegationManager _delegationManager
-    ) {
+    constructor(IETHPOSDeposit _ethPOS, IBeacon _eigenPodBeacon, IDelegationManager _delegationManager) {
         ethPOS = _ethPOS;
         eigenPodBeacon = _eigenPodBeacon;
         delegationManager = _delegationManager;

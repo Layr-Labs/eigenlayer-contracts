@@ -48,10 +48,7 @@ contract EigenPodManager is
         IBeacon _eigenPodBeacon,
         IDelegationManager _delegationManager,
         IPauserRegistry _pauserRegistry
-    )
-        EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _delegationManager)
-        Pausable(_pauserRegistry)
-    {
+    ) EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _delegationManager) Pausable(_pauserRegistry) {
         _disableInitializers();
     }
 
