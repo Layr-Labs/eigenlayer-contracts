@@ -342,8 +342,7 @@ contract DelegationManager is
             sharesToDecrease: sharesToDecrement
         });
 
-        /// TODO: implement EPM.burnShares interface. Likely requires more complex interface than just shares
-        /// so not adding a burnShares method in IShareManager
+        // NOTE: native ETH shares will be burned by a different mechanism in a future release
         if (strategy != beaconChainETHStrategy) {
             strategyManager.burnShares(strategy, sharesToBurn);
             emit OperatorSharesBurned(operator, strategy, sharesToBurn);
