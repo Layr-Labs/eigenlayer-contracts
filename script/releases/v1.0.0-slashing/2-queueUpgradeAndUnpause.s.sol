@@ -146,13 +146,14 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
                 )
             });
 
-        for (uint i = 0; i < zDeployedInstanceCount("PreLongtailStrats"); i++) {
+        uint count = zDeployedInstanceCount("PreLongtailStrats");
+        for (uint i = 0; i < count; i++) {
             _executorCalls.append({
-                to: zDeployedInstance(type(ProxyAdmin).name, i),
+                to: zDeployedContract(type(ProxyAdmin).name),
                 data: abi.encodeCall(
                     ProxyAdmin.upgrade,
                     (
-                        ITransparentUpgradeableProxy(payable(zDeployedContract(contractName))),
+                        ITransparentUpgradeableProxy(zDeployedInstance(type(StrategyBaseTVLLimits).name, i)),
                         zDeployedContract("PreLongtailStrats")
                     )
                 )
