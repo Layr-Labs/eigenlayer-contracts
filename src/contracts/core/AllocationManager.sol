@@ -62,7 +62,7 @@ contract AllocationManager is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
-        bool isRegistered = _isRegistered(params.operator, operatorSet);
+        bool isRegistered = _isOperatorSlashable(params.operator, operatorSet);
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
         require(isRegistered, NotMemberOfSet());
 
@@ -165,7 +165,7 @@ contract AllocationManager is
             OperatorSet memory operatorSet = params[i].operatorSet;
             require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
 
-            bool isRegistered = _isRegistered(operator, operatorSet);
+            bool isRegistered = _isOperatorSlashable(operator, operatorSet);
 
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 IStrategy strategy = params[i].strategies[j];
@@ -242,7 +242,7 @@ contract AllocationManager is
             // Check the operator set exists and the operator is not currently registered to it
             OperatorSet memory operatorSet = OperatorSet(params.avs, params.operatorSetIds[i]);
             require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
-            require(!_isRegistered(operator, operatorSet), AlreadyMemberOfSet());
+            require(!_isOperatorSlashable(operator, operatorSet), AlreadyMemberOfSet());
 
             // Add operator to operator set
             registeredSets[operator].add(operatorSet.key());
@@ -279,7 +279,7 @@ contract AllocationManager is
             // forgefmt: disable-next-item
             registrationStatus[params.operator][operatorSet.key()] = RegistrationStatus({
                 registered: false,
-                registeredUntil: uint32(block.number) + DEALLOCATION_DELAY
+                slashableUntil: uint32(block.number) + DEALLOCATION_DELAY
             });
         }
 
@@ -427,7 +427,8 @@ contract AllocationManager is
         emit AllocationDelaySet(operator, delay, info.effectBlock);
     }
 
-    function _isRegistered(address operator, OperatorSet memory operatorSet) internal view returns (bool) {
+    /// @notice returns whether the operator is slashable in the given operator set
+    function _isOperatorSlashable(address operator, OperatorSet memory operatorSet) internal view returns (bool) {
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
 
         return status.registered || block.number < status.registeredUntil;

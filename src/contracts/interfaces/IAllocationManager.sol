@@ -93,12 +93,12 @@ interface IAllocationManagerTypes {
     /**
      * @notice Contains registration details for an operator pertaining to an operator set
      * @param registered Whether the operator is currently registered for the operator set
-     * @param registeredUntil If the operator is not registered, how long until the operator is no longer
+     * @param slashableUntil If the operator is not registered, how long until the operator is no longer
      * slashable by the AVS.
      */
     struct RegistrationStatus {
         bool registered;
-        uint32 registeredUntil;
+        uint32 slashableUntil;
     }
 
     /**
