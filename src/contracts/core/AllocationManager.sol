@@ -62,9 +62,9 @@ contract AllocationManager is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
-        bool isRegistered = _isOperatorSlashable(params.operator, operatorSet);
+        bool isOperatorSlashable = _isOperatorSlashable(params.operator, operatorSet);
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
-        require(isRegistered, NotMemberOfSet());
+        require(isOperatorSlashable, OperatorNotSlashable());
 
         uint256[] memory wadSlashed = new uint256[](params.strategies.length);
 
@@ -89,7 +89,7 @@ contract AllocationManager is
 
             // 2. Skip if the operator does not have a slashable allocation
             // NOTE: this "if" is equivalent to: `if (!_isAllocationSlashable)`, because the other
-            // conditions in this method are already true (isRegistered + operatorSetStrategies.contains)
+            // conditions in this method are already true (isOperatorSlashable + operatorSetStrategies.contains)
             if (allocation.currentMagnitude == 0) {
                 continue;
             }
@@ -165,7 +165,7 @@ contract AllocationManager is
             OperatorSet memory operatorSet = params[i].operatorSet;
             require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
 
-            bool isRegistered = _isOperatorSlashable(operator, operatorSet);
+            bool isOperatorSlashable = _isOperatorSlashable(operator, operatorSet);
 
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 IStrategy strategy = params[i].strategies[j];
@@ -181,7 +181,7 @@ contract AllocationManager is
 
                 // 2. Check whether the operator's allocation is slashable. If not, we allow instant
                 // deallocation.
-                bool isSlashable = _isAllocationSlashable(operatorSet, strategy, allocation, isRegistered);
+                bool isSlashable = _isAllocationSlashable(operatorSet, strategy, allocation, isOperatorSlashable);
 
                 // 3. Calculate the change in magnitude
                 allocation.pendingDiff = _calcDelta(allocation.currentMagnitude, params[i].newMagnitudes[j]);
@@ -434,28 +434,20 @@ contract AllocationManager is
         return status.registered || block.number < status.registeredUntil;
     }
 
+    /// @notice returns whether the operator's allocation is slashable in the given operator set
     function _isAllocationSlashable(
         OperatorSet memory operatorSet,
         IStrategy strategy,
         Allocation memory allocation,
-        bool isRegistered
+        bool isOperatorSlashable
     ) internal view returns (bool) {
-        // If the operator set does not use this strategy, any allocation from it is not slashable
-        if (!_operatorSetStrategies[operatorSet.key()].contains(address(strategy))) {
-            return false;
-        }
-
-        // If the operator is not registered to the operator set, any allocation is not slashable
-        if (!isRegistered) {
-            return false;
-        }
-
-        // The allocation is not slashable if there is nothing allocated
-        if (allocation.currentMagnitude == 0) {
-            return false;
-        }
-
-        return true;
+        return 
+            // If the operator set does not use this strategy, any allocation from it is not slashable
+            _operatorSetStrategies[operatorSet.key()].contains(address(strategy)) &&
+            // If the operator is not slashable by the operatorSet, any allocation is not slashable
+            isOperatorSlashable &&
+            // If there is nothing allocated, the allocation is not slashable
+            allocation.currentMagnitude != 0;
     }
 
     /**
