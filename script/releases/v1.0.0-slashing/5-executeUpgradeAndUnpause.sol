@@ -1,22 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import "../Env.sol";
+import {QueueAndUnpause} from "./2-queueUpgradeAndUnpause.s.sol";
+
 import {MultisigCall, MultisigCallUtils} from "zeus-templates/templates/MultisigBuilder.sol";
 import {SafeTx, SafeTxUtils} from "zeus-templates/utils/SafeTxUtils.sol";
-import {QueueAndUnpause} from "./2-queueUpgradeAndUnpause.s.sol";
-import {EigenLabsUpgrade} from "../EigenLabsUpgrade.s.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract Execute is QueueAndUnpause {
     using MultisigCallUtils for MultisigCall[];
     using SafeTxUtils for SafeTx;
-    using EigenLabsUpgrade for *;
+    using Env for *;
 
     function options() internal override view returns (MultisigOptions memory) {
         return MultisigOptions(
-            this._protocolCouncilMultisig(),
+            Env.protocolCouncilMultisig(),
             Operation.Call
         );
     }
@@ -26,9 +27,9 @@ contract Execute is QueueAndUnpause {
      */
     function runAsMultisig() internal override {
         bytes memory call = _getMultisigTransactionCalldata();
-        TimelockController timelock = TimelockController(payable(this._timelock()));
+        TimelockController timelock = Env.timelockController();
         timelock.execute(
-            this._executorMultisig(),
+            Env.executorMultisig(),
             0,
             call,
             0,
@@ -40,13 +41,13 @@ contract Execute is QueueAndUnpause {
 
     function testExecute() public { 
         // 1- run queueing logic
-        vm.startPrank(this._operationsMultisig());
+        vm.startPrank(Env.opsMultisig());
         super.runAsMultisig();
         vm.stopPrank();
 
-        TimelockController timelock = this._timelock();
+        TimelockController timelock = Env.timelockController();
         bytes memory call = _getMultisigTransactionCalldata();
-        bytes32 txHash = timelock.hashOperation(this._executorMultisig(), 0, call, 0, 0);
+        bytes32 txHash = timelock.hashOperation(Env.executorMultisig(), 0, call, 0, 0);
         assertEq(timelock.isOperationPending(txHash), true, "Transaction should be queued and pending.");
 
 

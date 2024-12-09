@@ -2,37 +2,16 @@
 pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
-import {EigenLabsUpgrade} from "../EigenLabsUpgrade.s.sol";
+import "../Env.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-
-/// core/
-import "src/contracts/core/AllocationManager.sol";
-import "src/contracts/core/AVSDirectory.sol";
-import "src/contracts/core/DelegationManager.sol";
-import "src/contracts/core/RewardsCoordinator.sol";
-import "src/contracts/core/StrategyManager.sol";
-
-/// permissions/
-import "src/contracts/permissions/PauserRegistry.sol";
-import "src/contracts/permissions/PermissionController.sol";
-
-/// pods/
-import "src/contracts/pods/EigenPod.sol";
-import "src/contracts/pods/EigenPodManager.sol";
-
-/// strategies/
-import "src/contracts/strategies/EigenStrategy.sol";
-import "src/contracts/strategies/StrategyBase.sol";
-import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
-import "src/contracts/strategies/StrategyFactory.sol";
 
 /**
  * Purpose: use an EOA to deploy all of the new contracts for this upgrade. 
  */
 contract Deploy is EOADeployer {
-    using EigenLabsUpgrade for *;
+    using Env for *;
 
     function _runAsEOA() internal override {
         vm.startBroadcast();
@@ -40,15 +19,15 @@ contract Deploy is EOADeployer {
         /// permissions/
 
         address[] memory pausers = new address[](3);
-        pausers[0] = zAddress("pauserMultisig");
-        pausers[1] = zAddress("operationsMultisig");
-        pausers[2] = zAddress("executorMultisig");
+        pausers[0] = Env.pauserMultisig();
+        pausers[1] = Env.opsMultisig();
+        pausers[2] = Env.executorMultisig();
 
-        deployContract({
+        deployImpl({
             name: type(PauserRegistry).name,
             deployedTo: address(new PauserRegistry({
                 _pausers: pausers,
-                _unpauser: zAddress("executorMultisig")
+                _unpauser: Env.executorMultisig()
             }))
         });
 
@@ -61,29 +40,29 @@ contract Deploy is EOADeployer {
             name: type(PermissionController).name,
             deployedTo: address(new TransparentUpgradeableProxy({
                 _logic: permissionController_impl,
-                admin_: zDeployedContract(type(ProxyAdmin).name),
+                admin_: Env.proxyAdmin(),
                 _data: ""
             }))
         });
 
         /// core/
 
-        address allocationManager_impl = deployImpl({
+        deployImpl({
             name: type(AllocationManager).name,
             deployedTo: address(new AllocationManager({
-                _delegation: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
-                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name)),
-                _permissionController: PermissionController(zDeployedProxy(type(PermissionController).name)),
-                _DEALLOCATION_DELAY: zUint32("MIN_WITHDRAWAL_DELAY"),
-                _ALLOCATION_CONFIGURATION_DELAY: zUint32("ALLOCATION_CONFIGURATION_DELAY")
+                _delegation: Env.proxy.delegationManager(),
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _permissionController: Env.proxy.permissionController(),
+                _DEALLOCATION_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
+                _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY()
             }))
         });
 
         deployProxy({
             name: type(AllocationManager).name,
             deployedTo: address(new TransparentUpgradeableProxy({
-                _logic: allocationManager_impl,
-                admin_: zDeployedContract(type(ProxyAdmin).name),
+                _logic: address(Env.impl.allocationManager()),
+                admin_: Env.proxyAdmin(),
                 _data: ""
             }))
         });
@@ -91,45 +70,45 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(AVSDirectory).name,
             deployedTo: address(new AVSDirectory({
-                _delegation: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
-                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+                _delegation: Env.proxy.delegationManager(),
+                _pauserRegistry: Env.impl.pauserRegistry()
             }))
         });
 
         deployImpl({
             name: type(DelegationManager).name,
             deployedTo: address(new DelegationManager({
-                _avsDirectory: AVSDirectory(zDeployedProxy(type(AVSDirectory).name)),
-                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-                _eigenPodManager: EigenPodManager(zDeployedProxy(type(EigenPodManager).name)),
-                _allocationManager: AllocationManager(zDeployedProxy(type(AllocationManager).name)),
-                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name)),
-                _permissionController: PermissionController(zDeployedProxy(type(PermissionController).name)),
-                _MIN_WITHDRAWAL_DELAY: zUint32("MIN_WITHDRAWAL_DELAY")
+                _avsDirectory: Env.proxy.avsDirectory(),
+                _strategyManager: Env.proxy.strategyManager(),
+                _eigenPodManager: Env.proxy.eigenPodManager(),
+                _allocationManager: Env.proxy.allocationManager(),
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _permissionController: Env.proxy.permissionController(),
+                _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY()
             }))
         });
 
         deployImpl({
             name: type(RewardsCoordinator).name,
             deployedTo: address(new RewardsCoordinator({
-                _delegationManager: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
-                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-                _allocationManager: AllocationManager(zDeployedProxy(type(AllocationManager).name)),
-                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name)),
-                _permissionController: PermissionController(zDeployedProxy(type(PermissionController).name)),
-                _CALCULATION_INTERVAL_SECONDS: zUint32("CALCULATION_INTERVAL_SECONDS"),
-                _MAX_REWARDS_DURATION: zUint32("MAX_REWARDS_DURATION"),
-                _MAX_RETROACTIVE_LENGTH: zUint32("MAX_RETROACTIVE_LENGTH"),
-                _MAX_FUTURE_LENGTH: zUint32("MAX_FUTURE_LENGTH"),
-                _GENESIS_REWARDS_TIMESTAMP: zUint32("GENESIS_REWARDS_TIMESTAMP")
+                _delegationManager: Env.proxy.delegationManager(),
+                _strategyManager: Env.proxy.strategyManager(),
+                _allocationManager: Env.proxy.allocationManager(),
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _permissionController: Env.proxy.permissionController(),
+                _CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),
+                _MAX_REWARDS_DURATION: Env.MAX_REWARDS_DURATION(),
+                _MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
+                _MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(),
+                _GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP()
             }))
         });
 
         deployImpl({
             name: type(StrategyManager).name,
             deployedTo: address(new StrategyManager({
-                _delegation: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
-                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+                _delegation: Env.proxy.delegationManager(),
+                _pauserRegistry: Env.impl.pauserRegistry()
             }))
         });
 
@@ -138,20 +117,20 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(EigenPodManager).name,
             deployedTo: address(new EigenPodManager({
-                _ethPOS: IETHPOSDeposit(zAddress("ethPOS")),
-                _eigenPodBeacon: IBeacon(zDeployedProxy(type(EigenPod).name)),
-                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-                _delegationManager: DelegationManager(zDeployedProxy(type(DelegationManager).name)),
-                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+                _ethPOS: Env.ethPOS(),
+                _eigenPodBeacon: IBeacon(address(Env.proxy.eigenPod())),
+                _strategyManager: Env.proxy.strategyManager(),
+                _delegationManager: Env.proxy.delegationManager(),
+                _pauserRegistry: Env.impl.pauserRegistry()
             }))
         });
 
         deployImpl({
             name: type(EigenPod).name,
             deployedTo: address(new EigenPod({
-                _ethPOS: IETHPOSDeposit(zAddress("ethPOS")),
-                _eigenPodManager: EigenPodManager(zDeployedProxy(type(EigenPodManager).name)),
-                _GENESIS_TIME: zUint64("EIGENPOD_GENESIS_TIME")
+                _ethPOS: Env.ethPOS(),
+                _eigenPodManager: Env.proxy.eigenPodManager(),
+                _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME()
             }))
         });
 
@@ -160,24 +139,24 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(StrategyBaseTVLLimits).name,
             deployedTo: address(new StrategyBaseTVLLimits({
-                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+                _strategyManager: Env.proxy.strategyManager(),
+                _pauserRegistry: Env.impl.pauserRegistry()
             }))
         });
 
         deployImpl({
             name: type(EigenStrategy).name,
             deployedTo: address(new EigenStrategy({
-                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+                _strategyManager: Env.proxy.strategyManager(),
+                _pauserRegistry: Env.impl.pauserRegistry()
             }))
         });
 
         deployImpl({
             name: type(StrategyFactory).name,
             deployedTo: address(new StrategyFactory({
-                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+                _strategyManager: Env.proxy.strategyManager(),
+                _pauserRegistry: Env.impl.pauserRegistry()
             }))
         });
 
@@ -185,8 +164,8 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(StrategyBase).name,
             deployedTo: address(new StrategyBase({
-                _strategyManager: StrategyManager(zDeployedProxy(type(StrategyManager).name)),
-                _pauserRegistry: PauserRegistry(zDeployedContract(type(PauserRegistry).name))
+                _strategyManager: Env.proxy.strategyManager(),
+                _pauserRegistry: Env.impl.pauserRegistry()
             }))
         });
 

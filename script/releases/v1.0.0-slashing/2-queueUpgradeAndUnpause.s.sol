@@ -2,17 +2,17 @@
 pragma solidity ^0.8.12;
 
 import {Deploy} from "./1-deployContracts.s.sol";
+import "../Env.sol";
 
 import {MultisigCall, MultisigCallUtils, MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
+import "zeus-templates/utils/EncGnosisSafe.sol";
+import {IMultiSend} from "zeus-templates/interfaces/IMultiSend.sol";
+
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import {EigenLabsUpgrade} from "../EigenLabsUpgrade.s.sol";
-import "zeus-templates/utils/EncGnosisSafe.sol";
-import {MultisigCallUtils, MultisigCall} from "zeus-templates/utils/MultisigCallUtils.sol";
-import {IMultiSend} from "zeus-templates/interfaces/IMultiSend.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 /// core/
 import "src/contracts/core/AllocationManager.sol";
@@ -44,10 +44,10 @@ import "src/contracts/strategies/StrategyFactory.sol";
  */
 contract QueueAndUnpause is MultisigBuilder, Deploy {
     using MultisigCallUtils for *;
-    using EigenLabsUpgrade for *;
     using EncGnosisSafe for *;
     using MultisigCallUtils for *;
     using Strings for *;
+    using Env for *;
 
     MultisigCall[] private _executorCalls;
     MultisigCall[] private _opsCalls;
@@ -58,111 +58,115 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
 
         _executorCalls
             .append({
-                to: zDeployedContract(type(ProxyAdmin).name),
+                to: Env.proxyAdmin(),
                 data: abi.encodeCall(
                     ProxyAdmin.upgrade,
                     (
-                        ITransparentUpgradeableProxy(payable(zDeployedProxy(type(AVSDirectory).name))),
-                        zDeployedImpl(type(AVSDirectory).name)
+                        ITransparentUpgradeableProxy(address(Env.proxy.avsDirectory())),
+                        address(Env.impl.avsDirectory())
                     )
                 )
             })
             .append({
-                to: zDeployedContract(type(ProxyAdmin).name),
+                to: Env.proxyAdmin(),
                 data: abi.encodeCall(
                     ProxyAdmin.upgrade,
                     (
-                        ITransparentUpgradeableProxy(payable(zDeployedProxy(type(DelegationManager).name))),
-                        zDeployedImpl(type(DelegationManager).name)
+                        ITransparentUpgradeableProxy(address(Env.proxy.delegationManager())),
+                        address(Env.impl.delegationManager())
                     )
                 )
             })
             .append({
-                to: zDeployedContract(type(ProxyAdmin).name),
+                to: Env.proxyAdmin(),
                 data: abi.encodeCall(
                     ProxyAdmin.upgrade,
                     (
-                        ITransparentUpgradeableProxy(payable(zDeployedProxy(type(RewardsCoordinator).name))),
-                        zDeployedImpl(type(RewardsCoordinator).name)
+                        ITransparentUpgradeableProxy(address(Env.proxy.rewardsCoordinator())),
+                        address(Env.impl.rewardsCoordinator())
                     )
                 )
             })
             .append({
-                to: zDeployedContract(type(ProxyAdmin).name),
+                to: Env.proxyAdmin(),
                 data: abi.encodeCall(
                     ProxyAdmin.upgrade,
                     (
-                        ITransparentUpgradeableProxy(payable(zDeployedProxy(type(StrategyManager).name))),
-                        zDeployedImpl(type(StrategyManager).name)
+                        ITransparentUpgradeableProxy(address(Env.proxy.strategyManager())),
+                        address(Env.impl.strategyManager())
                     )
                 )
             })
             .append({
-                to: zDeployedContract(type(ProxyAdmin).name),
+                to: Env.proxyAdmin(),
                 data: abi.encodeCall(
                     ProxyAdmin.upgrade,
                     (
-                        ITransparentUpgradeableProxy(payable(zDeployedProxy(type(EigenPodManager).name))),
-                        zDeployedImpl(type(EigenPodManager).name)
+                        ITransparentUpgradeableProxy(address(Env.proxy.eigenPodManager())),
+                        address(Env.impl.eigenPodManager())
                     )
                 )
             })
             .append({
-                to: zDeployedProxy(type(EigenPod).name),
+                to: address(Env.proxy.eigenPod()),
                 data: abi.encodeCall(
                     UpgradeableBeacon.upgradeTo,
                     (
-                        zDeployedImpl(type(EigenPod).name)
+                        address(Env.impl.eigenPod())
                     )
                 )
             })
             .append({
-                to: zDeployedContract(type(ProxyAdmin).name),
+                to: Env.proxyAdmin(),
                 data: abi.encodeCall(
                     ProxyAdmin.upgrade,
                     (
-                        ITransparentUpgradeableProxy(payable(zDeployedProxy(type(EigenStrategy).name))),
-                        zDeployedImpl(type(EigenStrategy).name)
+                        ITransparentUpgradeableProxy(address(Env.proxy.eigenStrategy())),
+                        address(Env.impl.eigenStrategy())
                     )
                 )
             })  
             .append({
-                to: zDeployedContract(type(ProxyAdmin).name),
+                to: Env.proxyAdmin(),
                 data: abi.encodeCall(
                     ProxyAdmin.upgrade,
                     (
-                        ITransparentUpgradeableProxy(payable(zDeployedProxy(type(StrategyFactory).name))),
-                        zDeployedImpl(type(StrategyFactory).name)
+                        ITransparentUpgradeableProxy(address(Env.proxy.strategyFactory())),
+                        address(Env.impl.strategyFactory())
                     )
                 )
             })  
             .append({
-                to: zDeployedProxy("StrategyBeacon"), // TODO - this needs to be `StrategyBase.name`
+                to: address(Env.proxy.strategyBase()),
                 data: abi.encodeCall(
                     UpgradeableBeacon.upgradeTo,
                     (
-                        zDeployedImpl("StrategyBeacon")
+                        address(Env.impl.strategyBase())
                     )
                 )
             });
 
-        uint count = zDeployedInstanceCount("PreLongtailStrats");
+        uint count = Env.instance.strategyBaseTVLLimits_Count();
+        
+        // zDeployedInstanceCount("PreLongtailStrats");
         for (uint i = 0; i < count; i++) {
+            address instance = address(Env.instance.strategyBaseTVLLimits(i));
+
             _executorCalls.append({
-                to: zDeployedContract(type(ProxyAdmin).name),
+                to: Env.proxyAdmin(),
                 data: abi.encodeCall(
                     ProxyAdmin.upgrade,
                     (
-                        ITransparentUpgradeableProxy(zDeployedInstance(type(StrategyBaseTVLLimits).name, i)),
-                        zDeployedContract("PreLongtailStrats")
+                        ITransparentUpgradeableProxy(instance),
+                        address(Env.impl.strategyBaseTVLLimits())
                     )
                 )
             });
         }
 
         return EncGnosisSafe.calldataToExecTransaction({
-            from: zAddress("timelockController"),
-            to: zAddress("MultiSendCallOnly"),
+            from: address(Env.timelockController()),
+            to: Env.multiSendCallOnly(),
             data: MultisigCallUtils.encodeMultisendTxs(IMultiSend(address(0)), _executorCalls),
             op: EncGnosisSafe.Operation.DelegateCall
         });
@@ -170,7 +174,7 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
 
     function options() internal virtual override returns (MultisigOptions memory) {
         return MultisigOptions(
-            this._operationsMultisig(),
+            Env.opsMultisig(),
             Operation.DelegateCall
         );
     }
@@ -178,9 +182,9 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
     function runAsMultisig() internal virtual override {
         (bytes memory call) = _getMultisigTransactionCalldata();
 
-        TimelockController timelock = TimelockController(payable(this._timelock()));
+        TimelockController timelock = Env.timelockController();
         timelock.schedule(
-            this._executorMultisig(), 
+            Env.executorMultisig(), 
             0, 
             call,
             0,
@@ -196,9 +200,9 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
         // TODO hack
         delete _executorCalls;
 
-        TimelockController timelock = TimelockController(payable(this._timelock()));
+        TimelockController timelock = Env.timelockController();
         bytes memory call = _getMultisigTransactionCalldata();
-        bytes32 txHash = timelock.hashOperation(this._executorMultisig(), 0, call, 0, 0);
+        bytes32 txHash = timelock.hashOperation(Env.executorMultisig(), 0, call, 0, 0);
         assertEq(timelock.isOperationPending(txHash), true, "Transaction should be queued.");
     }
 }
