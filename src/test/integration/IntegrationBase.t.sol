@@ -348,8 +348,8 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
     /*******************************************************************************
                          SNAPSHOT ASSERTIONS: ALLOCATIONS
     *******************************************************************************/
-    
-    function assert_Snap_Allocations_Updated(
+
+    function assert_Snap_Allocations_Modified(
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies,
@@ -357,6 +357,8 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
         bool completed,
         string memory err
     ) internal {
+        // TODO: magnitudes (max, encumbered)
+
         Allocation[] memory curAllocs = _getAllocations(operator, operatorSet, strategies);
         Allocation[] memory prevAllocs = _getPrevAllocations(operator, operatorSet, strategies);
 
@@ -380,6 +382,63 @@ abstract contract IntegrationBase is IntegrationDeployer, IAllocationManagerType
                     prevAlloc.pendingDiff + int128(int64(newMagnitudes[i])), 
                     string.concat(err, " (pendingDiff)")
                 );
+
+                (, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
+
+                assertEq(
+                    curAlloc.effectBlock, 
+                    block.number + delay, 
+                    string.concat(err, " (effectBlock)")
+                );
+            }
+        }
+    }
+
+    function assert_Snap_Allocations_Slashed(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        uint256[] memory wadsToSlash,
+        bool completed,
+        string memory err
+    ) internal {
+        // TODO: slashable stake
+
+        Allocation[] memory curAllocs = _getAllocations(operator, operatorSet, strategies);
+        Allocation[] memory prevAllocs = _getPrevAllocations(operator, operatorSet, strategies);
+    
+        for (uint i = 0; i < strategies.length; i++) {
+            Allocation memory curAlloc = curAllocs[i];
+            Allocation memory prevAlloc = prevAllocs[i]; 
+
+            uint64 slashedMagnitude = uint64(uint256(prevAlloc.currentMagnitude).mulWadRoundUp(wadsToSlash[i]));
+
+            assertEq(
+                curAlloc.currentMagnitude, 
+                prevAlloc.currentMagnitude - slashedMagnitude, 
+                string.concat(err, " (currentMagnitude)")
+            );
+
+            if (completed) {
+                assertEq(curAlloc.pendingDiff, 0, string.concat(err, " (pendingDiff)"));
+                assertEq(curAlloc.effectBlock, 0, string.concat(err, " (effectBlock)"));
+            } else {
+                assertEq(
+                    curAlloc.currentMagnitude, 
+                    prevAlloc.currentMagnitude - slashedMagnitude, 
+                    string.concat(err, " (currentMagnitude)")
+                );
+
+                if (prevAlloc.pendingDiff < 0) {
+                    uint64 slashedPending =
+                        uint64(uint256(uint128(-prevAlloc.pendingDiff)).mulWadRoundUp(wadsToSlash[i]));
+                    
+                    assertEq(
+                        curAlloc.pendingDiff, 
+                        prevAlloc.pendingDiff + int128(uint128(slashedPending)), 
+                        string.concat(err, " (pendingDiff)")
+                    );
+                }
 
                 (, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
 
