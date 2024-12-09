@@ -12,7 +12,7 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/utils/Logger.t.sol";
 
-import "src/test/utils/SingleItemArrayLib.sol";
+import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
 
 interface IAVSDeployer {
@@ -24,7 +24,9 @@ interface IAVSDeployer {
 
 contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     using print for *;
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
+
+    IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     AllocationManager immutable allocationManager;
     PermissionController immutable permissionController;
@@ -93,31 +95,36 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         allocationManager.createOperatorSets(address(this), p);
         print.gasUsed();
     }
-    
-    function slashOperator(
-        User operator, 
-        uint32 operatorSetId, 
-        uint256 wadToSlash
-    ) public createSnapshot returns (SlashingParams memory slashingParams) {
-        print.method(
-            "slashOperator",
-            string.concat(
-                "{operator: ",
-                operator.NAME_COLORED(),
-                ", operatorSetId: ",
-                cheats.toString(operatorSetId),
-                ", wadToSlash: ",
-                wadToSlash.asWad(),
-                "}"
-            )
-        );
 
-        slashingParams= SlashingParams({
+    function slashOperator(User operator, uint32 operatorSetId, IStrategy[] memory strategies, uint256[] memory wadsToSlash) public createSnapshot {
+        SlashingParams memory p = SlashingParams({
             operator: address(operator),
             operatorSetId: operatorSetId,
-            wadToSlash: wadToSlash,
+            strategies: strategies,
+            wadsToSlash: wadsToSlash,
             description: "bad operator"
         });
+
+        for (uint256 i; i < strategies.length; ++i) {
+            string memory strategyName = strategies[i] == beaconChainETHStrategy ? 
+                "Native ETH" : 
+                IERC20Metadata(address(strategies[i].underlyingToken())).name();
+
+            print.method(
+                "slashOperator",
+                string.concat(
+                    "{operator: ",
+                    operator.NAME_COLORED(),
+                    ", operatorSetId: ",
+                    cheats.toString(operatorSetId),
+                    ", strategy: ",
+                    strategyName,
+                    ", wadToSlash: ",
+                    wadsToSlash[i].asWad(),
+                    "}"
+                )
+            );
+        }
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
         allocationManager.slashOperator(address(this), slashingParams);

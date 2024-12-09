@@ -13,7 +13,7 @@ import "src/contracts/pods/EigenPod.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/utils/Logger.t.sol";
-import "src/test/utils/SingleItemArrayLib.sol";
+import "src/test/utils/ArrayLib.sol";
 
 struct Validator {
     uint40 index;
@@ -31,7 +31,7 @@ interface IUserDeployer {
 
 contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     using SlashingLib for *;
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
     using print for *;
 
     IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);

@@ -8,7 +8,7 @@ import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/contracts/libraries/SlashingLib.sol";
-import "src/test/utils/SingleItemArrayLib.sol";
+import "src/test/utils/ArrayLib.sol";
 
 // TODO: add upgrade tests for completing withdrawals queued before upgrade in integration tests
 // TODO: add slashing cases for withdrawing as shares (can also be in integration tests)
@@ -21,7 +21,7 @@ import "src/test/utils/SingleItemArrayLib.sol";
  */
 contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManagerEvents, IDelegationManagerErrors {
     using SlashingLib for *; 
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     // Contract under test
     DelegationManager delegationManager;
@@ -1153,7 +1153,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 }
 
 contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
     using SlashingLib for *;
 
     function test_Revert_WhenPaused() public {
@@ -2497,7 +2497,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 }
 
 contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
     using SlashingLib for *;
 
     /// @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
@@ -3271,7 +3271,7 @@ contract DelegationManagerUnitTests_Redelegate is DelegationManagerUnitTests {
 
 contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
     using SlashingLib for uint256;
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
     using Math for uint256;
 
     // @notice Verifies that undelegating is not possible when the "undelegation paused" switch is flipped
@@ -4086,7 +4086,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
 
 contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTests {
     using SlashingLib for *;
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     function test_Revert_WhenEnterQueueWithdrawalsPaused() public {
         cheats.prank(pauser);
@@ -4784,7 +4784,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
 }
 
 contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
     using SlashingLib for *;
     using Math for uint256;
 
@@ -5400,7 +5400,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 }
 
 contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     /**
      * @notice Test burning shares for an operator with no queued withdrawals
@@ -6462,7 +6462,7 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
  */
 
 contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
 
     // 2. RegisterOperator, Deposit, Delegate, Queue, Complete
     function test_register_operator_deposit_delegate_queue_complete(Randomness r) public rand(r) {
