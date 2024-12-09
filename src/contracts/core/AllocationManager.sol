@@ -732,6 +732,14 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
+    function isMemberOfOperatorSet(
+        address operator,
+        OperatorSet memory operatorSet
+    ) public view returns (bool) {
+        return _operatorSetMembers[operatorSet.key()].contains(operator);
+    }
+
+    /// @inheritdoc IAllocationManager
     function isOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (bool) {
