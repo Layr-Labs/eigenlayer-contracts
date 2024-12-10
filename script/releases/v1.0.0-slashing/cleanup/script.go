@@ -269,12 +269,3 @@ func fetchCurrentCheckpointTimestamps(
 	}
 	return out, nil
 }
-
-// helper to get keys from a map[string]int
-func getKeys(m map[string]int) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
