@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -135,7 +136,16 @@ func runScript(args TArgs) error {
 	allEigenpods, err := queryAllEigenpodsOnNetwork(ctx, allValidators, eth, &eigenpodAbi, &podManagerAbi, podManagerAddress, mc)
 	panicOnError("queryAllEigenpodsOnNetwork", err)
 
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+
 	fmt.Printf("Discovered %d eigenpods on the network.\n", len(allEigenpods))
+
+	pods := lo.Map(allEigenpods, func(pod string, i int) string {
+		return fmt.Sprintf("0x%s", pod)
+	})
+	sort.Strings(pods)
+	fmt.Printf("%s\n", enc.Encode(pods))
 
 	// Now for each eigenpod, we want to fetch currentCheckpointTimestamp.
 	// We'll do a multicall to get currentCheckpointTimestamp from each eigenpod.
@@ -159,9 +169,6 @@ func runScript(args TArgs) error {
 	}
 
 	fmt.Printf("%d EigenPods had active checkpoints\n\n", len(results))
-
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
 	fmt.Printf("%s\n", enc.Encode(results))
 
 	fmt.Printf("Completing %d checkpoints....", len(results))
