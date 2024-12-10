@@ -21,11 +21,8 @@ contract Execute is Queue {
 
     event Upgraded(address indexed implementation);
 
-    function options() internal override view returns (MultisigOptions memory) {
-        return MultisigOptions(
-            this._protocolCouncilMultisig(),
-            Operation.Call
-        );
+    function options() internal view override returns (MultisigOptions memory) {
+        return MultisigOptions(this._protocolCouncilMultisig(), Operation.Call);
     }
 
     /**
@@ -131,6 +128,11 @@ contract Execute is Queue {
         assertEq(
             rewardsCoordinatorProxy.CALCULATION_INTERVAL_SECONDS(),
             zUint32("REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"),
+            "expected REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"
+        );
+        assertEq(
+            rewardsCoordinatorProxy.CALCULATION_INTERVAL_SECONDS(),
+            1 days,
             "expected REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"
         );
         assertGt(
