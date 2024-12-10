@@ -778,7 +778,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:DEFAULT_OPERATOR_SHARES.mulWad(75e16)
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(75e16)
         });
     }
 
@@ -832,7 +832,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:(DEFAULT_OPERATOR_SHARES - slashedStake).mulWad(expectedCurrentMag.divWad(expectedMaxMag))
+            expectedSlashableStake: (DEFAULT_OPERATOR_SHARES - slashedStake).mulWad(expectedCurrentMag.divWad(expectedMaxMag))
         });
     }
 
@@ -918,7 +918,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:newTotalStake.mulWad(expectedCurrentMag.divWad(expectedMaxMag))
+            expectedSlashableStake: newTotalStake.mulWad(expectedCurrentMag.divWad(expectedMaxMag))
         });
 
         cheats.roll(secondAllocEffectBlock);
@@ -940,7 +940,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:newTotalStake.mulWad(newSlashableMagnitude.divWad(expectedMaxMag))
+            expectedSlashableStake: newTotalStake.mulWad(newSlashableMagnitude.divWad(expectedMaxMag))
         });
     }
 
@@ -1092,7 +1092,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:0
+            expectedSlashableStake: 0
         });
     }
 
@@ -3574,7 +3574,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:DEFAULT_OPERATOR_SHARES.mulWad(5e17)
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
         });
 
         // Allocate the other half
@@ -3588,7 +3588,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:DEFAULT_OPERATOR_SHARES.mulWad(5e17)
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
         });
         
         // Check minimum slashable stake would not change even after the second allocation becomes effective
@@ -3597,7 +3597,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:DEFAULT_OPERATOR_SHARES.mulWad(5e17),
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17),
             futureBlock: secondAllocEffectBlock + 1
         });
 
@@ -3607,7 +3607,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:DEFAULT_OPERATOR_SHARES
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES
         });
     }
 
@@ -3633,7 +3633,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:0,
+            expectedSlashableStake: 0,
             futureBlock: _defaultAllocEffectBlock()
         });
 
@@ -3645,7 +3645,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:DEFAULT_OPERATOR_SHARES.mulWad(firstMod)
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(firstMod)
         });
 
         // Deallocate
@@ -3657,7 +3657,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:DEFAULT_OPERATOR_SHARES.mulWad(firstMod),
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(firstMod),
             futureBlock: uint32(block.number)
         });
 
@@ -3666,7 +3666,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:DEFAULT_OPERATOR_SHARES.mulWad(secondMod),
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(secondMod),
             futureBlock: uint32(block.number + DEALLOCATION_DELAY)
         });
 
@@ -3678,7 +3678,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             operator: defaultOperator,
             strategies: defaultStrategies,
-            expectedSlashableStake:DEFAULT_OPERATOR_SHARES.mulWad(secondMod)
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(secondMod)
         });
     }
 
@@ -3719,7 +3719,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: allocateParams[0].operatorSet,
             operator: defaultOperator,
             strategies: allocateParams[0].strategies,
-            expectedSlashableStake:allocateParams[0].newMagnitudes[0]
+            expectedSlashableStake: allocateParams[0].newMagnitudes[0]
         });
 
         // Check slashable stake after deallocation takes effect, before slashing
@@ -3727,7 +3727,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: allocateParams[0].operatorSet,
             operator: defaultOperator,
             strategies: allocateParams[0].strategies,
-            expectedSlashableStake:deallocateParams[0].newMagnitudes[0],
+            expectedSlashableStake: deallocateParams[0].newMagnitudes[0],
             futureBlock: deallocationEffectBlock
         });
 
@@ -3747,7 +3747,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: allocateParams[0].operatorSet,
             operator: defaultOperator,
             strategies: allocateParams[0].strategies,
-            expectedSlashableStake:expectedCurrentMagnitude
+            expectedSlashableStake: expectedCurrentMagnitude
         });
 
         // Check slashable stake after deallocation takes effect
@@ -3756,7 +3756,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: allocateParams[0].operatorSet,
             operator: defaultOperator,
             strategies: allocateParams[0].strategies,
-            expectedSlashableStake:expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1, 
+            expectedSlashableStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1, 
             futureBlock: deallocationEffectBlock
         });
 
@@ -3769,7 +3769,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operatorSet: allocateParams[0].operatorSet,
             operator: defaultOperator,
             strategies: allocateParams[0].strategies,
-            expectedSlashableStake:expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1
+            expectedSlashableStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1
         });
     }
 }
