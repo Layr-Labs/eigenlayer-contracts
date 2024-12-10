@@ -1798,39 +1798,6 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
     }
 
-    // TODO: yash
-    // function test_allocateMaxToMultipleStrategies(
-    //     Randomness r
-    // ) public rand(r) {
-    //     // Create a handful of operator sets under the same AVS, each with a unique strategy
-    //     OperatorSet[] memory operatorSets = _newOperatorSets_SingleUniqueStrategy(defaultAVS, r.Uint256(2, 10));
-
-    //     // Register for each operator set
-    //     _registerForOperatorSets(defaultOperator, operatorSets);
-
-    //     // Allocate max to each operator set
-    //     AllocateParams[] memory allocateParams = new AllocateParams[](operatorSets.length);
-    //     for (uint256 i = 0; i < operatorSets.length; i++) {
-    //         allocateParams[i] = AllocateParams({
-    //             operatorSet: operatorSets[i],
-    //             strategies: allocationManager.getStrategiesInOperatorSet(operatorSets[i]),
-    //             newMagnitudes: WAD.toArrayU64()
-    //         });
-    //     }
-
-    //     cheats.prank(defaultOperator);
-    //     allocationManager.modifyAllocations(defaultOperator, allocateParams);
-
-    //     // Ensure encumbered magnitude is updated for each strategy
-    //     for (uint256 i = 0; i < allocateParams.length; i++) {
-    //         assertEq(
-    //             WAD,
-    //             allocationManager.encumberedMagnitude(defaultOperator, allocateParams[i].strategies[0]),
-    //             "encumberedMagnitude not max"
-    //         );
-    //     }
-    // }
-
     function test_revert_allocateDeallocate_modificationPending() public {
         // Allocate
         AllocateParams[] memory allocateParams = _randAllocateParams_DefaultOpSet();
@@ -3711,96 +3678,96 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
         });
     }
 
-    // /**
-    //  * Allocates all of magnitude to a single strategy to an operatorSet. 
-    //  * Deallocate some portion. Finally, slash while deallocation is pending
-    //  */
-    // function testFuzz_SlashWhileDeallocationPending(
-    //     Randomness r
-    // ) public rand(r) {
-    //     // Initialize state
-    //     AllocateParams[] memory allocateParams = r.AllocateParams(defaultAVS, 1, 1);
-    //     AllocateParams[] memory deallocateParams = r.DeallocateParams(allocateParams);
-    //     CreateSetParams[] memory createSetParams = r.CreateSetParams(allocateParams);
-    //     RegisterParams memory registerParams = r.RegisterParams(allocateParams);
-    //     SlashingParams memory slashingParams = r.SlashingParams(defaultOperator, allocateParams[0]);
+    /**
+     * Allocates all of magnitude to a single strategy to an operatorSet. 
+     * Deallocate some portion. Finally, slash while deallocation is pending
+     */
+    function testFuzz_SlashWhileDeallocationPending(
+        Randomness r
+    ) public rand(r) {
+        // Initialize state
+        AllocateParams[] memory allocateParams = r.AllocateParams(defaultAVS, 1, 1);
+        AllocateParams[] memory deallocateParams = r.DeallocateParams(allocateParams);
+        CreateSetParams[] memory createSetParams = r.CreateSetParams(allocateParams);
+        RegisterParams memory registerParams = r.RegisterParams(allocateParams);
+        SlashingParams memory slashingParams = r.SlashingParams(defaultOperator, allocateParams[0]);
 
-    //     delegationManagerMock.setOperatorShares(
-    //         defaultOperator, allocateParams[0].strategies[0], DEFAULT_OPERATOR_SHARES
-    //     );
+        delegationManagerMock.setOperatorShares(
+            defaultOperator, allocateParams[0].strategies[0], DEFAULT_OPERATOR_SHARES
+        );
 
-    //     cheats.prank(defaultAVS);
-    //     allocationManager.createOperatorSets(defaultAVS, createSetParams);
-    //     cheats.startPrank(defaultOperator);
-    //     allocationManager.registerForOperatorSets(defaultOperator, registerParams);
+        cheats.prank(defaultAVS);
+        allocationManager.createOperatorSets(defaultAVS, createSetParams);
+        cheats.startPrank(defaultOperator);
+        allocationManager.registerForOperatorSets(defaultOperator, registerParams);
 
-    //     // Allocate
-    //     allocationManager.modifyAllocations(defaultOperator, allocateParams);
-    //     cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+        // Allocate
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
-    //     // Deallocate
-    //     allocationManager.modifyAllocations(defaultOperator, deallocateParams);
-    //     uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
-    //     cheats.stopPrank();
+        // Deallocate
+        allocationManager.modifyAllocations(defaultOperator, deallocateParams);
+        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
+        cheats.stopPrank();
 
-    //     // Check slashable stake after deallocation (still pending; no change)
-    //     _checkSlashableStake({
-    //         operatorSet: allocateParams[0].operatorSet,
-    //         operator: defaultOperator,
-    //         strategies: allocateParams[0].strategies,
-    //         expectedStake: allocateParams[0].newMagnitudes[0]
-    //     });
+        // Check slashable stake after deallocation (still pending; no change)
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedStake: allocateParams[0].newMagnitudes[0]
+        });
 
-    //     // Check slashable stake after deallocation takes effect, before slashing
-    //     _checkSlashableStake({
-    //         operatorSet: allocateParams[0].operatorSet,
-    //         operator: defaultOperator,
-    //         strategies: allocateParams[0].strategies,
-    //         expectedStake: deallocateParams[0].newMagnitudes[0],
-    //         futureBlock: deallocationEffectBlock
-    //     });
+        // Check slashable stake after deallocation takes effect, before slashing
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedStake: deallocateParams[0].newMagnitudes[0],
+            futureBlock: deallocationEffectBlock
+        });
 
-    //     uint256 magnitudeAllocated = allocateParams[0].newMagnitudes[0];
-    //     uint256 magnitudeDeallocated = magnitudeAllocated - deallocateParams[0].newMagnitudes[0];
-    //     uint256 magnitudeSlashed = magnitudeAllocated.mulWad(slashingParams.wadToSlash);
-    //     uint256 expectedCurrentMagnitude = magnitudeAllocated - magnitudeSlashed;
-    //     int128 expectedPendingDiff =
-    //         -int128(uint128(magnitudeDeallocated - magnitudeDeallocated.mulWadRoundUp(slashingParams.wadToSlash)));
+        uint256 magnitudeAllocated = allocateParams[0].newMagnitudes[0];
+        uint256 magnitudeDeallocated = magnitudeAllocated - deallocateParams[0].newMagnitudes[0];
+        uint256 magnitudeSlashed = magnitudeAllocated.mulWad(slashingParams.wadsToSlash[0]);
+        uint256 expectedCurrentMagnitude = magnitudeAllocated - magnitudeSlashed;
+        int128 expectedPendingDiff =
+            -int128(uint128(magnitudeDeallocated - magnitudeDeallocated.mulWadRoundUp(slashingParams.wadsToSlash[0])));
 
-    //     // Slash
-    //     cheats.prank(defaultAVS);
-    //     allocationManager.slashOperator(defaultAVS, slashingParams);
+        // Slash
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(defaultAVS, slashingParams);
 
-    //     // Check slashable stake after slash
-    //     _checkSlashableStake({
-    //         operatorSet: allocateParams[0].operatorSet,
-    //         operator: defaultOperator,
-    //         strategies: allocateParams[0].strategies,
-    //         expectedStake: expectedCurrentMagnitude
-    //     });
+        // Check slashable stake after slash
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedStake: expectedCurrentMagnitude
+        });
 
-    //     // Check slashable stake after deallocation takes effect
-    //     // Add 1 slippage for rounding down slashable stake
-    //     _checkSlashableStake({
-    //         operatorSet: allocateParams[0].operatorSet,
-    //         operator: defaultOperator,
-    //         strategies: allocateParams[0].strategies,
-    //         expectedStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1, 
-    //         futureBlock: deallocationEffectBlock
-    //     });
+        // Check slashable stake after deallocation takes effect
+        // Add 1 slippage for rounding down slashable stake
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1, 
+            futureBlock: deallocationEffectBlock
+        });
 
-    //     cheats.roll(deallocationEffectBlock);
-    //     allocationManager.clearDeallocationQueue(defaultOperator, allocateParams[0].strategies, _maxNumToClear());
+        cheats.roll(deallocationEffectBlock);
+        allocationManager.clearDeallocationQueue(defaultOperator, allocateParams[0].strategies, _maxNumToClear());
 
-    //     // Check slashable stake after slash and deallocation
-    //     // Add 1 slippage for rounding down slashable stake
-    //     _checkSlashableStake({
-    //         operatorSet: allocateParams[0].operatorSet,
-    //         operator: defaultOperator,
-    //         strategies: allocateParams[0].strategies,
-    //         expectedStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1
-    //     });
-    // }
+        // Check slashable stake after slash and deallocation
+        // Add 1 slippage for rounding down slashable stake
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1
+        });
+    }
 }
 
 contract AllocationManagerUnitTests_getMaxMagnitudesAtBlock is AllocationManagerUnitTests {
