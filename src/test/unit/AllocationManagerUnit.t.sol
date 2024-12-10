@@ -475,7 +475,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
     function test_revert_NotMemberOfSet() public {
         cheats.prank(defaultAVS);
-        cheats.expectRevert(NotMemberOfSet.selector);
+        cheats.expectRevert(OperatorNotSlashable.selector);
         allocationManager.slashOperator(defaultAVS, _randSlashingParams(random().Address(), 0));
     }
 
@@ -3048,6 +3048,11 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         assertEq(allocationManager.getRegisteredSets(operator).length, numOpSets, "should be registered for all sets");
 
         for (uint256 k; k < numOpSets; ++k) {
+            OperatorSet memory operatorSet = OperatorSet(defaultAVS, operatorSetIds[k]);
+            assertTrue(
+                allocationManager.isMemberOfOperatorSet(operator, operatorSet),
+                "should be member of set"
+            );
             assertEq(
                 allocationManager.getMembers(OperatorSet(defaultAVS, operatorSetIds[k]))[0],
                 operator,
@@ -3144,6 +3149,10 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
         assertEq(allocationManager.getRegisteredSets(operator).length, 0, "should not be registered for any sets");
 
         for (uint256 k; k < numOpSets; ++k) {
+            assertFalse(
+                allocationManager.isMemberOfOperatorSet(operator, OperatorSet(defaultAVS, operatorSetIds[k])),
+                "should not be member of set"
+            );
             assertEq(
                 allocationManager.getMemberCount(OperatorSet(defaultAVS, operatorSetIds[k])),
                 0,

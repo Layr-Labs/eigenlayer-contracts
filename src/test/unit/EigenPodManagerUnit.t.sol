@@ -43,7 +43,6 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSMock,
             eigenPodBeacon,
-            IStrategyManager(address(strategyManagerMock)),
             IDelegationManager(address(delegationManagerMock)),
             pauserRegistry
         );
@@ -119,7 +118,6 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         // Check storage variables
         assertEq(address(eigenPodManager.ethPOS()), address(ethPOSMock), "Initialization: ethPOS incorrect");
         assertEq(address(eigenPodManager.eigenPodBeacon()), address(eigenPodBeacon), "Initialization: eigenPodBeacon incorrect");
-        assertEq(address(eigenPodManager.strategyManager()), address(strategyManagerMock), "Initialization: strategyManager incorrect");
         assertEq(address(eigenPodManager.delegationManager()), address(delegationManagerMock), "Initialization: delegationManager incorrect");
     }
 
@@ -305,7 +303,6 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
         eigenPodManagerWrapper = new EigenPodManagerWrapper(
             ethPOSMock,
             eigenPodBeacon,
-            IStrategyManager(address(strategyManagerMock)),
             IDelegationManager(address(delegationManagerMock)),
             pauserRegistry
         );
@@ -428,7 +425,6 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         eigenPodManagerWrapper = new EigenPodManagerWrapper(
             ethPOSMock,
             eigenPodBeacon,
-            IStrategyManager(address(strategyManagerMock)),
             IDelegationManager(address(delegationManagerMock)),
             pauserRegistry
         );

@@ -14,8 +14,6 @@ interface IAllocationManagerErrors {
     error InvalidWadToSlash();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
-    /// @dev Thrown when calling a view function that requires a valid block number.
-    error InvalidBlockNumber();
     /// @dev Thrown when creating an operator set with more than max strategies.
     error MaxStrategiesExceeded();
 
@@ -43,13 +41,11 @@ interface IAllocationManagerErrors {
 
     /// @dev Thrown when an invalid operator set is provided.
     error InvalidOperatorSet();
-    /// @dev Thrown when a strategy is referenced that does not belong to an operator set.
-    error InvalidStrategy();
     /// @dev Thrown when provided `strategies` are not in ascending order.
     error StrategiesMustBeInAscendingOrder();
     /// @dev Thrown when trying to add a strategy to an operator set that already contains it.
     error StrategyAlreadyInOperatorSet();
-    /// @dev Thrown when trying to remove a strategy from an operator set it is not a part of.
+    /// @dev Thrown when a strategy is referenced that does not belong to an operator set.
     error StrategyNotInOperatorSet();
 
     /// Modifying Allocations
@@ -93,12 +89,12 @@ interface IAllocationManagerTypes {
     /**
      * @notice Contains registration details for an operator pertaining to an operator set
      * @param registered Whether the operator is currently registered for the operator set
-     * @param registeredUntil If the operator is not registered, how long until the operator is no longer
+     * @param slashableUntil If the operator is not registered, how long until the operator is no longer
      * slashable by the AVS.
      */
     struct RegistrationStatus {
         bool registered;
-        uint32 registeredUntil;
+        uint32 slashableUntil;
     }
 
     /**
@@ -484,6 +480,13 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
     function getRegisteredSets(
         address operator
     ) external view returns (OperatorSet[] memory operatorSets);
+
+    /**
+     * @notice Returns whether the operator is registered for the operator set
+     * @param operator The operator to query
+     * @param operatorSet The operator set to query
+     */
+    function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
     /**
      * @notice Returns whether the operator set exists
