@@ -3165,7 +3165,7 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         allocationManager.createOperatorSets(defaultAVS, createSetParams);
 
         for (uint256 j; j < numOpSets; ++j) {
-            cheats.expectEmit(true, true, false, false, address(allocationManager));
+            cheats.expectEmit(true, true, true, true, address(allocationManager));
             emit OperatorAddedToOperatorSet(operator, OperatorSet(defaultAVS, operatorSetIds[j]));
         }
 
