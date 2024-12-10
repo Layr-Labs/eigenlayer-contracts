@@ -56,8 +56,8 @@ contract TestRewardsV2 is ZeusScript {
 
         // Format Range
         uint32 moddedCurrTimestamp = uint32(block.timestamp) - (uint32(block.timestamp) % _rewardsCoordinator().CALCULATION_INTERVAL_SECONDS());
-        uint32 startTimestamp = moddedCurrTimestamp - _rewardsCoordinator().MAX_REWARDS_DURATION();
-        uint32 duration = _rewardsCoordinator().MAX_REWARDS_DURATION();
+        uint32 startTimestamp = moddedCurrTimestamp - 1 weeks;
+        uint32 duration = 1 weeks;
 
         (address[] memory operatorsRegisteredToAVS,) = _getAllOperatorsRegisteredToAVS(address(_rewardingServiceManager()));
 
