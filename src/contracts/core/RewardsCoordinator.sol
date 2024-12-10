@@ -96,9 +96,8 @@ contract RewardsCoordinator is
 
     /// @inheritdoc IRewardsCoordinator
     function createAVSRewardsSubmission(
-        address avs,
         RewardsSubmission[] calldata rewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) checkCanCall(avs) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
@@ -158,9 +157,7 @@ contract RewardsCoordinator is
     function createOperatorDirectedAVSRewardsSubmission(
         address avs,
         OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION) nonReentrant {
-        require(msg.sender == avs, UnauthorizedCaller());
-
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION) checkCanCall(avs) nonReentrant {
         for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; i++) {
             OperatorDirectedRewardsSubmission calldata operatorDirectedRewardsSubmission =
                 operatorDirectedRewardsSubmissions[i];
@@ -269,8 +266,7 @@ contract RewardsCoordinator is
         address operator,
         address avs,
         uint16 split
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_AVS_SPLIT) {
-        require(msg.sender == operator, UnauthorizedCaller());
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_AVS_SPLIT) checkCanCall(operator) {
         require(split <= ONE_HUNDRED_IN_BIPS, SplitExceedsMax());
 
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
@@ -281,8 +277,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setOperatorPISplit(address operator, uint16 split) external onlyWhenNotPaused(PAUSED_OPERATOR_PI_SPLIT) {
-        require(msg.sender == operator, UnauthorizedCaller());
+    function setOperatorPISplit(
+        address operator,
+        uint16 split
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_PI_SPLIT) checkCanCall(operator) {
         require(split <= ONE_HUNDRED_IN_BIPS, SplitExceedsMax());
 
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
