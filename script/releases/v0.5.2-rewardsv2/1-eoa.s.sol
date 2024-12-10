@@ -91,6 +91,11 @@ contract Deploy is EOADeployer {
             zUint32("REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"),
             "expected REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"
         );
+        assertEq(
+            rewardsCoordinatorImpl.CALCULATION_INTERVAL_SECONDS(),
+            1 days,
+            "expected REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"
+        );
         assertGt(
             rewardsCoordinatorImpl.CALCULATION_INTERVAL_SECONDS(),
             0,
