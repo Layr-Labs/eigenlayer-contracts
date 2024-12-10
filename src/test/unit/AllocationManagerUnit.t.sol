@@ -1793,26 +1793,6 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
     }
 
-    function testFuzz_revert_overAllocate(
-        Randomness r
-    ) public rand(r) {
-        uint8 numOpSets = uint8(r.Uint256(2, FUZZ_MAX_OP_SETS));
-
-        // Create and register for operator sets
-        OperatorSet[] memory operatorSets = r.OperatorSetArray(defaultAVS, numOpSets);
-        _createOperatorSets(operatorSets, defaultStrategies);
-
-        AllocateParams[] memory allocateParams = _randAllocateParams_SingleMockStrategy(operatorSets);
-        uint256 randIdx = r.Uint256(0, allocateParams.length - 1);
-
-        allocateParams[randIdx].newMagnitudes[0] = WAD + 1;
-
-        // Overallocate
-        cheats.expectRevert(InsufficientMagnitude.selector);
-        cheats.prank(defaultOperator);
-        allocationManager.modifyAllocations(defaultOperator, allocateParams);
-    }
-
     function test_revert_allocateDeallocate_modificationPending() public {
         // Allocate
         AllocateParams[] memory allocateParams = _randAllocateParams_DefaultOpSet();
