@@ -1,6 +1,6 @@
 {
     "name": "rewards-v2-patch",
-    "from": "~0.0.0",
+    "from": ">=0.0.0 <=0.5.1",
     "to": "0.5.2",
     "phases": [
         {
