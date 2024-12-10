@@ -212,15 +212,8 @@ contract PermissionController is Initializable, PermissionControllerStorage {
         address[] memory targets = new address[](length);
         bytes4[] memory selectors = new bytes4[](length);
 
-<<<<<<< HEAD
         for (uint256 i = 0; i < length; ++i) {
             (targets[i], selectors[i]) = _decodeTargetSelector(appointeePermissions.at(i));
-=======
-        for (uint256 i = 0; i < length; i++) {
-            (address target, bytes4 selector) = _decodeTargetSelector(appointeePermissions.at(i));
-            targets[i] = target;
-            selectors[i] = selector;
->>>>>>> b0193bfe (feat: alm tests)
         }
 
         return (targets, selectors);

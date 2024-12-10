@@ -11,7 +11,7 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/utils/Logger.t.sol";
 
-import "src/test/utils/SingleItemArrayLib.sol";
+import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
 
 interface IAVSDeployer {
@@ -22,7 +22,9 @@ interface IAVSDeployer {
 
 contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     using print for *;
-    using SingleItemArrayLib for *;
+    using ArrayLib for *;
+
+    IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     AllocationManager immutable allocationManager;
     StrategyFactory immutable strategyFactory;
@@ -88,7 +90,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         allocationManager.createOperatorSets(address(this), p);
     }
 
-<<<<<<< HEAD
     function slashOperator(User operator, uint32 operatorSetId, IStrategy[] memory strategies, uint256[] memory wadsToSlash) public createSnapshot {
         SlashingParams memory p = SlashingParams({
             operator: address(operator),
@@ -119,29 +120,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             );
         }
 
-=======
-    function slashOperator(User operator, uint32 operatorSetId, uint256 wadToSlash) public createSnapshot {
-        print.method(
-            "slashOperator",
-            string.concat(
-                "{operator: ",
-                operator.NAME_COLORED(),
-                ", operatorSetId: ",
-                cheats.toString(operatorSetId),
-                ", wadToSlash: ",
-                wadToSlash.asWad(),
-                "}"
-            )
-        );
-
-        SlashingParams memory p = SlashingParams({
-            operator: address(operator),
-            operatorSetId: operatorSetId,
-            wadToSlash: wadToSlash,
-            description: "bad operator"
-        });
-
->>>>>>> b0193bfe (feat: alm tests)
         allocationManager.slashOperator(address(this), p);
     }
 

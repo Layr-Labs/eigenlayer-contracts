@@ -679,16 +679,7 @@ contract DelegationManager is
             emit OperatorSharesIncreased(operator, staker, strategy, addedShares);
         }
     }
-
-    /// @dev Depending on the strategy used, determine which ShareManager contract to make external calls to
-    function _getShareManager(
-        IStrategy strategy
-    ) internal view returns (IShareManager) {
-        return strategy == beaconChainETHStrategy
-            ? IShareManager(address(eigenPodManager))
-            : IShareManager(address(strategyManager));
-    }
-
+    
     /**
      * @notice Decreases `operator`s shares in `strategy` based on staker's removed shares
      * @param operator The operator to decrease the delegated delegated shares for

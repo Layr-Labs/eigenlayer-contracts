@@ -20,6 +20,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
     using Strings for *;
     using print for *;
 
+    using ArrayLib for IStrategy[];
+
     uint numStakers = 0;
     uint numOperators = 0;
     uint numAVSs = 0;

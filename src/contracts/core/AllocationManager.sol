@@ -59,11 +59,7 @@ contract AllocationManager is
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) {
-        // Check that the msg.sender can call - we don't use a modifier to avoid `stack too deep` errors
-        require(_checkCanCall(avs), InvalidCaller());
-        require(0 < params.wadToSlash && params.wadToSlash <= WAD, InvalidWadToSlash());
-
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
         bool isOperatorSlashable = _isOperatorSlashable(params.operator, operatorSet);
@@ -144,7 +140,7 @@ contract AllocationManager is
             });
         }
 
-        emit OperatorSlashed(params.operator, operatorSet, strategiesSlashed, wadSlashed, params.description);
+        emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
     }
 
     /// @inheritdoc IAllocationManager
