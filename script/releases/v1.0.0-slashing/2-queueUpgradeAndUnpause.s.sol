@@ -4,14 +4,10 @@ pragma solidity ^0.8.12;
 import {Deploy} from "./1-deployContracts.s.sol";
 import "../Env.sol";
 
-import {MultisigCall, MultisigCallUtils, MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
-import "zeus-templates/utils/EncGnosisSafe.sol";
-import {IMultiSend} from "zeus-templates/interfaces/IMultiSend.sol";
+import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
+import "zeus-templates/utils/Encode.sol";
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// core/
@@ -43,130 +39,95 @@ import "src/contracts/strategies/StrategyFactory.sol";
  *  This should be run via the protocol council multisig.
  */
 contract QueueAndUnpause is MultisigBuilder, Deploy {
-    using MultisigCallUtils for *;
-    using EncGnosisSafe for *;
-    using MultisigCallUtils for *;
-    using Strings for *;
     using Env for *;
-
-    MultisigCall[] private _executorCalls;
-    MultisigCall[] private _opsCalls;
+    using Encode for *;
 
     function _getMultisigTransactionCalldata() internal returns (bytes memory) {
-
-        // MultisigCall[] storage executorCalls = MultisigCallUtils.newCalls();
-
-        _executorCalls
+        MultisigCall[] storage executorCalls = Encode.newMultisigCalls()
+            /// core/
             .append({
                 to: Env.proxyAdmin(),
-                data: abi.encodeCall(
-                    ProxyAdmin.upgrade,
-                    (
-                        ITransparentUpgradeableProxy(address(Env.proxy.avsDirectory())),
-                        address(Env.impl.avsDirectory())
-                    )
-                )
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.avsDirectory()),
+                    impl: address(Env.impl.avsDirectory())
+                })
             })
             .append({
                 to: Env.proxyAdmin(),
-                data: abi.encodeCall(
-                    ProxyAdmin.upgrade,
-                    (
-                        ITransparentUpgradeableProxy(address(Env.proxy.delegationManager())),
-                        address(Env.impl.delegationManager())
-                    )
-                )
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.delegationManager()),
+                    impl: address(Env.impl.delegationManager())
+                })
             })
             .append({
                 to: Env.proxyAdmin(),
-                data: abi.encodeCall(
-                    ProxyAdmin.upgrade,
-                    (
-                        ITransparentUpgradeableProxy(address(Env.proxy.rewardsCoordinator())),
-                        address(Env.impl.rewardsCoordinator())
-                    )
-                )
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.rewardsCoordinator()),
+                    impl: address(Env.impl.rewardsCoordinator())
+                })
             })
             .append({
                 to: Env.proxyAdmin(),
-                data: abi.encodeCall(
-                    ProxyAdmin.upgrade,
-                    (
-                        ITransparentUpgradeableProxy(address(Env.proxy.strategyManager())),
-                        address(Env.impl.strategyManager())
-                    )
-                )
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.strategyManager()),
+                    impl: address(Env.impl.strategyManager())
+                })
             })
-            .append({
-                to: Env.proxyAdmin(),
-                data: abi.encodeCall(
-                    ProxyAdmin.upgrade,
-                    (
-                        ITransparentUpgradeableProxy(address(Env.proxy.eigenPodManager())),
-                        address(Env.impl.eigenPodManager())
-                    )
-                )
-            })
+            /// pods/
             .append({
                 to: address(Env.proxy.eigenPod()),
-                data: abi.encodeCall(
-                    UpgradeableBeacon.upgradeTo,
-                    (
-                        address(Env.impl.eigenPod())
-                    )
-                )
+                data: Encode.upgradeableBeacon.upgradeTo({
+                    newImpl: address(Env.impl.eigenPod())
+                })
             })
             .append({
                 to: Env.proxyAdmin(),
-                data: abi.encodeCall(
-                    ProxyAdmin.upgrade,
-                    (
-                        ITransparentUpgradeableProxy(address(Env.proxy.eigenStrategy())),
-                        address(Env.impl.eigenStrategy())
-                    )
-                )
-            })  
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.eigenPodManager()),
+                    impl: address(Env.impl.eigenPodManager())
+                })
+            })
+            /// strategies/
             .append({
                 to: Env.proxyAdmin(),
-                data: abi.encodeCall(
-                    ProxyAdmin.upgrade,
-                    (
-                        ITransparentUpgradeableProxy(address(Env.proxy.strategyFactory())),
-                        address(Env.impl.strategyFactory())
-                    )
-                )
-            })  
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.eigenStrategy()),
+                    impl: address(Env.impl.eigenStrategy())
+                })
+            })
             .append({
                 to: address(Env.proxy.strategyBase()),
-                data: abi.encodeCall(
-                    UpgradeableBeacon.upgradeTo,
-                    (
-                        address(Env.impl.strategyBase())
-                    )
-                )
+                data: Encode.upgradeableBeacon.upgradeTo({
+                    newImpl: address(Env.impl.strategyBase())
+                })
+            })
+            .append({
+                to: Env.proxyAdmin(),
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.strategyFactory()),
+                    impl: address(Env.impl.strategyFactory())
+                })
             });
 
+        /// Add call to upgrade each pre-longtail strategy instance
         uint count = Env.instance.strategyBaseTVLLimits_Count();
         for (uint i = 0; i < count; i++) {
-            address instance = address(Env.instance.strategyBaseTVLLimits(i));
+            address proxyInstance = address(Env.instance.strategyBaseTVLLimits(i));
 
-            _executorCalls.append({
+            executorCalls.append({
                 to: Env.proxyAdmin(),
-                data: abi.encodeCall(
-                    ProxyAdmin.upgrade,
-                    (
-                        ITransparentUpgradeableProxy(instance),
-                        address(Env.impl.strategyBaseTVLLimits())
-                    )
-                )
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: proxyInstance,
+                    impl: address(Env.impl.strategyFactory())
+                })
             });
         }
 
-        return EncGnosisSafe.calldataToExecTransaction({
+        return Encode.gnosisSafe.execTransaction({
             from: address(Env.timelockController()),
             to: Env.multiSendCallOnly(),
-            data: MultisigCallUtils.encodeMultisendTxs(IMultiSend(address(0)), _executorCalls),
-            op: EncGnosisSafe.Operation.DelegateCall
+            op: Encode.Operation.DelegateCall,
+            data: Encode.multiSend(executorCalls)
         });
     }
 
@@ -178,7 +139,7 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
     }
 
     function runAsMultisig() internal virtual override {
-        (bytes memory call) = _getMultisigTransactionCalldata();
+        bytes memory call = _getMultisigTransactionCalldata();
 
         TimelockController timelock = Env.timelockController();
         timelock.schedule(
@@ -194,9 +155,6 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
     function testDeploy() virtual public override {
         runAsEOA();
         execute();
-
-        // TODO hack
-        delete _executorCalls;
 
         TimelockController timelock = Env.timelockController();
         bytes memory call = _getMultisigTransactionCalldata();

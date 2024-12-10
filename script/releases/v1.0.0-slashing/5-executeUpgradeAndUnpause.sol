@@ -4,15 +4,10 @@ pragma solidity ^0.8.12;
 import "../Env.sol";
 import {QueueAndUnpause} from "./2-queueUpgradeAndUnpause.s.sol";
 
-import {MultisigCall, MultisigCallUtils} from "zeus-templates/templates/MultisigBuilder.sol";
-import {SafeTx, SafeTxUtils} from "zeus-templates/utils/SafeTxUtils.sol";
-
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract Execute is QueueAndUnpause {
-    using MultisigCallUtils for MultisigCall[];
-    using SafeTxUtils for SafeTx;
     using Env for *;
 
     function options() internal override view returns (MultisigOptions memory) {
