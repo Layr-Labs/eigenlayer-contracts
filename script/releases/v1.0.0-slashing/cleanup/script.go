@@ -5,10 +5,12 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"os"
 	"strings"
 	"time"
 
+	proofgen "github.com/Layr-Labs/eigenpod-proofs-generation/cli/core"
 	eth2client "github.com/attestantio/go-eth2-client"
 	"github.com/attestantio/go-eth2-client/api"
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
@@ -20,6 +22,11 @@ import (
 	multicall "github.com/jbrower95/multicall-go"
 	"github.com/samber/lo"
 )
+
+type EigenpodInfo struct {
+	Address                    string `json:"address"`
+	CurrentCheckpointTimestamp uint64 `json:"currentCheckpointTimestamp"`
+}
 
 type TQueryAllEigenpodsOnNetworkArgs struct {
 	Ctx               context.Context
@@ -45,12 +52,14 @@ type ValidatorWithIndex struct {
 type TArgs struct {
 	Node       string
 	BeaconNode string
+	Sender     string
 }
 
 func main() {
 	err := runScript(TArgs{
 		Node:       os.Getenv("RPC_URL"),
 		BeaconNode: os.Getenv("BEACON_URL"),
+		Sender:     os.Getenv("SENDER_PK"),
 	})
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
@@ -76,6 +85,9 @@ func runScript(args TArgs) error {
 
 	eth, err := ethclient.Dial(args.Node)
 	panicOnError("failed to reach eth node", err)
+
+	chainId, err := eth.ChainID(ctx)
+	panicOnError("failed to read chainId", err)
 
 	beaconClient, err := attestantio.New(ctx,
 		attestantio.WithAddress(args.BeaconNode),
@@ -130,33 +142,54 @@ func runScript(args TArgs) error {
 	checkpointTimestamps, err := fetchCurrentCheckpointTimestamps(allEigenpods, &eigenpodAbi, mc)
 	panicOnError("failed to fetch currentCheckpointTimestamps", err)
 
-	// Build a result set
-	type EigenpodInfo struct {
-		Address                    string `json:"address"`
-		CurrentCheckpointTimestamp uint64 `json:"currentCheckpointTimestamp"`
-	}
 	results := []EigenpodInfo{}
 
 	for i, ep := range allEigenpods {
 		if checkpointTimestamps[i] > 0 {
 			results = append(results, EigenpodInfo{
-				Address:                    ep,
+				Address:                    fmt.Sprintf("0x%s", ep),
 				CurrentCheckpointTimestamp: checkpointTimestamps[i],
 			})
 		}
+	}
+
+	if len(results) == 0 {
+		fmt.Printf("No eigenpods had active checkpoints. OK.")
+		return nil
 	}
 
 	fmt.Printf("%d EigenPods had active checkpoints\n\n", len(results))
 
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
+	fmt.Printf("%s\n", enc.Encode(results))
 
-	fmt.Printf("Completing these checkpoints....")
+	fmt.Printf("Completing %d checkpoints....", len(results))
+	coreBeaconClient, _, err := proofgen.NewBeaconClient(args.BeaconNode, true /* verbose */)
+	panicOnError("failed to instantiate beaconClient", err)
 
-	// TODO: complete the checkpoints.
-	// TODO: pass in a funded wallet.
+	for i := 0; i < len(results); i++ {
+		fmt.Printf("Completing [%d/%d]...", i+1, len(results))
+		fmt.Printf("NOTE: this is expensive, and may take several minutes.")
+		completeCheckpointForEigenpod(ctx, results[i].Address, eth, chainId, coreBeaconClient, args.Sender)
+	}
 
-	return enc.Encode(results)
+	return nil
+}
+
+func completeCheckpointForEigenpod(ctx context.Context, eigenpodAddress string, eth *ethclient.Client, chainId *big.Int, coreBeaconClient proofgen.BeaconClient, sender string) {
+	res, err := proofgen.GenerateCheckpointProof(ctx, eigenpodAddress, eth, chainId, coreBeaconClient, true)
+	panicOnError(fmt.Sprintf("failed to generate checkpoint proof for eigenpod:%s", eigenpodAddress), err)
+
+	txns, err := proofgen.SubmitCheckpointProof(ctx, sender, eigenpodAddress, chainId, res, eth, 80 /* ideal checkpoint proof batch size */, true /* noPrompt */, false /* noSend */, true /* verbose */)
+	panicOnError(fmt.Sprintf("failed to submit checkpoint proof for eigenpod:%s", eigenpodAddress), err)
+	if txns == nil {
+		panic("submitting checkpoint proof generated no transactions. this is a bug.")
+	}
+
+	for i, txn := range txns {
+		fmt.Printf("[%d/%d] %s\n", i+1, len(txns), txn.Hash())
+	}
 }
 
 // This is a simplified version of the queryAllEigenpodsOnNetwork function inline.
@@ -193,7 +226,7 @@ func internalQueryAllEigenpodsOnNetwork(args TQueryAllEigenpodsOnNetworkArgs) ([
 		return accum
 	}, map[string]int{}))
 
-	fmt.Printf("Querying %d addresses to see if they may be eigenpods\n", len(interestingWithdrawalAddresses))
+	fmt.Printf("Querying %d beacon-chain withdrawal addresses to see if they may be eigenpods\n", len(interestingWithdrawalAddresses))
 
 	podOwners, err := multicall.DoManyAllowFailures[common.Address](args.Mc, lo.Map(interestingWithdrawalAddresses, func(address string, index int) *multicall.MultiCallMetaData[common.Address] {
 		callMeta, err := multicall.Describe[common.Address](
