@@ -89,23 +89,23 @@ library Env {
     }
 
     function CALCULATION_INTERVAL_SECONDS() internal view returns (uint32) {
-        return _envU32("CALCULATION_INTERVAL_SECONDS");
+        return _envU32("REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS");
     }
 
     function MAX_REWARDS_DURATION() internal view returns (uint32) {
-        return _envU32("MAX_REWARDS_DURATION");
+        return _envU32("REWARDS_COORDINATOR_MAX_REWARDS_DURATION");
     }
 
     function MAX_RETROACTIVE_LENGTH() internal view returns (uint32) {
-        return _envU32("MAX_RETROACTIVE_LENGTH");
+        return _envU32("REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH");
     }
 
     function MAX_FUTURE_LENGTH() internal view returns (uint32) {
-        return _envU32("MAX_FUTURE_LENGTH");
+        return _envU32("REWARDS_COORDINATOR_MAX_FUTURE_LENGTH");
     }
 
     function GENESIS_REWARDS_TIMESTAMP() internal view returns (uint32) {
-        return _envU32("GENESIS_REWARDS_TIMESTAMP");
+        return _envU32("REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP");
     }
 
     /**
