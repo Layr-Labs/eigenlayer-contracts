@@ -678,11 +678,11 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         uint64 encumberedMagnitudeBefore = allocationManager.encumberedMagnitude(defaultOperator, strategyMock);
         uint64 maxMagnitudeBefore = allocationManager.getMaxMagnitudes(defaultOperator, strategyMock.toArray())[0];
 
-        // The only slash event we expect is the OperatorSlashed. There isn't a way to validate
-        // an event is NOT emitted, but we've manually validated that
+        // The only slash event we expect is the OperatorSlashed. Validate the number
         cheats.expectEmit(true, true, true, true, address(allocationManager));
         emit OperatorSlashed(defaultOperator, defaultOperatorSet, defaultStrategies, uint256(0).toArrayU256(), "test");
 
+        uint256 numLogsBefore = cheats.getRecordedLogs().length;
         cheats.prank(defaultAVS);
         allocationManager.slashOperator(
             defaultAVS, 
@@ -694,6 +694,10 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
                 description: "test"
             })
         );
+        uint256 numLogsAfter = cheats.getRecordedLogs().length;
+
+        // Assert only 1 log was emitted
+        assertEq(numLogsAfter, numLogsBefore + 1, "Incorrect number of logs emitted");
 
         // Assert encumberedMagnitude and maxMagnitude are unchanged
         assertEq(
