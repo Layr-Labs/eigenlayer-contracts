@@ -123,6 +123,8 @@ func runScript(args TArgs) error {
 	}
 	validators := *_validators
 
+	fmt.Printf("Found %d validators\n", len(validators))
+
 	panicOnError("failed to load beacon state", err)
 
 	panicOnError("failed to fetch validators", err)
@@ -179,6 +181,16 @@ func runScript(args TArgs) error {
 		fmt.Printf("Completing [%d/%d]...", i+1, len(results))
 		fmt.Printf("NOTE: this is expensive, and may take several minutes.")
 		completeCheckpointForEigenpod(ctx, results[i].Address, eth, chainId, coreBeaconClient, args.Sender)
+	}
+
+	checkpointTimestamps, err = fetchCurrentCheckpointTimestamps(allEigenpods, &eigenpodAbi, mc)
+	panicOnError("failed to fetch currentCheckpointTimestamps", err)
+
+	// require that all eigenpods have a checkpoint timestamp of 0
+	for i, timestamp := range checkpointTimestamps {
+		if timestamp != 0 {
+			panic(fmt.Sprintf("expected all eigenpods to have a checkpoint timestamp of 0, but found %d on %s", timestamp, allEigenpods[i]))
+		}
 	}
 
 	return nil
@@ -261,7 +273,7 @@ func internalQueryAllEigenpodsOnNetwork(args TQueryAllEigenpodsOnNetworkArgs) ([
 
 	fmt.Printf("Querying %d addresses on (EigenPodManager=%s) to see if it knows about these eigenpods\n", len(addressesWithPodOwners), args.PodManagerAddress)
 
-	eigenpodForOwner, err := multicall.DoManyAllowFailures(
+	eigenpodForOwner, err := multicall.DoMany(
 		args.Mc,
 		lo.Map(addressesWithPodOwners, func(address string, i int) *multicall.MultiCallMetaData[common.Address] {
 			claimedOwner := *podToPodOwner[address]
@@ -279,7 +291,7 @@ func internalQueryAllEigenpodsOnNetwork(args TQueryAllEigenpodsOnNetworkArgs) ([
 
 	// now, see which are properly eigenpods
 	return lo.Filter(addressesWithPodOwners, func(address string, i int) bool {
-		return (*eigenpodForOwner)[i].Success && (*eigenpodForOwner)[i].Value.Cmp(common.HexToAddress(addressesWithPodOwners[i])) == 0
+		return (*eigenpodForOwner)[i].Cmp(common.HexToAddress(addressesWithPodOwners[i])) == 0
 	}), nil
 }
 
