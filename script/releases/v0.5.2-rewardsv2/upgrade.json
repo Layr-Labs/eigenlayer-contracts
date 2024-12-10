@@ -1,0 +1,19 @@
+{
+    "name": "rewards-v2-patch",
+    "from": "~0.0.0",
+    "to": "0.5.2",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-eoa.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-multisig.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-multisig.s.sol"
+        }
+    ]
+}
