@@ -1288,6 +1288,17 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             expectedAllocation: Allocation({currentMagnitude: 0, pendingDiff: 0, effectBlock: uint32(block.number) + DEALLOCATION_DELAY}),
             expectedMagnitudes: Magnitudes({encumbered: 0, max: 0, allocatable: 0})
         });
+
+        // Complete deallocation
+        cheats.roll(uint32(block.number) + DEALLOCATION_DELAY);
+        allocationManager.clearDeallocationQueue(defaultOperator, defaultStrategies, _maxNumToClear());
+
+        // Validate allocatable amount is 0
+        assertEq(
+            0,
+            allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock),
+            "Allocatable magnitude should be 0"
+        );
     }
 
     /**
