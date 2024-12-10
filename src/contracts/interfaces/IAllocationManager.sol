@@ -26,8 +26,6 @@ interface IAllocationManagerErrors {
 
     /// @dev Thrown when an invalid operator is provided.
     error InvalidOperator();
-    /// @dev Thrown when `operator` is not a registered operator.
-    error OperatorNotRegistered();
     /// @dev Thrown when an operator's allocation delay has yet to be set.
     error UninitializedAllocationDelay();
     /// @dev Thrown when attempting to slash an operator when they are not slashable.
