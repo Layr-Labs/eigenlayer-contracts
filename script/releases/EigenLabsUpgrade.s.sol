@@ -35,13 +35,13 @@ library EigenLabsUpgrade {
     function _pauserRegistry(
         ZeusScript self
     ) internal view returns (address) {
-        return self.zDeployedContract("PauserRegistry");
+        return self.zDeployedImpl("PauserRegistry");
     }
 
     function _proxyAdmin(
         ZeusScript self
     ) internal view returns (address) {
-        return self.zDeployedContract("ProxyAdmin");
+        return self.zAddress("proxyAdmin");
     }
 
     function _eigenPodManagerProxy(
