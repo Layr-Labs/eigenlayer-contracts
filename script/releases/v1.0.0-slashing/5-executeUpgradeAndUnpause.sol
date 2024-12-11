@@ -10,18 +10,8 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 contract Execute is QueueAndUnpause {
     using Env for *;
 
-    function options() internal override view returns (MultisigOptions memory) {
-        return MultisigOptions(
-            Env.protocolCouncilMultisig(),
-            Operation.Call
-        );
-    }
-
-    /**
-     * @dev Overrides the previous _execute function to execute the queued transactions.
-     */
-    function runAsMultisig() internal override {
-        bytes memory call = _getMultisigTransactionCalldata();
+    function _runAsMultisig() prank(Env.protocolCouncilMultisig()) internal override {
+        bytes memory call = _getCalldataToExecutor();
         TimelockController timelock = Env.timelockController();
         timelock.execute(
             Env.executorMultisig(),
@@ -37,11 +27,11 @@ contract Execute is QueueAndUnpause {
     function testExecute() public { 
         // 1- run queueing logic
         vm.startPrank(Env.opsMultisig());
-        super.runAsMultisig();
+        super._runAsMultisig();
         vm.stopPrank();
 
         TimelockController timelock = Env.timelockController();
-        bytes memory call = _getMultisigTransactionCalldata();
+        bytes memory call = _getCalldataToExecutor();
         bytes32 txHash = timelock.hashOperation(Env.executorMultisig(), 0, call, 0, 0);
         assertEq(timelock.isOperationPending(txHash), true, "Transaction should be queued and pending.");
 

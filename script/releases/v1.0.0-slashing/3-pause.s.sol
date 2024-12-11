@@ -11,14 +11,7 @@ import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 contract Pause is MultisigBuilder {
     using Env for *;
 
-    function options() internal override view returns (MultisigOptions memory) {
-        return MultisigOptions(
-            Env.pauserMultisig(),
-            Operation.Call
-        );
-    }
-
-    function runAsMultisig() internal virtual override {
+    function _runAsMultisig() prank(Env.pauserMultisig()) internal virtual override {
         // TODO: set: 
         //    pause EigenPodManager
     }

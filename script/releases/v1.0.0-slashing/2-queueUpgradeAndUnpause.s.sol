@@ -42,7 +42,22 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
     using Env for *;
     using Encode for *;
 
-    function _getMultisigTransactionCalldata() internal returns (bytes memory) {
+    function _runAsMultisig() prank(Env.opsMultisig()) internal virtual override {
+        bytes memory calldata_to_executor = _getCalldataToExecutor();
+
+        TimelockController timelock = Env.timelockController();
+        timelock.schedule(
+            Env.executorMultisig(), 
+            0, 
+            calldata_to_executor,
+            0,
+            bytes32(0),  
+            timelock.getMinDelay()
+        );
+    }
+
+    /// @dev Get the calldata to be sent from the timelock to the executor
+    function _getCalldataToExecutor() internal returns (bytes memory) {
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls()
             /// core/
             .append({
@@ -131,33 +146,12 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
         });
     }
 
-    function options() internal virtual override returns (MultisigOptions memory) {
-        return MultisigOptions(
-            Env.opsMultisig(),
-            Operation.DelegateCall
-        );
-    }
-
-    function runAsMultisig() internal virtual override {
-        bytes memory call = _getMultisigTransactionCalldata();
-
-        TimelockController timelock = Env.timelockController();
-        timelock.schedule(
-            Env.executorMultisig(), 
-            0, 
-            call,
-            0,
-            bytes32(0),  
-            timelock.getMinDelay()
-        );
-    }
-
     function testDeploy() virtual public override {
         runAsEOA();
         execute();
 
         TimelockController timelock = Env.timelockController();
-        bytes memory call = _getMultisigTransactionCalldata();
+        bytes memory call = _getCalldataToExecutor();
         bytes32 txHash = timelock.hashOperation(Env.executorMultisig(), 0, call, 0, 0);
         assertEq(timelock.isOperationPending(txHash), true, "Transaction should be queued.");
     }
