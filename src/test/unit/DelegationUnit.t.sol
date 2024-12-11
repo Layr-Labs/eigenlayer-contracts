@@ -4679,6 +4679,234 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
         uint256 operatorSharesAfter = delegationManager.operatorShares(defaultOperator, strategyMock);
         assertLe(operatorSharesAfter, operatorSharesBefore, "operator shares should be less than or equal to before due to potential rounding");
     }
+}
+
+contract DelegationManagerUnitTests_redelegate is DelegationManagerUnitTests {    
+    // @notice Verifies that redelegating is not possible when the "delegation paused" switch is flipped
+    function testFuzz_Revert_redelegate_delegatePaused(Randomness r) public {
+        address staker = r.Address();
+        address newOperator = r.Address();
+
+        // register *this contract* as an operator and delegate from the `staker` to them
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _registerOperatorWithBaseDetails(newOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+
+        // set the pausing flag
+        cheats.prank(pauser);
+        delegationManager.pause(2 ** PAUSED_NEW_DELEGATION);
+
+        cheats.prank(staker);
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        delegationManager.redelegate(newOperator, emptyApproverSignatureAndExpiry, emptySalt);
+    }
+
+    // @notice Verifies that redelegating is not possible when the "undelegation paused" switch is flipped
+    function testFuzz_Revert_redelegate_undelegatePaused(Randomness r) public {
+        address staker = r.Address();
+        address newOperator = r.Address();
+
+        // register *this contract* as an operator and delegate from the `staker` to them
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _registerOperatorWithBaseDetails(newOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+
+        // set the pausing flag
+        cheats.prank(pauser);
+        delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
+
+        cheats.prank(staker);
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        delegationManager.redelegate(newOperator, emptyApproverSignatureAndExpiry, emptySalt);
+    }
+
+    function testFuzz_Revert_redelegate_notDelegated(Randomness r) public {
+        address undelegatedStaker = r.Address();
+        assertFalse(delegationManager.isDelegated(undelegatedStaker), "bad test setup");
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+
+        cheats.prank(undelegatedStaker);
+        cheats.expectRevert(NotActivelyDelegated.selector);
+        delegationManager.redelegate(defaultOperator, emptyApproverSignatureAndExpiry, emptySalt);
+    }
+
+    // @notice Verifies that an operator cannot undelegate from themself (this should always be forbidden)
+    function testFuzz_Revert_redelegate_stakerIsOperator(Randomness r) public {
+        address operator = r.Address();
+        _registerOperatorWithBaseDetails(operator);
+        _registerOperatorWithBaseDetails(defaultOperator);
+
+        cheats.prank(operator);
+        cheats.expectRevert(OperatorsCannotUndelegate.selector);
+        delegationManager.redelegate(defaultOperator, emptyApproverSignatureAndExpiry, emptySalt);
+    }
+
+    /// @notice Verifies that `staker` cannot redelegate to an unregistered `operator`
+    function testFuzz_Revert_redelegateToUnregisteredOperator(Randomness r) public {
+        address staker = r.Address();
+        address operator = r.Address();
+        assertFalse(delegationManager.isOperator(operator), "incorrect test input?");
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+
+        // try to delegate and check that the call reverts
+        cheats.prank(staker);
+        cheats.expectRevert(OperatorNotRegistered.selector);
+        delegationManager.redelegate(operator, emptyApproverSignatureAndExpiry, emptySalt);
+    }
+
+    function testFuzz_Revert_redelegate_ExpiredSignature(
+        Randomness r
+    ) public {
+        // roll to a very late timestamp
+        skip(type(uint256).max / 2);
+
+        address staker = r.Address();
+        address newOperator = r.Address();
+        uint expiry = r.Uint256(0, block.timestamp - 1);
+        bytes32 salt = r.Bytes32();
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+
+        _registerOperatorWithDelegationApprover(newOperator);
+
+        // calculate the delegationSigner's signature
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            newOperator,
+            salt,
+            expiry
+        );
+
+        // delegate from the `staker` to the operator
+        cheats.startPrank(staker);
+        cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
+        delegationManager.redelegate(newOperator, approverSignatureAndExpiry, salt);
+        cheats.stopPrank();
+    }
+
+    function testFuzz_Revert_redelegate_SpentSalt(
+        Randomness r
+    ) public {
+        address staker = r.Address();
+        address newOperator = r.Address();
+        uint expiry = r.Uint256(block.timestamp, block.timestamp + 100);
+        bytes32 salt = r.Bytes32();
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _registerOperatorWithDelegationApprover(newOperator);
+
+        // verify that the salt hasn't been used before
+        assertFalse(
+            delegationManager.delegationApproverSaltIsSpent(
+                delegationManager.delegationApprover(newOperator),
+                salt
+            ),
+            "salt somehow spent too early?"
+        );
+        // calculate the delegationSigner's signature
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            newOperator,
+            salt,
+            expiry
+        );
+
+        // Spend salt by delegating normally first
+        cheats.startPrank(staker);
+        delegationManager.delegateTo(newOperator, approverSignatureAndExpiry, salt);
+        assertTrue(
+            delegationManager.delegationApproverSaltIsSpent(
+                delegationManager.delegationApprover(newOperator),
+                salt
+            ),
+            "salt somehow spent not spent?"
+        );
+
+        // redelegate to a different operator
+        delegationManager.redelegate(defaultOperator, emptyApproverSignatureAndExpiry, emptySalt);
+
+        // Now try to redelegate to the original operator using the invalid signature
+        cheats.expectRevert(SaltSpent.selector);
+        delegationManager.redelegate(newOperator, approverSignatureAndExpiry, salt);
+        cheats.stopPrank();
+    }
+
+    /**
+     * @notice Verifies that the `redelegate` function properly queues a withdrawal for all shares of the staker
+     * ... and delegates to a new operator
+     */
+    function testFuzz_redelegate_noSlashing(Randomness r) public {
+        uint256 shares = r.Uint256(1, MAX_STRATEGY_SHARES);
+        IStrategy[] memory strategyArray = r.StrategyArray(1);
+        IStrategy strategy = strategyArray[0];
+
+        // Set the staker deposits in the strategies
+        strategyManagerMock.addDeposit(defaultStaker, strategy, shares);
+
+        // register *this contract* as an operator and delegate from the `staker` to them
+        address newOperator = r.Address();
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+        _registerOperatorWithBaseDetails(newOperator);
+        
+        // Format queued withdrawal
+        (
+            ,
+            Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            strategy: strategy,
+            depositSharesToWithdraw: shares
+        });
+
+        // Redelegate the staker
+        _undelegate_expectEmit_singleStrat(
+            UndelegateEmitStruct({
+                staker: defaultStaker,
+                operator: defaultOperator,
+                strategy: strategy,
+                depositSharesQueued: shares,
+                operatorSharesDecreased: shares,
+                withdrawal: withdrawal,
+                withdrawalRoot: withdrawalRoot,
+                depositScalingFactor: WAD,
+                forceUndelegated: false
+            })
+        );
+        _delegateTo_expectEmit_singleStrat(
+            DelegateToSingleStratEmitStruct({
+                staker: defaultStaker,
+                operator: newOperator,
+                strategy: strategyMock,
+                depositShares: 0,
+                depositScalingFactor: WAD
+            })
+        );
+        cheats.prank(defaultStaker);
+        delegationManager.redelegate(newOperator, emptyApproverSignatureAndExpiry, emptySalt);
+
+        // Checks - delegation status
+        assertEq(
+            delegationManager.delegatedTo(defaultStaker),
+            newOperator,
+            "undelegated staker should be delegated to new operator"
+        );
+        assertTrue(delegationManager.isDelegated(defaultStaker), "staker should still be delegated");
+
+        // Checks - operator & staker shares
+        assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "operator shares not decreased correctly");
+        assertEq(delegationManager.operatorShares(newOperator, strategyMock), 0, "operator shares should not have been added");
+        (uint256[] memory stakerWithdrawableShares, ) = delegationManager.getWithdrawableShares(defaultStaker, strategyArray);
+        assertEq(stakerWithdrawableShares[0], 0, "staker withdrawable shares not calculated correctly");
+    }
 
     /**
      * @notice This function tests to ensure that a delegator can re-delegate to an operator after undelegating.

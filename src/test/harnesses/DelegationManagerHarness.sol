@@ -7,7 +7,6 @@ import "forge-std/Test.sol";
 contract DelegationManagerHarness is DelegationManager {
 
     constructor(
-        IAVSDirectory _avsDirectory,
         IStrategyManager _strategyManager,
         IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
@@ -16,7 +15,6 @@ contract DelegationManagerHarness is DelegationManager {
         uint32 _MIN_WITHDRAWAL_DELAY
     )
         DelegationManager(
-            _avsDirectory,
             _strategyManager,
             _eigenPodManager,
             _allocationManager,
