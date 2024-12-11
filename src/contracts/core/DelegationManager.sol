@@ -289,27 +289,21 @@ contract DelegationManager is
     function decreaseDelegatedShares(
         address staker,
         uint256 curDepositShares,
-        uint64 prevBeaconChainSlashingFactor,
-        uint256 wadSlashed
+        uint64 beaconChainSlashingFactorDecrease
     ) external onlyEigenPodManager {
         if (!isDelegated(staker)) {
             return;
         }
-
         address operator = delegatedTo[staker];
 
-        // Calculate the previous slashing factor. This mirrors the calculation done
-        // in _getSlashingFactor
+        // Calculate the shares to remove from the operator by calculating difference in shares
+        // from the newly updated beaconChainSlashingFactor
         uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, beaconChainETHStrategy);
-        uint256 prevSlashingFactor = maxMagnitude.mulWad(prevBeaconChainSlashingFactor);
-
-        // Calculate the shares to remove from the operator by calculating the previously-withdrawable
-        // shares and applying slashing
         DepositScalingFactor memory dsf = _depositScalingFactor[staker][beaconChainETHStrategy];
         uint256 sharesToRemove = dsf.calcWithdrawable({
             depositShares: curDepositShares,
-            slashingFactor: prevSlashingFactor
-        }).mulWad(wadSlashed);
+            slashingFactor: maxMagnitude.mulWad(beaconChainSlashingFactorDecrease)
+        });
 
         // Decrease the operator's shares
         _decreaseDelegation({
@@ -348,8 +342,7 @@ contract DelegationManager is
             sharesToDecrease: sharesToDecrement
         });
 
-        /// TODO: implement EPM.burnShares interface. Likely requires more complex interface than just shares
-        /// so not adding a burnShares method in IShareManager
+        // NOTE: native ETH shares will be burned by a different mechanism in a future release
         if (strategy != beaconChainETHStrategy) {
             strategyManager.burnShares(strategy, sharesToBurn);
             emit OperatorSharesBurned(operator, strategy, sharesToBurn);
