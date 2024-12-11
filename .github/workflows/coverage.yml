@@ -68,18 +68,5 @@ jobs:
         echo "comment_contents<<$EOF" >> $GITHUB_OUTPUT
         echo "$(lcov --list ./lcov.info.pruned --ignore-errors inconsistent)" >> $GITHUB_OUTPUT
         echo "$EOF" >> $GITHUB_OUTPUT
-    - name: Comment the full report
-      uses: actions/github-script@v7
-      with:
-        script: |
-          let body = `${{ steps.print_coverage.outputs.comment_contents }}`;
-          github.rest.issues.createComment({
-            issue_number: ${{ steps.get_issue_number.outputs.result }},
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `
-            \`\`\`
-            ${body}
-            \`\`\`
-            `
-          })
+    - name: Log Coverage Report
+      run: echo "${{ steps.print_coverage.outputs.comment_contents }}"
