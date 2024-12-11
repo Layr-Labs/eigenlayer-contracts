@@ -75,8 +75,22 @@ contract TestRewardsV2 is ZeusScript {
             rewardsCoordinator.setOperatorPISplit(operatorsRegisteredToAVS[i], uint16(vm.randomUint(1, 10000)));
             vm.stopBroadcast();
         }
+    }
 
-        // this leaves 1/5 of the operators with no splits set
+    function tx_prep4() public parseState {
+        address rewardingServiceManager = address(_rewardingServiceManager());
+        IRewardsCoordinator rewardsCoordinator = _rewardsCoordinator();
+        // Deploy token 
+        (address[] memory operatorsRegisteredToAVS,) = _getAllOperatorsRegisteredToAVS(rewardingServiceManager);
+
+        // for the second 1/5 of the operators, set the AVS split to random values
+        for (uint256 i = operatorsRegisteredToAVS.length*3/5; i < operatorsRegisteredToAVS.length*4/5 + 4; i++) {
+            emit log_named_address("Operator", operatorsRegisteredToAVS[i]);
+            vm.startBroadcast();
+            ServiceManagerMock(rewardingServiceManager).deregisterOperatorFromAVS(operatorsRegisteredToAVS[i]);
+            vm.stopBroadcast();
+        }
+
     }
 
     function tx_1() public parseState {
@@ -98,8 +112,8 @@ contract TestRewardsV2 is ZeusScript {
 
         // Format Range
         uint32 moddedCurrTimestamp = uint32(block.timestamp) - (uint32(block.timestamp) % _rewardsCoordinator().CALCULATION_INTERVAL_SECONDS());
-        uint32 startTimestamp = moddedCurrTimestamp - 1 weeks;
-        uint32 duration = 1 weeks;
+        uint32 startTimestamp = moddedCurrTimestamp - 3 days;
+        uint32 duration = 3 days;
 
         (address[] memory operatorsRegisteredToAVS,) = _getAllOperatorsRegisteredToAVS(address(_rewardingServiceManager()));
 
@@ -135,8 +149,8 @@ contract TestRewardsV2 is ZeusScript {
 
         // Format Range
         uint32 moddedCurrTimestamp = uint32(block.timestamp) - (uint32(block.timestamp) % _rewardsCoordinator().CALCULATION_INTERVAL_SECONDS());
-        uint32 startTimestamp = moddedCurrTimestamp - 1 weeks;
-        uint32 duration = 2 weeks;
+        uint32 startTimestamp = moddedCurrTimestamp - 3 days;
+        uint32 duration = 3 days;
 
         rewardsSubmission[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategyAndMultipliers,
@@ -171,8 +185,8 @@ contract TestRewardsV2 is ZeusScript {
         // Format Range
         uint32 calculationIntervalSeconds = _rewardsCoordinator().CALCULATION_INTERVAL_SECONDS();
         uint32 moddedCurrTimestamp = uint32(block.timestamp) - (uint32(block.timestamp) % calculationIntervalSeconds);
-        uint32 startTimestamp = moddedCurrTimestamp;
-        uint32 duration = 2 weeks;
+        uint32 startTimestamp = moddedCurrTimestamp - 3 days;
+        uint32 duration = 3 days;
 
         rewardsSubmission[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategyAndMultipliers,
