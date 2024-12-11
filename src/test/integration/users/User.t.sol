@@ -37,9 +37,12 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    AllocationManager allocationManager;
+    // TODO: fix this and view function getters. These are newly added contracts so these are initially
+    // 0 addresses for fork tests. To work around this, we read these addresses directly off the delegationManager
+    // from its immutable addresses. This is a temporary solution until we can figure out a better way to handle this.
+    // AllocationManager allocationManager; 
+    // PermissionController permissionController;
     DelegationManager delegationManager;
-    PermissionController permissionController;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
     TimeMachine timeMachine;
@@ -56,9 +59,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
-        allocationManager = deployer.allocationManager();
+        // TODO uncommented for reason above
+        // allocationManager = deployer.allocationManager();
+        // permissionController = deployer.permissionController();
         delegationManager = deployer.delegationManager();
-        permissionController = deployer.permissionController();
         strategyManager = deployer.strategyManager();
         eigenPodManager = deployer.eigenPodManager();
         
@@ -101,7 +105,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             )
         );
 
-        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        IStrategy[] memory strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
 
         require(strategies.length == magnitudes.length, "User.modifyAllocations: length mismatch");
 
@@ -112,7 +116,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }).toArray();
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.modifyAllocations.selector);
-        allocationManager.modifyAllocations(address(this), allocateParams);
+        allocationManager().modifyAllocations(address(this), allocateParams);
         print.gasUsed();
 
         return allocateParams[0];
@@ -123,7 +127,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) public virtual returns (AllocateParams memory) {
         return modifyAllocations(
             operatorSet, 
-            new uint64[](allocationManager.getStrategiesInOperatorSet(operatorSet).length)
+            new uint64[](allocationManager().getStrategiesInOperatorSet(operatorSet).length)
         );
     }
 
@@ -150,7 +154,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         );
         
         _tryPrankAppointee_AllocationManager(IAllocationManager.registerForOperatorSets.selector);
-        allocationManager.registerForOperatorSets(
+        allocationManager().registerForOperatorSets(
             address(this),
             RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
         );
@@ -172,7 +176,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         );
         
         _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
-        allocationManager.deregisterFromOperatorSets(
+        allocationManager().deregisterFromOperatorSets(
             DeregisterParams({
                 operator: address(this),
                 avs: operatorSet.avs,
@@ -185,9 +189,9 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function setAllocationDelay(uint32 delay) public virtual createSnapshot {
         print.method("setAllocationDelay");
         _tryPrankAppointee_AllocationManager(IAllocationManager.setAllocationDelay.selector);
-        allocationManager.setAllocationDelay(address(this), delay);
+        allocationManager().setAllocationDelay(address(this), delay);
         print.gasUsed();
-        rollForward({blocks: allocationManager.ALLOCATION_CONFIGURATION_DELAY()});
+        rollForward({blocks: allocationManager().ALLOCATION_CONFIGURATION_DELAY()});
     }
 
     /// -----------------------------------------------------------------------
@@ -439,6 +443,14 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// Internal Methods
     /// -----------------------------------------------------------------------
 
+    function allocationManager() public view returns (AllocationManager) {
+        return AllocationManager(address(delegationManager.allocationManager()));
+    }
+
+    function permissionController() public view returns (PermissionController) {
+        return PermissionController(address(delegationManager.permissionController()));
+    }
+
     function _completeQueuedWithdrawal(
         Withdrawal memory withdrawal,
         bool receiveAsTokens
@@ -606,7 +618,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         IStrategy strategy
     ) internal view returns (uint256) {
         address operator = delegationManager.delegatedTo(staker);
-        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
+        uint64 maxMagnitude = allocationManager().getMaxMagnitudes(operator, strategy.toArray())[0];
         if (strategy == beaconChainETHStrategy) {
             return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(staker));
         }
@@ -675,14 +687,14 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         address target,
         bytes4 selector
     ) internal {
-        address[] memory appointees = permissionController.getAppointees(address(this), target, selector);
+        address[] memory appointees = permissionController().getAppointees(address(this), target, selector);
         if (appointees.length != 0) cheats.prank(appointees[0]);
     }
 
     function _tryPrankAppointee_AllocationManager(
         bytes4 selector
     ) internal {
-        return _tryPrankAppointee(address(allocationManager), selector);
+        return _tryPrankAppointee(address(allocationManager()), selector);
     }
 
     function _tryPrankAppointee_DelegationManager(

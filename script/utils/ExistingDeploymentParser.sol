@@ -779,5 +779,6 @@ contract ExistingDeploymentParser is Script, Test {
         REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".config.params.MAX_RETROACTIVE_LENGTH"));
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".config.params.MAX_FUTURE_LENGTH"));
         REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(stdJson.readUint(initialDeploymentData, ".config.params.GENESIS_REWARDS_TIMESTAMP"));
+        MIN_WITHDRAWAL_DELAY = uint32(stdJson.readUint(initialDeploymentData, ".config.params.MIN_WITHDRAWAL_DELAY"));
     }
 }
