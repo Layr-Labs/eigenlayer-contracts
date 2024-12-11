@@ -7,7 +7,7 @@ import "src/test/integration/deprecatedInterfaces/mainnet/IStrategyManager.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/contracts/mixins/SignatureUtils.sol";
 
-interface IUserMainnetForkDeployer {
+interface IUserM1MainnetForkDeployer {
     function delegationManager() external view returns (DelegationManager);
     function strategyManager() external view returns (StrategyManager);
     function eigenPodManager() external view returns (EigenPodManager);
@@ -26,7 +26,7 @@ contract User_M1 is User {
     IEigenPodManager_DeprecatedM1 eigenPodManager_M1;
 
     constructor(string memory name) User(name) {
-        IUserMainnetForkDeployer deployer = IUserMainnetForkDeployer(msg.sender);
+        IUserM1MainnetForkDeployer deployer = IUserM1MainnetForkDeployer(msg.sender);
 
         strategyManager_M1 = IStrategyManager_DeprecatedM1(address(deployer.strategyManager()));
         eigenPodManager_M1 = IEigenPodManager_DeprecatedM1(address(deployer.eigenPodManager()));

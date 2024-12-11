@@ -104,7 +104,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
         // Deploy DelegationManager implmentation and upgrade proxy
         delegationManagerImplementation = new DelegationManager(
-            IAVSDirectory(address(avsDirectoryMock)), 
             IStrategyManager(address(strategyManagerMock)), 
             IEigenPodManager(address(eigenPodManagerMock)), 
             IAllocationManager(address(allocationManagerMock)), 

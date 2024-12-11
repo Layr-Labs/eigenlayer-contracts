@@ -129,9 +129,6 @@ interface IEigenPodManager is
     /// @notice Beacon proxy to which the EigenPods point
     function eigenPodBeacon() external view returns (IBeacon);
 
-    /// @notice EigenLayer's StrategyManager contract
-    function strategyManager() external view returns (IStrategyManager);
-
     /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
     function hasPod(
         address podOwner

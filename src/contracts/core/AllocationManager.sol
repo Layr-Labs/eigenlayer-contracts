@@ -62,9 +62,9 @@ contract AllocationManager is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
-        bool isRegistered = _isRegistered(params.operator, operatorSet);
+        bool isOperatorSlashable = _isOperatorSlashable(params.operator, operatorSet);
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
-        require(isRegistered, NotMemberOfSet());
+        require(isOperatorSlashable, OperatorNotSlashable());
 
         uint256[] memory wadSlashed = new uint256[](params.strategies.length);
 
@@ -89,7 +89,7 @@ contract AllocationManager is
 
             // 2. Skip if the operator does not have a slashable allocation
             // NOTE: this "if" is equivalent to: `if (!_isAllocationSlashable)`, because the other
-            // conditions in this method are already true (isRegistered + operatorSetStrategies.contains)
+            // conditions in this method are already true (isOperatorSlashable + operatorSetStrategies.contains)
             if (allocation.currentMagnitude == 0) {
                 continue;
             }
@@ -123,6 +123,12 @@ contract AllocationManager is
 
             // 5. Update state
             _updateAllocationInfo(params.operator, operatorSet.key(), params.strategies[i], info, allocation);
+
+            // Emit an event for the updated allocation
+            emit AllocationUpdated(
+                params.operator, operatorSet, params.strategies[i], allocation.currentMagnitude, uint32(block.number)
+            );
+
             _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
 
             // 6. Decrease and burn operators shares in the DelegationManager
@@ -165,7 +171,7 @@ contract AllocationManager is
             OperatorSet memory operatorSet = params[i].operatorSet;
             require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
 
-            bool isRegistered = _isRegistered(operator, operatorSet);
+            bool isOperatorSlashable = _isOperatorSlashable(operator, operatorSet);
 
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 IStrategy strategy = params[i].strategies[j];
@@ -181,7 +187,7 @@ contract AllocationManager is
 
                 // 2. Check whether the operator's allocation is slashable. If not, we allow instant
                 // deallocation.
-                bool isSlashable = _isAllocationSlashable(operatorSet, strategy, allocation, isRegistered);
+                bool isSlashable = _isAllocationSlashable(operatorSet, strategy, allocation, isOperatorSlashable);
 
                 // 3. Calculate the change in magnitude
                 allocation.pendingDiff = _calcDelta(allocation.currentMagnitude, params[i].newMagnitudes[j]);
@@ -201,6 +207,7 @@ contract AllocationManager is
 
                         allocation.currentMagnitude = params[i].newMagnitudes[j];
                         allocation.pendingDiff = 0;
+                        allocation.effectBlock = uint32(block.number);
                     }
                 } else if (allocation.pendingDiff > 0) {
                     // Allocation immediately consumes available magnitude, but the additional
@@ -213,6 +220,15 @@ contract AllocationManager is
 
                 // 5. Update state
                 _updateAllocationInfo(operator, operatorSet.key(), strategy, info, allocation);
+
+                // 6. Emit an event for the updated allocation
+                emit AllocationUpdated(
+                    operator,
+                    OperatorSetLib.decode(operatorSet.key()),
+                    strategy,
+                    _addInt128(allocation.currentMagnitude, allocation.pendingDiff),
+                    allocation.effectBlock
+                );
             }
         }
     }
@@ -242,7 +258,7 @@ contract AllocationManager is
             // Check the operator set exists and the operator is not currently registered to it
             OperatorSet memory operatorSet = OperatorSet(params.avs, params.operatorSetIds[i]);
             require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
-            require(!_isRegistered(operator, operatorSet), AlreadyMemberOfSet());
+            require(!_isOperatorSlashable(operator, operatorSet), AlreadyMemberOfSet());
 
             // Add operator to operator set
             registeredSets[operator].add(operatorSet.key());
@@ -279,7 +295,7 @@ contract AllocationManager is
             // forgefmt: disable-next-item
             registrationStatus[params.operator][operatorSet.key()] = RegistrationStatus({
                 registered: false,
-                registeredUntil: uint32(block.number) + DEALLOCATION_DELAY
+                slashableUntil: uint32(block.number) + DEALLOCATION_DELAY
             });
         }
 
@@ -292,7 +308,7 @@ contract AllocationManager is
     function setAllocationDelay(address operator, uint32 delay) external {
         if (msg.sender != address(delegation)) {
             require(_checkCanCall(operator), InvalidCaller());
-            require(delegation.isOperator(operator), OperatorNotRegistered());
+            require(delegation.isOperator(operator), InvalidOperator());
         }
         _setAllocationDelay(operator, delay);
     }
@@ -321,7 +337,6 @@ contract AllocationManager is
 
             // Add strategies to the operator set
             bytes32 operatorSetKey = operatorSet.key();
-
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 _operatorSetStrategies[operatorSetKey].add(address(params[i].strategies[j]));
                 emit StrategyAddedToOperatorSet(operatorSet, params[i].strategies[j]);
@@ -427,34 +442,28 @@ contract AllocationManager is
         emit AllocationDelaySet(operator, delay, info.effectBlock);
     }
 
-    function _isRegistered(address operator, OperatorSet memory operatorSet) internal view returns (bool) {
+    /// @notice returns whether the operator is slashable in the given operator set
+    function _isOperatorSlashable(address operator, OperatorSet memory operatorSet) internal view returns (bool) {
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
 
-        return status.registered || block.number < status.registeredUntil;
+        return status.registered || block.number < status.slashableUntil;
     }
 
+    /// @notice returns whether the operator's allocation is slashable in the given operator set
     function _isAllocationSlashable(
         OperatorSet memory operatorSet,
         IStrategy strategy,
         Allocation memory allocation,
-        bool isRegistered
+        bool isOperatorSlashable
     ) internal view returns (bool) {
-        // If the operator set does not use this strategy, any allocation from it is not slashable
-        if (!_operatorSetStrategies[operatorSet.key()].contains(address(strategy))) {
-            return false;
-        }
-
-        // If the operator is not registered to the operator set, any allocation is not slashable
-        if (!isRegistered) {
-            return false;
-        }
-
-        // The allocation is not slashable if there is nothing allocated
-        if (allocation.currentMagnitude == 0) {
-            return false;
-        }
-
-        return true;
+        /// forgefmt: disable-next-item
+        return 
+            // If the operator set does not use this strategy, any allocation from it is not slashable
+            _operatorSetStrategies[operatorSet.key()].contains(address(strategy)) &&
+            // If the operator is not slashable by the operatorSet, any allocation is not slashable
+            isOperatorSlashable &&
+            // If there is nothing allocated, the allocation is not slashable
+            allocation.currentMagnitude != 0;
     }
 
     /**
@@ -503,15 +512,18 @@ contract AllocationManager is
         StrategyInfo memory info,
         Allocation memory allocation
     ) internal {
-        // Update encumbered magnitude
-        encumberedMagnitude[operator][strategy] = info.encumberedMagnitude;
-        emit EncumberedMagnitudeUpdated(operator, strategy, info.encumberedMagnitude);
+        // Update encumbered magnitude if it has changed
+        // The mapping should NOT be updated when there is a deallocation on a delay
+        if (encumberedMagnitude[operator][strategy] != info.encumberedMagnitude) {
+            encumberedMagnitude[operator][strategy] = info.encumberedMagnitude;
+            emit EncumberedMagnitudeUpdated(operator, strategy, info.encumberedMagnitude);
+        }
 
         // Update allocation for this operator set from the strategy
+        // We emit an `AllocationUpdated` from the `modifyAllocations` and `slashOperator` functions.
+        // `clearDeallocationQueue` does not emit an `AllocationUpdated` event since it was
+        // emitted when the deallocation was queued
         allocations[operator][operatorSetKey][strategy] = allocation;
-        emit AllocationUpdated(
-            operator, OperatorSetLib.decode(operatorSetKey), strategy, allocation.currentMagnitude, uint32(block.number)
-        );
 
         // Note: these no-op if the sets already contain the added values (or do not contain removed ones)
         if (allocation.pendingDiff != 0) {
@@ -645,7 +657,7 @@ contract AllocationManager is
             Allocation memory allocation = allocations[operator][operatorSetKey][strategy];
 
             // If we've reached a pending deallocation that isn't completable yet,
-            // we can stop. Any subsequent modificaitons will also be uncompletable.
+            // we can stop. Any subsequent modifications will also be uncompletable.
             if (block.number < allocation.effectBlock) {
                 break;
             }
@@ -736,6 +748,11 @@ contract AllocationManager is
         }
 
         return operatorSets;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        return _operatorSetMembers[operatorSet.key()].contains(operator);
     }
 
     /// @inheritdoc IAllocationManager

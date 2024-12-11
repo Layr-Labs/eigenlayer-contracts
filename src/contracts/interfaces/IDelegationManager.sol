@@ -7,8 +7,8 @@ import "./ISignatureUtils.sol";
 import "../libraries/SlashingLib.sol";
 
 interface IDelegationManagerErrors {
-    /// @dev Thrown when msg.sender is not allowed to call a function
-    error UnauthorizedCaller();
+    /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
+    error OnlyStrategyManagerOrEigenPodManager();
     /// @dev Thrown when msg.sender is not the EigenPodManager
     error OnlyEigenPodManager();
     /// @dev Throw when msg.sender is not the AllocationManager
@@ -35,8 +35,6 @@ interface IDelegationManagerErrors {
     error InputArrayLengthMismatch();
     /// @dev Thrown when input arrays length is zero.
     error InputArrayLengthZero();
-    /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
-    error OnlyStrategyManagerOrEigenPodManager();
 
     /// Slashing
 
@@ -51,12 +49,8 @@ interface IDelegationManagerErrors {
 
     /// Withdrawal Processing
 
-    /// @dev Thrown when attempting to execute an action that was not queued.
-    error WithdrawalDoesNotExist();
     /// @dev Thrown when attempting to withdraw before delay has elapsed.
     error WithdrawalDelayNotElapsed();
-    /// @dev Thrown when provided delay exceeds maximum.
-    error WithdrawalDelayExeedsMax();
     /// @dev Thrown when a withdraw amount larger than max is attempted.
     error WithdrawalExceedsMax();
     /// @dev Thrown when withdrawer is not the current caller.

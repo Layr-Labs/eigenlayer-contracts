@@ -375,7 +375,9 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(address avs, RewardsSubmission[] calldata rewardsSubmissions) external;
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
 
     /**
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
