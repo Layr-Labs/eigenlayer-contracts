@@ -474,6 +474,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * This value depends on which operator the staker is delegated to.
      * The shares amount returned is the actual amount of Strategy shares the staker would receive (subject
      * to each strategy's underlying shares to token ratio).
+     * The sum of getWithdrawableShares for all of an Operator's Stakers should be <= Operator shares
      */
     function getWithdrawableShares(
         address staker,
