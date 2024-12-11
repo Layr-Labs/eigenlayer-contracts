@@ -153,38 +153,6 @@ library ArrayLib {
     }
 
     /// -----------------------------------------------------------------------
-    /// Sorting
-    /// -----------------------------------------------------------------------
-    
-    function sort(
-        IStrategy[] memory array
-    ) internal pure returns (IStrategy[] memory) {
-        if (array.length <= 1) {
-            return array;
-        }
-
-        for (uint256 i = 1; i < array.length; i++) {
-            IStrategy key = array[i];
-            uint256 j = i - 1;
-            
-            while (j > 0 && uint256(uint160(address(array[j]))) > uint256(uint160(address(key)))) {
-                array[j + 1] = array[j];
-                j--;
-            }
-            
-            // Special case for the first element
-            if (j == 0 && uint256(uint160(address(array[j]))) > uint256(uint160(address(key)))) {
-                array[j + 1] = array[j];
-                array[j] = key;
-            } else if (j < i - 1) {
-                array[j + 1] = key;
-            }
-        }
-        
-        return array;
-    }
-
-    /// -----------------------------------------------------------------------
     /// Length Updates
     /// -----------------------------------------------------------------------
 
