@@ -122,39 +122,6 @@ library ArrayLib {
         array = new IAllocationManagerTypes.AllocateParams[](1);
         array[0] = allocateParams;
     }
-
-    /// -----------------------------------------------------------------------
-    /// Sorting
-    /// -----------------------------------------------------------------------
-    
-    function sort(
-        IStrategy[] memory array
-    ) internal pure returns (IStrategy[] memory) {
-        if (array.length <= 1) {
-            return array;
-        }
-
-        for (uint256 i = 1; i < array.length; i++) {
-            IStrategy key = array[i];
-            uint256 j = i - 1;
-            
-            while (j > 0 && uint256(uint160(address(array[j]))) > uint256(uint160(address(key)))) {
-                array[j + 1] = array[j];
-                j--;
-            }
-            
-            // Special case for the first element
-            if (j == 0 && uint256(uint160(address(array[j]))) > uint256(uint160(address(key)))) {
-                array[j + 1] = array[j];
-                array[j] = key;
-            } else if (j < i - 1) {
-                array[j + 1] = key;
-            }
-        }
-        
-        return array;
-    }
-
     /// -----------------------------------------------------------------------
     /// Length Updates
     /// -----------------------------------------------------------------------
@@ -236,6 +203,186 @@ library ArrayLib {
         assembly {
             mstore(array, len)
         }
+        return array;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Contains
+    /// -----------------------------------------------------------------------
+
+    function contains(
+        uint16[] memory array,
+        uint16 x
+    ) internal pure returns (bool) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return true;
+        }
+        return false;
+    }
+
+    function contains(
+        uint32[] memory array,
+        uint32 x
+    ) internal pure returns (bool) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return true;
+        }
+        return false;
+    }
+
+    function contains(
+        uint64[] memory array,
+        uint64 x
+    ) internal pure returns (bool) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return true;
+        }
+        return false;
+    }
+
+    function contains(
+        uint256[] memory array,
+        uint256 x
+    ) internal pure returns (bool) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return true;
+        }
+        return false;
+    }
+
+    function contains(
+        address[] memory array,
+        address x
+    ) internal pure returns (bool) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return true;
+        }
+        return false;
+    }
+
+    function contains(
+        IERC20[] memory array,
+        IERC20 x
+    ) internal pure returns (bool) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return true;
+        }
+        return false;
+    }
+
+    function contains(
+        IStrategy[] memory array,
+        IStrategy x
+    ) internal pure returns (bool) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return true;
+        }
+        return false;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// indexOf
+    /// -----------------------------------------------------------------------
+
+    function indexOf(
+        uint16[] memory array,
+        uint16 x
+    ) internal pure returns (uint256) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return i;
+        }
+        return type(uint256).max;
+    }
+
+    function indexOf(
+        uint32[] memory array,
+        uint32 x
+    ) internal pure returns (uint256) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return i;
+        }
+        return type(uint256).max;
+    }
+
+    function indexOf(
+        uint64[] memory array,
+        uint64 x
+    ) internal pure returns (uint256) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return i;
+        }
+        return type(uint256).max;
+    }
+
+    function indexOf(
+        uint256[] memory array,
+        uint256 x
+    ) internal pure returns (uint256) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return i;
+        }
+        return type(uint256).max;
+    }
+
+    function indexOf(
+        address[] memory array,
+        address x
+    ) internal pure returns (uint256) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return i;
+        }
+        return type(uint256).max;
+    }
+
+    function indexOf(
+        IERC20[] memory array,
+        IERC20 x
+    ) internal pure returns (uint256) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return i;
+        }
+        return type(uint256).max;
+    }
+
+    function indexOf(
+        IStrategy[] memory array,
+        IStrategy x
+    ) internal pure returns (uint256) {
+        for (uint256 i; i < array.length; ++i) {
+            if (array[i] == x) return i;
+        }
+        return type(uint256).max;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Sorting
+    /// -----------------------------------------------------------------------
+    
+    function sort(
+        IStrategy[] memory array
+    ) internal pure returns (IStrategy[] memory) {
+        if (array.length <= 1) {
+            return array;
+        }
+
+        for (uint256 i = 1; i < array.length; i++) {
+            IStrategy key = array[i];
+            uint256 j = i - 1;
+            
+            while (j > 0 && uint256(uint160(address(array[j]))) > uint256(uint160(address(key)))) {
+                array[j + 1] = array[j];
+                j--;
+            }
+            
+            // Special case for the first element
+            if (j == 0 && uint256(uint160(address(array[j]))) > uint256(uint160(address(key)))) {
+                array[j + 1] = array[j];
+                array[j] = key;
+            } else if (j < i - 1) {
+                array[j + 1] = key;
+            }
+        }
+        
         return array;
     }
 }

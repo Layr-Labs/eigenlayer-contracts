@@ -44,6 +44,8 @@ uint8 constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
 uint8 constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
 uint8 constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
 
+IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
 abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     using StdStyle for *;
     using ArrayLib for *;
@@ -61,6 +63,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
     // Multiple of 12 for sanity's sake
     uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
     uint64 constant GENESIS_TIME_MAINNET = 1_606_824_023;
+
+    uint8 constant NUM_LST_STRATS = 32;
 
     TimeMachine public timeMachine;
 
@@ -290,15 +294,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
         cheats.prank(eigenLayerReputedMultisig);
         strategyManager.setStrategyWhitelister(address(strategyFactory));
 
-        // Normal deployments
-        _newStrategyAndToken("Strategy1 token", "str1", 10e50, address(this), false); // initialSupply, owner
-        _newStrategyAndToken("Strategy2 token", "str2", 10e50, address(this), false); // initialSupply, owner
-        _newStrategyAndToken("Strategy3 token", "str3", 10e50, address(this), false); // initialSupply, owner
-
-        // Factory deployments
-        _newStrategyAndToken("Strategy4 token", "str4", 10e50, address(this), true); // initialSupply, owner
-        _newStrategyAndToken("Strategy5 token", "str5", 10e50, address(this), true); // initialSupply, owner
-        _newStrategyAndToken("Strategy6 token", "str6", 10e50, address(this), true); // initialSupply, owner
+        for (uint i = 1; i < NUM_LST_STRATS + 1; ++i) {
+            string memory name = string.concat("LST-Strat", cheats.toString(i), " token");
+            string memory symbol = string.concat("lstStrat", cheats.toString(i));
+            // Deploy half of the strategies using the factory.
+            _newStrategyAndToken(name, symbol, 10e50, address(this), i % 2 == 0);
+        }
 
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
@@ -771,8 +772,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser, Logger {
 
             strategies[0] = BEACONCHAIN_ETH_STRAT;
             tokenBalances[0] = amount;
-        } else if (assetType == HOLDS_ALL) {
-            uint numLSTs = lstStrats.length;
+        } else if (assetType == HOLDS_ALL || assetType == HOLDS_MAX) {
+            uint numLSTs = assetType == HOLDS_MAX ? lstStrats.length : 5;
             strategies = new IStrategy[](numLSTs + 1);
             tokenBalances = new uint[](numLSTs + 1);
 
