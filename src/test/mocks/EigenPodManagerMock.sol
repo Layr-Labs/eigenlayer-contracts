@@ -41,10 +41,10 @@ contract EigenPodManagerMock is Test, Pausable {
         IStrategy,
         IERC20,
         uint256 shares
-    ) external returns (uint256 existingDepositShares, uint256 newDepositShares) {
-        existingDepositShares = uint256(podOwnerDepositShares[podOwner]);
+    ) external returns (uint256, uint256) {
+        uint256 existingDepositShares = uint256(podOwnerDepositShares[podOwner]);
         podOwnerDepositShares[podOwner] += int256(shares);
-        newDepositShares = uint256(podOwnerDepositShares[podOwner]);
+        return (existingDepositShares, shares);
     }
 
     function removeDepositShares(

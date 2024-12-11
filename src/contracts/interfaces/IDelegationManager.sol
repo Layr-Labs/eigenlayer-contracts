@@ -359,16 +359,14 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * a decrease in balance in the beaconChainETHStrategy
      * @param staker the staker whose operator's balance will be decreased
      * @param curDepositShares the current deposit shares held by the staker
-     * @param prevBeaconChainSlashingFactor the amount of beacon chain slashing experienced before the balance decrease
-     * @param wadSlashed the additional slashing experienced by the staker
-     * @dev Note: `wadSlashed` and `prevBeaconChainSlashingFactor` are assumed to ALWAYS be < 1 WAD.
+     * @param beaconChainSlashingFactorDecrease the amount that the staker's beaconChainSlashingFactor has decreased by
+     * @dev Note: `beaconChainSlashingFactorDecrease` are assumed to ALWAYS be < 1 WAD.
      * These invariants are maintained in the EigenPodManager.
      */
     function decreaseDelegatedShares(
         address staker,
         uint256 curDepositShares,
-        uint64 prevBeaconChainSlashingFactor,
-        uint256 wadSlashed
+        uint64 beaconChainSlashingFactorDecrease
     ) external;
 
     /**

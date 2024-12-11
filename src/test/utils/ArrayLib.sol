@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "src/contracts/interfaces/IAllocationManager.sol";
+import "src/contracts/interfaces/IDelegationManager.sol";
 
 library ArrayLib {
     using ArrayLib for *;
@@ -89,6 +90,27 @@ library ArrayLib {
     }
 
     function toArray(
+        bool x
+    ) internal pure returns (bool[] memory array) {
+        array = new bool[](1);
+        array[0] = x;
+    }
+
+    function toArray(
+        bool x,
+        uint256 len
+    ) internal pure returns (bool[] memory array) {
+        array = new bool[](len);
+        for (uint256 i; i < len; ++i) {
+            array[i] = x;
+        }
+    }
+
+    /// -----------------------------------------------------------------------
+    /// EigenLayer Types
+    /// -----------------------------------------------------------------------
+
+    function toArray(
         IERC20 token
     ) internal pure returns (IERC20[] memory array) {
         array = new IERC20[](1);
@@ -121,6 +143,13 @@ library ArrayLib {
     ) internal pure returns (IAllocationManagerTypes.AllocateParams[] memory array) {
         array = new IAllocationManagerTypes.AllocateParams[](1);
         array[0] = allocateParams;
+    }
+
+    function toArray(
+        IDelegationManagerTypes.Withdrawal memory withdrawal
+    ) internal pure returns (IDelegationManagerTypes.Withdrawal[] memory array) {
+        array = new IDelegationManagerTypes.Withdrawal[](1);
+        array[0] = withdrawal;
     }
 
     /// -----------------------------------------------------------------------

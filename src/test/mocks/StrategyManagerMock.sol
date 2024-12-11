@@ -108,10 +108,8 @@ contract StrategyManagerMock is Test {
     ) external returns (uint, uint) {
         // Increase the staker's shares
         uint256 strategyIndex = _getStrategyIndex(staker, strategy);
+        uint256 existingShares = sharesToReturn[staker][strategyIndex];
         sharesToReturn[staker][strategyIndex] += addedShares;
-
-        // Call increase delegated shared
-        uint256 existingShares = stakerDepositShares(staker, strategy);
 
         return (existingShares, addedShares);
     }
