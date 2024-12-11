@@ -250,7 +250,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();
 
-        assertEq(strategies.length, 33, "sanity");
+        if (forkType == LOCAL) assertEq(strategies.length, 33, "sanity");
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 

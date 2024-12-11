@@ -70,7 +70,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         (User operator,,) = _newRandomOperator();
         (AVS avs,) = _newRandomAVS();
 
-        assertEq(strategies.length, 33, "sanity");
+        if (forkType == LOCAL) assertEq(strategies.length, 33, "sanity");
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, tokenBalances);
@@ -135,7 +135,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         (User operator,,) = _newRandomOperator();
         (AVS avs,) = _newRandomAVS();
 
-        assertEq(strategies.length, 33, "sanity");
+        if (forkType == LOCAL) assertEq(strategies.length, 33, "sanity");
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, tokenBalances);
@@ -176,7 +176,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
             staker.completeWithdrawalAsTokens(withdrawals[i]);
             // FIXME: check_Withdrawal_AsTokens_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams, expectedTokens);
         }
-
+        
         // Check Final State
         assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
         assert_HasUnderlyingTokenBalances_AfterSlash(

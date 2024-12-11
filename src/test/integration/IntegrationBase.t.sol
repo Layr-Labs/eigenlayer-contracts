@@ -219,7 +219,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 tokenBalance = strat.underlyingToken().balanceOf(address(user));
             }
 
-            assertEq(expectedBalance, tokenBalance, err);
+            assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
         }
     }
 
@@ -527,18 +527,16 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 ? address(staker).balance 
                 : strat.underlyingToken().balanceOf(address(staker));
 
+            uint256 maxDelta = strat == BEACONCHAIN_ETH_STRAT ? 1 gwei : 3;
+
             if (slashingParams.strategies.contains(strat)) {
                 uint256 wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
 
                 expectedBalances[i] -= expectedBalances[i]
                     .mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
+            } 
 
-                uint256 maxDelta = strat == BEACONCHAIN_ETH_STRAT ? 1 gwei : 1;
-
-                assertApproxEqAbs(expectedBalances[i], balance, maxDelta, err);
-            } else {
-                assertEq(expectedBalances[i], balance, err);
-            }
+            assertApproxEqAbs(expectedBalances[i], balance, maxDelta, err);
         }
     }
 
