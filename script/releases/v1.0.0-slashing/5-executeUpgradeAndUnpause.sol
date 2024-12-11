@@ -11,38 +11,48 @@ contract Execute is QueueAndUnpause {
     using Env for *;
 
     function _runAsMultisig() prank(Env.protocolCouncilMultisig()) internal override {
-        bytes memory call = _getCalldataToExecutor();
+        bytes memory calldata_to_executor = _getCalldataToExecutor();
+
         TimelockController timelock = Env.timelockController();
-        timelock.execute(
-            Env.executorMultisig(),
-            0,
-            call,
-            0,
-            bytes32(0)
-        );
+        timelock.execute({
+            target: Env.executorMultisig(),
+            value: 0,
+            payload: calldata_to_executor,
+            predecessor: 0,
+            salt: 0
+        });
     }
 
-    function testDeploy() override public {}
-
-    function testExecute() public { 
-        // 1- run queueing logic
-        vm.startPrank(Env.opsMultisig());
-        super._runAsMultisig();
-        vm.stopPrank();
+    function testScript() public virtual override {
+        runAsEOA();
 
         TimelockController timelock = Env.timelockController();
-        bytes memory call = _getCalldataToExecutor();
-        bytes32 txHash = timelock.hashOperation(Env.executorMultisig(), 0, call, 0, 0);
-        assertEq(timelock.isOperationPending(txHash), true, "Transaction should be queued and pending.");
+        bytes memory calldata_to_executor = _getCalldataToExecutor();
+        bytes32 txHash = timelock.hashOperation({
+            target: Env.executorMultisig(),
+            value: 0,
+            data: calldata_to_executor,
+            predecessor: 0,
+            salt: 0
+        });
 
+        assertFalse(timelock.isOperationPending(txHash), "Transaction should NOT be queued.");
 
-        // 2- warp past delay?
+        // 1- run queueing logic
+        super._runAsMultisig();
+        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
+
+        assertTrue(timelock.isOperationPending(txHash), "Transaction should be queued.");
+        assertFalse(timelock.isOperationReady(txHash), "Transaction should NOT be ready for execution.");
+        assertFalse(timelock.isOperationDone(txHash), "Transaction should NOT be complete.");
+        
+        // 2- warp past delay
         vm.warp(block.timestamp + timelock.getMinDelay()); // 1 tick after ETA
         assertEq(timelock.isOperationReady(txHash), true, "Transaction should be executable.");
         
         // 3- execute
         execute();
 
-        // 3. TODO: assert that the execute did something
+        assertTrue(timelock.isOperationDone(txHash), "Transaction should be complete.");
     }
 }

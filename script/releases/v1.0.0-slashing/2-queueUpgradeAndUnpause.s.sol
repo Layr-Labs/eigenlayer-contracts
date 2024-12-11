@@ -8,28 +8,6 @@ import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import "zeus-templates/utils/Encode.sol";
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-
-/// core/
-import "src/contracts/core/AllocationManager.sol";
-import "src/contracts/core/AVSDirectory.sol";
-import "src/contracts/core/DelegationManager.sol";
-import "src/contracts/core/RewardsCoordinator.sol";
-import "src/contracts/core/StrategyManager.sol";
-
-/// permissions/
-import "src/contracts/permissions/PauserRegistry.sol";
-import "src/contracts/permissions/PermissionController.sol";
-
-/// pods/
-import "src/contracts/pods/EigenPod.sol";
-import "src/contracts/pods/EigenPodManager.sol";
-
-/// strategies/
-import "src/contracts/strategies/EigenStrategy.sol";
-import "src/contracts/strategies/StrategyBase.sol";
-import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
-import "src/contracts/strategies/StrategyFactory.sol";
 
 /**
  * Purpose: 
@@ -46,14 +24,14 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
-        timelock.schedule(
-            Env.executorMultisig(), 
-            0, 
-            calldata_to_executor,
-            0,
-            bytes32(0),  
-            timelock.getMinDelay()
-        );
+        timelock.schedule({
+            target: Env.executorMultisig(),
+            value: 0,
+            data: calldata_to_executor,
+            predecessor: 0,
+            salt: 0,
+            delay: timelock.getMinDelay()
+        });
     }
 
     /// @dev Get the calldata to be sent from the timelock to the executor
@@ -146,13 +124,25 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
         });
     }
 
-    function testDeploy() virtual public override {
+    function testScript() public virtual override {
         runAsEOA();
+        
+        TimelockController timelock = Env.timelockController();
+        bytes memory calldata_to_executor = _getCalldataToExecutor();
+        bytes32 txHash = timelock.hashOperation({
+            target: Env.executorMultisig(),
+            value: 0,
+            data: calldata_to_executor,
+            predecessor: 0,
+            salt: 0
+        });
+
+        // Check that the upgrade does not exist in the timelock
+        assertFalse(timelock.isOperationPending(txHash), "Transaction should NOT be queued.");
+  
         execute();
 
-        TimelockController timelock = Env.timelockController();
-        bytes memory call = _getCalldataToExecutor();
-        bytes32 txHash = timelock.hashOperation(Env.executorMultisig(), 0, call, 0, 0);
-        assertEq(timelock.isOperationPending(txHash), true, "Transaction should be queued.");
+        // Check that the upgrade has been added to the timelock
+        assertTrue(timelock.isOperationPending(txHash), "Transaction should be queued.");
     }
 }

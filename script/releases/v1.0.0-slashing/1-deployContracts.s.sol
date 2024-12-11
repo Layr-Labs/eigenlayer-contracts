@@ -172,7 +172,7 @@ contract Deploy is EOADeployer {
         vm.stopBroadcast();
     }
 
-    function testDeploy() public virtual {       
+    function testScript() public virtual {       
         _runAsEOA();
         Deployment[] memory deploys = deploys();
 
