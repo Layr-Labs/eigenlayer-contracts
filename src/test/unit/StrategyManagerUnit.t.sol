@@ -1419,6 +1419,7 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
         uint256 depositAmount,
         uint256 sharesAmount
     ) external filterFuzzedAddressInputs(staker) {
+        cheats.assume(staker != address(this));
         cheats.assume(staker != address(0));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesAmount);
         IStrategy strategy = dummyStrat;
@@ -1433,6 +1434,7 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
         uint256 depositAmount,
         uint256 sharesAmount
     ) external filterFuzzedAddressInputs(staker) {
+        cheats.assume(staker != address(this));
         cheats.assume(staker != address(0));
         cheats.assume(sharesAmount > 0 && sharesAmount < dummyToken.totalSupply() && depositAmount >= sharesAmount);
         IStrategy strategy = dummyStrat;
