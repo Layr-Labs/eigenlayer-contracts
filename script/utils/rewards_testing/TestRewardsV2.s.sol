@@ -54,6 +54,31 @@ contract TestRewardsV2 is ZeusScript {
 
     }
 
+    function tx_prep3() public parseState {
+        address rewardingServiceManager = address(_rewardingServiceManager());
+        IRewardsCoordinator rewardsCoordinator = _rewardsCoordinator();
+        // Deploy token 
+        (address[] memory operatorsRegisteredToAVS,) = _getAllOperatorsRegisteredToAVS(rewardingServiceManager);
+
+        // for the second 1/5 of the operators, set the AVS split to random values
+        for (uint256 i = operatorsRegisteredToAVS.length*1/5; i < operatorsRegisteredToAVS.length*1/5 + 4; i++) {
+            vm.startBroadcast(operatorsRegisteredToAVS[i]);
+            rewardsCoordinator.setOperatorAVSSplit(operatorsRegisteredToAVS[i], rewardingServiceManager, uint16(vm.randomUint(1, 10000)));
+            rewardsCoordinator.setOperatorPISplit(operatorsRegisteredToAVS[i], uint16(vm.randomUint(1, 10000)));
+            vm.stopBroadcast();
+        }
+
+        // for the third 1/5 of the operators, set the PI split to random values
+        for (uint256 i = operatorsRegisteredToAVS.length*1/5; i < operatorsRegisteredToAVS.length*1/5+4; i++) {
+            vm.startBroadcast(operatorsRegisteredToAVS[i]);
+            rewardsCoordinator.setOperatorAVSSplit(operatorsRegisteredToAVS[i], rewardingServiceManager, uint16(vm.randomUint(1, 10000)));
+            rewardsCoordinator.setOperatorPISplit(operatorsRegisteredToAVS[i], uint16(vm.randomUint(1, 10000)));
+            vm.stopBroadcast();
+        }
+
+        // this leaves 1/5 of the operators with no splits set
+    }
+
     function tx_1() public parseState {
         // Deploy token 
         string memory name = "RewardsV2_OperatorDirectedRewards_Test_1";
