@@ -37,6 +37,23 @@ contract TestRewardsV2 is ZeusScript {
         // this leaves 1/5 of the operators with no splits set
     }
 
+    function tx_prep2() public parseState {
+        (address[] memory operators,) = _getAllRegisteredOperators();
+        IStrategy[] memory strategies = _getAVStrategies();
+        address[] memory strategiesAddresses = new address[](strategies.length);
+        for(uint256 i = 0; i < strategies.length; i++){
+            strategiesAddresses[i] = address(strategies[i]);
+        }
+        ServiceManagerMock serviceManager = _rewardingServiceManager();
+
+        for(uint256 i = 0; i < operators.length; i++){
+            vm.startBroadcast();
+            serviceManager.setOperatorRestakedStrategies(operators[i], strategiesAddresses);
+            vm.stopBroadcast();
+        }
+
+    }
+
     function tx_1() public parseState {
         // Deploy token 
         string memory name = "RewardsV2_OperatorDirectedRewards_Test_1";
@@ -94,7 +111,7 @@ contract TestRewardsV2 is ZeusScript {
         // Format Range
         uint32 moddedCurrTimestamp = uint32(block.timestamp) - (uint32(block.timestamp) % _rewardsCoordinator().CALCULATION_INTERVAL_SECONDS());
         uint32 startTimestamp = moddedCurrTimestamp - 1 weeks;
-        uint32 duration = 1 weeks;
+        uint32 duration = 2 weeks;
 
         rewardsSubmission[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategyAndMultipliers,
