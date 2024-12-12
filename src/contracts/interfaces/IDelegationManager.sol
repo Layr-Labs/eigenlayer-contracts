@@ -527,6 +527,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     function beaconChainETHStrategy() external view returns (IStrategy);
 
     /// @notice Backwards-compatible interface to return the `MIN_WITHDRAWAL_DELAY_BLOCKS` value
+    /// @dev Previous value in storage was deprecated. See `__deprecated_minWithdrawalDelayBlocks`
     function minWithdrawalDelayBlocks() external view returns (uint32);
 
     /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
