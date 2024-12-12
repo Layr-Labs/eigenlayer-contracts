@@ -303,11 +303,17 @@ contract RewardsCoordinator is
         require(msg.sender == operator, "RewardsCoordinator.setOperatorAVSSplit: caller is not the operator");
         require(split <= ONE_HUNDRED_IN_BIPS, "RewardsCoordinator.setOperatorAVSSplit: split must be <= 10000 bips");
 
-        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
-        uint16 oldSplit = _getOperatorSplit(operatorAVSSplitBips[operator][avs]);
-        _setOperatorSplit(operatorAVSSplitBips[operator][avs], split, activatedAt);
+        (uint16 oldSplit, uint32 oldActivatedAt) = _getOperatorSplit(operatorAVSSplitBips[operator][avs]);
+        require(
+            block.timestamp > oldActivatedAt,
+            "RewardsCoordinator.setOperatorAVSSplit: earlier split not activated yet"
+        );
 
-        emit OperatorAVSSplitBipsSet(msg.sender, operator, avs, activatedAt, oldSplit, split);
+        uint32 newActivatedAt = uint32(block.timestamp) + activationDelay;
+
+        _setOperatorSplit(operatorAVSSplitBips[operator][avs], split, newActivatedAt);
+
+        emit OperatorAVSSplitBipsSet(msg.sender, operator, avs, newActivatedAt, oldSplit, split);
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -315,11 +321,17 @@ contract RewardsCoordinator is
         require(msg.sender == operator, "RewardsCoordinator.setOperatorPISplit: caller is not the operator");
         require(split <= ONE_HUNDRED_IN_BIPS, "RewardsCoordinator.setOperatorPISplit: split must be <= 10000 bips");
 
-        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
-        uint16 oldSplit = _getOperatorSplit(operatorPISplitBips[operator]);
-        _setOperatorSplit(operatorPISplitBips[operator], split, activatedAt);
+        (uint16 oldSplit, uint32 oldActivatedAt) = _getOperatorSplit(operatorPISplitBips[operator]);
+        require(
+            block.timestamp > oldActivatedAt,
+            "RewardsCoordinator.setOperatorPISplit: earlier split not activated yet"
+        );
 
-        emit OperatorPISplitBipsSet(msg.sender, operator, activatedAt, oldSplit, split);
+        uint32 newActivatedAt = uint32(block.timestamp) + activationDelay;
+
+        _setOperatorSplit(operatorPISplitBips[operator], split, newActivatedAt);
+
+        emit OperatorPISplitBipsSet(msg.sender, operator, newActivatedAt, oldSplit, split);
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -395,16 +407,11 @@ contract RewardsCoordinator is
      * @param activatedAt The timestamp when the split is activated.
      */
     function _setOperatorSplit(OperatorSplit storage operatorSplit, uint16 split, uint32 activatedAt) internal {
-        // If, the earlier 'new' split is activated, we update the 'old' split with the earlier 'new' split.
-        // Else, the earlier 'old' split remains the same. This is essentially resetting the activation delay window
-        // since the earlier split setting didn't complete.
-        if (block.timestamp >= operatorSplit.activatedAt) {
-            if (operatorSplit.activatedAt == 0) {
-                // If the operator split has not been initialized yet, set the old split to the default split.
-                operatorSplit.oldSplitBips = defaultOperatorSplitBips;
-            } else {
-                operatorSplit.oldSplitBips = operatorSplit.newSplitBips;
-            }
+        if (operatorSplit.activatedAt == 0) {
+            // If the operator split has not been initialized yet, set the old split to the default split.
+            operatorSplit.oldSplitBips = defaultOperatorSplitBips;
+        } else {
+            operatorSplit.oldSplitBips = operatorSplit.newSplitBips;
         }
         operatorSplit.newSplitBips = split;
         operatorSplit.activatedAt = activatedAt;
@@ -631,17 +638,19 @@ contract RewardsCoordinator is
      * @dev It takes default split and activation delay into account while calculating the split.
      * @param operatorSplit The split struct for an Operator
      * @return The split in basis points.
+     * @return The timestamp when the split was activated.
      */
-    function _getOperatorSplit(OperatorSplit memory operatorSplit) internal view returns (uint16) {
-        if (operatorSplit.activatedAt == 0) {
+    function _getOperatorSplit(OperatorSplit memory operatorSplit) internal view returns (uint16, uint32) {
+        uint32 activatedAt = operatorSplit.activatedAt;
+        if (activatedAt == 0) {
             // Return the Default Operator Split if the operator split has not been initialized.
-            return defaultOperatorSplitBips;
+            return (defaultOperatorSplitBips, activatedAt);
         } else {
             // Return the new split if the new split has been activated, else return the old split.
             return
-                (block.timestamp >= operatorSplit.activatedAt)
-                    ? operatorSplit.newSplitBips
-                    : operatorSplit.oldSplitBips;
+                (block.timestamp >= activatedAt)
+                    ? (operatorSplit.newSplitBips, activatedAt)
+                    : (operatorSplit.oldSplitBips, activatedAt);
         }
     }
 
@@ -676,12 +685,14 @@ contract RewardsCoordinator is
 
     /// @inheritdoc IRewardsCoordinator
     function getOperatorAVSSplit(address operator, address avs) external view returns (uint16) {
-        return _getOperatorSplit(operatorAVSSplitBips[operator][avs]);
+        (uint16 split, ) = _getOperatorSplit(operatorAVSSplitBips[operator][avs]);
+        return split;
     }
 
     /// @inheritdoc IRewardsCoordinator
     function getOperatorPISplit(address operator) external view returns (uint16) {
-        return _getOperatorSplit(operatorPISplitBips[operator]);
+        (uint16 split, ) = _getOperatorSplit(operatorPISplitBips[operator]);
+        return split;
     }
 
     /// @inheritdoc IRewardsCoordinator
