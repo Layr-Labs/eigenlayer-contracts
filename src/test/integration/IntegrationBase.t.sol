@@ -1312,8 +1312,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     /// @dev Rolls forward by the minimum withdrawal delay blocks.
-    function _rollBlocksForCompleteWithdrawals() internal {        
-        rollForward({blocks: delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS()});
+    function _rollBlocksForCompleteWithdrawals(IDelegationManagerTypes.Withdrawal[] memory withdrawals) internal {     
+        uint256 latest;
+        for (uint i = 0; i < withdrawals.length; ++i) {
+            if (withdrawals[i].startBlock > latest) latest = withdrawals[i].startBlock;
+        }
+        cheats.roll(latest + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
     }
 
     /// @dev Rolls forward by the default allocation delay blocks.

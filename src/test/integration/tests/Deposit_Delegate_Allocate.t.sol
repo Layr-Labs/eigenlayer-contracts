@@ -105,7 +105,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         // 6. Complete withdrawal
-        _rollBlocksForCompleteWithdrawals();
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             uint256[] memory expectedTokens =
                 _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
@@ -169,14 +169,14 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
             avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
 
         // 6. Complete withdrawal
-        _rollBlocksForCompleteWithdrawals();
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             uint256[] memory expectedTokens =
                 _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
             // FIXME: check_Withdrawal_AsTokens_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams, expectedTokens);
         }
-        
+
         // Check Final State
         assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
         assert_HasUnderlyingTokenBalances_AfterSlash(
