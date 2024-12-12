@@ -204,8 +204,10 @@ This method is identical in function to [`createAVSRewardsSubmission`](#createav
 function createOperatorDirectedAVSRewardsSubmission(
     address avs,
     OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
-) external
-    onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION) nonReentrant
+)
+    external
+    onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION)
+    nonReentrant
 ```
 
 AVS may make Rewards v2 submissions by calling `createOperatorDirectedAVSRewardsSubmission()` with any custom on-chain or off-chain logic to determine their rewards distribution strategy. This can be custom to the work performed by Operators during a certain period of time, can be a flat reward rate, or some other structure based on the AVS’s economic model. This would enable AVSs' flexibility in rewarding different operators for performance and other variables while maintaining the same easily calculable reward rate for stakers delegating to the same operator and strategy. The AVS can submit multiple performance-based rewards denominated in different tokens for even more flexibility.
@@ -254,6 +256,7 @@ Earners configure and claim these rewards using the following functions:
 
 * [`RewardsCoordinator.setClaimerFor`](#setclaimerfor)
 * [`RewardsCoordinator.processClaim`](#processclaim)
+* [`RewardsCoordinator.processClaims`](#processclaims)
 
 #### `submitRoot`
 
@@ -352,7 +355,9 @@ The `RewardsMerkleClaim` struct contains the following fields (see [Rewards Merk
     * `IERC20 token`: the ERC20 token to be claimed
     * `uint256 amount`: the amount of the ERC20 token to be claimed
 
-`processClaim` will first call `_checkClaim` to verify the merkle proofs against the `DistributionRoot` at the specified `rootIndex`. This is done by first performing a merkle proof verification of the earner's `EarnerTreeMerkleLeaf` against the `DistributionRoot` and then for each tokenIndex, verifying each token leaf against the earner's `earnerTokenRoot`.
+`processClaim` is a simple wrapper function which calls out to the internal function `_processClaim`, which holds all of the necessary logic.
+
+`_processClaim` will first call `_checkClaim` to verify the merkle proofs against the `DistributionRoot` at the specified `rootIndex`. This is done by first performing a merkle proof verification of the earner's `EarnerTreeMerkleLeaf` against the `DistributionRoot` and then for each tokenIndex, verifying each token leaf against the earner's `earnerTokenRoot`.
 
 The caller must be the set claimer address in the `claimerFor` mapping or the earner themselves if the claimer is not set.
 
@@ -378,6 +383,26 @@ After the claim is verified, for each token leaf, the difference between the cum
 * For each `TokenTreeMerkleLeaf`,
     * `tokenLeaf.cumulativeEarnings > cumulativeClaimed[earner][token]`: cumulativeEarnings must be gt than cumulativeClaimed. Trying to reclaim with the same proofs will revert because the claimed and earnings values will equal, breaking this requirement.
     * `tokenLeaf.token.safeTransfer(recipient, claimAmount)` MUST succeed
+
+#### `processClaims`
+
+```solidity
+function processClaims(
+        RewardsMerkleClaim[] calldata claims,
+        address recipient
+)
+    external
+    onlyWhenNotPaused(PAUSED_PROCESS_CLAIM)
+    nonReentrant
+```
+
+`processClaims` is a simple wrapper function around `_processClaim`, calling it once for each claim provided.
+
+*Effects*:
+* For each `RewardsMerkleClaim` element: see [`processClaim`](#processclaim) above.
+
+*Requirements*
+* See [`processClaim`](#processclaim) above.
 
 ---
 
