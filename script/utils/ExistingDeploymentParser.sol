@@ -214,6 +214,7 @@ contract ExistingDeploymentParser is Script, Test {
         baseStrategyImplementation = StrategyBase(
             stdJson.readAddress(existingDeploymentData, ".deployment.strategies.preLongtailStrats.impl")
         );
+        strategyBeacon = UpgradeableBeacon(stdJson.readAddress(existingDeploymentData, ".deployment.strategies.strategyBeacon.beacon"));
         emptyContract = EmptyContract(stdJson.readAddress(existingDeploymentData, ".deployment.emptyContract"));
 
         // Strategies Deployed, load strategy list

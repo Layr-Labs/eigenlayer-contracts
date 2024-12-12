@@ -217,6 +217,9 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
 
         checkTimelockControllerConfig(protocolTimelockController);
         checkTimelockControllerConfig(protocolTimelockController_BEIGEN);
+
+        require(eigenPodBeacon.owner() == executorMultisig, "eigenPodBeacon: owner not set correctly");
+        require(strategyBeacon.owner() == executorMultisig, "strategyBeacon: owner not set correctly");
     }
 
     function checkExecutorMultisigOwnership(address _executorMultisig, address timelockControllerAddress) public view {
@@ -237,7 +240,6 @@ contract CurrentConfigCheck is ExistingDeploymentParser, TimelockEncoding {
         }
         require(timelockControllerInOwners, "timelockControllerAddress not in _executorMultisig owners");
         require(communityMultisigInOwners, "communityMultisig not in _executorMultisig owners");
-
     }
 
     function checkTimelockControllerConfig(TimelockController timelockController) public view {
