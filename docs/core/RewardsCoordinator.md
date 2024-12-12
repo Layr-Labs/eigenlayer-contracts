@@ -11,9 +11,9 @@ The `RewardsCoordinator` accepts ERC20s from AVSs alongside rewards submission r
 
 There are two forms of rewards:
 * Rewards v1, also known as rewards submissions.
-* Rewards v2, also known as operator-directed rewards submissions. See the [ELIP](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-001.md) for additional context on this rewards type.
+* Rewards v2, also known as operator-directed rewards submissions. See the [ELIP](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-001.md) for additional context on this proposed rewards type.
 
-*Off-chain*, the trusted *rewards updater* calculates a rewards distribution over some rewards submission's time range, depending on the rewards type. For a **v1 rewards submission**, it is based on: (i) the relative stake weight of each Operator's Stakers and (ii) a default split given to the Operator. For a **v2 rewards submission**, it is based on: (i) an AVS's custom rewards logic, (ii) the per-operator splits.
+*Off-chain*, the trusted *rewards updater* calculates a rewards distribution over some rewards submission's time range, depending on the rewards type. For a **v1 rewards submission**, it is based on: (i) the relative stake weight of each Operator's Stakers and (ii) a default split given to the Operator. For a **v2 rewards submission**, it will be based on: (i) an AVS's custom rewards logic, (ii) the per-operator splits.
 
 *On-chain*, the rewards updater sends the `RewardsCoordinator` a merkle root of each earner's cumulative earnings. Earners provide merkle proofs to the `RewardsCoordinator` to claim rewards against these roots.
 
@@ -412,6 +412,8 @@ function processClaims(
 * [`RewardsCoordinator.setDefaultOperatorSplit`](#setDefaultOperatorSplit)
 * [`RewardsCoordinator.setRewardsUpdater`](#setrewardsupdater)
 * [`RewardsCoordinator.setRewardsForAllSubmitter`](#setrewardsforallsubmitter)
+* [`RewardsCoordinator.setOperatorAVSsplit`](#setOperatorAVSsplit)
+* [`RewardsCoordinator.setOperatorPIsplit`](#setOperatorPIsplit)
 
 #### `setActivationDelay`
 
@@ -474,6 +476,53 @@ Allows the Owner to update the `_submitter's` permissions in the `isRewardsForAl
 
 *Requirements*:
 * Caller MUST be the Owner
+
+#### `setOperatorAVSsplit`
+
+```solidity
+function setOperatorAVSSplit(
+    address operator,
+    address avs,
+    uint16 split
+)
+    external
+    onlyWhenNotPaused(PAUSED_OPERATOR_AVS_SPLIT)
+```
+
+An Operator may, for a given AVS, set a split which will determine what percent of their attributed rewards are allocated to themselves. The remaining percentage will go to Stakers.
+
+The split will take effect after an `activationDelay` set by the contract owner. Note that once an operator initiates a split update, the `activationDelay` must pass before a new split update can be initiated.
+
+*Effects*:
+* Updates `operatorSplit.activatedAt` to `block.timestamp + activationDelay`
+* If the operator has not initialized yet, sets  `operatorSplit.oldSplitBips` to `defaultOperatorSplitBips`. Else sets `operatorSplit.oldSplitBips` to the current `newSplitBips`
+* Updates `operatorSplit.newSplitBips` to `split`
+* Emits an `OperatorAVSSplitBipsSet` event
+
+*Requirements*:
+* Caller MUST BE the operator
+* Split MUST BE <= 10,000 bips (100%)
+* Current `block.timestamp` MUST BE greater than current `operatorSplit.activatedAt`.
+  * Any pending split must have already completed prior to setting a new split.
+
+#### `setOperatorPIsplit`
+
+```solidity
+function setOperatorPISplit(
+    address operator,
+    uint16 split
+)
+    external
+    onlyWhenNotPaused(PAUSED_OPERATOR_PI_SPLIT)
+```
+
+Similar to [`setOperatorAVSSplit`](#setoperatoravssplit), Operators may set their split for [programmatic incentives](https://www.blog.eigenlayer.xyz/introducing-programmatic-incentives-v1/), allowing them to specify what percent of these rewards they will maintain and what percent will go to their Stakers. The `allocationDelay` also applies here, as well as the inability to reinitiate a split update before the delay passes.
+
+*Effects*:
+* Same as [`setOperatorAVSSplit`](#setoperatoravssplit), but with `operatorPISplitBips` instead of `operatorAVSSplitBips`.
+
+*Requirements*:
+* See [`setOperatorAVSSplit`](#setoperatoravssplit).
 
 ---
 
