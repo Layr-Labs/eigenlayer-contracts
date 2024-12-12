@@ -50,7 +50,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     IAllocationManager public immutable allocationManager;
 
     /// @notice Minimum withdrawal delay in blocks until a queued withdrawal can be completed.
-    uint32 public immutable MIN_WITHDRAWAL_DELAY_BLOCKS;
+    uint32 internal immutable MIN_WITHDRAWAL_DELAY_BLOCKS;
 
     // Mutatables
 
