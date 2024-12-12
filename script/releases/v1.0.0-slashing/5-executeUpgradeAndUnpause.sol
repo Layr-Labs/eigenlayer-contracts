@@ -104,7 +104,7 @@ contract Execute is QueueAndUnpause, Pause {
             assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
             assertTrue(delegation.pauserRegistry() == Env.impl.pauserRegistry(), "dm.pR invalid");
             assertTrue(delegation.permissionController() == Env.proxy.permissionController(), "dm.pc invalid");
-            assertTrue(delegation.MIN_WITHDRAWAL_DELAY_BLOCKS() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid");
+            assertTrue(delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid");
 
             RewardsCoordinator rewards = Env.proxy.rewardsCoordinator();
             assertTrue(rewards.delegationManager() == Env.proxy.delegationManager(), "rc.dm invalid");
