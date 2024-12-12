@@ -66,12 +66,12 @@ This document is organized according to the following themes (click each to be t
 
 ### Submitting Rewards Requests
 
-
 Rewards are initially submitted to the contract to be distributed to Operators and Stakers by the following functions:
 
 * [`RewardsCoordinator.createAVSRewardsSubmission`](#createavsrewardssubmission)
 * [`RewardsCoordinator.createRewardsForAllSubmission`](#createrewardsforallsubmission)
 * [`RewardsCoordinator.createRewardsForAllEarners`](#createrewardsforallearners)
+* [`RewardsCoordinator.createOperatorDirectedAVSRewardsSubmission`](#createOperatorDirectedAVSRewardsSubmission)
 
 #### `createAVSRewardsSubmission`
 
@@ -197,6 +197,49 @@ This method is identical in function to [`createAVSRewardsSubmission`](#createav
 
 *Requirements*:
 * See [`createAVSRewardsSubmission`](#createavsrewardssubmission) above. The only difference is that each calculated rewards submission hash MUST NOT already exist in the `isRewardsSubmissionForAllEarnersHash` mapping.
+
+#### `createOperatorDirectedAVSRewardsSubmission`
+
+```solidity
+function createOperatorDirectedAVSRewardsSubmission(
+    address avs,
+    OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
+) external
+    onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION) nonReentrant
+```
+
+AVS may make Rewards v2 submissions by calling `createOperatorDirectedAVSRewardsSubmission()` with any custom on-chain or off-chain logic to determine their rewards distribution strategy. This can be custom to the work performed by Operators during a certain period of time, can be a flat reward rate, or some other structure based on the AVS’s economic model. This would enable AVSs' flexibility in rewarding different operators for performance and other variables while maintaining the same easily calculable reward rate for stakers delegating to the same operator and strategy. The AVS can submit multiple performance-based rewards denominated in different tokens for even more flexibility.
+
+*Effects*:
+* For each `OperatorDirectedRewardsSubmission` element
+  * Transfers `amount` of `token` from the `msg.sender` (`AVS`) to the `RewardsCoordinator`
+  * Hashes `msg.sender` (`AVS`), `nonce`, and `OperatorDirectedRewardsSubmission` struct to create a unique rewards hash and sets this value to `true` in the `isOperatorDirectedAVSRewardsSubmissionHash` mapping
+  * Increments `submissionNonce[msg.sender]`
+  * Emits an `OperatorDirectedAVSRewardsSubmissionCreated` event
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION`
+* Caller MUST BE the AVS
+* Function call is not reentered
+* For each `OperatorDirectedRewardsSubmission` element:
+  * Requirements from calling internal function `_validateOperatorDirectedRewardsSubmission()`
+    * `operatorDirectedRewardsSubmission.strategiesAndMultipliers.length > 0`
+    * `operatorDirectedRewardsSubmission.duration <= MAX_REWARDS_DURATION`
+    * `operatorDirectedRewardsSubmission.duration % calculationIntervalSeconds == 0`
+    * `operatorDirectedRewardsSubmission.startTimestamp % calculationIntervalSeconds == 0`
+    * `block.timestamp - MAX_RETROACTIVE_LENGTH <= operatorDirectedRewardsSubmission.startTimestamp`
+    * `GENESIS_REWARDS_TIMESTAMP <= operatorDirectedRewardsSubmission.startTimestamp`
+    * For each `operatorDirectedRewardsSubmission.strategiesAndMultipliers` element:
+      * Each `strategy` is whitelisted for deposit in the StrategyManager or is the `beaconChainETHStrategy`
+      * `rewardsSubmission.strategiesAndMultipliers` is sorted by ascending strategy address to prevent duplicate strategies
+    * `operatorDirectedRewardsSubmission.operatorRewards.length > 0`
+    * For each `operatorDirectedRewardsSubmission.operatorRewards` element:
+      * `operatorReward.operator != address(0)`
+      * `currOperatorAddress < operatorReward.operator`
+      * `operatorReward.amount > 0`
+    * `totalAmount <= MAX_REWARDS_AMOUNT`, where `totalAmount` is the sum of every `operatorReward.amount`
+    * `operatorDirectedRewardsSubmission.startTimestamp + operatorDirectedRewardsSubmission.duration < block.timestamp`, enforcing strictly retoractive rewards submissions
+  * `transferFrom` MUST succeed in transferring `amount` of `token` from `msg.sender` to the `RewardsCoordinator`
 
 ---
 
