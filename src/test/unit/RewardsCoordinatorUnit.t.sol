@@ -494,7 +494,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
 
         // Trying to set Second Split
         cheats.prank(operator);
-        cheats.expectRevert("RewardsCoordinator.setOperatorAVSSplit: earlier split not activated yet");
+        cheats.expectRevert("RewardsCoordinator._setOperatorSplit: earlier split not activated yet");
         rewardsCoordinator.setOperatorAVSSplit(operator, avs, secondSplit);
     }
 
@@ -627,7 +627,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
 
         // Trying to set Second Split
         cheats.prank(operator);
-        cheats.expectRevert("RewardsCoordinator.setOperatorPISplit: earlier split not activated yet");
+        cheats.expectRevert("RewardsCoordinator._setOperatorSplit: earlier split not activated yet");
         rewardsCoordinator.setOperatorPISplit(operator, secondSplit);
     }
 
