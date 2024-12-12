@@ -395,16 +395,15 @@ contract RewardsCoordinator is
      * @param activatedAt The timestamp when the split is activated.
      */
     function _setOperatorSplit(OperatorSplit storage operatorSplit, uint16 split, uint32 activatedAt) internal {
-        // If, the earlier 'new' split is activated, we update the 'old' split with the earlier 'new' split.
-        // Else, the earlier 'old' split remains the same. This is essentially resetting the activation delay window
-        // since the earlier split setting didn't complete.
-        if (block.timestamp >= operatorSplit.activatedAt) {
-            if (operatorSplit.activatedAt == 0) {
-                // If the operator split has not been initialized yet, set the old split to the default split.
-                operatorSplit.oldSplitBips = defaultOperatorSplitBips;
-            } else {
-                operatorSplit.oldSplitBips = operatorSplit.newSplitBips;
-            }
+        require(
+            block.timestamp > operatorSplit.activatedAt,
+            "RewardsCoordinator._setOperatorSplit: earlier split not activated yet"
+        );
+        if (operatorSplit.activatedAt == 0) {
+            // If the operator split has not been initialized yet, set the old split to the default split.
+            operatorSplit.oldSplitBips = defaultOperatorSplitBips;
+        } else {
+            operatorSplit.oldSplitBips = operatorSplit.newSplitBips;
         }
         operatorSplit.newSplitBips = split;
         operatorSplit.activatedAt = activatedAt;

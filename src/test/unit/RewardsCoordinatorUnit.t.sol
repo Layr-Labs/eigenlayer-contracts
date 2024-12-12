@@ -474,7 +474,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
     }
 
     // Testing the split setting for a second time prior to the earlier activation.
-    function testFuzz_setOperatorAVSSplitSecondTimeBeforePriorActivation(
+    function testFuzz_Revert_setOperatorAVSSplitSecondTimeBeforePriorActivation(
         address operator,
         address avs,
         uint16 firstSplit,
@@ -484,25 +484,18 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         cheats.assume(operator != address(0));
         firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
         secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
-        warpTime = uint32(bound(warpTime, uint32(block.timestamp), uint32(block.timestamp) + activationDelay - 1));
-        uint16 oldSplit = rewardsCoordinator.getOperatorAVSSplit(operator, avs);
+        warpTime = uint32(bound(warpTime, uint32(block.timestamp), uint32(block.timestamp) + activationDelay));
 
         // Setting First Split
         cheats.prank(operator);
         rewardsCoordinator.setOperatorAVSSplit(operator, avs, firstSplit);
         // Warping to time before activation of First split
         cheats.warp(warpTime);
-        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
 
-        // Setting Second Split
-        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit OperatorAVSSplitBipsSet(operator, operator, avs, activatedAt, oldSplit, secondSplit);
+        // Trying to set Second Split
         cheats.prank(operator);
+        cheats.expectRevert("RewardsCoordinator._setOperatorSplit: earlier split not activated yet");
         rewardsCoordinator.setOperatorAVSSplit(operator, avs, secondSplit);
-
-        assertEq(oldSplit, rewardsCoordinator.getOperatorAVSSplit(operator, avs), "Incorrect Operator split");
-        cheats.warp(activatedAt);
-        assertEq(secondSplit, rewardsCoordinator.getOperatorAVSSplit(operator, avs), "Incorrect Operator split");
     }
 
     // Testing the split setting for a second time after earlier activation.
@@ -517,7 +510,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
         secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
         warpTime = uint32(
-            bound(warpTime, uint32(block.timestamp) + activationDelay, type(uint32).max - activationDelay)
+            bound(warpTime, uint32(block.timestamp) + activationDelay + 1, type(uint32).max - activationDelay)
         );
 
         // Setting First Split
@@ -577,7 +570,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         rewardsCoordinator.setOperatorPISplit(operator, split);
     }
 
-    function testFuzz_setOperatorAVSSplit(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
+    function testFuzz_setOperatorPISplit(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
@@ -594,7 +587,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
     }
 
     // Testing that the split has been initialized for the first time.
-    function testFuzz_setOperatorAVSSplitFirstTime(
+    function testFuzz_setOperatorPISplitFirstTime(
         address operator,
         uint16 split
     ) public filterFuzzedAddressInputs(operator) {
@@ -615,7 +608,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
     }
 
     // Testing the split setting for a second time prior to the earlier activation.
-    function testFuzz_setOperatorAVSSplitSecondTimeBeforePriorActivation(
+    function testFuzz_Revert_setOperatorPISplitSecondTimeBeforePriorActivation(
         address operator,
         uint16 firstSplit,
         uint16 secondSplit,
@@ -624,29 +617,22 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         cheats.assume(operator != address(0));
         firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
         secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
-        warpTime = uint32(bound(warpTime, uint32(block.timestamp), uint32(block.timestamp) + activationDelay - 1));
-        uint16 oldSplit = rewardsCoordinator.getOperatorPISplit(operator);
+        warpTime = uint32(bound(warpTime, uint32(block.timestamp), uint32(block.timestamp) + activationDelay));
 
         // Setting First Split
         cheats.prank(operator);
         rewardsCoordinator.setOperatorPISplit(operator, firstSplit);
         // Warping to time before activation of First split
         cheats.warp(warpTime);
-        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
 
-        // Setting Second Split
-        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit OperatorPISplitBipsSet(operator, operator, activatedAt, oldSplit, secondSplit);
+        // Trying to set Second Split
         cheats.prank(operator);
+        cheats.expectRevert("RewardsCoordinator._setOperatorSplit: earlier split not activated yet");
         rewardsCoordinator.setOperatorPISplit(operator, secondSplit);
-
-        assertEq(oldSplit, rewardsCoordinator.getOperatorPISplit(operator), "Incorrect Operator split");
-        cheats.warp(activatedAt);
-        assertEq(secondSplit, rewardsCoordinator.getOperatorPISplit(operator), "Incorrect Operator split");
     }
 
     // Testing the split setting for a second time after earlier activation.
-    function testFuzz_setOperatorAVSSplitSecondTimeAfterPriorActivation(
+    function testFuzz_setOperatorPISplitSecondTimeAfterPriorActivation(
         address operator,
         uint16 firstSplit,
         uint16 secondSplit,
@@ -656,7 +642,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
         secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
         warpTime = uint32(
-            bound(warpTime, uint32(block.timestamp) + activationDelay, type(uint32).max - activationDelay)
+            bound(warpTime, uint32(block.timestamp) + activationDelay + 1, type(uint32).max - activationDelay)
         );
 
         // Setting First Split
