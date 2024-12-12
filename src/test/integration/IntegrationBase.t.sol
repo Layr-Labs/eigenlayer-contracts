@@ -1317,7 +1317,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         for (uint i = 0; i < withdrawals.length; ++i) {
             if (withdrawals[i].startBlock > latest) latest = withdrawals[i].startBlock;
         }
-        cheats.roll(latest + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
+        cheats.roll(latest + delegationManager.minWithdrawalDelayBlocks());
     }
 
     /// @dev Rolls forward by the default allocation delay blocks.

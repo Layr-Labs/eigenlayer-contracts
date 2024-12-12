@@ -378,7 +378,7 @@ contract DeployFromScratch is Script, Test {
         // Check DM and AM have same withdrawa/deallocation delay
         // TODO: Update after AllocationManager is converted to timestamps as well
         // require(
-        //     delegation.MIN_WITHDRAWAL_DELAY_BLOCKS() == allocationManager.DEALLOCATION_DELAY(),
+        //     delegation.minWithdrawalDelayBlocks() == allocationManager.DEALLOCATION_DELAY(),
         //     "DelegationManager and AllocationManager have different withdrawal/deallocation delays"
         // );
         require(
