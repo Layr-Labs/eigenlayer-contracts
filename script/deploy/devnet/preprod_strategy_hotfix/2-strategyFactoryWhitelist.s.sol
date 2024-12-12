@@ -22,7 +22,7 @@ import "forge-std/Script.sol";
         --rpc-url http://127.0.0.1:8545 \
         --private-key $PRIVATE_KEY -vvvv
  */
-contract EigenStrategyPreprodHotfix is Script {
+contract EigenStrategyPreprodHotfix is Script, MultisigBuilder {
     using Env for *;
     using Encode for *;
 
@@ -36,12 +36,21 @@ contract EigenStrategyPreprodHotfix is Script {
     MultisigCall[] internal _opsCalls;
 
     function run() public {
+        execute();
+    }
+
+    function _runAsMultisig() internal override {
         bytes memory calldata_to_operations_multisig = _getCalldataToOpsMultisig();
 
-        vm.startBroadcast();
-        (bool success, ) = address(Env.opsMultisig()).call(calldata_to_operations_multisig);
-        require(success, "main transaction failed");
-        vm.stopBroadcast();
+        _startPrank2(Env.opsMultisig());
+
+        (bool success, bytes memory returnData) = Env.multiSendCallOnly().delegatecall(
+            abi.encodeCall(IMultiSend.multiSend, (calldata_to_operations_multisig))
+        );
+
+        // (bool success, ) = address(Env.opsMultisig()).call(calldata_to_operations_multisig);
+        // require(success, "main transaction failed");
+        _stopPrank();
     }
 
     function _getCalldataToOpsMultisig() internal returns (bytes memory) {
@@ -69,13 +78,19 @@ contract EigenStrategyPreprodHotfix is Script {
             )
         });
 
-        bytes memory opsMultisigCalldata = Encode.gnosisSafe.execTransaction({
-            from: Env.opsMultisig(),
-            to: Env.multiSendCallOnly(),
-            op: Encode.Operation.DelegateCall,
-            data: Encode.multiSend(_opsCalls)
-        });
+        return (Encode.multiSend(_opsCalls));
+    }
 
-        return (opsMultisigCalldata);
+    function _startPrank2(address caller) internal {
+        require(!hasPranked, "MultisigBuilder._startPrank: called twice in txn");
+        hasPranked = true;
+
+        emit ZeusRequireMultisig(caller, Encode.Operation.DelegateCall);
+        vm.startPrank(caller);
+    }
+
+    function _stopPrank2() internal {
+        require(hasPranked, "MultisigBuilder._stopPrank: _startPrank not called");
+        vm.stopPrank();
     }
 }
