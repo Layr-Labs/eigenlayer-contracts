@@ -45,7 +45,7 @@ contract User_M2 is User {
         delegationManager_M2 = IDelegationManager_DeprecatedM2(address(deployer.delegationManager()));
         strategyManager_M2 = IStrategyManager_DeprecatedM2(address(deployer.strategyManager()));
         eigenPodManager_M2 = IEigenPodManager_DeprecatedM2(address(deployer.eigenPodManager()));
-
+        cheats.label(address(this), NAME_COLORED());
     }
 
     /// -----------------------------------------------------------------------

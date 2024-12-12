@@ -21,7 +21,8 @@ uint256 constant FLAG = 1;
 uint256 constant NO_ASSETS = (FLAG << 0); // will have no assets
 uint256 constant HOLDS_LST = (FLAG << 1); // will hold some random amount of LSTs
 uint256 constant HOLDS_ETH = (FLAG << 2); // will hold some random amount of ETH
-uint256 constant HOLDS_ALL = (FLAG << 3); // will hold every LST and ETH
+uint256 constant HOLDS_ALL = (FLAG << 3); // will always hold ETH, and some LSTs
+uint256 constant HOLDS_MAX = (FLAG << 4); // will hold every LST and ETH (used for testing max strategies)
 
 /// @dev Types representing the different types of users that can be created.
 uint256 constant DEFAULT = (FLAG << 0);
@@ -39,7 +40,7 @@ abstract contract Logger is Test {
     /// Storage
     /// -----------------------------------------------------------------------
 
-    bool on = true;
+    bool public logging = true;
 
     /// -----------------------------------------------------------------------
     /// Modifiers
@@ -52,9 +53,9 @@ abstract contract Logger is Test {
     }
 
     modifier noLogging() {
-        _pauseLogging();
+        logging = false;
         _;
-        _resumeLogging();
+        logging = true;
     }
 
     /// -----------------------------------------------------------------------
@@ -68,12 +69,12 @@ abstract contract Logger is Test {
     /// Colored Names
     /// -----------------------------------------------------------------------
 
-    /// @dev Returns `NAME` colored based on the inheriting contract's role.
+    /// @dev Returns `NAME` colored based logging the inheriting contract's role.
     function NAME_COLORED() public view returns (string memory) {
         return colorByRole(NAME());
     }
 
-    /// @dev Returns `name` colored based on its role.
+    /// @dev Returns `name` colored based logging its role.
     function colorByRole(
         string memory name
     ) public view noTracing returns (string memory colored) {
@@ -112,14 +113,9 @@ abstract contract Logger is Test {
     /// Logging
     /// -----------------------------------------------------------------------
 
-    function _pauseLogging() internal {
-        console.log("\n%s logging paused...", NAME_COLORED());
-        on = false;
-    }
-
-    function _resumeLogging() internal {
-        console.log("\n%s logging unpaused...", NAME_COLORED());
-        on = true;
+    function _toggleLog() internal {
+        logging = !logging;
+        console.log("\n%s logging %s...", NAME_COLORED(), logging ? "enabled" : "disabled");
     }
 }
 
@@ -135,10 +131,12 @@ library print {
     function method(
         string memory m
     ) internal view {
+        if (!_logging()) return;
         console.log("%s.%s()", _name(), m.italic());
     }
 
     function method(string memory m, string memory args) internal view {
+        if (!_logging()) return;
         console.log("%s.%s(%s)", _name(), m.italic(), args);
     }
 
@@ -149,6 +147,7 @@ library print {
         IStrategy[] memory strategies,
         uint256[] memory tokenBalances
     ) internal view {
+        if (!_logging()) return;
         console.log(
             "\nCreated %s %s who holds %s.", userType.asUserType(), _logger().colorByRole(name), assetType.asAssetType()
         );
@@ -165,6 +164,12 @@ library print {
                 );
             }
         }
+    }
+
+    function gasUsed() internal {
+        uint256 used = cheats.snapshotGasLastCall("gasUsed");
+        if (!_logging()) return;
+        console.log("   Gas used: %d".dim().bold(), used);
     }
 
     /// -----------------------------------------------------------------------
@@ -282,5 +287,9 @@ library print {
 
     function _logger() internal view returns (Logger) {
         return Logger(address(this));
+    }
+
+    function _logging() internal view returns (bool) {
+        return _logger().logging();
     }
 }
