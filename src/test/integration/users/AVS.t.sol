@@ -49,6 +49,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         strategyFactory = deployer.strategyFactory();
         timeMachine = deployer.timeMachine();
         _NAME = name;
+        cheats.label(address(this), NAME_COLORED());
     }
 
     modifier createSnapshot() virtual {

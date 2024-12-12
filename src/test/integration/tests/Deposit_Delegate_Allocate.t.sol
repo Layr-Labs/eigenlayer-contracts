@@ -17,12 +17,12 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
             _userTypes: DEFAULT | ALT_METHODS
         });
 
+        _upgradeEigenLayerContracts();
+
         // Create a staker and an operator with a nonzero balance and corresponding strategies
         (, OperatorSet[] memory operatorSets) = _newRandomAVS();
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();
-
-        _upgradeEigenLayerContracts();
 
         // 1. Delegate to operator
         staker.delegateTo(operator);

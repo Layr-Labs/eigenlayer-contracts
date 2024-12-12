@@ -71,6 +71,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         _createPod();
         _NAME = name;
+        cheats.label(address(this), NAME_COLORED());
     }
 
     modifier createSnapshot() virtual {
