@@ -11,9 +11,9 @@ The `RewardsCoordinator` accepts ERC20s from AVSs alongside rewards submission r
 
 There are two forms of rewards:
 * Rewards v1, also known as rewards submissions.
-* Rewards v2, also known as operator-directed rewards submissions. See the [ELIP](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-001.md) for additional context on this proposed rewards type.
+* Rewards v2, also known as operator-directed rewards submissions. See the [ELIP](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-001.md) for additional context on this rewards type.
 
-*Off-chain*, the trusted *rewards updater* calculates a rewards distribution over some rewards submission's time range, depending on the rewards type. For a **v1 rewards submission**, it is based on: (i) the relative stake weight of each Operator's Stakers and (ii) a default split given to the Operator. For a **v2 rewards submission**, it will be based on: (i) an AVS's custom rewards logic, (ii) the per-operator splits.
+*Off-chain*, the trusted *rewards updater* calculates a rewards distribution over some rewards submission's time range, depending on the rewards type. For a **v1 rewards submission**, it is based on: (i) the relative stake weight of each Operator's Stakers and (ii) a default split given to the Operator. For a **v2 rewards submission**, it is based on: (i) an AVS's custom rewards logic, (ii) the per-operator splits.
 
 *On-chain*, the rewards updater sends the `RewardsCoordinator` a merkle root of each earner's cumulative earnings. Earners provide merkle proofs to the `RewardsCoordinator` to claim rewards against these roots.
 
