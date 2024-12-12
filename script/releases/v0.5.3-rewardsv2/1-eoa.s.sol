@@ -17,6 +17,7 @@ contract Deploy is EOADeployer {
         zUpdateUint16(string("REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS"), uint16(1000));
         zUpdateUint32(string("REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"), uint32(1 days));
 
+        // Deploying new RewardsCoordinator implementation with operator split activation delay lock.
         vm.startBroadcast();
         deploySingleton(
             address(
