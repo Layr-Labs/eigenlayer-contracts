@@ -978,6 +978,11 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
+    function minWithdrawalDelayBlocks() external view returns (uint32) {
+        return MIN_WITHDRAWAL_DELAY_BLOCKS;
+    }
+
+    /// @inheritdoc IDelegationManager
     function calculateDelegationApprovalDigestHash(
         address staker,
         address operator,
