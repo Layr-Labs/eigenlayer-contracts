@@ -523,7 +523,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @notice Returns the minimum withdrawal delay in blocks to pass for withdrawals queued to be completable.
      * Also applies to legacy withdrawals so any withdrawals not completed prior to the slashing upgrade will be subject
      * to this longer delay.
-     * @dev Backwards-compatible interface to return the `MIN_WITHDRAWAL_DELAY_BLOCKS` value
+     * @dev Backwards-compatible interface to return the internal `MIN_WITHDRAWAL_DELAY_BLOCKS` value
      * @dev Previous value in storage was deprecated. See `__deprecated_minWithdrawalDelayBlocks`
      */
     function minWithdrawalDelayBlocks() external view returns (uint32);
