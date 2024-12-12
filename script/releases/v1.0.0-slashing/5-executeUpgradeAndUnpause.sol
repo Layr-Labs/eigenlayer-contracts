@@ -48,10 +48,10 @@ contract Execute is QueueAndUnpause, Pause {
         assertFalse(timelock.isOperationDone(txHash), "Transaction should NOT be complete.");
         
         // 2- run pausing logic
-        // Pause._runAsMultisig();
-        // _unsafeResetHasPranked(); // reset hasPranked so we can use it again
+        Pause._runAsMultisig();
+        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
 
-        // assertTrue(Env.proxy.eigenPodManager().paused(PAUSED_START_CHECKPOINT), "EPM is not paused!");
+        assertTrue(Env.proxy.eigenPodManager().paused(PAUSED_START_CHECKPOINT), "EPM is not paused!");
 
         // 2- warp past delay
         vm.warp(block.timestamp + timelock.getMinDelay()); // 1 tick after ETA
@@ -99,7 +99,6 @@ contract Execute is QueueAndUnpause, Pause {
             assertTrue(avsDirectory.pauserRegistry() == Env.impl.pauserRegistry(), "avsD.pR invalid");
 
             DelegationManager delegation = Env.proxy.delegationManager();
-            assertTrue(delegation.avsDirectory() == Env.proxy.avsDirectory(), "dm.avsD invalid");
             assertTrue(delegation.strategyManager() == Env.proxy.strategyManager(), "dm.sm invalid");
             assertTrue(delegation.eigenPodManager() == Env.proxy.eigenPodManager(), "dm.epm invalid");
             assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
@@ -132,7 +131,6 @@ contract Execute is QueueAndUnpause, Pause {
             EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
             assertTrue(eigenPodManager.ethPOS() == Env.ethPOS(), "epm.ethPOS invalid");
             assertTrue(eigenPodManager.eigenPodBeacon() == Env.beacon.eigenPod(), "epm.epBeacon invalid");
-            assertTrue(eigenPodManager.strategyManager() == Env.proxy.strategyManager(), "epm.sm invalid");
             assertTrue(eigenPodManager.delegationManager() == Env.proxy.delegationManager(), "epm.dm invalid");
             assertTrue(eigenPodManager.pauserRegistry() == Env.impl.pauserRegistry(), "epm.pR invalid");
         }

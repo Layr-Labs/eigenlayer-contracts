@@ -85,7 +85,6 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(DelegationManager).name,
             deployedTo: address(new DelegationManager({
-                _avsDirectory: Env.proxy.avsDirectory(),
                 _strategyManager: Env.proxy.strategyManager(),
                 _eigenPodManager: Env.proxy.eigenPodManager(),
                 _allocationManager: Env.proxy.allocationManager(),
@@ -126,7 +125,6 @@ contract Deploy is EOADeployer {
             deployedTo: address(new EigenPodManager({
                 _ethPOS: Env.ethPOS(),
                 _eigenPodBeacon: Env.beacon.eigenPod(),
-                _strategyManager: Env.proxy.strategyManager(),
                 _delegationManager: Env.proxy.delegationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry()
             }))
@@ -370,7 +368,6 @@ contract Deploy is EOADeployer {
             assertTrue(avsDirectory.pauserRegistry() == Env.impl.pauserRegistry(), "avsD.pR invalid");
 
             DelegationManager delegation = Env.impl.delegationManager();
-            assertTrue(delegation.avsDirectory() == Env.proxy.avsDirectory(), "dm.avsD invalid");
             assertTrue(delegation.strategyManager() == Env.proxy.strategyManager(), "dm.sm invalid");
             assertTrue(delegation.eigenPodManager() == Env.proxy.eigenPodManager(), "dm.epm invalid");
             assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
@@ -405,7 +402,6 @@ contract Deploy is EOADeployer {
             EigenPodManager eigenPodManager = Env.impl.eigenPodManager();
             assertTrue(eigenPodManager.ethPOS() == Env.ethPOS(), "epm.ethPOS invalid");
             assertTrue(eigenPodManager.eigenPodBeacon() == Env.beacon.eigenPod(), "epm.epBeacon invalid");
-            assertTrue(eigenPodManager.strategyManager() == Env.proxy.strategyManager(), "epm.sm invalid");
             assertTrue(eigenPodManager.delegationManager() == Env.proxy.delegationManager(), "epm.dm invalid");
             assertTrue(eigenPodManager.pauserRegistry() == Env.impl.pauserRegistry(), "epm.pR invalid");
         }
