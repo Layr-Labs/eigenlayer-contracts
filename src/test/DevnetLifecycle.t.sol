@@ -111,7 +111,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
         cheats.prank(operator);
         delegationManager.registerAsOperator(address(0), 1, emptyStringForMetadataURI);
         // Warp passed configuration delay
-        cheats.roll(block.number + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
+        cheats.roll(block.number + delegationManager.minWithdrawalDelayBlocks());
 
         // Validate storage
         assertTrue(delegationManager.isOperator(operator));
@@ -221,7 +221,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
         delegationManager.queueWithdrawals(queuedWithdrawals);
 
         // Roll passed withdrawal delay
-        cheats.roll(block.number + delegationManager.MIN_WITHDRAWAL_DELAY_BLOCKS());
+        cheats.roll(block.number + delegationManager.minWithdrawalDelayBlocks());
 
         // Complete withdrawal
         IERC20[] memory tokens = new IERC20[](1);

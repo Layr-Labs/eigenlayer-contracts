@@ -37,7 +37,7 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         _upgradeEigenLayerContracts();
 
         // 4. Complete Queued Withdrawal
-        _rollBlocksForCompleteWithdrawals();
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
@@ -77,7 +77,7 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         _upgradeEigenLayerContracts();
 
         // 4. Complete Queued Withdrawal
-        _rollBlocksForCompleteWithdrawals();
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);

@@ -1,0 +1,27 @@
+{
+    "name": "slashing",
+    "from": "0.5.2",
+    "to": "1.0.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployContracts.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueUpgradeAndUnpause.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-pause.s.sol"
+        },
+        {
+            "type": "script",
+            "filename": "4-podCleanup.sh"
+        },
+        {
+            "type": "multisig",
+            "filename": "5-executeUpgradeAndUnpause.s.sol"
+        }
+    ]
+}

@@ -490,13 +490,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      */
     function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256);
 
-    /**
-     * @notice Returns the minimum withdrawal delay in blocks to pass for withdrawals queued to be completable.
-     * Also applies to legacy withdrawals so any withdrawals not completed prior to the slashing upgrade will be subject
-     * to this longer delay.
-     */
-    function MIN_WITHDRAWAL_DELAY_BLOCKS() external view returns (uint32);
-
     /// @notice Returns a list of pending queued withdrawals for a `staker`, and the `shares` to be withdrawn.
     function getQueuedWithdrawals(
         address staker
@@ -525,6 +518,15 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
 
     /// @notice return address of the beaconChainETHStrategy
     function beaconChainETHStrategy() external view returns (IStrategy);
+
+    /**
+     * @notice Returns the minimum withdrawal delay in blocks to pass for withdrawals queued to be completable.
+     * Also applies to legacy withdrawals so any withdrawals not completed prior to the slashing upgrade will be subject
+     * to this longer delay.
+     * @dev Backwards-compatible interface to return the internal `MIN_WITHDRAWAL_DELAY_BLOCKS` value
+     * @dev Previous value in storage was deprecated. See `__deprecated_minWithdrawalDelayBlocks`
+     */
+    function minWithdrawalDelayBlocks() external view returns (uint32);
 
     /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32);

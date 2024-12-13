@@ -42,8 +42,6 @@ interface IEigenPodErrors {
 
     /// @dev Thrown when amount exceeds `restakedExecutionLayerGwei`.
     error InsufficientWithdrawableBalance();
-    /// @dev Thrown when provided `amountGwei` is not a multiple of gwei.
-    error AmountMustBeMultipleOfGwei();
 
     /// Validator Status
 

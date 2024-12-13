@@ -1419,6 +1419,7 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
         uint256 depositAmount,
         uint256 sharesAmount
     ) external filterFuzzedAddressInputs(staker) {
+        cheats.assume(staker != address(this));
         cheats.assume(staker != address(0));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesAmount);
         IStrategy strategy = dummyStrat;
@@ -1433,7 +1434,9 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
         uint256 depositAmount,
         uint256 sharesAmount
     ) external filterFuzzedAddressInputs(staker) {
+        cheats.assume(staker != address(this));
         cheats.assume(staker != address(0));
+        cheats.assume(staker != address(dummyStrat));
         cheats.assume(sharesAmount > 0 && sharesAmount < dummyToken.totalSupply() && depositAmount >= sharesAmount);
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
@@ -1485,6 +1488,7 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         uint256 sharesToBurn
     ) external filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != address(0));
+        cheats.assume(staker != address(dummyStrat));
         cheats.assume(sharesToBurn > 0 && sharesToBurn < dummyToken.totalSupply() && depositAmount >= sharesToBurn);
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;

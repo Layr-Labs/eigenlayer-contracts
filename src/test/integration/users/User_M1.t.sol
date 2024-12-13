@@ -30,6 +30,7 @@ contract User_M1 is User {
 
         strategyManager_M1 = IStrategyManager_DeprecatedM1(address(deployer.strategyManager()));
         eigenPodManager_M1 = IEigenPodManager_DeprecatedM1(address(deployer.eigenPodManager()));
+        cheats.label(address(this), NAME_COLORED());
     }
 
     /**

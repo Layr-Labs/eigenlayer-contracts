@@ -53,7 +53,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals();
+        _rollBlocksForCompleteWithdrawals(withdrawals);
 
         // Complete withdrawal
         for (uint256 i = 0; i < withdrawals.length; ++i) {
@@ -116,7 +116,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals();
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
 
@@ -172,7 +172,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals();
+        _rollBlocksForCompleteWithdrawals(withdrawals);
 
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
@@ -229,7 +229,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals();
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares);
@@ -238,6 +238,52 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         // Check final state:
         assert_HasExpectedShares(staker, strategies, shares, "staker should have all original shares");
         assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker not have any underlying tokens");
+        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
+    }
+
+    function testFuzz_deposit_delegate_undelegate_completeAsTokens_Max_Strategies(
+        uint24 _random
+    ) public {
+        _configRand({_randomSeed: _random, _assetTypes: HOLDS_MAX, _userTypes: DEFAULT});
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
+
+        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
+        (User operator,,) = _newRandomOperator();
+
+        if (forkType == LOCAL) assertEq(strategies.length, 33, "sanity");
+
+        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+
+        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
+        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
+
+        /// 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        check_Deposit_State(staker, strategies, shares);
+
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, shares);
+
+        // 3. Undelegate from an operator
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
+
+        // 4. Complete withdrawal
+        // Fast forward to when we can complete the withdrawal
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+
+        // Complete withdrawal
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens);
+        }
+
+        // Check Final State
+        assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
+        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should once again have original token tokenBalances");
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 }

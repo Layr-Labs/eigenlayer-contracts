@@ -64,7 +64,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
     //     console.log("withdrawble: ", staker.pod().withdrawableRestakedExecutionLayerGwei());
 
     //     // Fast forward to when we can complete the withdrawal
-    //     _rollBlocksForCompleteWithdrawals();
+    //     _rollBlocksForCompleteWithdrawals(withdrawals);
 
     //     // 5. Complete queued withdrawals as tokens
     //     staker.completeWithdrawalsAsTokens(withdrawals);

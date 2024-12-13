@@ -2,32 +2,50 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
+import "src/test/utils/Logger.t.sol";
 
-contract TimeMachine is Test {
+contract TimeMachine is Test, Logger {
+    uint256[] public snapshots;
 
-    Vm cheats = Vm(VM_ADDRESS);
-
-    bool pastExists = false;
-    uint lastSnapshot;
-
-    function createSnapshot() public returns (uint) {
-        uint snapshot = cheats.snapshotState();
-        lastSnapshot = snapshot;
-        pastExists = true;
-        return snapshot;
+    function NAME() public view virtual override returns (string memory) {
+        return "TimeMachine";
     }
 
-    function warpToLast() public returns (uint curState) {
-        // Safety check to make sure createSnapshot is called before attempting to warp
-        // so we don't accidentally prevent our own births
-        assertTrue(pastExists, "Global.warpToPast: invalid usage, past does not exist");
+    /// -----------------------------------------------------------------------
+    /// Setters
+    /// -----------------------------------------------------------------------
 
-        curState = cheats.snapshotState();
-        cheats.revertToState(lastSnapshot);
-        return curState;
+    function createSnapshot() public returns (uint256 snapshot) {
+        snapshots.push(snapshot = cheats.snapshotState());
+        print.method("createSnapshot", cheats.toString(snapshot));
     }
 
-    function warpToPresent(uint curState) public {
-        cheats.revertToState(curState);
+    function travelToLast() public returns (uint256 currentSnapshot) {
+        // Safety check to make sure createSnapshot is called before attempting
+        // to warp so we don't accidentally prevent our own births.
+        assertTrue(pastExists(), "Global.warpToPast: invalid usage, past does not exist");
+        uint256 last = lastSnapshot();
+        print.method("travelToLast", cheats.toString(last));
+        currentSnapshot = createSnapshot();
+        cheats.revertToState(last);
+    }
+
+    function travel(
+        uint256 snapshot
+    ) public {
+        print.method("travel", cheats.toString(snapshot));
+        cheats.revertToState(snapshot);
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Getters
+    /// -----------------------------------------------------------------------
+
+    function lastSnapshot() public view returns (uint256) {
+        return snapshots[snapshots.length - 1];
+    }
+
+    function pastExists() public view returns (bool) {
+        return snapshots.length != 0;
     }
 }

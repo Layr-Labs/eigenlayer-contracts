@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "forge-std/Test.sol";
 
 import "src/contracts/core/AllocationManager.sol";
+import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 
 import "src/test/mocks/ERC20Mock.sol";
@@ -15,8 +16,10 @@ import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
 
 interface IAVSDeployer {
+    function delegationManager() external view returns (DelegationManager);
     function allocationManager() external view returns (AllocationManager);
     function strategyFactory() external view returns (StrategyFactory);
+    function permissionController() external view returns (PermissionController);
     function timeMachine() external view returns (TimeMachine);
 }
 
@@ -26,7 +29,10 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
     IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    AllocationManager immutable allocationManager;
+    // TODO: fix later for same reason as User.t.sol
+    // AllocationManager immutable allocationManager;
+    // PermissionController immutable permissionController;
+    DelegationManager immutable delegationManager;
     StrategyFactory immutable strategyFactory;
     TimeMachine immutable timeMachine;
     string _NAME;
@@ -37,10 +43,13 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         string memory name
     ) {
         IAVSDeployer deployer = IAVSDeployer(msg.sender);
-        allocationManager = deployer.allocationManager();
+        // allocationManager = deployer.allocationManager();
+        // permissionController = deployer.permissionController();
+        delegationManager = deployer.delegationManager();
         strategyFactory = deployer.strategyFactory();
         timeMachine = deployer.timeMachine();
         _NAME = name;
+        cheats.label(address(this), NAME_COLORED());
     }
 
     modifier createSnapshot() virtual {
@@ -74,7 +83,8 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         print.createOperatorSets(p);
-        allocationManager.createOperatorSets(address(this), p);
+        allocationManager().createOperatorSets(address(this), p);
+        print.gasUsed();
     }
 
     function createOperatorSet(
@@ -87,11 +97,17 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         CreateSetParams[] memory p = CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray();
 
         print.createOperatorSets(p);
-        allocationManager.createOperatorSets(address(this), p);
+        allocationManager().createOperatorSets(address(this), p);
+        print.gasUsed();
     }
 
-    function slashOperator(User operator, uint32 operatorSetId, IStrategy[] memory strategies, uint256[] memory wadsToSlash) public createSnapshot {
-        SlashingParams memory p = SlashingParams({
+    function slashOperator(
+        User operator, 
+        uint32 operatorSetId, 
+        IStrategy[] memory strategies, 
+        uint256[] memory wadsToSlash
+    ) public createSnapshot returns (SlashingParams memory p) {
+        p = SlashingParams({
             operator: address(operator),
             operatorSetId: operatorSetId,
             strategies: strategies,
@@ -120,7 +136,9 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             );
         }
 
-        allocationManager.slashOperator(address(this), p);
+        _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
+        allocationManager().slashOperator(address(this), p);
+        print.gasUsed();
     }
 
     function deregisterFromOperatorSets(User operator, uint32[] memory operatorSetIds) public createSnapshot {
@@ -130,7 +148,9 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             DeregisterParams({operator: address(operator), avs: address(this), operatorSetIds: operatorSetIds});
 
         print.deregisterFromOperatorSets(p);
-        allocationManager.deregisterFromOperatorSets(p);
+        _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
+        allocationManager().deregisterFromOperatorSets(p);
+        print.gasUsed();
     }
 
     function setAVSRegistrar(
@@ -138,7 +158,9 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     ) public createSnapshot {
         print.method("setAVSRegistrar");
         console.log("Setting AVS registrar to: %s", address(registrar));
-        allocationManager.setAVSRegistrar(address(this), registrar);
+        _tryPrankAppointee_AllocationManager(IAllocationManager.setAVSRegistrar.selector);
+        allocationManager().setAVSRegistrar(address(this), registrar);
+        print.gasUsed();
     }
 
     function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) public createSnapshot {
@@ -149,8 +171,9 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         for (uint256 i; i < strategies.length; ++i) {
             console.log("   strategy: %s", address(strategies[i]));
         }
-
-        allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
+        _tryPrankAppointee_AllocationManager(IAllocationManager.addStrategiesToOperatorSet.selector);
+        allocationManager().addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
+        print.gasUsed();
     }
 
     function removeStrategiesFromOperatorSet(
@@ -164,8 +187,9 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         for (uint256 i; i < strategies.length; ++i) {
             console.log("   strategy: %s", address(strategies[i]));
         }
-
-        allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
+        _tryPrankAppointee_AllocationManager(IAllocationManager.removeStrategiesFromOperatorSet.selector);
+        allocationManager().removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
+        print.gasUsed();
     }
 
     /// -----------------------------------------------------------------------
@@ -179,4 +203,30 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     ) external override {}
 
     function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external override {}
+
+    /// -----------------------------------------------------------------------
+    /// Internal Helpers
+    /// -----------------------------------------------------------------------
+
+    function allocationManager() public view returns (AllocationManager) {
+        return AllocationManager(address(delegationManager.allocationManager()));
+    }
+
+    function permissionController() public view returns (PermissionController) {
+        return PermissionController(address(delegationManager.permissionController()));
+    }
+
+    function _tryPrankAppointee(
+        address target,
+        bytes4 selector
+    ) internal {
+        address[] memory appointees = permissionController().getAppointees(address(this), target, selector);
+        if (appointees.length != 0) cheats.prank(appointees[0]);
+    }
+
+    function _tryPrankAppointee_AllocationManager(
+        bytes4 selector
+    ) internal {
+        return _tryPrankAppointee(address(allocationManager()), selector);
+    }
 }
