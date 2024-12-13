@@ -196,29 +196,29 @@ contract Deploy is EOADeployer {
     function _validateNewImplAddresses(bool areMatching) internal view {
         /// core/ -- can't check AllocationManager as it didn't exist before this deploy
 
-        function (bool, string memory) internal pure assertion =
-            areMatching ? _assertTrue : _assertFalse;
+        function (address, address, string memory) internal pure assertion =
+            areMatching ? _assertMatch : _assertNotMatch;
 
         assertion(
-            _getProxyImpl(address(Env.proxy.avsDirectory())) ==
+            _getProxyImpl(address(Env.proxy.avsDirectory())),
             address(Env.impl.avsDirectory()),
             "avsDirectory impl failed"
         );
 
         assertion(
-            _getProxyImpl(address(Env.proxy.delegationManager())) ==
+            _getProxyImpl(address(Env.proxy.delegationManager())),
             address(Env.impl.delegationManager()),
             "delegationManager impl failed"
         );
 
         assertion(
-            _getProxyImpl(address(Env.proxy.rewardsCoordinator())) ==
+            _getProxyImpl(address(Env.proxy.rewardsCoordinator())),
             address(Env.impl.rewardsCoordinator()),
             "rewardsCoordinator impl failed"
         );
 
         assertion(
-            _getProxyImpl(address(Env.proxy.strategyManager())) ==
+            _getProxyImpl(address(Env.proxy.strategyManager())),
             address(Env.impl.strategyManager()),
             "strategyManager impl failed"
         );
@@ -229,13 +229,13 @@ contract Deploy is EOADeployer {
         /// pods/
 
         assertion(
-            Env.beacon.eigenPod().implementation() ==
+            Env.beacon.eigenPod().implementation(),
             address(Env.impl.eigenPod()),
             "eigenPod impl failed"
         );
 
         assertion(
-            _getProxyImpl(address(Env.proxy.eigenPodManager())) ==
+            _getProxyImpl(address(Env.proxy.eigenPodManager())),
             address(Env.impl.eigenPodManager()),
             "eigenPodManager impl failed"
         );
@@ -243,13 +243,13 @@ contract Deploy is EOADeployer {
         /// strategies/
 
         assertion(
-            _getProxyImpl(address(Env.proxy.eigenStrategy())) ==
+            _getProxyImpl(address(Env.proxy.eigenStrategy())),
             address(Env.impl.eigenStrategy()),
             "eigenStrategy impl failed"
         );
 
         assertion(
-            Env.beacon.strategyBase().implementation() ==
+            Env.beacon.strategyBase().implementation(),
             address(Env.impl.strategyBase()),
             "strategyBase impl failed"
         );
@@ -257,14 +257,14 @@ contract Deploy is EOADeployer {
         uint count = Env.instance.strategyBaseTVLLimits_Count();
         for (uint i = 0; i < count; i++) {
             assertion(
-                _getProxyImpl(address(Env.instance.strategyBaseTVLLimits(i))) ==
+                _getProxyImpl(address(Env.instance.strategyBaseTVLLimits(i))),
                 address(Env.impl.strategyBaseTVLLimits()),
                 "strategyBaseTVLLimits impl failed"
             );
         }
 
         assertion(
-            _getProxyImpl(address(Env.proxy.strategyFactory())) ==
+            _getProxyImpl(address(Env.proxy.strategyFactory())),
             address(Env.impl.strategyFactory()),
             "strategyFactory impl failed"
         );
@@ -518,11 +518,11 @@ contract Deploy is EOADeployer {
         return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(proxy));
     }
 
-    function _assertTrue(bool b, string memory err) private pure {
-        assertTrue(b, err);
+    function _assertMatch(address a, address b, string memory err) private pure {
+        assertEq(a, b, err);
     }
 
-    function _assertFalse(bool b, string memory err) private pure {
-        assertFalse(b, err);
+    function _assertNotMatch(address a, address b, string memory err) private pure {
+        assertNotEq(a, b, err);
     }
 }
