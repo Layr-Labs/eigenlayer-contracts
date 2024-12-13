@@ -7,6 +7,7 @@ import "../Env.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /**
  * Purpose: use an EOA to deploy all of the new contracts for this upgrade. 
@@ -184,6 +185,7 @@ contract Deploy is EOADeployer {
         _validateProxyAdmins();
         _validateImplConstructors();
         _validateImplsInitialized();
+        _validateStrategiesAreWhitelisted();
     }
 
     /// @dev Validate that the `Env.impl` addresses are updated to be distinct from what the proxy
@@ -484,6 +486,25 @@ contract Deploy is EOADeployer {
             StrategyFactory strategyFactory = Env.impl.strategyFactory();
             vm.expectRevert(errInit);
             strategyFactory.initialize(address(0), 0, UpgradeableBeacon(address(0)));
+        }
+    }
+
+    /// @dev Iterate over StrategyBaseTVLLimits instances and validate that each is
+    /// whitelisted for deposit
+    function _validateStrategiesAreWhitelisted() internal view {
+        uint count = Env.instance.strategyBaseTVLLimits_Count();
+        for (uint i = 0; i < count; i++) {
+            StrategyBaseTVLLimits strategy = Env.instance.strategyBaseTVLLimits(i);
+            
+            // emit log_named_uint("strategy", i);
+            // IERC20Metadata underlying = IERC20Metadata(address(strategy.underlyingToken()));
+            // emit log_named_string("- name", underlying.name());
+            // emit log_named_string("- symbol", underlying.symbol());
+            // emit log_named_uint("- totalShares", strategy.totalShares());
+
+            bool isWhitelisted = Env.proxy.strategyManager().strategyIsWhitelistedForDeposit(strategy);
+            // emit log_named_string("- is whitelisted", isWhitelisted ? "true" : "false");
+            assertTrue(isWhitelisted, "not whitelisted!!");
         }
     }
 

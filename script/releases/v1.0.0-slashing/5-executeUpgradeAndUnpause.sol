@@ -63,6 +63,7 @@ contract Execute is QueueAndUnpause, Pause {
         assertTrue(timelock.isOperationDone(txHash), "Transaction should be complete.");
 
         _validateNewImplAddresses({ areMatching: true });
+        _validateStrategiesAreWhitelisted();
         _validateProxyAdmins();
         _validateProxyConstructors();
         _validateProxiesInitialized();
