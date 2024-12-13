@@ -70,7 +70,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice Returns the operator details for a given `operator`.
     mapping(address operator => OperatorDetails) internal _operatorDetails;
 
-    /// @notice Returns the `operator` a `staker` is delgated to, address(0) if not delegated.
+    /// @notice Returns the `operator` a `staker` is delegated to, address(0) if not delegated.
     mapping(address staker => address operator) public delegatedTo;
 
     /// @notice Do not remove, deprecated storage.

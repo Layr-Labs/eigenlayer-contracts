@@ -134,7 +134,7 @@ contract User_M2 is User {
             int256 delta = tokenDeltas[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                // If any balance update has occured, a checkpoint will pick it up
+                // If any balance update has occurred, a checkpoint will pick it up
                 _startCheckpoint();
                 if (pod.activeValidatorCount() != 0) {
                     _completeCheckpoint();

@@ -145,7 +145,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         require(strategyWithTVLLimits.totalShares() == newMaxTotalDepositsFuzzedInput, "total shares not updated correctly");
     }
 
-    /// @notice General-purpose test, re-useable, handles whether the deposit should revert or not and returns 'true' if it did revert.
+    /// @notice General-purpose test, reusable, handles whether the deposit should revert or not and returns 'true' if it did revert.
     function testDeposit_WithTVLLimits(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput, uint256 depositAmount)
         public returns (bool depositReverted)
     {

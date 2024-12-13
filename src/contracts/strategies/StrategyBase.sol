@@ -23,7 +23,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  * To mitigate against the common "inflation attack" vector, we have chosen to use the 'virtual shares' mitigation route,
  * similar to [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/extensions/ERC4626.sol).
  * We acknowledge that this mitigation has the known downside of the virtual shares causing some losses to users, which are pronounced
- * particularly in the case of the share exchange rate changing signficantly, either positively or negatively.
+ * particularly in the case of the share exchange rate changing significantly, either positively or negatively.
  * For a fairly thorough discussion of this issue and our chosen mitigation strategy, we recommend reading through
  * [this thread](https://github.com/OpenZeppelin/openzeppelin-contracts/issues/3706) on the OpenZeppelin repo.
  * We specifically use a share offset of `SHARES_OFFSET` and a balance offset of `BALANCE_OFFSET`.

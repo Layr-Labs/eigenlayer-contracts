@@ -89,7 +89,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         // Redeploy StrategyManagerMock with DM
         strategyManagerMock = StrategyManagerMock(payable(address(new StrategyManagerMock(delegationManager))));
 
-        // Deploy DelegationManager implmentation and upgrade proxy
+        // Deploy DelegationManager implementation and upgrade proxy
         delegationManagerImplementation = new DelegationManagerHarness(
             IStrategyManager(address(strategyManagerMock)),
             IEigenPodManager(address(eigenPodManagerMock)),
@@ -1391,7 +1391,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
         assertEq(delegationManager.paused(), 0, "constructor / initializer incorrect, paused status set wrong");
     }
 
-    /// @notice Verifies that the DelegationManager cannot be iniitalized multiple times
+    /// @notice Verifies that the DelegationManager cannot be initialized multiple times
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
         delegationManager.initialize(address(this), 0);
