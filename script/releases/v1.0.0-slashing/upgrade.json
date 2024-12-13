@@ -1,6 +1,6 @@
 {
     "name": "slashing",
-    "from": "0.5.2",
+    "from": "~0.5.3",
     "to": "1.0.0",
     "phases": [
         {
@@ -17,7 +17,12 @@
         },
         {
             "type": "script",
-            "filename": "4-podCleanup.sh"
+            "filename": "cleanup/start.sh",
+            "arguments": [
+                {"type": "url", "passBy": "env", "inputType": "text", "name": "RPC_URL", "prompt": "Enter an ETH RPC URL"},
+                {"type": "url", "passBy": "env", "inputType": "text", "name": "BEACON_URL", "prompt": "Enter an ETH2 Beacon RPC URL"},
+                {"type": "privateKey", "passBy": "env", "inputType": "password", "name": "SENDER_PK", "prompt": "Enter an ETH wallet private key to complete checkpoints from:"}
+            ]
         },
         {
             "type": "multisig",
