@@ -1,17 +1,27 @@
-# Release Scripts
+# Release Scripting With Zeus
 
-This directory contains the following subdirectories:
+This directory is where you will build [Zeus](https://github.com/Layr-Labs/zeus) scripts to manage core protocol releases. Releases are broken up into multiple steps composed of either a `forge` script or a custom shell script. Zeus's role is:
+* Provide an environment to your script via environment variables
+* Update environment after a release is run to completion
+* Track status of releases to ensure steps are run (in order) only once per environment
 
-* `configs`: to store configuration data related to a given network.
-* `interfaces`: to store interfaces relevant to your scripts.
-* `releases`: to set up more subdirectories corresponding to your release, and the most important `script/` subdirectory.
-* `utils`: to define any utility contracts for performing common actions.
+**Note about environments:** Zeus scripts are intended to be written once, and run across _any_ environment we use. We currently have 3 live environments (`preprod`, `testnet`, and `mainnet`), and the params/deployment addresses for each live in separate folders in [`layr-labs/eigenlayer-contracts-metadata`](https://github.com/Layr-Labs/eigenlayer-contracts-metadata).
 
-It is intended to be driven by [Zeus](https://github.com/Layr-Labs/zeus), which will run `forge` commands under the hood and track the status of upgrades.
+When running or testing a script, _you tell zeus which environment to use,_ and it will fork the corresponding network state and setup environment variables for that environment's params/deployment addresses.
 
-## Using Zeus Templates
+##### Getting Started
 
-The [zeus-templates](https://github.com/Layr-Labs/zeus-templates) repository provides two base contract classes to facilitate deployment and multisig scripts.
+* Install [Zeus](https://github.com/Layr-Labs/zeus)
+* Run `zeus login`
+
+At this point, you should be able to view an environment's config (try `zeus env show preprod`)
+
+---
+
+### Writing a Script
+
+Scripts are broken up into multiple steps TODO
+
 
 ### EOADeployer
 

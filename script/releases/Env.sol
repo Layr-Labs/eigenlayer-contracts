@@ -129,6 +129,10 @@ library Env {
         return _envU32("REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP");
     }
 
+    function REWARDS_PAUSE_STATUS() internal view returns (uint) {
+        return _envU256("REWARDS_COORDINATOR_PAUSE_STATUS");
+    }
+
     /**
      * core/
      */
@@ -299,6 +303,10 @@ library Env {
 
     function _envAddress(string memory key) private view returns (address) {
         return ZEnvHelpers.state().envAddress(key);
+    }
+
+    function _envU256(string memory key) private view returns (uint) {
+        return ZEnvHelpers.state().envU256(key);
     }
 
     function _envU64(string memory key) private view returns (uint64) {
