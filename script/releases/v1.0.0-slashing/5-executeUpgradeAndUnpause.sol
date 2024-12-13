@@ -68,6 +68,22 @@ contract Execute is QueueAndUnpause, Pause {
         _validateProxiesInitialized();
     }
 
+    function _validateNewProxyImplsMatch() internal view {
+        ProxyAdmin pa = ProxyAdmin(Env.proxyAdmin());
+
+        assertTrue(
+            pa.getProxyImplementation(ITransparentUpgradeableProxy(address(Env.proxy.allocationManager()))) ==
+            address(Env.impl.allocationManager()),
+            "allocationManager impl failed"
+        );
+
+        assertTrue(
+            pa.getProxyImplementation(ITransparentUpgradeableProxy(address(Env.proxy.permissionController()))) ==
+            address(Env.impl.permissionController()),
+            "permissionController impl failed"
+        );
+    }
+
     /// @dev Mirrors the checks done in 1-deployContracts, but now we check each contract's
     /// proxy, as the upgrade should mean that each proxy can see these methods/immutables
     function _validateProxyConstructors() internal view {

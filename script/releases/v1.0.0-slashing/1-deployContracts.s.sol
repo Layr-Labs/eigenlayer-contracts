@@ -240,7 +240,6 @@ contract Deploy is EOADeployer {
 
         /// strategies/
 
-        // FIXME
         assertion(
             _getProxyImpl(address(Env.proxy.eigenStrategy())) ==
             address(Env.impl.eigenStrategy()),
