@@ -10,7 +10,7 @@ no_match_test = "queueUpgrade"
 no_match_path = "script/releases/**/*.sol"
 remappings = [
     "@openzeppelin/=lib/openzeppelin-contracts-v4.9.0/",
-    "@openzeppelin-upgrades/contracts/=node_modules/eigen-oz/",
+    "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable-v4.9.0/",
     "ds-test/=lib/ds-test/src/",
     "forge-std/=lib/forge-std/src/"
 ]
