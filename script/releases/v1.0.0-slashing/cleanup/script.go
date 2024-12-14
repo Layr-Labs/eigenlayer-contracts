@@ -78,6 +78,11 @@ func panicOnError(msg string, err error) {
 func runScript(args TArgs) error {
 	ctx := context.Background()
 
+	if args.Sender[:2] == "0x" {
+		args.Sender = args.Sender[2:]
+	}
+	fmt.Printf("Sender: %s\n", args.Sender)
+
 	eigenpodAbi, err := abi.JSON(strings.NewReader(EigenPodAbi))
 	panicOnError("failed to load eigenpod abi", err)
 
