@@ -10,7 +10,7 @@ abstract contract RelayScript is Script {
     bool private started;
     bool private broadcasted;
     mapping(address => bool) private isRelay;
-
+    mapping(address => bool) private isEOA;
     uint256 internal broadcastForkId;
 
     modifier relayBroadcast {
@@ -31,10 +31,16 @@ abstract contract RelayScript is Script {
         vm.startStateDiffRecording();
     }
 
-    function _prank(address relay) internal {
-        require(started, "RelayScript._prank: already started");
+    function _broadcastRelay(address relay) internal {
+        require(started, "RelayScript._broadcastRelay: not started");
         vm.prank(relay);
         isRelay[relay] = true;
+    }
+
+    function _broadcastEOA(address eoa) internal {
+        require(started, "RelayScript._broadcastEOA: not started");
+        vm.prank(eoa);
+        isEOA[eoa] = true;
     }
 
     function _broadcast() internal {
@@ -46,24 +52,32 @@ abstract contract RelayScript is Script {
 
         // broadcast relay txs on broadcast fork
         vm.selectFork(broadcastForkId);
-        vm.startBroadcast();
         // Process each access to find relay calls
         for (uint256 i = 0; i < accesses.length; i++) {
             Vm.AccountAccess memory access = accesses[i];
             
-            // Only process Call type accesses
-            // TODO: why doesn't Vm.AccountAccessKind.Call work here?
-            if (uint8(access.kind) != uint8(0)) continue;
-            
             // Check if the accessor is one of our relays
-            if (!isRelay[access.accessor]) continue;
-
-            // Forward the call through the Pod interface
-            Relay(payable(access.accessor)).execute(
-                access.account,
-                access.value,
-                access.data
-            );
+            if (isRelay[access.accessor] && uint8(access.kind) == uint8(0)) {
+                Relay relay = Relay(payable(access.accessor));
+                vm.broadcast(relay.mothership());
+                // Forward the call through the Pod interface
+                relay.execute(
+                    access.account,
+                    access.value,
+                    access.data
+                );
+            } else if (isEOA[access.accessor] && uint8(access.kind) == uint8(0)) {
+                vm.broadcast(access.accessor);
+                (bool success, ) = access.account.call{value: access.value}(access.data);
+                require(success, "RelayScript._broadcast: EOA call failed");
+            } else if (isEOA[access.accessor] && uint8(access.kind) == uint8(4)) {
+                vm.broadcast(access.accessor);
+                bytes memory data = access.data;
+                uint256 value = access.value;
+                assembly {
+                    let x := create(value, add(data, 0x20), mload(data))
+                }
+            }
         }
     }
 }
